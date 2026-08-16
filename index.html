@@ -58,6 +58,9 @@
   .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface2); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2); border-radius:99px; padding:3px 9px; white-space:nowrap;}
+  .inline-edit{font:inherit; color:inherit; text-align:left; display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:1px 5px; margin-left:-5px;}
+  .inline-edit .pen{font-size:.62em; color:var(--accent); opacity:.75;}
+  .inline-edit:active{background:var(--surface2);}
   .tb-save{position:relative; color:var(--ink-soft);}
   .tb-save svg{width:19px; height:19px;}
   .tb-save .tb-dot{position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%; background:var(--accent); border:2px solid var(--bg);}
@@ -470,10 +473,7 @@ const ICON_SAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 function backupStale(){ return !isEmptyDb(db) && (!db.lastBackup || Date.now()-db.lastBackup > 7*864e5); }
 function topbar(){
   return `<div class="topbar"><div class="wordmark">Tonnage<b>.</b></div>
-    <div class="row" style="gap:8px;">
-      <button class="icon-btn tb-save" id="tb-save" title="Sauvegarder mes données" aria-label="Sauvegarder mes données">${ICON_SAVE}${backupStale()?'<i class="tb-dot"></i>':''}</button>
-      <button class="icon-btn" id="tb-settings" title="Réglages" aria-label="Réglages">⚙︎</button>
-    </div></div>`;
+    <button class="icon-btn" id="tb-settings" title="Réglages" aria-label="Réglages">⚙︎</button></div>`;
 }
 async function quickBackup(){
   const stamp = new Date().toISOString().slice(0,10);
@@ -489,7 +489,6 @@ async function quickBackup(){
   }
 }
 function wireTopbar(){
-  const s = document.getElementById("tb-save"); if(s) s.onclick = quickBackup;
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
 }
 let curTab = "seance";
@@ -685,8 +684,8 @@ let chronoInt = null;
 const HB_OPTS = {
   prot: [["Poulet (150 g)",35],["Steak de bœuf",30],["Œufs (×3)",18],["Thon (1 boîte)",25],["Poisson (150 g)",30],["Jambon / dinde",15]],
   carb: [["Riz (100 g)",5],["Pâtes (100 g)",8],["Patates (200 g)",4],["Pain (2 tranches)",6],["Semoule (100 g)",6],["Légumineuses (150 g)",15]],
-  snack: [["Avoine (60 g)",8],["Banane",1],["Biscuits",3],["Compote",0],["Whey + lait",30],["Fruits secs (30 g)",5]],
-  bkProt: [["Œufs (×3)",18],["Whey + lait",30],["Jambon",10],["Fromage blanc",15]],
+  snack: [["Avoine (60 g)",8],["Banane",1],["Biscuits",3],["Compote",0],["Whey + eau",25],["Whey + lait",30],["Fruits secs (30 g)",5]],
+  bkProt: [["Œufs (×3)",18],["Whey + eau",25],["Whey + lait",30],["Jambon",10],["Fromage blanc",15]],
   bkCarb: [["Avoine (60 g)",8],["Pain (2 tranches)",6],["Banane",1],["Biscuits",3],["Compote",0]]
 };
 const HB_PROT_MAP = {
@@ -830,6 +829,37 @@ function openBilan(){
     <button class="btn btn-accent" id="bl-ok" style="width:100%;">C'est noté</button>`);
   document.getElementById("bl-ok").onclick=closeSheet;
 }
+function editName(){
+  openSheet(`<h3>Ton prénom</h3>
+    <div class="stack">
+      <input id="nm-in" value="${esc(db.settings.name)}" placeholder="Nico" maxlength="20">
+      <button class="btn btn-accent" id="nm-ok">Enregistrer</button>
+    </div>`);
+  const inp = document.getElementById("nm-in");
+  inp.focus(); inp.select();
+  const ok = ()=>{ db.settings.name = inp.value.trim() || "Champion"; save(); closeSheet(); render(); };
+  document.getElementById("nm-ok").onclick = ok;
+  inp.onkeydown = e => { if(e.key==="Enter") ok(); };
+}
+function editGoal(){
+  const cur = currentWeight();
+  openSheet(`<h3>Objectif de poids</h3>
+    <div class="stack">
+      <input type="number" inputmode="decimal" step="0.5" min="0" id="gl-in" value="${db.settings.goal}">
+      ${cur!==null? `<div style="font-size:13px; color:var(--ink-soft);">Tu es à <b style="color:var(--ink);">${fmtKg(cur)} kg</b> aujourd'hui.</div>`:""}
+      <button class="btn btn-accent" id="gl-ok">Enregistrer</button>
+    </div>`);
+  const inp = document.getElementById("gl-in");
+  inp.focus(); inp.select();
+  const ok = ()=>{
+    const v = parseFloat(inp.value);
+    if(!v || v<=0) return;
+    db.settings.goal = v; coachGoal = null; save(); closeSheet(); render();
+    toast("Objectif : "+fmtKg(v)+" kg");
+  };
+  document.getElementById("gl-ok").onclick = ok;
+  inp.onkeydown = e => { if(e.key==="Enter") ok(); };
+}
 function suggestedTemplate(){
   if(!db.templates.length) return null;
   let best=null, bestDate=Infinity;
@@ -864,12 +894,7 @@ function renderSeance(app){
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">⚠️ Tes données ne peuvent pas être enregistrées</div>
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
-    ${(!isEmptyDb(db) && (!db.lastBackup || Date.now()-db.lastBackup > 7*864e5)) ? `<div class="card" style="border-color:var(--accent-deep); margin-top:12px;">
-      <div class="row">
-        <div class="grow" style="font-size:13px; color:var(--ink-soft);">💾 <b style="color:var(--ink);">Mets tes données à l'abri</b><br>Un fichier de sauvegarde, et tu ne perds rien si iOS nettoie l'app.</div>
-        <button class="btn btn-accent btn-sm" id="hm-backup">Sauvegarder</button>
-      </div></div>` : ""}
-    <h1 style="font-size:26px; margin-top:14px;">Salut ${esc(db.settings.name)} 👋</h1>
+    <h1 style="font-size:26px; margin-top:14px;"><button id="hm-name" class="inline-edit">Salut ${esc(db.settings.name)} <span class="pen">✎</span></button></h1>
     <div style="color:var(--ink-soft); font-size:15px; margin:4px 0 16px;">${sub}</div>
     <div class="card">
       <div class="row" style="justify-content:space-between; margin-bottom:6px;">
@@ -893,8 +918,7 @@ function renderSeance(app){
     <div class="card" id="cardio-card"></div>`;
   wireTopbar();
   document.getElementById("bilan-btn").onclick=openBilan;
-  const hmBackup = document.getElementById("hm-backup");
-  if(hmBackup) hmBackup.onclick = quickBackup;
+  document.getElementById("hm-name").onclick=editName;
   const todayKey = new Date().toISOString().slice(0,10);
   const checked = db.habitLog[todayKey] || [];
   const sel = db.habitSel[todayKey] || {};
@@ -1350,8 +1374,8 @@ function openSettings(){
       <div><span class="label" style="display:block; margin-bottom:5px;">Habitudes du jour (une par ligne)</span>
       <textarea id="st-habits" rows="4">${esc(db.habits.join("\n"))}</textarea></div>
       <div class="section-t" style="margin-top:6px;">Sauvegarde</div>
-      <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">Tes données vivent dans ce téléphone. Enregistre un fichier de sauvegarde de temps en temps : si iOS fait le ménage, tu restaures tout en deux taps.</p>
-      <button class="btn btn-accent" id="st-file">💾 Enregistrer un fichier de sauvegarde</button>
+      <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.</p>
+      <button class="btn" id="st-file">💾 Enregistrer un fichier</button>
       <label class="btn" for="st-restore-in" style="display:flex;">📂 Restaurer depuis un fichier</label>
       <input type="file" id="st-restore-in" accept=".json,application/json,text/plain" style="display:none;">
       <button class="btn" id="st-export">Exporter en texte</button>
@@ -1361,13 +1385,21 @@ function openSettings(){
       <button class="btn btn-danger" id="st-reset">Tout effacer</button>
       <button class="btn btn-accent" id="st-ok">Fermer</button>
     </div>`);
-  document.getElementById("st-ok").onclick=()=>{
+  /* enregistrement au fil de la saisie : rien n'est perdu si la fiche est fermée d'un geste */
+  const applySettings = ()=>{
     db.settings.name = document.getElementById("st-name").value.trim()||"Champion";
     db.settings.rest = parseInt(document.getElementById("st-rest").value)||90;
-    db.settings.goal = parseFloat(document.getElementById("st-goal").value)||80;
+    const g = parseFloat(document.getElementById("st-goal").value);
+    if(g>0){ if(g!==db.settings.goal) coachGoal = null; db.settings.goal = g; }
     db.habits = document.getElementById("st-habits").value.split("\n").map(s=>s.trim()).filter(Boolean).slice(0,8);
-    save(); closeSheet();
+    save();
   };
+  ["st-name","st-rest","st-goal","st-habits"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.oninput = applySettings; el.onchange = applySettings; }
+  });
+  overlay.addEventListener("click", function once(e){ if(e.target===overlay){ applySettings(); render(); overlay.removeEventListener("click", once); } });
+  document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); render(); };
   const ago = ts => {
     if(!ts) return "jamais";
     const m = Math.round((Date.now()-Number(ts))/60000);
@@ -1563,7 +1595,7 @@ function renderWeightSection(sec){
       <div class="row">
         <div class="grow">
           <div style="font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;">${cur!==null? fmtKg(cur)+" kg" : "—"}</div>
-          <div style="font-size:12.5px; color:var(--ink-mute);">${cur!==null? (delta>0? `objectif ${fmtKg(goal)} kg · encore ${fmtKg(delta)} kg` : `objectif ${fmtKg(goal)} kg atteint 🎉`) : "note ton poids une fois par semaine, le matin"}</div>
+          <div style="font-size:12.5px; color:var(--ink-mute);"><button class="inline-edit" id="wt-goal">${cur!==null? (delta>0? `objectif ${fmtKg(goal)} kg · encore ${fmtKg(delta)} kg` : `objectif ${fmtKg(goal)} kg atteint 🎉`) : `objectif ${fmtKg(goal)} kg`} <span class="pen">✎</span></button></div>
         </div>
         <button class="btn btn-accent btn-sm" id="wt-add">＋ Noter</button>
       </div>
@@ -1574,6 +1606,7 @@ function renderWeightSection(sec){
         : `<div style="font-size:12.5px; color:var(--ink-mute); margin-top:8px;">Note-toi à nouveau dans quelques jours : la courbe se dessinera.</div>`}`
       : `<div class="empty" style="padding:20px 10px;">Ta courbe de poids apparaîtra ici dès ta première pesée.</div>`}
     </div>`;
+  document.getElementById("wt-goal").onclick=editGoal;
   document.getElementById("wt-add").onclick=()=>{
     openSheet(`<h3>Noter mon poids</h3>
       <div class="stack">
