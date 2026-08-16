@@ -1409,24 +1409,34 @@ function kcalEquiv(kcal){
   const n = Math.round(kcal/270);
   return n>=1 ? ` — l'équivalent de ${n} pain${n>1?"s":""} au chocolat 🥐` : "";
 }
-function openCardioAdd(){
-  openSheet(`<h3>Ajouter une sortie</h3>
+function openCardioAdd(idExistant){
+  const c = idExistant ? db.cardio.find(x=>x.id===idExistant) : null;
+  openSheet(`<h3>${c? "Modifier la sortie" : "Ajouter une sortie"}</h3>
+    ${c? `<div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${fmtDate(c.date)}</div>`:""}
     <div class="stack">
       <div class="row">
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Distance (km)</span>
-        <input type="number" inputmode="decimal" step="0.1" min="0" id="cd-km" placeholder="5"></div>
+        <input type="number" inputmode="decimal" step="0.1" min="0" id="cd-km" placeholder="5" value="${c? c.km : ""}"></div>
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Durée (min)</span>
-        <input type="number" inputmode="numeric" min="0" id="cd-min" placeholder="30"></div>
+        <input type="number" inputmode="numeric" min="0" id="cd-min" placeholder="30" value="${c? Math.round(c.min) : ""}"></div>
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Pente (%)</span>
-        <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="0"></div>
+        <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="${(c && c.pente)? c.pente : ""}"></div>
       </div>
-      <button class="btn btn-accent" id="cd-ok">Enregistrer</button>
+      <button class="btn btn-accent" id="cd-ok">${c? "Enregistrer les modifications" : "Enregistrer"}</button>
+      ${c? `<button class="btn btn-ghost" id="cd-cancel">Annuler</button>`:""}
     </div>`);
+  const annul = document.getElementById("cd-cancel");
+  if(annul) annul.onclick = openCardioList;
   document.getElementById("cd-ok").onclick=()=>{
     const km = parseFloat(document.getElementById("cd-km").value);
     const min = parseFloat(document.getElementById("cd-min").value);
     const pente = parseFloat(document.getElementById("cd-pente").value)||0;
-    if(!km || !min) return;
+    if(!km || !min){ toast("Indique la distance et la durée"); return; }
+    if(c){
+      c.km = km; c.min = min; c.pente = pente;
+      save(); openCardioList(); toast("Sortie modifiée ✓");
+      return;
+    }
     db.cardio.push({id:uid(), date:new Date().toISOString(), km, min, pente});
     save();
     const kg = currentWeight() || 75;
@@ -1447,13 +1457,20 @@ function openCardioList(){
         const vkmh = Math.round(c.km/(c.min/60)*10)/10;
         return `<div class="pick-row"><div class="grow">
           <div>${fmtKg(c.km)} km · ${Math.round(c.min)} min · ${vkmh.toLocaleString("fr-FR")} km/h${c.pente?` · ${c.pente.toLocaleString("fr-FR")} %`:""}</div>
-          <div class="eq" style="text-transform:capitalize;">${fmtDate(c.date)} · ≈ ${Math.round(cardioKcal(c.km,c.min,c.pente,kg))} kcal</div></div>
+          <div class="eq" style="text-transform:capitalize;">${fmtDate(c.date)} · ${cardioType(c.km,c.min)} · ≈ ${Math.round(cardioKcal(c.km,c.min,c.pente,kg))} kcal</div></div>
+          <button class="icon-btn" data-cedit="${c.id}" style="width:32px; height:32px;">✎</button>
           <button class="icon-btn" data-cdel="${c.id}" style="color:var(--bad); width:32px; height:32px;">✕</button></div>`;
       }).join("") : `<div class="empty">Aucune sortie enregistrée.</div>`
-    }</div>`);
+    }</div>
+    <button class="btn btn-accent" id="cd-new" style="width:100%; margin-top:12px;">＋ Ajouter une sortie</button>`);
+  document.getElementById("cd-new").onclick = ()=>openCardioAdd();
+  document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.cedit));
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=()=>{
-    db.cardio = db.cardio.filter(c=>c.id!==b.dataset.cdel);
-    save(); openCardioList();
+    const c = db.cardio.find(x=>x.id===b.dataset.cdel);
+    askConfirm("Supprimer cette sortie ?", `${fmtKg(c.km)} km du ${fmtDateShort(c.date)} sera retirée de ton historique.`, "Supprimer", true, ()=>{
+      db.cardio = db.cardio.filter(x=>x.id!==c.id);
+      save(); openCardioList();
+    });
   });
 }
 
