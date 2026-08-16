@@ -58,6 +58,10 @@
   .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface2); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2); border-radius:99px; padding:3px 9px; white-space:nowrap;}
+  .hint-box{display:flex; gap:10px; align-items:flex-start; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
+    border-radius:11px; padding:10px 12px; margin-bottom:11px; font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
+  .hint-box b{color:var(--ink);}
+  .hint-box button{flex:none; font-size:11.5px; font-weight:800; color:var(--accent); padding:2px 4px; align-self:center;}
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
   .ob-steps i.on{background:var(--accent);}
@@ -939,6 +943,7 @@ function applyDefaults(){
   if(!db.habits) db.habits = ["Petit-déj complet","Déjeuner solide","Dîner solide","Shake ou collation en +"];
   if(!db.habitLog) db.habitLog = {};
   if(!db.habitSel) db.habitSel = {};
+  if(!db.seen) db.seen = {};
   if(!db.seq) db.seq = 1;
   if(!("active" in db)) db.active = null;
 }
@@ -1050,6 +1055,20 @@ function getEx(id){ return allEx().find(e=>e.id===id) || {name:"Exercice supprim
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 async function useCap(name){
   try{ return (window.claude && window.claude.use) ? await window.claude.use(name) : null; }catch(e){ return null; }
+}
+/* --- explications affichées une seule fois, la première fois qu'on rencontre une mécanique --- */
+function dejaVu(k){ return !!(db.seen && db.seen[k]); }
+function marquerVu(k){ if(!db.seen) db.seen={}; db.seen[k]=true; save(); }
+function hintBox(key, html){
+  if(dejaVu(key)) return "";
+  return `<div class="hint-box"><div class="grow">${html}</div><button data-hintx="${key}">Compris</button></div>`;
+}
+function wireHints(root){
+  (root||document).querySelectorAll("[data-hintx]").forEach(b=>b.onclick=()=>{
+    marquerVu(b.dataset.hintx);
+    const box = b.closest(".hint-box");
+    if(box) box.remove();
+  });
 }
 function toast(msg){
   const t = document.createElement("div");
@@ -1240,6 +1259,10 @@ function startRest(sec){
   document.getElementById("rest-picon").textContent = "⏸";
   rest.int = setInterval(tickRest, 250);
   tickRest();
+  if(!dejaVu("repos")){
+    marquerVu("repos");
+    setTimeout(()=>toast("Repos lancé — touche la barre pour la mettre en pause"), 500);
+  }
 }
 function togglePauseRest(){
   if(!restbar.classList.contains("show")) return;
@@ -1647,6 +1670,7 @@ function renderSeance(app){
   const protNow = dayProt(todayKey);
   const protPct = Math.min(100, protNow/protTarget*100);
   document.getElementById("eat-card").innerHTML = `
+    ${hintBox("repas", "Coche simplement tes repas au fil de la journée : aucune calorie à saisir. Une fois un repas coché, choisis ce que tu as mangé et l'app en déduit tes protéines.")}
     ${plan? `<div class="row" style="justify-content:space-between; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid var(--border);">
       <div><div style="font-size:19px; font-weight:800; font-variant-numeric:tabular-nums;">${plan.kcal} <span style="font-size:12px; font-weight:600; color:var(--ink-mute);">kcal / jour</span></div>
       <div style="font-size:12px; color:var(--ink-mute);">${plan.aim==="masse"?"pour prendre du muscle":(plan.aim==="seche"?"pour perdre du gras":"pour te recomposer")}</div></div>
@@ -1679,6 +1703,7 @@ function renderSeance(app){
         </button>${sub}</div>`;
     }).join("")}</div>
     ${allDone? `<div style="font-size:13px; color:var(--good); font-weight:700; margin-top:10px;">Journée parfaite — c'est comme ça qu'on prend 💪</div>`:""}`;
+  wireHints(document.getElementById("eat-card"));
   const planBtn = document.getElementById("eat-plan");
   if(planBtn) planBtn.onclick = ()=>showPlan(false);
   document.querySelectorAll("[data-hb]").forEach(b=>b.onclick=()=>{
@@ -1865,6 +1890,7 @@ function renderActive(app){
         <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
         <span class="pill">${esc(ex.equip||ex.muscle)}</span></div>
       <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
+      ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
       <div class="set-cols"><span></span><span>kg</span><span>reps</span><span>✓</span></div>
       <div class="sets"></div>
       <div class="row">
@@ -1903,7 +1929,8 @@ function renderActive(app){
           startRest(rs);
           const ask = document.createElement("div");
           ask.className = "rir-ask";
-          ask.innerHTML = `<div class="q">Aurais-tu pu faire plus de reps ?</div>
+          ask.innerHTML = `${dejaVu("rir")? "" : `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:8px;">Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.</div>`}
+            <div class="q">Aurais-tu pu faire plus de reps ?</div>
             <div class="row">
               <button data-rir="0">Non, 0</button>
               <button data-rir="1">1-2</button>
@@ -1913,6 +1940,7 @@ function renderActive(app){
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir;
+            if(!dejaVu("rir")) marquerVu("rir");
             const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
             const next = en.sets.find(s=>!s.done);
             const inc = (st.w||0)>=20? 2.5 : 1;
@@ -1947,6 +1975,7 @@ function renderActive(app){
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
       save(); render();
     };
+    wireHints(card);
     card.querySelector('[data-act="swap"]').onclick=()=>openSwap(ei);
     const injBtn = card.querySelector("[data-injswap]");
     if(injBtn) injBtn.onclick=()=>openSwap(ei, true);
@@ -2176,6 +2205,7 @@ function openSettings(){
   openSheet(`<h3>Réglages</h3>
     <div class="stack">
       <button class="btn" id="st-profile">👤 Mon profil et mon plan</button>
+      <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
       <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
       <input type="text" id="st-name" value="${esc(db.settings.name)}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
@@ -2216,6 +2246,7 @@ function openSettings(){
   onSheetClose = ()=>{ render(); };
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
   document.getElementById("st-profile").onclick=()=>openOnboarding(false);
+  document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast("Les explications réapparaîtront ✓"); };
   /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
   const autoBox = document.getElementById("st-auto");
   if(!fileApiOk()){
