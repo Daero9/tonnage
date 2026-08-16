@@ -105,6 +105,11 @@
   .set-row input{text-align:center; padding:9px 6px;}
   .set-row .ck{width:44px; height:42px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink-mute);}
   .set-row.done input{background:var(--surface); color:var(--ink-soft); border-color:transparent;}
+  .set-row.warm .n{font-size:10px; letter-spacing:.02em; color:var(--accent); font-weight:800;}
+  .set-row.warm input{border-style:dashed;}
+  .inj-note{background:rgba(224,108,90,.12); border:1px solid rgba(224,108,90,.35); border-radius:10px; padding:9px 11px; margin-bottom:10px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
+  .inj-note b{color:var(--bad);}
+  .inj-swap{color:var(--accent); font-weight:700; text-decoration:underline; font-size:12.5px;}
   .set-row.done .ck{background:var(--good); border-color:var(--good); color:#0d1a12;}
   .rir-ask{background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:2px 0 10px;}
   .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
@@ -245,6 +250,109 @@ const LIB = [
   ["Abdos","Crunch","Poids du corps","crunch"],["Abdos","Gainage","Poids du corps","plank"],["Abdos","Relevés de jambes","Barre fixe","pullup"],["Abdos","Crunch câble","Poulie","cable"]
 ].map((e,i)=>({id:"lib"+i, muscle:e[0], name:e[1], equip:e[2], icon:e[3]}));
 
+/* alternatives équivalentes, pour remplacer un exercice (machine prise, matériel manquant…) */
+const ALTS = {
+  "Développé couché":["Développé couché haltères","Développé incliné haltères","Dips","Pompes"],
+  "Développé incliné haltères":["Développé couché haltères","Développé couché","Pompes"],
+  "Développé couché haltères":["Développé couché","Développé incliné haltères","Pompes"],
+  "Écartés poulie":["Développé couché haltères","Développé incliné haltères"],
+  "Dips":["Développé couché","Extension poulie","Pompes"],
+  "Pompes":["Développé couché haltères","Dips"],
+  "Tractions":["Tirage vertical","Rowing haltère"],
+  "Rowing barre":["Rowing haltère","Tirage horizontal"],
+  "Tirage vertical":["Tractions","Tirage horizontal"],
+  "Rowing haltère":["Rowing barre","Tirage horizontal"],
+  "Tirage horizontal":["Rowing haltère","Rowing barre"],
+  "Soulevé de terre":["Soulevé de terre roumain","Hip thrust","Rowing barre"],
+  "Développé militaire":["Développé haltères","Élévations latérales"],
+  "Développé haltères":["Développé militaire","Élévations latérales"],
+  "Élévations latérales":["Oiseau","Face pull","Développé haltères"],
+  "Oiseau":["Face pull","Élévations latérales"],
+  "Face pull":["Oiseau","Tirage horizontal"],
+  "Curl barre":["Curl haltères","Curl marteau","Curl pupitre"],
+  "Curl haltères":["Curl barre","Curl marteau"],
+  "Curl marteau":["Curl haltères","Curl barre"],
+  "Curl pupitre":["Curl barre","Curl haltères"],
+  "Extension poulie":["Barre au front","Extension nuque haltère","Dips"],
+  "Barre au front":["Extension poulie","Extension nuque haltère"],
+  "Extension nuque haltère":["Extension poulie","Barre au front"],
+  "Squat":["Presse à cuisses","Fentes","Leg extension"],
+  "Presse à cuisses":["Squat","Fentes","Leg extension"],
+  "Fentes":["Presse à cuisses","Squat","Hip thrust"],
+  "Leg curl":["Soulevé de terre roumain","Hip thrust"],
+  "Leg extension":["Presse à cuisses","Squat"],
+  "Soulevé de terre roumain":["Leg curl","Hip thrust","Soulevé de terre"],
+  "Hip thrust":["Soulevé de terre roumain","Fentes","Leg curl"],
+  "Crunch":["Relevés de jambes","Crunch câble","Gainage"],
+  "Gainage":["Crunch","Relevés de jambes"],
+  "Relevés de jambes":["Crunch","Gainage"],
+  "Crunch câble":["Crunch","Relevés de jambes"]
+};
+function altsFor(exId){
+  const ex = getEx(exId);
+  const names = ALTS[ex.name] || [];
+  const out = [];
+  names.forEach(n=>{ const e = allEx().find(x=>x.name===n); if(e) out.push(e); });
+  allEx().forEach(e=>{ if(e.muscle===ex.muscle && e.id!==exId && !out.some(o=>o.id===e.id)) out.push(e); });
+  return out;
+}
+
+/* blessures : exercices à éviter, variantes plus sûres et conseil de posture */
+const INJURIES = [
+  {id:"epaule", label:"Épaule"},
+  {id:"dos", label:"Dos / lombaires"},
+  {id:"genou", label:"Genou"},
+  {id:"coude", label:"Coude"},
+  {id:"poignet", label:"Poignet"}
+];
+const INJURY_RULES = {
+  epaule: {
+    "Développé militaire":{tip:"Debout barre au-dessus de la tête, c'est le mouvement le plus exigeant pour l'épaule.", alts:["Développé haltères","Élévations latérales"]},
+    "Développé couché":{tip:"Garde les coudes à 45° du buste plutôt qu'écartés à 90°, et ne descends pas la barre trop bas.", alts:["Développé couché haltères","Pompes"]},
+    "Dips":{tip:"Grande amplitude en bas = forte tension sur l'avant de l'épaule.", alts:["Extension poulie","Barre au front"]},
+    "Écartés poulie":{tip:"L'étirement en fin de course tire sur la capsule de l'épaule. Réduis l'amplitude.", alts:["Développé incliné haltères","Pompes"]},
+    "Tractions":{tip:"Prise large et descente complète sollicitent beaucoup l'épaule. Préfère une prise neutre.", alts:["Tirage vertical","Rowing haltère"]},
+    "Élévations latérales":{tip:"Ne monte pas au-delà de la hauteur d'épaule, pouce légèrement vers le haut.", alts:["Oiseau","Face pull"]}
+  },
+  dos: {
+    "Soulevé de terre":{tip:"L'exercice le plus exigeant pour les lombaires. À éviter tant que ça tire.", alts:["Hip thrust","Leg curl"]},
+    "Soulevé de terre roumain":{tip:"Dos strictement neutre, charge légère, amplitude réduite.", alts:["Leg curl","Hip thrust"]},
+    "Rowing barre":{tip:"Buste penché sans soutien = compression lombaire. Préfère un appui.", alts:["Tirage horizontal","Rowing haltère"]},
+    "Squat":{tip:"La barre sur le dos comprime la colonne. La presse soulage les lombaires.", alts:["Presse à cuisses","Leg extension"]},
+    "Développé militaire":{tip:"Debout, on cambre souvent les lombaires pour compenser. Fais-le assis, dossier calé.", alts:["Développé haltères"]},
+    "Fentes":{tip:"Garde le buste droit et gainé, charges légères.", alts:["Presse à cuisses","Leg extension"]}
+  },
+  genou: {
+    "Squat":{tip:"Ne descends pas plus bas que le parallèle, genoux dans l'axe des pieds.", alts:["Presse à cuisses","Hip thrust"]},
+    "Fentes":{tip:"Le genou avant encaisse beaucoup. Amplitude courte, pas de genou qui dépasse la pointe du pied.", alts:["Hip thrust","Leg curl"]},
+    "Leg extension":{tip:"Exercice qui cisaille la rotule quand elle est sensible. Charges légères, amplitude partielle.", alts:["Hip thrust","Leg curl"]},
+    "Presse à cuisses":{tip:"Ne descends pas au-delà de 90° de flexion.", alts:["Hip thrust","Leg curl"]}
+  },
+  coude: {
+    "Barre au front":{tip:"Le nom dit tout : très exigeant pour le coude. La poulie répartit mieux la tension.", alts:["Extension poulie"]},
+    "Curl barre":{tip:"La barre droite bloque les poignets et tire sur le coude. Prise neutre ou haltères.", alts:["Curl marteau","Curl haltères"]},
+    "Dips":{tip:"Forte tension sur le tendon du triceps au coude.", alts:["Extension poulie","Pompes"]},
+    "Extension nuque haltère":{tip:"Position qui étire fortement le tendon. Amplitude modérée.", alts:["Extension poulie"]}
+  },
+  poignet: {
+    "Curl barre":{tip:"La barre droite force l'extension du poignet. Prise marteau = poignet neutre.", alts:["Curl marteau","Curl haltères"]},
+    "Développé couché":{tip:"Poignets bien droits dans l'axe des avant-bras, barre basse dans la paume.", alts:["Développé couché haltères"]},
+    "Pompes":{tip:"Poignet en extension maximale. Utilise des poignées ou des haltères au sol.", alts:["Développé couché haltères"]},
+    "Développé militaire":{tip:"Poignets neutres, prise pas trop large.", alts:["Développé haltères"]}
+  }
+};
+function injuryNote(exName){
+  const list = (db.profile && db.profile.injuries) || [];
+  for(const id of list){
+    const rule = INJURY_RULES[id] && INJURY_RULES[id][exName];
+    if(rule){
+      const lab = (INJURIES.find(x=>x.id===id)||{}).label || id;
+      return {injury:lab, tip:rule.tip, alts:rule.alts};
+    }
+  }
+  return null;
+}
+
 /* pictogrammes : silhouette en couleur neutre, matériel en accent */
 const AC = 'stroke="var(--accent)"';
 const EX_ICONS = {
@@ -366,10 +474,20 @@ function openOnboarding(first){
         <div class="chips" id="ob-days">
           ${[2,3,4,5,6].map(n=>`<button class="chip ${(p.days||3)===n?"on":""}" data-dy="${n}">${n}</button>`).join("")}
         </div></div>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Zones sensibles ou blessées</span>
+        <div class="chips" id="ob-inj">
+          ${INJURIES.map(i=>`<button class="chip ${(p.injuries||[]).includes(i.id)?"on":""}" data-inj="${i.id}">${i.label}</button>`).join("")}
+        </div>
+        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px; line-height:1.5;">L'app signalera les exercices à risque et proposera des variantes. Ces conseils sont généraux : en cas de douleur, arrête et consulte un professionnel de santé.</div></div>
       <button class="btn btn-accent" id="ob-ok">${first? "Créer mon plan" : "Mettre à jour mon plan"}</button>
       ${first? `<button class="btn btn-ghost" id="ob-skip">Plus tard</button>`:""}
     </div>`);
-  let metab = p.metab||"normal", days = p.days||3;
+  let metab = p.metab||"normal", days = p.days||3, injuries = (p.injuries||[]).slice();
+  document.querySelectorAll("[data-inj]").forEach(b=>b.onclick=()=>{
+    const id = b.dataset.inj;
+    if(injuries.includes(id)) injuries = injuries.filter(x=>x!==id); else injuries.push(id);
+    b.classList.toggle("on", injuries.includes(id));
+  });
   document.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{
     metab=b.dataset.mt;
     document.querySelectorAll("[data-mt]").forEach(x=>x.classList.toggle("on", x===b));
@@ -387,7 +505,7 @@ function openOnboarding(first){
       sex: document.getElementById("ob-sex").value,
       age: g("ob-age"), height: g("ob-height"),
       weight: g("ob-weight"), goalWeight: g("ob-goal"),
-      metab, days
+      metab, days, injuries
     };
     if(!prof.age || !prof.height || !prof.weight || !prof.goalWeight){ toast("Remplis âge, taille, poids et objectif"); return; }
     db.profile = prof;
@@ -550,15 +668,27 @@ function fmtDate(iso){ return new Date(iso).toLocaleDateString("fr-FR",{weekday:
 function fmtDateShort(iso){ return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric", month:"short"}); }
 function fmtDur(ms){ const m=Math.round(ms/60000); return m<60? m+" min" : Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"); }
 function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
-function sessionVolume(sess){ let v=0; sess.entries.forEach(en=>en.sets.forEach(st=>{ if(st.done) v += (st.w||0)*(st.r||0); })); return v; }
+function sessionVolume(sess){ let v=0; sess.entries.forEach(en=>en.sets.forEach(st=>{ if(st.done && !st.warm) v += (st.w||0)*(st.r||0); })); return v; }
 function lastPerf(exId){
   for(let i=db.history.length-1;i>=0;i--){
     const en = db.history[i].entries.find(e=>e.exId===exId);
-    if(en && en.sets.some(s=>s.done)) return {date:db.history[i].date, sets:en.sets.filter(s=>s.done)};
+    if(en){
+      const sets = en.sets.filter(s=>s.done && !s.warm);
+      if(sets.length) return {date:db.history[i].date, sets};
+    }
   }
   return null;
 }
+function workSets(en){ return en.sets.filter(s=>!s.warm); }
 function e1rm(w,r){ return r>1 ? w*(1+r/30) : w; }
+/* kcal d'une séance de muscu : ~6 MET pendant la durée, ajusté par le volume soulevé */
+function liftKcal(durMs, volume){
+  const kg = currentWeight() || (db.profile && db.profile.weight) || 75;
+  const min = Math.max(0, durMs/60000);
+  const base = 6 * 3.5 * kg / 200 * min;       /* dépense liée à la durée */
+  const travail = volume * 0.0012;             /* dépense liée au tonnage soulevé */
+  return Math.round(base + travail);
+}
 function parseReps(reps){
   const m = String(reps||"").match(/(\d+)(?:\D+(\d+))?/);
   if(!m) return null;
@@ -879,8 +1009,9 @@ function computeBilan(){
   const ups=[], downs=[];
   const curBest={};
   cur.forEach(s=>s.entries.forEach(en=>{
-    if(!en.sets.length) return;
-    const b = Math.max(...en.sets.map(st=>e1rm(st.w||0,st.r||0)));
+    const sets = workSets(en);
+    if(!sets.length) return;
+    const b = Math.max(...sets.map(st=>e1rm(st.w||0,st.r||0)));
     if(b>(curBest[en.exId]||0)) curBest[en.exId]=b;
   }));
   Object.keys(curBest).forEach(exId=>{
@@ -889,7 +1020,7 @@ function computeBilan(){
       const t=new Date(s.date).getTime();
       if(t<d28||t>=d7) return;
       const en=s.entries.find(e=>e.exId===exId);
-      if(en&&en.sets.length) pb=Math.max(pb, ...en.sets.map(st=>e1rm(st.w||0,st.r||0)));
+      if(en && workSets(en).length) pb=Math.max(pb, ...workSets(en).map(st=>e1rm(st.w||0,st.r||0)));
     });
     if(pb>0){
       const pct=(curBest[exId]-pb)/pb*100;
@@ -1032,7 +1163,7 @@ function renderSeance(app){
       <div class="wk-stats">
         <div><div class="v">${weekMs? fmtDur(weekMs):"—"}</div><div class="u">d'entraînement</div></div>
         <div><div class="v">${weekVol? (weekVol>=1000? (weekVol/1000).toLocaleString("fr-FR",{maximumFractionDigits:1})+" t" : fmtKg(weekVol)+" kg") : "—"}</div><div class="u">soulevées</div></div>
-        <div><div class="v">${cs.kcal? cs.kcal+" kcal":"—"}</div><div class="u">${cs.km? "cardio ("+fmtKg(cs.km)+" km)":"cardio"}</div></div>
+        <div><div class="v">${(()=>{const k=week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s)),0)+cs.kcal; return k? k+" kcal":"—";})()}</div><div class="u">brûlées${cs.km? " (dont "+fmtKg(cs.km)+" km)":""}</div></div>
       </div>
     </div>
     <div class="section-t">Manger pour ${fmtKg(db.settings.goal)} kg</div>
@@ -1176,16 +1307,43 @@ function renderSeance(app){
       const more = t.items.length>4? `<span class="ex-ico sm" style="font-size:12px; font-weight:800; color:var(--ink-mute);">+${t.items.length-4}</span>`:"";
       return `<div class="sess-card">
         ${sug && sug.id===t.id? `<div class="sugg-badge">Conseillée aujourd'hui</div>`:""}
-        <div style="font-size:18px; font-weight:800;">${esc(t.name)}</div>
-        <div style="font-size:12.5px; color:var(--ink-mute); margin:2px 0 10px;">${t.items.length} exercice${t.items.length>1?"s":""} · ~${mins} min</div>
-        <div class="row" style="gap:6px; margin-bottom:12px;">${icons}${more}</div>
+        <button class="inline-edit" data-preview="${t.id}" style="display:block; width:100%; padding:0; margin:0;">
+          <div style="font-size:18px; font-weight:800;">${esc(t.name)}</div>
+          <div style="font-size:12.5px; color:var(--ink-mute); margin:2px 0 10px;">${t.items.length} exercice${t.items.length>1?"s":""} · ~${mins} min · voir le détail</div>
+          <div class="row" style="gap:6px; margin-bottom:12px;">${icons}${more}</div>
+        </button>
         <button class="btn btn-accent btn-sm" data-launch="${t.id}" style="width:100%;">Lancer</button>
       </div>`;}).join("")}</div>`;
     zone.querySelectorAll("[data-launch]").forEach(b=>b.onclick=()=>startWorkout(b.dataset.launch));
+    zone.querySelectorAll("[data-preview]").forEach(b=>b.onclick=()=>openPreview(b.dataset.preview));
   }
   document.getElementById("free-btn").onclick=()=>startWorkout(null);
 }
 
+function openPreview(tplId){
+  const t = db.templates.find(x=>x.id===tplId);
+  if(!t) return;
+  const mins = Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5);
+  openSheet(`<h3>${esc(t.name)}</h3>
+    <div class="row" style="gap:6px; margin-bottom:14px;">
+      <span class="pill">${t.items.length} exercice${t.items.length>1?"s":""}</span>
+      <span class="pill">~${mins} min</span>
+      <span class="pill">${t.items.reduce((a,i)=>a+i.sets,0)} séries</span>
+    </div>
+    <div style="max-height:52dvh; overflow-y:auto;">${t.items.map((it,i)=>{
+      const ex = getEx(it.exId);
+      const last = lastPerf(it.exId);
+      const note = injuryNote(ex.name);
+      return `<div class="pick-row" style="cursor:default;">${exIcon(ex)}
+        <div class="grow"><div>${i+1}. ${esc(ex.name)}</div>
+        <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? ` · dernière fois ${fmtKg(Math.max(...last.sets.map(s=>s.w||0)))} kg`:""}</div>
+        ${note? `<div class="eq" style="color:var(--bad);">⚠️ ${esc(note.injury)} : ${esc(note.tip)}</div>`:""}</div></div>`;
+    }).join("")}</div>
+    <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">Lancer cette séance</button>
+    <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">Fermer</button>`);
+  document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
+  document.getElementById("pv-close").onclick=closeSheet;
+}
 function startWorkout(tplId){
   const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
   const entries = tpl ? tpl.items.map(it=>{
@@ -1201,6 +1359,12 @@ function startWorkout(tplId){
     }
     return {exId:it.exId, target:it, sets};
   }) : [];
+  /* série d'échauffement sur le premier exercice */
+  if(entries.length){
+    const w0 = entries[0].sets[0] && entries[0].sets[0].w;
+    const wu = w0 ? Math.max(0, Math.round(w0*0.5/2.5)*2.5) : "";
+    entries[0].sets.unshift({w:wu, r:10, done:false, warm:true});
+  }
   db.active = {name: tpl? tpl.name : "Séance libre", templateId:tplId, start:Date.now(), entries};
   save(); render();
 }
@@ -1232,24 +1396,28 @@ function renderActive(app){
     const target = en.target && en.target.reps ? ` · Objectif ${en.target.sets} × ${esc(String(en.target.reps))}` : "";
     const sug = suggestFor(en.exId, en.target);
     const sugLine = sug ? `<div class="hint" style="color:var(--accent);">→ ${esc(sug.text)}</div>` : "";
+    const note = injuryNote(ex.name);
+    const noteLine = note ? `<div class="inj-note">⚠️ <b>${esc(note.injury)} sensible.</b> ${esc(note.tip)}${note.alts.length? ` <button class="inj-swap" data-injswap="${ei}">Voir les variantes</button>`:""}</div>` : "";
     const card = document.createElement("div");
     card.className="ex-card";
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
         <span class="pill">${esc(ex.equip||ex.muscle)}</span></div>
-      <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}
+      <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
       <div class="set-cols"><span></span><span>kg</span><span>reps</span><span>✓</span></div>
       <div class="sets"></div>
       <div class="row">
         <button class="btn btn-sm btn-ghost grow" data-act="addset">＋ série</button>
+        <button class="btn btn-sm btn-ghost" data-act="swap">⇄ Remplacer</button>
         <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border);">Retirer</button>
       </div>`;
     const setsDiv = card.querySelector(".sets");
     en.sets.forEach((st,si)=>{
       const row = document.createElement("div");
-      row.className = "set-row"+(st.done?" done":"");
-      row.innerHTML = `<div class="n">${si+1}</div>
+      row.className = "set-row"+(st.done?" done":"")+(st.warm?" warm":"");
+      const num = st.warm ? "Éch." : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
+      row.innerHTML = `<div class="n">${num}</div>
         <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="kg" value="${st.w!==""?st.w:""}">
         <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
         <button class="ck">${st.done?"✓":"○"}</button>`;
@@ -1266,6 +1434,10 @@ function renderActive(app){
         row.querySelector(".ck").textContent = st.done?"✓":"○";
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk) oldAsk.remove();
+        if(st.done && st.warm){
+          startRest(60);
+          return;
+        }
         if(st.done){
           const rs = (en.target && en.target.rest) || db.settings.rest;
           startRest(rs);
@@ -1315,6 +1487,9 @@ function renderActive(app){
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
       save(); render();
     };
+    card.querySelector('[data-act="swap"]').onclick=()=>openSwap(ei);
+    const injBtn = card.querySelector("[data-injswap]");
+    if(injBtn) injBtn.onclick=()=>openSwap(ei, true);
     card.querySelector('[data-act="delex"]').onclick=()=>{
       askConfirm("Retirer l'exercice ?", ex.name+" sera retiré de cette séance (les autres exercices sont conservés).", "Retirer", true, ()=>{
         a.entries.splice(ei,1); save(); render();
@@ -1331,18 +1506,57 @@ function renderActive(app){
   });
   document.getElementById("cancel-w").onclick=()=>askConfirm("Annuler la séance ?","Tout ce que tu as saisi dans cette séance sera perdu.","Oui, annuler",true,()=>{ db.active=null; save(); render(); });
   document.getElementById("finish-w").onclick=()=>{
-    const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done).length,0);
+    const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm("Aucune série validée","Valide au moins une série (bouton ○) avant de terminer, ou annule la séance.","OK",false,()=>{}); return; }
-    const vol = a.entries.reduce((v,en)=>v+en.sets.reduce((x,s)=>x+(s.done?(s.w||0)*(s.r||0):0),0),0);
-    askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés au total. On enregistre ?`, "Enregistrer", false, ()=>{
+    const vol = a.entries.reduce((v,en)=>v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?(s.w||0)*(s.r||0):0),0),0);
+    const kcal = liftKcal(Date.now()-a.start, vol);
+    askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés · environ ${kcal} kcal brûlées. On enregistre ?`, "Enregistrer", false, ()=>{
       db.history.push({
         id:uid(), date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         start:a.start, end:Date.now(),
-        entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, rir:(s.rir===undefined?null:s.rir)}))})).filter(en=>en.sets.length)
+        entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir)}))})).filter(en=>en.sets.length)
       });
       db.active=null; save(); render();
     });
   };
+}
+
+/* remplacer un exercice pendant la séance (machine prise, matériel manquant, blessure) */
+function openSwap(ei, fromInjury){
+  const en = db.active.entries[ei];
+  const ex = getEx(en.exId);
+  const note = injuryNote(ex.name);
+  let list = altsFor(en.exId);
+  if(fromInjury && note){
+    const safe = note.alts.map(n=>allEx().find(e=>e.name===n)).filter(Boolean);
+    list = safe.concat(list.filter(e=>!safe.some(s=>s.id===e.id)));
+  }
+  openSheet(`<h3>Remplacer ${esc(ex.name)}</h3>
+    ${note? `<div class="inj-note" style="margin:0 0 12px;">⚠️ <b>${esc(note.injury)} sensible.</b> ${esc(note.tip)}</div>`:""}
+    <p style="margin:0 0 10px; font-size:13px; color:var(--ink-soft);">Ces exercices travaillent les mêmes muscles — tes séries et ton objectif sont conservés.</p>
+    <div style="max-height:52dvh; overflow-y:auto;">${list.map(e=>{
+      const n2 = injuryNote(e.name);
+      const reco = fromInjury && note && note.alts.includes(e.name);
+      return `<div class="pick-row" data-swap="${e.id}">${exIcon(e)}
+        <div class="grow"><div>${esc(e.name)}${reco? ' <span style="color:var(--good); font-size:11px; font-weight:700;">CONSEILLÉ</span>':""}</div>
+        <div class="eq">${esc(e.equip||"")}${n2? ` · ⚠️ ${esc(n2.injury)}`:""}</div></div>
+        <span style="color:var(--accent); font-weight:800;">⇄</span></div>`;
+    }).join("")}</div>
+    <button class="btn" id="sw-cancel" style="width:100%; margin-top:12px;">Annuler</button>`);
+  document.getElementById("sw-cancel").onclick=closeSheet;
+  document.querySelectorAll("[data-swap]").forEach(r=>r.onclick=()=>{
+    const newId = r.dataset.swap;
+    const last = lastPerf(newId);
+    en.exId = newId;
+    en.sets.forEach((s,i)=>{
+      if(s.done) return;
+      const ls = last && last.sets[Math.min(i, last.sets.length-1)];
+      s.w = s.warm && ls ? Math.max(0, Math.round((ls.w||0)*0.5/2.5)*2.5) : (ls? ls.w : "");
+      if(ls && !s.warm) s.r = ls.r;
+    });
+    save(); closeSheet(); render();
+    toast("Remplacé par "+getEx(newId).name);
+  });
 }
 
 /* ================= EXERCISE PICKER ================= */
@@ -1422,11 +1636,14 @@ function renderProgs(app){
   } else {
     list.innerHTML = db.templates.map(t=>`
       <div class="lrow">
-        <div class="grow"><div class="t1">${esc(t.name)}</div>
-        <div class="t2">${t.items.length} exercice${t.items.length>1?"s":""}</div></div>
+        <button class="inline-edit grow" data-preview="${t.id}" style="padding:0; margin:0;">
+          <div><div class="t1">${esc(t.name)}</div>
+          <div class="t2">${t.items.length} exercice${t.items.length>1?"s":""} · voir le détail</div></div>
+        </button>
         <button class="icon-btn" data-edit="${t.id}">✎</button>
         <button class="icon-btn" data-del="${t.id}" style="color:var(--bad);">✕</button>
       </div>`).join("");
+    list.querySelectorAll("[data-preview]").forEach(b=>b.onclick=()=>openPreview(b.dataset.preview));
     list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openTplEditor(b.dataset.edit));
     list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
       const t = db.templates.find(x=>x.id===b.dataset.del);
@@ -1636,6 +1853,7 @@ function renderHist(app){
         <span class="pill">${fmtDur(s.end-s.start)}</span>
         <span class="pill">${nSets} séries</span>
         <span class="pill" style="color:var(--accent);">${fmtKg(vol)} kg</span>
+        <span class="pill">≈ ${liftKcal(s.end-s.start, vol)} kcal</span>
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
         <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
@@ -1698,11 +1916,13 @@ function renderProgress(app){
   const pts = [];
   db.history.forEach(s=>{
     const en = s.entries.find(e=>e.exId===prgEx);
-    if(!en || !en.sets.length) return;
+    if(!en) return;
+    const sets = workSets(en);
+    if(!sets.length) return;
     let v;
-    if(prgMetric==="max") v = Math.max(...en.sets.map(st=>st.w||0));
-    else if(prgMetric==="1rm") v = Math.max(...en.sets.map(st=>e1rm(st.w||0, st.r||0)));
-    else v = en.sets.reduce((x,st)=>x+(st.w||0)*(st.r||0),0);
+    if(prgMetric==="max") v = Math.max(...sets.map(st=>st.w||0));
+    else if(prgMetric==="1rm") v = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
+    else v = sets.reduce((x,st)=>x+(st.w||0)*(st.r||0),0);
     pts.push({date:s.date, v:Math.round(v*10)/10});
   });
 
@@ -1777,8 +1997,9 @@ function muscleProfile(){
   db.history.forEach(s=>s.entries.forEach(en=>{
     const ex = getEx(en.exId);
     const ref = STRENGTH_REF[ex.name];
-    if(!ref || !en.sets.length) return;
-    const best = Math.max(...en.sets.map(st=>e1rm(st.w||0, st.r||0)));
+    const sets = workSets(en);
+    if(!ref || !sets.length) return;
+    const best = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
     if(best<=0) return;
     (byEx[en.exId] = byEx[en.exId] || {muscle:ex.muscle, ref, vals:[]}).vals.push(best);
   }));
