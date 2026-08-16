@@ -474,7 +474,7 @@ let coachGoal = null;
 const ACTIVITY = {2:1.375, 3:1.55, 4:1.55, 5:1.725, 6:1.725, 7:1.9};
 const METAB_ADJ = {rapide:1.10, normal:1.0, lent:0.92};
 function planFor(p){
-  if(!p) return null;
+  if(!p || !(p.weight>0) || !(p.height>0) || !(p.age>0) || !(p.goalWeight>0)) return null;
   const bmr = 10*p.weight + 6.25*p.height - 5*p.age + (p.sex==="f" ? -161 : 5);
   const tdee = bmr * (ACTIVITY[p.days]||1.55) * (METAB_ADJ[p.metab]||1);
   const diff = p.goalWeight - p.weight;
@@ -512,7 +512,7 @@ function openOnboarding(first){
     ${first? `<p style="margin:0 0 14px; font-size:13.5px; color:var(--ink-soft);">Quelques infos et je te prépare un plan sur mesure : besoins caloriques, protéines et programme adapté.</p>`:""}
     <div class="stack">
       <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
-      <input id="ob-name" value="${esc(p.name||db.settings.name||"")}" placeholder="Nico" maxlength="20"></div>
+      <input id="ob-name" value="${esc(p.name||db.settings.name||"")}" placeholder="Ton prénom" maxlength="20"></div>
       <div class="row">
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Sexe</span>
         <select id="ob-sex"><option value="h" ${p.sex!=="f"?"selected":""}>Homme</option><option value="f" ${p.sex==="f"?"selected":""}>Femme</option></select></div>
@@ -618,7 +618,7 @@ function currentWeight(){
 }
 function coachDesc(goal){
   const cur = currentWeight(), obj = db.settings.goal;
-  const delta = cur!==null? Math.round((obj-cur)*10)/10 : null;
+  const delta = (cur!==null && obj>0)? Math.round((obj-cur)*10)/10 : null;
   if(goal==="masse"){
     let p = "3 séances axées charges lourdes (6-10 reps) et repos longs, 3 à 4 fois par semaine en alternant. Côté assiette : ~300-500 kcal au-dessus de tes besoins et 1,6-2 g de protéines par kilo.";
     if(delta!==null && delta>0) p = `Objectif +${fmtKg(delta)} kg (${fmtKg(cur)} → ${fmtKg(obj)} kg), soit environ ${Math.max(2,Math.round(delta/0.375))} semaines à un rythme propre. `+p;
@@ -661,8 +661,8 @@ function applyDefaults(){
   if(!Array.isArray(db.cardio)) db.cardio = [];
   if(!db.settings) db.settings = {};
   if(!db.settings.rest) db.settings.rest = 90;
-  if(!db.settings.goal) db.settings.goal = 80;
-  if(!db.settings.name) db.settings.name = "Nico";
+  if(!db.settings.goal) db.settings.goal = 0;      /* renseigné par l'écran de bienvenue */
+  if(typeof db.settings.name !== "string") db.settings.name = "";
   if(!db.habits) db.habits = ["Petit-déj complet","Déjeuner solide","Dîner solide","Shake ou collation en +"];
   if(!db.habitLog) db.habitLog = {};
   if(!db.habitSel) db.habitSel = {};
@@ -684,19 +684,79 @@ function idbOpen(){
     }catch(e){ res(null); }
   });
 }
-async function idbSet(json){
+async function idbPut(key, val){
   const d = await idbOpen(); if(!d) return;
-  try{ d.transaction("kv","readwrite").objectStore("kv").put(json, KEY); }catch(e){}
+  try{ d.transaction("kv","readwrite").objectStore("kv").put(val, key); }catch(e){}
 }
-async function idbGet(){
+async function idbTake(key){
   const d = await idbOpen(); if(!d) return null;
   return new Promise(res=>{
     try{
-      const r = d.transaction("kv","readonly").objectStore("kv").get(KEY);
+      const r = d.transaction("kv","readonly").objectStore("kv").get(key);
       r.onsuccess = ()=>res(r.result||null);
       r.onerror = ()=>res(null);
     }catch(e){ res(null); }
   });
+}
+async function idbDel(key){
+  const d = await idbOpen(); if(!d) return;
+  try{ d.transaction("kv","readwrite").objectStore("kv").delete(key); }catch(e){}
+}
+function idbSet(json){ return idbPut(KEY, json); }
+function idbGet(){ return idbTake(KEY); }
+
+/* --- sauvegarde automatique dans un fichier choisi une fois (Android Chrome, PC) --- */
+const AUTOFILE = "tonnage_autofile";
+let autoFile = {handle:null, ok:false, to:null, name:""};
+function fileApiOk(){ return typeof window.showSaveFilePicker === "function"; }
+async function autoFileWrite(){
+  if(!autoFile.ok || !autoFile.handle) return;
+  try{
+    const w = await autoFile.handle.createWritable();
+    await w.write(JSON.stringify(db));
+    await w.close();
+    db.lastBackup = Date.now();
+  }catch(e){ autoFile.ok = false; }
+}
+function autoFileSchedule(){
+  if(!autoFile.ok) return;
+  if(autoFile.to) clearTimeout(autoFile.to);
+  autoFile.to = setTimeout(autoFileWrite, 2000);
+}
+async function autoFilePick(){
+  try{
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "tonnage-donnees.json",
+      types: [{description:"Sauvegarde Tonnage", accept:{"application/json":[".json"]}}]
+    });
+    autoFile.handle = handle; autoFile.ok = true; autoFile.name = handle.name || "";
+    await idbPut(AUTOFILE, handle);
+    await autoFileWrite();
+    save();
+    toast("Sauvegarde automatique activée ✓");
+    openSettings();
+  }catch(e){
+    if(e && e.name === "AbortError") return;
+    toast("Ce navigateur ne permet pas la sauvegarde automatique");
+  }
+}
+async function autoFileResume(){
+  if(!autoFile.handle){ autoFilePick(); return; }
+  try{
+    const p = await autoFile.handle.requestPermission({mode:"readwrite"});
+    if(p === "granted"){
+      autoFile.ok = true;
+      await autoFileWrite(); save();
+      toast("Sauvegarde automatique réactivée ✓");
+      openSettings();
+    } else toast("Autorisation refusée");
+  }catch(e){ autoFilePick(); }
+}
+async function autoFileOff(){
+  autoFile = {handle:null, ok:false, to:null, name:""};
+  await idbDel(AUTOFILE);
+  toast("Sauvegarde automatique désactivée");
+  openSettings();
 }
 function save(){
   db.savedAt = Date.now();
@@ -707,6 +767,7 @@ function save(){
     if(localStorage.getItem(KEY)===null) storageOK = false;
   }catch(e){ storageOK = false; }
   idbSet(json);
+  autoFileSchedule();
 }
 /* demande au navigateur de ne pas effacer les données */
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
@@ -1077,6 +1138,7 @@ function habitOpts(h){
   return {"Protéines":HB_OPTS.prot,"Féculents":HB_OPTS.carb};
 }
 function weightVerdict(){
+  if(!(db.settings.goal>0)) return {txt:"Renseigne ton profil pour recevoir des conseils adaptés à ton objectif.", tone:"mute"};
   const ws = db.weights.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(ws.length<2) return {txt:"Note ton poids une fois par semaine — c'est la balance qui dira si tu manges assez.", tone:"mute"};
   const last = ws[ws.length-1];
@@ -1193,7 +1255,7 @@ function openBilan(){
 function editName(){
   openSheet(`<h3>Ton prénom</h3>
     <div class="stack">
-      <input id="nm-in" value="${esc(db.settings.name)}" placeholder="Nico" maxlength="20">
+      <input id="nm-in" value="${esc(db.settings.name)}" placeholder="Ton prénom" maxlength="20">
       <button class="btn btn-accent" id="nm-ok">Enregistrer</button>
     </div>`);
   const inp = document.getElementById("nm-in");
@@ -1206,7 +1268,7 @@ function editGoal(){
   const cur = currentWeight();
   openSheet(`<h3>Objectif de poids</h3>
     <div class="stack">
-      <input type="number" inputmode="decimal" step="0.5" min="0" id="gl-in" value="${db.settings.goal}">
+      <input type="number" inputmode="decimal" step="0.5" min="0" id="gl-in" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80">
       ${cur!==null? `<div style="font-size:13px; color:var(--ink-soft);">Tu es à <b style="color:var(--ink);">${fmtKg(cur)} kg</b> aujourd'hui.</div>`:""}
       <button class="btn btn-accent" id="gl-ok">Enregistrer</button>
     </div>`);
@@ -1255,7 +1317,7 @@ function renderSeance(app){
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">⚠️ Tes données ne peuvent pas être enregistrées</div>
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
-    <h1 style="font-size:26px; margin-top:14px;"><button id="hm-name" class="inline-edit">Salut ${esc(db.settings.name)} <span class="pen">✎</span></button></h1>
+    <h1 style="font-size:26px; margin-top:14px;"><button id="hm-name" class="inline-edit">${db.settings.name? "Salut "+esc(db.settings.name) : "Bienvenue"} <span class="pen">✎</span></button></h1>
     <div style="color:var(--ink-soft); font-size:15px; margin:4px 0 16px;">${sub}</div>
     <div class="card">
       <div class="row" style="justify-content:space-between; margin-bottom:6px;">
@@ -1270,7 +1332,7 @@ function renderSeance(app){
         <div><div class="v">${(()=>{const k=week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s)),0)+cs.kcal; return k? k+" kcal":"—";})()}</div><div class="u">brûlées${cs.km? " (dont "+fmtKg(cs.km)+" km)":""}</div></div>
       </div>
     </div>
-    <div class="section-t">Manger pour ${fmtKg(db.settings.goal)} kg</div>
+    <div class="section-t">${db.settings.goal>0 ? "Manger pour "+fmtKg(db.settings.goal)+" kg" : "Mon alimentation"}</div>
     <div class="card" id="eat-card"></div>
     <div class="section-t">Mes séances</div>
     <div id="tpl-zone"></div>
@@ -1717,7 +1779,7 @@ function renderProgs(app){
     <button class="btn" id="lib-btn" style="width:100%; margin-top:10px;">Bibliothèque d'exercices</button>
     <div id="coach-card"></div>`;
   const cur = currentWeight(), obj = db.settings.goal;
-  if(!coachGoal) coachGoal = (cur!==null && obj<cur) ? "seche" : "masse";
+  if(!coachGoal) coachGoal = (cur!==null && obj>0 && obj<cur) ? "seche" : "masse";
   const prog = COACH_PROGRAMS[coachGoal];
   const missing = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
   document.getElementById("coach-card").innerHTML = `
@@ -1825,11 +1887,12 @@ function openSettings(){
       <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
       <input type="number" inputmode="numeric" step="15" min="0" id="st-rest" value="${db.settings.rest}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Objectif de poids (kg)</span>
-      <input type="number" inputmode="decimal" step="0.5" min="0" id="st-goal" value="${db.settings.goal}"></div>
+      <input type="number" inputmode="decimal" step="0.5" min="0" id="st-goal" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Habitudes du jour (une par ligne)</span>
       <textarea id="st-habits" rows="4">${esc(db.habits.join("\n"))}</textarea></div>
       <div class="section-t" style="margin-top:6px;">Sauvegarde</div>
       <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.</p>
+      <div id="st-auto"></div>
       <button class="btn" id="st-file">💾 Enregistrer un fichier</button>
       <label class="btn" for="st-restore-in" style="display:flex;">📂 Restaurer depuis un fichier</label>
       <input type="file" id="st-restore-in" accept=".json,application/json,text/plain" style="display:none;">
@@ -1859,6 +1922,29 @@ function openSettings(){
   onSheetClose = ()=>{ render(); };
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
   document.getElementById("st-profile").onclick=()=>openOnboarding(false);
+  /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
+  const autoBox = document.getElementById("st-auto");
+  if(!fileApiOk()){
+    autoBox.innerHTML = `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:4px;">La sauvegarde automatique dans un fichier n'est pas disponible sur ce navigateur (Safari/iPhone ne la propose pas). Tes données restent enregistrées dans le téléphone.</div>`;
+  } else if(autoFile.ok){
+    autoBox.innerHTML = `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:2px;">
+      <div style="font-weight:700; color:var(--good); font-size:13.5px;">✓ Sauvegarde automatique active</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin:3px 0 10px;">Chaque modification est écrite dans <b>${esc(autoFile.name||"ton fichier")}</b>, sans rien te demander.</div>
+      <div class="row"><button class="btn btn-sm grow" id="af-change">Changer de fichier</button>
+      <button class="btn btn-sm" id="af-off" style="color:var(--bad);">Désactiver</button></div></div>`;
+    document.getElementById("af-change").onclick = autoFilePick;
+    document.getElementById("af-off").onclick = autoFileOff;
+  } else if(autoFile.handle){
+    autoBox.innerHTML = `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:2px;">
+      <div style="font-weight:700; color:var(--accent); font-size:13.5px;">⏸ Sauvegarde automatique en pause</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin:3px 0 10px;">Le navigateur redemande l'autorisation d'écrire dans ${esc(autoFile.name||"ton fichier")}.</div>
+      <button class="btn btn-accent btn-sm" id="af-resume" style="width:100%;">Réactiver</button></div>`;
+    document.getElementById("af-resume").onclick = autoFileResume;
+  } else {
+    autoBox.innerHTML = `<button class="btn btn-accent" id="af-on" style="width:100%;">⚡ Activer la sauvegarde automatique</button>
+      <div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin:6px 0 2px;">Tu choisis un fichier une seule fois, et l'app y écrit toute seule à chaque modification.</div>`;
+    document.getElementById("af-on").onclick = autoFilePick;
+  }
   const ago = ts => {
     if(!ts) return "jamais";
     const m = Math.round((Date.now()-Number(ts))/60000);
@@ -2048,7 +2134,7 @@ function renderWeightSection(sec){
   const ws = db.weights.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
   const cur = ws.length? ws[ws.length-1].kg : null;
   const goal = db.settings.goal;
-  const delta = cur!==null? Math.round((goal-cur)*10)/10 : null;
+  const delta = (cur!==null && goal>0)? Math.round((goal-cur)*10)/10 : null;
   const first = ws.length? ws[0].kg : null;
   const total = (cur!==null && first!==null)? Math.round((cur-first)*10)/10 : null;
   sec.innerHTML = `
@@ -2057,7 +2143,9 @@ function renderWeightSection(sec){
       <div class="row">
         <div class="grow">
           <div style="font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;">${cur!==null? fmtKg(cur)+" kg" : "—"}</div>
-          <div style="font-size:12.5px; color:var(--ink-mute);"><button class="inline-edit" id="wt-goal">${cur!==null? (delta>0? `objectif ${fmtKg(goal)} kg · encore ${fmtKg(delta)} kg` : `objectif ${fmtKg(goal)} kg atteint 🎉`) : `objectif ${fmtKg(goal)} kg`} <span class="pen">✎</span></button></div>
+          <div style="font-size:12.5px; color:var(--ink-mute);"><button class="inline-edit" id="wt-goal">${goal>0
+            ? (delta===null ? `objectif ${fmtKg(goal)} kg` : (delta>0 ? `objectif ${fmtKg(goal)} kg · encore ${fmtKg(delta)} kg` : `objectif ${fmtKg(goal)} kg atteint 🎉`))
+            : "définir un objectif"} <span class="pen">✎</span></button></div>
         </div>
         <button class="btn btn-accent btn-sm" id="wt-add">＋ Noter</button>
       </div>
@@ -2253,7 +2341,7 @@ function renderProteinSection(sec){
   const div = document.createElement("div");
   if(!any){
     div.innerHTML = `<div class="section-t">Protéines · 14 derniers jours</div>
-      <div class="card empty" style="padding:22px 16px;">Coche tes repas sur l'écran <b>Séance</b> (carte « Manger pour ${fmtKg(db.settings.goal)} kg ») : ton historique de protéines s'affichera ici, jour par jour.</div>`;
+      <div class="card empty" style="padding:22px 16px;">Coche tes repas sur l'écran <b>Séance</b> : ton historique de protéines s'affichera ici, jour par jour.</div>`;
     sec.appendChild(div);
     return;
   }
@@ -2421,6 +2509,15 @@ if(!db.profile) setTimeout(()=>{ if(!db.profile) openOnboarding(true); }, 400);
       try{ d.transaction("kv","readwrite").objectStore("kv").put(String(Date.now()), MARK); diag.idb="ok"; }catch(e){ diag.idb="bloqué"; }
     }
   }catch(e){ diag.idb = "bloqué"; }
+
+  /* fichier de sauvegarde automatique choisi lors d'une session précédente */
+  if(fileApiOk()){
+    const h = await idbTake(AUTOFILE);
+    if(h){
+      autoFile.handle = h; autoFile.name = h.name || "";
+      try{ autoFile.ok = (await h.queryPermission({mode:"readwrite"})) === "granted"; }catch(e){ autoFile.ok = false; }
+    }
+  }
 
   const raw = await idbGet();
   if(!raw){ if(!isEmptyDb(db)) save(); return; }
