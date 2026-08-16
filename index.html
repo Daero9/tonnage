@@ -1203,13 +1203,18 @@ function lastPerf(exId){
 function workSets(en){ return en.sets.filter(s=>!s.warm); }
 function e1rm(w,r){ return r>1 ? w*(1+r/30) : w; }
 /* kcal d'une séance de muscu : ~6 MET pendant la durée, ajusté par le volume soulevé */
-function liftKcal(durMs, volume){
+function liftKcal(durMs, volume, nSeries){
   const kg = currentWeight() || (db.profile && db.profile.weight) || 75;
-  const min = Math.max(0, durMs/60000);
-  const base = 6 * 3.5 * kg / 200 * min;       /* dépense liée à la durée */
-  const travail = volume * 0.0012;             /* dépense liée au tonnage soulevé */
+  const mesuree = Math.max(0, durMs/60000);
+  /* si les séries ont été saisies après coup, la durée mesurée est ridicule :
+     on retombe alors sur une estimation à partir du nombre de séries (~2,5 min chacune) */
+  const estimee = (nSeries||0) * 2.5;
+  const min = (estimee > 0 && mesuree < estimee*0.5) ? estimee : mesuree;
+  const base = 6 * 3.5 * kg / 200 * min;       /* dépense liée à la durée d'effort */
+  const travail = volume * 0.005;              /* travail mécanique du tonnage soulevé */
   return Math.round(base + travail);
 }
+function nbSeries(s){ return s.entries.reduce((n,en)=>n+en.sets.filter(x=>!x.warm).length,0); }
 function parseReps(reps){
   const m = String(reps||"").match(/(\d+)(?:\D+(\d+))?/);
   if(!m) return null;
@@ -1820,7 +1825,7 @@ function renderSeance(app){
       <div class="wk-stats">
         <div><div class="v">${weekMs? fmtDur(weekMs):"—"}</div><div class="u">d'entraînement</div></div>
         <div><div class="v">${weekVol? (weekVol>=1000? (weekVol/1000).toLocaleString("fr-FR",{maximumFractionDigits:1})+" t" : fmtKg(weekVol)+" kg") : "—"}</div><div class="u">soulevées</div></div>
-        <div><div class="v">${(()=>{const k=week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s)),0)+cs.kcal; return k? k+" kcal":"—";})()}</div><div class="u">brûlées${cs.km? " (dont "+fmtKg(cs.km)+" km)":""}</div></div>
+        <div><div class="v">${(()=>{const k=week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s), nbSeries(s)),0)+cs.kcal; return k? k+" kcal":"—";})()}</div><div class="u">brûlées${cs.km? " (dont "+fmtKg(cs.km)+" km)":""}</div></div>
       </div>
     </div>
     <div id="start-zone"></div>
@@ -2206,7 +2211,7 @@ function renderActive(app){
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm("Aucune série validée","Valide au moins une série (bouton ○) avant de terminer, ou annule la séance.","OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?(s.w||0)*(s.r||0):0),0),0);
-    const kcal = liftKcal(Date.now()-a.start, vol);
+    const kcal = liftKcal(Date.now()-a.start, vol, doneSets);
     askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés · environ ${kcal} kcal brûlées. On enregistre ?`, "Enregistrer", false, ()=>{
       db.history.push({
         id:uid(), date:new Date().toISOString(), name:a.name, templateId:a.templateId,
@@ -2414,11 +2419,10 @@ function openSettings(){
     <div class="stack">
       <button class="btn" id="st-profile">👤 Mon profil et mon plan</button>
       <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Apparence</span>
-        <div class="chips" id="st-theme">
-          ${[["sombre","🌙 Sombre"],["clair","☀️ Clair"]].map(([v,l])=>
-            `<button class="chip ${db.settings.theme===v?"on":""}" data-theme="${v}">${l}</button>`).join("")}
-        </div></div>
+      <button class="btn" id="st-theme">
+        <span class="grow" style="text-align:left;">Apparence</span>
+        <span style="font-weight:800; color:var(--accent);">${db.settings.theme==="clair"? "☀️ Clair" : "🌙 Sombre"}</span>
+      </button>
       <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
       <input type="text" id="st-name" value="${esc(db.settings.name)}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
@@ -2459,11 +2463,11 @@ function openSettings(){
   onSheetClose = ()=>{ render(); };
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
   document.getElementById("st-profile").onclick=()=>openOnboarding(false);
-  document.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{
-    db.settings.theme = b.dataset.theme;
+  document.getElementById("st-theme").onclick=(e)=>{
+    db.settings.theme = (db.settings.theme==="clair") ? "sombre" : "clair";
     save(); appliquerTheme();
-    document.querySelectorAll("[data-theme]").forEach(x=>x.classList.toggle("on", x===b));
-  });
+    e.currentTarget.lastElementChild.textContent = db.settings.theme==="clair" ? "☀️ Clair" : "🌙 Sombre";
+  };
   document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast("Les explications réapparaîtront ✓"); };
   /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
   const autoBox = document.getElementById("st-auto");
@@ -2589,7 +2593,7 @@ function renderHist(app){
         <span class="pill">${fmtDur(s.end-s.start)}</span>
         <span class="pill">${nSets} séries</span>
         <span class="pill" style="color:var(--accent);">${fmtKg(vol)} kg</span>
-        <span class="pill">≈ ${liftKcal(s.end-s.start, vol)} kcal</span>
+        <span class="pill">≈ ${liftKcal(s.end-s.start, vol, nSets)} kcal</span>
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
         <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
