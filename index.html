@@ -792,7 +792,11 @@ let curTab = "seance";
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
     `<button class="tab ${curTab===id?'on':''}" data-tab="${id}">${ICONS[id]}<span>${lab}</span></button>`).join("");
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ curTab=b.dataset.tab; render(); });
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.tab===curTab) return;
+    if(curTab==="seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
+    curTab=b.dataset.tab; render();
+  });
 }
 function render(){
   renderTabs();
@@ -807,9 +811,37 @@ function render(){
 /* ================= MODAL ================= */
 const overlay = document.getElementById("overlay");
 const sheet = document.getElementById("sheet");
-function openSheet(html){ sheet.innerHTML = '<div class="grab"></div>'+html; overlay.classList.add("show"); }
-function closeSheet(){ overlay.classList.remove("show"); }
+let sheetOpen = false;
+let onSheetClose = null;   /* action à exécuter quand la fiche se ferme, quelle qu'en soit la façon */
+function openSheet(html){
+  sheet.innerHTML = '<div class="grab"></div>'+html;
+  overlay.classList.add("show");
+  if(!sheetOpen){
+    sheetOpen = true;
+    onSheetClose = null;
+    try{ history.pushState({tonnage:"sheet"}, ""); }catch(e){}
+  }
+}
+function hideSheet(){
+  overlay.classList.remove("show");
+  sheetOpen = false;
+  if(onSheetClose){ const f = onSheetClose; onSheetClose = null; try{ f(); }catch(e){} }
+}
+function closeSheet(){
+  if(sheetOpen && history.state && history.state.tonnage==="sheet"){
+    sheetOpen = false;
+    try{ history.back(); return; }catch(e){}
+  }
+  hideSheet();
+}
 overlay.addEventListener("click", e=>{ if(e.target===overlay) closeSheet(); });
+
+/* touche retour Android : ferme la fiche ouverte, puis revient à l'onglet Séance,
+   et seulement ensuite laisse le système fermer l'app */
+window.addEventListener("popstate", ()=>{
+  if(overlay.classList.contains("show")){ hideSheet(); return; }
+  if(curTab !== "seance"){ curTab = "seance"; render(); }
+});
 function askConfirm(title, msg, okLabel, danger, cb){
   openSheet(`<h3>${esc(title)}</h3><p style="color:var(--ink-soft); margin:0 0 18px; font-size:14.5px;">${esc(msg)}</p>
     <div class="row"><button class="btn grow" id="cf-no">Annuler</button>
@@ -1779,19 +1811,22 @@ function openSettings(){
     </div>`);
   /* enregistrement au fil de la saisie : rien n'est perdu si la fiche est fermée d'un geste */
   const applySettings = ()=>{
-    db.settings.name = document.getElementById("st-name").value.trim()||"Champion";
-    db.settings.rest = parseInt(document.getElementById("st-rest").value)||90;
-    const g = parseFloat(document.getElementById("st-goal").value);
+    const el = id => document.getElementById(id);
+    if(!el("st-name")) return;                      /* la fiche n'est plus à l'écran */
+    db.settings.name = el("st-name").value.trim()||"Champion";
+    db.settings.rest = parseInt(el("st-rest").value)||90;
+    const g = parseFloat(el("st-goal").value);
     if(g>0){ if(g!==db.settings.goal) coachGoal = null; db.settings.goal = g; }
-    db.habits = document.getElementById("st-habits").value.split("\n").map(s=>s.trim()).filter(Boolean).slice(0,8);
+    db.habits = el("st-habits").value.split("\n").map(s=>s.trim()).filter(Boolean).slice(0,8);
     save();
   };
   ["st-name","st-rest","st-goal","st-habits"].forEach(id=>{
     const el = document.getElementById(id);
     if(el){ el.oninput = applySettings; el.onchange = applySettings; }
   });
-  overlay.addEventListener("click", function once(e){ if(e.target===overlay){ applySettings(); render(); overlay.removeEventListener("click", once); } });
-  document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); render(); };
+  /* quelle que soit la façon de fermer (bouton, clic à côté, touche retour) : on enregistre */
+  onSheetClose = ()=>{ render(); };
+  document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
   document.getElementById("st-profile").onclick=()=>openOnboarding(false);
   const ago = ts => {
     if(!ts) return "jamais";
