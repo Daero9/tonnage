@@ -496,12 +496,85 @@ let coachGoal = null;
 const ACTIVITY = {2:1.375, 3:1.55, 4:1.55, 5:1.725, 6:1.725, 7:1.9};
 const METAB_ADJ = {rapide:1.07, normal:1.0, lent:0.94};
 const AIMS = [
-  {id:"masse",     label:"Prise de muscle", prog:"masse",     prot:1.9, desc:"Construire du muscle avec un surplus de calories maîtrisé."},
-  {id:"seche",     label:"Perte de poids",  prog:"seche",     prot:2.2, desc:"Perdre du gras en préservant un maximum de muscle."},
-  {id:"recomp",    label:"Recomposition",   prog:"recomp",    prot:2.0, desc:"Perdre du gras et gagner du muscle à poids stable."},
-  {id:"force",     label:"Force",           prog:"force",     prot:1.8, desc:"Devenir plus fort sur les mouvements de base."},
-  {id:"entretien", label:"Entretien",       prog:"entretien", prot:1.6, desc:"Garder la forme et tes acquis, sans viser de changement."}
+  {id:"masse", label:"Prise de muscle", prog:"masse", prot:1.9,
+   desc:"Construire du muscle avec un surplus de calories maîtrisé.",
+   detail:{
+     principe:"Fabriquer du tissu musculaire demande de l'énergie et des matériaux. Sans excédent, le corps entretient ce qu'il a mais ne construit rien de neuf.",
+     calories:"8 à 16 % au-dessus de ta dépense selon le rythme choisi. En dessous, la progression cale ; au-dessus, le surplus part en gras sans accélérer le muscle.",
+     proteines:"1,8 à 2 g par kilo de poids de corps. C'est la brique de base : le surplus calorique fournit l'énergie, les protéines fournissent la matière.",
+     entrainement:"6 à 12 répétitions, charges lourdes, 1 min 30 à 3 min de repos, 3 à 4 séances par semaine en Push / Pull / Legs.",
+     pour:"Tu veux prendre du volume, et ton objectif de poids est au-dessus de ton poids actuel.",
+     attention:"Au-delà de 0,5 kg par semaine, l'essentiel de la prise est du gras. La lenteur est le prix d'une prise propre."
+   }},
+  {id:"seche", label:"Perte de poids", prog:"seche", prot:2.2,
+   desc:"Perdre du gras en préservant un maximum de muscle.",
+   detail:{
+     principe:"Le corps puise dans ses réserves quand il reçoit moins que ce qu'il dépense. Tout l'enjeu est qu'il pioche dans le gras plutôt que dans le muscle.",
+     calories:"12 à 24 % en dessous de ta dépense. Jamais plus : un déficit brutal fait fondre le muscle, chuter l'énergie et reprendre le poids ensuite.",
+     proteines:"2,2 g par kilo — le besoin le plus élevé de tous les objectifs. En déficit, ce sont elles qui signalent au corps de garder le muscle.",
+     entrainement:"Continue à soulever lourd : c'est la sollicitation qui préserve le muscle, pas les séries légères. 8 à 15 répétitions, plus 2 à 3 sorties cardio.",
+     pour:"Ton objectif de poids est en dessous de ton poids actuel.",
+     attention:"Si tu perds de la force séance après séance, ton déficit est trop agressif : remonte les calories."
+   }},
+  {id:"recomp", label:"Recomposition", prog:"recomp", prot:2.0,
+   desc:"Perdre du gras et gagner du muscle à poids stable.",
+   detail:{
+     principe:"Transformer sa composition sans changer de poids : le gras diminue pendant que le muscle augmente. Sur la balance, l'aiguille bouge à peine — c'est normal, c'est même le but.",
+     calories:"À ta maintenance exactement. Le corps prend l'énergie du gras qu'il perd pour construire le muscle qu'il gagne.",
+     proteines:"2 g par kilo. Élevées, car il faut construire et protéger en même temps.",
+     entrainement:"8 à 12 répétitions, intensité soutenue, 3 séances par semaine en Haut / Bas / Full body.",
+     pour:"Tu débutes, tu reprends après une pause, ou tu es à peu près à ton poids mais tu veux une meilleure silhouette.",
+     attention:"Ce n'est PAS le bon objectif si tu veux perdre plusieurs kilos : ton poids ne bougera quasiment pas. Juge tes progrès au miroir, au tour de taille et aux charges soulevées, jamais à la balance."
+   }},
+  {id:"force", label:"Force", prog:"force", prot:1.8,
+   desc:"Devenir plus fort sur les mouvements de base.",
+   detail:{
+     principe:"Progresser en force tient autant du système nerveux que du muscle : le corps apprend à recruter plus de fibres d'un coup. On cherche la charge, pas la fatigue.",
+     calories:"Léger surplus de 4 à 10 %. Assez pour récupérer entre des séances éprouvantes, sans prise de poids notable.",
+     proteines:"1,8 g par kilo, pour la réparation des tissus et des tendons mis à rude épreuve.",
+     entrainement:"3 à 6 répétitions, charges très lourdes, 3 à 4 minutes de repos entre les séries. Squat, développé couché, soulevé de terre et développé militaire.",
+     pour:"Tu veux soulever plus lourd, sans forcément changer de silhouette.",
+     attention:"Les repos longs ne sont pas du temps perdu : c'est ce qui permet à la série suivante d'être aussi lourde que la précédente."
+   }},
+  {id:"entretien", label:"Entretien", prog:"entretien", prot:1.6,
+   desc:"Garder la forme et tes acquis, sans viser de changement.",
+   detail:{
+     principe:"Maintenir demande beaucoup moins que construire. Deux séances par semaine suffisent à conserver muscle et force pendant des mois.",
+     calories:"À ta maintenance. Ni surplus ni déficit, le poids reste stable.",
+     proteines:"1,6 g par kilo, suffisant pour préserver l'existant.",
+     entrainement:"2 séances full body, 8 à 12 répétitions, intensité modérée. On ne cherche pas la performance, juste la régularité.",
+     pour:"Période chargée, vacances, blessure en cours de guérison, ou objectif atteint que tu veux consolider.",
+     attention:"C'est un mode de croisière, pas une fin en soi : quand la vie se calme, repasse sur un objectif de progression."
+   }}
 ];
+function aimWarning(aimId, weight, goalWeight){
+  if(!(weight>0) || !(goalWeight>0)) return null;
+  const d = Math.round((goalWeight - weight)*10)/10;
+  const a = aimOf(aimId);
+  if((aimId==="recomp" || aimId==="entretien") && Math.abs(d) >= 2){
+    return `Tu vises ${fmtKg(Math.abs(d))} kg ${d<0?"de moins":"de plus"}, mais en « ${a.label} » le poids reste stable — tes calories sont calculées à la maintenance. Pour ${d<0?"perdre":"prendre"} ces kilos, choisis plutôt « ${d<0?"Perte de poids":"Prise de muscle"} ».`;
+  }
+  if(aimId==="masse" && d <= -2){
+    return `Tu as choisi « Prise de muscle » mais ton objectif est ${fmtKg(-d)} kg en dessous de ton poids actuel. Ces deux choses s'opposent : passe en « Perte de poids », ou relève ton objectif.`;
+  }
+  if(aimId==="seche" && d >= 2){
+    return `Tu as choisi « Perte de poids » mais ton objectif est ${fmtKg(d)} kg au-dessus de ton poids actuel. Passe en « Prise de muscle », ou abaisse ton objectif.`;
+  }
+  return null;
+}
+function openAimInfo(id, retour){
+  const a = aimOf(id), t = a.detail;
+  const bloc = (titre, txt) => `<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${titre}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${esc(txt)}</div></div>`;
+  openSheet(`<h3>${esc(a.label)}</h3>
+    ${bloc("Le principe", t.principe)}
+    ${bloc("Les calories", t.calories)}
+    ${bloc("Les protéines", t.proteines)}
+    ${bloc("L'entraînement", t.entrainement)}
+    ${bloc("Pour qui", t.pour)}
+    <div class="inj-note" style="margin-bottom:14px;">⚠️ ${esc(t.attention)}</div>
+    <button class="btn btn-accent" id="ai-ok" style="width:100%;">${retour? "Revenir à mon profil" : "Compris"}</button>`);
+  document.getElementById("ai-ok").onclick = ()=>{ if(retour) retour(); else closeSheet(); };
+}
 const PACES = [["progressif","Progressif"],["modere","Modéré"],["rapide","Rapide"]];
 /* surplus / déficit en % de la dépense estimée : s'adapte à la corpulence de chacun */
 const PACE_PCT = {
@@ -570,8 +643,8 @@ function proteinTarget(){
   if(pl) return pl.prot;
   return Math.round((currentWeight()||74)*1.9);
 }
-function openOnboarding(first){
-  const p = db.profile || {};
+function openOnboarding(first, brouillon){
+  const p = brouillon || db.profile || {};
   openSheet(`<h3>${first? "Bienvenue sur Tonnage 👋" : "Mon profil"}</h3>
     ${first? `<p style="margin:0 0 14px; font-size:13.5px; color:var(--ink-soft);">Quelques infos et je te prépare un plan sur mesure : besoins caloriques, protéines et programme adapté.</p>`:""}
     <div class="stack">
@@ -595,7 +668,9 @@ function openOnboarding(first){
         <div class="chips" id="ob-aim">
           ${AIMS.map(a=>`<button class="chip ${(p.aim||"masse")===a.id?"on":""}" data-aim="${a.id}">${a.label}</button>`).join("")}
         </div>
-        <div id="ob-aimdesc" style="font-size:12px; color:var(--ink-mute); margin-top:6px;"></div></div>
+        <div id="ob-aimdesc" style="font-size:12px; color:var(--ink-mute); margin-top:6px;"></div>
+        <button class="chip" id="ob-aiminfo" style="margin-top:7px; padding:5px 12px; font-size:12px;">ⓘ Tout savoir sur cet objectif</button>
+        <div id="ob-aimwarn"></div></div>
       <div id="ob-pacebox"><span class="label" style="display:block; margin-bottom:6px;">À quelle vitesse</span>
         <div class="chips" id="ob-pace">
           ${PACES.map(([v,l])=>`<button class="chip ${(p.pace||"modere")===v?"on":""}" data-pace="${v}">${l}</button>`).join("")}
@@ -642,8 +717,25 @@ function openOnboarding(first){
   const refreshAim = ()=>{
     document.getElementById("ob-aimdesc").textContent = aimOf(aim).desc;
     document.getElementById("ob-pacebox").style.display = PACE_RATE[aim] ? "block" : "none";
+    const w = parseFloat(document.getElementById("ob-weight").value);
+    const g = parseFloat(document.getElementById("ob-goal").value);
+    const warn = aimWarning(aim, w, g);
+    document.getElementById("ob-aimwarn").innerHTML = warn
+      ? `<div class="inj-note" style="margin:9px 0 0;">⚠️ ${esc(warn)}</div>` : "";
     refreshProt();
   };
+  const snapshot = ()=>{
+    const v = id => document.getElementById(id).value;
+    const n = id => parseFloat(v(id));
+    return {name:v("ob-name"), sex:v("ob-sex"), age:n("ob-age"), height:n("ob-height"),
+            weight:n("ob-weight"), goalWeight:n("ob-goal"), metab, days, injuries, aim, pace, protPerKg:perKg};
+  };
+  document.getElementById("ob-aiminfo").onclick = ()=>{
+    const brouillon = snapshot();
+    openAimInfo(aim, ()=>openOnboarding(first, brouillon));
+  };
+  document.getElementById("ob-goal").addEventListener("input", refreshAim);
+  document.getElementById("ob-weight").addEventListener("input", refreshAim);
   document.querySelectorAll("[data-aim]").forEach(b=>b.onclick=()=>{
     const ancienReco = aimOf(aim).prot;
     aim = b.dataset.aim;
@@ -704,6 +796,8 @@ function showPlan(justCreated){
       <span class="pill" style="background:var(--accent); color:var(--accent-ink); font-weight:800;">${esc(pl.aimLabel)}</span>
       ${PACE_RATE[pl.aim]? `<span class="pill">${esc((PACES.find(x=>x[0]===pl.pace)||[])[1]||"")} · ${esc(pl.rythme)}</span>`:""}
     </div>
+    ${(()=>{ const w = aimWarning(db.profile.aim, db.profile.weight, db.profile.goalWeight);
+      return w? `<div class="inj-note" style="margin:0 0 12px;">⚠️ ${esc(w)}</div>` : ""; })()}
     <p style="margin:0 0 14px; font-size:14px; color:var(--ink-soft); line-height:1.6;">${planAdvice(pl, db.profile)}</p>
     <div class="tiles" style="margin-bottom:14px;">
       <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">kcal / jour</div></div>
