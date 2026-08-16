@@ -2947,27 +2947,104 @@ const GAIN_MENSUEL = {
   "Abdos":           {mesure:"de densité abdominale", min:0, max:0, exo:"gainage et crunch"},
   "Lombaires":       {mesure:"de robustesse lombaire", min:0, max:0, exo:"soulevé de terre roumain"}
 };
+/* liens fonctionnels réels entre muscles : on n'évoque un risque que s'il existe vraiment */
+const LIENS = [
+  {a:"Grand dorsal", b:["Fessiers","Ischio-jambiers","Lombaires","Quadriceps"],
+   txt:"Ces deux-là travaillent ensemble sur les tirages lourds : les hanches produisent la force, le haut du dos tient la position. Quand le bas prend de l'avance, c'est le dos qui devient le maillon limitant — tu génères plus de force que tu ne peux en stabiliser, et le dos finit par s'arrondir."},
+  {a:"Pectoraux", b:["Grand dorsal","Trapèzes"],
+   txt:"Pousser et tirer doivent s'équilibrer. Un torse plus fort que le dos enroule peu à peu les épaules vers l'avant : l'amplitude au développé se réduit et l'articulation encaisse davantage."},
+  {a:"Quadriceps", b:["Ischio-jambiers"],
+   txt:"Quadriceps et ischio-jambiers se contrebalancent autour du genou. Un écart marqué en faveur de l'avant de la cuisse est le schéma classique des claquages d'ischios et des genoux qui tirent."},
+  {a:"Deltoïdes", b:["Trapèzes"],
+   txt:"Les trapèzes orientent l'omoplate pendant que les deltoïdes lèvent le bras. Des trapèzes en retard limitent la stabilité de l'épaule sur tout ce qui passe au-dessus de la tête."},
+  {a:"Abdos", b:["Lombaires"],
+   txt:"Abdominaux et lombaires forment la sangle qui verrouille le tronc. C'est toujours le plus faible des deux qui lâche quand la charge monte."},
+  {a:"Biceps", b:["Triceps"],
+   txt:"Le triceps représente les deux tiers du volume du bras : c'est lui, bien plus que le biceps, qui fait grossir un bras."}
+];
+function lienEntre(m1, m2){
+  for(const l of LIENS){
+    if((l.a===m1 && l.b.includes(m2)) || (l.a===m2 && l.b.includes(m1))) return l.txt;
+  }
+  return null;
+}
 function analyseProfil(prof){
   const connus = MP_MUSCLES.filter(m=>prof[m]!==null);
-  if(connus.length < 2) return null;
+  const nbSeances = db.history.length;
+  if(connus.length < 2){
+    return `<div class="analyse">
+      <div class="label" style="margin-bottom:6px;">📋 Ce que dit ton profil</div>
+      <p style="margin:0;">Avec ${nbSeances} séance${nbSeances>1?"s":""} enregistrée${nbSeances>1?"s":""}, il me manque encore de la matière pour te dire quelque chose d'utile. Il faut deux passages sur un même exercice pour qu'un muscle apparaisse ici. Continue à logger, l'analyse se remplira toute seule.</p>
+    </div>`;
+  }
   const tries = connus.slice().sort((a,b)=>prof[a]-prof[b]);
   const faible = tries[0], fort = tries[tries.length-1];
   const moyenne = Math.round(connus.reduce((a,m)=>a+prof[m],0)/connus.length);
   const ecart = prof[fort] - prof[faible];
+
+  /* ce que tu fais réellement */
+  const freq = {};
+  db.history.forEach(s=>s.entries.forEach(en=>{ freq[en.exId] = (freq[en.exId]||0)+1; }));
+  const cible = m => allEx().filter(e=>(MUSCLE_WORK[e.name]||[]).some(([mm,n])=>n===3 && groupeDe(mm)===m));
+  const exFort = cible(fort).filter(e=>freq[e.id]).sort((a,b)=>freq[b.id]-freq[a.id])[0];
+  const pourFaible = cible(faible);
+  const faits = pourFaible.filter(e=>freq[e.id]).sort((a,b)=>freq[b.id]-freq[a.id]);
+  const jamais = pourFaible.filter(e=>!freq[e.id]);
+  const dansProgrammes = pourFaible.filter(e=>db.templates.some(t=>t.items.some(i=>i.exId===e.id)));
+
+  /* 1. le constat, avec tes chiffres */
+  let constat = `Sur tes ${nbSeances} séances, ton meilleur score est <b style="color:var(--good);">${fort.toLowerCase()}</b> à ${prof[fort]}`;
+  constat += exFort ? `, porté par ${freq[exFort.id]} passage${freq[exFort.id]>1?"s":""} sur ${exFort.name.toLowerCase()}. ` : `. `;
+  constat += `Ton retard est sur <b style="color:var(--bad);">${faible.toLowerCase()}</b> à ${prof[faible]}`;
+  if(!faits.length) constat += `, et c'est logique : tu n'as encore enregistré aucun exercice qui le cible directement.`;
+  else if(faits.length && freq[faits[0].id] <= 2) constat += `, avec seulement ${freq[faits[0].id]} passage${freq[faits[0].id]>1?"s":""} sur ${faits[0].name.toLowerCase()}.`;
+  else constat += `, malgré ${freq[faits[0].id]} passages sur ${faits[0].name.toLowerCase()} — la fréquence est là, c'est donc la charge ou l'intensité qu'il faut monter.`;
+
+  /* 2. l'écart : on n'invoque un risque que si le lien existe */
+  const lien = lienEntre(fort, faible);
+  let diagnostic;
+  if(ecart < 20){
+    diagnostic = `Seulement ${ecart} points séparent tes deux extrêmes : ton développement est <b>remarquablement homogène</b>. À ce stade, inutile de chasser un point faible — continue à charger partout.`;
+  } else if(lien){
+    diagnostic = `${ecart} points d'écart entre les deux. ${lien}`;
+  } else if(ecart < 45){
+    diagnostic = `${ecart} points d'écart. Ces deux muscles ne travaillent pas ensemble, il n'y a donc aucun risque à cet écart — c'est simplement là que tu as le plus de marge de progression facile.`;
+  } else {
+    diagnostic = `${ecart} points d'écart. Ces deux muscles sont indépendants, donc pas d'inquiétude côté blessure : c'est un simple retard de travail, et le rattraper est ce qui changera le plus vite ta silhouette.`;
+  }
+
+  /* 3. l'action, à partir de tes programmes */
+  let action;
+  if(ecart < 20){
+    const g0 = GAIN_MENSUEL[faible] || {};
+    return `<div class="analyse">
+      <div class="label" style="margin-bottom:6px;">📋 Ce que dit ton profil</div>
+      <p style="margin:0 0 8px;">${constat}</p>
+      <p style="margin:0 0 8px;">${diagnostic}</p>
+      <p style="margin:0 0 8px;">Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : 2,5 kg de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.</p>
+      <p style="margin:0; font-size:11px; color:var(--ink-mute);">Moyenne générale ${moyenne}. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.</p>
+    </div>`;
+  }
+  if(dansProgrammes.length){
+    action = `${dansProgrammes[0].name} est déjà dans tes séances : place-le <b>en premier exercice</b>, quand tu es frais, plutôt qu'en fin de séance.`;
+  } else if(jamais.length){
+    action = `Aucun exercice de ${faible.toLowerCase()} n'est dans tes programmes. Ajoute <b>${jamais[0].name.toLowerCase()}</b>${jamais[1]? ` ou ${jamais[1].name.toLowerCase()}`:""} — c'est le geste le plus rentable que tu puisses faire ce mois-ci.`;
+  } else {
+    action = `Garde ${faits[0].name.toLowerCase()} mais monte les charges : tu es à un niveau où la progression vient de l'intensité, plus de la répétition.`;
+  }
+
+  /* 4. la projection chiffrée */
   const g = GAIN_MENSUEL[faible] || {};
-  let equilibre;
-  if(ecart < 20) equilibre = `Ton physique est <b>bien équilibré</b> : moins de ${ecart} points séparent ton muscle le plus fort du plus faible. C'est le signe d'un entraînement complet — continue ainsi.`;
-  else if(ecart < 45) equilibre = `Tu as un <b>déséquilibre modéré</b> de ${ecart} points entre ${fort.toLowerCase()} et ${faible.toLowerCase()}. Rien d'inquiétant, mais c'est le levier le plus rentable pour progresser.`;
-  else equilibre = `L'écart entre ${fort.toLowerCase()} et ${faible.toLowerCase()} atteint ${ecart} points. Un déséquilibre marqué finit par limiter les gros mouvements et augmente le risque de blessure : c'est ta priorité.`;
   const projection = (g.min>0)
-    ? `Concrètement : en plaçant <b>${g.exo}</b> en début de séance deux fois par semaine, compte environ <b>${g.min.toLocaleString("fr-FR")} à ${g.max.toLocaleString("fr-FR")} cm ${g.mesure} par mois</b>. Sur une semaine ça ne se voit pas — sur six mois, ça change une silhouette.`
-    : `Concrètement : deux passages de <b>${g.exo}</b> par semaine suffisent à combler l'écart en quelques semaines.`;
+    ? `En le travaillant deux fois par semaine, compte <b>${g.min.toLocaleString("fr-FR")} à ${g.max.toLocaleString("fr-FR")} cm ${g.mesure} par mois</b>. Sur une semaine c'est invisible ; sur six mois, ça se voit sur les photos.`
+    : `Deux passages par semaine suffisent à combler ce retard en quelques semaines.`;
+
   return `<div class="analyse">
     <div class="label" style="margin-bottom:6px;">📋 Ce que dit ton profil</div>
-    <p style="margin:0 0 8px;">Ton point fort est <b style="color:var(--good);">${fort.toLowerCase()}</b> (${prof[fort]}), ton point à travailler <b style="color:var(--bad);">${faible.toLowerCase()}</b> (${prof[faible]}), pour une moyenne de ${moyenne}.</p>
-    <p style="margin:0 0 8px;">${equilibre}</p>
-    <p style="margin:0;">${projection}</p>
-    <p style="margin:8px 0 0; font-size:11px; color:var(--ink-mute);">Estimations valables avec un apport en protéines suffisant et un bon sommeil. Elles ralentissent naturellement avec l'expérience — les premières années sont les plus généreuses.</p>
+    <p style="margin:0 0 8px;">${constat}</p>
+    <p style="margin:0 0 8px;">${diagnostic}</p>
+    <p style="margin:0 0 8px;">${action} ${projection}</p>
+    <p style="margin:0; font-size:11px; color:var(--ink-mute);">Moyenne générale ${moyenne}. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.</p>
   </div>`;
 }
 function renderMuscleSection(sec){
