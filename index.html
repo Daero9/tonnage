@@ -58,6 +58,11 @@
   .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface2); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2); border-radius:99px; padding:3px 9px; white-space:nowrap;}
+  .slider{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:99px; padding:0; border:none;
+    background:linear-gradient(90deg, var(--accent-deep), var(--accent)); outline:none;}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none; width:26px; height:26px; border-radius:50%; background:var(--accent);
+    border:3px solid var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.5); cursor:pointer;}
+  .slider::-moz-range-thumb{width:22px; height:22px; border-radius:50%; background:var(--accent); border:3px solid var(--surface); cursor:pointer;}
   .inline-edit{font:inherit; color:inherit; text-align:left; display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:1px 5px; margin-left:-5px;}
   .inline-edit .pen{font-size:.62em; color:var(--accent); opacity:.75;}
   .inline-edit:active{background:var(--surface2);}
@@ -458,6 +463,23 @@ const COACH_PROGRAMS = {
       {name:"Full body B · Perte de poids", items:[["Presse à cuisses",3,"12-15",75],["Tirage vertical",3,"10-12",75],["Développé haltères",3,"12-15",75],["Curl haltères",3,"12-15",60],["Relevés de jambes",3,"12-15",45]]}
     ]
   },
+  force: {
+    label:"Force",
+    title:"Force · Squat / Bench / Deadlift",
+    templates:[
+      {name:"Force A · Bas du corps", items:[["Squat",5,"3-5",210],["Soulevé de terre roumain",3,"5-6",180],["Presse à cuisses",3,"6-8",150],["Gainage",3,"30-45",90]]},
+      {name:"Force B · Poussée", items:[["Développé couché",5,"3-5",210],["Développé militaire",4,"4-6",180],["Dips",3,"6-8",150],["Extension poulie",3,"8-10",90]]},
+      {name:"Force C · Tirage", items:[["Soulevé de terre",5,"3-5",240],["Rowing barre",4,"5-6",180],["Tractions",4,"5-8",150],["Curl barre",3,"8-10",90]]}
+    ]
+  },
+  entretien: {
+    label:"Entretien",
+    title:"Entretien · 2 séances full body",
+    templates:[
+      {name:"Full body A · Entretien", items:[["Squat",3,"8-12",90],["Développé couché haltères",3,"8-12",90],["Tirage vertical",3,"8-12",90],["Élévations latérales",2,"12-15",60],["Gainage",2,"30-45",60]]},
+      {name:"Full body B · Entretien", items:[["Soulevé de terre roumain",3,"8-12",90],["Développé haltères",3,"8-12",90],["Rowing haltère",3,"8-12",90],["Curl haltères",2,"10-12",60],["Crunch",2,"15-20",45]]}
+    ]
+  },
   recomp: {
     label:"Perte de gras + muscle",
     title:"Recomposition · Haut / Bas / Full",
@@ -473,33 +495,70 @@ let coachGoal = null;
 /* ===== Profil & plan personnalisé ===== */
 const ACTIVITY = {2:1.375, 3:1.55, 4:1.55, 5:1.725, 6:1.725, 7:1.9};
 const METAB_ADJ = {rapide:1.10, normal:1.0, lent:0.92};
+const AIMS = [
+  {id:"masse",     label:"Prise de muscle", prog:"masse",     prot:1.9, desc:"Construire du muscle avec un surplus de calories maîtrisé."},
+  {id:"seche",     label:"Perte de poids",  prog:"seche",     prot:2.2, desc:"Perdre du gras en préservant un maximum de muscle."},
+  {id:"recomp",    label:"Recomposition",   prog:"recomp",    prot:2.0, desc:"Perdre du gras et gagner du muscle à poids stable."},
+  {id:"force",     label:"Force",           prog:"force",     prot:1.8, desc:"Devenir plus fort sur les mouvements de base."},
+  {id:"entretien", label:"Entretien",       prog:"entretien", prot:1.6, desc:"Garder la forme et tes acquis, sans viser de changement."}
+];
+const PACES = [["progressif","Progressif"],["modere","Modéré"],["rapide","Rapide"]];
+const PACE_KCAL = {
+  masse:     {progressif:250,  modere:400,  rapide:600},
+  seche:     {progressif:-300, modere:-450, rapide:-700},
+  recomp:    {progressif:0,    modere:0,    rapide:0},
+  force:     {progressif:150,  modere:250,  rapide:350},
+  entretien: {progressif:0,    modere:0,    rapide:0}
+};
+const PACE_RATE = {   /* kg par semaine */
+  masse: {progressif:0.2,  modere:0.35, rapide:0.5},
+  seche: {progressif:0.35, modere:0.5,  rapide:0.75},
+  force: {progressif:0.15, modere:0.25, rapide:0.35}
+};
+function aimOf(id){ return AIMS.find(a=>a.id===id) || AIMS[0]; }
 function planFor(p){
   if(!p || !(p.weight>0) || !(p.height>0) || !(p.age>0) || !(p.goalWeight>0)) return null;
   const bmr = 10*p.weight + 6.25*p.height - 5*p.age + (p.sex==="f" ? -161 : 5);
   const tdee = bmr * (ACTIVITY[p.days]||1.55) * (METAB_ADJ[p.metab]||1);
   const diff = p.goalWeight - p.weight;
-  const aim = diff > 1 ? "masse" : (diff < -1 ? "seche" : "recomp");
-  let kcal, prot, rythme;
-  if(aim==="masse"){
-    kcal = tdee + (p.metab==="rapide" ? 500 : 400);
-    prot = p.weight * 1.9;
-    rythme = "+0,25 à +0,5 kg par semaine";
-  } else if(aim==="seche"){
-    kcal = tdee - 450;
-    prot = p.weight * 2.2;
-    rythme = "−0,5 kg par semaine";
-  } else {
-    kcal = tdee;
-    prot = p.weight * 2.0;
-    rythme = "poids stable, silhouette qui change";
-  }
-  const semaines = Math.abs(diff) < 1 ? null : Math.max(2, Math.round(Math.abs(diff) / (aim==="masse" ? 0.375 : 0.5)));
+  const aimId = p.aim || (diff > 1 ? "masse" : (diff < -1 ? "seche" : "recomp"));
+  const aim = aimOf(aimId);
+  const pace = p.pace || "modere";
+  let delta = (PACE_KCAL[aim.id]||{})[pace] || 0;
+  if(aim.id==="masse" && p.metab==="rapide") delta += 100;   /* métabolisme qui brûle vite */
+  const kcal = tdee + delta;
+  const perKg = p.protPerKg || aim.prot;
+  const prot = p.weight * perKg;
+  const rate = (PACE_RATE[aim.id]||{})[pace] || 0;
+  const semaines = (rate>0 && Math.abs(diff)>=1) ? Math.max(2, Math.round(Math.abs(diff)/rate)) : null;
+  const rythme = rate>0 ? `${diff<0?"−":"+"}${rate.toLocaleString("fr-FR")} kg par semaine` : "poids stable";
   return {
     bmr: Math.round(bmr), tdee: Math.round(tdee),
-    kcal: Math.round(kcal/10)*10, prot: Math.round(prot),
-    aim, rythme, semaines, diff: Math.round(diff*10)/10,
-    program: aim, seances: Math.min(4, Math.max(2, p.days))
+    kcal: Math.round(kcal/10)*10, prot: Math.round(prot), perKg,
+    aim: aim.id, aimLabel: aim.label, pace, rythme, semaines,
+    diff: Math.round(diff*10)/10, delta,
+    program: aim.prog, seances: Math.min(5, Math.max(2, p.days))
   };
+}
+/* le conseil nutrition, formulé selon l'objectif et le rythme choisis */
+function planAdvice(pl, p){
+  const kg = p.weight, cible = p.goalWeight;
+  const perKg = pl.perKg.toLocaleString("fr-FR");
+  if(pl.aim==="masse"){
+    const vite = pl.pace==="rapide";
+    return `Pour atteindre ${fmtKg(cible)} kg${pl.semaines? ` d'ici environ ${pl.semaines} semaines`:""}, vise <b>${pl.kcal} kcal</b> et <b>${pl.prot} g de protéines</b> par jour, soit ${perKg} g par kilo de poids de corps.${vite? " Attention : à ce rythme, une part plus importante de la prise sera du gras — si le tour de taille grimpe vite, repasse en modéré." : " C'est le rythme qui maximise le muscle en limitant le gras."}`;
+  }
+  if(pl.aim==="seche"){
+    const vite = pl.pace==="rapide";
+    return `Pour descendre à ${fmtKg(cible)} kg${pl.semaines? ` d'ici environ ${pl.semaines} semaines`:""}, vise <b>${pl.kcal} kcal</b> et <b>${pl.prot} g de protéines</b> par jour, soit ${perKg} g par kilo — les protéines sont ta protection contre la fonte musculaire.${vite? " Ce rythme est agressif : si tu perds de la force sur tes séances, ralentis." : ""}`;
+  }
+  if(pl.aim==="recomp"){
+    return `Mange à ta maintenance, <b>${pl.kcal} kcal</b> par jour, avec <b>${pl.prot} g de protéines</b> (${perKg} g par kilo). Le poids bougera peu : juge tes progrès à la glace et aux charges soulevées, pas à la balance.`;
+  }
+  if(pl.aim==="force"){
+    return `Vise <b>${pl.kcal} kcal</b> et <b>${pl.prot} g de protéines</b> par jour (${perKg} g par kilo). Un léger surplus soutient la récupération nerveuse et articulaire, indispensable quand on pousse lourd.`;
+  }
+  return `Mange à ta maintenance, <b>${pl.kcal} kcal</b> par jour, avec <b>${pl.prot} g de protéines</b> (${perKg} g par kilo) pour conserver ta masse musculaire.`;
 }
 function proteinTarget(){
   const pl = planFor(db.profile);
@@ -527,6 +586,22 @@ function openOnboarding(first){
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Objectif (kg)</span>
         <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${p.goalWeight||db.settings.goal||""}" placeholder="80"></div>
       </div>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Ton objectif</span>
+        <div class="chips" id="ob-aim">
+          ${AIMS.map(a=>`<button class="chip ${(p.aim||"masse")===a.id?"on":""}" data-aim="${a.id}">${a.label}</button>`).join("")}
+        </div>
+        <div id="ob-aimdesc" style="font-size:12px; color:var(--ink-mute); margin-top:6px;"></div></div>
+      <div id="ob-pacebox"><span class="label" style="display:block; margin-bottom:6px;">À quelle vitesse</span>
+        <div class="chips" id="ob-pace">
+          ${PACES.map(([v,l])=>`<button class="chip ${(p.pace||"modere")===v?"on":""}" data-pace="${v}">${l}</button>`).join("")}
+        </div></div>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Protéines par jour</span>
+        <input type="range" min="1.2" max="2.5" step="0.1" id="ob-prot" class="slider">
+        <div class="row" style="justify-content:space-between; margin-top:5px;">
+          <span id="ob-protval" style="font-size:13.5px; font-weight:700;"></span>
+          <button class="chip" id="ob-protreset" style="padding:4px 10px; font-size:11.5px;">Valeur conseillée</button>
+        </div>
+        <div id="ob-prothint" style="font-size:11.5px; color:var(--ink-mute); margin-top:5px; line-height:1.5;"></div></div>
       <div><span class="label" style="display:block; margin-bottom:6px;">Ton métabolisme</span>
         <div class="chips" id="ob-metab">
           ${[["rapide","Rapide — je peine à prendre du poids"],["normal","Normal"],["lent","Lent — je prends facilement"]].map(([v,l])=>
@@ -545,6 +620,40 @@ function openOnboarding(first){
       ${first? `<button class="btn btn-ghost" id="ob-skip">Plus tard</button>`:""}
     </div>`);
   let metab = p.metab||"normal", days = p.days||3, injuries = (p.injuries||[]).slice();
+  let aim = p.aim||"masse", pace = p.pace||"modere", perKg = p.protPerKg || aimOf(aim).prot;
+  const protSlider = document.getElementById("ob-prot");
+  const poids = ()=> parseFloat(document.getElementById("ob-weight").value) || p.weight || 75;
+  const refreshProt = ()=>{
+    protSlider.value = perKg;
+    const g = Math.round(poids()*perKg);
+    const reco = aimOf(aim).prot;
+    document.getElementById("ob-protval").textContent = `${perKg.toLocaleString("fr-FR")} g/kg · ${g} g par jour`;
+    let hint;
+    if(perKg < reco-0.15) hint = `En dessous des ${reco.toLocaleString("fr-FR")} g/kg conseillés pour cet objectif — tu risques de laisser du muscle sur la table.`;
+    else if(perKg > reco+0.3) hint = `Au-delà de ${reco.toLocaleString("fr-FR")} g/kg, le bénéfice supplémentaire est minime : ce n'est ni dangereux ni utile, mais ça remplit vite l'estomac.`;
+    else hint = `C'est la zone conseillée pour « ${aimOf(aim).label.toLowerCase()} ». Répartis-les sur 3 à 4 prises dans la journée.`;
+    document.getElementById("ob-prothint").textContent = hint;
+  };
+  const refreshAim = ()=>{
+    document.getElementById("ob-aimdesc").textContent = aimOf(aim).desc;
+    document.getElementById("ob-pacebox").style.display = PACE_RATE[aim] ? "block" : "none";
+    refreshProt();
+  };
+  document.querySelectorAll("[data-aim]").forEach(b=>b.onclick=()=>{
+    const ancienReco = aimOf(aim).prot;
+    aim = b.dataset.aim;
+    document.querySelectorAll("[data-aim]").forEach(x=>x.classList.toggle("on", x===b));
+    if(Math.abs(perKg-ancienReco) < 0.05) perKg = aimOf(aim).prot;   /* suit la reco si l'utilisateur n'a rien touché */
+    refreshAim();
+  });
+  document.querySelectorAll("[data-pace]").forEach(b=>b.onclick=()=>{
+    pace = b.dataset.pace;
+    document.querySelectorAll("[data-pace]").forEach(x=>x.classList.toggle("on", x===b));
+  });
+  protSlider.oninput = ()=>{ perKg = Math.round(parseFloat(protSlider.value)*10)/10; refreshProt(); };
+  document.getElementById("ob-protreset").onclick = ()=>{ perKg = aimOf(aim).prot; refreshProt(); };
+  document.getElementById("ob-weight").addEventListener("input", refreshProt);
+  refreshAim();
   document.querySelectorAll("[data-inj]").forEach(b=>b.onclick=()=>{
     const id = b.dataset.inj;
     if(injuries.includes(id)) injuries = injuries.filter(x=>x!==id); else injuries.push(id);
@@ -567,7 +676,7 @@ function openOnboarding(first){
       sex: document.getElementById("ob-sex").value,
       age: g("ob-age"), height: g("ob-height"),
       weight: g("ob-weight"), goalWeight: g("ob-goal"),
-      metab, days, injuries
+      metab, days, injuries, aim, pace, protPerKg: perKg
     };
     if(!prof.age || !prof.height || !prof.weight || !prof.goalWeight){ toast("Remplis âge, taille, poids et objectif"); return; }
     db.profile = prof;
@@ -585,20 +694,22 @@ function showPlan(justCreated){
   if(!pl){ closeSheet(); render(); return; }
   const prog = COACH_PROGRAMS[pl.program];
   const manquantes = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
-  const objectif = pl.aim==="masse" ? `prendre ${fmtKg(Math.abs(pl.diff))} kg de muscle`
-    : (pl.aim==="seche" ? `perdre ${fmtKg(Math.abs(pl.diff))} kg` : "te recomposer sans changer de poids");
   openSheet(`<h3>${justCreated? "Ton plan est prêt 🎯" : "Mon plan"}</h3>
-    <p style="margin:0 0 14px; font-size:14px; color:var(--ink-soft);">Pour ${objectif}, voici ce que je te conseille — compte environ ${pl.semaines? pl.semaines+" semaines" : "quelques semaines"} à un rythme de ${pl.rythme}.</p>
+    <div class="row" style="gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+      <span class="pill" style="background:var(--accent); color:var(--accent-ink); font-weight:800;">${esc(pl.aimLabel)}</span>
+      ${PACE_RATE[pl.aim]? `<span class="pill">${esc((PACES.find(x=>x[0]===pl.pace)||[])[1]||"")} · ${esc(pl.rythme)}</span>`:""}
+    </div>
+    <p style="margin:0 0 14px; font-size:14px; color:var(--ink-soft); line-height:1.6;">${planAdvice(pl, db.profile)}</p>
     <div class="tiles" style="margin-bottom:14px;">
       <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">kcal / jour</div></div>
-      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">protéines / jour</div></div>
+      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">protéines (${pl.perKg.toLocaleString("fr-FR")} g/kg)</div></div>
       <div class="tile"><div class="v">${pl.seances}</div><div class="u">séances / sem.</div></div>
     </div>
     <div class="card" style="background:var(--surface2); margin-bottom:14px;">
       <div style="font-weight:800; margin-bottom:3px;">${esc(prog.title)}</div>
       <div style="font-size:13px; color:var(--ink-soft);">${esc(coachDesc(pl.program))}</div>
     </div>
-    <div style="font-size:12px; color:var(--ink-mute); margin-bottom:14px;">Estimations calculées à partir de ta taille, ton poids, ton âge et ton activité (formule Mifflin-St Jeor). Ajuste-les selon ce que dit la balance semaine après semaine.</div>
+    <div style="font-size:12px; color:var(--ink-mute); margin-bottom:14px; line-height:1.5;">Estimations calculées à partir de ta taille, ton poids, ton âge et ton activité (formule Mifflin-St Jeor), soit ${pl.tdee} kcal de dépense quotidienne${pl.delta? (pl.delta>0? ` et ${pl.delta} kcal de surplus`:` et ${-pl.delta} kcal de déficit`):""}. Ajuste selon ce que dit la balance semaine après semaine.</div>
     ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">Ajouter les ${manquantes.length} séances à mes programmes</button>`:""}
     <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : "C'est parti"}</button>`);
   const add = document.getElementById("pl-add");
@@ -628,6 +739,12 @@ function coachDesc(goal){
     let p = "2 séances full body (12-15 reps, repos courts) pour garder le muscle + 2-3 sorties cardio par semaine (à enregistrer dans l'onglet Séance). Côté assiette : ~400-500 kcal sous tes besoins.";
     if(delta!==null && delta<0) p = `Objectif −${fmtKg(-delta)} kg (${fmtKg(cur)} → ${fmtKg(obj)} kg), soit environ ${Math.max(1,Math.round(-delta/0.5))} semaines à −0,5 kg/semaine, un rythme sain. `+p;
     return p;
+  }
+  if(goal==="force"){
+    return "3 séances organisées autour du squat, du développé couché et du soulevé de terre : peu de répétitions (3 à 6), charges lourdes et repos très longs (3 à 4 min) pour récupérer entre les séries. Progresse en ajoutant du poids, pas des répétitions.";
+  }
+  if(goal==="entretien"){
+    return "2 séances full body par semaine suffisent largement à conserver muscle et force. Séries de 8 à 12 répétitions, intensité modérée, sans chercher la performance — l'objectif est la régularité sur le long terme.";
   }
   return "3 séances (haut / bas / full body) à intensité moyenne-haute pour construire du muscle tout en perdant du gras. Côté assiette : mange à ta maintenance avec beaucoup de protéines (2 g/kg), et le corps fait l'échange gras → muscle.";
 }
