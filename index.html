@@ -28,7 +28,7 @@
     -webkit-font-smoothing:antialiased;
     overscroll-behavior-y:none;
   }
-  #app{max-width:560px; margin:0 auto; padding:16px 16px 150px;}
+  #app{max-width:560px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px 150px;}
   h1,h2,h3{margin:0; text-wrap:balance;}
   button{font-family:inherit; font-size:16px; border:none; cursor:pointer; color:inherit; background:none; padding:0;}
   input,select,textarea{font-family:inherit; font-size:16px; color:var(--ink); background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; outline:none; width:100%;}
@@ -299,6 +299,132 @@ const COACH_PROGRAMS = {
   }
 };
 let coachGoal = null;
+
+/* ===== Profil & plan personnalisé ===== */
+const ACTIVITY = {2:1.375, 3:1.55, 4:1.55, 5:1.725, 6:1.725, 7:1.9};
+const METAB_ADJ = {rapide:1.10, normal:1.0, lent:0.92};
+function planFor(p){
+  if(!p) return null;
+  const bmr = 10*p.weight + 6.25*p.height - 5*p.age + (p.sex==="f" ? -161 : 5);
+  const tdee = bmr * (ACTIVITY[p.days]||1.55) * (METAB_ADJ[p.metab]||1);
+  const diff = p.goalWeight - p.weight;
+  const aim = diff > 1 ? "masse" : (diff < -1 ? "seche" : "recomp");
+  let kcal, prot, rythme;
+  if(aim==="masse"){
+    kcal = tdee + (p.metab==="rapide" ? 500 : 400);
+    prot = p.weight * 1.9;
+    rythme = "+0,25 à +0,5 kg par semaine";
+  } else if(aim==="seche"){
+    kcal = tdee - 450;
+    prot = p.weight * 2.2;
+    rythme = "−0,5 kg par semaine";
+  } else {
+    kcal = tdee;
+    prot = p.weight * 2.0;
+    rythme = "poids stable, silhouette qui change";
+  }
+  const semaines = Math.abs(diff) < 1 ? null : Math.max(2, Math.round(Math.abs(diff) / (aim==="masse" ? 0.375 : 0.5)));
+  return {
+    bmr: Math.round(bmr), tdee: Math.round(tdee),
+    kcal: Math.round(kcal/10)*10, prot: Math.round(prot),
+    aim, rythme, semaines, diff: Math.round(diff*10)/10,
+    program: aim, seances: Math.min(4, Math.max(2, p.days))
+  };
+}
+function proteinTarget(){
+  const pl = planFor(db.profile);
+  if(pl) return pl.prot;
+  return Math.round((currentWeight()||74)*1.9);
+}
+function openOnboarding(first){
+  const p = db.profile || {};
+  openSheet(`<h3>${first? "Bienvenue sur Tonnage 👋" : "Mon profil"}</h3>
+    ${first? `<p style="margin:0 0 14px; font-size:13.5px; color:var(--ink-soft);">Quelques infos et je te prépare un plan sur mesure : besoins caloriques, protéines et programme adapté.</p>`:""}
+    <div class="stack">
+      <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
+      <input id="ob-name" value="${esc(p.name||db.settings.name||"")}" placeholder="Nico" maxlength="20"></div>
+      <div class="row">
+        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Sexe</span>
+        <select id="ob-sex"><option value="h" ${p.sex!=="f"?"selected":""}>Homme</option><option value="f" ${p.sex==="f"?"selected":""}>Femme</option></select></div>
+        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Âge</span>
+        <input type="number" inputmode="numeric" id="ob-age" value="${p.age||""}" placeholder="28"></div>
+      </div>
+      <div class="row">
+        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Taille (cm)</span>
+        <input type="number" inputmode="numeric" id="ob-height" value="${p.height||""}" placeholder="188"></div>
+        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Poids (kg)</span>
+        <input type="number" inputmode="decimal" step="0.1" id="ob-weight" value="${p.weight||currentWeight()||""}" placeholder="74"></div>
+        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Objectif (kg)</span>
+        <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${p.goalWeight||db.settings.goal||""}" placeholder="80"></div>
+      </div>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Ton métabolisme</span>
+        <div class="chips" id="ob-metab">
+          ${[["rapide","Rapide — je peine à prendre du poids"],["normal","Normal"],["lent","Lent — je prends facilement"]].map(([v,l])=>
+            `<button class="chip ${(p.metab||"normal")===v?"on":""}" data-mt="${v}">${l}</button>`).join("")}
+        </div></div>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Séances de sport par semaine</span>
+        <div class="chips" id="ob-days">
+          ${[2,3,4,5,6].map(n=>`<button class="chip ${(p.days||3)===n?"on":""}" data-dy="${n}">${n}</button>`).join("")}
+        </div></div>
+      <button class="btn btn-accent" id="ob-ok">${first? "Créer mon plan" : "Mettre à jour mon plan"}</button>
+      ${first? `<button class="btn btn-ghost" id="ob-skip">Plus tard</button>`:""}
+    </div>`);
+  let metab = p.metab||"normal", days = p.days||3;
+  document.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{
+    metab=b.dataset.mt;
+    document.querySelectorAll("[data-mt]").forEach(x=>x.classList.toggle("on", x===b));
+  });
+  document.querySelectorAll("[data-dy]").forEach(b=>b.onclick=()=>{
+    days=parseInt(b.dataset.dy);
+    document.querySelectorAll("[data-dy]").forEach(x=>x.classList.toggle("on", x===b));
+  });
+  const skip = document.getElementById("ob-skip");
+  if(skip) skip.onclick=()=>{ db.profile = {skipped:true}; save(); closeSheet(); render(); };
+  document.getElementById("ob-ok").onclick=()=>{
+    const g = id => parseFloat(document.getElementById(id).value);
+    const prof = {
+      name: document.getElementById("ob-name").value.trim() || "Champion",
+      sex: document.getElementById("ob-sex").value,
+      age: g("ob-age"), height: g("ob-height"),
+      weight: g("ob-weight"), goalWeight: g("ob-goal"),
+      metab, days
+    };
+    if(!prof.age || !prof.height || !prof.weight || !prof.goalWeight){ toast("Remplis âge, taille, poids et objectif"); return; }
+    db.profile = prof;
+    db.settings.name = prof.name;
+    db.settings.goal = prof.goalWeight;
+    const today = new Date().toISOString().slice(0,10);
+    db.weights = db.weights.filter(w=>w.date.slice(0,10)!==today);
+    db.weights.push({date:new Date().toISOString(), kg:prof.weight});
+    coachGoal = null;
+    save(); showPlan(true);
+  };
+}
+function showPlan(justCreated){
+  const pl = planFor(db.profile);
+  if(!pl){ closeSheet(); render(); return; }
+  const prog = COACH_PROGRAMS[pl.program];
+  const manquantes = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
+  const objectif = pl.aim==="masse" ? `prendre ${fmtKg(Math.abs(pl.diff))} kg de muscle`
+    : (pl.aim==="seche" ? `perdre ${fmtKg(Math.abs(pl.diff))} kg` : "te recomposer sans changer de poids");
+  openSheet(`<h3>${justCreated? "Ton plan est prêt 🎯" : "Mon plan"}</h3>
+    <p style="margin:0 0 14px; font-size:14px; color:var(--ink-soft);">Pour ${objectif}, voici ce que je te conseille — compte environ ${pl.semaines? pl.semaines+" semaines" : "quelques semaines"} à un rythme de ${pl.rythme}.</p>
+    <div class="tiles" style="margin-bottom:14px;">
+      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">kcal / jour</div></div>
+      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">protéines / jour</div></div>
+      <div class="tile"><div class="v">${pl.seances}</div><div class="u">séances / sem.</div></div>
+    </div>
+    <div class="card" style="background:var(--surface2); margin-bottom:14px;">
+      <div style="font-weight:800; margin-bottom:3px;">${esc(prog.title)}</div>
+      <div style="font-size:13px; color:var(--ink-soft);">${esc(coachDesc(pl.program))}</div>
+    </div>
+    <div style="font-size:12px; color:var(--ink-mute); margin-bottom:14px;">Estimations calculées à partir de ta taille, ton poids, ton âge et ton activité (formule Mifflin-St Jeor). Ajuste-les selon ce que dit la balance semaine après semaine.</div>
+    ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">Ajouter les ${manquantes.length} séances à mes programmes</button>`:""}
+    <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : "C'est parti"}</button>`);
+  const add = document.getElementById("pl-add");
+  if(add) add.onclick=()=>{ addCoachProgram(pl.program); closeSheet(); render(); toast("Séances ajoutées ✓"); };
+  document.getElementById("pl-ok").onclick=()=>{ closeSheet(); render(); };
+}
 function addCoachProgram(goal){
   COACH_PROGRAMS[goal].templates.forEach(t=>{
     if(db.templates.some(x=>x.name===t.name)) return;
@@ -315,7 +441,7 @@ function coachDesc(goal){
   const delta = cur!==null? Math.round((obj-cur)*10)/10 : null;
   if(goal==="masse"){
     let p = "3 séances axées charges lourdes (6-10 reps) et repos longs, 3 à 4 fois par semaine en alternant. Côté assiette : ~300-500 kcal au-dessus de tes besoins et 1,6-2 g de protéines par kilo.";
-    if(delta!==null && delta>0) p = `Objectif +${fmtKg(delta)} kg (${fmtKg(cur)} → ${fmtKg(obj)} kg), soit environ ${Math.max(1,Math.round(delta/0.5))} mois à +0,5 kg/mois propre. `+p;
+    if(delta!==null && delta>0) p = `Objectif +${fmtKg(delta)} kg (${fmtKg(cur)} → ${fmtKg(obj)} kg), soit environ ${Math.max(2,Math.round(delta/0.375))} semaines à un rythme propre. `+p;
     return p;
   }
   if(goal==="seche"){
@@ -925,10 +1051,15 @@ function renderSeance(app){
   const verdict = weightVerdict();
   const vColor = {good:"var(--good)", warn:"var(--accent)", bad:"var(--bad)", mute:"var(--ink-mute)"}[verdict.tone];
   const allDone = db.habits.length && checked.length>=db.habits.length;
-  const protTarget = Math.round((currentWeight()||74)*1.9);
+  const protTarget = proteinTarget();
+  const plan = planFor(db.profile);
   const protNow = dayProt(todayKey);
   const protPct = Math.min(100, protNow/protTarget*100);
   document.getElementById("eat-card").innerHTML = `
+    ${plan? `<div class="row" style="justify-content:space-between; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid var(--border);">
+      <div><div style="font-size:19px; font-weight:800; font-variant-numeric:tabular-nums;">${plan.kcal} <span style="font-size:12px; font-weight:600; color:var(--ink-mute);">kcal / jour</span></div>
+      <div style="font-size:12px; color:var(--ink-mute);">${plan.aim==="masse"?"pour prendre du muscle":(plan.aim==="seche"?"pour perdre du gras":"pour te recomposer")}</div></div>
+      <button class="btn btn-sm" id="eat-plan">Mon plan</button></div>`:""}
     <div style="font-size:13px; color:${vColor}; font-weight:600; margin-bottom:12px;">${esc(verdict.txt)}</div>
     <div class="row" style="justify-content:space-between; margin-bottom:5px;">
       <span class="label">Protéines aujourd'hui</span>
@@ -957,6 +1088,8 @@ function renderSeance(app){
         </button>${sub}</div>`;
     }).join("")}</div>
     ${allDone? `<div style="font-size:13px; color:var(--good); font-weight:700; margin-top:10px;">Journée parfaite — c'est comme ça qu'on prend 💪</div>`:""}`;
+  const planBtn = document.getElementById("eat-plan");
+  if(planBtn) planBtn.onclick = ()=>showPlan(false);
   document.querySelectorAll("[data-hb]").forEach(b=>b.onclick=()=>{
     const i = parseInt(b.dataset.hb);
     const arr = db.habitLog[todayKey] || [];
@@ -1365,6 +1498,7 @@ function openTplEditor(id){
 function openSettings(){
   openSheet(`<h3>Réglages</h3>
     <div class="stack">
+      <button class="btn" id="st-profile">👤 Mon profil et mon plan</button>
       <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
       <input type="text" id="st-name" value="${esc(db.settings.name)}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
@@ -1400,6 +1534,7 @@ function openSettings(){
   });
   overlay.addEventListener("click", function once(e){ if(e.target===overlay){ applySettings(); render(); overlay.removeEventListener("click", once); } });
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); render(); };
+  document.getElementById("st-profile").onclick=()=>openOnboarding(false);
   const ago = ts => {
     if(!ts) return "jamais";
     const m = Math.round((Date.now()-Number(ts))/60000);
@@ -1906,6 +2041,7 @@ render = function(){ _origRender(); syncWakeLock(); };
 
 /* ================= INIT ================= */
 render();
+if(!db.profile) setTimeout(()=>{ if(!db.profile) openOnboarding(true); }, 400);
 
 /* récupération : si IndexedDB détient une version plus récente (ou que localStorage a été vidé) */
 (async ()=>{
