@@ -362,6 +362,20 @@ const ALTS = {
   "Roulette abdominale":["Gainage","Crunch"],
   "Planche latérale":["Gainage","Crunch"]
 };
+/* exercices où la charge est ton propre corps : le champ kg sert au lest éventuel */
+function estPoidsDuCorps(ex){ return ex && (ex.equip==="Poids du corps" || ex.equip==="Barre fixe"); }
+function serieEchauffement(exId, reps){
+  const ex = getEx(exId);
+  const rng = parseReps(reps);
+  const cible = rng ? rng.lo : 8;
+  if(estPoidsDuCorps(ex)){
+    /* impossible d'alléger : on fait moins de répétitions, pas plus */
+    return {w:"", r:Math.max(3, Math.round(cible/2)), done:false, warm:true};
+  }
+  const last = lastPerf(exId);
+  const w = last ? Math.max(0, Math.round(Math.max(...last.sets.map(s=>s.w||0))*0.5/2.5)*2.5) : "";
+  return {w, r:Math.min(12, cible+4), done:false, warm:true};
+}
 function altsFor(exId){
   const ex = getEx(exId);
   const names = ALTS[ex.name] || [];
@@ -2060,9 +2074,7 @@ function startWorkout(tplId){
   }) : [];
   /* série d'échauffement sur le premier exercice */
   if(entries.length){
-    const w0 = entries[0].sets[0] && entries[0].sets[0].w;
-    const wu = w0 ? Math.max(0, Math.round(w0*0.5/2.5)*2.5) : "";
-    entries[0].sets.unshift({w:wu, r:10, done:false, warm:true});
+    entries[0].sets.unshift(serieEchauffement(entries[0].exId, entries[0].target && entries[0].target.reps));
   }
   db.active = {name: tpl? tpl.name : "Séance libre", templateId:tplId, start:Date.now(), entries};
   save(); render();
@@ -2106,7 +2118,7 @@ function renderActive(app){
       <div style="margin-bottom:8px;">${musclesHtml(ex.name)}</div>
       <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
-      <div class="set-cols"><span></span><span>kg</span><span>reps</span><span>✓</span></div>
+      <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)" : "kg"}</span><span>reps</span><span>✓</span></div>
       <div class="sets"></div>
       <div class="row">
         <button class="btn btn-sm btn-ghost grow" data-act="addset">＋ série</button>
@@ -2119,7 +2131,7 @@ function renderActive(app){
       row.className = "set-row"+(st.done?" done":"")+(st.warm?" warm":"");
       const num = st.warm ? "Éch." : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
       row.innerHTML = `<div class="n">${num}</div>
-        <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="kg" value="${st.w!==""?st.w:""}">
+        <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="${estPoidsDuCorps(ex)? "0" : "kg"}" value="${st.w!==""?st.w:""}">
         <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
         <button class="ck">${st.done?"✓":"○"}</button>`;
       const [wIn, rIn] = row.querySelectorAll("input");
@@ -2254,9 +2266,14 @@ function openSwap(ei, fromInjury){
     en.exId = newId;
     en.sets.forEach((s,i)=>{
       if(s.done) return;
+      if(s.warm){
+        const e = serieEchauffement(newId, en.target && en.target.reps);
+        s.w = e.w; s.r = e.r;
+        return;
+      }
       const ls = last && last.sets[Math.min(i, last.sets.length-1)];
-      s.w = s.warm && ls ? Math.max(0, Math.round((ls.w||0)*0.5/2.5)*2.5) : (ls? ls.w : "");
-      if(ls && !s.warm) s.r = ls.r;
+      s.w = ls? ls.w : "";
+      if(ls) s.r = ls.r;
     });
     save(); closeSheet(); render();
     toast("Remplacé par "+getEx(newId).name);
