@@ -58,6 +58,16 @@
   .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface2); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2); border-radius:99px; padding:3px 9px; white-space:nowrap;}
+  .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
+  .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
+  .ob-steps i.on{background:var(--accent);}
+  .start-card{border-color:var(--accent-deep) !important;}
+  .start-step{display:flex; gap:10px; align-items:flex-start; margin-bottom:9px; font-size:13.5px; color:var(--ink-soft);}
+  .start-step b{color:var(--ink);}
+  .start-step .num{flex:none; width:21px; height:21px; border-radius:50%; background:var(--surface2); color:var(--ink-mute);
+    font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .start-step.done .num{background:var(--good); color:#0d1a12;}
+  .start-step.done b{color:var(--ink-mute); text-decoration:line-through;}
   .slider{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:99px; padding:0; border:none;
     background:linear-gradient(90deg, var(--accent-deep), var(--accent)); outline:none;}
   .slider::-webkit-slider-thumb{-webkit-appearance:none; width:26px; height:26px; border-radius:50%; background:var(--accent);
@@ -643,148 +653,195 @@ function proteinTarget(){
   if(pl) return pl.prot;
   return Math.round((currentWeight()||74)*1.9);
 }
-function openOnboarding(first, brouillon){
-  const p = brouillon || db.profile || {};
-  openSheet(`<h3>${first? "Bienvenue sur Tonnage 👋" : "Mon profil"}</h3>
-    ${first? `<p style="margin:0 0 14px; font-size:13.5px; color:var(--ink-soft);">Quelques infos et je te prépare un plan sur mesure : besoins caloriques, protéines et programme adapté.</p>`:""}
-    <div class="stack">
-      <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
-      <input id="ob-name" value="${esc(p.name||db.settings.name||"")}" placeholder="Ton prénom" maxlength="20"></div>
-      <div class="row">
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Sexe</span>
-        <select id="ob-sex"><option value="h" ${p.sex!=="f"?"selected":""}>Homme</option><option value="f" ${p.sex==="f"?"selected":""}>Femme</option></select></div>
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Âge</span>
-        <input type="number" inputmode="numeric" id="ob-age" value="${p.age||""}" placeholder="28"></div>
-      </div>
-      <div class="row">
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Taille (cm)</span>
-        <input type="number" inputmode="numeric" id="ob-height" value="${p.height||""}" placeholder="188"></div>
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Poids (kg)</span>
-        <input type="number" inputmode="decimal" step="0.1" id="ob-weight" value="${p.weight||currentWeight()||""}" placeholder="74"></div>
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Objectif (kg)</span>
-        <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${p.goalWeight||db.settings.goal||""}" placeholder="80"></div>
-      </div>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Ton objectif</span>
+function openOnboarding(first, brouillon, depart){
+  const base = brouillon || db.profile || {};
+  const d = {
+    name: base.name || db.settings.name || "",
+    sex: base.sex || "h",
+    age: base.age || "",
+    height: base.height || "",
+    weight: base.weight || currentWeight() || "",
+    goalWeight: base.goalWeight || (db.settings.goal>0 ? db.settings.goal : ""),
+    aim: base.aim || "masse",
+    pace: base.pace || "modere",
+    protPerKg: base.protPerKg || null,      /* null = suit la valeur conseillée */
+    metab: base.metab || "normal",
+    days: base.days || 3,
+    injuries: (base.injuries||[]).slice(),
+    avance: !!brouillon && !!base.avance
+  };
+  const perKg = ()=> d.protPerKg || aimOf(d.aim).prot;
+  let step = depart || 1;
+  const TOTAL = 3;
+
+  const lire = ()=>{
+    const v = id => { const el=document.getElementById(id); return el? el.value : null; };
+    if(v("ob-name")!==null) d.name = v("ob-name").trim();
+    if(v("ob-sex")!==null) d.sex = v("ob-sex");
+    if(v("ob-age")!==null) d.age = parseFloat(v("ob-age"));
+    if(v("ob-height")!==null) d.height = parseFloat(v("ob-height"));
+    if(v("ob-weight")!==null) d.weight = parseFloat(v("ob-weight"));
+    if(v("ob-goal")!==null) d.goalWeight = parseFloat(v("ob-goal"));
+  };
+
+  function draw(){
+    const barre = `<div class="ob-steps">${[1,2,3].map(n=>`<i class="${n<=step?'on':''}"></i>`).join("")}</div>
+      <div class="label" style="margin-bottom:10px;">Étape ${step} sur ${TOTAL}</div>`;
+    let corps = "", titre = "";
+
+    if(step===1){
+      titre = first? "Bienvenue sur Tonnage 👋" : "Qui es-tu ?";
+      corps = `
+        ${first? `<p style="margin:0 0 14px; font-size:13.5px; color:var(--ink-soft); line-height:1.55;">Trois questions rapides et je te prépare un plan sur mesure : calories, protéines et programme d'entraînement.</p>`:""}
+        <div class="stack">
+          <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
+          <input id="ob-name" value="${esc(d.name)}" placeholder="Ton prénom" maxlength="20"></div>
+          <div class="row">
+            <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Sexe</span>
+            <select id="ob-sex"><option value="h" ${d.sex!=="f"?"selected":""}>Homme</option><option value="f" ${d.sex==="f"?"selected":""}>Femme</option></select></div>
+            <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Âge</span>
+            <input type="number" inputmode="numeric" id="ob-age" value="${d.age||""}" placeholder="28"></div>
+          </div>
+          <div class="row">
+            <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Taille (cm)</span>
+            <input type="number" inputmode="numeric" id="ob-height" value="${d.height||""}" placeholder="175"></div>
+            <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Poids (kg)</span>
+            <input type="number" inputmode="decimal" step="0.1" id="ob-weight" value="${d.weight||""}" placeholder="70"></div>
+          </div>
+          <div style="font-size:12px; color:var(--ink-mute); line-height:1.5;">Ces informations servent uniquement à calculer tes besoins. Elles restent dans ton téléphone.</div>
+        </div>`;
+    }
+
+    if(step===2){
+      titre = "Ton objectif";
+      const warn = aimWarning(d.aim, d.weight, d.goalWeight);
+      corps = `<div class="stack">
         <div class="chips" id="ob-aim">
-          ${AIMS.map(a=>`<button class="chip ${(p.aim||"masse")===a.id?"on":""}" data-aim="${a.id}">${a.label}</button>`).join("")}
+          ${AIMS.map(a=>`<button class="chip ${d.aim===a.id?"on":""}" data-aim="${a.id}">${a.label}</button>`).join("")}
         </div>
-        <div id="ob-aimdesc" style="font-size:12px; color:var(--ink-mute); margin-top:6px;"></div>
-        <button class="chip" id="ob-aiminfo" style="margin-top:7px; padding:5px 12px; font-size:12px;">ⓘ Tout savoir sur cet objectif</button>
-        <div id="ob-aimwarn"></div></div>
-      <div id="ob-pacebox"><span class="label" style="display:block; margin-bottom:6px;">À quelle vitesse</span>
-        <div class="chips" id="ob-pace">
-          ${PACES.map(([v,l])=>`<button class="chip ${(p.pace||"modere")===v?"on":""}" data-pace="${v}">${l}</button>`).join("")}
-        </div></div>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Protéines par jour</span>
-        <input type="range" min="1.2" max="2.5" step="0.1" id="ob-prot" class="slider">
-        <div class="row" style="justify-content:space-between; margin-top:5px;">
-          <span id="ob-protval" style="font-size:13.5px; font-weight:700;"></span>
-          <button class="chip" id="ob-protreset" style="padding:4px 10px; font-size:11.5px;">Valeur conseillée</button>
-        </div>
-        <div id="ob-prothint" style="font-size:11.5px; color:var(--ink-mute); margin-top:5px; line-height:1.5;"></div></div>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Ton métabolisme</span>
-        <div class="chips" id="ob-metab">
-          ${[["rapide","Rapide — je peine à prendre du poids"],["normal","Normal"],["lent","Lent — je prends facilement"]].map(([v,l])=>
-            `<button class="chip ${(p.metab||"normal")===v?"on":""}" data-mt="${v}">${l}</button>`).join("")}
-        </div></div>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Séances de sport par semaine</span>
-        <div class="chips" id="ob-days">
-          ${[2,3,4,5,6].map(n=>`<button class="chip ${(p.days||3)===n?"on":""}" data-dy="${n}">${n}</button>`).join("")}
-        </div></div>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Zones sensibles ou blessées</span>
-        <div class="chips" id="ob-inj">
-          ${INJURIES.map(i=>`<button class="chip ${(p.injuries||[]).includes(i.id)?"on":""}" data-inj="${i.id}">${i.label}</button>`).join("")}
-        </div>
-        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px; line-height:1.5;">L'app signalera les exercices à risque et proposera des variantes. Ces conseils sont généraux : en cas de douleur, arrête et consulte un professionnel de santé.</div></div>
-      <button class="btn btn-accent" id="ob-ok">${first? "Créer mon plan" : "Mettre à jour mon plan"}</button>
-      ${first? `<button class="btn btn-ghost" id="ob-skip">Plus tard</button>`:""}
-    </div>`);
-  let metab = p.metab||"normal", days = p.days||3, injuries = (p.injuries||[]).slice();
-  let aim = p.aim||"masse", pace = p.pace||"modere", perKg = p.protPerKg || aimOf(aim).prot;
-  const protSlider = document.getElementById("ob-prot");
-  const poids = ()=> parseFloat(document.getElementById("ob-weight").value) || p.weight || 75;
-  const refreshProt = ()=>{
-    protSlider.value = perKg;
-    const g = Math.round(poids()*perKg);
-    const reco = aimOf(aim).prot;
-    document.getElementById("ob-protval").textContent = `${perKg.toLocaleString("fr-FR")} g/kg · ${g} g par jour`;
-    let hint;
-    if(perKg < reco-0.15) hint = `En dessous des ${reco.toLocaleString("fr-FR")} g/kg conseillés pour cet objectif — tu risques de laisser du muscle sur la table.`;
-    else if(perKg > reco+0.3) hint = `Au-delà de ${reco.toLocaleString("fr-FR")} g/kg, le bénéfice supplémentaire est minime : ce n'est ni dangereux ni utile, mais ça remplit vite l'estomac.`;
-    else hint = `C'est la zone conseillée pour « ${aimOf(aim).label.toLowerCase()} ». Répartis-les sur 3 à 4 prises dans la journée.`;
-    document.getElementById("ob-prothint").textContent = hint;
-  };
-  const refreshAim = ()=>{
-    document.getElementById("ob-aimdesc").textContent = aimOf(aim).desc;
-    document.getElementById("ob-pacebox").style.display = PACE_RATE[aim] ? "block" : "none";
-    const w = parseFloat(document.getElementById("ob-weight").value);
-    const g = parseFloat(document.getElementById("ob-goal").value);
-    const warn = aimWarning(aim, w, g);
-    document.getElementById("ob-aimwarn").innerHTML = warn
-      ? `<div class="inj-note" style="margin:9px 0 0;">⚠️ ${esc(warn)}</div>` : "";
-    refreshProt();
-  };
-  const snapshot = ()=>{
-    const v = id => document.getElementById(id).value;
-    const n = id => parseFloat(v(id));
-    return {name:v("ob-name"), sex:v("ob-sex"), age:n("ob-age"), height:n("ob-height"),
-            weight:n("ob-weight"), goalWeight:n("ob-goal"), metab, days, injuries, aim, pace, protPerKg:perKg};
-  };
-  document.getElementById("ob-aiminfo").onclick = ()=>{
-    const brouillon = snapshot();
-    openAimInfo(aim, ()=>openOnboarding(first, brouillon));
-  };
-  document.getElementById("ob-goal").addEventListener("input", refreshAim);
-  document.getElementById("ob-weight").addEventListener("input", refreshAim);
-  document.querySelectorAll("[data-aim]").forEach(b=>b.onclick=()=>{
-    const ancienReco = aimOf(aim).prot;
-    aim = b.dataset.aim;
-    document.querySelectorAll("[data-aim]").forEach(x=>x.classList.toggle("on", x===b));
-    if(Math.abs(perKg-ancienReco) < 0.05) perKg = aimOf(aim).prot;   /* suit la reco si l'utilisateur n'a rien touché */
-    refreshAim();
-  });
-  document.querySelectorAll("[data-pace]").forEach(b=>b.onclick=()=>{
-    pace = b.dataset.pace;
-    document.querySelectorAll("[data-pace]").forEach(x=>x.classList.toggle("on", x===b));
-  });
-  protSlider.oninput = ()=>{ perKg = Math.round(parseFloat(protSlider.value)*10)/10; refreshProt(); };
-  document.getElementById("ob-protreset").onclick = ()=>{ perKg = aimOf(aim).prot; refreshProt(); };
-  document.getElementById("ob-weight").addEventListener("input", refreshProt);
-  refreshAim();
-  document.querySelectorAll("[data-inj]").forEach(b=>b.onclick=()=>{
-    const id = b.dataset.inj;
-    if(injuries.includes(id)) injuries = injuries.filter(x=>x!==id); else injuries.push(id);
-    b.classList.toggle("on", injuries.includes(id));
-  });
-  document.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{
-    metab=b.dataset.mt;
-    document.querySelectorAll("[data-mt]").forEach(x=>x.classList.toggle("on", x===b));
-  });
-  document.querySelectorAll("[data-dy]").forEach(b=>b.onclick=()=>{
-    days=parseInt(b.dataset.dy);
-    document.querySelectorAll("[data-dy]").forEach(x=>x.classList.toggle("on", x===b));
-  });
-  const skip = document.getElementById("ob-skip");
-  if(skip) skip.onclick=()=>{ db.profile = {skipped:true}; save(); closeSheet(); render(); };
-  document.getElementById("ob-ok").onclick=()=>{
-    const g = id => parseFloat(document.getElementById(id).value);
-    const prof = {
-      name: document.getElementById("ob-name").value.trim() || "Champion",
-      sex: document.getElementById("ob-sex").value,
-      age: g("ob-age"), height: g("ob-height"),
-      weight: g("ob-weight"), goalWeight: g("ob-goal"),
-      metab, days, injuries, aim, pace, protPerKg: perKg
+        <div style="font-size:13px; color:var(--ink-soft); line-height:1.5;">${esc(aimOf(d.aim).desc)}</div>
+        <button class="chip" id="ob-aiminfo" style="align-self:flex-start; padding:5px 12px; font-size:12px;">ⓘ Tout savoir sur cet objectif</button>
+        <div><span class="label" style="display:block; margin-bottom:5px;">Poids que tu vises (kg)</span>
+        <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${d.goalWeight||""}" placeholder="${d.weight||70}"></div>
+        ${warn? `<div class="inj-note" style="margin:0;">⚠️ ${esc(warn)}</div>`:""}
+      </div>`;
+    }
+
+    if(step===3){
+      titre = "Ton entraînement";
+      corps = `<div class="stack">
+        <div><span class="label" style="display:block; margin-bottom:6px;">Séances de sport par semaine</span>
+          <div class="chips" id="ob-days">
+            ${[2,3,4,5,6].map(n=>`<button class="chip ${d.days===n?"on":""}" data-dy="${n}">${n}</button>`).join("")}
+          </div>
+          <div style="font-size:12px; color:var(--ink-mute); margin-top:6px;">Sois réaliste : mieux vaut 3 séances tenues que 5 abandonnées.</div></div>
+        ${d.avance ? `
+          <div><span class="label" style="display:block; margin-bottom:6px;">Ton métabolisme</span>
+            <div class="chips" id="ob-metab">
+              ${[["rapide","Rapide — je peine à prendre du poids"],["normal","Normal"],["lent","Lent — je prends facilement"]].map(([v,l])=>
+                `<button class="chip ${d.metab===v?"on":""}" data-mt="${v}">${l}</button>`).join("")}
+            </div></div>
+          ${PACE_RATE[d.aim] ? `<div><span class="label" style="display:block; margin-bottom:6px;">À quelle vitesse</span>
+            <div class="chips" id="ob-pace">
+              ${PACES.map(([v,l])=>`<button class="chip ${d.pace===v?"on":""}" data-pace="${v}">${l}</button>`).join("")}
+            </div></div>`:""}
+          <div><span class="label" style="display:block; margin-bottom:6px;">Protéines par jour</span>
+            <input type="range" min="1.2" max="2.5" step="0.1" id="ob-prot" class="slider" value="${perKg()}">
+            <div class="row" style="justify-content:space-between; margin-top:5px;">
+              <span id="ob-protval" style="font-size:13.5px; font-weight:700;"></span>
+              <button class="chip" id="ob-protreset" style="padding:4px 10px; font-size:11.5px;">Valeur conseillée</button>
+            </div>
+            <div id="ob-prothint" style="font-size:11.5px; color:var(--ink-mute); margin-top:5px; line-height:1.5;"></div></div>
+          <div><span class="label" style="display:block; margin-bottom:6px;">Zones sensibles ou blessées</span>
+            <div class="chips" id="ob-inj">
+              ${INJURIES.map(i=>`<button class="chip ${d.injuries.includes(i.id)?"on":""}" data-inj="${i.id}">${i.label}</button>`).join("")}
+            </div>
+            <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px; line-height:1.5;">L'app signalera les exercices à risque et proposera des variantes. Ces conseils sont généraux : en cas de douleur, arrête et consulte un professionnel de santé.</div></div>
+        ` : `<button class="btn btn-ghost" id="ob-plus" style="width:100%;">⚙︎ Affiner mon plan (facultatif)</button>
+             <div style="font-size:12px; color:var(--ink-mute); line-height:1.5;">Métabolisme, vitesse de progression, dose de protéines et blessures. Sans ça, j'utilise les valeurs conseillées pour ton objectif.</div>`}
+      </div>`;
+    }
+
+    openSheet(`${barre}<h3>${titre}</h3>${corps}
+      <div class="row" style="margin-top:18px;">
+        ${step>1? `<button class="btn" id="ob-prev" style="flex:0 0 auto; padding-inline:18px;">Retour</button>`:""}
+        <button class="btn btn-accent grow" id="ob-next">${step<TOTAL? "Suivant" : "Créer mon plan"}</button>
+      </div>
+      ${(first && step===1)? `<button class="btn btn-ghost" id="ob-skip" style="width:100%; margin-top:8px;">Plus tard</button>`:""}`);
+
+    /* --- câblage --- */
+    document.querySelectorAll("[data-aim]").forEach(b=>b.onclick=()=>{
+      lire();
+      const ancienne = aimOf(d.aim).prot;
+      d.aim = b.dataset.aim;
+      if(d.protPerKg && Math.abs(d.protPerKg-ancienne)<0.05) d.protPerKg = null;
+      draw();
+    });
+    const info = document.getElementById("ob-aiminfo");
+    if(info) info.onclick = ()=>{ lire(); openAimInfo(d.aim, draw); };
+    const goal = document.getElementById("ob-goal");
+    if(goal) goal.oninput = ()=>{ lire(); const w=document.getElementById("ob-aimwarnlive"); if(w) w.remove(); };
+    document.querySelectorAll("[data-dy]").forEach(b=>b.onclick=()=>{ d.days=parseInt(b.dataset.dy); draw(); });
+    document.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{ d.metab=b.dataset.mt; draw(); });
+    document.querySelectorAll("[data-pace]").forEach(b=>b.onclick=()=>{ d.pace=b.dataset.pace; draw(); });
+    document.querySelectorAll("[data-inj]").forEach(b=>b.onclick=()=>{
+      const id=b.dataset.inj;
+      d.injuries = d.injuries.includes(id)? d.injuries.filter(x=>x!==id) : d.injuries.concat(id);
+      b.classList.toggle("on", d.injuries.includes(id));
+    });
+    const plus = document.getElementById("ob-plus");
+    if(plus) plus.onclick = ()=>{ d.avance = true; draw(); };
+
+    const slider = document.getElementById("ob-prot");
+    if(slider){
+      const majProt = ()=>{
+        const kg = d.weight || 75;
+        const val = perKg();
+        slider.value = val;
+        const reco = aimOf(d.aim).prot;
+        document.getElementById("ob-protval").textContent = `${val.toLocaleString("fr-FR")} g/kg · ${Math.round(kg*val)} g par jour`;
+        let hint;
+        if(val < reco-0.15) hint = `En dessous des ${reco.toLocaleString("fr-FR")} g/kg conseillés pour cet objectif — tu risques de laisser du muscle sur la table.`;
+        else if(val > reco+0.3) hint = `Au-delà de ${reco.toLocaleString("fr-FR")} g/kg, le bénéfice supplémentaire est minime : ce n'est ni dangereux ni utile, mais ça remplit vite l'estomac.`;
+        else hint = `C'est la zone conseillée pour « ${aimOf(d.aim).label.toLowerCase()} ». Répartis-les sur 3 à 4 prises dans la journée.`;
+        document.getElementById("ob-prothint").textContent = hint;
+      };
+      slider.oninput = ()=>{ d.protPerKg = Math.round(parseFloat(slider.value)*10)/10; majProt(); };
+      document.getElementById("ob-protreset").onclick = ()=>{ d.protPerKg = null; majProt(); };
+      majProt();
+    }
+
+    const skip = document.getElementById("ob-skip");
+    if(skip) skip.onclick = ()=>{ db.profile = {skipped:true}; save(); closeSheet(); render(); };
+    const prev = document.getElementById("ob-prev");
+    if(prev) prev.onclick = ()=>{ lire(); step--; draw(); };
+
+    document.getElementById("ob-next").onclick = ()=>{
+      lire();
+      if(step===1){
+        if(!(d.age>0) || !(d.height>0) || !(d.weight>0)){ toast("Remplis âge, taille et poids"); return; }
+        step=2; draw(); return;
+      }
+      if(step===2){
+        if(!(d.goalWeight>0)){ toast("Indique le poids que tu vises"); return; }
+        step=3; draw(); return;
+      }
+      /* validation finale */
+      db.profile = {
+        name: d.name || "Champion", sex: d.sex, age: d.age, height: d.height,
+        weight: d.weight, goalWeight: d.goalWeight, aim: d.aim, pace: d.pace,
+        protPerKg: perKg(), metab: d.metab, days: d.days, injuries: d.injuries, avance: d.avance
+      };
+      db.settings.name = db.profile.name;
+      db.settings.goal = d.goalWeight;
+      const today = new Date().toISOString().slice(0,10);
+      db.weights = db.weights.filter(w=>w.date.slice(0,10)!==today);
+      db.weights.push({date:new Date().toISOString(), kg:d.weight});
+      coachGoal = null;
+      save(); showPlan(true);
     };
-    if(!prof.age || !prof.height || !prof.weight || !prof.goalWeight){ toast("Remplis âge, taille, poids et objectif"); return; }
-    db.profile = prof;
-    db.settings.name = prof.name;
-    db.settings.goal = prof.goalWeight;
-    const today = new Date().toISOString().slice(0,10);
-    db.weights = db.weights.filter(w=>w.date.slice(0,10)!==today);
-    db.weights.push({date:new Date().toISOString(), kg:prof.weight});
-    coachGoal = null;
-    save(); showPlan(true);
-  };
+  }
+  draw();
 }
 function showPlan(justCreated){
   const pl = planFor(db.profile);
@@ -1548,6 +1605,7 @@ function renderSeance(app){
         <div><div class="v">${(()=>{const k=week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s)),0)+cs.kcal; return k? k+" kcal":"—";})()}</div><div class="u">brûlées${cs.km? " (dont "+fmtKg(cs.km)+" km)":""}</div></div>
       </div>
     </div>
+    <div id="start-zone"></div>
     <div class="section-t">${db.settings.goal>0 ? "Manger pour "+fmtKg(db.settings.goal)+" kg" : "Mon alimentation"}</div>
     <div class="card" id="eat-card"></div>
     <div class="section-t">Mes séances</div>
@@ -1557,6 +1615,26 @@ function renderSeance(app){
     <div class="card" id="cardio-card"></div>`;
   wireTopbar();
   document.getElementById("bilan-btn").onclick=openBilan;
+
+  /* carte de démarrage : visible tant que la première séance n'est pas faite */
+  const profilOk = !!planFor(db.profile);
+  const aDesSeances = db.templates.length>0;
+  const aTermine = db.history.length>0;
+  const startZone = document.getElementById("start-zone");
+  if(!aTermine){
+    const etape = (ok, num, txt, act) => `<div class="start-step ${ok?"done":""}">
+      <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b>${act&&!ok? `<div style="margin-top:5px;"><button class="btn btn-accent btn-sm" id="${act}">${act==="sc-profil"?"Renseigner mon profil":(act==="sc-prog"?"Ajouter mes séances":"Lancer ma séance")}</button></div>`:""}</div></div>`;
+    const suivante = suggestedTemplate();
+    startZone.innerHTML = `<div class="section-t">Par où commencer</div>
+      <div class="card start-card">
+        ${etape(profilOk, 1, "Renseigner ton profil pour obtenir ton plan", !profilOk? "sc-profil":null)}
+        ${etape(aDesSeances, 2, "Choisir tes séances d'entraînement", (profilOk && !aDesSeances)? "sc-prog":null)}
+        ${etape(false, 3, "Faire ta première séance", (aDesSeances)? "sc-go":null)}
+      </div>`;
+    const bp = document.getElementById("sc-profil"); if(bp) bp.onclick=()=>openOnboarding(true);
+    const bg = document.getElementById("sc-prog");   if(bg) bg.onclick=()=>{ curTab="prog"; render(); };
+    const bl = document.getElementById("sc-go");     if(bl) bl.onclick=()=>{ if(suivante) startWorkout(suivante.id); };
+  }
   document.getElementById("hm-name").onclick=editName;
   const todayKey = new Date().toISOString().slice(0,10);
   const checked = db.habitLog[todayKey] || [];
