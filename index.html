@@ -247,7 +247,15 @@ const LIB = [
   ["Biceps","Curl barre","Barre","curl"],["Biceps","Curl haltères","Haltères","curl"],["Biceps","Curl marteau","Haltères","curl"],["Biceps","Curl pupitre","Barre","curl"],
   ["Triceps","Extension poulie","Poulie","cable"],["Triceps","Barre au front","Barre","bench"],["Triceps","Extension nuque haltère","Haltères","ohp"],
   ["Jambes","Squat","Barre","squat"],["Jambes","Presse à cuisses","Machine","machine"],["Jambes","Fentes","Haltères","lunge"],["Jambes","Leg curl","Machine","machine"],["Jambes","Leg extension","Machine","machine"],["Jambes","Soulevé de terre roumain","Barre","deadlift"],["Jambes","Hip thrust","Barre","bench"],["Jambes","Mollets debout","Machine","calf"],
-  ["Abdos","Crunch","Poids du corps","crunch"],["Abdos","Gainage","Poids du corps","plank"],["Abdos","Relevés de jambes","Barre fixe","pullup"],["Abdos","Crunch câble","Poulie","cable"]
+  ["Abdos","Crunch","Poids du corps","crunch"],["Abdos","Gainage","Poids du corps","plank"],["Abdos","Relevés de jambes","Barre fixe","pullup"],["Abdos","Crunch câble","Poulie","cable"],
+  /* machines et poulies les plus courantes en salle */
+  ["Pectoraux","Butterfly (pec deck)","Machine","machine"],["Pectoraux","Développé machine","Machine","machine"],["Pectoraux","Écartés poulie haute","Poulie","cable"],["Pectoraux","Développé couché à la Smith","Machine","bench"],
+  ["Dos","Tirage vertical prise neutre","Poulie","cable"],["Dos","Rowing machine","Machine","machine"],["Dos","Pull-over poulie","Poulie","cable"],["Dos","Haussements d'épaules","Haltères","dumbbell"],
+  ["Épaules","Élévations latérales poulie","Poulie","cable"],["Épaules","Développé machine épaules","Machine","machine"],["Épaules","Élévations frontales","Haltères","latraise"],
+  ["Biceps","Curl poulie basse","Poulie","cable"],["Biceps","Curl incliné haltères","Haltères","curl"],
+  ["Triceps","Extension poulie corde","Poulie","cable"],["Triceps","Extension triceps machine","Machine","machine"],["Triceps","Kickback poulie","Poulie","cable"],
+  ["Jambes","Hack squat","Machine","machine"],["Jambes","Fentes bulgares","Haltères","lunge"],["Jambes","Abducteurs machine","Machine","machine"],["Jambes","Adducteurs machine","Machine","machine"],["Jambes","Mollets assis","Machine","calf"],
+  ["Abdos","Roulette abdominale","Poids du corps","plank"],["Abdos","Planche latérale","Poids du corps","plank"]
 ].map((e,i)=>({id:"lib"+i, muscle:e[0], name:e[1], equip:e[2], icon:e[3]}));
 
 /* alternatives équivalentes, pour remplacer un exercice (machine prise, matériel manquant…) */
@@ -286,7 +294,30 @@ const ALTS = {
   "Crunch":["Relevés de jambes","Crunch câble","Gainage"],
   "Gainage":["Crunch","Relevés de jambes"],
   "Relevés de jambes":["Crunch","Gainage"],
-  "Crunch câble":["Crunch","Relevés de jambes"]
+  "Crunch câble":["Crunch","Relevés de jambes"],
+  "Butterfly (pec deck)":["Écartés poulie","Écartés poulie haute","Développé machine"],
+  "Développé machine":["Développé couché","Développé couché haltères","Butterfly (pec deck)"],
+  "Écartés poulie haute":["Écartés poulie","Butterfly (pec deck)"],
+  "Développé couché à la Smith":["Développé couché","Développé machine","Développé couché haltères"],
+  "Tirage vertical prise neutre":["Tirage vertical","Tractions","Rowing machine"],
+  "Rowing machine":["Rowing haltère","Tirage horizontal","Rowing barre"],
+  "Pull-over poulie":["Tirage vertical","Tractions"],
+  "Haussements d'épaules":["Face pull","Rowing barre"],
+  "Élévations latérales poulie":["Élévations latérales","Oiseau"],
+  "Développé machine épaules":["Développé haltères","Développé militaire"],
+  "Élévations frontales":["Élévations latérales","Développé haltères"],
+  "Curl poulie basse":["Curl haltères","Curl barre","Curl incliné haltères"],
+  "Curl incliné haltères":["Curl haltères","Curl poulie basse"],
+  "Extension poulie corde":["Extension poulie","Barre au front"],
+  "Extension triceps machine":["Extension poulie","Extension poulie corde"],
+  "Kickback poulie":["Extension poulie corde","Extension poulie"],
+  "Hack squat":["Presse à cuisses","Squat","Fentes bulgares"],
+  "Fentes bulgares":["Fentes","Presse à cuisses","Hip thrust"],
+  "Abducteurs machine":["Hip thrust","Fentes"],
+  "Adducteurs machine":["Fentes","Presse à cuisses"],
+  "Mollets assis":["Mollets debout"],
+  "Roulette abdominale":["Gainage","Crunch"],
+  "Planche latérale":["Gainage","Crunch"]
 };
 function altsFor(exId){
   const ex = getEx(exId);
@@ -308,37 +339,47 @@ const INJURIES = [
 const INJURY_RULES = {
   epaule: {
     "Développé militaire":{tip:"Debout barre au-dessus de la tête, c'est le mouvement le plus exigeant pour l'épaule.", alts:["Développé haltères","Élévations latérales"]},
-    "Développé couché":{tip:"Garde les coudes à 45° du buste plutôt qu'écartés à 90°, et ne descends pas la barre trop bas.", alts:["Développé couché haltères","Pompes"]},
-    "Dips":{tip:"Grande amplitude en bas = forte tension sur l'avant de l'épaule.", alts:["Extension poulie","Barre au front"]},
-    "Écartés poulie":{tip:"L'étirement en fin de course tire sur la capsule de l'épaule. Réduis l'amplitude.", alts:["Développé incliné haltères","Pompes"]},
-    "Tractions":{tip:"Prise large et descente complète sollicitent beaucoup l'épaule. Préfère une prise neutre.", alts:["Tirage vertical","Rowing haltère"]},
-    "Élévations latérales":{tip:"Ne monte pas au-delà de la hauteur d'épaule, pouce légèrement vers le haut.", alts:["Oiseau","Face pull"]}
+    "Développé couché":{tip:"Garde les coudes à 45° du buste plutôt qu'écartés à 90°, et ne descends pas la barre trop bas.", alts:["Développé machine","Développé couché haltères"]},
+    "Dips":{tip:"Grande amplitude en bas = forte tension sur l'avant de l'épaule.", alts:["Extension triceps machine","Extension poulie corde"]},
+    "Écartés poulie":{tip:"L'étirement en fin de course tire sur la capsule de l'épaule. Réduis l'amplitude.", alts:["Développé machine","Butterfly (pec deck)"]},
+    "Butterfly (pec deck)":{tip:"Règle le siège pour que les bras partent à hauteur de poitrine et ne recule pas trop loin en arrière.", alts:["Développé machine","Écartés poulie haute"]},
+    "Tractions":{tip:"Prise large et descente complète sollicitent beaucoup l'épaule. Préfère une prise neutre.", alts:["Tirage vertical prise neutre","Rowing machine"]},
+    "Élévations latérales":{tip:"Ne monte pas au-delà de la hauteur d'épaule, pouce légèrement vers le haut.", alts:["Élévations latérales poulie","Oiseau"]},
+    "Élévations latérales poulie":{tip:"La poulie garde une tension constante : reste sous la hauteur d'épaule et va lentement.", alts:["Oiseau","Face pull"]},
+    "Développé couché à la Smith":{tip:"La barre guidée impose une trajectoire fixe qui peut forcer l'épaule. Les haltères s'adaptent mieux.", alts:["Développé machine","Développé couché haltères"]}
   },
   dos: {
     "Soulevé de terre":{tip:"L'exercice le plus exigeant pour les lombaires. À éviter tant que ça tire.", alts:["Hip thrust","Leg curl"]},
     "Soulevé de terre roumain":{tip:"Dos strictement neutre, charge légère, amplitude réduite.", alts:["Leg curl","Hip thrust"]},
-    "Rowing barre":{tip:"Buste penché sans soutien = compression lombaire. Préfère un appui.", alts:["Tirage horizontal","Rowing haltère"]},
-    "Squat":{tip:"La barre sur le dos comprime la colonne. La presse soulage les lombaires.", alts:["Presse à cuisses","Leg extension"]},
-    "Développé militaire":{tip:"Debout, on cambre souvent les lombaires pour compenser. Fais-le assis, dossier calé.", alts:["Développé haltères"]},
-    "Fentes":{tip:"Garde le buste droit et gainé, charges légères.", alts:["Presse à cuisses","Leg extension"]}
+    "Rowing barre":{tip:"Buste penché sans soutien = compression lombaire. Préfère un appui poitrine.", alts:["Rowing machine","Tirage horizontal"]},
+    "Squat":{tip:"La barre sur le dos comprime la colonne. La presse et le hack squat soulagent les lombaires.", alts:["Presse à cuisses","Hack squat"]},
+    "Développé militaire":{tip:"Debout, on cambre souvent les lombaires pour compenser. Fais-le assis, dossier calé.", alts:["Développé machine épaules","Développé haltères"]},
+    "Fentes":{tip:"Garde le buste droit et gainé, charges légères.", alts:["Presse à cuisses","Abducteurs machine"]},
+    "Haussements d'épaules":{tip:"Charges lourdes debout = compression de la colonne. Reste modéré et gainé.", alts:["Face pull","Rowing machine"]},
+    "Roulette abdominale":{tip:"Exercice très exigeant pour les lombaires quand on manque de gainage.", alts:["Gainage","Planche latérale"]}
   },
   genou: {
     "Squat":{tip:"Ne descends pas plus bas que le parallèle, genoux dans l'axe des pieds.", alts:["Presse à cuisses","Hip thrust"]},
     "Fentes":{tip:"Le genou avant encaisse beaucoup. Amplitude courte, pas de genou qui dépasse la pointe du pied.", alts:["Hip thrust","Leg curl"]},
+    "Fentes bulgares":{tip:"Pied arrière surélevé : tout le poids passe sur le genou avant. À éviter tant que ça tire.", alts:["Hip thrust","Abducteurs machine"]},
+    "Hack squat":{tip:"Le guidage force une flexion profonde du genou. Reste au-dessus du parallèle.", alts:["Presse à cuisses","Hip thrust"]},
     "Leg extension":{tip:"Exercice qui cisaille la rotule quand elle est sensible. Charges légères, amplitude partielle.", alts:["Hip thrust","Leg curl"]},
     "Presse à cuisses":{tip:"Ne descends pas au-delà de 90° de flexion.", alts:["Hip thrust","Leg curl"]}
   },
   coude: {
-    "Barre au front":{tip:"Le nom dit tout : très exigeant pour le coude. La poulie répartit mieux la tension.", alts:["Extension poulie"]},
+    "Barre au front":{tip:"Le nom dit tout : très exigeant pour le coude. La poulie répartit mieux la tension.", alts:["Extension poulie corde","Extension triceps machine"]},
     "Curl barre":{tip:"La barre droite bloque les poignets et tire sur le coude. Prise neutre ou haltères.", alts:["Curl marteau","Curl haltères"]},
-    "Dips":{tip:"Forte tension sur le tendon du triceps au coude.", alts:["Extension poulie","Pompes"]},
-    "Extension nuque haltère":{tip:"Position qui étire fortement le tendon. Amplitude modérée.", alts:["Extension poulie"]}
+    "Dips":{tip:"Forte tension sur le tendon du triceps au coude.", alts:["Extension triceps machine","Extension poulie corde"]},
+    "Extension nuque haltère":{tip:"Position qui étire fortement le tendon. Amplitude modérée.", alts:["Extension poulie corde","Extension triceps machine"]},
+    "Kickback poulie":{tip:"Coude verrouillé en extension complète : va doucement et sans à-coups.", alts:["Extension triceps machine","Extension poulie corde"]}
   },
   poignet: {
     "Curl barre":{tip:"La barre droite force l'extension du poignet. Prise marteau = poignet neutre.", alts:["Curl marteau","Curl haltères"]},
     "Développé couché":{tip:"Poignets bien droits dans l'axe des avant-bras, barre basse dans la paume.", alts:["Développé couché haltères"]},
     "Pompes":{tip:"Poignet en extension maximale. Utilise des poignées ou des haltères au sol.", alts:["Développé couché haltères"]},
-    "Développé militaire":{tip:"Poignets neutres, prise pas trop large.", alts:["Développé haltères"]}
+    "Développé militaire":{tip:"Poignets neutres, prise pas trop large.", alts:["Développé machine épaules","Développé haltères"]},
+    "Curl poulie basse":{tip:"Avec la barre droite le poignet casse. Prends la corde ou une barre coudée.", alts:["Curl marteau","Curl haltères"]},
+    "Roulette abdominale":{tip:"Le poignet est en extension sous charge. À éviter tant que c'est sensible.", alts:["Gainage","Crunch"]}
   }
 };
 function injuryNote(exName){
@@ -1988,7 +2029,13 @@ const STRENGTH_REF = {
   "Curl barre":0.45, "Curl haltères":0.16, "Curl marteau":0.16, "Curl pupitre":0.35,
   "Extension poulie":0.4, "Barre au front":0.35, "Extension nuque haltère":0.15,
   "Squat":1.25, "Presse à cuisses":2.2, "Fentes":0.4, "Leg curl":0.55, "Leg extension":0.65, "Soulevé de terre roumain":1.1, "Hip thrust":1.3, "Mollets debout":1.0,
-  "Crunch câble":0.35
+  "Crunch câble":0.35, "Écartés poulie":0.35,
+  "Butterfly (pec deck)":0.55, "Développé machine":0.9, "Écartés poulie haute":0.35, "Développé couché à la Smith":0.95,
+  "Tirage vertical prise neutre":0.75, "Rowing machine":0.8, "Pull-over poulie":0.4, "Haussements d'épaules":0.5,
+  "Élévations latérales poulie":0.1, "Développé machine épaules":0.55, "Élévations frontales":0.12,
+  "Curl poulie basse":0.4, "Curl incliné haltères":0.14,
+  "Extension poulie corde":0.4, "Extension triceps machine":0.5, "Kickback poulie":0.12,
+  "Hack squat":1.4, "Fentes bulgares":0.28, "Abducteurs machine":0.6, "Adducteurs machine":0.6, "Mollets assis":0.7
 };
 const MP_MUSCLES = ["Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos"];
 function muscleProfile(){
