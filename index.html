@@ -16,7 +16,17 @@
     --ink:#f2ede6; --ink-soft:#b8afa2; --ink-mute:#7d7568;
     --accent:#e8a33d; --accent-deep:#c97f1e; --accent-ink:#1a1408;
     --good:#6fbf8b; --bad:#e06c5a;
+    --barre:rgba(19,17,16,.92);
+    --figure:none;
     --radius:14px;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f3ee; --surface:#ffffff; --surface2:#efeae1; --border:#ddd5c8;
+    --ink:#1d1a16; --ink-soft:#57503f; --ink-mute:#8b8272;
+    --accent:#c07617; --accent-deep:#9c5d0e; --accent-ink:#fffaf2;
+    --good:#2e8552; --bad:#c04430;
+    --barre:rgba(246,243,238,.94);
+    --figure:none;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
@@ -42,6 +52,7 @@
   .date-line{color:var(--ink-mute); font-size:13px; margin-bottom:18px; text-transform:capitalize;}
 
   .label{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-mute);}
+  .section-t i{font-style:normal; font-size:13px; margin-right:6px; vertical-align:-1px;}
   .section-t{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-mute); margin:26px 0 10px;}
 
   .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
@@ -91,7 +102,7 @@
   .tile .u{font-size:12px; color:var(--ink-mute); margin-top:2px;}
 
   /* tab bar */
-  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:rgba(19,17,16,.92); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);}
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--barre); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);}
   .tabbar-in{max-width:560px; margin:0 auto; display:flex;}
   .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 7px; color:var(--ink-mute); font-size:10.5px; font-weight:600; letter-spacing:.02em;}
   .tab svg{width:22px; height:22px;}
@@ -204,9 +215,10 @@
   .mp-bar{height:22px; border-radius:7px; background:var(--surface2); overflow:hidden;}
   .mp-fill{height:100%; border-radius:7px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px; font-size:12.5px; font-weight:800; color:rgba(0,0,0,.6); min-width:34px;}
   .mp-nodata{font-size:12px; color:var(--ink-mute); padding:0 9px; line-height:22px;}
-  .mp-bodies{display:flex; justify-content:center; gap:14px; margin:10px 0 16px;}
+  .mp-bodies{display:flex; justify-content:center; gap:14px; margin:10px 0 16px; border-radius:12px;}
+  :root[data-theme="light"] .mp-bodies{background:#1d1a17; padding:10px 6px;}
   .mp-fig{position:relative; width:46%; max-width:160px;}
-  .mp-fig img{width:100%; display:block;}
+  .mp-fig img{width:100%; display:block; filter:var(--figure);}
   .mp-fig svg{position:absolute; inset:0; width:100%; height:100%;}
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(78px + env(safe-area-inset-bottom)); z-index:80;
     background:var(--good); color:#0d1a12; font-weight:700; font-size:14px; padding:11px 18px; border-radius:12px;
@@ -224,6 +236,9 @@
   .pick-row{display:flex; align-items:center; gap:11px; padding:8px 4px; border-bottom:1px solid var(--border); font-weight:600;}
   .pick-row:active{background:var(--surface2);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
+  .mw{display:flex; flex-wrap:wrap; gap:4px 8px; margin-top:3px;}
+  .mw-item{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
+  .mw-item i{width:7px; height:7px; border-radius:50%; flex:none;}
   .ex-ico{width:46px; height:46px; flex:none; border-radius:11px; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink-soft);}
   .ex-ico svg{width:36px; height:36px; display:block;}
   .ex-ico.sm{width:38px; height:38px; border-radius:9px;}
@@ -352,6 +367,77 @@ function altsFor(exId){
   names.forEach(n=>{ const e = allEx().find(x=>x.name===n); if(e) out.push(e); });
   allEx().forEach(e=>{ if(e.muscle===ex.muscle && e.id!==exId && !out.some(o=>o.id===e.id)) out.push(e); });
   return out;
+}
+
+/* muscles sollicités : 3 = fort (rouge), 2 = moyen (orange), 1 = léger (vert) */
+const MUSCLE_WORK = {
+  "Développé couché":[["Pectoraux",3],["Triceps",2],["Épaules",2]],
+  "Développé incliné haltères":[["Pectoraux",3],["Épaules",2],["Triceps",2]],
+  "Développé couché haltères":[["Pectoraux",3],["Triceps",2],["Épaules",2]],
+  "Écartés poulie":[["Pectoraux",3],["Épaules",1]],
+  "Dips":[["Triceps",3],["Pectoraux",3],["Épaules",2]],
+  "Pompes":[["Pectoraux",3],["Triceps",2],["Épaules",2],["Abdos",1]],
+  "Butterfly (pec deck)":[["Pectoraux",3],["Épaules",1]],
+  "Développé machine":[["Pectoraux",3],["Triceps",2],["Épaules",2]],
+  "Écartés poulie haute":[["Pectoraux",3],["Épaules",1]],
+  "Développé couché à la Smith":[["Pectoraux",3],["Triceps",2],["Épaules",2]],
+  "Tractions":[["Dos",3],["Biceps",2],["Avant-bras",2]],
+  "Rowing barre":[["Dos",3],["Biceps",2],["Lombaires",2]],
+  "Tirage vertical":[["Dos",3],["Biceps",2]],
+  "Rowing haltère":[["Dos",3],["Biceps",2]],
+  "Tirage horizontal":[["Dos",3],["Biceps",2],["Trapèzes",1]],
+  "Soulevé de terre":[["Lombaires",3],["Ischio-jambiers",3],["Fessiers",3],["Dos",3],["Trapèzes",2]],
+  "Tirage vertical prise neutre":[["Dos",3],["Biceps",2]],
+  "Rowing machine":[["Dos",3],["Biceps",2]],
+  "Pull-over poulie":[["Dos",3],["Triceps",1]],
+  "Haussements d'épaules":[["Trapèzes",3],["Avant-bras",2]],
+  "Développé militaire":[["Épaules",3],["Triceps",2],["Abdos",1]],
+  "Développé haltères":[["Épaules",3],["Triceps",2]],
+  "Élévations latérales":[["Épaules",3]],
+  "Oiseau":[["Épaules",3],["Dos",2]],
+  "Face pull":[["Épaules",3],["Dos",2],["Trapèzes",1]],
+  "Élévations latérales poulie":[["Épaules",3]],
+  "Développé machine épaules":[["Épaules",3],["Triceps",2]],
+  "Élévations frontales":[["Épaules",3],["Pectoraux",1]],
+  "Curl barre":[["Biceps",3],["Avant-bras",2]],
+  "Curl haltères":[["Biceps",3],["Avant-bras",1]],
+  "Curl marteau":[["Biceps",3],["Avant-bras",3]],
+  "Curl pupitre":[["Biceps",3]],
+  "Curl poulie basse":[["Biceps",3],["Avant-bras",1]],
+  "Curl incliné haltères":[["Biceps",3]],
+  "Extension poulie":[["Triceps",3]],
+  "Barre au front":[["Triceps",3]],
+  "Extension nuque haltère":[["Triceps",3]],
+  "Extension poulie corde":[["Triceps",3]],
+  "Extension triceps machine":[["Triceps",3]],
+  "Kickback poulie":[["Triceps",3]],
+  "Squat":[["Quadriceps",3],["Fessiers",3],["Lombaires",2],["Abdos",2]],
+  "Presse à cuisses":[["Quadriceps",3],["Fessiers",2]],
+  "Fentes":[["Quadriceps",3],["Fessiers",3],["Abdos",1]],
+  "Leg curl":[["Ischio-jambiers",3],["Mollets",1]],
+  "Leg extension":[["Quadriceps",3]],
+  "Soulevé de terre roumain":[["Ischio-jambiers",3],["Fessiers",3],["Lombaires",2]],
+  "Hip thrust":[["Fessiers",3],["Ischio-jambiers",2]],
+  "Mollets debout":[["Mollets",3]],
+  "Hack squat":[["Quadriceps",3],["Fessiers",2]],
+  "Fentes bulgares":[["Quadriceps",3],["Fessiers",3]],
+  "Abducteurs machine":[["Fessiers",3]],
+  "Adducteurs machine":[["Adducteurs",3]],
+  "Mollets assis":[["Mollets",3]],
+  "Crunch":[["Abdos",3]],
+  "Gainage":[["Abdos",3],["Lombaires",2],["Épaules",1]],
+  "Relevés de jambes":[["Abdos",3],["Quadriceps",1]],
+  "Crunch câble":[["Abdos",3]],
+  "Roulette abdominale":[["Abdos",3],["Lombaires",2],["Dos",1]],
+  "Planche latérale":[["Abdos",3],["Épaules",1]]
+};
+const NIVEAU_COULEUR = {3:"var(--bad)", 2:"#e8a33d", 1:"var(--good)"};
+const NIVEAU_TEXTE = {3:"forte", 2:"moyenne", 1:"légère"};
+function musclesHtml(exName, max){
+  const list = MUSCLE_WORK[exName];
+  if(!list) return "";
+  return `<span class="mw">${list.slice(0, max||4).map(([m,n])=>
+    `<span class="mw-item" title="Sollicitation ${NIVEAU_TEXTE[n]}"><i style="background:${NIVEAU_COULEUR[n]};"></i>${esc(m)}</span>`).join("")}</span>`;
 }
 
 /* blessures : exercices à éviter, variantes plus sûres et conseil de posture */
@@ -951,10 +1037,17 @@ function applyDefaults(){
   if(!db.habitSel) db.habitSel = {};
   if(!db.seen) db.seen = {};
   if(!db.dayFix) db.dayFix = {};
+  if(!db.settings.theme) db.settings.theme = "sombre";
   if(!db.seq) db.seq = 1;
   if(!("active" in db)) db.active = null;
 }
 applyDefaults();
+function appliquerTheme(){
+  const clair = db.settings.theme === "clair";
+  document.documentElement.dataset.theme = clair ? "light" : "dark";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", clair ? "#f6f3ee" : "#131110");
+}
 function isEmptyDb(d){ return !d || (!(d.history||[]).length && !(d.weights||[]).length && !(d.templates||[]).length && !(d.cardio||[]).length); }
 
 /* --- stockage de secours : IndexedDB (survit quand localStorage est éphémère) --- */
@@ -1731,12 +1824,12 @@ function renderSeance(app){
       </div>
     </div>
     <div id="start-zone"></div>
-    <div class="section-t">${db.settings.goal>0 ? "Manger pour "+fmtKg(db.settings.goal)+" kg" : "Mon alimentation"}</div>
+    <div class="section-t"><i>🍽️</i>Alimentation</div>
     <div class="card" id="eat-card"></div>
-    <div class="section-t">Mes séances</div>
+    <div class="section-t"><i>🏋️</i>Mes séances</div>
     <div id="tpl-zone"></div>
     <button class="btn btn-ghost" id="free-btn" style="width:100%; margin-top:12px;">Démarrer une séance libre</button>
-    <div class="section-t">Cardio</div>
+    <div class="section-t"><i>👟</i>Cardio</div>
     <div class="card" id="cardio-card"></div>`;
   wireTopbar();
   document.getElementById("bilan-btn").onclick=openBilan;
@@ -1750,7 +1843,7 @@ function renderSeance(app){
     const etape = (ok, num, txt, act) => `<div class="start-step ${ok?"done":""}">
       <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b>${act&&!ok? `<div style="margin-top:5px;"><button class="btn btn-accent btn-sm" id="${act}">${act==="sc-profil"?"Renseigner mon profil":(act==="sc-prog"?"Ajouter mes séances":"Lancer ma séance")}</button></div>`:""}</div></div>`;
     const suivante = suggestedTemplate();
-    startZone.innerHTML = `<div class="section-t">Par où commencer</div>
+    startZone.innerHTML = `<div class="section-t"><i>🚩</i>Par où commencer</div>
       <div class="card start-card">
         ${etape(profilOk, 1, "Renseigner ton profil pour obtenir ton plan", !profilOk? "sc-profil":null)}
         ${etape(aDesSeances, 2, "Choisir tes séances d'entraînement", (profilOk && !aDesSeances)? "sc-prog":null)}
@@ -1935,7 +2028,7 @@ function openPreview(tplId){
       const note = injuryNote(ex.name);
       return `<div class="pick-row" style="cursor:default;">${exIcon(ex)}
         <div class="grow"><div>${i+1}. ${esc(ex.name)}</div>
-        <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? ` · dernière fois ${fmtKg(Math.max(...last.sets.map(s=>s.w||0)))} kg`:""}</div>
+        <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? ` · dernière fois ${fmtKg(Math.max(...last.sets.map(s=>s.w||0)))} kg`:""}</div>${musclesHtml(ex.name,3)}
         ${note? `<div class="eq" style="color:var(--bad);">⚠️ ${esc(note.injury)} : ${esc(note.tip)}</div>`:""}</div></div>`;
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">Lancer cette séance</button>
@@ -2003,6 +2096,7 @@ function renderActive(app){
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
         <span class="pill">${esc(ex.equip||ex.muscle)}</span></div>
+      <div style="margin-bottom:8px;">${musclesHtml(ex.name)}</div>
       <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
       <div class="set-cols"><span></span><span>kg</span><span>reps</span><span>✓</span></div>
@@ -2142,7 +2236,7 @@ function openSwap(ei, fromInjury){
       const reco = fromInjury && note && note.alts.includes(e.name);
       return `<div class="pick-row" data-swap="${e.id}">${exIcon(e)}
         <div class="grow"><div>${esc(e.name)}${reco? ' <span style="color:var(--good); font-size:11px; font-weight:700;">CONSEILLÉ</span>':""}</div>
-        <div class="eq">${esc(e.equip||"")}${n2? ` · ⚠️ ${esc(n2.injury)}`:""}</div></div>
+        <div class="eq">${esc(e.equip||"")}${n2? ` · ⚠️ ${esc(n2.injury)}`:""}</div>${musclesHtml(e.name,3)}</div>
         <span style="color:var(--accent); font-weight:800;">⇄</span></div>`;
     }).join("")}</div>
     <button class="btn" id="sw-cancel" style="width:100%; margin-top:12px;">Annuler</button>`);
@@ -2178,7 +2272,7 @@ function openPicker(cb){
     listEl.innerHTML = Object.keys(groups).map(m=>
       `<div class="muscle-h">${esc(m)}</div>`+groups[m].map(e=>
         `<div class="pick-row" data-pk="${e.id}">${exIcon(e)}
-          <div class="grow"><div>${esc(e.name)}</div><div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}</div></div>
+          <div class="grow"><div>${esc(e.name)}</div><div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}</div>${musclesHtml(e.name,3)}</div>
           ${browse? "" : `<span style="color:var(--accent); font-weight:800; font-size:18px;">＋</span>`}</div>`).join("")
     ).join("") || `<div class="empty">Aucun résultat.</div>`;
     if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=()=>{ closeSheet(); cb(r.dataset.pk); });
@@ -2220,7 +2314,7 @@ function renderProgs(app){
   const prog = COACH_PROGRAMS[coachGoal];
   const missing = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
   document.getElementById("coach-card").innerHTML = `
-    <div class="section-t">Programmes conseillés</div>
+    <div class="section-t"><i>🎯</i>Programmes conseillés</div>
     <div class="chips" style="margin-bottom:10px;">
       ${Object.keys(COACH_PROGRAMS).map(k=>`<button class="chip ${k===coachGoal?'on':''}" data-goal="${k}">${COACH_PROGRAMS[k].label}</button>`).join("")}
     </div>
@@ -2320,6 +2414,11 @@ function openSettings(){
     <div class="stack">
       <button class="btn" id="st-profile">👤 Mon profil et mon plan</button>
       <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Apparence</span>
+        <div class="chips" id="st-theme">
+          ${[["sombre","🌙 Sombre"],["clair","☀️ Clair"]].map(([v,l])=>
+            `<button class="chip ${db.settings.theme===v?"on":""}" data-theme="${v}">${l}</button>`).join("")}
+        </div></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
       <input type="text" id="st-name" value="${esc(db.settings.name)}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
@@ -2360,6 +2459,11 @@ function openSettings(){
   onSheetClose = ()=>{ render(); };
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
   document.getElementById("st-profile").onclick=()=>openOnboarding(false);
+  document.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{
+    db.settings.theme = b.dataset.theme;
+    save(); appliquerTheme();
+    document.querySelectorAll("[data-theme]").forEach(x=>x.classList.toggle("on", x===b));
+  });
   document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast("Les explications réapparaîtront ✓"); };
   /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
   const autoBox = document.getElementById("st-auto");
@@ -2516,7 +2620,7 @@ function renderProgress(app){
     ${topbar()}
     <div class="date-line">Progression</div>
     <div id="wt-sec"></div>
-    <div class="section-t">Par exercice</div>
+    <div class="section-t"><i>📈</i>Par exercice</div>
     <div id="prg-body"></div>`;
   wireTopbar();
   renderWeightSection(document.getElementById("wt-sec"));
@@ -2577,7 +2681,7 @@ function renderWeightSection(sec){
   const first = ws.length? ws[0].kg : null;
   const total = (cur!==null && first!==null)? Math.round((cur-first)*10)/10 : null;
   sec.innerHTML = `
-    <div class="section-t" style="margin-top:0;">Poids corporel</div>
+    <div class="section-t" style="margin-top:0;"><i>⚖️</i>Poids corporel</div>
     <div class="card">
       <div class="row">
         <div class="grow">
@@ -2753,7 +2857,7 @@ function renderMuscleSection(sec){
     </div>`;
   }).join("");
   const div = document.createElement("div");
-  div.innerHTML = `<div class="section-t">Profil musculaire</div>
+  div.innerHTML = `<div class="section-t"><i>💪</i>Profil musculaire</div>
     <div class="card">
       <p style="margin:0 0 4px; font-size:13px; color:var(--ink-soft);">Tes points forts (<b style="color:var(--good);">vert</b>), points faibles (<b style="color:var(--bad);">rouge</b>) et muscles équilibrés (<b style="color:#b9a97f;">beige</b>), d'après tes 1RM estimés rapportés à ton poids de corps.</p>
       <div class="mp-bodies">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
@@ -2781,13 +2885,13 @@ function renderProteinSection(sec){
   const hit = days.filter(x=>x.v>=target).length;
   const div = document.createElement("div");
   if(!any){
-    div.innerHTML = `<div class="section-t">Protéines · 7 derniers jours</div>
+    div.innerHTML = `<div class="section-t"><i>🥩</i>Protéines · 7 derniers jours</div>
       <div class="card empty" style="padding:22px 16px;">Coche tes repas sur l'écran <b>Séance</b> : ton historique de protéines s'affichera ici, jour par jour.</div>`;
     sec.appendChild(div);
     return;
   }
   const moyKcal = Math.round(days.filter(x=>x.kc>0).reduce((a,x)=>a+x.kc,0) / Math.max(1, days.filter(x=>x.kc>0).length));
-  div.innerHTML = `<div class="section-t">Protéines · 7 derniers jours</div>
+  div.innerHTML = `<div class="section-t"><i>🥩</i>Protéines · 7 derniers jours</div>
     <div class="card">
       <div class="row" style="justify-content:space-between; margin-bottom:10px;">
         <span style="font-size:13.5px; color:var(--ink-soft);">Objectif <b style="color:var(--ink);">${target} g</b> / jour</span>
@@ -2888,7 +2992,7 @@ function renderCardioSection(sec){
   if(keys.length < 2) return;
   const pts = keys.map(k=>({date:k, v:Math.round(weeks[k]*10)/10}));
   const div = document.createElement("div");
-  div.innerHTML = `<div class="section-t">Cardio · km par semaine</div>
+  div.innerHTML = `<div class="section-t"><i>👟</i>Cardio · km par semaine</div>
     <div class="card"><div class="chart-wrap" id="cd-chart"></div></div>`;
   sec.appendChild(div);
   drawChart(div.querySelector("#cd-chart"), pts, "km");
@@ -2975,6 +3079,7 @@ const _origRender = render;
 render = function(){ _origRender(); syncWakeLock(); };
 
 /* ================= INIT ================= */
+appliquerTheme();
 render();
 if(!db.profile) setTimeout(()=>{ if(!db.profile) openOnboarding(true); }, 400);
 
