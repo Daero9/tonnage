@@ -1410,7 +1410,19 @@ function fmtDate(iso){ return new Date(iso).toLocaleDateString("fr-FR",{weekday:
 function fmtDateShort(iso){ return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric", month:"short"}); }
 function fmtDur(ms){ const m=Math.round(ms/60000); return m<60? m+" min" : Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"); }
 function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
-function sessionVolume(sess){ let v=0; sess.entries.forEach(en=>en.sets.forEach(st=>{ if(st.done && !st.warm) v += (st.w||0)*(st.r||0); })); return v; }
+/* avec deux haltères, la charge saisie est celle d'UN haltère : le tonnage compte les deux */
+function facteurCharge(exId){
+  const ex = getEx(exId);
+  return (ex && ex.equip==="Haltères" && !/haltère$|nuque/i.test(ex.name)) ? 2 : 1;
+}
+function sessionVolume(sess){
+  let v=0;
+  sess.entries.forEach(en=>{
+    const f = facteurCharge(en.exId);
+    en.sets.forEach(st=>{ if(st.done && !st.warm) v += (st.w||0)*(st.r||0)*f; });
+  });
+  return v;
+}
 function lastPerf(exId){
   for(let i=db.history.length-1;i>=0;i--){
     const en = db.history[i].entries.find(e=>e.exId===exId);
@@ -2337,7 +2349,7 @@ function renderActive(app){
       <div style="margin-bottom:8px;">${musclesHtml(ex.name)}</div>
       <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
-      <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)" : "kg"}</span><span>reps</span><span>✓</span></div>
+      <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)" : (facteurCharge(en.exId)===2? "kg / haltère" : "kg")}</span><span>reps</span><span>✓</span></div>
       <div class="sets"></div>
       <div class="row">
         <button class="btn btn-sm btn-ghost grow" data-act="addset">＋ série</button>
@@ -2365,8 +2377,10 @@ function renderActive(app){
           if(inp && document.activeElement !== inp) inp.value = (valeur===""? "" : valeur);
         }
       };
+      /* la charge se reporte (on la garde d'une série à l'autre) ; les répétitions non :
+         faire 5 reps au lieu de 12 est un accident de parcours, pas une nouvelle consigne */
       wIn.oninput=()=>{ st.w = wIn.value===""?"":parseFloat(wIn.value); if(!st.warm) propager("w", st.w); save(); };
-      rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); if(!st.warm) propager("r", st.r); save(); };
+      rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); save(); };
       row.querySelector(".ck").onclick=()=>{
         ensureAudio();
         st.w = parseFloat(wIn.value)||0; st.r = parseInt(rIn.value)||0;
@@ -2485,7 +2499,7 @@ function renderActive(app){
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm("Aucune série validée","Valide au moins une série (bouton ○) avant de terminer, ou annule la séance.","OK",false,()=>{}); return; }
-    const vol = a.entries.reduce((v,en)=>v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?(s.w||0)*(s.r||0):0),0),0);
+    const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?(s.w||0)*(s.r||0)*f:0),0); },0);
     const kcal = liftKcal(Date.now()-a.start, vol, doneSets);
     askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés · environ ${kcal} kcal brûlées. On enregistre ?`, "Enregistrer", false, ()=>{
       db.history.push({
@@ -2702,6 +2716,10 @@ function openSettings(){
     <div class="stack">
       <button class="btn" id="st-profile">👤 Mon profil et mon plan</button>
       <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
+      <button class="btn" id="st-ecran">
+        <span class="grow" style="text-align:left;">Garder l'écran allumé en séance</span>
+        <span style="font-weight:800; color:var(--accent);">${db.settings.ecranAllume===false? "Non" : "Oui"}</span>
+      </button>
       <button class="btn" id="st-theme">
         <span class="grow" style="text-align:left;">Apparence</span>
         <span style="font-weight:800; color:var(--accent);">${db.settings.theme==="clair"? "☀️ Clair" : "🌙 Sombre"}</span>
@@ -2746,6 +2764,11 @@ function openSettings(){
   onSheetClose = ()=>{ render(); };
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
   document.getElementById("st-profile").onclick=()=>openOnboarding(false);
+  document.getElementById("st-ecran").onclick=(e)=>{
+    db.settings.ecranAllume = (db.settings.ecranAllume === false);
+    save(); syncWakeLock();
+    e.currentTarget.lastElementChild.textContent = db.settings.ecranAllume===false? "Non" : "Oui";
+  };
   document.getElementById("st-theme").onclick=(e)=>{
     db.settings.theme = (db.settings.theme==="clair") ? "sombre" : "clair";
     save(); appliquerTheme();
@@ -2791,6 +2814,7 @@ function openSettings(){
     <div>${survived? '<span style="color:var(--good);">✓</span>' : '<span style="color:var(--bad);">✕</span>'} Trace de la session précédente : ${survived? "retrouvée ("+ago(diag.lsMark||diag.idbMark)+")" : "perdue"}</div>
     <div style="color:var(--ink-mute);">Dernier enregistrement chargé : ${diag.loadedSavedAt? ago(diag.loadedSavedAt) : "aucun"}</div>
     <div style="color:var(--ink-mute);">Dernière sauvegarde fichier : ${ago(db.lastBackup)}</div>
+    <div style="color:var(--ink-mute);">Écran maintenu allumé : ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
     ${!survived? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">iOS efface la mémoire de l'app entre deux ouvertures. Utilise l'icône 💾 avant de fermer, et 📂 pour restaurer.</div>`:""}`;
   document.getElementById("st-file").onclick=async()=>{
@@ -3008,7 +3032,7 @@ function renderProgress(app){
     let v;
     if(prgMetric==="max") v = Math.max(...sets.map(st=>st.w||0));
     else if(prgMetric==="1rm") v = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
-    else v = sets.reduce((x,st)=>x+(st.w||0)*(st.r||0),0);
+    else v = sets.reduce((x,st)=>x+(st.w||0)*(st.r||0),0)*facteurCharge(prgEx);
     pts.push({date:s.date, v:Math.round(v*10)/10});
   });
 
@@ -3548,19 +3572,25 @@ function drawChart(wrap, pts, unit, goal){
 
 /* ================= WAKE LOCK (écran allumé pendant la séance) ================= */
 let wakeLock = null;
+let wakeEtat = ("wakeLock" in navigator) ? "en attente" : "non supporté par ce navigateur";
 async function syncWakeLock(){
+  const voulu = !!db.active && db.settings.ecranAllume !== false;
+  if(!("wakeLock" in navigator)) return;
   try{
-    if(db.active && "wakeLock" in navigator){
-      if(!wakeLock){
+    if(voulu){
+      if(!wakeLock && !document.hidden){
         wakeLock = await navigator.wakeLock.request("screen");
-        wakeLock.addEventListener("release", ()=>{ wakeLock = null; });
+        wakeEtat = "actif";
+        wakeLock.addEventListener("release", ()=>{ wakeLock = null; if(wakeEtat==="actif") wakeEtat = "relâché"; });
       }
     } else if(wakeLock){
-      wakeLock.release(); wakeLock = null;
+      await wakeLock.release(); wakeLock = null; wakeEtat = "inactif hors séance";
     }
-  }catch(e){}
+  }catch(e){ wakeEtat = "refusé : " + (e && e.name ? e.name : "erreur"); }
 }
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) syncWakeLock(); });
+/* certains navigateurs n'accordent le verrou qu'après une interaction : on retente au premier contact */
+["pointerdown","touchstart"].forEach(ev=>document.addEventListener(ev, ()=>{ if(db.active && !wakeLock) syncWakeLock(); }, {passive:true}));
 const _origRender = render;
 render = function(){ _origRender(); syncWakeLock(); };
 
