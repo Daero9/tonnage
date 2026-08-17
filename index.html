@@ -901,6 +901,87 @@ function openAimInfo(id, retour){
     <button class="btn btn-accent" id="ai-ok" style="width:100%;">${retour? "Revenir à mon profil" : "Compris"}</button>`);
   document.getElementById("ai-ok").onclick = ()=>{ if(retour) retour(); else closeSheet(); };
 }
+/* Ajouts caloriques denses : peu de volume dans l'estomac, beaucoup de kcal.
+   Pensés pour ceux qui n'arrivent pas à manger assez (métabolisme rapide, petit appétit). */
+const KCAL_UP = [
+  ["Beurre de cacahuète (30 g)", 180, "Le plus rentable de tous : sur le pain du matin ou dans le shaker, avalé en trois bouchées."],
+  ["Huile d'olive (1 c. à soupe)", 120, "Versée sur les pâtes, le riz ou les légumes après cuisson. Tu ne la sens pas passer."],
+  ["Lait entier au lieu d'eau (500 ml)", 200, "Dans ton shaker : +200 kcal et +16 g de protéines, sans une bouchée de plus."],
+  ["Amandes ou noix (30 g)", 180, "Une poignée dans la poche, à grignoter entre deux repas."],
+  ["Avocat (1 entier)", 240, "Dans une salade ou écrasé sur du pain, avec un filet d'huile."],
+  ["Fromage râpé (30 g)", 110, "Sur les pâtes, le riz, les gratins. Ça se rajoute partout."],
+  ["Avoine (60 g de flocons)", 230, "Dans le lait ou le shaker. Beaucoup de calories pour très peu de volume."],
+  ["Fruits secs : dattes, abricots (40 g)", 120, "Très dense en sucres, parfait juste avant la séance."],
+  ["+100 g de riz ou pâtes cuits", 130, "Rajoute simplement une louche à ton assiette du midi et du soir : +260 kcal sur la journée."],
+  ["Chocolat noir (3 carrés)", 150, "Le dessert qui coûte peu d'effort à manger."],
+  ["Miel ou confiture (1 c. à soupe)", 60, "Sur les tartines, dans le fromage blanc, dans l'avoine."]
+];
+const KCAL_DOWN = [
+  ["Lait entier → demi-écrémé (500 ml)", -80, "Même goût dans le shaker, mêmes protéines."],
+  ["Huile mesurée à la cuillère", -150, "Verser à l'œil dans la poêle, c'est souvent 2 à 3 cuillères sans s'en rendre compte."],
+  ["Skyr ou fromage blanc 0 % au lieu de la crème", -120, "Même onctuosité, et des protéines en plus."],
+  ["Jus et sodas → eau", -200, "Les calories liquides ne rassasient pas du tout. C'est la coupe la plus indolore."],
+  ["Un tiers de féculents en moins, doublé en légumes", -150, "L'assiette reste aussi pleine, tu sors de table rassasié."],
+  ["Viande maigre à la place de la version grasse", -120, "Blanc de poulet, steak 5 %, jambon dégraissé."],
+  ["Grignotage sucré → fruit entier", -180, "Une pomme cale mieux qu'un biscuit, pour trois fois moins."],
+  ["Cuisson au four ou à la poêle antiadhésive", -100, "Sans matière grasse ajoutée, le plat perd 100 kcal sans rien changer d'autre."]
+];
+function openKcalTips(sens, pl){
+  const up = sens==="up";
+  const liste = up? KCAL_UP : KCAL_DOWN;
+  const manque = pl? Math.max(0, pl.kcalMin - dayKcal(dayKey())) : 0;
+  const intro = up
+    ? (manque > 800
+       ? `Il te manque environ <b>${manque} kcal</b> aujourd'hui — l'équivalent d'un repas entier. Le shaker ci-dessous en couvre déjà la plus grosse part, le reste se rattrape avec deux ou trois lignes de la liste.`
+       : (manque>0
+          ? `Il te manque environ <b>${manque} kcal</b> aujourd'hui. Pas besoin d'un repas de plus : deux ou trois lignes de cette liste suffisent.`
+          : `Tu y es pour aujourd'hui. Garde cette liste sous la main pour les journées où l'appétit n'est pas là.`))
+    : `Voici les échanges les plus indolores : tu enlèves des calories sans enlever de nourriture dans l'assiette.`;
+  const reflexes = up
+    ? ["Bois tes calories : un shaker au lait entier passe quand un repas ne passe plus.",
+       "Ajoute plutôt que remplace : une cuillère d'huile, une poignée d'amandes, une louche de riz en plus.",
+       "Méfie-toi du volume : soupes, salades et légumes te remplissent l'estomac pour presque rien.",
+       "Vise une 4ᵉ prise dans la journée plutôt que d'agrandir les trois repas existants."]
+    : ["Garde les protéines hautes : c'est ce qui protège le muscle pendant le déficit.",
+       "Coupe d'abord le liquide et les matières grasses de cuisson, pas les repas.",
+       "Remplis l'assiette de légumes : même volume, moitié moins de calories.",
+       "Un déficit lent tient dans la durée ; un déficit brutal se paie en fringales le week-end."];
+  const shaker = up? `<div class="card" style="margin-bottom:14px; background:var(--surface2);">
+      <div style="font-weight:800; margin-bottom:6px;">Le shaker qui règle le problème</div>
+      <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.6;">500 ml de lait entier + 60 g d'avoine + 1 banane + 30 g de beurre de cacahuète + 1 dose de whey.<br>
+      <b style="color:var(--accent);">≈ 950 kcal et 55 g de protéines</b>, bus en trois minutes. Un par jour et ta fourchette est atteinte.</div>
+    </div>`:"";
+  openSheet(`<h3>${up? "Manger plus de calories" : "Réduire les calories"}</h3>
+    <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin-bottom:14px;">${intro}</div>
+    ${shaker}
+    <div class="label" style="margin-bottom:7px;">${up? "À ajouter dans la journée" : "Les échanges qui rapportent"}</div>
+    <div class="stack" style="gap:8px; margin-bottom:16px;">${liste.map(([nom,k,txt])=>`
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <span class="pill" style="flex:0 0 auto; font-variant-numeric:tabular-nums; color:${up?'var(--good)':'var(--accent)'};">${k>0?"+":""}${k}</span>
+        <div><div style="font-size:13.5px; font-weight:700;">${esc(nom)}</div>
+        <div style="font-size:12.5px; color:var(--ink-mute); line-height:1.5;">${esc(txt)}</div></div>
+      </div>`).join("")}</div>
+    <div class="label" style="margin-bottom:7px;">Les réflexes</div>
+    <div class="stack" style="gap:6px; margin-bottom:16px;">${reflexes.map(r=>`
+      <div style="font-size:13px; color:var(--ink-soft); line-height:1.5;">• ${esc(r)}</div>`).join("")}</div>
+    <button class="btn btn-accent" id="kt-ok" style="width:100%;">Compris</button>`);
+  document.getElementById("kt-ok").onclick = closeSheet;
+}
+function openKcalInfo(pl){
+  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
+  openSheet(`<h3>Tes calories du jour</h3>
+    ${b("D'où vient le chiffre", pl
+      ? `Ton corps brûle environ <b>${pl.tdee} kcal</b> par jour au repos et en activité (calcul à partir de ta taille, ton poids, ton âge, tes ${pl.seances} séances par semaine et ton métabolisme). Pour ${pl.aim==="seche"?"perdre du gras":(pl.aim==="masse"?"prendre du muscle":"progresser")}, on ${pl.delta>=0?"ajoute":"retire"} <b>${Math.abs(pl.delta)} kcal</b>.`
+      : "Renseigne ton profil (poids, taille, âge, objectif) pour obtenir une cible personnalisée.")}
+    ${pl? b("Pourquoi une fourchette", pl.delta>=0
+      ? `Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Vise <b>au moins ${pl.kcalMin} kcal</b> — c'est le seuil qui compte, celui en dessous duquel tu ne prends rien. Au-delà de <b>${pl.kcalMax} kcal</b>, le surplus part surtout en gras plutôt qu'en muscle : inutile de forcer plus haut.`
+      : `Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Le chiffre qui compte est le plafond : <b>pas plus de ${pl.kcalMax} kcal</b>. Mais ne descends pas non plus sous <b>${pl.kcalMin} kcal</b> — un déficit trop violent te fait perdre du muscle et ne tient pas deux semaines.`):""}
+    ${b("Le total affiché", "Il vient uniquement des aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, passe par « Autre » — sinon le total sera sous-estimé. Tu peux aussi corriger une journée à la main depuis Progression.")}
+    ${b("Et les calories brûlées ?", "Elles ne se soustraient pas ici : tes séances sont déjà comptées dans ta dépense quotidienne. Les kcal affichées après une séance sont là pour l'info, pas pour t'autoriser à manger plus.")}
+    ${b("La vraie vérification", "C'est la balance, pas l'appli. Pèse-toi une fois par semaine, au même moment : si le poids ne bouge pas dans le sens voulu au bout de 2 à 3 semaines, ajuste de 200 kcal.")}
+    <button class="btn btn-accent" id="ki-ok" style="width:100%;">Compris</button>`);
+  document.getElementById("ki-ok").onclick = closeSheet;
+}
 const PACES = [["progressif","Progressif"],["modere","Modéré"],["rapide","Rapide"]];
 /* surplus / déficit en % de la dépense estimée : s'adapte à la corpulence de chacun */
 const PACE_PCT = {
@@ -933,9 +1014,13 @@ function planFor(p){
   const rateAff = Math.round(rate*20)/20;
   const semaines = (rate>0.02 && Math.abs(diff)>=1) ? Math.max(2, Math.round(Math.abs(diff)/rate)) : null;
   const rythme = rate>0.02 ? `${deltaReel<0?"−":"+"}${rateAff.toLocaleString("fr-FR")} kg par semaine` : "poids stable";
+  /* fourchette : ±5 %, la vraie précision de ces formules. Le plancher est l'objectif à viser,
+     le plafond la limite au-delà de laquelle on prend surtout du gras (ou on casse le déficit). */
+  const kcalMin = Math.round(kcal*0.95/10)*10;
+  const kcalMax = Math.round(kcal*1.05/10)*10;
   return {
     bmr: Math.round(bmr), tdee: Math.round(tdee),
-    kcal: Math.round(kcal/10)*10, prot: Math.round(prot), perKg,
+    kcal: Math.round(kcal/10)*10, kcalMin, kcalMax, prot: Math.round(prot), perKg,
     aim: aim.id, aimLabel: aim.label, pace, rythme, semaines,
     diff: Math.round(diff*10)/10, delta: Math.round(deltaReel), plafonne,
     program: aim.prog, seances: Math.min(5, Math.max(2, p.days))
@@ -2129,18 +2214,19 @@ function renderSeance(app){
   const protNow = dayProt(todayKey);
   const protPct = Math.min(100, protNow/protTarget*100);
   const kcalNow = dayKcal(todayKey);
-  const kcalTarget = plan? plan.kcal : 0;
-  const kcalPct = kcalTarget? Math.min(100, kcalNow/kcalTarget*100) : 0;
-  /* trop haut = au-dessus de la cible en sèche, en dessous = manque en prise de masse */
-  const kcalCoul = !kcalTarget ? "var(--accent)"
-    : (kcalNow > kcalTarget*1.15 ? "var(--bad)"
-      : (kcalNow >= kcalTarget*0.9 ? "var(--good)" : "var(--accent)"));
-  const resteKcal = kcalTarget - kcalNow;
+  const kMin = plan? plan.kcalMin : 0, kMax = plan? plan.kcalMax : 0;
+  const enHausse = !plan || plan.delta >= 0;   /* objectif de prise → on cherche à manger plus */
+  /* en prise, le chiffre qui compte est le plancher ; en déficit, c'est le plafond */
+  const kRef = enHausse? kMin : kMax;
+  const kcalPct = kRef? Math.min(100, kcalNow/kRef*100) : 0;
+  const kcalCoul = !kRef ? "var(--accent)"
+    : (kcalNow > kMax ? "var(--bad)" : (kcalNow >= kMin ? "var(--good)" : "var(--accent)"));
+  const resteKcal = kRef - kcalNow;
   document.getElementById("eat-card").innerHTML = `
     ${hintBox("repas", "Coche simplement tes repas au fil de la journée : aucune calorie à saisir. Une fois un repas coché, choisis ce que tu as mangé et l'app en déduit tes protéines et tes calories.")}
     ${plan? `<div class="row" style="justify-content:space-between; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid var(--border);">
       <div><div style="font-size:15px; font-weight:800;">${plan.aim==="masse"?"Prendre du muscle":(plan.aim==="seche"?"Perdre du gras":(plan.aim==="force"?"Gagner en force":(plan.aim==="entretien"?"Entretien":"Recomposition")))}</div>
-      <div style="font-size:12px; color:var(--ink-mute);">Cible du jour : ${plan.kcal} kcal · ${protTarget} g de protéines</div></div>
+      <div style="font-size:12px; color:var(--ink-mute);">Cible du jour : ${plan.delta>=0? "au moins "+plan.kcalMin : "pas plus de "+plan.kcalMax} kcal · ${protTarget} g de protéines</div></div>
       <button class="btn btn-sm" id="eat-plan">Mon plan</button></div>`:""}
     <div style="font-size:13px; color:${vColor}; font-weight:600; margin-bottom:12px;">${esc(verdict.txt)}</div>
     <div class="row" style="justify-content:space-between; margin-bottom:5px;">
@@ -2149,17 +2235,23 @@ function renderSeance(app){
     </div>
     <div class="mp-bar" style="height:12px; margin-bottom:11px;"><div style="height:100%; width:${protPct}%; border-radius:7px; background:${protNow>=protTarget?'var(--good)':'var(--accent)'}; transition:width .3s;"></div></div>
     <div class="row" style="justify-content:space-between; margin-bottom:5px;">
-      <span class="label">Calories aujourd'hui</span>
-      <span style="font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:${kcalCoul};">≈ ${kcalNow}${kcalTarget? " / "+kcalTarget : ""} kcal</span>
+      <span class="row" style="gap:5px;"><span class="label">Calories aujourd'hui</span>
+        <button class="icon-btn info-btn" id="eat-kinfo" title="Comment sont calculées mes calories ?">ⓘ</button></span>
+      <span style="font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:${kcalCoul};">≈ ${kcalNow} kcal</span>
     </div>
-    <div class="mp-bar" style="height:12px; margin-bottom:6px;"><div style="height:100%; width:${kcalTarget?kcalPct:0}%; border-radius:7px; background:${kcalCoul}; transition:width .3s;"></div></div>
-    <div style="font-size:11.5px; color:var(--ink-mute); margin-bottom:14px;">${
-      !kcalTarget ? "Estimation d'après les aliments cochés. Renseigne ton profil pour avoir une cible."
-      : (kcalNow===0 ? "Estimation d'après les aliments cochés — coche tes repas au fil de la journée."
-        : (resteKcal > 150 ? `Il te reste environ ${resteKcal} kcal à manger aujourd'hui.`
-          : (resteKcal < -0.15*kcalTarget ? `Environ ${-resteKcal} kcal au-dessus de ta cible${db.profile.aim==="seche"?" — à surveiller en sèche.":"."}`
-            : "Tu es dans ta cible du jour 👌")))
+    <div class="mp-bar" style="height:12px; margin-bottom:6px;"><div style="height:100%; width:${kcalPct}%; border-radius:7px; background:${kcalCoul}; transition:width .3s;"></div></div>
+    <div style="font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-bottom:${plan?"9px":"14px"};">${
+      !kRef ? "Estimation d'après les aliments cochés. Renseigne ton profil pour avoir une cible."
+      : `Objectif : <b style="color:var(--ink-soft);">${enHausse? "au moins "+kMin : "pas plus de "+kMax} kcal</b> · fourchette ${kMin} – ${kMax}.<br>` + (
+          kcalNow===0 ? "Coche tes repas au fil de la journée, le total se remplit tout seul."
+          : (kcalNow > kMax ? `Environ ${kcalNow-kMax} kcal au-dessus de la fourchette${enHausse?"." : " — à surveiller en sèche."}`
+            : (resteKcal > 100 ? (enHausse
+                ? `Il te reste environ <b style="color:var(--accent);">${resteKcal} kcal</b> à manger.`
+                : `Il te reste environ <b style="color:var(--accent);">${resteKcal} kcal</b> avant ta limite.`)
+              : "Tu es dans ta fourchette du jour 👌")))
     }</div>
+    ${plan? `<button class="btn btn-sm btn-ghost" id="eat-ktips" style="width:100%; margin-bottom:14px;">${
+      enHausse ? "💡 Du mal à atteindre ces calories ?" : "💡 Comment réduire sans avoir faim ?"}</button>`:""}
     <div class="stack" style="gap:7px;">${db.habits.map((h,i)=>{
       const on = checked.includes(i);
       const mySel = sel[i] || [];
@@ -2188,6 +2280,10 @@ function renderSeance(app){
   wireHints(document.getElementById("eat-card"));
   const planBtn = document.getElementById("eat-plan");
   if(planBtn) planBtn.onclick = ()=>showPlan(false);
+  const kiBtn = document.getElementById("eat-kinfo");
+  if(kiBtn) kiBtn.onclick = ()=>openKcalInfo(plan);
+  const ktBtn = document.getElementById("eat-ktips");
+  if(ktBtn) ktBtn.onclick = ()=>openKcalTips(enHausse? "up":"down", plan);
   document.querySelectorAll("[data-hb]").forEach(b=>b.onclick=()=>{
     const i = parseInt(b.dataset.hb);
     const arr = db.habitLog[todayKey] || [];
