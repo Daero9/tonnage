@@ -2128,18 +2128,38 @@ function renderSeance(app){
   const plan = planFor(db.profile);
   const protNow = dayProt(todayKey);
   const protPct = Math.min(100, protNow/protTarget*100);
+  const kcalNow = dayKcal(todayKey);
+  const kcalTarget = plan? plan.kcal : 0;
+  const kcalPct = kcalTarget? Math.min(100, kcalNow/kcalTarget*100) : 0;
+  /* trop haut = au-dessus de la cible en sèche, en dessous = manque en prise de masse */
+  const kcalCoul = !kcalTarget ? "var(--accent)"
+    : (kcalNow > kcalTarget*1.15 ? "var(--bad)"
+      : (kcalNow >= kcalTarget*0.9 ? "var(--good)" : "var(--accent)"));
+  const resteKcal = kcalTarget - kcalNow;
   document.getElementById("eat-card").innerHTML = `
-    ${hintBox("repas", "Coche simplement tes repas au fil de la journée : aucune calorie à saisir. Une fois un repas coché, choisis ce que tu as mangé et l'app en déduit tes protéines.")}
+    ${hintBox("repas", "Coche simplement tes repas au fil de la journée : aucune calorie à saisir. Une fois un repas coché, choisis ce que tu as mangé et l'app en déduit tes protéines et tes calories.")}
     ${plan? `<div class="row" style="justify-content:space-between; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid var(--border);">
-      <div><div style="font-size:19px; font-weight:800; font-variant-numeric:tabular-nums;">${plan.kcal} <span style="font-size:12px; font-weight:600; color:var(--ink-mute);">kcal / jour</span></div>
-      <div style="font-size:12px; color:var(--ink-mute);">${plan.aim==="masse"?"pour prendre du muscle":(plan.aim==="seche"?"pour perdre du gras":"pour te recomposer")}</div></div>
+      <div><div style="font-size:15px; font-weight:800;">${plan.aim==="masse"?"Prendre du muscle":(plan.aim==="seche"?"Perdre du gras":(plan.aim==="force"?"Gagner en force":(plan.aim==="entretien"?"Entretien":"Recomposition")))}</div>
+      <div style="font-size:12px; color:var(--ink-mute);">Cible du jour : ${plan.kcal} kcal · ${protTarget} g de protéines</div></div>
       <button class="btn btn-sm" id="eat-plan">Mon plan</button></div>`:""}
     <div style="font-size:13px; color:${vColor}; font-weight:600; margin-bottom:12px;">${esc(verdict.txt)}</div>
     <div class="row" style="justify-content:space-between; margin-bottom:5px;">
       <span class="label">Protéines aujourd'hui</span>
       <span style="font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:${protNow>=protTarget?'var(--good)':'var(--ink)'};">≈ ${protNow} / ${protTarget} g</span>
     </div>
-    <div class="mp-bar" style="height:12px; margin-bottom:14px;"><div style="height:100%; width:${protPct}%; border-radius:7px; background:${protNow>=protTarget?'var(--good)':'var(--accent)'}; transition:width .3s;"></div></div>
+    <div class="mp-bar" style="height:12px; margin-bottom:11px;"><div style="height:100%; width:${protPct}%; border-radius:7px; background:${protNow>=protTarget?'var(--good)':'var(--accent)'}; transition:width .3s;"></div></div>
+    <div class="row" style="justify-content:space-between; margin-bottom:5px;">
+      <span class="label">Calories aujourd'hui</span>
+      <span style="font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:${kcalCoul};">≈ ${kcalNow}${kcalTarget? " / "+kcalTarget : ""} kcal</span>
+    </div>
+    <div class="mp-bar" style="height:12px; margin-bottom:6px;"><div style="height:100%; width:${kcalTarget?kcalPct:0}%; border-radius:7px; background:${kcalCoul}; transition:width .3s;"></div></div>
+    <div style="font-size:11.5px; color:var(--ink-mute); margin-bottom:14px;">${
+      !kcalTarget ? "Estimation d'après les aliments cochés. Renseigne ton profil pour avoir une cible."
+      : (kcalNow===0 ? "Estimation d'après les aliments cochés — coche tes repas au fil de la journée."
+        : (resteKcal > 150 ? `Il te reste environ ${resteKcal} kcal à manger aujourd'hui.`
+          : (resteKcal < -0.15*kcalTarget ? `Environ ${-resteKcal} kcal au-dessus de ta cible${db.profile.aim==="seche"?" — à surveiller en sèche.":"."}`
+            : "Tu es dans ta cible du jour 👌")))
+    }</div>
     <div class="stack" style="gap:7px;">${db.habits.map((h,i)=>{
       const on = checked.includes(i);
       const mySel = sel[i] || [];
