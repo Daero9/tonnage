@@ -1453,6 +1453,17 @@ function suggestFor(exId, target){
   const avgRir = rirs.length? rirs.reduce((a,b)=>a+b,0)/rirs.length : null;
   const allTop = last.sets.every(s=>(s.r||0)>=rng.hi);
   const anyBelow = last.sets.some(s=>(s.r||0)<rng.lo);
+  /* au poids du corps sans lest : on progresse en répétitions, pas en kilos */
+  if(estPoidsDuCorps(getEx(exId)) && !(maxW>0)){
+    const maxR = Math.max(...last.sets.map(s=>s.r||0));
+    if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
+      return {mode:"reps", w:0, text:`Tu tiens ${maxR} reps sans forcer — vise ${maxR+1} reps, ou ajoute un peu de lest.`};
+    if(anyBelow && avgRir!==null && avgRir<0.5)
+      return {mode:"hold", w:0, text:`Dernière fois tu étais à bout — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`};
+    if(anyBelow)
+      return {mode:"hold", w:0, text:`Continue à viser ${rng.lo} reps sur toutes les séries avant de charger.`};
+    return {mode:"beat", w:0, text:`Essaie de gratter une répétition de plus sur la première série.`};
+  }
   if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
     return {mode:"up", w:maxW+inc, text: allTop
       ? `Toutes les séries à ${rng.hi} reps ou plus la dernière fois — passe à ${fmtKg(maxW+inc)} kg.`
@@ -2377,19 +2388,40 @@ function renderActive(app){
             st.rir = rir;
             if(!dejaVu("rir")) marquerVu("rir");
             const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
-            const next = en.sets.find(s=>!s.done);
+            const next = en.sets.find(s=>!s.done && !s.warm);   /* jamais l'échauffement */
             const inc = (st.w||0)>=20? 2.5 : 1;
+            const sansCharge = estPoidsDuCorps(ex) && !((st.w||0) > 0);
             let msg;
             if(rir>=3){
-              msg = `Trop léger — prochaine série à ${fmtKg((st.w||0)+inc)} kg.`;
-              if(next) next.w = (st.w||0)+inc;
+              if(sansCharge){
+                const nr = (st.r||0)+2;
+                msg = next ? `Trop léger — vise ${nr} reps sur la prochaine série.`
+                            : `Trop léger — la prochaine fois, vise ${nr} reps ou ajoute du lest.`;
+                if(next) next.r = nr;
+              } else {
+                const nw = (st.w||0)+inc;
+                msg = next ? `Trop léger — prochaine série à ${fmtKg(nw)} kg.`
+                            : `Trop léger — passe à ${fmtKg(nw)} kg à la prochaine séance.`;
+                if(next) next.w = nw;
+              }
             } else if(rir===0 && (st.r||0) < rng.lo){
-              msg = `Trop lourd — prochaine série à ${fmtKg(Math.max(0,(st.w||0)-inc))} kg.`;
-              if(next) next.w = Math.max(0,(st.w||0)-inc);
+              if(sansCharge){
+                const nr = Math.max(1,(st.r||0)-1);
+                msg = next ? `Trop dur — vise ${nr} reps sur la prochaine série, la qualité prime.`
+                            : `Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`;
+                if(next) next.r = nr;
+              } else {
+                const nw = Math.max(0,(st.w||0)-inc);
+                msg = next ? `Trop lourd — prochaine série à ${fmtKg(nw)} kg.`
+                            : `Trop lourd — garde cette charge la prochaine fois, elle viendra.`;
+                if(next) next.w = nw;
+              }
             } else if(rir===0){
-              msg = "À la limite — garde cette charge, c'est du bon travail.";
+              msg = sansCharge ? "À la limite — c'est exactement là qu'il faut être."
+                                : "À la limite — garde cette charge, c'est du bon travail.";
             } else {
-              msg = "Parfait, pile la bonne zone pour prendre du muscle.";
+              msg = next ? "Parfait, pile la bonne zone pour prendre du muscle."
+                          : "Parfait — c'est noté pour ta prochaine séance.";
             }
             save();
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
@@ -2427,7 +2459,7 @@ function renderActive(app){
     const last = lastPerf(exId);
     const ls = last? last.sets[0] : null;
     a.entries.push({exId, target:{sets:4, reps:"", rest:db.settings.rest}, sets:[{w:ls?ls.w:"", r:ls?ls.r:"", done:false}]});
-    save(); render();
+    save(); closeSheet(); render();
   });
   document.getElementById("cancel-w").onclick=()=>askConfirm("Annuler la séance ?","Tout ce que tu as saisi dans cette séance sera perdu.","Oui, annuler",true,()=>{ db.active=null; save(); render(); });
   document.getElementById("finish-w").onclick=()=>{
@@ -2509,7 +2541,8 @@ function openPicker(cb){
           <button class="icon-btn info-btn" data-exinfo="${e.id}" title="Fiche de l'exercice">ⓘ</button>
           ${browse? "" : `<span style="color:var(--accent); font-weight:800; font-size:18px;">＋</span>`}</div>`).join("")
     ).join("") || `<div class="empty">Aucun résultat.</div>`;
-    if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-exinfo]")) return; closeSheet(); cb(r.dataset.pk); });
+    /* on ne ferme pas ici : c'est l'appelant qui décide (rouvrir l'éditeur, ou fermer) */
+    if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-exinfo]")) return; cb(r.dataset.pk); });
     listEl.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
   };
   draw("");
@@ -2529,7 +2562,7 @@ function openPicker(cb){
       if(!name) return;
       const equip = document.getElementById("ne-equip").value;
       const ex = {id:uid(), name, muscle:document.getElementById("ne-muscle").value, equip, icon:EQUIP_ICON[equip]||"dumbbell", custom:true};
-      db.custom.push(ex); save(); closeSheet();
+      db.custom.push(ex); save();
       if(browse) openPicker(null); else cb(ex.id);
     };
   };
