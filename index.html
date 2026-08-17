@@ -238,6 +238,10 @@
   .pick-row{display:flex; align-items:center; gap:11px; padding:8px 4px; border-bottom:1px solid var(--border); font-weight:600;}
   .pick-row:active{background:var(--surface2);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
+  .info-btn{width:30px; height:30px; flex:none; font-size:15px; color:var(--accent); background:none; border:none;}
+  .astuce{background:var(--surface2); border-radius:12px; padding:12px 13px; font-size:13.5px; line-height:1.6; color:var(--ink-soft); margin-top:12px;}
+  .etape{display:flex; gap:12px; align-items:flex-start; padding:9px 0; border-top:1px solid var(--border); font-size:13.5px; line-height:1.55; color:var(--ink-soft);}
+  .etape .num{flex:none; font-size:15px; font-weight:800; color:var(--ink-mute); font-variant-numeric:tabular-nums;}
   .mw{display:flex; flex-wrap:wrap; gap:4px 8px; margin-top:3px;}
   .mw-item{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
   .mw-item i{width:7px; height:7px; border-radius:50%; flex:none;}
@@ -447,6 +451,134 @@ const MUSCLE_WORK = {
   "Roulette abdominale":[["Abdos",3],["Lombaires",2],["Grand dorsal",1]],
   "Planche latérale":[["Obliques",3],["Abdos",2],["Deltoïdes",1]]
 };
+/* fiches d'exécution : conseil de pro + étapes, par exercice */
+const EXO_INFO = {
+"Développé couché":{tip:"Rentre les omoplates l'une vers l'autre et garde-les serrées tout du long : ça stabilise l'épaule et raccourcit la distance à parcourir.",
+ steps:["Allonge-toi, les yeux sous la barre, pieds bien à plat au sol.","Saisis la barre un peu plus large que les épaules, poignets droits dans l'axe des avant-bras.","Descends la barre au niveau du bas des pectoraux, coudes à 45° du buste.","Effleure la poitrine sans rebondir, puis pousse en gardant les fessiers sur le banc.","Verrouille les coudes en haut sans décoller les omoplates."]},
+"Développé incliné haltères":{tip:"Un banc incliné à 30° suffit : au-delà, ce sont les épaules qui prennent le travail à la place du haut des pectoraux.",
+ steps:["Règle le banc à 30°, assieds-toi et cale les haltères sur tes cuisses.","Bascule en arrière en les amenant à hauteur de poitrine.","Descends jusqu'à sentir l'étirement, coudes légèrement en avant du buste.","Pousse en rapprochant les haltères sans les cogner.","Contrôle la descente sur trois secondes."]},
+"Développé couché haltères":{tip:"Les haltères permettent une amplitude plus grande que la barre : descends un peu plus bas, c'est tout l'intérêt.",
+ steps:["Allonge-toi avec les haltères posés sur les cuisses, puis bascule en arrière.","Positionne-les à hauteur de poitrine, paumes vers l'avant.","Descends lentement jusqu'à ce que tes coudes passent sous la ligne du torse.","Pousse vers le haut en resserrant les pectoraux.","Garde une légère flexion des coudes en haut."]},
+"Écartés poulie":{tip:"Garde les coudes légèrement fléchis et figés : si l'angle du coude change, tu fais un développé, plus un écarté.",
+ steps:["Place-toi au centre, une poignée dans chaque main, un pied légèrement en avant.","Bras écartés, coudes fléchis à 15°, poitrine sortie.","Ramène les mains devant toi en décrivant un arc de cercle.","Serre les pectoraux une seconde quand les mains se rejoignent.","Reviens lentement en contrôlant l'étirement."]},
+"Dips":{tip:"Penche le buste en avant pour cibler les pectoraux, reste vertical pour cibler les triceps.",
+ steps:["Monte sur les barres, bras tendus, épaules basses.","Descends en pliant les coudes, buste légèrement penché.","Arrête-toi quand les bras forment un angle droit.","Pousse pour remonter sans donner de coup de jambes.","Verrouille les coudes en haut."]},
+"Pompes":{tip:"Serre les fessiers et les abdos : le corps doit former une planche rigide de la tête aux talons.",
+ steps:["Mains au sol un peu plus larges que les épaules, doigts vers l'avant.","Corps gainé, bassin dans l'alignement du dos.","Descends en gardant les coudes à 45°, poitrine près du sol.","Pousse en expirant, sans creuser le bas du dos.","Bloque une seconde en haut."]},
+"Butterfly (pec deck)":{tip:"Règle le siège pour que les poignées arrivent à hauteur de poitrine : trop haut, l'épaule encaisse.",
+ steps:["Assieds-toi, dos plaqué contre le dossier.","Attrape les poignées, coudes à hauteur d'épaules.","Ramène les bras devant toi lentement.","Serre les pectoraux une seconde au point de contraction.","Laisse revenir sans relâcher complètement la tension."]},
+"Développé machine":{tip:"Idéal quand tu es seul : tu peux aller à l'échec sans risque puisque la machine guide la trajectoire.",
+ steps:["Règle le siège pour que les poignées soient au niveau du bas des pectoraux.","Dos plaqué, pieds au sol.","Pousse en expirant jusqu'à quasi-extension des bras.","Reviens lentement sans laisser les poids se reposer.","Garde les épaules basses tout du long."]},
+"Écartés poulie haute":{tip:"Poulies hautes, mouvement vers le bas : c'est la partie basse des pectoraux qui travaille le plus.",
+ steps:["Règle les poulies au-dessus de la tête, une poignée dans chaque main.","Avance d'un pas, buste légèrement penché en avant.","Descends les mains l'une vers l'autre devant les hanches.","Croise légèrement les poignets en fin de mouvement.","Remonte en contrôlant."]},
+"Développé couché à la Smith":{tip:"La barre guidée te permet de pousser lourd en sécurité, mais la trajectoire est imposée : si ton épaule tire, repasse aux haltères.",
+ steps:["Positionne le banc pour que la barre descende sur le bas des pectoraux.","Déverrouille la barre en la faisant pivoter.","Descends en contrôlant, coudes à 45°.","Pousse jusqu'à extension complète.","Reverrouille la barre en fin de série."]},
+"Tractions":{tip:"Initie le mouvement en abaissant les omoplates avant de plier les coudes : c'est ce qui engage vraiment le dos plutôt que les bras.",
+ steps:["Saisis la barre en pronation, mains un peu plus larges que les épaules.","Laisse-toi pendre bras tendus, épaules basses et engagées.","Tire en amenant les coudes vers le bas et l'arrière, poitrine vers la barre.","Monte jusqu'à ce que le menton dépasse la barre.","Contrôle la descente jusqu'à l'extension complète."]},
+"Rowing barre":{tip:"Le buste ne doit pas se relever pendant la série : s'il remonte, la charge est trop lourde.",
+ steps:["Debout, pieds largeur de bassin, barre devant toi.","Penche le buste à 45°, dos plat, genoux légèrement fléchis.","Tire la barre vers le nombril, coudes le long du corps.","Serre les omoplates une seconde en haut.","Redescends la barre en contrôlant."]},
+"Tirage vertical":{tip:"Ne tire pas la barre derrière la nuque : c'est inutile pour le dos et coûteux pour l'épaule.",
+ steps:["Règle les cales pour bloquer les cuisses.","Saisis la barre large, buste très légèrement en arrière.","Tire la barre vers le haut de la poitrine.","Serre les omoplates en fin de course.","Remonte lentement bras tendus."]},
+"Rowing haltère":{tip:"Appuie la main libre sur un banc : ça soulage complètement le bas du dos et te permet de charger plus.",
+ steps:["Genou et main du même côté posés sur un banc.","Haltère dans l'autre main, bras tendu vers le sol, dos plat.","Tire l'haltère vers la hanche, coude près du corps.","Serre l'omoplate en haut.","Descends lentement jusqu'à l'étirement complet."]},
+"Tirage horizontal":{tip:"Ne balance pas le buste d'avant en arrière : seuls les bras et les omoplates doivent bouger.",
+ steps:["Assieds-toi, pieds calés, genoux légèrement fléchis.","Attrape la poignée, dos droit, buste vertical.","Tire vers le nombril en gardant les coudes près du corps.","Serre les omoplates une seconde.","Laisse revenir en contrôlant l'étirement."]},
+"Soulevé de terre":{tip:"La barre doit rester collée aux jambes tout du long : si elle s'éloigne, le bas du dos prend tout.",
+ steps:["Pieds largeur de bassin, barre au-dessus du milieu du pied.","Attrape la barre, bras tendus, dos plat, poitrine sortie.","Pousse dans le sol avec les jambes en gardant le dos figé.","Verrouille hanches et genoux en haut sans te cambrer.","Repose la barre en poussant les hanches vers l'arrière."]},
+"Tirage vertical prise neutre":{tip:"La prise neutre est la plus douce pour l'épaule : à privilégier si tu as des gênes.",
+ steps:["Fixe la poignée à prise parallèle.","Cale les cuisses, buste légèrement en arrière.","Tire vers le haut de la poitrine.","Serre les omoplates.","Remonte en contrôlant sur trois secondes."]},
+"Rowing machine":{tip:"L'appui poitrine supprime toute contrainte lombaire : c'est le meilleur rowing quand le bas du dos est sensible.",
+ steps:["Règle le siège pour que la poitrine repose sur le coussin.","Attrape les poignées bras tendus.","Tire vers l'arrière, coudes le long du corps.","Serre les omoplates une seconde.","Reviens sans laisser les poids toucher."]},
+"Pull-over poulie":{tip:"Bras quasi tendus tout du long : dès que tu plies les coudes, ce sont les triceps qui travaillent.",
+ steps:["Debout face à la poulie haute, barre ou corde en main.","Recule d'un pas, buste légèrement penché.","Descends les bras tendus vers les cuisses.","Sens l'étirement des dorsaux en fin de course.","Remonte lentement sans plier les coudes."]},
+"Haussements d'épaules":{tip:"Monte les épaules vers les oreilles à la verticale : les faire tourner n'apporte rien et fragilise le cou.",
+ steps:["Debout, un haltère dans chaque main le long du corps.","Bras tendus, épaules relâchées.","Monte les épaules le plus haut possible.","Bloque une seconde en haut.","Redescends lentement en contrôlant."]}
+};
+
+Object.assign(EXO_INFO, {
+"Développé militaire":{tip:"Serre les fessiers et les abdos : sans ce verrouillage, tu compenses en cambrant le bas du dos.",
+ steps:["Debout, barre au niveau des clavicules, mains largeur d'épaules.","Coudes légèrement en avant, poignets droits.","Pousse la barre à la verticale en rentrant la tête quand elle passe.","Verrouille les bras au-dessus de la tête, barre alignée avec les oreilles.","Redescends en contrôlant jusqu'aux clavicules."]},
+"Développé haltères":{tip:"Assis avec dossier, c'est plus sûr pour le dos ; debout, c'est plus exigeant pour le gainage. Choisis selon ton objectif.",
+ steps:["Haltères à hauteur d'épaules, paumes vers l'avant.","Coudes légèrement en avant du buste.","Pousse vers le haut en rapprochant les haltères.","Ne les cogne pas en haut, garde une légère flexion.","Redescends jusqu'à ce que les coudes passent sous les épaules."]},
+"Élévations latérales":{tip:"Charge légère et mouvement lent : c'est l'un des rares exercices où monter lourd ruine complètement l'exercice.",
+ steps:["Debout, un haltère dans chaque main le long du corps.","Buste légèrement penché en avant, coudes très légèrement fléchis.","Monte les bras sur les côtés jusqu'à hauteur d'épaules.","Imagine que tu verses de l'eau avec un pichet, petit doigt légèrement plus haut.","Redescends lentement sans laisser tomber les bras."]},
+"Oiseau":{tip:"Vise les épaules arrière, pas les omoplates : les bras partent sur les côtés, pas vers le nombril.",
+ steps:["Buste penché en avant à 45° ou poitrine appuyée sur un banc incliné.","Haltères sous la poitrine, coudes légèrement fléchis.","Écarte les bras sur les côtés jusqu'à hauteur d'épaules.","Serre une seconde en haut sans hausser les épaules.","Redescends en contrôlant."]},
+"Face pull":{tip:"Termine le mouvement avec les mains au niveau des oreilles et les coudes hauts : c'est ce qui cible l'arrière de l'épaule.",
+ steps:["Règle la poulie à hauteur de visage, corde en main.","Recule d'un pas, bras tendus, paumes vers l'intérieur.","Tire la corde vers le visage en écartant les mains.","Coudes hauts, omoplates serrées, mains au niveau des oreilles.","Reviens lentement bras tendus."]},
+"Élévations latérales poulie":{tip:"La poulie garde une tension constante même en bas du mouvement, contrairement aux haltères : idéal en fin de séance.",
+ steps:["Poulie basse, poignée dans la main opposée, câble passant devant toi.","Bras le long du corps, coude légèrement fléchi.","Monte le bras sur le côté jusqu'à hauteur d'épaule.","Bloque une seconde en haut.","Redescends très lentement contre la résistance."]},
+"Développé machine épaules":{tip:"Bon choix quand l'épaule est sensible : la trajectoire guidée évite les compensations.",
+ steps:["Règle le siège pour que les poignées soient à hauteur d'épaules.","Dos plaqué au dossier, pieds au sol.","Pousse vers le haut jusqu'à quasi-extension.","Ne verrouille pas violemment les coudes.","Redescends jusqu'à ce que les coudes passent sous les épaules."]},
+"Élévations frontales":{tip:"Inutile de monter plus haut que les épaules : au-delà, ce sont les trapèzes qui prennent le relais.",
+ steps:["Debout, haltères devant les cuisses, paumes vers toi.","Gainage serré, pas d'élan avec le buste.","Monte un bras devant toi jusqu'à hauteur d'épaule.","Bloque une seconde.","Redescends lentement puis alterne."]},
+"Curl barre":{tip:"Colle les coudes contre les côtes : s'ils avancent, ce sont les épaules qui aident.",
+ steps:["Debout, barre en supination, mains largeur d'épaules.","Coudes collés au buste, dos droit.","Monte la barre en fléchissant seulement les coudes.","Serre les biceps une seconde en haut.","Redescends lentement jusqu'à extension complète."]},
+"Curl haltères":{tip:"Tourne légèrement le poignet vers l'extérieur en montant : le biceps se contracte davantage en supination.",
+ steps:["Debout, un haltère dans chaque main, paumes vers l'avant.","Coudes fixes contre le buste.","Monte un haltère en gardant le coude immobile.","Serre en haut, poignet légèrement tourné vers l'extérieur.","Redescends lentement et alterne."]},
+"Curl marteau":{tip:"Prise neutre : c'est l'exercice qui épaissit le bras, car il cible le brachial sous le biceps.",
+ steps:["Debout, haltères en prise neutre, paumes face à face.","Coudes collés au corps.","Monte sans tourner le poignet.","Bloque une seconde en haut.","Redescends en contrôlant."]},
+"Curl pupitre":{tip:"Le pupitre empêche toute triche : c'est là que tu sentiras le plus la partie basse du mouvement.",
+ steps:["Assieds-toi, aisselles calées en haut du pupitre.","Bras tendus, barre en supination.","Monte la barre en gardant les épaules basses.","Ne bloque pas complètement en haut pour garder la tension.","Redescends jusqu'à extension quasi complète."]},
+"Curl poulie basse":{tip:"La poulie maintient la tension en bas du mouvement, là où les haltères n'en ont plus.",
+ steps:["Poulie basse, barre ou corde en main, en supination.","Recule d'un pas, coudes collés au corps.","Monte en fléchissant les coudes uniquement.","Serre une seconde en haut.","Redescends lentement contre la résistance."]},
+"Curl incliné haltères":{tip:"Le banc incliné met le biceps en étirement dès le départ : c'est la position la plus dure et la plus efficace.",
+ steps:["Assieds-toi sur un banc incliné à 45°, bras pendants.","Laisse les haltères descendre complètement.","Monte sans avancer les coudes.","Serre en haut sans monter l'épaule.","Redescends jusqu'à l'étirement complet."]},
+"Extension poulie":{tip:"Colle les coudes au corps : dès qu'ils s'écartent, l'exercice devient un pull-over et le triceps décroche.",
+ steps:["Poulie haute, barre en pronation, mains largeur d'épaules.","Coudes collés aux côtes, buste très légèrement penché.","Tends les bras vers le bas jusqu'à extension complète.","Serre le triceps une seconde en bas.","Remonte en contrôlant sans laisser les coudes s'ouvrir."]},
+"Barre au front":{tip:"Descends la barre derrière la tête plutôt que sur le front : la tension sur le triceps est meilleure et le coude moins sollicité.",
+ steps:["Allongé sur un banc, barre au-dessus des épaules.","Coudes fixes, pointés vers le plafond.","Descends la barre vers le haut du front ou derrière.","Ne bouge que les avant-bras.","Tends les bras en serrant les triceps."]},
+"Extension nuque haltère":{tip:"Amplitude complète mais charge modérée : cette position étire fortement le tendon du triceps.",
+ steps:["Assis ou debout, un haltère tenu à deux mains au-dessus de la tête.","Coudes serrés vers l'avant, près des oreilles.","Descends l'haltère derrière la nuque.","Ne laisse pas les coudes s'écarter.","Remonte en tendant complètement les bras."]},
+"Extension poulie corde":{tip:"Écarte les deux brins de la corde en fin de mouvement : ça termine la contraction sur le chef long du triceps.",
+ steps:["Poulie haute, corde en prise neutre.","Coudes collés au corps.","Tends les bras vers le bas.","Écarte les mains en bas en tournant légèrement les poignets.","Remonte lentement."]},
+"Extension triceps machine":{tip:"Guidage stable : parfait pour finir la séance en sécurité quand les bras fatiguent.",
+ steps:["Règle le siège pour que les coudes soient dans l'axe de la machine.","Dos plaqué, avant-bras sur les supports.","Pousse jusqu'à extension complète.","Serre une seconde.","Reviens sans laisser les poids se reposer."]},
+"Kickback poulie":{tip:"Le bras doit rester parallèle au sol : seul l'avant-bras bouge.",
+ steps:["Poulie basse, buste penché en avant, dos plat.","Coude remonté à hauteur du buste, bras collé au corps.","Tends l'avant-bras vers l'arrière.","Serre le triceps une seconde en extension.","Reviens lentement sans bouger le coude."]}
+});
+
+Object.assign(EXO_INFO, {
+"Squat":{tip:"Pousse le sol loin de toi plutôt que de « te relever » : la consigne change tout sur le placement du bassin.",
+ steps:["Barre sur le haut du dos, pieds largeur d'épaules, pointes légèrement ouvertes.","Gainage serré, poitrine sortie, regard droit devant.","Descends en poussant les hanches vers l'arrière, genoux dans l'axe des pieds.","Descends au moins jusqu'à la parallèle si ta mobilité le permet.","Remonte en poussant dans les talons, sans avancer les genoux."]},
+"Presse à cuisses":{tip:"Ne verrouille jamais les genoux en haut : garde une légère flexion pour protéger l'articulation.",
+ steps:["Assieds-toi, dos et bassin bien plaqués.","Pieds largeur d'épaules au milieu de la plateforme.","Descends jusqu'à 90° de flexion, pas plus bas.","Le bas du dos ne doit jamais décoller du siège.","Pousse sans bloquer complètement les genoux."]},
+"Fentes":{tip:"Fais un grand pas pour cibler les fessiers, un pas plus court pour cibler les quadriceps.",
+ steps:["Debout, haltères le long du corps, gainage serré.","Avance d'un grand pas, buste droit.","Descends jusqu'à ce que le genou arrière frôle le sol.","Le genou avant reste au-dessus de la cheville.","Pousse dans le talon avant pour revenir."]},
+"Leg curl":{tip:"Ne décolle pas le bassin de l'appui : si tu te cambres, la charge est trop lourde.",
+ steps:["Installe-toi, rouleau juste au-dessus des talons.","Bassin plaqué, mains sur les poignées.","Fléchis les genoux en amenant les talons vers les fessiers.","Serre une seconde en position haute.","Redescends lentement sans relâcher d'un coup."]},
+"Leg extension":{tip:"Marque un temps d'arrêt d'une seconde en haut : c'est là que le quadriceps travaille le plus.",
+ steps:["Règle le dossier pour que les genoux soient dans l'axe de rotation.","Rouleau posé sur le bas du tibia.","Tends les jambes jusqu'à l'extension complète.","Bloque une seconde en contractant.","Redescends en contrôlant, sans laisser tomber."]},
+"Soulevé de terre roumain":{tip:"Le mouvement part des hanches, pas du dos : recule le bassin comme pour fermer une porte de voiture avec les fesses.",
+ steps:["Debout, barre devant les cuisses, genoux légèrement fléchis.","Dos plat, épaules en arrière.","Descends la barre le long des jambes en poussant les hanches vers l'arrière.","Arrête-toi quand tu sens l'étirement des ischio-jambiers.","Reviens en poussant le bassin vers l'avant, fessiers serrés."]},
+"Hip thrust":{tip:"Rentre le menton et regarde tes genoux pendant la montée : ça empêche de cambrer le bas du dos.",
+ steps:["Haut du dos appuyé sur un banc, barre sur le pli des hanches.","Pieds à plat, tibias verticaux en position haute.","Pousse le bassin vers le plafond en serrant les fessiers.","Bloque une seconde, corps aligné épaules-hanches-genoux.","Redescends sans poser complètement."]},
+"Mollets debout":{tip:"Monte le plus haut possible et descends le plus bas possible : l'amplitude complète fait toute la différence sur ce muscle têtu.",
+ steps:["Pointes de pieds sur la marche, talons dans le vide.","Descends les talons jusqu'à l'étirement maximal.","Monte sur la pointe des pieds le plus haut possible.","Bloque une seconde en haut.","Redescends lentement sur trois secondes."]},
+"Hack squat":{tip:"Pieds hauts sur la plateforme pour les fessiers, pieds bas pour les quadriceps.",
+ steps:["Épaules sous les coussins, dos plaqué contre le dossier.","Pieds largeur d'épaules au milieu de la plateforme.","Déverrouille et descends en contrôlant.","Descends jusqu'à la parallèle, genoux dans l'axe.","Pousse dans les talons sans bloquer les genoux."]},
+"Fentes bulgares":{tip:"Le plus dur des exercices de jambes à charge égale : commence au poids du corps avant d'ajouter des haltères.",
+ steps:["Pied arrière posé sur un banc derrière toi.","Pied avant assez loin pour que le tibia reste vertical.","Descends verticalement, buste légèrement penché.","Le genou arrière descend vers le sol.","Pousse dans le talon avant pour remonter."]},
+"Abducteurs machine":{tip:"Penche légèrement le buste en avant : les fessiers travaillent davantage que dans la position assise droite.",
+ steps:["Assieds-toi, coussins contre l'extérieur des cuisses.","Dos plaqué, mains sur les poignées.","Écarte les jambes en poussant contre les coussins.","Bloque une seconde en écartement maximal.","Reviens lentement sans laisser les poids claquer."]},
+"Adducteurs machine":{tip:"Amplitude progressive : les adducteurs sont fragiles, ne force jamais sur l'étirement à froid.",
+ steps:["Assieds-toi, coussins contre l'intérieur des cuisses.","Écarte les jambes jusqu'à un étirement confortable.","Resserre les cuisses en contrôlant.","Serre une seconde en position fermée.","Laisse revenir doucement."]},
+"Mollets assis":{tip:"Genou plié, c'est le soléaire qui travaille : il complète les mollets debout, il ne les remplace pas.",
+ steps:["Assieds-toi, coussins sur le bas des cuisses.","Pointes de pieds sur la cale, talons dans le vide.","Descends les talons au maximum.","Monte sur la pointe des pieds.","Bloque une seconde puis redescends lentement."]},
+"Crunch":{tip:"Décolle seulement les omoplates : monter tout le buste fait travailler les fléchisseurs de hanche, pas les abdos.",
+ steps:["Allongé au sol, genoux pliés, pieds à plat.","Mains sur les tempes ou croisées sur la poitrine.","Enroule le haut du dos en soufflant.","Décolle les omoplates de quelques centimètres seulement.","Redescends lentement sans poser la tête."]},
+"Gainage":{tip:"Serre les fessiers : c'est le réflexe qui empêche automatiquement le bassin de tomber.",
+ steps:["Appuis sur les avant-bras, coudes sous les épaules.","Corps aligné de la tête aux talons.","Serre abdos et fessiers, bassin légèrement rentré.","Respire normalement, ne bloque pas ta respiration.","Tiens la position sans laisser le bas du dos creuser."]},
+"Relevés de jambes":{tip:"Enroule le bassin vers le haut en fin de mouvement : sans ça, ce sont les hanches qui travaillent.",
+ steps:["Suspendu à la barre, bras tendus, épaules engagées.","Jambes tendues ou genoux pliés selon ton niveau.","Monte les jambes en enroulant le bassin vers le haut.","Évite de te balancer.","Redescends lentement en gardant le contrôle."]},
+"Crunch câble":{tip:"Le mouvement vient de la colonne qui s'enroule, pas des bras qui tirent.",
+ steps:["À genoux face à la poulie haute, corde de chaque côté du visage.","Hanches fixes, fesses sur les talons.","Enroule le buste vers le sol en soufflant.","Serre les abdos une seconde en bas.","Remonte lentement sans tirer avec les bras."]},
+"Roulette abdominale":{tip:"Commence à genoux avec une amplitude courte : cet exercice est bien plus dur qu'il n'en a l'air.",
+ steps:["À genoux, roulette sous les épaules.","Dos légèrement arrondi, abdos serrés.","Déroule vers l'avant en gardant le bassin rentré.","Ne descends que jusqu'où tu peux garder le dos non creusé.","Reviens en tirant avec les abdos, pas avec les bras."]},
+"Planche latérale":{tip:"Aligne épaule, hanche et cheville : si les hanches reculent, l'exercice ne sert plus à rien.",
+ steps:["Allongé sur le côté, coude sous l'épaule.","Pieds superposés ou légèrement décalés.","Décolle les hanches jusqu'à l'alignement complet.","Serre les obliques du côté au sol.","Tiens la position en respirant normalement."]}
+});
+
 const NIVEAU_COULEUR = {3:"var(--bad)", 2:"#e8a33d", 1:"var(--good)"};
 const NIVEAU_TEXTE = {3:"forte", 2:"moyenne", 1:"légère"};
 function musclesHtml(exName, max){
@@ -454,6 +586,62 @@ function musclesHtml(exName, max){
   if(!list) return "";
   return `<span class="mw">${list.slice(0, max||4).map(([m,n])=>
     `<span class="mw-item" title="Sollicitation ${NIVEAU_TEXTE[n]}"><i style="background:${NIVEAU_COULEUR[n]};"></i>${esc(m)}</span>`).join("")}</span>`;
+}
+
+/* fiche complète d'un exercice : anatomie, exécution, conseil */
+function exoBodyHtml(exName, back){
+  const cle = back? "back" : "front";
+  const [W,H] = MP_TAILLE[cle];
+  const img = back? MP_BACK : MP_FRONT;
+  const niveaux = {};
+  (MUSCLE_WORK[exName]||[]).forEach(([m,n])=>{
+    const g = groupeDe(m);
+    if(g && (!niveaux[g] || n>niveaux[g])) niveaux[g] = n;
+  });
+  const zones = MP_ZONES[cle].map(z=>{
+    const n = niveaux[z[0]];
+    if(!n) return "";
+    return `<ellipse cx="${z[1]}" cy="${z[2]}" rx="${z[3]}" ry="${z[4]}" transform="rotate(${z[5]} ${z[1]} ${z[2]})" fill="${NIVEAU_COULEUR[n]}" fill-opacity="${n===3?0.7:(n===2?0.5:0.35)}"/>`;
+  }).join("");
+  if(!zones) return "";
+  return `<div class="mp-fig" style="max-width:132px;"><img src="${img}" alt="${back?'dos':'face'}">
+    <svg viewBox="0 0 ${W} ${H}"><g style="filter:blur(4px);">${zones}</g></svg>
+    <div style="text-align:center; font-size:9.5px; font-weight:800; letter-spacing:.1em; color:var(--ink-mute); margin-top:2px;">${back?"VUE DOS":"VUE FACE"}</div></div>`;
+}
+function openExoInfo(exId){
+  const ex = getEx(exId);
+  const info = EXO_INFO[ex.name];
+  const note = injuryNote(ex.name);
+  const muscles = MUSCLE_WORK[ex.name] || [];
+  const principaux = muscles.filter(([m,n])=>n===3);
+  const assistes = muscles.filter(([m,n])=>n<3);
+  /* on n'affiche que les vues où l'exercice a réellement des zones */
+  const face = exoBodyHtml(ex.name,false), dos = exoBodyHtml(ex.name,true);
+  openSheet(`
+    <div class="row" style="gap:12px; align-items:center; margin-bottom:4px;">
+      ${exIcon(ex)}
+      <div class="grow"><h3 style="margin:0;">${esc(ex.name)}</h3>
+      <div style="font-size:12.5px; color:var(--ink-mute);">${esc(ex.equip||"")} · ${esc(ex.muscle)}</div></div>
+    </div>
+    ${note? `<div class="inj-note" style="margin:12px 0;">⚠️ <b>${esc(note.injury)} sensible.</b> ${esc(note.tip)}</div>`:""}
+    ${info? `<div class="astuce"><div class="label" style="color:var(--accent); margin-bottom:5px;">✨ Astuce de pro</div>${esc(info.tip)}</div>`:""}
+    ${info? `<div class="label" style="margin:16px 0 8px;">Comment l'exécuter · ${info.steps.length} étapes</div>
+      <div>${info.steps.map((t,i)=>`<div class="etape"><span class="num">${String(i+1).padStart(2,"0")}</span><span>${esc(t)}</span></div>`).join("")}</div>`
+      : `<div style="font-size:13px; color:var(--ink-mute); margin:14px 0;">Pas encore de fiche d'exécution pour cet exercice.</div>`}
+    ${muscles.length? `<div class="label" style="margin:18px 0 8px;">Muscles sollicités</div>
+      <div class="row" style="gap:14px; align-items:flex-start;">
+        ${(face||dos)? `<div class="row" style="gap:6px; flex:0 0 auto;">${face}${dos}</div>`:""}
+        <div class="grow">
+          ${principaux.map(([m])=>`<div style="margin-bottom:8px;">
+            <div class="mw-item" style="font-size:10.5px; color:var(--bad); letter-spacing:.08em;"><i style="background:var(--bad);"></i>PRINCIPAL</div>
+            <div style="font-size:16px; font-weight:800; line-height:1.2;">${esc(m)}</div>
+          </div>`).join("")}
+          ${assistes.length? `<div class="mw-item" style="font-size:10.5px; letter-spacing:.08em; margin-top:10px;"><i style="background:var(--ink-mute);"></i>ASSISTÉS · ${assistes.length}</div>
+            <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.7;">${assistes.map(([m,n])=>`${esc(m)} <span style="color:${NIVEAU_COULEUR[n]};">●</span>`).join("<br>")}</div>`:""}
+        </div>
+      </div>`:""}
+    <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:18px;">Fermer</button>`);
+  document.getElementById("ei-ok").onclick = closeSheet;
 }
 
 /* blessures : exercices à éviter, variantes plus sûres et conseil de posture */
@@ -2050,10 +2238,12 @@ function openPreview(tplId){
       return `<div class="pick-row" style="cursor:default;">${exIcon(ex)}
         <div class="grow"><div>${i+1}. ${esc(ex.name)}</div>
         <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? ` · dernière fois ${fmtKg(Math.max(...last.sets.map(s=>s.w||0)))} kg`:""}</div>${musclesHtml(ex.name,3)}
-        ${note? `<div class="eq" style="color:var(--bad);">⚠️ ${esc(note.injury)} : ${esc(note.tip)}</div>`:""}</div></div>`;
+        ${note? `<div class="eq" style="color:var(--bad);">⚠️ ${esc(note.injury)} : ${esc(note.tip)}</div>`:""}</div>
+        <button class="icon-btn info-btn" data-exinfo="${it.exId}" title="Fiche de l'exercice">ⓘ</button></div>`;
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">Lancer cette séance</button>
     <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">Fermer</button>`);
+  document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
   document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
   document.getElementById("pv-close").onclick=closeSheet;
 }
@@ -2114,6 +2304,7 @@ function renderActive(app){
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
+        <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="Fiche de l'exercice">ⓘ</button>
         <span class="pill">${esc(ex.equip||ex.muscle)}</span></div>
       <div style="margin-bottom:8px;">${musclesHtml(ex.name)}</div>
       <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
@@ -2203,6 +2394,7 @@ function renderActive(app){
       save(); render();
     };
     wireHints(card);
+    card.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
     card.querySelector('[data-act="swap"]').onclick=()=>openSwap(ei);
     const injBtn = card.querySelector("[data-injswap]");
     if(injBtn) injBtn.onclick=()=>openSwap(ei, true);
@@ -2297,9 +2489,11 @@ function openPicker(cb){
       `<div class="muscle-h">${esc(m)}</div>`+groups[m].map(e=>
         `<div class="pick-row" data-pk="${e.id}">${exIcon(e)}
           <div class="grow"><div>${esc(e.name)}</div><div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}</div>${musclesHtml(e.name,3)}</div>
+          <button class="icon-btn info-btn" data-exinfo="${e.id}" title="Fiche de l'exercice">ⓘ</button>
           ${browse? "" : `<span style="color:var(--accent); font-weight:800; font-size:18px;">＋</span>`}</div>`).join("")
     ).join("") || `<div class="empty">Aucun résultat.</div>`;
-    if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=()=>{ closeSheet(); cb(r.dataset.pk); });
+    if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-exinfo]")) return; closeSheet(); cb(r.dataset.pk); });
+    listEl.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
   };
   draw("");
   document.getElementById("pk-search").oninput=e=>draw(e.target.value);
