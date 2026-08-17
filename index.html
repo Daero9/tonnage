@@ -1343,6 +1343,8 @@ function applyDefaults(){
   if(!db.habitSel) db.habitSel = {};
   if(!db.seen) db.seen = {};
   if(!db.dayFix) db.dayFix = {};
+  if(!db.hbPerso) db.hbPerso = {};     /* aliments ajoutés aux propositions, par type de repas */
+  if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "sombre";
   if(!db.seq) db.seq = 1;
   if(!("active" in db)) db.active = null;
@@ -1942,7 +1944,8 @@ const FOOD_100G = [
     ["Dose de whey (30 g)",24,120,"dose"],
     ["Pot de fromage blanc (100 g)",8,50,"pot"],["Pot de skyr (150 g)",17,90,"pot"],["Yaourt nature",5,60,"pot"],
     ["Tranche de pain",3,90,"tranche"],["Banane",1.3,105,"banane"],["Pomme",0.5,95,"pomme"],
-    ["Gourde de compote",0.3,60,"gourde"],["Barre de céréales",2,130,"barre"],["Poignée d'amandes (25 g)",5,150,"poignée"]
+    ["Gourde de compote",0.3,60,"gourde"],["Barre de céréales",2,130,"barre"],["Poignée d'amandes (25 g)",5,150,"poignée"],
+    ["Cuillère à soupe d'huile d'olive",0,120,"cuillère"],["Cuillère de beurre de cacahuète (30 g)",7.5,180,"cuillère"]
   ]],
   ["Viandes / poissons (au poids)", [["Porc (filet)",27,250,"100g"],["Bœuf / steak",26,250,"100g"],["Poulet (blanc)",31,165,"100g"],["Dinde",29,135,"100g"],["Veau",27,170,"100g"],["Agneau",25,250,"100g"],["Saumon",22,200,"100g"],["Thon",26,130,"100g"],["Cabillaud",23,85,"100g"],["Crevettes",20,100,"100g"],["Jambon blanc",20,110,"100g"],["Steak haché 5 %",26,150,"100g"]]],
   ["Laitages (au poids)", [["Fromage blanc 0 %",8,50,"100g"],["Skyr",11,60,"100g"],["Yaourt grec",9,100,"100g"],["Lait",3.4,50,"100g"],["Comté / emmental",28,400,"100g"],["Mozzarella",18,280,"100g"],["Whey en poudre",75,380,"100g"]]],
@@ -1971,11 +1974,48 @@ function dayKcal(key){
   return s? Math.round(Object.values(s).flat().reduce((a,l)=>a+kcalOf(l),0)) : 0;
 }
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
+function habitType(h){
+  const t = (h||"").toLowerCase();
+  if(t.includes("shake")||t.includes("collation")||t.includes("goûter")) return "snack";
+  if(t.includes("petit-déj")||t.includes("petit déj")) return "petitdej";
+  return "repas";
+}
+/* groupes de propositions : [titre, clé, aliments]. Les aliments masqués par appui long
+   disparaissent, ceux ajoutés depuis « Autre » forment un groupe « Mes aliments ». */
 function habitOpts(h){
-  const t = h.toLowerCase();
-  if(t.includes("shake")||t.includes("collation")||t.includes("goûter")) return {"Contenu":HB_OPTS.snack};
-  if(t.includes("petit-déj")||t.includes("petit déj")) return {"Protéines":HB_OPTS.bkProt,"Féculents / énergie":HB_OPTS.bkCarb};
-  return {"Protéines":HB_OPTS.prot,"Féculents":HB_OPTS.carb};
+  const ty = habitType(h);
+  const base = ty==="snack" ? [["Contenu","snack",HB_OPTS.snack]]
+    : (ty==="petitdej" ? [["Protéines","bkProt",HB_OPTS.bkProt],["Féculents / énergie","bkCarb",HB_OPTS.bkCarb]]
+      : [["Protéines","prot",HB_OPTS.prot],["Féculents","carb",HB_OPTS.carb]]);
+  const gs = base.map(([titre,cle,list])=>[titre, cle, list.filter(x=>!((db.hbMasque[cle]||[]).includes(x[0])))])
+                 .filter(g=>g[2].length);
+  const perso = db.hbPerso[ty] || [];
+  if(perso.length) gs.push(["Mes aliments","perso:"+ty, perso]);
+  return gs;
+}
+function nbMasques(){ return Object.values(db.hbMasque||{}).reduce((a,l)=>a+(l?l.length:0),0); }
+/* appui long sur une proposition : on la retire de la liste (masquée, ou supprimée si c'est la tienne) */
+function demanderRetrait(label, grp){
+  const perso = grp.indexOf("perso:")===0;
+  openSheet(`<h3>Retirer cet aliment ?</h3>
+    <div style="font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px;">
+      <b style="color:var(--ink);">${esc(label)}</b> ne sera plus proposé quand tu coches un repas.
+      ${perso? "Tu pourras le recréer depuis « ＋ Autre… »." : "Tu pourras le remettre depuis « ＋ Autre… », en bas de la fiche."}
+      Les journées déjà enregistrées ne changent pas.</div>
+    <div class="row" style="gap:8px;">
+      <button class="btn grow" id="rt-non">Annuler</button>
+      <button class="btn btn-accent grow" id="rt-oui">Retirer</button>
+    </div>`);
+  document.getElementById("rt-non").onclick = closeSheet;
+  document.getElementById("rt-oui").onclick = ()=>{
+    if(perso){
+      const ty = grp.slice(6);
+      db.hbPerso[ty] = (db.hbPerso[ty]||[]).filter(x=>x[0]!==label);
+    } else {
+      db.hbMasque[grp] = (db.hbMasque[grp]||[]).concat(label);
+    }
+    save(); closeSheet(); render();
+  };
 }
 function weightVerdict(){
   if(!(db.settings.goal>0)) return {txt:"Renseigne ton profil pour recevoir des conseils adaptés à ton objectif.", tone:"mute"};
@@ -2259,13 +2299,13 @@ function renderSeance(app){
       let sub = "";
       if(ouvert){
         const groups = habitOpts(h);
-        const predefined = Object.values(groups).flat().map(x=>x[0]);
-        const customs = mySel.filter(l=>!predefined.includes(l) && !(l in HB_PROT_MAP));
-        sub = `<div class="hb-sub">` + Object.keys(groups).map((g,gi)=>`
-          <div class="hb-g"><span class="label">${esc(g)}</span>
-          <div class="chips" style="gap:5px; margin-top:4px;">${groups[g].map(([l,p])=>`
-            <button class="chip chip-sm ${mySel.includes(l)?'on':''}" data-opt="${i}|${esc(l)}">${esc(l)}<i>${p>0?p+"g":""}</i></button>`).join("")}
-          ${gi===Object.keys(groups).length-1 ? customs.map(l=>`<button class="chip chip-sm on" data-opt="${i}|${esc(l)}">${esc(l)}</button>`).join("") + `<button class="chip chip-sm" data-other="${i}" style="border-style:dashed;">＋ Autre…</button>` : ""}
+        const predefined = groups.reduce((a,g)=>a.concat(g[2].map(x=>x[0])), []);
+        const customs = mySel.filter(l=>!predefined.includes(l));   /* choisis via « Autre », ou masqués depuis */
+        sub = `<div class="hb-sub">` + groups.map(([titre,cle,items],gi)=>`
+          <div class="hb-g"><span class="label">${esc(titre)}</span>
+          <div class="chips" style="gap:5px; margin-top:4px;">${items.map(([l,p,kc])=>`
+            <button class="chip chip-sm ${mySel.includes(l)?'on':''}" data-opt="${i}|${esc(l)}" data-grp="${cle}">${esc(l.replace(/\s*\(~[^)]*\)\s*$/,""))}<i>${p>0? p+"g" : (kc? kc+" kcal":"")}</i></button>`).join("")}
+          ${gi===groups.length-1 ? customs.map(l=>`<button class="chip chip-sm on" data-opt="${i}|${esc(l)}">${esc(l)}</button>`).join("") + `<button class="chip chip-sm" data-other="${i}" style="border-style:dashed;">＋ Autre…</button>` : ""}
           </div></div>`).join("") + `</div>`;
       }
       return `<div>
@@ -2298,14 +2338,29 @@ function renderSeance(app){
     habitOuvert[i] = habitOuvert[i] === false;
     renderSurPlace();
   });
-  document.querySelectorAll("[data-opt]").forEach(b=>b.onclick=()=>{
+  let lpTimer = null, lpFired = false;
+  document.querySelectorAll("[data-opt]").forEach(b=>{
     const [iStr, label] = b.dataset.opt.split("|");
     const i = parseInt(iStr);
-    if(!db.habitSel[todayKey]) db.habitSel[todayKey] = {};
-    const arr = db.habitSel[todayKey][i] || [];
-    db.habitSel[todayKey][i] = arr.includes(label)? arr.filter(x=>x!==label) : arr.concat(label);
-    if(db.dayFix[todayKey]) delete db.dayFix[todayKey];   /* la saisie manuelle reprend la main */
-    save(); renderSurPlace();
+    const grp = b.dataset.grp;
+    const debut = ()=>{
+      if(!grp) return;                       /* un aliment ponctuel ne se retire pas des propositions */
+      lpFired = false; clearTimeout(lpTimer);
+      lpTimer = setTimeout(()=>{ lpFired = true; if(navigator.vibrate) navigator.vibrate(18); demanderRetrait(label, grp); }, 550);
+    };
+    const fin = ()=>clearTimeout(lpTimer);
+    b.addEventListener("touchstart", debut, {passive:true});
+    ["touchend","touchmove","touchcancel"].forEach(e=>b.addEventListener(e, fin));
+    b.addEventListener("mousedown", debut); b.addEventListener("mouseup", fin); b.addEventListener("mouseleave", fin);
+    b.oncontextmenu = e=>{ e.preventDefault(); if(grp) demanderRetrait(label, grp); };
+    b.onclick=()=>{
+      if(lpFired){ lpFired = false; return; }   /* c'était un appui long, pas un choix */
+      if(!db.habitSel[todayKey]) db.habitSel[todayKey] = {};
+      const arr = db.habitSel[todayKey][i] || [];
+      db.habitSel[todayKey][i] = arr.includes(label)? arr.filter(x=>x!==label) : arr.concat(label);
+      if(db.dayFix[todayKey]) delete db.dayFix[todayKey];   /* la saisie manuelle reprend la main */
+      save(); renderSurPlace();
+    };
   });
   document.querySelectorAll("[data-other]").forEach(b=>b.onclick=()=>{
     const i = parseInt(b.dataset.other);
@@ -2327,8 +2382,15 @@ function renderSeance(app){
           <input type="number" inputmode="numeric" step="10" min="0" id="ot-kcal" placeholder="400">
         </div>
         <div id="ot-live" style="font-size:15px; font-weight:700; color:var(--accent); min-height:22px;"></div>
+        <label class="row" style="gap:9px; align-items:flex-start; cursor:pointer;">
+          <input type="checkbox" id="ot-save" style="width:19px; height:19px; margin-top:1px; accent-color:var(--accent); flex:0 0 auto;">
+          <span style="font-size:13px; color:var(--ink-soft); line-height:1.45;">Garder dans mes propositions<br>
+            <span style="font-size:11.5px; color:var(--ink-mute);">Il apparaîtra directement la prochaine fois, sans avoir à le ressaisir.</span></span>
+        </label>
         <p style="margin:0; font-size:12px; color:var(--ink-mute);">Pas sûr de la quantité ? Envoie une photo de ton assiette à Claude, il te l'estime.</p>
         <button class="btn btn-accent" id="ot-ok">Ajouter</button>
+        ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? `Restaurer les ${nbMasques()} propositions retirées` : "Restaurer la proposition retirée"}</button>`:""}
+        <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute);">Astuce : appui long sur une proposition pour la retirer de la liste.</p>
       </div>`);
     const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
     const trouver = val => {
@@ -2356,21 +2418,29 @@ function renderSeance(app){
       liveEl.textContent = piece
         ? `${q} ${unite}${q>1?"s":""} ≈ ${prot} g de protéines · ${kcal} kcal`
         : `${q} g de ${court.toLowerCase()} ≈ ${prot} g de protéines · ${kcal} kcal`;
-      return {label: piece ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)` : `${court} ${q} g (~${prot} g prot. · ${kcal} kcal)`, prot};
+      return {label: piece ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)` : `${court} ${q} g (~${prot} g prot. · ${kcal} kcal)`, prot, kcal};
     };
     foodEl.onchange = calc; gEl.oninput = calc;
+    const resto = document.getElementById("ot-restore");
+    if(resto) resto.onclick = ()=>{ db.hbMasque = {}; save(); closeSheet(); render(); };
     document.getElementById("ot-ok").onclick=()=>{
-      let label;
+      let label, prot = 0, kcal = 0;
       if(foodEl.value==="manuel"){
         const p = parseFloat(document.getElementById("ot-prot").value);
         if(isNaN(p)||p<0) return;
         const k = parseFloat(document.getElementById("ot-kcal").value);
         const nom = document.getElementById("ot-name").value.trim()||"Autre";
-        label = isNaN(k) ? `${nom} (~${p} g prot.)` : `${nom} (~${p} g prot. · ${Math.round(k)} kcal)`;
+        prot = p; kcal = isNaN(k)? 0 : Math.round(k);
+        label = isNaN(k) ? `${nom} (~${p} g prot.)` : `${nom} (~${p} g prot. · ${kcal} kcal)`;
       } else {
         const r = calc();
         if(!r) return;
-        label = r.label;
+        label = r.label; prot = r.prot; kcal = r.kcal;
+      }
+      if(document.getElementById("ot-save").checked){
+        const ty = habitType(db.habits[i]);
+        const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
+        if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal]);
       }
       if(!db.habitSel[todayKey]) db.habitSel[todayKey] = {};
       db.habitSel[todayKey][i] = (db.habitSel[todayKey][i]||[]).concat(label);
