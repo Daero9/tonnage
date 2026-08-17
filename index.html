@@ -1819,34 +1819,49 @@ function openCardioList(){
 /* ================= SÉANCE (home) ================= */
 let chronoInt = null;
 /* ===== Nutrition sans chiffres : checklist + verdict de la balance ===== */
-/* [libellé avec portion, protéines (g), calories] */
+/* [libellé avec portion réelle, protéines (g), calories] — portions courantes, pas symboliques */
 const HB_OPTS = {
-  prot: [["Poulet (150 g)",35,250],["Steak de bœuf",30,300],["Œufs (×3)",18,230],["Thon (1 boîte)",25,130],["Poisson (150 g)",30,220],["Jambon / dinde",15,110]],
-  carb: [["Riz (100 g)",5,130],["Pâtes (100 g)",8,160],["Patates (200 g)",4,160],["Pain (2 tranches)",6,180],["Semoule (100 g)",6,150],["Légumineuses (150 g)",15,180]],
-  snack: [["Avoine (60 g)",8,230],["Banane",1,100],["Biscuits",3,200],["Compote",0,90],["Whey + eau",25,110],["Whey + lait",30,250],["Fruits secs (30 g)",5,170]],
-  bkProt: [["Œufs (×3)",18,230],["Whey + eau",25,110],["Whey + lait",30,250],["Jambon",10,110],["Fromage blanc",15,120]],
-  bkCarb: [["Avoine (60 g)",8,230],["Pain (2 tranches)",6,180],["Banane",1,100],["Biscuits",3,200],["Compote",0,90]]
+  prot: [["Poulet (150 g)",35,250],["Steak de bœuf (150 g)",38,330],["Œufs (×3)",19,230],["Thon (1 boîte)",26,130],["Poisson (150 g)",30,220],["Jambon (2 tranches)",16,90]],
+  carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,320],["Patates (250 g)",5,200],["Pain (2 tranches)",6,180],["Semoule (200 g cuite)",8,240],["Légumineuses (150 g)",14,175]],
+  snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuits (×4)",3,200],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose)",32,250],["Fruits secs (30 g)",5,170]],
+  bkProt: [["Œufs (×3)",19,230],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose)",32,250],["Jambon (2 tranches)",16,90],["Fromage blanc (200 g)",16,100]],
+  bkCarb: [["Avoine (60 g)",8,230],["Pain (2 tranches)",6,180],["Banane",1,105],["Biscuits (×4)",3,200],["Compote (1 gourde)",0,60]]
 };
 const HB_PROT_MAP = {
-  /* anciens libellés (données déjà enregistrées) */
+  /* anciens libellés, pour ne pas perdre les journées déjà enregistrées */
   "150 g de poulet":35,"1 steak de bœuf":30,"3 œufs":18,"1 boîte de thon":25,"150 g de poisson":30,"Autre protéine":20,
   "Riz":5,"Pâtes":8,"Patates":4,"Pain":6,"Semoule":6,"Légumineuses":15,"Autre féculent":5,
-  "60 g d'avoine":8,"Fruits secs":5,"Autre":3
+  "60 g d'avoine":8,"Fruits secs":5,"Autre":3,
+  "Steak de bœuf":30,"Thon (1 boîte)":25,"Jambon / dinde":15,"Jambon":10,"Fromage blanc":15,
+  "Riz (100 g)":5,"Pâtes (100 g)":8,"Patates (200 g)":4,"Semoule (100 g)":6,"Légumineuses (150 g)":15,
+  "Biscuits":3,"Compote":0,"Whey + eau":25,"Whey + lait":30
 };
 const HB_KCAL_MAP = {
   "150 g de poulet":250,"1 steak de bœuf":300,"3 œufs":230,"1 boîte de thon":130,"150 g de poisson":220,"Autre protéine":200,
   "Riz":130,"Pâtes":160,"Patates":160,"Pain":180,"Semoule":150,"Légumineuses":180,"Autre féculent":150,
-  "60 g d'avoine":230,"Fruits secs":170,"Autre":150
+  "60 g d'avoine":230,"Fruits secs":170,"Autre":150,
+  "Steak de bœuf":300,"Thon (1 boîte)":130,"Jambon / dinde":110,"Jambon":110,"Fromage blanc":120,
+  "Riz (100 g)":130,"Pâtes (100 g)":160,"Patates (200 g)":160,"Semoule (100 g)":150,"Légumineuses (150 g)":180,
+  "Biscuits":200,"Compote":90,"Whey + eau":110,"Whey + lait":250
 };
 Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
   if(!(l in HB_PROT_MAP) || g>HB_PROT_MAP[l]) HB_PROT_MAP[l]=g;
   if(!(l in HB_KCAL_MAP)) HB_KCAL_MAP[l]=k;
 }));
-/* pour 100 g d'aliment prêt à manger : [nom, protéines, calories] */
+/* [nom, protéines, calories, unité] — "100g" = valeurs pour 100 g, sinon valeurs POUR UNE PIÈCE */
 const FOOD_100G = [
-  ["Viandes / poissons", [["Porc (filet)",27,250],["Bœuf / steak",26,250],["Poulet (blanc)",31,165],["Dinde",29,135],["Veau",27,170],["Agneau",25,250],["Saumon",22,200],["Thon",26,130],["Cabillaud",23,85],["Crevettes",20,100],["Jambon blanc",20,110],["Steak haché 5 %",26,150]]],
-  ["Œufs / laitages", [["Œuf (≈55 g pièce)",13,145],["Fromage blanc 0 %",8,50],["Skyr",11,60],["Yaourt grec",9,100],["Lait",3.4,50],["Comté / emmental",28,400],["Mozzarella",18,280],["Whey en poudre",75,380]]],
-  ["Féculents / végétal", [["Riz cuit",2.7,130],["Pâtes cuites",5,160],["Pain",9,260],["Avoine",13,380],["Semoule cuite",4,120],["Patate",2,80],["Quinoa cuit",4.4,120],["Lentilles cuites",9,115],["Pois chiches cuits",9,160],["Haricots rouges cuits",9,125],["Tofu",12,120],["Amandes",21,600],["Beurre de cacahuète",25,600]]]
+  ["À la pièce", [
+    ["Œuf",6.5,78,"œuf"],["Blanc d'œuf",3.6,17,"blanc"],
+    ["Steak haché 5 % (100 g)",26,150,"steak"],["Blanc de poulet (130 g)",40,215,"filet"],
+    ["Tranche de jambon",8,45,"tranche"],["Boîte de thon (110 g)",26,130,"boîte"],
+    ["Dose de whey (30 g)",24,120,"dose"],
+    ["Pot de fromage blanc (100 g)",8,50,"pot"],["Pot de skyr (150 g)",17,90,"pot"],["Yaourt nature",5,60,"pot"],
+    ["Tranche de pain",3,90,"tranche"],["Banane",1.3,105,"banane"],["Pomme",0.5,95,"pomme"],
+    ["Gourde de compote",0.3,60,"gourde"],["Barre de céréales",2,130,"barre"],["Poignée d'amandes (25 g)",5,150,"poignée"]
+  ]],
+  ["Viandes / poissons (au poids)", [["Porc (filet)",27,250,"100g"],["Bœuf / steak",26,250,"100g"],["Poulet (blanc)",31,165,"100g"],["Dinde",29,135,"100g"],["Veau",27,170,"100g"],["Agneau",25,250,"100g"],["Saumon",22,200,"100g"],["Thon",26,130,"100g"],["Cabillaud",23,85,"100g"],["Crevettes",20,100,"100g"],["Jambon blanc",20,110,"100g"],["Steak haché 5 %",26,150,"100g"]]],
+  ["Laitages (au poids)", [["Fromage blanc 0 %",8,50,"100g"],["Skyr",11,60,"100g"],["Yaourt grec",9,100,"100g"],["Lait",3.4,50,"100g"],["Comté / emmental",28,400,"100g"],["Mozzarella",18,280,"100g"],["Whey en poudre",75,380,"100g"]]],
+  ["Féculents / végétal (au poids)", [["Riz cuit",2.7,130,"100g"],["Pâtes cuites",5,160,"100g"],["Pain",9,260,"100g"],["Avoine",13,380,"100g"],["Semoule cuite",4,120,"100g"],["Patate",2,80,"100g"],["Quinoa cuit",4.4,120,"100g"],["Lentilles cuites",9,115,"100g"],["Pois chiches cuits",9,160,"100g"],["Haricots rouges cuits",9,125,"100g"],["Tofu",12,120,"100g"],["Amandes",21,600,"100g"],["Beurre de cacahuète",25,600,"100g"]]]
 ];
 function protOf(label){
   const m = label.match(/\(~(\d+(?:[.,]\d+)?)\s*g prot\./);
@@ -2182,33 +2197,50 @@ function renderSeance(app){
       <div class="stack">
         <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
         <select id="ot-food">${FOOD_100G.map(([grp,items])=>
-          `<optgroup label="${grp}">${items.map(([n,p])=>`<option value="${p}">${n}</option>`).join("")}</optgroup>`).join("")}
+          `<optgroup label="${grp}">${items.map(([n,p,k,u],i)=>`<option value="${grp}|${i}">${n}</option>`).join("")}</optgroup>`).join("")}
           <option value="manuel">Autre — je saisis les protéines</option>
         </select></div>
-        <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;">Quantité mangée (g)</span>
+        <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;" id="ot-glabel">Quantité mangée (g)</span>
         <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
         <div id="ot-mwrap" style="display:none;">
           <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
           <input id="ot-name" placeholder="Ex : plat du resto" style="margin-bottom:9px;">
           <span class="label" style="display:block; margin-bottom:5px;">Protéines (g)</span>
-          <input type="number" inputmode="decimal" step="1" min="0" id="ot-prot" placeholder="25">
+          <input type="number" inputmode="decimal" step="1" min="0" id="ot-prot" placeholder="25" style="margin-bottom:9px;">
+          <span class="label" style="display:block; margin-bottom:5px;">Calories (facultatif)</span>
+          <input type="number" inputmode="numeric" step="10" min="0" id="ot-kcal" placeholder="400">
         </div>
         <div id="ot-live" style="font-size:15px; font-weight:700; color:var(--accent); min-height:22px;"></div>
         <p style="margin:0; font-size:12px; color:var(--ink-mute);">Pas sûr de la quantité ? Envoie une photo de ton assiette à Claude, il te l'estime.</p>
         <button class="btn btn-accent" id="ot-ok">Ajouter</button>
       </div>`);
     const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
+    const trouver = val => {
+      const [grp, idx] = val.split("|");
+      const g = FOOD_100G.find(x=>x[0]===grp);
+      return g ? g[1][parseInt(idx)] : null;
+    };
     const calc = ()=>{
       const manual = foodEl.value==="manuel";
       document.getElementById("ot-gwrap").style.display = manual? "none":"block";
       document.getElementById("ot-mwrap").style.display = manual? "block":"none";
       if(manual){ liveEl.textContent = ""; return null; }
-      const per = parseFloat(foodEl.value), g = parseFloat(gEl.value);
-      if(!g || g<=0){ liveEl.textContent = ""; return null; }
-      const prot = Math.round(per*g/100);
-      const name = foodEl.options[foodEl.selectedIndex].text.replace(/\s*\(.*?\)/,"");
-      liveEl.textContent = `${g} g de ${name.toLowerCase()} ≈ ${prot} g de protéines`;
-      return {label:`${name} ${g} g (~${prot} g prot.)`, prot};
+      const f = trouver(foodEl.value);
+      if(!f) return null;
+      const [nom, prot100, kcal100, unite] = f;
+      const piece = unite !== "100g";
+      document.getElementById("ot-glabel").textContent = piece ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})` : "Quantité mangée (g)";
+      gEl.step = piece ? 1 : 10;
+      gEl.placeholder = piece ? "2" : "150";
+      const q = parseFloat(gEl.value);
+      if(!q || q<=0){ liveEl.textContent = ""; return null; }
+      const prot = Math.round(piece ? prot100*q : prot100*q/100);
+      const kcal = Math.round(piece ? kcal100*q : kcal100*q/100);
+      const court = nom.replace(/\s*\(.*?\)/,"");
+      liveEl.textContent = piece
+        ? `${q} ${unite}${q>1?"s":""} ≈ ${prot} g de protéines · ${kcal} kcal`
+        : `${q} g de ${court.toLowerCase()} ≈ ${prot} g de protéines · ${kcal} kcal`;
+      return {label: piece ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)` : `${court} ${q} g (~${prot} g prot. · ${kcal} kcal)`, prot};
     };
     foodEl.onchange = calc; gEl.oninput = calc;
     document.getElementById("ot-ok").onclick=()=>{
@@ -2216,7 +2248,9 @@ function renderSeance(app){
       if(foodEl.value==="manuel"){
         const p = parseFloat(document.getElementById("ot-prot").value);
         if(isNaN(p)||p<0) return;
-        label = `${document.getElementById("ot-name").value.trim()||"Autre"} (~${p} g prot.)`;
+        const k = parseFloat(document.getElementById("ot-kcal").value);
+        const nom = document.getElementById("ot-name").value.trim()||"Autre";
+        label = isNaN(k) ? `${nom} (~${p} g prot.)` : `${nom} (~${p} g prot. · ${Math.round(k)} kcal)`;
       } else {
         const r = calc();
         if(!r) return;
