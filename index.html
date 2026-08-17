@@ -2354,8 +2354,19 @@ function renderActive(app){
         <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
         <button class="ck">${st.done?"✓":"○"}</button>`;
       const [wIn, rIn] = row.querySelectorAll("input");
-      wIn.oninput=()=>{ st.w = wIn.value===""?"":parseFloat(wIn.value); save(); };
-      rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); save(); };
+      /* ce que tu saisis se reporte sur les séries suivantes non validées, jamais sur les précédentes */
+      const propager = (champ, valeur)=>{
+        const lignes = setsDiv.querySelectorAll(".set-row");
+        for(let j=si+1; j<en.sets.length; j++){
+          const s2 = en.sets[j];
+          if(s2.done || s2.warm) continue;
+          s2[champ] = valeur;
+          const inp = lignes[j] && lignes[j].querySelectorAll("input")[champ==="w"?0:1];
+          if(inp && document.activeElement !== inp) inp.value = (valeur===""? "" : valeur);
+        }
+      };
+      wIn.oninput=()=>{ st.w = wIn.value===""?"":parseFloat(wIn.value); if(!st.warm) propager("w", st.w); save(); };
+      rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); if(!st.warm) propager("r", st.r); save(); };
       row.querySelector(".ck").onclick=()=>{
         ensureAudio();
         st.w = parseFloat(wIn.value)||0; st.r = parseInt(rIn.value)||0;
@@ -2390,47 +2401,56 @@ function renderActive(app){
             const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
             const next = en.sets.find(s=>!s.done && !s.warm);   /* jamais l'échauffement */
             const inc = (st.w||0)>=20? 2.5 : 1;
+            /* applique une valeur à toutes les séries restantes, pas seulement à la suivante */
+            const appliquerSuite = (champ, valeur)=>{
+              const lignes = setsDiv.querySelectorAll(".set-row");
+              en.sets.forEach((s2,j)=>{
+                if(s2.done || s2.warm) return;
+                s2[champ] = valeur;
+                const inp = lignes[j] && lignes[j].querySelectorAll("input")[champ==="w"?0:1];
+                if(inp) inp.value = (valeur===""? "" : valeur);
+              });
+            };
             const sansCharge = estPoidsDuCorps(ex) && !((st.w||0) > 0);
             let msg;
             if(rir>=3){
               if(sansCharge){
                 const nr = (st.r||0)+2;
-                msg = next ? `Trop léger — vise ${nr} reps sur la prochaine série.`
+                msg = next ? `Trop léger — vise ${nr} reps sur les séries suivantes.`
                             : `Trop léger — la prochaine fois, vise ${nr} reps ou ajoute du lest.`;
-                if(next) next.r = nr;
+                if(next) appliquerSuite("r", nr);
               } else {
                 const nw = (st.w||0)+inc;
-                msg = next ? `Trop léger — prochaine série à ${fmtKg(nw)} kg.`
+                msg = next ? `Trop léger — séries suivantes à ${fmtKg(nw)} kg.`
                             : `Trop léger — passe à ${fmtKg(nw)} kg à la prochaine séance.`;
-                if(next) next.w = nw;
+                if(next) appliquerSuite("w", nw);
               }
             } else if(rir===0 && (st.r||0) < rng.lo){
               if(sansCharge){
                 const nr = Math.max(1,(st.r||0)-1);
-                msg = next ? `Trop dur — vise ${nr} reps sur la prochaine série, la qualité prime.`
+                msg = next ? `Trop dur — vise ${nr} reps sur les séries suivantes, la qualité prime.`
                             : `Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`;
-                if(next) next.r = nr;
+                if(next) appliquerSuite("r", nr);
               } else {
                 const nw = Math.max(0,(st.w||0)-inc);
-                msg = next ? `Trop lourd — prochaine série à ${fmtKg(nw)} kg.`
+                msg = next ? `Trop lourd — séries suivantes à ${fmtKg(nw)} kg.`
                             : `Trop lourd — garde cette charge la prochaine fois, elle viendra.`;
-                if(next) next.w = nw;
+                if(next) appliquerSuite("w", nw);
               }
             } else if(rir===0){
+              /* à la limite : on garde exactement ce que tu viens de faire */
+              if(next && !sansCharge) appliquerSuite("w", st.w);
               msg = sansCharge ? "À la limite — c'est exactement là qu'il faut être."
-                                : "À la limite — garde cette charge, c'est du bon travail.";
+                                : (next ? `À la limite — on reste à ${fmtKg(st.w||0)} kg sur les séries suivantes.`
+                                        : "À la limite — garde cette charge, c'est du bon travail.");
             } else {
-              msg = next ? "Parfait, pile la bonne zone pour prendre du muscle."
+              /* zone idéale : les séries suivantes reprennent la charge qui vient de fonctionner */
+              if(next && !sansCharge) appliquerSuite("w", st.w);
+              msg = next ? `Parfait — on reste à ${fmtKg(st.w||0)} kg, pile la bonne zone.`
                           : "Parfait — c'est noté pour ta prochaine séance.";
             }
             save();
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
-            if(next){
-              const ni = en.sets.indexOf(next);
-              const nRow = setsDiv.querySelectorAll(".set-row")[ni];
-              const nIn = nRow ? nRow.querySelector("input") : null;
-              if(nIn) nIn.value = next.w;
-            }
             setTimeout(()=>{ ask.remove(); }, 2600);
           });
         }
