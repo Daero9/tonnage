@@ -145,6 +145,10 @@
   .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
   .rir-ask .q.ok{margin:0; color:var(--accent);}
   .rir-ask .row button{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 0; font-weight:700; font-size:14px;}
+  .set-row.drop{margin-top:-3px;}
+  .set-row.drop .n{font-size:14px; color:var(--accent); text-align:right;}
+  .set-row.drop input{padding:6px 6px; font-size:13.5px; background:var(--surface2);}
+  .set-row.drop .ck{width:44px; height:34px; font-size:14px; color:var(--bad); background:none; border-style:dashed;}
   .set-cols{display:grid; grid-template-columns:26px 1fr 1fr 44px; gap:8px; margin-bottom:6px;}
   .set-cols span{font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-mute); text-align:center;}
 
@@ -1506,7 +1510,7 @@ function sessionVolume(sess){
   let v=0;
   sess.entries.forEach(en=>{
     const f = facteurCharge(en.exId);
-    en.sets.forEach(st=>{ if(st.done && !st.warm) v += (st.w||0)*(st.r||0)*f; });
+    en.sets.forEach(st=>{ if(st.done && !st.warm) v += volSerie(st)*f; });
   });
   return v;
 }
@@ -1521,6 +1525,11 @@ function lastPerf(exId){
   return null;
 }
 function workSets(en){ return en.sets.filter(s=>!s.warm); }
+/* tonnage d'une série, dégressifs compris : 6 x 12 kg puis 4 x 10 kg = 112 kg soulevés */
+function volSerie(s){
+  return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
+}
+function repsSerie(s){ return (s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.r||0),0)); }
 function e1rm(w,r){ return r>1 ? w*(1+r/30) : w; }
 /* kcal d'une séance de muscu : ~6 MET pendant la durée, ajusté par le volume soulevé */
 function liftKcal(durMs, volume, nSeries){
@@ -1800,16 +1809,56 @@ restbar.addEventListener("click", e=>{ if(e.target.closest("button")) return; to
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && rest.int) tickRest(); });
 
 /* ================= CARDIO ================= */
-function cardioKcal(km, min, pente, kg){
+function cardioKcal(km, min, pente, kg, courir){
   if(!km || !min || !kg) return 0;
   const vkmh = km/(min/60);
   const v = vkmh*1000/60;               /* m/min */
   const g = Math.max(0,(pente||0))/100;
-  const run = vkmh >= 7;
+  const run = (courir === undefined) ? vkmh >= 7 : !!courir;
   const vo2 = run ? 0.2*v + 0.9*v*g + 3.5 : 0.1*v + 1.8*v*g + 3.5;  /* ACSM, ml/kg/min */
   return vo2 * kg / 1000 * 5 * min;
 }
-function cardioType(km, min){ return (km/(min/60)) >= 7 ? "couru" : "marché"; }
+/* marche, course ou mixte : le choix de l'utilisateur prime, sinon on devine d'après l'allure */
+function cardioType(c){
+  if(c && c.type) return c.type;
+  return (c && c.km/(c.min/60) >= 7) ? "course" : "marche";
+}
+const CARDIO_VERBE = {marche:"marché", course:"couru", mixte:"marché et couru"};
+const CARDIO_NOM   = {marche:"Marche", course:"Course", mixte:"Marche + course"};
+/* kcal d'une sortie. Ordre de fiabilité : la montre, puis la fréquence cardiaque,
+   puis le modèle ACSM — en séparant la part courue de la part marchée si la sortie est mixte. */
+function sortieKcal(c, kg){
+  if(c.kcalM > 0) return c.kcalM;
+  if(c.hr > 0 && c.min > 0){
+    /* La FC dit l'effort réel, quelle que soit l'alternance marche / course.
+       FC max théorique (Tanaka) → % de VO2max → consommation d'oxygène → kcal. */
+    const p = db.profile || {};
+    const age = p.age || 30;
+    const fcMax = 208 - 0.7*age;
+    const pctVO2 = (c.hr/fcMax - 0.37) / 0.64;
+    if(pctVO2 > 0.15){
+      let vo2max = (p.sex === "f" ? 38 : 45) - Math.max(0, age-25)*0.25 + ((p.days||3) >= 4 ? 3 : 0);
+      vo2max = Math.min(60, Math.max(25, vo2max));
+      const vo2 = Math.min(1, pctVO2) * vo2max;          /* ml/kg/min */
+      return vo2 * kg / 1000 * 5 * c.min;
+    }
+  }
+  const t = cardioType(c);
+  if(t === "mixte" && c.runMin > 0 && c.runMin < c.min){
+    /* on ne connaît que le temps couru : la distance se répartit au prorata des allures
+       (on court environ 1,8 fois plus vite qu'on marche) */
+    const tr = c.runMin, tw = c.min - tr;
+    const kmRun = c.km * (1.8*tr) / (1.8*tr + tw);
+    return cardioKcal(kmRun, tr, c.pente, kg, true) + cardioKcal(c.km-kmRun, tw, c.pente, kg, false);
+  }
+  return cardioKcal(c.km, c.min, c.pente, kg, t === "course");
+}
+/* d'où vient le chiffre affiché, pour être franc sur la précision */
+function sourceKcal(c){
+  if(c.kcalM > 0) return "d'après ta montre";
+  if(c.hr > 0) return "d'après ta FC moyenne";
+  return cardioType(c) === "mixte" ? "en séparant marche et course" : "";
+}
 function weekStartDate(){
   const d = new Date(); d.setHours(0,0,0,0);
   d.setDate(d.getDate() - ((d.getDay()+6)%7));
@@ -1820,9 +1869,10 @@ function cardioWeekStats(){
   const kg = currentWeight() || 75;
   const wk = db.cardio.filter(c=>new Date(c.date)>=w0);
   const km = wk.reduce((a,c)=>a+c.km,0);
-  const kcal = wk.reduce((a,c)=>a+cardioKcal(c.km,c.min,c.pente,kg),0);
-  const ran = wk.some(c=>cardioType(c.km,c.min)==="couru");
-  const walked = wk.some(c=>cardioType(c.km,c.min)==="marché");
+  const kcal = wk.reduce((a,c)=>a+sortieKcal(c,kg),0);
+  const types = wk.map(c=>cardioType(c));
+  const ran = types.some(t=>t==="course"||t==="mixte");
+  const walked = types.some(t=>t==="marche"||t==="mixte");
   const verb = ran && walked ? "marché / couru" : (ran ? "couru" : "marché");
   return {n:wk.length, km:Math.round(km*10)/10, kcal:Math.round(kcal), verb};
 }
@@ -1851,28 +1901,80 @@ function openCardioAdd(idExistant){
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Pente (%)</span>
         <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="${(c && c.pente)? c.pente : ""}"></div>
       </div>
+      <div>
+        <span class="label" style="display:block; margin-bottom:5px;">C'était quoi ?</span>
+        <div class="chips" style="gap:6px;">
+          <button class="chip chip-sm" data-ctype="marche">🚶 Marche</button>
+          <button class="chip chip-sm" data-ctype="course">🏃 Course</button>
+          <button class="chip chip-sm" data-ctype="mixte">🚶🏃 Un peu des deux</button>
+        </div>
+        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px;" id="cd-thint"></div>
+      </div>
+      <div id="cd-mixwrap" style="display:none;">
+        <span class="label" style="display:block; margin-bottom:5px;">Dont couru (min)</span>
+        <input type="number" inputmode="numeric" min="0" id="cd-runmin" placeholder="10" value="${(c && c.runMin)? c.runMin : ""}">
+      </div>
+      <button class="btn btn-ghost btn-sm" id="cd-more" style="align-self:flex-start;">⌚ J'ai les données de ma montre</button>
+      <div id="cd-watch" style="display:none;">
+        <div class="row">
+          <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">FC moyenne (bpm)</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-hr" placeholder="135" value="${(c && c.hr)? c.hr : ""}"></div>
+          <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">kcal de la montre</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-kcalm" placeholder="320" value="${(c && c.kcalM)? c.kcalM : ""}"></div>
+        </div>
+        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px; line-height:1.5;">Facultatif, mais plus fiable que l'estimation : les kcal de ta montre sont reprises telles quelles, sinon la FC moyenne sert au calcul.</div>
+      </div>
       <button class="btn btn-accent" id="cd-ok">${c? "Enregistrer les modifications" : "Enregistrer"}</button>
       ${c? `<button class="btn btn-ghost" id="cd-cancel">Annuler</button>`:""}
     </div>`);
   const annul = document.getElementById("cd-cancel");
   if(annul) annul.onclick = openCardioList;
+  let cType = c ? cardioType(c) : null;      /* null = pas encore choisi : on devine d'après l'allure */
+  const kmEl = document.getElementById("cd-km"), minEl = document.getElementById("cd-min");
+  const majType = ()=>{
+    const km = parseFloat(kmEl.value), mn = parseFloat(minEl.value);
+    const devine = (km>0 && mn>0) ? ((km/(mn/60) >= 7) ? "course" : "marche") : null;
+    const actif = cType || devine;
+    document.querySelectorAll("[data-ctype]").forEach(b=>b.classList.toggle("on", b.dataset.ctype===actif));
+    document.getElementById("cd-mixwrap").style.display = actif==="mixte" ? "block" : "none";
+    const h = document.getElementById("cd-thint");
+    if(actif==="mixte") h.textContent = "Indique le temps couru : marcher et courir ne brûlent pas pareil.";
+    else if(!cType && devine) h.textContent = `Déduit de ton allure (${(Math.round(km/(mn/60)*10)/10).toLocaleString("fr-FR")} km/h). Corrige si tu as alterné.`;
+    else h.textContent = "";
+  };
+  document.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>{ cType = b.dataset.ctype; majType(); });
+  kmEl.oninput = majType; minEl.oninput = majType;
+  majType();
+  if(c && (c.hr || c.kcalM)) document.getElementById("cd-watch").style.display = "block";
+  document.getElementById("cd-more").onclick = ()=>{
+    const w = document.getElementById("cd-watch");
+    w.style.display = w.style.display==="none" ? "block" : "none";
+  };
   document.getElementById("cd-ok").onclick=()=>{
     const km = parseFloat(document.getElementById("cd-km").value);
     const min = parseFloat(document.getElementById("cd-min").value);
     const pente = parseFloat(document.getElementById("cd-pente").value)||0;
     if(!km || !min){ toast("Indique la distance et la durée"); return; }
+    const type = cType || ((km/(min/60) >= 7) ? "course" : "marche");
+    let runMin = parseFloat(document.getElementById("cd-runmin").value)||0;
+    if(type!=="mixte") runMin = 0;
+    if(type==="mixte" && runMin >= min){ toast("Le temps couru doit être inférieur à la durée totale"); return; }
+    const hr = parseFloat(document.getElementById("cd-hr").value)||0;
+    const kcalM = parseFloat(document.getElementById("cd-kcalm").value)||0;
     if(c){
-      c.km = km; c.min = min; c.pente = pente;
+      c.km = km; c.min = min; c.pente = pente; c.type = type; c.runMin = runMin; c.hr = hr; c.kcalM = kcalM;
       save(); openCardioList(); toast("Sortie modifiée ✓");
       return;
     }
-    db.cardio.push({id:uid(), date:new Date().toISOString(), km, min, pente});
+    const sortie = {id:uid(), date:new Date().toISOString(), km, min, pente, type, runMin, hr, kcalM};
+    db.cardio.push(sortie);
     save();
     const kg = currentWeight() || 75;
-    const kcal = Math.round(cardioKcal(km,min,pente,kg));
+    const kcal = Math.round(sortieKcal(sortie, kg));
     const vkmh = Math.round(km/(min/60)*10)/10;
+    const src = sourceKcal(sortie);
     openSheet(`<h3>Belle sortie ! 🎉</h3>
-      <p style="margin:0 0 14px; font-size:14.5px; color:var(--ink-soft);">Tu as ${cardioType(km,min)} <b style="color:var(--ink);">${fmtKg(km)} km</b> à ${vkmh.toLocaleString("fr-FR")} km/h${pente?` avec ${pente.toLocaleString("fr-FR")} % de pente`:""}, soit environ <b style="color:var(--accent);">${kcal} kcal</b> brûlées${kcalEquiv(kcal)}.</p>
+      <p style="margin:0 0 14px; font-size:14.5px; color:var(--ink-soft);">Tu as ${CARDIO_VERBE[type]} <b style="color:var(--ink);">${fmtKg(km)} km</b> en ${Math.round(min)} min${type==="mixte"? ` dont ${Math.round(runMin)} min de course` : ` à ${vkmh.toLocaleString("fr-FR")} km/h`}${pente?` avec ${pente.toLocaleString("fr-FR")} % de pente`:""}, soit environ <b style="color:var(--accent);">${kcal} kcal</b> brûlées${src? ` (${src})`:""}${kcalEquiv(kcal)}.</p>
       <button class="btn btn-accent" id="cd-close" style="width:100%;">Continuer</button>`);
     document.getElementById("cd-close").onclick=()=>{ closeSheet(); render(); };
   };
@@ -1886,7 +1988,7 @@ function openCardioList(){
         const vkmh = Math.round(c.km/(c.min/60)*10)/10;
         return `<div class="pick-row"><div class="grow">
           <div>${fmtKg(c.km)} km · ${Math.round(c.min)} min · ${vkmh.toLocaleString("fr-FR")} km/h${c.pente?` · ${c.pente.toLocaleString("fr-FR")} %`:""}</div>
-          <div class="eq" style="text-transform:capitalize;">${fmtDate(c.date)} · ${cardioType(c.km,c.min)} · ≈ ${Math.round(cardioKcal(c.km,c.min,c.pente,kg))} kcal</div></div>
+          <div class="eq" style="text-transform:capitalize;">${fmtDate(c.date)} · ${CARDIO_NOM[cardioType(c)]} · ≈ ${Math.round(sortieKcal(c,kg))} kcal</div></div>
           <button class="icon-btn" data-cedit="${c.id}" style="width:32px; height:32px;">✎</button>
           <button class="icon-btn" data-cdel="${c.id}" style="color:var(--bad); width:32px; height:32px;">✕</button></div>`;
       }).join("") : `<div class="empty">Aucune sortie enregistrée.</div>`
@@ -2571,6 +2673,7 @@ function renderActive(app){
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)" : (facteurCharge(en.exId)===2? "kg / haltère" : "kg")}</span><span>reps</span><span>✓</span></div>
       <div class="sets"></div>
+      ${hintBox("degressif","<b>Dégressif ?</b> Appui long sur une série pour ajouter une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté.")}
       <div class="row">
         <button class="btn btn-sm btn-ghost grow" data-act="addset">＋ série</button>
         <button class="btn btn-sm btn-ghost" data-act="swap">⇄ Remplacer</button>
@@ -2627,7 +2730,10 @@ function renderActive(app){
               <button data-rir="1">1-2</button>
               <button data-rir="3">3-5+</button>
             </div>`;
-          row.after(ask);
+          /* la question se place sous la série, dégressifs compris */
+          let ancre = row, nx = row.nextElementSibling;
+          while(nx && nx.classList.contains("drop")){ ancre = nx; nx = nx.nextElementSibling; }
+          ancre.after(ask);
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir;
@@ -2689,7 +2795,56 @@ function renderActive(app){
           });
         }
       };
+      /* appui long sur la ligne : menu de la série (dégressif, suppression) */
+      let sTimer = null, sLong = false;
+      const ouvrirMenu = ()=>{
+        sLong = true;
+        if(navigator.vibrate) navigator.vibrate(18);
+        openSheet(`<h3>${st.warm? "Série d'échauffement" : "Série "+num}</h3>
+          <div class="stack">
+            <button class="btn btn-accent" id="ms-drop">＋ Ajouter un dégressif</button>
+            <div style="font-size:12.5px; color:var(--ink-mute); line-height:1.55;">Tu as baissé la charge pour finir la série ? Ajoute une ligne : <b>6 × 12 kg puis 4 × 10 kg</b> compte comme une seule série, et les 112 kg soulevés partent bien dans ton tonnage.</div>
+            ${en.sets.length>1? `<button class="btn btn-ghost" id="ms-del" style="color:var(--bad);">Supprimer cette série</button>`:""}
+          </div>`);
+        document.getElementById("ms-drop").onclick = ()=>{
+          const inc = (st.w||0)>=20? 2.5 : 1;
+          const dernier = (st.drops && st.drops.length)? st.drops[st.drops.length-1] : st;
+          if(!st.drops) st.drops = [];
+          st.drops.push({w: Math.max(0, (dernier.w||0)-inc), r: ""});
+          save(); closeSheet(); render();
+        };
+        const sup = document.getElementById("ms-del");
+        if(sup) sup.onclick = ()=>{ en.sets.splice(si,1); save(); closeSheet(); render(); };
+      };
+      const lgStart = e=>{
+        if(e.target.closest("input") || e.target.closest("button")) return;
+        sLong = false; clearTimeout(sTimer);
+        sTimer = setTimeout(ouvrirMenu, 550);
+      };
+      const lgStop = ()=>clearTimeout(sTimer);
+      row.addEventListener("touchstart", lgStart, {passive:true});
+      ["touchend","touchmove","touchcancel"].forEach(ev=>row.addEventListener(ev, lgStop));
+      row.addEventListener("mousedown", lgStart); row.addEventListener("mouseup", lgStop); row.addEventListener("mouseleave", lgStop);
+      row.oncontextmenu = e=>{ e.preventDefault(); if(!e.target.closest("input")) ouvrirMenu(); };
       setsDiv.appendChild(row);
+      /* lignes dégressives : même série, charge plus basse */
+      (st.drops||[]).forEach((d,di)=>{
+        const dr = document.createElement("div");
+        dr.className = "set-row drop"+(st.done?" done":"");
+        dr.innerHTML = `<div class="n">↳</div>
+          <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="kg" value="${d.w!==""&&d.w!=null?d.w:""}">
+          <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${d.r!==""&&d.r!=null?d.r:""}">
+          <button class="ck" title="Retirer ce dégressif">✕</button>`;
+        const [dw, dq] = dr.querySelectorAll("input");
+        dw.oninput = ()=>{ d.w = dw.value===""?"":parseFloat(dw.value); save(); };
+        dq.oninput = ()=>{ d.r = dq.value===""?"":parseInt(dq.value); save(); };
+        dr.querySelector(".ck").onclick = ()=>{
+          st.drops.splice(di,1);
+          if(!st.drops.length) delete st.drops;
+          save(); render();
+        };
+        setsDiv.appendChild(dr);
+      });
     });
     card.querySelector('[data-act="addset"]').onclick=()=>{
       const prev = en.sets[en.sets.length-1];
@@ -2719,13 +2874,13 @@ function renderActive(app){
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm("Aucune série validée","Valide au moins une série (bouton ○) avant de terminer, ou annule la séance.","OK",false,()=>{}); return; }
-    const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?(s.w||0)*(s.r||0)*f:0),0); },0);
+    const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
     const kcal = liftKcal(Date.now()-a.start, vol, doneSets);
     askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés · environ ${kcal} kcal brûlées. On enregistre ?`, "Enregistrer", false, ()=>{
       db.history.push({
         id:uid(), date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         start:a.start, end:Date.now(),
-        entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir)}))})).filter(en=>en.sets.length)
+        entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length)
       });
       db.active=null; save(); render();
     });
@@ -3125,7 +3280,7 @@ function renderHist(app){
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
         <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
-        <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}`).join(" · ")}</div></div>`).join("")}
+        <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)}×${d.r}`).join("")}`).join(" · ")}</div></div>`).join("")}
       </div>
     </div>`;
   }).join("");
@@ -3252,7 +3407,7 @@ function renderProgress(app){
     let v;
     if(prgMetric==="max") v = Math.max(...sets.map(st=>st.w||0));
     else if(prgMetric==="1rm") v = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
-    else v = sets.reduce((x,st)=>x+(st.w||0)*(st.r||0),0)*facteurCharge(prgEx);
+    else v = sets.reduce((x,st)=>x+volSerie(st),0)*facteurCharge(prgEx);
     pts.push({date:s.date, v:Math.round(v*10)/10});
   });
 
