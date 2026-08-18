@@ -2805,7 +2805,7 @@ function renderActive(app){
         const dernier = (st.drops && st.drops.length)? st.drops[st.drops.length-1] : st;
         if(!st.drops) st.drops = [];
         st.drops.push({w: Math.max(0, (dernier.w||0)-inc), r: ""});
-        save(); render();
+        save(); renderSurPlace();
       };
       const dgBtn = row.querySelector(".dg");
       if(dgBtn) dgBtn.onclick = ajouterDrop;
@@ -2822,7 +2822,7 @@ function renderActive(app){
           </div>`);
         document.getElementById("ms-drop").onclick = ()=>{ closeSheet(); ajouterDrop(); };
         const sup = document.getElementById("ms-del");
-        if(sup) sup.onclick = ()=>{ en.sets.splice(si,1); save(); closeSheet(); render(); };
+        if(sup) sup.onclick = ()=>{ en.sets.splice(si,1); save(); closeSheet(); renderSurPlace(); };
       };
       const lgStart = e=>{
         if(e.target.closest("input") || e.target.closest("button")) return;
@@ -2850,7 +2850,7 @@ function renderActive(app){
         dr.querySelector(".ck").onclick = ()=>{
           st.drops.splice(di,1);
           if(!st.drops.length) delete st.drops;
-          save(); render();
+          save(); renderSurPlace();
         };
         setsDiv.appendChild(dr);
       });
@@ -2858,7 +2858,7 @@ function renderActive(app){
     card.querySelector('[data-act="addset"]').onclick=()=>{
       const prev = en.sets[en.sets.length-1];
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
-      save(); render();
+      save(); renderSurPlace();
     };
     wireHints(card);
     card.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
