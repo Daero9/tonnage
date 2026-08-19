@@ -911,12 +911,12 @@ function openAimInfo(id, retour){
 /* Ajouts caloriques denses : peu de volume dans l'estomac, beaucoup de kcal.
    Pensés pour ceux qui n'arrivent pas à manger assez (métabolisme rapide, petit appétit). */
 const KCAL_UP = [
-  ["Beurre de cacahuète (30 g)", 180, "Le plus rentable de tous : sur le pain du matin ou dans le shaker, avalé en trois bouchées."],
+  ["Beurre de cacahuète (30 g)", 175, "Le plus rentable de tous : sur le pain du matin ou dans le shaker, avalé en trois bouchées."],
   ["Huile d'olive (1 c. à soupe)", 120, "Versée sur les pâtes, le riz ou les légumes après cuisson. Tu ne la sens pas passer."],
-  ["Lait entier au lieu d'eau (500 ml)", 200, "Dans ton shaker : +200 kcal et +16 g de protéines, sans une bouchée de plus."],
-  ["Amandes ou noix (30 g)", 180, "Une poignée dans la poche, à grignoter entre deux repas."],
+  ["Lait entier au lieu d'eau (500 ml)", 320, "Dans ton shaker : +320 kcal et +16 g de protéines, sans une bouchée de plus."],
+  ["Amandes ou noix (30 g)", 175, "Une poignée dans la poche, à grignoter entre deux repas."],
   ["Avocat (1 entier)", 240, "Dans une salade ou écrasé sur du pain, avec un filet d'huile."],
-  ["Fromage râpé (30 g)", 110, "Sur les pâtes, le riz, les gratins. Ça se rajoute partout."],
+  ["Fromage râpé (30 g)", 120, "Sur les pâtes, le riz, les gratins. Ça se rajoute partout."],
   ["Avoine (60 g de flocons)", 230, "Dans le lait ou le shaker. Beaucoup de calories pour très peu de volume."],
   ["Fruits secs : dattes, abricots (40 g)", 120, "Très dense en sucres, parfait juste avant la séance."],
   ["+100 g de riz ou pâtes cuits", 130, "Rajoute simplement une louche à ton assiette du midi et du soir : +260 kcal sur la journée."],
@@ -924,7 +924,7 @@ const KCAL_UP = [
   ["Miel ou confiture (1 c. à soupe)", 60, "Sur les tartines, dans le fromage blanc, dans l'avoine."]
 ];
 const KCAL_DOWN = [
-  ["Lait entier → demi-écrémé (500 ml)", -80, "Même goût dans le shaker, mêmes protéines."],
+  ["Lait entier → demi-écrémé (500 ml)", -90, "Même goût dans le shaker, mêmes protéines."],
   ["Huile mesurée à la cuillère", -150, "Verser à l'œil dans la poêle, c'est souvent 2 à 3 cuillères sans s'en rendre compte."],
   ["Skyr ou fromage blanc 0 % au lieu de la crème", -120, "Même onctuosité, et des protéines en plus."],
   ["Jus et sodas → eau", -200, "Les calories liquides ne rassasient pas du tout. C'est la coupe la plus indolore."],
@@ -2013,28 +2013,34 @@ let chronoInt = null;
 /* ===== Nutrition sans chiffres : checklist + verdict de la balance ===== */
 /* [libellé avec portion réelle, protéines (g), calories] — portions courantes, pas symboliques */
 const HB_OPTS = {
-  prot: [["Poulet (150 g)",35,250],["Steak de bœuf (150 g)",38,330],["Œufs (×3)",19,230],["Thon (1 boîte)",26,130],["Poisson (150 g)",30,220],["Jambon (2 tranches)",16,90]],
-  carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,320],["Patates (250 g)",5,200],["Pain (2 tranches)",6,180],["Semoule (200 g cuite)",8,240],["Légumineuses (150 g)",14,175]],
-  snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuits (×4)",3,200],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose)",32,250],["Fruits secs (30 g)",5,170]],
-  bkProt: [["Œufs (×3)",19,230],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose)",32,250],["Jambon (2 tranches)",16,90],["Fromage blanc (200 g)",16,100]],
-  bkCarb: [["Avoine (60 g)",8,230],["Pain (2 tranches)",6,180],["Banane",1,105],["Biscuits (×4)",3,200],["Compote (1 gourde)",0,60]]
+  prot: [["Poulet (150 g cru)",34,185],["Steak de bœuf (150 g cru)",32,210],["Œufs (×3)",19,235],["Thon (1 boîte égouttée)",24,110],["Poisson blanc (150 g cru)",27,125],["Saumon (150 g cru)",30,300],["Jambon (2 tranches)",16,90]],
+  carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,315],["Patates (250 g)",5,220],["Pain (2 tranches)",6,180],["Semoule (200 g cuite)",8,225],["Légumineuses (150 g cuites)",13,175]],
+  snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuits (×4)",3,180],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Amandes / noix (30 g)",6,180]],
+  bkProt: [["Œufs (×3)",19,235],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (2 tranches)",16,90],["Fromage blanc (200 g)",16,100]],
+  bkCarb: [["Avoine (60 g)",8,230],["Pain (2 tranches)",6,180],["Banane",1,105],["Biscuits (×4)",3,180],["Compote (1 gourde)",0,60]]
 };
 const HB_PROT_MAP = {
   /* anciens libellés, pour ne pas perdre les journées déjà enregistrées */
-  "150 g de poulet":35,"1 steak de bœuf":30,"3 œufs":18,"1 boîte de thon":25,"150 g de poisson":30,"Autre protéine":20,
-  "Riz":5,"Pâtes":8,"Patates":4,"Pain":6,"Semoule":6,"Légumineuses":15,"Autre féculent":5,
+  "150 g de poulet":34,"1 steak de bœuf":32,"3 œufs":19,"1 boîte de thon":24,"150 g de poisson":27,"Autre protéine":20,
+  "Riz":5,"Pâtes":8,"Patates":4,"Pain":6,"Semoule":6,"Légumineuses":13,"Autre féculent":5,
   "60 g d'avoine":8,"Fruits secs":5,"Autre":3,
-  "Steak de bœuf":30,"Thon (1 boîte)":25,"Jambon / dinde":15,"Jambon":10,"Fromage blanc":15,
-  "Riz (100 g)":5,"Pâtes (100 g)":8,"Patates (200 g)":4,"Semoule (100 g)":6,"Légumineuses (150 g)":15,
-  "Biscuits":3,"Compote":0,"Whey + eau":25,"Whey + lait":30
+  "Steak de bœuf":32,"Thon (1 boîte)":24,"Jambon / dinde":15,"Jambon":10,"Fromage blanc":15,
+  "Riz (100 g)":3,"Pâtes (100 g)":5,"Patates (200 g)":4,"Semoule (100 g)":4,"Légumineuses (150 g)":13,
+  "Biscuits":3,"Compote":0,"Whey + eau":24,"Whey + lait":34,
+  "Poulet (150 g)":34,"Steak de bœuf (150 g)":32,"Thon (1 boîte)":24,"Poisson (150 g)":27,
+  "Pâtes (200 g cuites)":10,"Patates (250 g)":5,"Semoule (200 g cuite)":8,"Légumineuses (150 g)":13,
+  "Whey + lait (1 dose)":34,"Fruits secs (30 g)":6,"Biscuits (×4)":3
 };
 const HB_KCAL_MAP = {
-  "150 g de poulet":250,"1 steak de bœuf":300,"3 œufs":230,"1 boîte de thon":130,"150 g de poisson":220,"Autre protéine":200,
-  "Riz":130,"Pâtes":160,"Patates":160,"Pain":180,"Semoule":150,"Légumineuses":180,"Autre féculent":150,
+  "150 g de poulet":185,"1 steak de bœuf":210,"3 œufs":235,"1 boîte de thon":110,"150 g de poisson":125,"Autre protéine":200,
+  "Riz":130,"Pâtes":158,"Patates":87,"Pain":180,"Semoule":112,"Légumineuses":175,"Autre féculent":150,
   "60 g d'avoine":230,"Fruits secs":170,"Autre":150,
-  "Steak de bœuf":300,"Thon (1 boîte)":130,"Jambon / dinde":110,"Jambon":110,"Fromage blanc":120,
-  "Riz (100 g)":130,"Pâtes (100 g)":160,"Patates (200 g)":160,"Semoule (100 g)":150,"Légumineuses (150 g)":180,
-  "Biscuits":200,"Compote":90,"Whey + eau":110,"Whey + lait":250
+  "Steak de bœuf":210,"Thon (1 boîte)":110,"Jambon / dinde":110,"Jambon":110,"Fromage blanc":120,
+  "Riz (100 g)":130,"Pâtes (100 g)":158,"Patates (200 g)":175,"Semoule (100 g)":112,"Légumineuses (150 g)":175,
+  "Biscuits":180,"Compote":60,"Whey + eau":120,"Whey + lait":260,
+  "Poulet (150 g)":185,"Steak de bœuf (150 g)":210,"Poisson (150 g)":125,
+  "Pâtes (200 g cuites)":315,"Patates (250 g)":220,"Semoule (200 g cuite)":225,
+  "Whey + lait (1 dose)":260,"Fruits secs (30 g)":180,"Biscuits (×4)":180
 };
 Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
   if(!(l in HB_PROT_MAP) || g>HB_PROT_MAP[l]) HB_PROT_MAP[l]=g;
@@ -2043,18 +2049,18 @@ Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
 /* [nom, protéines, calories, unité] — "100g" = valeurs pour 100 g, sinon valeurs POUR UNE PIÈCE */
 const FOOD_100G = [
   ["À la pièce", [
-    ["Œuf",6.5,78,"œuf"],["Blanc d'œuf",3.6,17,"blanc"],
-    ["Steak haché 5 % (100 g)",26,150,"steak"],["Blanc de poulet (130 g)",40,215,"filet"],
-    ["Tranche de jambon",8,45,"tranche"],["Boîte de thon (110 g)",26,130,"boîte"],
+    ["Œuf",6.3,78,"œuf"],["Blanc d'œuf",3.6,17,"blanc"],
+    ["Steak haché 5 % (100 g cru)",21,140,"steak"],["Blanc de poulet (130 g cru)",29,155,"filet"],
+    ["Tranche de jambon",8,45,"tranche"],["Boîte de thon (95 g égoutté)",24,110,"boîte"],
     ["Dose de whey (30 g)",24,120,"dose"],
-    ["Pot de fromage blanc (100 g)",8,50,"pot"],["Pot de skyr (150 g)",17,90,"pot"],["Yaourt nature",5,60,"pot"],
-    ["Tranche de pain",3,90,"tranche"],["Banane",1.3,105,"banane"],["Pomme",0.5,95,"pomme"],
-    ["Gourde de compote",0.3,60,"gourde"],["Barre de céréales",2,130,"barre"],["Poignée d'amandes (25 g)",5,150,"poignée"],
-    ["Cuillère à soupe d'huile d'olive",0,120,"cuillère"],["Cuillère de beurre de cacahuète (30 g)",7.5,180,"cuillère"]
+    ["Pot de fromage blanc (100 g)",8,50,"pot"],["Pot de skyr (150 g)",16.5,90,"pot"],["Yaourt nature (125 g)",4.5,70,"pot"],
+    ["Tranche de pain (35 g)",3,90,"tranche"],["Banane",1.3,105,"banane"],["Pomme",0.5,95,"pomme"],
+    ["Gourde de compote",0.3,60,"gourde"],["Barre de céréales",2,130,"barre"],["Poignée d'amandes (25 g)",5,145,"poignée"],
+    ["Cuillère à soupe d'huile d'olive",0,120,"cuillère"],["Cuillère de beurre de cacahuète (30 g)",7.5,175,"cuillère"]
   ]],
-  ["Viandes / poissons (au poids)", [["Porc (filet)",27,250,"100g"],["Bœuf / steak",26,250,"100g"],["Poulet (blanc)",31,165,"100g"],["Dinde",29,135,"100g"],["Veau",27,170,"100g"],["Agneau",25,250,"100g"],["Saumon",22,200,"100g"],["Thon",26,130,"100g"],["Cabillaud",23,85,"100g"],["Crevettes",20,100,"100g"],["Jambon blanc",20,110,"100g"],["Steak haché 5 %",26,150,"100g"]]],
-  ["Laitages (au poids)", [["Fromage blanc 0 %",8,50,"100g"],["Skyr",11,60,"100g"],["Yaourt grec",9,100,"100g"],["Lait",3.4,50,"100g"],["Comté / emmental",28,400,"100g"],["Mozzarella",18,280,"100g"],["Whey en poudre",75,380,"100g"]]],
-  ["Féculents / végétal (au poids)", [["Riz cuit",2.7,130,"100g"],["Pâtes cuites",5,160,"100g"],["Pain",9,260,"100g"],["Avoine",13,380,"100g"],["Semoule cuite",4,120,"100g"],["Patate",2,80,"100g"],["Quinoa cuit",4.4,120,"100g"],["Lentilles cuites",9,115,"100g"],["Pois chiches cuits",9,160,"100g"],["Haricots rouges cuits",9,125,"100g"],["Tofu",12,120,"100g"],["Amandes",21,600,"100g"],["Beurre de cacahuète",25,600,"100g"]]]
+  ["Viandes / poissons (poids cru)", [["Poulet (blanc)",22.5,120,"100g"],["Poulet (blanc) — pesé cuit",31,165,"100g"],["Bœuf haché 5 % — pesé cuit",26,170,"100g"],["Dinde (escalope)",24,110,"100g"],["Porc (filet mignon)",21,120,"100g"],["Bœuf haché 5 %",21,137,"100g"],["Bœuf (entrecôte, faux-filet)",19,230,"100g"],["Veau",20,115,"100g"],["Agneau",18,230,"100g"],["Saumon",20,200,"100g"],["Thon frais",23,110,"100g"],["Cabillaud",18,82,"100g"],["Crevettes",20,85,"100g"],["Jambon blanc",20,110,"100g"]]],
+  ["Laitages (au poids)", [["Fromage blanc 0 %",8,50,"100g"],["Skyr",11,60,"100g"],["Yaourt grec",9,100,"100g"],["Lait demi-écrémé",3.3,46,"100g"],["Lait entier",3.2,64,"100g"],["Comté / emmental",28,400,"100g"],["Mozzarella",20,250,"100g"],["Whey en poudre",78,390,"100g"]]],
+  ["Féculents / végétal (poids cuit)", [["Riz cuit",2.7,130,"100g"],["Pâtes cuites",5,158,"100g"],["Pain",9,260,"100g"],["Avoine (sèche)",13,380,"100g"],["Semoule cuite",4,112,"100g"],["Patate",2,87,"100g"],["Quinoa cuit",4.4,120,"100g"],["Lentilles cuites",9,116,"100g"],["Pois chiches cuits",9,164,"100g"],["Haricots rouges cuits",9,127,"100g"],["Tofu",12,120,"100g"],["Amandes",21,580,"100g"],["Beurre de cacahuète",25,590,"100g"]]]
 ];
 function protOf(label){
   const m = label.match(/\(~(\d+(?:[.,]\d+)?)\s*g prot\./);
