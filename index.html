@@ -3422,8 +3422,6 @@ function openSettings(){
       <input type="number" inputmode="numeric" step="15" min="0" id="st-rest" value="${db.settings.rest}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Objectif de poids (kg)</span>
       <input type="number" inputmode="decimal" step="0.5" min="0" id="st-goal" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80"></div>
-      <div><span class="label" style="display:block; margin-bottom:5px;">Habitudes du jour (une par ligne)</span>
-      <textarea id="st-habits" rows="4">${esc(db.habits.join("\n"))}</textarea></div>
       <div class="section-t" style="margin-top:6px;">Sauvegarde</div>
       <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.</p>
       <div id="st-auto"></div>
@@ -3445,10 +3443,9 @@ function openSettings(){
     db.settings.rest = parseInt(el("st-rest").value)||90;
     const g = parseFloat(el("st-goal").value);
     if(g>0){ if(g!==db.settings.goal) coachGoal = null; db.settings.goal = g; }
-    db.habits = el("st-habits").value.split("\n").map(s=>s.trim()).filter(Boolean).slice(0,8);
     save();
   };
-  ["st-name","st-rest","st-goal","st-habits"].forEach(id=>{
+  ["st-name","st-rest","st-goal"].forEach(id=>{
     const el = document.getElementById(id);
     if(el){ el.oninput = applySettings; el.onchange = applySettings; }
   });
