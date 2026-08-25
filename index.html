@@ -12,21 +12,29 @@
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});}</script>
 <style>
   :root{
-    --bg:#131110; --surface:#1d1a17; --surface2:#26221e; --border:#332e28;
-    --ink:#f2ede6; --ink-soft:#b8afa2; --ink-mute:#7d7568;
-    --accent:#e8a33d; --accent-deep:#c97f1e; --accent-ink:#1a1408;
-    --good:#6fbf8b; --bad:#e06c5a;
-    --barre:rgba(19,17,16,.92);
-    --figure:none;
-    --radius:14px;
-  }
-  :root[data-theme="light"]{
-    --bg:#f6f3ee; --surface:#ffffff; --surface2:#efeae1; --border:#ddd5c8;
-    --ink:#1d1a16; --ink-soft:#57503f; --ink-mute:#8b8272;
-    --accent:#c07617; --accent-deep:#9c5d0e; --accent-ink:#fffaf2;
-    --good:#2e8552; --bad:#c04430;
-    --barre:rgba(246,243,238,.94);
+    /* clair : fond crème, bandeau sombre, orange franc — d'après la maquette Figma */
+    --bg:#eae7e0; --surface:#ffffff; --surface2:#f2efe9; --border:#e0dbd1;
+    --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
+    --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
+    --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
+    --good:#3f9c62; --bad:#e0554a;
+    --barre:rgba(255,255,255,.96);
+    --sheet:#f4f1eb; --field:#ffffff;
     --figure:invert(1);
+    --radius:16px;
+    --matin:#3ca0e8; --midi:#f58220; --collation:#5b5bd6; --soir:#f2506e; --extra:#4caf50;
+  }
+  :root[data-theme="dark"]{
+    --bg:#141416; --surface:#1f1f22; --surface2:#2a2a2e; --border:#333338;
+    --ink:#f4f2ef; --ink-soft:#b3b1ad; --ink-mute:#85837f;
+    --accent:#f58220; --accent-deep:#c96a12; --accent-ink:#1a1207;
+    --hero:#0e0e10; --hero-ink:#ffffff; --hero-soft:#b0aeaa;
+    --good:#6fbf8b; --bad:#e06c5a;
+    --barre:rgba(20,20,22,.96);
+    --sheet:#1f1f22; --field:#2a2a2e;
+    --figure:none;
+    --radius:16px;
+    --matin:#4aa8ea; --midi:#f58220; --collation:#6f6fe0; --soir:#f2607b; --extra:#5cba60;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
@@ -41,7 +49,7 @@
   #app{max-width:560px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px 150px;}
   h1,h2,h3{margin:0; text-wrap:balance;}
   button{font-family:inherit; font-size:16px; border:none; cursor:pointer; color:inherit; background:none; padding:0;}
-  input,select,textarea{font-family:inherit; font-size:16px; color:var(--ink); background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; outline:none; width:100%;}
+  input,select,textarea{font-family:inherit; font-size:16px; color:var(--ink); background:var(--field); border:1px solid var(--border); border-radius:10px; padding:11px 12px; outline:none; width:100%;}
   input:focus,select:focus,textarea:focus{border-color:var(--accent-deep);}
   input[type=number]{font-variant-numeric:tabular-nums;}
   ::placeholder{color:var(--ink-mute);}
@@ -102,9 +110,121 @@
   .tile .u{font-size:12px; color:var(--ink-mute); margin-top:2px;}
 
   /* tab bar */
+  /* ---- bandeau sombre incurvé (accueil, alimentation, progression) ---- */
+  .hero{position:relative; background:var(--hero); color:var(--hero-ink);
+    margin:calc(-16px - env(safe-area-inset-top)) -16px 0; padding:calc(14px + env(safe-area-inset-top)) 18px 74px;
+    overflow:hidden;}
+  .hero::before{content:""; position:absolute; top:-118px; left:50%; transform:translateX(-50%);
+    width:196px; height:196px; border-radius:50%; background:var(--bg);}
+  .hero::after{content:""; position:absolute; left:-24%; right:-24%; bottom:-58%; height:118%;
+    border-radius:50%; border:2px solid rgba(255,255,255,.14); pointer-events:none;}
+  .hero-top{display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2;}
+  .hero-ic{width:31px; height:31px; border-radius:50%; background:#fff; color:#1b1b1d;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .hero-ic svg{width:19px; height:19px;}
+  .hero-h{position:relative; z-index:2; text-align:center; margin-top:26px;}
+  .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
+  .hero-h .sub{font-size:14px; font-weight:600; color:var(--hero-soft); margin-top:8px;}
+  .hero-h .big{font-size:27px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;}
+  .under-hero{margin-top:-58px; position:relative; z-index:3;}
+
+  /* ---- carte de la semaine ---- */
+  .wk-card{background:var(--surface); border-radius:18px; padding:12px 14px 13px;
+    box-shadow:0 6px 22px rgba(0,0,0,.14);}
+  .wk-days{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:9px;}
+  .wk-day i{display:block; height:13px; border-radius:7px; background:var(--surface2); border:1.5px solid transparent;}
+  .wk-day.on i{background:var(--accent);}
+  .wk-day.today i{border-color:var(--accent-deep); background:transparent;}
+  .wk-day.today.on i{background:var(--accent);}
+  .wk-day span{display:block; text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-mute); margin-top:3px;}
+  .wk-sep{height:1px; background:var(--border); margin:0 -4px 9px;}
+  .wk-nums{display:flex; align-items:center; justify-content:space-between; position:relative;}
+  .wk-nums .n{flex:1; text-align:center;}
+  .wk-nums .v{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .wk-nums .u{font-size:11px; color:var(--ink-mute);}
+  .wk-bilan{position:absolute; left:50%; top:5px; transform:translateX(-50%);
+    background:var(--accent); color:var(--accent-ink); font-size:12px; font-weight:800;
+    border-radius:99px; padding:3px 12px;}
+
+  /* ---- carrousel de séances ---- */
+  .car{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory;
+    margin:0 -16px; padding:14px 16px 10px; -webkit-overflow-scrolling:touch;}
+  .car::-webkit-scrollbar{display:none;}
+  .prog-slot{position:relative; flex:0 0 63%; scroll-snap-align:center; padding-top:13px;}
+  .prog-card{position:relative; width:100%; aspect-ratio:192/279; border-radius:16px;
+    overflow:hidden; background:var(--hero); color:#fff; display:block;
+    box-shadow:0 8px 26px rgba(0,0,0,.22);}
+  .prog-card .ph{position:absolute; inset:0; background-size:cover; background-position:center;}
+  .prog-card .ph::after{content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.82) 100%);}
+  .prog-card .in{position:absolute; inset:0; padding:12px; display:flex; flex-direction:column; justify-content:flex-end;}
+  .prog-card .nm{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1;}
+  .prog-card .ex{font-size:10.5px; line-height:1.5; color:rgba(255,255,255,.88); margin-top:5px;}
+  .prog-card .dur{position:absolute; top:10px; right:10px; z-index:2; background:rgba(255,255,255,.92);
+    color:#1b1b1d; font-size:11px; font-weight:800; border-radius:99px; padding:3px 9px;}
+  .prog-card .pen{position:absolute; bottom:10px; right:10px; z-index:2; width:26px; height:26px;
+    border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; font-size:13px;}
+  .prog-slot .sug{position:absolute; top:0; left:50%; transform:translateX(-50%); z-index:4;
+    background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:800;
+    border-radius:99px; padding:3px 11px; white-space:nowrap;}
+  .car-wrap{position:relative;}
+
+  /* ---- bouton + flottant ---- */
+  .fab{width:58px; height:58px; border-radius:50%; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:31px; font-weight:300;
+    box-shadow:0 6px 18px rgba(245,130,32,.42); line-height:1;}
+  .fab-row{display:flex; justify-content:flex-end; margin:2px 4px 0;}
+
+  /* ---- bandeau historique ---- */
+  .hist-strip{display:flex; gap:8px; overflow-x:auto; margin:0 -16px; padding:2px 16px 14px;}
+  .hist-strip::-webkit-scrollbar{display:none;}
+  .hist-c{position:relative; flex:0 0 108px; height:112px; border-radius:12px; overflow:hidden;
+    background:var(--hero); color:#fff; text-align:left;}
+  .hist-c .ph{position:absolute; inset:0; background-size:cover; background-position:center;}
+  .hist-c .ph::after{content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.72) 100%);}
+  .hist-c .in{position:absolute; inset:0; padding:8px 9px; display:flex; flex-direction:column; justify-content:flex-end;}
+  .hist-c .dt{position:absolute; top:7px; left:50%; transform:translateX(-50%); z-index:2;
+    background:rgba(255,255,255,.9); color:#1b1b1d; font-size:9.5px; font-weight:800;
+    border-radius:99px; padding:2px 7px; white-space:nowrap;}
+  .hist-c .nm{font-size:15px; font-weight:800; line-height:1.1;}
+  .hist-c .st{font-size:9px; line-height:1.45; color:rgba(255,255,255,.85); margin-top:2px;}
+
+  /* ---- alimentation : jauges, onglets de repas, pastilles ---- */
+  .eat-card{background:var(--surface); border-radius:16px; padding:12px 14px; box-shadow:0 6px 22px rgba(0,0,0,.14);}
+  .eat-line{display:flex; align-items:baseline; gap:8px;}
+  .eat-line .v{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .eat-line .l{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
+  .eat-bar{height:11px; border-radius:7px; background:var(--surface2); overflow:hidden; margin:4px 0 10px; position:relative;}
+  .eat-bar i{display:block; height:100%; border-radius:7px; background:var(--accent);}
+  .eat-bar b{position:absolute; right:7px; top:-1px; font-size:10.5px; font-weight:700; color:var(--ink-mute);}
+  .eat-side{display:flex; flex-direction:column; gap:8px; justify-content:center;}
+  .eat-side button{width:36px; height:36px; border-radius:10px; background:var(--surface); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 3px 10px rgba(0,0,0,.18);}
+
+  .meal-tabs{display:flex; gap:3px; margin:16px -4px -1px; padding:0 4px; position:relative; z-index:2;}
+  .meal-tab{flex:1; border-radius:10px 10px 0 0; background:var(--surface2); color:var(--ink-mute);
+    font-size:10px; font-weight:800; letter-spacing:.03em; text-transform:uppercase;
+    padding:9px 2px 10px; text-align:center; transform:translateY(6px); transition:transform .18s ease, background .18s ease, color .18s ease;}
+  .meal-tab.on{transform:translateY(0); color:#fff; padding-bottom:16px;}
+  .meal-panel{background:var(--surface); border-radius:14px; padding:16px 13px 22px; position:relative; z-index:1;
+    box-shadow:0 6px 22px rgba(0,0,0,.10); min-height:52vh;}
+  .meal-h{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-mute); text-align:center; margin:2px 0 9px;}
+  .fgrid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:16px;}
+  .fchip{display:flex; align-items:center; gap:5px; background:var(--surface); border:1px solid var(--border);
+    border-radius:9px; padding:6px 7px; text-align:left; min-width:0;}
+  .fchip .ic{font-size:13px; flex:0 0 auto;}
+  .fchip .nm{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .fchip .q{font-size:10px; color:var(--ink-mute); white-space:nowrap;}
+  .fchip .g{margin-left:auto; font-size:12px; font-weight:800; flex:0 0 auto;}
+  .fchip.on{color:#fff; border-color:transparent;}
+  .fchip.on .q{color:rgba(255,255,255,.8);}
+  .fab-center{display:flex; justify-content:center; margin-top:14px;}
+
   .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--barre); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);}
   .tabbar-in{max-width:560px; margin:0 auto; display:flex;}
-  .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 7px; color:var(--ink-mute); font-size:10.5px; font-weight:600; letter-spacing:.02em;}
+  .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 0 9px; color:var(--ink-mute); font-size:11px; font-weight:700; letter-spacing:.01em;}
   .tab svg{width:22px; height:22px;}
   .tab.on{color:var(--accent);}
 
@@ -174,7 +294,26 @@
   .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center;}
   .overlay.show{display:flex;}
   .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
-  .sheet h3{font-size:18px; margin-bottom:14px;}
+  .sheet h3{font-size:18px; margin-bottom:14px; text-align:center;}
+  .sheet{background:var(--sheet);}
+  /* ---- fiche « nouvelle séance » ---- */
+  .f-lab{font-size:10.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-mute); display:block; margin-bottom:6px;}
+  .tpl-item{background:var(--field); border:1px solid var(--border); border-radius:12px; padding:10px 11px; margin-bottom:8px;}
+  .tpl-item .cfg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; margin-top:8px;}
+  .tpl-item .cfg .label{font-size:9px; letter-spacing:.08em; text-align:center; display:block; margin-bottom:3px;}
+  .tpl-item .cfg input{text-align:center; padding:7px 4px; font-size:14px; background:var(--sheet);}
+  .tpl-vide{text-align:center; font-size:13.5px; color:var(--ink-mute); padding:12px 0 14px;}
+  .btn-dash{border:1px dashed var(--border); background:none; color:var(--ink-soft); font-weight:700;
+    border-radius:12px; padding:12px; width:100%;}
+  /* ---- fiche « choisir un exercice » ---- */
+  .pk-h{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin:14px 0 7px;}
+  .pk-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border);}
+  .pk-row .th{width:44px; height:44px; border-radius:9px; background:var(--surface2); flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;}
+  .pk-row .nm{font-size:14px; font-weight:700; line-height:1.25;}
+  .pk-row .eq{font-size:11.5px; color:var(--ink-mute);}
+  .pk-add{width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:600; flex:0 0 auto;}
   .grab{width:44px; height:5px; border-radius:3px; background:var(--ink-mute); opacity:.55; margin:0 auto 6px;}
   .grab::after{content:""; display:block; height:14px;}   /* zone de préhension plus large au doigt */
   .sheet{touch-action:pan-y;}
@@ -1350,18 +1489,28 @@ function applyDefaults(){
   if(!db.habitSel) db.habitSel = {};
   if(!db.seen) db.seen = {};
   if(!db.dayFix) db.dayFix = {};
+  /* anciens repas numérotés -> repas nommés (matin / midi / collation / soir / extra) */
+  if(!db.mealsV2){
+    const map = {"0":"matin","1":"midi","2":"soir","3":"collation"};
+    Object.keys(db.habitSel||{}).forEach(k=>{
+      const o = db.habitSel[k], n = {};
+      Object.keys(o).forEach(i=>{ const m = map[i] || i; n[m] = (n[m]||[]).concat(o[i]); });
+      db.habitSel[k] = n;
+    });
+    db.mealsV2 = 1;
+  }
   if(!db.hbPerso) db.hbPerso = {};     /* aliments ajoutés aux propositions, par type de repas */
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
-  if(!db.settings.theme) db.settings.theme = "sombre";
+  if(!db.settings.theme) db.settings.theme = "clair";
   if(!db.seq) db.seq = 1;
   if(!("active" in db)) db.active = null;
 }
 applyDefaults();
 function appliquerTheme(){
-  const clair = db.settings.theme === "clair";
-  document.documentElement.dataset.theme = clair ? "light" : "dark";
+  const sombre = db.settings.theme === "sombre";
+  document.documentElement.dataset.theme = sombre ? "dark" : "light";
   const meta = document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.setAttribute("content", clair ? "#f6f3ee" : "#131110");
+  if(meta) meta.setAttribute("content", sombre ? "#0e0e10" : "#1b1b1d");
 }
 function isEmptyDb(d){ return !d || (!(d.history||[]).length && !(d.weights||[]).length && !(d.templates||[]).length && !(d.cardio||[]).length); }
 
@@ -1588,18 +1737,26 @@ function suggestFor(exId, target){
 
 /* ================= TABS ================= */
 const ICONS = {
-  seance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>',
-  prog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
-  hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
-  prg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19h16M6 16l4-5 3 3 5-7"/></svg>'
+  seance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 5v14M17.5 5v14M3 9v6M21 9v6M6.5 12h11"/></svg>',
+  eat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 12.5V21"/><path d="M17 3c-1.6 1.2-2.5 3-2.5 5s.9 3.2 2.5 3.4V21"/></svg>',
+  prg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M7 15l3.5-4 2.5 2.5L17 9"/></svg>'
 };
-const TABS = [["seance","Séance"],["prog","Programmes"],["hist","Historique"],["prg","Progression"]];
+const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]];
 const ICON_SAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>';
 function backupStale(){ return !isEmptyDb(db) && (!db.lastBackup || Date.now()-db.lastBackup > 7*864e5); }
-function topbar(){
-  return `<div class="topbar"><div class="wordmark">Tonnage<b>.</b></div>
-    <button class="icon-btn" id="tb-settings" title="Réglages" aria-label="Réglages">⚙︎</button></div>`;
+const IC_USER = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.6 20c.6-4 3.7-6 7.4-6s6.8 2 7.4 6z"/></svg>';
+const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm9 3.4c0 .6-.05 1.1-.14 1.7l2 1.5-1.9 3.3-2.4-1a7.8 7.8 0 0 1-2.9 1.7L15.3 22h-3.8l-.35-2.6c-1.05-.3-2-.85-2.85-1.6l-2.4 1L4 15.5l2-1.5A8.6 8.6 0 0 1 5.9 12c0-.55.05-1.1.14-1.6L4 8.9l1.9-3.3 2.4 1c.85-.75 1.8-1.3 2.85-1.6L11.5 2h3.8l.35 2.6c1.05.3 2.05.85 2.9 1.6l2.4-1L22.85 8.9l-2 1.5c.1.5.15 1.05.15 1.6z"/></svg>';
+/* bandeau sombre incurvé : titre libre, avatar à gauche, réglages à droite */
+function hero(inner){
+  return `<div class="hero">
+    <div class="hero-top">
+      <button class="hero-ic" id="tb-user" title="Mon profil" aria-label="Mon profil">${IC_USER}</button>
+      <button class="hero-ic" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button>
+    </div>
+    <div class="hero-h">${inner}</div>
+  </div>`;
 }
+function topbar(){ return ""; }
 async function quickBackup(){
   const stamp = dayKey();
   try{
@@ -1615,6 +1772,7 @@ async function quickBackup(){
 }
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
+  const u = document.getElementById("tb-user"); if(u) u.onclick = ()=>openOnboarding(true);
 }
 let curTab = "seance";
 function renderTabs(){
@@ -1630,6 +1788,7 @@ function render(){
   renderTabs();
   const app = document.getElementById("app");
   if(curTab==="seance") renderSeance(app);
+  else if(curTab==="eat") renderEat(app);
   else if(curTab==="prog") renderProgs(app);
   else if(curTab==="hist") renderHist(app);
   else renderProgress(app);
@@ -1810,6 +1969,236 @@ document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaini
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); } };
 restbar.addEventListener("click", e=>{ if(e.target.closest("button")) return; togglePauseRest(); });
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && rest.int) tickRest(); });
+
+
+/* ================= ALIMENTATION ================= */
+function renderEat(app){
+  const k = dayKey();
+  if(!mealCur) mealCur = mealParHeure();
+  const sel = db.habitSel[k] || {};
+  const plan = planFor(db.profile);
+  const protTarget = proteinTarget();
+  const protNow = dayProt(k), kcalNow = dayKcal(k);
+  const kMin = plan? plan.kcalMin : 0, kMax = plan? plan.kcalMax : 0;
+  const enHausse = !plan || plan.delta >= 0;
+  const kRef = enHausse? kMin : kMax;
+  const coul = MEAL_C[mealCur];
+
+  app.innerHTML = `
+    ${hero(`<div class="big">Aujourd'hui</div>`)}
+    <div class="under-hero" style="display:flex; gap:9px; align-items:stretch;">
+      <div class="eat-card" style="flex:1; min-width:0;">
+        <div class="eat-line"><span class="v">${protNow} <span style="font-size:14px;">g</span></span><span class="l">Protéines</span></div>
+        <div class="eat-bar"><i style="width:${Math.min(100, protTarget? protNow/protTarget*100 : 0)}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i><b>${protTarget} g</b></div>
+        <div class="eat-line"><span class="v">${kcalNow}</span><span class="l">Kcal</span>
+          <button class="icon-btn info-btn" id="eat-kinfo" style="margin-left:2px;" title="Comment sont calculées mes calories ?">ⓘ</button></div>
+        <div class="eat-bar"><i style="width:${Math.min(100, kRef? kcalNow/kRef*100 : 0)}%; background:${
+          !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b>${kRef? kRef+" kcal" : "—"}</b></div>
+      </div>
+      <div class="eat-side">
+        <button id="eat-plan" title="Mon plan" aria-label="Mon plan">📖</button>
+        <button id="eat-tips" title="Idées d'aliments" aria-label="Idées d'aliments">💡</button>
+      </div>
+    </div>
+    <div class="meal-tabs">${MEALS.map(([id,lab])=>`
+      <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
+        style="${mealCur===id? `background:${MEAL_C[id]};`:""}">${lab}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</button>`).join("")}</div>
+    <div class="meal-panel" id="meal-panel"></div>`;
+  wireTopbar();
+  document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
+  document.getElementById("eat-plan").onclick  = ()=>showPlan(false);
+  document.getElementById("eat-tips").onclick  = ()=>openKcalTips(enHausse? "up":"down", plan);
+  document.querySelectorAll("[data-meal]").forEach(b=>b.onclick=()=>{ mealCur = b.dataset.meal; renderSurPlace(); });
+
+  /* ---- pastilles d'aliments du repas courant ---- */
+  const panel = document.getElementById("meal-panel");
+  const mySel = sel[mealCur] || [];
+  const groups = habitOpts(mealCur);
+  const connus = groups.reduce((a,g)=>a.concat(g[2].map(x=>x[0])), []);
+  const libres = mySel.filter(l=>!connus.includes(l));
+  const pastille = (label, prot, on) => {
+    const pa = partsAliment(label, prot);
+    return `<button class="fchip ${on?'on':''}" data-opt="${esc(label)}" style="${on? `background:${coul};`:""}">
+      <span class="ic">${foodIcon(label)}</span>
+      <span class="nm">${esc(pa.nom)}</span>
+      ${pa.q? `<span class="q">(${esc(pa.q)})</span>`:""}
+      <span class="g">${pa.prot}<span style="font-size:9px;">g</span></span>
+    </button>`;
+  };
+  panel.innerHTML = groups.map(([titre,cle,items])=>`
+    <div class="meal-h">${esc(titre)}</div>
+    <div class="fgrid">${items.map(([l,pr])=>pastille(l, pr, mySel.includes(l))).join("")}</div>`).join("")
+    + (libres.length? `<div class="meal-h">Ajoutés aujourd'hui</div>
+      <div class="fgrid">${libres.map(l=>pastille(l, protOf(l), true)).join("")}</div>`:"")
+    + `<div class="fab-center"><button class="fab" id="eat-add" style="background:${coul}; box-shadow:0 6px 18px rgba(0,0,0,.2);" aria-label="Ajouter un aliment">＋</button></div>`;
+
+  document.getElementById("eat-add").onclick = ()=>openAjoutAliment(mealCur);
+
+  let lpT = null, lpFired = false;
+  panel.querySelectorAll("[data-opt]").forEach(b=>{
+    const label = b.dataset.opt;
+    const deb = ()=>{ lpFired=false; clearTimeout(lpT);
+      lpT = setTimeout(()=>{ lpFired=true; if(navigator.vibrate) navigator.vibrate(18); openModifAliment(mealCur, label); }, 550); };
+    const fin = ()=>clearTimeout(lpT);
+    b.addEventListener("touchstart", deb, {passive:true});
+    ["touchend","touchmove","touchcancel"].forEach(e=>b.addEventListener(e, fin));
+    b.addEventListener("mousedown", deb); b.addEventListener("mouseup", fin); b.addEventListener("mouseleave", fin);
+    b.oncontextmenu = e=>{ e.preventDefault(); openModifAliment(mealCur, label); };
+    b.onclick = ()=>{
+      if(lpFired){ lpFired=false; return; }
+      basculerAliment(mealCur, label);
+    };
+  });
+}
+function basculerAliment(meal, label){
+  const k = dayKey();
+  if(!db.habitSel[k]) db.habitSel[k] = {};
+  const arr = db.habitSel[k][meal] || [];
+  db.habitSel[k][meal] = arr.includes(label)? arr.filter(x=>x!==label) : arr.concat(label);
+  if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
+  save(); renderSurPlace();
+}
+
+/* fiche « Ajouter un aliment » : liste d'aliments, quantité, garder dans les propositions */
+function openAjoutAliment(meal){
+  openSheet(`<h3 style="text-align:center;">Ajouter un aliment</h3>
+    <div class="stack">
+      <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
+      <select id="ot-food">${FOOD_100G.map(([grp,items])=>
+        `<optgroup label="${grp}">${items.map(([n,pr,kc,u],i)=>`<option value="${grp}|${i}">${n}</option>`).join("")}</optgroup>`).join("")}
+        <option value="manuel">Autre — je saisis les valeurs</option>
+      </select></div>
+      <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;" id="ot-glabel">Quantité mangée (g)</span>
+      <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
+      <div id="ot-mwrap" style="display:none;">
+        <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
+        <input id="ot-name" placeholder="Ex : plat du resto" style="margin-bottom:9px;">
+        <span class="label" style="display:block; margin-bottom:5px;">Protéines (g)</span>
+        <input type="number" inputmode="decimal" step="1" min="0" id="ot-prot" placeholder="25" style="margin-bottom:9px;">
+        <span class="label" style="display:block; margin-bottom:5px;">Calories (facultatif)</span>
+        <input type="number" inputmode="numeric" step="10" min="0" id="ot-kcal" placeholder="400">
+      </div>
+      <div id="ot-live" style="font-size:14.5px; font-weight:700; color:var(--accent); min-height:20px;"></div>
+      <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
+        <input type="checkbox" id="ot-save" style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
+        <span style="font-size:13.5px; color:var(--ink-soft);">Garder dans mes propositions</span>
+      </label>
+      <button class="btn btn-accent" id="ot-ok">Enregistrer</button>
+      ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? `Restaurer les ${nbMasques()} propositions retirées` : "Restaurer la proposition retirée"}</button>`:""}
+      <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;">Astuce : appui long sur une proposition pour la modifier.</p>
+    </div>`);
+  const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
+  const trouver = val => {
+    const [grp, idx] = val.split("|");
+    const g = FOOD_100G.find(x=>x[0]===grp);
+    return g ? g[1][parseInt(idx)] : null;
+  };
+  const calc = ()=>{
+    const manual = foodEl.value==="manuel";
+    document.getElementById("ot-gwrap").style.display = manual? "none":"block";
+    document.getElementById("ot-mwrap").style.display = manual? "block":"none";
+    if(manual){ liveEl.textContent = ""; return null; }
+    const f = trouver(foodEl.value);
+    if(!f) return null;
+    const [nom, prot100, kcal100, unite] = f;
+    const piece = unite !== "100g";
+    document.getElementById("ot-glabel").textContent = piece ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})` : "Quantité mangée (g)";
+    gEl.step = piece ? 1 : 10;
+    gEl.placeholder = piece ? "2" : "150";
+    const q = parseFloat(gEl.value);
+    if(!q || q<=0){ liveEl.textContent = ""; return null; }
+    const prot = Math.round(piece ? prot100*q : prot100*q/100);
+    const kcal = Math.round(piece ? kcal100*q : kcal100*q/100);
+    const court = nom.replace(/\s*\(.*?\)/,"");
+    liveEl.textContent = piece
+      ? `${q} ${unite}${q>1?"s":""} ≈ ${prot} g de protéines · ${kcal} kcal`
+      : `${q} g de ${court.toLowerCase()} ≈ ${prot} g de protéines · ${kcal} kcal`;
+    return {label: piece ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)` : `${court} ${q} g (~${prot} g prot. · ${kcal} kcal)`, prot, kcal};
+  };
+  foodEl.onchange = calc; gEl.oninput = calc;
+  const resto = document.getElementById("ot-restore");
+  if(resto) resto.onclick = ()=>{ db.hbMasque = {}; save(); closeSheet(); render(); };
+  document.getElementById("ot-ok").onclick = ()=>{
+    let label, prot = 0, kcal = 0;
+    if(foodEl.value==="manuel"){
+      const pr = parseFloat(document.getElementById("ot-prot").value);
+      if(isNaN(pr)||pr<0) return;
+      const kc = parseFloat(document.getElementById("ot-kcal").value);
+      const nom = document.getElementById("ot-name").value.trim()||"Autre";
+      prot = pr; kcal = isNaN(kc)? 0 : Math.round(kc);
+      label = isNaN(kc) ? `${nom} (~${pr} g prot.)` : `${nom} (~${pr} g prot. · ${kcal} kcal)`;
+    } else {
+      const r = calc();
+      if(!r) return;
+      label = r.label; prot = r.prot; kcal = r.kcal;
+    }
+    if(document.getElementById("ot-save").checked){
+      const ty = habitType(meal);
+      const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
+      if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal]);
+    }
+    const k = dayKey();
+    if(!db.habitSel[k]) db.habitSel[k] = {};
+    db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).concat(label);
+    if(db.dayFix[k]) delete db.dayFix[k];
+    save(); closeSheet(); render();
+  };
+}
+
+/* appui long sur une pastille : changer la quantité, ou la retirer des propositions */
+function openModifAliment(meal, label){
+  const k = dayKey();
+  const pris = (db.habitSel[k] && db.habitSel[k][meal] || []).includes(label);
+  const prot = protOf(label), kcal = kcalOf(label);
+  const pa = partsAliment(label, prot);
+  const grp = trouverGroupe(label);
+  openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(pa.nom)}</h3>
+    <div class="row" style="justify-content:center; gap:34px; margin-bottom:16px;">
+      <div style="text-align:center;"><div style="font-size:29px; font-weight:800; line-height:1.05;">${prot}<span style="font-size:16px;"> g</span></div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">Protéines</div></div>
+      <div style="text-align:center;"><div style="font-size:29px; font-weight:800; line-height:1.05;">${kcal||"—"}</div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">Kilocalories</div></div>
+    </div>
+    <div class="stack">
+      <div><span class="label" style="display:block; margin-bottom:5px;">Nombre de portions</span>
+      <input type="number" inputmode="decimal" step="0.5" min="0.5" id="ma-n" value="1"></div>
+      <div id="ma-live" style="font-size:13.5px; font-weight:700; color:var(--accent);">1 portion ≈ ${prot} g de protéines${kcal? ` · ${kcal} kcal`:""}</div>
+      <button class="btn btn-accent" id="ma-ok">${pris? "Mettre à jour" : "Ajouter à ce repas"}</button>
+      ${grp? `<button class="btn" id="ma-del" style="background:var(--hero); color:#fff; border-color:var(--hero);">Retirer des propositions</button>`
+            : `<button class="btn" id="ma-del" style="background:var(--hero); color:#fff; border-color:var(--hero);">Supprimer</button>`}
+      <button class="btn btn-ghost" id="ma-cancel">Annuler</button>
+    </div>`);
+  const nEl = document.getElementById("ma-n"), live = document.getElementById("ma-live");
+  const maj = ()=>{
+    const n = parseFloat(nEl.value)||0;
+    if(n<=0){ live.textContent = ""; return; }
+    live.textContent = `${n.toLocaleString("fr-FR")} portion${n>1?"s":""} ≈ ${Math.round(prot*n)} g de protéines${kcal? ` · ${Math.round(kcal*n)} kcal`:""}`;
+  };
+  nEl.oninput = maj;
+  document.getElementById("ma-cancel").onclick = closeSheet;
+  document.getElementById("ma-ok").onclick = ()=>{
+    const n = parseFloat(nEl.value)||1;
+    if(!db.habitSel[k]) db.habitSel[k] = {};
+    let arr = (db.habitSel[k][meal]||[]).filter(x=>x!==label);
+    arr = arr.concat(n===1 ? label : `${pa.nom} ×${n.toLocaleString("fr-FR")} (~${Math.round(prot*n)} g prot.${kcal? ` · ${Math.round(kcal*n)} kcal`:""})`);
+    db.habitSel[k][meal] = arr;
+    if(db.dayFix[k]) delete db.dayFix[k];
+    save(); closeSheet(); render();
+  };
+  document.getElementById("ma-del").onclick = ()=>{
+    if(grp){ demanderRetrait(label, grp); return; }
+    if(db.habitSel[k]) db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).filter(x=>x!==label);
+    save(); closeSheet(); render();
+  };
+}
+/* à quel groupe de propositions appartient cet aliment (null s'il est libre) */
+function trouverGroupe(label){
+  let cle = null;
+  Object.keys(HB_OPTS).forEach(k=>{ if(HB_OPTS[k].some(x=>x[0]===label)) cle = cle || k; });
+  if(cle) return cle;
+  Object.keys(db.hbPerso||{}).forEach(ty=>{ if((db.hbPerso[ty]||[]).some(x=>x[0]===label)) cle = cle || "perso:"+ty; });
+  return cle;
+}
 
 /* ================= CARDIO ================= */
 function cardioKcal(km, min, pente, kg, courir){
@@ -2085,6 +2474,37 @@ function dayKcal(key){
   return s? Math.round(Object.values(s).flat().reduce((a,l)=>a+kcalOf(l),0)) : 0;
 }
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
+const MEALS = [["matin","Matin"],["midi","Midi"],["collation","Collation"],["soir","Soir"],["extra","Extra"]];
+const MEAL_C = {matin:"var(--matin)", midi:"var(--midi)", collation:"var(--collation)", soir:"var(--soir)", extra:"var(--extra)"};
+let mealCur = null;   /* repas affiché ; par défaut celui qui correspond à l'heure */
+function mealParHeure(){
+  const h = new Date().getHours();
+  if(h < 11) return "matin";
+  if(h < 15) return "midi";
+  if(h < 18) return "collation";
+  return "soir";
+}
+/* petites icônes d'aliments, choisies sur le nom */
+const FOOD_IC = [[/poulet|dinde|volaille/,"🍗"],[/bœuf|boeuf|steak|viande|agneau|veau|porc/,"🥩"],[/œuf|oeuf|blanc d/,"🥚"],
+  [/thon|saumon|poisson|cabillaud|crevette/,"🐟"],[/jambon/,"🍖"],[/whey|shaker|lait/,"🥛"],[/fromage|skyr|yaourt/,"🧀"],
+  [/riz/,"🍚"],[/pâte|pate|semoule|quinoa/,"🍝"],[/patate|pomme de terre/,"🥔"],[/pain|tartine|tranche de pain/,"🍞"],
+  [/avoine|céréale|cereale/,"🥣"],[/banane/,"🍌"],[/pomme/,"🍎"],[/compote/,"🧃"],[/biscuit|chocolat/,"🍪"],
+  [/amande|noix|cacahuète|cacahuete/,"🥜"],[/huile/,"🫒"],[/légumineuse|legumineuse|lentille|pois|haricot|tofu/,"🫘"]];
+function foodIcon(label){
+  const l = (label||"").toLowerCase();
+  for(const [re,ic] of FOOD_IC) if(re.test(l)) return ic;
+  return "🍽️";
+}
+/* « Poulet (150 g cuit) » ou « Œuf ×3 (~20 g prot. · 234 kcal) » -> nom, portion, protéines */
+function partsAliment(label, prot){
+  const net = (label||"").replace(/\s*\(~[^)]*\)\s*$/,"").trim();
+  let nom = net, q = "";
+  let m = net.match(/^(.*?)\s*\(([^()]+)\)\s*(?:×\s*([\d.,]+))?$/);
+  if(m){ nom = m[1]; q = m[2]; if(m[3]) q += " ×"+m[3]; }
+  else if((m = net.match(/^(.*?)\s*×\s*([\d.,]+)$/))){ nom = m[1]; q = "×"+m[2]; }
+  else if((m = net.match(/^(.*?)\s+([\d.,]+\s*(?:g|ml|kg))$/i))){ nom = m[1]; q = m[2]; }
+  return {nom:nom.trim(), q:q.trim(), prot:Math.round(prot)};
+}
 function habitType(h){
   const t = (h||"").toLowerCase();
   if(t.includes("shake")||t.includes("collation")||t.includes("goûter")) return "snack";
@@ -2094,7 +2514,9 @@ function habitType(h){
 /* groupes de propositions : [titre, clé, aliments]. Les aliments masqués par appui long
    disparaissent, ceux ajoutés depuis « Autre » forment un groupe « Mes aliments ». */
 function habitOpts(h){
-  const ty = habitType(h);
+  const ty = (h==="matin") ? "petitdej"
+    : (h==="collation" || h==="extra") ? "snack"
+    : (h==="midi" || h==="soir") ? "repas" : habitType(h);
   const base = ty==="snack" ? [["Contenu","snack",HB_OPTS.snack]]
     : (ty==="petitdej" ? [["Protéines","bkProt",HB_OPTS.bkProt],["Féculents / énergie","bkCarb",HB_OPTS.bkCarb]]
       : [["Protéines","prot",HB_OPTS.prot],["Féculents","carb",HB_OPTS.carb]]);
@@ -2284,6 +2706,30 @@ function suggestedTemplate(){
   });
   return best;
 }
+/* photo d'ambiance d'une séance : choisie sur le nom, sinon sur les muscles travaillés */
+const PHOTOS = ["push","pull","jambes","abdos","cardio"];
+function photoSeance(t){
+  if(t && t.photo && PHOTOS.includes(t.photo)) return t.photo;
+  const n = ((t && t.name) || "").toLowerCase();
+  if(/push|poussée|pousse|pec|torse/.test(n)) return "push";
+  if(/pull|tirage|dos/.test(n)) return "pull";
+  if(/jambe|leg|cuisse|fessier|squat/.test(n)) return "jambes";
+  if(/abdo|gainage|core|ceinture/.test(n)) return "abdos";
+  if(/cardio|course|run|hiit|marche/.test(n)) return "cardio";
+  const score = {push:0, pull:0, jambes:0, abdos:0};
+  ((t && t.items) || []).forEach(it=>{
+    const m = (getEx(it.exId).muscle || "").toLowerCase();
+    if(/pector|épaul|epaul|triceps/.test(m)) score.push++;
+    else if(/dos|biceps/.test(m)) score.pull++;
+    else if(/jambe/.test(m)) score.jambes++;
+    else if(/abdo/.test(m)) score.abdos++;
+  });
+  const best = Object.keys(score).sort((a,b)=>score[b]-score[a])[0];
+  return score[best] ? best : "push";
+}
+function photoUrl(nom){ return `img/${nom}.jpg`; }
+function dureeSeance(t){ return Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5); }
+
 function renderSeance(app){
   if(chronoInt){ clearInterval(chronoInt); chronoInt=null; }
   if(db.active){ renderActive(app); return; }
@@ -2292,304 +2738,155 @@ function renderSeance(app){
   const w0 = weekStartDate();
   const week = db.history.filter(s=>new Date(s.date)>=w0);
   const weekVol = week.reduce((a,s)=>a+sessionVolume(s),0);
-  const weekMs = week.reduce((a,s)=>a+((s.end||0)-(s.start||0)),0);
   const cs = cardioWeekStats();
+  const weekKcal = week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s), nbSeries(s)),0) + cs.kcal;
   const days = ["L","M","M","J","V","S","D"];
   const trained = new Set();
   db.history.concat(db.cardio).forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
   const todayIdx = (now.getDay()+6)%7;
   const sug = suggestedTemplate();
+  const bilanNeuf = (db.history.length||db.weights.length) && (!db.lastBilan || Date.now()-new Date(db.lastBilan).getTime()>6.5*864e5);
   const sub = !db.templates.length
-    ? "Crée ta première séance dans l'onglet Programmes pour démarrer."
-    : `On est ${now.toLocaleDateString("fr-FR",{weekday:"long"})} — prêt pour ta séance <b style="color:var(--ink);">${esc(sug.name)}</b> ?`;
+    ? "Crée ta première séance avec le bouton ＋"
+    : `Prêt pour ta séance <b style="color:#fff;">${esc(sug.name)}</b> ?`;
 
   app.innerHTML = `
-    ${topbar()}
+    ${hero(`<h1>${db.settings.name? "Salut "+esc(db.settings.name)+"," : "Bienvenue,"}</h1>
+      <div class="sub">${sub}</div>`)}
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">⚠️ Tes données ne peuvent pas être enregistrées</div>
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
-    <h1 style="font-size:26px; margin-top:14px;"><button id="hm-name" class="inline-edit">${db.settings.name? "Salut "+esc(db.settings.name) : "Bienvenue"} <span class="pen">✎</span></button></h1>
-    <div style="color:var(--ink-soft); font-size:15px; margin:4px 0 16px;">${sub}</div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between; margin-bottom:6px;">
-        <span class="label">Cette semaine</span>
-        <button class="btn btn-sm" id="bilan-btn" style="padding:6px 12px; font-size:13px; position:relative;">Bilan${(db.history.length||db.weights.length) && (!db.lastBilan || Date.now()-new Date(db.lastBilan).getTime()>6.5*864e5) ? '<span style="position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--accent);"></span>':""}</button>
-      </div>
-      <div style="font-size:30px; font-weight:800; font-variant-numeric:tabular-nums;">${week.length} <span style="font-size:15px; font-weight:600; color:var(--ink-mute);">séance${week.length>1?"s":""} de muscu</span></div>
-      <div class="week-dots">${days.map((d,i)=>`<div class="wd ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}"><i></i><span>${d}</span></div>`).join("")}</div>
-      <div class="wk-stats">
-        <div><div class="v">${weekMs? fmtDur(weekMs):"—"}</div><div class="u">d'entraînement</div></div>
-        <div><div class="v">${weekVol? (weekVol>=1000? (weekVol/1000).toLocaleString("fr-FR",{maximumFractionDigits:1})+" t" : fmtKg(weekVol)+" kg") : "—"}</div><div class="u">soulevées</div></div>
-        <div><div class="v">${(()=>{const k=week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s), nbSeries(s)),0)+cs.kcal; return k? k+" kcal":"—";})()}</div><div class="u">brûlées${cs.km? " (dont "+fmtKg(cs.km)+" km)":""}</div></div>
+    <div class="under-hero">
+      <div class="wk-card">
+        <div class="wk-days">${days.map((d,i)=>`<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}"><i></i><span>${d}</span></div>`).join("")}</div>
+        <div class="wk-sep"></div>
+        <div class="wk-nums">
+          <div class="n"><div class="v">${weekVol? fmtKg(Math.round(weekVol)) : "0"} <span style="font-size:13px;">Kg</span></div><div class="u">Soulevés</div></div>
+          <div class="n"><div class="v">${Math.round(weekKcal)} <span style="font-size:13px;">Kcal</span></div><div class="u">Brûlées</div></div>
+          <button class="wk-bilan" id="bilan-btn">Bilan${bilanNeuf? ' <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#fff; vertical-align:2px;"></span>':""}</button>
+        </div>
       </div>
     </div>
     <div id="start-zone"></div>
-    <div class="section-t"><i>🍽️</i>Alimentation</div>
-    <div class="card" id="eat-card"></div>
-    <div class="section-t"><i>🏋️</i>Mes séances</div>
-    <div id="tpl-zone"></div>
-    <button class="btn btn-ghost" id="free-btn" style="width:100%; margin-top:12px;">Démarrer une séance libre</button>
-    <div class="section-t"><i>👟</i>Cardio</div>
-    <div class="card" id="cardio-card"></div>`;
+    <div class="car-wrap"><div class="car" id="car"></div></div>
+    <div class="fab-row"><button class="fab" id="fab" aria-label="Ajouter">＋</button></div>
+    <div class="section-t" style="margin-top:14px;"><i>▤</i>Historique</div>
+    <div class="hist-strip" id="hist-strip"></div>`;
   wireTopbar();
   document.getElementById("bilan-btn").onclick=openBilan;
+  document.getElementById("fab").onclick=openAjout;
 
   /* carte de démarrage : visible tant que la première séance n'est pas faite */
   const profilOk = !!planFor(db.profile);
   const aDesSeances = db.templates.length>0;
-  const aTermine = db.history.length>0;
   const startZone = document.getElementById("start-zone");
-  if(!aTermine){
+  if(!db.history.length){
     const etape = (ok, num, txt, act) => `<div class="start-step ${ok?"done":""}">
-      <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b>${act&&!ok? `<div style="margin-top:5px;"><button class="btn btn-accent btn-sm" id="${act}">${act==="sc-profil"?"Renseigner mon profil":(act==="sc-prog"?"Ajouter mes séances":"Lancer ma séance")}</button></div>`:""}</div></div>`;
-    const suivante = suggestedTemplate();
+      <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b>${act&&!ok? `<div style="margin-top:5px;"><button class="btn btn-accent btn-sm" id="${act}">Commencer</button></div>`:""}</div></div>`;
     startZone.innerHTML = `<div class="section-t"><i>🚩</i>Par où commencer</div>
       <div class="card start-card">
         ${etape(profilOk, 1, "Renseigner ton profil pour obtenir ton plan", !profilOk? "sc-profil":null)}
-        ${etape(aDesSeances, 2, "Choisir tes séances d'entraînement", (profilOk && !aDesSeances)? "sc-prog":null)}
-        ${etape(false, 3, "Faire ta première séance", (aDesSeances)? "sc-go":null)}
+        ${etape(aDesSeances, 2, "Créer ta première séance", (profilOk && !aDesSeances)? "sc-prog":null)}
+        ${etape(false, 3, "La faire", (aDesSeances)? "sc-go":null)}
       </div>`;
     const bp = document.getElementById("sc-profil"); if(bp) bp.onclick=()=>openOnboarding(true);
-    const bg = document.getElementById("sc-prog");   if(bg) bg.onclick=()=>{ curTab="prog"; render(); };
-    const bl = document.getElementById("sc-go");     if(bl) bl.onclick=()=>{ if(suivante) startWorkout(suivante.id); };
+    const bg = document.getElementById("sc-prog");   if(bg) bg.onclick=()=>openTplEditor(null);
+    const bl = document.getElementById("sc-go");     if(bl) bl.onclick=()=>{ if(sug) startWorkout(sug.id); };
   }
-  document.getElementById("hm-name").onclick=editName;
-  const todayKey = dayKey();
-  const checked = db.habitLog[todayKey] || [];
-  const sel = db.habitSel[todayKey] || {};
-  const verdict = weightVerdict();
-  const vColor = {good:"var(--good)", warn:"var(--accent)", bad:"var(--bad)", mute:"var(--ink-mute)"}[verdict.tone];
-  const allDone = db.habits.length && checked.length>=db.habits.length;
-  const protTarget = proteinTarget();
-  const plan = planFor(db.profile);
-  const protNow = dayProt(todayKey);
-  const protPct = Math.min(100, protNow/protTarget*100);
-  const kcalNow = dayKcal(todayKey);
-  const kMin = plan? plan.kcalMin : 0, kMax = plan? plan.kcalMax : 0;
-  const enHausse = !plan || plan.delta >= 0;   /* objectif de prise → on cherche à manger plus */
-  /* en prise, le chiffre qui compte est le plancher ; en déficit, c'est le plafond */
-  const kRef = enHausse? kMin : kMax;
-  const kcalPct = kRef? Math.min(100, kcalNow/kRef*100) : 0;
-  const kcalCoul = !kRef ? "var(--accent)"
-    : (kcalNow > kMax ? "var(--bad)" : (kcalNow >= kMin ? "var(--good)" : "var(--accent)"));
-  const resteKcal = kRef - kcalNow;
-  document.getElementById("eat-card").innerHTML = `
-    ${hintBox("repas", "Coche simplement tes repas au fil de la journée : aucune calorie à saisir. Une fois un repas coché, choisis ce que tu as mangé et l'app en déduit tes protéines et tes calories.")}
-    ${plan? `<div class="row" style="justify-content:space-between; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid var(--border);">
-      <div><div style="font-size:15px; font-weight:800;">${plan.aim==="masse"?"Prendre du muscle":(plan.aim==="seche"?"Perdre du gras":(plan.aim==="force"?"Gagner en force":(plan.aim==="entretien"?"Entretien":"Recomposition")))}</div>
-      <div style="font-size:12px; color:var(--ink-mute);">Cible du jour : ${plan.delta>=0? "au moins "+plan.kcalMin : "pas plus de "+plan.kcalMax} kcal · ${protTarget} g de protéines</div></div>
-      <button class="btn btn-sm" id="eat-plan">Mon plan</button></div>`:""}
-    <div style="font-size:13px; color:${vColor}; font-weight:600; margin-bottom:12px;">${esc(verdict.txt)}</div>
-    <div class="row" style="justify-content:space-between; margin-bottom:5px;">
-      <span class="label">Protéines aujourd'hui</span>
-      <span style="font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:${protNow>=protTarget?'var(--good)':'var(--ink)'};">≈ ${protNow} / ${protTarget} g</span>
-    </div>
-    <div class="mp-bar" style="height:12px; margin-bottom:11px;"><div style="height:100%; width:${protPct}%; border-radius:7px; background:${protNow>=protTarget?'var(--good)':'var(--accent)'}; transition:width .3s;"></div></div>
-    <div class="row" style="justify-content:space-between; margin-bottom:5px;">
-      <span class="row" style="gap:5px;"><span class="label">Calories aujourd'hui</span>
-        <button class="icon-btn info-btn" id="eat-kinfo" title="Comment sont calculées mes calories ?">ⓘ</button></span>
-      <span style="font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:${kcalCoul};">≈ ${kcalNow} kcal</span>
-    </div>
-    <div class="mp-bar" style="height:12px; margin-bottom:6px;"><div style="height:100%; width:${kcalPct}%; border-radius:7px; background:${kcalCoul}; transition:width .3s;"></div></div>
-    <div style="font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-bottom:${plan?"9px":"14px"};">${
-      !kRef ? "Estimation d'après les aliments cochés. Renseigne ton profil pour avoir une cible."
-      : `Objectif : <b style="color:var(--ink-soft);">${enHausse? "au moins "+kMin : "pas plus de "+kMax} kcal</b> · fourchette ${kMin} – ${kMax}.<br>` + (
-          kcalNow===0 ? "Coche tes repas au fil de la journée, le total se remplit tout seul."
-          : (kcalNow > kMax ? `Environ ${kcalNow-kMax} kcal au-dessus de la fourchette${enHausse?"." : " — à surveiller en sèche."}`
-            : (resteKcal > 100 ? (enHausse
-                ? `Il te reste environ <b style="color:var(--accent);">${resteKcal} kcal</b> à manger.`
-                : `Il te reste environ <b style="color:var(--accent);">${resteKcal} kcal</b> avant ta limite.`)
-              : "Tu es dans ta fourchette du jour 👌")))
-    }</div>
-    ${plan? `<button class="btn btn-sm btn-ghost" id="eat-ktips" style="width:100%; margin-bottom:14px;">${
-      enHausse ? "💡 Du mal à atteindre ces calories ?" : "💡 Comment réduire sans avoir faim ?"}</button>`:""}
-    <div class="stack" style="gap:7px;">${db.habits.map((h,i)=>{
-      const on = checked.includes(i);
-      const mySel = sel[i] || [];
-      const ouvert = on && habitOuvert[i] !== false;
-      let sub = "";
-      if(ouvert){
-        const groups = habitOpts(h);
-        const predefined = groups.reduce((a,g)=>a.concat(g[2].map(x=>x[0])), []);
-        const customs = mySel.filter(l=>!predefined.includes(l));   /* choisis via « Autre », ou masqués depuis */
-        sub = `<div class="hb-sub">` + groups.map(([titre,cle,items],gi)=>`
-          <div class="hb-g"><span class="label">${esc(titre)}</span>
-          <div class="chips" style="gap:5px; margin-top:4px;">${items.map(([l,p,kc])=>`
-            <button class="chip chip-sm ${mySel.includes(l)?'on':''}" data-opt="${i}|${esc(l)}" data-grp="${cle}">${esc(l.replace(/\s*\(~[^)]*\)\s*$/,""))}<i>${p>0? p+"g" : (kc? kc+" kcal":"")}</i></button>`).join("")}
-          ${gi===groups.length-1 ? customs.map(l=>`<button class="chip chip-sm on" data-opt="${i}|${esc(l)}">${esc(l)}</button>`).join("") + `<button class="chip chip-sm" data-other="${i}" style="border-style:dashed;">＋ Autre…</button>` : ""}
-          </div></div>`).join("") + `</div>`;
-      }
-      return `<div>
-        <div class="hb-row ${on?'on':''}">
-          <button class="hb-ck" data-hb="${i}" aria-label="Cocher ${esc(h)}">${on?"✓":""}</button>
-          <button class="grow hb-lbl" data-hbopen="${i}" style="text-align:left;">${esc(h)}</button>
-          ${mySel.length? `<span class="pill" style="font-size:11px;">${mySel.length}</span>`:""}
-          ${on? `<button class="hb-caret" data-hbopen="${i}">${ouvert?"▾":"▸"}</button>`:""}
-        </div>${sub}</div>`;
-    }).join("")}</div>
-    ${allDone? `<div style="font-size:13px; color:var(--good); font-weight:700; margin-top:10px;">Journée parfaite — c'est comme ça qu'on prend 💪</div>`:""}`;
-  wireHints(document.getElementById("eat-card"));
-  const planBtn = document.getElementById("eat-plan");
-  if(planBtn) planBtn.onclick = ()=>showPlan(false);
-  const kiBtn = document.getElementById("eat-kinfo");
-  if(kiBtn) kiBtn.onclick = ()=>openKcalInfo(plan);
-  const ktBtn = document.getElementById("eat-ktips");
-  if(ktBtn) ktBtn.onclick = ()=>openKcalTips(enHausse? "up":"down", plan);
-  document.querySelectorAll("[data-hb]").forEach(b=>b.onclick=()=>{
-    const i = parseInt(b.dataset.hb);
-    const arr = db.habitLog[todayKey] || [];
-    const etait = arr.includes(i);
-    db.habitLog[todayKey] = etait? arr.filter(x=>x!==i) : arr.concat(i);
-    if(!etait) habitOuvert[i] = true;      /* on coche : on déplie pour choisir les aliments */
-    save(); renderSurPlace();
-  });
-  document.querySelectorAll("[data-hbopen]").forEach(b=>b.onclick=()=>{
-    const i = parseInt(b.dataset.hbopen);
-    if(!(db.habitLog[todayKey]||[]).includes(i)) return;   /* replier n'a de sens que si c'est coché */
-    habitOuvert[i] = habitOuvert[i] === false;
-    renderSurPlace();
-  });
-  let lpTimer = null, lpFired = false;
-  document.querySelectorAll("[data-opt]").forEach(b=>{
-    const [iStr, label] = b.dataset.opt.split("|");
-    const i = parseInt(iStr);
-    const grp = b.dataset.grp;
-    const debut = ()=>{
-      if(!grp) return;                       /* un aliment ponctuel ne se retire pas des propositions */
-      lpFired = false; clearTimeout(lpTimer);
-      lpTimer = setTimeout(()=>{ lpFired = true; if(navigator.vibrate) navigator.vibrate(18); demanderRetrait(label, grp); }, 550);
-    };
-    const fin = ()=>clearTimeout(lpTimer);
-    b.addEventListener("touchstart", debut, {passive:true});
-    ["touchend","touchmove","touchcancel"].forEach(e=>b.addEventListener(e, fin));
-    b.addEventListener("mousedown", debut); b.addEventListener("mouseup", fin); b.addEventListener("mouseleave", fin);
-    b.oncontextmenu = e=>{ e.preventDefault(); if(grp) demanderRetrait(label, grp); };
-    b.onclick=()=>{
-      if(lpFired){ lpFired = false; return; }   /* c'était un appui long, pas un choix */
-      if(!db.habitSel[todayKey]) db.habitSel[todayKey] = {};
-      const arr = db.habitSel[todayKey][i] || [];
-      db.habitSel[todayKey][i] = arr.includes(label)? arr.filter(x=>x!==label) : arr.concat(label);
-      if(db.dayFix[todayKey]) delete db.dayFix[todayKey];   /* la saisie manuelle reprend la main */
-      save(); renderSurPlace();
-    };
-  });
-  document.querySelectorAll("[data-other]").forEach(b=>b.onclick=()=>{
-    const i = parseInt(b.dataset.other);
-    openSheet(`<h3>Autre aliment</h3>
-      <div class="stack">
-        <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
-        <select id="ot-food">${FOOD_100G.map(([grp,items])=>
-          `<optgroup label="${grp}">${items.map(([n,p,k,u],i)=>`<option value="${grp}|${i}">${n}</option>`).join("")}</optgroup>`).join("")}
-          <option value="manuel">Autre — je saisis les protéines</option>
-        </select></div>
-        <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;" id="ot-glabel">Quantité mangée (g)</span>
-        <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
-        <div id="ot-mwrap" style="display:none;">
-          <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
-          <input id="ot-name" placeholder="Ex : plat du resto" style="margin-bottom:9px;">
-          <span class="label" style="display:block; margin-bottom:5px;">Protéines (g)</span>
-          <input type="number" inputmode="decimal" step="1" min="0" id="ot-prot" placeholder="25" style="margin-bottom:9px;">
-          <span class="label" style="display:block; margin-bottom:5px;">Calories (facultatif)</span>
-          <input type="number" inputmode="numeric" step="10" min="0" id="ot-kcal" placeholder="400">
-        </div>
-        <div id="ot-live" style="font-size:15px; font-weight:700; color:var(--accent); min-height:22px;"></div>
-        <label class="row" style="gap:9px; align-items:flex-start; cursor:pointer;">
-          <input type="checkbox" id="ot-save" style="width:19px; height:19px; margin-top:1px; accent-color:var(--accent); flex:0 0 auto;">
-          <span style="font-size:13px; color:var(--ink-soft); line-height:1.45;">Garder dans mes propositions<br>
-            <span style="font-size:11.5px; color:var(--ink-mute);">Il apparaîtra directement la prochaine fois, sans avoir à le ressaisir.</span></span>
-        </label>
-        <p style="margin:0; font-size:12px; color:var(--ink-mute);">Pas sûr de la quantité ? Envoie une photo de ton assiette à Claude, il te l'estime.</p>
-        <button class="btn btn-accent" id="ot-ok">Ajouter</button>
-        ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? `Restaurer les ${nbMasques()} propositions retirées` : "Restaurer la proposition retirée"}</button>`:""}
-        <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute);">Astuce : appui long sur une proposition pour la retirer de la liste.</p>
-      </div>`);
-    const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
-    const trouver = val => {
-      const [grp, idx] = val.split("|");
-      const g = FOOD_100G.find(x=>x[0]===grp);
-      return g ? g[1][parseInt(idx)] : null;
-    };
-    const calc = ()=>{
-      const manual = foodEl.value==="manuel";
-      document.getElementById("ot-gwrap").style.display = manual? "none":"block";
-      document.getElementById("ot-mwrap").style.display = manual? "block":"none";
-      if(manual){ liveEl.textContent = ""; return null; }
-      const f = trouver(foodEl.value);
-      if(!f) return null;
-      const [nom, prot100, kcal100, unite] = f;
-      const piece = unite !== "100g";
-      document.getElementById("ot-glabel").textContent = piece ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})` : "Quantité mangée (g)";
-      gEl.step = piece ? 1 : 10;
-      gEl.placeholder = piece ? "2" : "150";
-      const q = parseFloat(gEl.value);
-      if(!q || q<=0){ liveEl.textContent = ""; return null; }
-      const prot = Math.round(piece ? prot100*q : prot100*q/100);
-      const kcal = Math.round(piece ? kcal100*q : kcal100*q/100);
-      const court = nom.replace(/\s*\(.*?\)/,"");
-      liveEl.textContent = piece
-        ? `${q} ${unite}${q>1?"s":""} ≈ ${prot} g de protéines · ${kcal} kcal`
-        : `${q} g de ${court.toLowerCase()} ≈ ${prot} g de protéines · ${kcal} kcal`;
-      return {label: piece ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)` : `${court} ${q} g (~${prot} g prot. · ${kcal} kcal)`, prot, kcal};
-    };
-    foodEl.onchange = calc; gEl.oninput = calc;
-    const resto = document.getElementById("ot-restore");
-    if(resto) resto.onclick = ()=>{ db.hbMasque = {}; save(); closeSheet(); render(); };
-    document.getElementById("ot-ok").onclick=()=>{
-      let label, prot = 0, kcal = 0;
-      if(foodEl.value==="manuel"){
-        const p = parseFloat(document.getElementById("ot-prot").value);
-        if(isNaN(p)||p<0) return;
-        const k = parseFloat(document.getElementById("ot-kcal").value);
-        const nom = document.getElementById("ot-name").value.trim()||"Autre";
-        prot = p; kcal = isNaN(k)? 0 : Math.round(k);
-        label = isNaN(k) ? `${nom} (~${p} g prot.)` : `${nom} (~${p} g prot. · ${kcal} kcal)`;
-      } else {
-        const r = calc();
-        if(!r) return;
-        label = r.label; prot = r.prot; kcal = r.kcal;
-      }
-      if(document.getElementById("ot-save").checked){
-        const ty = habitType(db.habits[i]);
-        const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
-        if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal]);
-      }
-      if(!db.habitSel[todayKey]) db.habitSel[todayKey] = {};
-      db.habitSel[todayKey][i] = (db.habitSel[todayKey][i]||[]).concat(label);
-      save(); closeSheet(); render();
-    };
-  });
-  document.getElementById("cardio-card").innerHTML = `
-    ${cs.n? `<div style="font-size:15px; margin-bottom:2px;">Cette semaine tu as ${cs.verb} <b>${fmtKg(cs.km)} km</b> (${cs.n} sortie${cs.n>1?"s":""}), soit environ <b style="color:var(--accent);">${cs.kcal} kcal</b>${kcalEquiv(cs.kcal)}.</div>` : ""}
-    <div style="font-size:13.5px; color:var(--ink-soft); margin-bottom:10px;">${motivPhrase(cs.km)}</div>
-    <div class="row">
-      <button class="btn btn-accent btn-sm grow" id="cardio-add">＋ Ajouter une sortie</button>
-      <button class="btn btn-sm" id="cardio-list">Mes sorties</button>
-    </div>`;
-  document.getElementById("cardio-add").onclick=openCardioAdd;
-  document.getElementById("cardio-list").onclick=openCardioList;
 
-  const zone = document.getElementById("tpl-zone");
+  /* ---- carrousel des séances ---- */
+  const car = document.getElementById("car");
   if(!db.templates.length){
-    zone.innerHTML = `<div class="card empty"><div class="big">🏗️</div>Aucune séance pour l'instant.<br>Crée ta première dans l'onglet <b>Programmes</b>.</div>`;
+    car.innerHTML = `<div class="card empty" style="flex:1;"><div class="big">🏗️</div>Aucune séance pour l'instant.<br>Appuie sur ＋ pour créer la première.</div>`;
   } else {
     const ordered = sug? [sug].concat(db.templates.filter(t=>t.id!==sug.id)) : db.templates.slice();
-    zone.innerHTML = `<div class="hscroll">${ordered.map(t=>{
-      const mins = Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5);
-      const icons = t.items.slice(0,4).map(it=>exIcon(getEx(it.exId), true)).join("");
-      const more = t.items.length>4? `<span class="ex-ico sm" style="font-size:12px; font-weight:800; color:var(--ink-mute);">+${t.items.length-4}</span>`:"";
-      return `<div class="sess-card">
-        ${sug && sug.id===t.id? `<div class="sugg-badge">Conseillée aujourd'hui</div>`:""}
-        <button class="inline-edit" data-preview="${t.id}" style="display:block; width:100%; padding:0; margin:0;">
-          <div style="font-size:18px; font-weight:800;">${esc(t.name)}</div>
-          <div style="font-size:12.5px; color:var(--ink-mute); margin:2px 0 10px;">${t.items.length} exercice${t.items.length>1?"s":""} · ~${mins} min · voir le détail</div>
-          <div class="row" style="gap:6px; margin-bottom:12px;">${icons}${more}</div>
-        </button>
-        <button class="btn btn-accent btn-sm" data-launch="${t.id}" style="width:100%;">Lancer</button>
-      </div>`;}).join("")}</div>`;
-    zone.querySelectorAll("[data-launch]").forEach(b=>b.onclick=()=>startWorkout(b.dataset.launch));
-    zone.querySelectorAll("[data-preview]").forEach(b=>b.onclick=()=>openPreview(b.dataset.preview));
+    car.innerHTML = ordered.map(t=>{
+      const noms = t.items.map(it=>getEx(it.exId).name);
+      const liste = noms.slice(0,4).map(n=>`· ${esc(n)}`).join("<br>") + (noms.length>4? `<br>+ ${noms.length-4} autre${noms.length-4>1?"s":""}`:"");
+      return `<div class="prog-slot">
+        ${sug && sug.id===t.id? `<div class="sug">Conseillé aujourd'hui</div>`:""}
+        <div class="prog-card" data-open="${t.id}">
+          <div class="ph" style="background-image:url('${photoUrl(photoSeance(t))}');"></div>
+          <div class="dur">◷ ${dureeSeance(t)} min</div>
+          <div class="in">
+            <div class="nm">${esc(t.name)}</div>
+            <div class="ex">${liste || "Aucun exercice"}</div>
+          </div>
+          <button class="pen" data-edit="${t.id}" aria-label="Modifier">✎</button>
+        </div>
+      </div>`;
+    }).join("");
+    car.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{
+      if(e.target.closest("[data-edit]")) return;
+      openPreview(c.dataset.open);
+    });
+    car.querySelectorAll("[data-edit]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openTplEditor(b.dataset.edit); });
   }
-  document.getElementById("free-btn").onclick=()=>startWorkout(null);
+
+  /* ---- bandeau historique ---- */
+  const hs = document.getElementById("hist-strip");
+  const passees = db.history.slice().reverse().slice(0,12);
+  if(!passees.length){
+    hs.innerHTML = `<div class="card empty" style="flex:1; padding:16px;">Aucune séance enregistrée pour l'instant.</div>`;
+  } else {
+    hs.innerHTML = passees.map(h=>{
+      const vol = Math.round(sessionVolume(h));
+      const kc = liftKcal(h.end-h.start, vol, nbSeries(h));
+      const mn = Math.round(((h.end||0)-(h.start||0))/60000);
+      const t = db.templates.find(x=>x.id===h.templateId);
+      return `<button class="hist-c" data-hist="${h.id}">
+        <div class="ph" style="background-image:url('${photoUrl(photoSeance(t || {name:h.name, items:h.entries.map(e=>({exId:e.exId}))}))}');"></div>
+        <div class="dt">◷ ${fmtDateShort(h.date)}</div>
+        <div class="in">
+          <div class="nm">${esc(h.name)}</div>
+          <div class="st">${fmtKg(vol)} Kg soulevés<br>${kc} Kcal brûlés<br>${mn>=60? Math.floor(mn/60)+"H"+String(mn%60).padStart(2,"0") : mn+" min"}</div>
+        </div>
+      </button>`;
+    }).join("") + `<button class="hist-c" id="hist-all" style="flex:0 0 76px; background:var(--surface2); color:var(--ink-soft);">
+      <div class="in" style="align-items:center; justify-content:center; text-align:center;">
+        <div style="font-size:12px; font-weight:700; line-height:1.3;">Voir<br>tout</div></div></button>`;
+    hs.querySelectorAll("[data-hist]").forEach(b=>b.onclick=()=>openHistDetail(b.dataset.hist));
+    const all = document.getElementById("hist-all");
+    if(all) all.onclick=()=>{ curTab="hist"; render(); };
+  }
+}
+
+/* le bouton ＋ de l'accueil */
+function openAjout(){
+  openSheet(`<h3 style="text-align:center;">Ajouter</h3>
+    <div class="stack">
+      <button class="btn btn-accent" id="aj-seance">＋ Nouvelle séance</button>
+      <button class="btn" id="aj-cardio">＋ Sortie cardio</button>
+      <button class="btn" id="aj-lib" style="background:var(--hero); color:#fff; border-color:var(--hero);">Bibliothèque d'exercices</button>
+      <button class="btn btn-ghost" id="aj-libre">Démarrer une séance libre</button>
+    </div>`);
+  document.getElementById("aj-seance").onclick=()=>{ closeSheet(); setTimeout(()=>openTplEditor(null), 60); };
+  document.getElementById("aj-cardio").onclick=()=>{ closeSheet(); setTimeout(openCardioAdd, 60); };
+  document.getElementById("aj-lib").onclick=()=>{ closeSheet(); setTimeout(()=>openPicker(null), 60); };
+  document.getElementById("aj-libre").onclick=()=>{ closeSheet(); startWorkout(null); };
+}
+
+/* détail d'une séance passée, depuis le bandeau historique */
+function openHistDetail(id){
+  const h = db.history.find(x=>x.id===id);
+  if(!h) return;
+  const vol = Math.round(sessionVolume(h));
+  const mn = Math.round(((h.end||0)-(h.start||0))/60000);
+  openSheet(`<h3>${esc(h.name)}</h3>
+    <div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${fmtDate(h.date)} · ${mn} min · ${fmtKg(vol)} kg</div>
+    <div style="max-height:52dvh; overflow-y:auto; margin-bottom:14px;">${h.entries.map(en=>`
+      <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
+      <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)}×${d.r}`).join("")}`).join(" · ")}</div></div>`).join("")}</div>
+    <div class="row">
+      <button class="btn grow" id="hd-edit">✎ Modifier</button>
+      <button class="btn grow" id="hd-del" style="color:var(--bad);">Supprimer</button>
+    </div>`);
+  document.getElementById("hd-edit").onclick=()=>openHistEdit(id);
+  document.getElementById("hd-del").onclick=()=>{
+    askConfirm("Supprimer cette séance ?", `${h.name} du ${fmtDateShort(h.date)} sera retirée de l'historique et des courbes.`, "Supprimer", true, ()=>{
+      db.history = db.history.filter(x=>x.id!==h.id); save(); render();
+    });
+  };
 }
 
 function openPreview(tplId){
@@ -2949,9 +3246,9 @@ function openSwap(ei, fromInjury){
 function openPicker(cb){
   const browse = !cb;
   openSheet(`<h3>${browse? "Bibliothèque d'exercices" : "Choisir un exercice"}</h3>
-    <input id="pk-search" placeholder="Rechercher un exercice ou un matériel…" style="margin-bottom:6px;">
+    <input id="pk-search" placeholder="Rechercher un exercice ou un matériel…" style="margin-bottom:2px;">
     <div id="pk-list" style="max-height:52dvh; overflow-y:auto;"></div>
-    <button class="btn btn-ghost" id="pk-new" style="width:100%; margin-top:14px;">＋ Créer un exercice perso</button>`);
+    <button class="btn-dash" id="pk-new" style="margin-top:14px;">＋ Créer un exercice perso</button>`);
   const listEl = document.getElementById("pk-list");
   const draw = q=>{
     q=(q||"").toLowerCase();
@@ -2959,11 +3256,12 @@ function openPicker(cb){
     const groups = {};
     filtered.forEach(e=>{ (groups[e.muscle||"Autres"] = groups[e.muscle||"Autres"]||[]).push(e); });
     listEl.innerHTML = Object.keys(groups).map(m=>
-      `<div class="muscle-h">${esc(m)}</div>`+groups[m].map(e=>
-        `<div class="pick-row" data-pk="${e.id}">${exIcon(e)}
-          <div class="grow"><div>${esc(e.name)}</div><div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}</div>${musclesHtml(e.name,3)}</div>
+      `<div class="pk-h">${esc(m)}</div>`+groups[m].map(e=>
+        `<div class="pk-row" data-pk="${e.id}"><div class="th">${exIcon(e, true)}</div>
+          <div class="grow" style="min-width:0;"><div class="nm">${esc(e.name)}</div>
+            <div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}</div>${musclesHtml(e.name,3)}</div>
           <button class="icon-btn info-btn" data-exinfo="${e.id}" title="Fiche de l'exercice">ⓘ</button>
-          ${browse? "" : `<span style="color:var(--accent); font-weight:800; font-size:18px;">＋</span>`}</div>`).join("")
+          ${browse? "" : `<span class="pk-add">＋</span>`}</div>`).join("")
     ).join("") || `<div class="empty">Aucun résultat.</div>`;
     /* on ne ferme pas ici : c'est l'appelant qui décide (rouvrir l'éditeur, ou fermer) */
     if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-exinfo]")) return; cb(r.dataset.pk); });
@@ -2995,8 +3293,8 @@ function openPicker(cb){
 /* ================= PROGRAMMES ================= */
 function renderProgs(app){
   app.innerHTML = `
-    ${topbar()}
-    <div class="date-line">Mes programmes</div>
+    ${hero(`<div class="big">Mes programmes</div>`)}
+    <div class="under-hero" style="height:14px;"></div>
     <div class="stack" id="prog-list"></div>
     <button class="btn btn-accent" id="new-tpl" style="width:100%; margin-top:14px;">＋ Nouvelle séance</button>
     <button class="btn" id="lib-btn" style="width:100%; margin-top:10px;">Bibliothèque d'exercices</button>
@@ -3051,30 +3349,34 @@ function openTplEditor(id){
   const draw = ()=>{
     openSheet(`<h3>${id?"Modifier la séance":"Nouvelle séance"}</h3>
       <div class="stack">
-        <div><span class="label" style="display:block; margin-bottom:5px;">Nom de la séance</span>
+        <div><span class="f-lab">Nom de la séance</span>
         <input id="tp-name" placeholder="Ex : Push, Haut du corps…" value="${esc(tpl.name)}"></div>
-        <div><span class="label" style="display:block; margin-bottom:5px;">Exercices</span><div id="tp-items"></div>
-        <button class="btn btn-ghost" id="tp-add" style="width:100%;">＋ Ajouter un exercice</button></div>
-        <div class="row">
-          <button class="btn grow" id="tp-cancel">Annuler</button>
+        <div><span class="f-lab">Exercices</span><div id="tp-items"></div>
+        <button class="btn-dash" id="tp-add">＋ Ajouter un exercice</button></div>
+        <div class="row" style="gap:9px;">
+          <button class="btn grow" id="tp-cancel" style="background:var(--field);">Annuler</button>
           <button class="btn btn-accent grow" id="tp-save">Enregistrer</button>
         </div>
       </div>`);
     const itemsEl = document.getElementById("tp-items");
-    itemsEl.innerHTML = tpl.items.length? "" : `<div class="empty" style="padding:14px;">Aucun exercice pour l'instant.</div>`;
+    itemsEl.innerHTML = tpl.items.length? "" : `<div class="tpl-vide">Aucun exercice pour l'instant.</div>`;
     tpl.items.forEach((it,i)=>{
       const ex = getEx(it.exId);
       const d = document.createElement("div");
       d.className="tpl-item";
       d.innerHTML = `
-        <div class="row"><div class="grow" style="font-weight:700;">${i+1}. ${esc(ex.name)}</div>
-          <button class="icon-btn" data-up style="width:32px;height:32px;">↑</button>
-          <button class="icon-btn" data-dn style="width:32px;height:32px;">↓</button>
-          <button class="icon-btn" data-rm style="width:32px;height:32px;color:var(--bad);">✕</button></div>
+        <div class="row" style="align-items:flex-start;">
+          <div class="grow" style="font-weight:700; font-size:13.5px; line-height:1.3;">${i+1}. ${esc(ex.name)}</div>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <button class="icon-btn" data-up style="width:24px;height:18px; font-size:11px;">▲</button>
+            <button class="icon-btn" data-dn style="width:24px;height:18px; font-size:11px;">▼</button>
+          </div>
+          <button class="icon-btn" data-rm style="width:26px;height:26px;color:#fff;background:var(--bad);border-radius:7px;font-size:13px;">✕</button>
+        </div>
         <div class="cfg">
           <label><span class="label">Séries</span><input type="number" inputmode="numeric" min="1" value="${it.sets}" data-f="sets"></label>
           <label><span class="label">Reps</span><input type="text" placeholder="8-12" value="${esc(String(it.reps||""))}" data-f="reps"></label>
-          <label><span class="label">Repos (s)</span><input type="number" inputmode="numeric" min="0" step="15" value="${it.rest}" data-f="rest"></label>
+          <label><span class="label">Repos (sec)</span><input type="number" inputmode="numeric" min="0" step="15" value="${it.rest}" data-f="rest"></label>
         </div>`;
       d.querySelector("[data-up]").onclick=()=>{ if(i>0){ tpl.items.splice(i-1,0,tpl.items.splice(i,1)[0]); tpl.name=document.getElementById("tp-name").value; draw(); } };
       d.querySelector("[data-dn]").onclick=()=>{ if(i<tpl.items.length-1){ tpl.items.splice(i+1,0,tpl.items.splice(i,1)[0]); tpl.name=document.getElementById("tp-name").value; draw(); } };
@@ -3265,8 +3567,8 @@ function openSettings(){
 /* ================= HISTORIQUE ================= */
 function renderHist(app){
   app.innerHTML = `
-    ${topbar()}
-    <div class="date-line">Historique</div>
+    ${hero(`<div class="big">Historique</div>`)}
+    <div class="under-hero" style="height:14px;"></div>
     <div class="stack" id="h-list"></div>`;
   wireTopbar();
   const list = document.getElementById("h-list");
@@ -3404,7 +3706,8 @@ function renderProgress(app){
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    ${topbar()}
+    ${hero(`<div class="big">Progression</div>`)}
+    <div class="under-hero" style="height:14px;"></div>
     <div class="date-line">Progression</div>
     <div id="wt-sec"></div>
     <div class="section-t"><i>📈</i>Par exercice</div>

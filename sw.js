@@ -1,6 +1,7 @@
 /* Tonnage — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnage-v1";
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
+const CACHE = "tonnage-v2";
+const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
+  "./img/push.jpg", "./img/pull.jpg", "./img/jambes.jpg", "./img/abdos.jpg", "./img/cardio.jpg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()).catch(() => self.skipWaiting()));
