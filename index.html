@@ -112,17 +112,17 @@
   /* tab bar */
   /* ---- bandeau sombre incurvé (accueil, alimentation, progression) ---- */
   .hero{position:relative; background:var(--hero); color:var(--hero-ink);
-    margin:calc(-16px - env(safe-area-inset-top)) -16px 0; padding:calc(14px + env(safe-area-inset-top)) 18px 74px;
+    margin:calc(-16px - env(safe-area-inset-top)) -16px 0; padding:calc(14px + env(safe-area-inset-top)) 18px 78px;
     overflow:hidden;}
-  .hero::before{content:""; position:absolute; top:-118px; left:50%; transform:translateX(-50%);
-    width:196px; height:196px; border-radius:50%; background:var(--bg);}
-  .hero::after{content:""; position:absolute; left:-24%; right:-24%; bottom:-58%; height:118%;
-    border-radius:50%; border:2px solid rgba(255,255,255,.14); pointer-events:none;}
+  /* encoche ronde en haut, comme sur la maquette */
+  .hero::before{content:""; position:absolute; top:-74px; left:50%; transform:translateX(-50%);
+    width:140px; height:140px; border-radius:50%; background:var(--bg); z-index:1;}
+  .hero-svg{position:absolute; left:0; right:0; bottom:-1px; width:100%; height:96px; display:block; z-index:1;}
   .hero-top{display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2;}
   .hero-ic{width:31px; height:31px; border-radius:50%; background:#fff; color:#1b1b1d;
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
   .hero-ic svg{width:19px; height:19px;}
-  .hero-h{position:relative; z-index:2; text-align:center; margin-top:26px;}
+  .hero-h{position:relative; z-index:2; text-align:center; margin-top:48px;}
   .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
   .hero-h .sub{font-size:14px; font-weight:600; color:var(--hero-soft); margin-top:8px;}
   .hero-h .big{font-size:27px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;}
@@ -147,10 +147,13 @@
     border-radius:99px; padding:3px 12px;}
 
   /* ---- carrousel de séances ---- */
-  .car{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory;
-    margin:0 -16px; padding:14px 16px 10px; -webkit-overflow-scrolling:touch;}
+  .car{--cardw:min(63vw, 320px);
+    display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory;
+    margin:0 -16px; padding:14px calc((100% - var(--cardw))/2) 10px; -webkit-overflow-scrolling:touch;}
   .car::-webkit-scrollbar{display:none;}
-  .prog-slot{position:relative; flex:0 0 63%; scroll-snap-align:center; padding-top:13px;}
+  .prog-slot{position:relative; flex:0 0 var(--cardw); scroll-snap-align:center; padding-top:13px;
+    transform:scale(.86); transform-origin:center 62%; opacity:.72; transition:transform .08s linear, opacity .08s linear;}
+  .prog-slot.mid{transform:scale(1); opacity:1;}
   .prog-card{position:relative; width:100%; aspect-ratio:192/279; border-radius:16px;
     overflow:hidden; background:var(--hero); color:#fff; display:block;
     box-shadow:0 8px 26px rgba(0,0,0,.22);}
@@ -191,32 +194,36 @@
   .hist-c .st{font-size:9px; line-height:1.45; color:rgba(255,255,255,.85); margin-top:2px;}
 
   /* ---- alimentation : jauges, onglets de repas, pastilles ---- */
-  .eat-card{background:var(--surface); border-radius:16px; padding:12px 14px; box-shadow:0 6px 22px rgba(0,0,0,.14);}
-  .eat-line{display:flex; align-items:baseline; gap:8px;}
-  .eat-line .v{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
-  .eat-line .l{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
-  .eat-bar{height:11px; border-radius:7px; background:var(--surface2); overflow:hidden; margin:4px 0 10px; position:relative;}
-  .eat-bar i{display:block; height:100%; border-radius:7px; background:var(--accent);}
-  .eat-bar b{position:absolute; right:7px; top:-1px; font-size:10.5px; font-weight:700; color:var(--ink-mute);}
-  .eat-side{display:flex; flex-direction:column; gap:8px; justify-content:center;}
-  .eat-side button{width:36px; height:36px; border-radius:10px; background:var(--surface); color:var(--ink);
-    display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 3px 10px rgba(0,0,0,.18);}
+  .eat-card{background:var(--surface); border-radius:16px; padding:13px 15px 15px; box-shadow:0 6px 22px rgba(0,0,0,.16);}
+  .eat-line{display:flex; align-items:baseline; gap:8px; justify-content:center;}
+  .eat-line .v{font-size:29px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.05;}
+  .eat-line .l{font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft);}
+  .eat-bar{height:16px; border-radius:9px; background:var(--surface2); overflow:hidden; margin:6px 0 12px; position:relative;}
+  .eat-bar i{display:block; height:100%; border-radius:9px; background:var(--accent);}
+  .eat-bar b{position:absolute; right:9px; top:0; line-height:16px; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .eat-side{display:flex; flex-direction:column; gap:9px; justify-content:center;}
+  .eat-side button{width:38px; height:38px; border-radius:11px; background:var(--surface); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.18);}
+  .eat-side svg{width:21px; height:21px;}
 
-  .meal-tabs{display:flex; gap:3px; margin:16px -4px -1px; padding:0 4px; position:relative; z-index:2;}
-  .meal-tab{flex:1; border-radius:10px 10px 0 0; background:var(--surface2); color:var(--ink-mute);
-    font-size:10px; font-weight:800; letter-spacing:.03em; text-transform:uppercase;
-    padding:9px 2px 10px; text-align:center; transform:translateY(6px); transition:transform .18s ease, background .18s ease, color .18s ease;}
-  .meal-tab.on{transform:translateY(0); color:#fff; padding-bottom:16px;}
-  .meal-panel{background:var(--surface); border-radius:14px; padding:16px 13px 22px; position:relative; z-index:1;
-    box-shadow:0 6px 22px rgba(0,0,0,.10); min-height:52vh;}
+  /* les onglets passent DERRIÈRE le panneau blanc : leur bas est masqué, aucun trou possible */
+  .meal-tabs{display:flex; gap:4px; margin:18px 0 -18px; position:relative; z-index:1; align-items:flex-end;}
+  .meal-tab{flex:1; border-radius:12px 12px 0 0; background:var(--surface2); color:var(--ink-mute);
+    font-size:9.5px; font-weight:800; letter-spacing:.02em; text-transform:uppercase;
+    padding:9px 1px 26px; text-align:center; transform:translateY(9px);
+    transition:transform .2s ease, background .2s ease, color .2s ease;}
+  .meal-tab.on{transform:translateY(0); color:#fff;}
+  .meal-panel{background:var(--surface); border-radius:14px; padding:16px 13px 22px; position:relative; z-index:2;
+    box-shadow:0 -2px 14px rgba(0,0,0,.06), 0 6px 22px rgba(0,0,0,.10); min-height:52vh;}
   .meal-h{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-mute); text-align:center; margin:2px 0 9px;}
   .fgrid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:16px;}
-  .fchip{display:flex; align-items:center; gap:5px; background:var(--surface); border:1px solid var(--border);
-    border-radius:9px; padding:6px 7px; text-align:left; min-width:0;}
-  .fchip .ic{font-size:13px; flex:0 0 auto;}
-  .fchip .nm{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .fchip .q{font-size:10px; color:var(--ink-mute); white-space:nowrap;}
+  .fchip{display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:7px 8px; text-align:left; min-width:0;}
+  .fchip .ic{font-size:14px; flex:0 0 auto;}
+  .fchip .tx{flex:1; min-width:0;}
+  .fchip .nm{display:block; font-size:11.5px; font-weight:700; line-height:1.2; overflow-wrap:anywhere;}
+  .fchip .q{display:block; font-size:9.5px; line-height:1.3; color:var(--ink-mute); margin-top:1px;}
   .fchip .g{margin-left:auto; font-size:12px; font-weight:800; flex:0 0 auto;}
   .fchip.on{color:#fff; border-color:transparent;}
   .fchip.on .q{color:rgba(255,255,255,.8);}
@@ -1747,8 +1754,13 @@ function backupStale(){ return !isEmptyDb(db) && (!db.lastBackup || Date.now()-d
 const IC_USER = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.6 20c.6-4 3.7-6 7.4-6s6.8 2 7.4 6z"/></svg>';
 const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm9 3.4c0 .6-.05 1.1-.14 1.7l2 1.5-1.9 3.3-2.4-1a7.8 7.8 0 0 1-2.9 1.7L15.3 22h-3.8l-.35-2.6c-1.05-.3-2-.85-2.85-1.6l-2.4 1L4 15.5l2-1.5A8.6 8.6 0 0 1 5.9 12c0-.55.05-1.1.14-1.6L4 8.9l1.9-3.3 2.4 1c.85-.75 1.8-1.3 2.85-1.6L11.5 2h3.8l.35 2.6c1.05.3 2.05.85 2.9 1.6l2.4-1L22.85 8.9l-2 1.5c.1.5.15 1.05.15 1.6z"/></svg>';
 /* bandeau sombre incurvé : titre libre, avatar à gauche, réglages à droite */
+/* le fond du bandeau : bord bas incurvé + filet blanc, repris de la maquette */
+const HERO_SVG = `<svg class="hero-svg" viewBox="0 0 400 96" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0 30 Q200 96 400 30 L400 96 L0 96 Z" fill="var(--bg)"/>
+  <path d="M0 8 Q200 74 400 8" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.6"/>
+</svg>`;
 function hero(inner){
-  return `<div class="hero">
+  return `<div class="hero">${HERO_SVG}
     <div class="hero-top">
       <button class="hero-ic" id="tb-user" title="Mon profil" aria-label="Mon profil">${IC_USER}</button>
       <button class="hero-ic" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button>
@@ -1996,13 +2008,13 @@ function renderEat(app){
           !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b>${kRef? kRef+" kcal" : "—"}</b></div>
       </div>
       <div class="eat-side">
-        <button id="eat-plan" title="Mon plan" aria-label="Mon plan">📖</button>
-        <button id="eat-tips" title="Idées d'aliments" aria-label="Idées d'aliments">💡</button>
+        <button id="eat-plan" title="Mon plan" aria-label="Mon plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
+        <button id="eat-tips" title="Idées d'aliments" aria-label="Idées d'aliments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/></svg></button>
       </div>
     </div>
     <div class="meal-tabs">${MEALS.map(([id,lab])=>`
       <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
-        style="${mealCur===id? `background:${MEAL_C[id]};`:""}">${lab}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</button>`).join("")}</div>
+        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${lab}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span></button>`).join("")}</div>
     <div class="meal-panel" id="meal-panel"></div>`;
   wireTopbar();
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
@@ -2020,8 +2032,7 @@ function renderEat(app){
     const pa = partsAliment(label, prot);
     return `<button class="fchip ${on?'on':''}" data-opt="${esc(label)}" style="${on? `background:${coul};`:""}">
       <span class="ic">${foodIcon(label)}</span>
-      <span class="nm">${esc(pa.nom)}</span>
-      ${pa.q? `<span class="q">(${esc(pa.q)})</span>`:""}
+      <span class="tx"><span class="nm">${esc(pa.nom)}</span>${pa.qCourt? `<span class="q">${esc(pa.qCourt)}</span>`:""}</span>
       <span class="g">${pa.prot}<span style="font-size:9px;">g</span></span>
     </button>`;
   };
@@ -2503,7 +2514,10 @@ function partsAliment(label, prot){
   if(m){ nom = m[1]; q = m[2]; if(m[3]) q += " ×"+m[3]; }
   else if((m = net.match(/^(.*?)\s*×\s*([\d.,]+)$/))){ nom = m[1]; q = "×"+m[2]; }
   else if((m = net.match(/^(.*?)\s+([\d.,]+\s*(?:g|ml|kg))$/i))){ nom = m[1]; q = m[2]; }
-  return {nom:nom.trim(), q:q.trim(), prot:Math.round(prot)};
+  /* « 150 g cuit » -> « 150 g » : la mention crue/cuite reste dans la fiche détaillée */
+  const court = q.replace(/\s*(cuit(?:e|s|es)?|cru(?:e|s|es)?|égoutté(?:e|s|es)?)(?=\s|$)/gi,"")
+                 .split(",")[0].replace(/\s+/g," ").trim();
+  return {nom:nom.trim(), q:q.trim(), qCourt:court, prot:Math.round(prot)};
 }
 function habitType(h){
   const t = (h||"").toLowerCase();
@@ -2816,6 +2830,20 @@ function renderSeance(app){
         </div>
       </div>`;
     }).join("");
+    /* la carte au centre est plus grande que ses voisines, en continu pendant le glissement */
+    const majCentre = ()=>{
+      const mid = car.scrollLeft + car.clientWidth/2;
+      car.querySelectorAll(".prog-slot").forEach(sl=>{
+        const c = sl.offsetLeft + sl.offsetWidth/2;
+        let d = Math.min(1, Math.abs(c-mid)/(sl.offsetWidth*0.95));
+        if(d < 0.07) d = 0;                     /* la carte centrale reste à taille pleine */
+        sl.style.transform = `scale(${(1-0.15*d).toFixed(3)})`;
+        sl.style.opacity = (1-0.3*d).toFixed(3);
+      });
+    };
+    let raf = null;
+    car.addEventListener("scroll", ()=>{ if(raf) return; raf = requestAnimationFrame(()=>{ raf=null; majCentre(); }); }, {passive:true});
+    requestAnimationFrame(majCentre);
     car.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{
       if(e.target.closest("[data-edit]")) return;
       openPreview(c.dataset.open);
@@ -3357,6 +3385,7 @@ function openTplEditor(id){
           <button class="btn grow" id="tp-cancel" style="background:var(--field);">Annuler</button>
           <button class="btn btn-accent grow" id="tp-save">Enregistrer</button>
         </div>
+        ${id? `<button class="btn" id="tp-del" style="background:var(--bad); color:#fff; border-color:var(--bad);">Supprimer la séance</button>`:""}
       </div>`);
     const itemsEl = document.getElementById("tp-items");
     itemsEl.innerHTML = tpl.items.length? "" : `<div class="tpl-vide">Aucun exercice pour l'instant.</div>`;
@@ -3392,6 +3421,14 @@ function openTplEditor(id){
       openPicker(exId=>{ tpl.items.push({exId, sets:4, reps:"8-12", rest:db.settings.rest}); draw(); });
     };
     document.getElementById("tp-cancel").onclick=closeSheet;
+    const sup = document.getElementById("tp-del");
+    if(sup) sup.onclick=()=>{
+      const nom = document.getElementById("tp-name").value.trim() || tpl.name || "Cette séance";
+      askConfirm("Supprimer la séance ?", `${nom} disparaîtra de ton accueil. Les séances déjà faites restent dans ton historique.`, "Supprimer", true, ()=>{
+        db.templates = db.templates.filter(t=>t.id!==tpl.id);
+        save(); closeSheet(); render(); toast("Séance supprimée");
+      });
+    };
     document.getElementById("tp-save").onclick=()=>{
       tpl.name = document.getElementById("tp-name").value.trim() || "Séance sans nom";
       const idx = db.templates.findIndex(t=>t.id===tpl.id);
