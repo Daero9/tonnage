@@ -3464,8 +3464,11 @@ function renderActive(app){
           return;
         }
         if(st.done){
+          /* plus rien à faire après ? inutile de lancer un repos */
+          const resteDuTravail = a.entries.some(e2=>e2.sets.some(s2=>!s2.done && !s2.warm));
           const rs = (en.target && en.target.rest) || db.settings.rest;
-          startRest(rs);
+          if(resteDuTravail) startRest(rs);
+          else { restbar.classList.remove("show"); if(rest.int){ clearInterval(rest.int); rest.int=null; } }
           const ask = document.createElement("div");
           ask.className = "rir-ask";
           ask.innerHTML = `${dejaVu("rir")? "" : `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:8px;">Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.</div>`}
@@ -3629,14 +3632,98 @@ function renderActive(app){
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
     const kcal = liftKcal(dureeSeance2(a), vol, doneSets);
     askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés · environ ${kcal} kcal brûlées. On enregistre ?`, "Enregistrer", false, ()=>{
+      /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
+      const recap = {
+        nom: a.name, series: doneSets, volume: Math.round(vol), kcal,
+        duree: dureeSeance2(a), exos: a.entries.length,
+        records: nouveauxRecords(a)
+      };
       db.history.push({
         id:uid(), date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         start:a.start, end:a.start + dureeSeance2(a),
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length)
       });
       db.active=null; save(); render();
+      setTimeout(()=>openFinSeance(recap), 260);
     });
   };
+}
+/* records battus pendant la séance : meilleur 1RM estimé face à tout l'historique précédent */
+function nouveauxRecords(a){
+  const out = [];
+  a.entries.forEach(en=>{
+    const sets = en.sets.filter(s=>s.done && !s.warm);
+    if(!sets.length) return;
+    const best = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
+    if(!(best>0)) return;
+    let avant = 0;
+    db.history.forEach(h=>h.entries.forEach(e2=>{
+      if(e2.exId !== en.exId) return;
+      e2.sets.filter(s=>!s.warm).forEach(st=>{ avant = Math.max(avant, e1rm(st.w||0, st.r||0)); });
+    }));
+    if(best > avant*1.005 && avant > 0) out.push({nom:getEx(en.exId).name, gain:Math.round((best-avant)*10)/10});
+    else if(best > 0 && avant === 0) out.push({nom:getEx(en.exId).name, gain:0});
+  });
+  return out;
+}
+/* confettis : quelques centaines de rectangles qui retombent, sans bibliothèque */
+function confettis(canvas, duree){
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = W*dpr; canvas.height = H*dpr; ctx.scale(dpr,dpr);
+  const coul = ["#f58220","#4caf50","#3ca0e8","#f2506e","#ffd166","#ffffff"];
+  const bouts = [];
+  for(let i=0;i<110;i++) bouts.push({
+    x: Math.random()*W, y: -20 - Math.random()*H*0.6,
+    l: 5+Math.random()*6, h: 8+Math.random()*8,
+    vy: 60+Math.random()*90, vx: (Math.random()-0.5)*50,
+    rot: Math.random()*Math.PI, vr: (Math.random()-0.5)*6,
+    c: coul[(Math.random()*coul.length)|0]
+  });
+  let t0 = null, stop = false;
+  const boucle = t=>{
+    if(stop) return;
+    if(t0===null) t0 = t;
+    const dt = 1/60, ecoule = t - t0;
+    ctx.clearRect(0,0,W,H);
+    bouts.forEach(b=>{
+      b.x += b.vx*dt; b.y += b.vy*dt; b.rot += b.vr*dt; b.vy += 22*dt;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+      ctx.fillStyle = b.c; ctx.globalAlpha = Math.max(0, 1 - ecoule/duree);
+      ctx.fillRect(-b.l/2, -b.h/2, b.l, b.h); ctx.restore();
+    });
+    if(ecoule < duree) requestAnimationFrame(boucle);
+    else ctx.clearRect(0,0,W,H);
+  };
+  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  requestAnimationFrame(boucle);
+}
+function openFinSeance(r){
+  const mn = Math.round(r.duree/60000);
+  openSheet(`<div style="position:relative;">
+    <canvas id="fin-conf" style="position:absolute; inset:-18px -16px auto; width:calc(100% + 32px); height:230px; pointer-events:none; z-index:2;"></canvas>
+    <div style="text-align:center; position:relative; z-index:1;">
+      <div style="font-size:42px; line-height:1;">🎉</div>
+      <h3 style="margin:8px 0 2px;">Félicitations !</h3>
+      <div style="font-size:13.5px; color:var(--ink-soft);">${esc(r.nom)} — c'est dans la boîte.</div>
+    </div>
+  </div>
+  <div class="tiles" style="margin:16px 0 14px;">
+    <div class="tile"><div class="v">${mn}<span style="font-size:13px;"> min</span></div><div class="u">de séance</div></div>
+    <div class="tile"><div class="v">${r.volume>=1000? (r.volume/1000).toLocaleString("fr-FR",{maximumFractionDigits:1})+" t" : fmtKg(r.volume)+" kg"}</div><div class="u">soulevés</div></div>
+    <div class="tile"><div class="v" style="color:var(--accent);">${r.kcal}</div><div class="u">kcal brûlées</div></div>
+  </div>
+  <div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin-bottom:14px;">
+    ${r.series} série${r.series>1?"s":""} sur ${r.exos} exercice${r.exos>1?"s":""}.</div>
+  ${r.records.length? `<div class="card" style="background:var(--surface2); margin-bottom:14px;">
+    <div style="font-weight:800; margin-bottom:6px;">🏆 ${r.records.length>1? "Nouveaux records":"Nouveau record"}</div>
+    ${r.records.map(x=>`<div style="font-size:13.5px; color:var(--ink-soft);">${esc(x.nom)}${x.gain? ` — <b style="color:var(--good);">+${fmtKg(x.gain)} kg</b> sur ton max estimé`:" — première performance enregistrée"}</div>`).join("")}
+  </div>`:""}
+  <button class="btn btn-accent" id="fin-ok" style="width:100%;">Terminé</button>`);
+  document.getElementById("fin-ok").onclick = closeSheet;
+  const cv = document.getElementById("fin-conf");
+  if(cv) setTimeout(()=>confettis(cv, 2600), 60);
 }
 
 /* remplacer un exercice pendant la séance (machine prise, matériel manquant, blessure) */
