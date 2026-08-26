@@ -37,17 +37,21 @@
     --matin:#4aa8ea; --midi:#f58220; --collation:#6f6fe0; --soir:#f2607b; --extra:#5cba60;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; padding:0; width:100%; max-width:100%; overflow-x:hidden;}
+  html{margin:0; padding:0;}
+  /* « clip » borne la largeur SANS créer de conteneur de défilement :
+     « hidden » ici cassait le défilement vertical sur Android. */
+  body{margin:0; padding:0; width:100%; max-width:100%; overflow-x:clip;}
   body{
     background:var(--bg); color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     font-size:16px; line-height:1.45;
     min-height:100dvh;
     -webkit-font-smoothing:antialiased;
-    /* aucun rebond latéral : plus de « seconde page » quand on tire depuis le bord */
-    overscroll-behavior:none;
+    /* pas de rebond latéral, mais le défilement vertical reste intact */
+    overscroll-behavior-x:none;
+    overscroll-behavior-y:none;
   }
-  #app{max-width:560px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px 150px; overflow-x:clip;}
+  #app{max-width:560px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px 150px;}
   /* les bandeaux qui défilent gardent leur propre rebond, pas celui de la page */
   .car, .hist-strip{overscroll-behavior-x:contain;}
   h1,h2,h3{margin:0; text-wrap:balance;}
