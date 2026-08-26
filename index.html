@@ -396,7 +396,9 @@
   .mp-bodies{display:flex; justify-content:center; gap:14px; margin:10px 0 16px; border-radius:12px;}
   
   .mp-fig{position:relative; width:46%; max-width:160px;}
-  .mp-fig img{width:100%; display:block; filter:var(--figure);}
+  /* base blanche > muscles colorés > lignes : la base reste blanche dans les deux thèmes */
+  .mp-fig .mp-base{width:100%; display:block;}
+  .mp-fig .mp-lignes{position:absolute; inset:0; width:100%; display:block; pointer-events:none;}
   .mp-fig svg{position:absolute; inset:0; width:100%; height:100%;}
   .mp-mask{position:absolute; inset:0; display:block; pointer-events:none;
     -webkit-mask-size:100% 100%; mask-size:100% 100%;
@@ -772,21 +774,18 @@ function musclesHtml(exName, max){
 /* fiche complète d'un exercice : anatomie, exécution, conseil */
 function exoBodyHtml(exName, back){
   const cle = back? "back" : "front";
-  const [W,H] = MP_TAILLE[cle];
-  const img = back? MP_BACK : MP_FRONT;
   const niveaux = {};
   (MUSCLE_WORK[exName]||[]).forEach(([m,n])=>{
     const g = groupeDe(m);
     if(g && (!niveaux[g] || n>niveaux[g])) niveaux[g] = n;
   });
-  const zones = MP_ZONES[cle].map(z=>{
-    const n = niveaux[z[0]];
-    if(!n) return "";
-    return `<ellipse cx="${z[1]}" cy="${z[2]}" rx="${z[3]}" ry="${z[4]}" transform="rotate(${z[5]} ${z[1]} ${z[2]})" fill="${NIVEAU_COULEUR[n]}" fill-opacity="${n===3?0.7:(n===2?0.5:0.35)}"/>`;
-  }).join("");
-  if(!zones) return "";
-  return `<div class="mp-fig" style="max-width:132px;"><img src="${img}" alt="${back?'dos':'face'}">
-    <svg viewBox="0 0 ${W} ${H}"><g style="filter:blur(4px);">${zones}</g></svg>
+  const masques = MASK_OK[cle].filter(m=>niveaux[m])
+    .map(m=>masqueHtml(cle, m, {color:NIVEAU_COULEUR[niveaux[m]], op: niveaux[m]===3? 1 : (niveaux[m]===2? 0.75 : 0.5)})).join("");
+  if(!masques) return "";
+  return `<div class="mp-fig" style="max-width:110px;">
+    <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}">
+    ${masques}
+    <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true">
     <div style="text-align:center; font-size:9.5px; font-weight:800; letter-spacing:.1em; color:var(--ink-mute); margin-top:2px;">${back?"VUE DOS":"VUE FACE"}</div></div>`;
 }
 function openExoInfo(exId){
@@ -4404,7 +4403,11 @@ const MP_ZONES = {
 /* Masques par muscle : PNG blanc détouré, recoloré en CSS. Tant que la liste est vide,
    on garde les taches elliptiques. Ajouter un nom ici suffit à activer le masque. */
 const MASK_DIR = "img/muscles/";
-const MASK_OK = {front:[], back:[]};
+/* muscles pour lesquels un tracé existe ; les autres restent en blanc sur la silhouette */
+const MASK_OK = {
+  front:["Pectoraux","Deltoïdes","Trapèzes","Biceps","Abdos","Quadriceps","Mollets"],
+  back:["Trapèzes","Deltoïdes","Grand dorsal","Triceps","Avant-bras","Lombaires","Fessiers","Ischio-jambiers","Mollets"]
+};
 function slugMuscle(m){
   return (m||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
@@ -4414,21 +4417,15 @@ function masqueHtml(cle, muscle, s){
     -webkit-mask-image:url('${url}'); mask-image:url('${url}');"></span>`;
 }
 function mpBodyHtml(back, st){
-  const img = back? MP_BACK : MP_FRONT;
-  if(!img.startsWith("data:")) return mpBodySvg(back, st);   /* fallback si build non exécuté */
   const cle = back? "back" : "front";
-  const [W,H] = MP_TAILLE[cle];
-  const masques = MP_ZONES[cle].map(z=>z[0]).filter((m,i,a)=>a.indexOf(m)===i)
-    .filter(m=>MASK_OK[cle].includes(m) && st[m] && !st[m].nodata)
-    .map(m=>masqueHtml(cle, m, st[m])).join("");
-  const zones = MP_ZONES[cle].map(z=>{
-    const s = st[z[0]];
-    if(!s || s.nodata || MASK_OK[cle].includes(z[0])) return "";
-    return `<ellipse cx="${z[1]}" cy="${z[2]}" rx="${z[3]}" ry="${z[4]}" transform="rotate(${z[5]} ${z[1]} ${z[2]})" fill="${s.color}" fill-opacity="${0.6*s.op}"/>`;
-  }).join("");
-  return `<div class="mp-fig"><img src="${img}" alt="${back?'dos':'face'}">
+  const masques = MASK_OK[cle]
+    .filter(m => st[m] && !st[m].nodata)
+    .map(m => masqueHtml(cle, m, st[m])).join("");
+  return `<div class="mp-fig">
+    <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}">
     ${masques}
-    <svg viewBox="0 0 ${W} ${H}"><g style="filter:blur(4px);">${zones}</g></svg></div>`;
+    <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true">
+  </div>`;
 }
 function mpBodySvg(back, st){
   const B = "#332d25", EDGE = "#4d453a";
