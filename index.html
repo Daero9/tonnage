@@ -1054,6 +1054,24 @@ const AIMS = [
      attention:"C'est un mode de croisière, pas une fin en soi : quand la vie se calme, repasse sur un objectif de progression."
    }}
 ];
+/* bornes plausibles pour un humain : au-delà, c'est une faute de frappe */
+const BORNES = {
+  weight:     [30, 300, "Le poids doit être compris entre 30 et 300 kg."],
+  goalWeight: [30, 300, "Le poids visé doit être compris entre 30 et 300 kg."],
+  height:     [120, 230, "La taille doit être comprise entre 120 et 230 cm."],
+  age:        [14, 100, "L'âge doit être compris entre 14 et 100 ans."]
+};
+/* renvoie le message d'erreur du premier champ hors bornes, sinon null */
+function verifieChamp(champ, val){
+  const b = BORNES[champ];
+  if(!b) return null;
+  if(!(val > 0)) return null;                 /* champ vide : traité ailleurs */
+  return (val < b[0] || val > b[1]) ? b[2] : null;
+}
+function verifieProfil(d, champs){
+  for(const c of champs){ const m = verifieChamp(c, d[c]); if(m) return m; }
+  return null;
+}
 /* IMC et seuils de sécurité : on refuse d'accompagner un objectif dangereux */
 function imc(kg, cm){ return (kg>0 && cm>0) ? kg/Math.pow(cm/100,2) : 0; }
 function poidsMiniSain(cm, sexe){ return Math.round(18.5*Math.pow(cm/100,2)*10)/10; }   /* IMC 18,5 */
@@ -1339,13 +1357,13 @@ function openOnboarding(first, brouillon, depart){
             <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Sexe</span>
             <select id="ob-sex"><option value="h" ${d.sex!=="f"?"selected":""}>Homme</option><option value="f" ${d.sex==="f"?"selected":""}>Femme</option></select></div>
             <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Âge</span>
-            <input type="number" inputmode="numeric" id="ob-age" value="${d.age||""}" placeholder="28"></div>
+            <input type="number" inputmode="numeric" min="14" max="100" id="ob-age" value="${d.age||""}" placeholder="28"></div>
           </div>
           <div class="row">
             <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Taille (cm)</span>
-            <input type="number" inputmode="numeric" id="ob-height" value="${d.height||""}" placeholder="175"></div>
+            <input type="number" inputmode="numeric" min="120" max="230" id="ob-height" value="${d.height||""}" placeholder="175"></div>
             <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Poids (kg)</span>
-            <input type="number" inputmode="decimal" step="0.1" id="ob-weight" value="${d.weight||""}" placeholder="70"></div>
+            <input type="number" inputmode="decimal" step="0.1" min="30" max="300" id="ob-weight" value="${d.weight||""}" placeholder="70"></div>
           </div>
           <div style="font-size:12px; color:var(--ink-mute); line-height:1.5;">Ces informations servent uniquement à calculer tes besoins. Elles restent dans ton téléphone.</div>
         </div>`;
@@ -1361,7 +1379,7 @@ function openOnboarding(first, brouillon, depart){
         <div style="font-size:13px; color:var(--ink-soft); line-height:1.5;">${esc(aimOf(d.aim).desc)}</div>
         <button class="chip" id="ob-aiminfo" style="align-self:flex-start; padding:5px 12px; font-size:12px;">ⓘ Tout savoir sur cet objectif</button>
         <div><span class="label" style="display:block; margin-bottom:5px;">Poids que tu vises (kg)</span>
-        <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${d.goalWeight||""}" placeholder="${d.weight||70}"></div>
+        <input type="number" inputmode="decimal" step="0.5" min="30" max="300" id="ob-goal" value="${d.goalWeight||""}" placeholder="${d.weight||70}"></div>
         ${warn? `<div class="inj-note" style="margin:0;">⚠️ ${esc(warn)}</div>`:""}
         <div id="ob-alerte">${(()=>{ const a = alerteObjectif(d); if(!a) return "";
           const rouge = a.niveau==="danger";
@@ -1429,6 +1447,12 @@ function openOnboarding(first, brouillon, depart){
       lire();
       const zone = document.getElementById("ob-alerte");
       if(!zone) return;
+      const hors = verifieChamp("goalWeight", d.goalWeight);
+      if(hors){
+        zone.innerHTML = `<div class="inj-note" style="margin:0; border-color:var(--bad); background:rgba(224,85,74,.10);">
+          <b style="color:var(--bad);">⛔ Valeur impossible</b><br>${esc(hors)}</div>`;
+        return;
+      }
       const a = alerteObjectif(d);
       if(!a){ zone.innerHTML = ""; return; }
       const rouge = a.niveau === "danger";
@@ -1474,10 +1498,14 @@ function openOnboarding(first, brouillon, depart){
       lire();
       if(step===1){
         if(!(d.age>0) || !(d.height>0) || !(d.weight>0)){ toast("Remplis âge, taille et poids"); return; }
+        const err = verifieProfil(d, ["age","height","weight"]);
+        if(err){ toast(err); return; }
         step=2; draw(); return;
       }
       if(step===2){
         if(!(d.goalWeight>0)){ toast("Indique le poids que tu vises"); return; }
+        const err = verifieChamp("goalWeight", d.goalWeight);
+        if(err){ toast(err); return; }
         step=3; draw(); return;
       }
       /* validation finale */
@@ -2971,7 +2999,7 @@ function editGoal(){
   const cur = currentWeight();
   openSheet(`<h3>Objectif de poids</h3>
     <div class="stack">
-      <input type="number" inputmode="decimal" step="0.5" min="0" id="gl-in" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80">
+      <input type="number" inputmode="decimal" step="0.5" min="30" max="300" id="gl-in" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80">
       ${cur!==null? `<div style="font-size:13px; color:var(--ink-soft);">Tu es à <b style="color:var(--ink);">${fmtKg(cur)} kg</b> aujourd'hui.</div>`:""}
       <button class="btn btn-accent" id="gl-ok">Enregistrer</button>
     </div>`);
@@ -2980,6 +3008,10 @@ function editGoal(){
   const ok = ()=>{
     const v = parseFloat(inp.value);
     if(!v || v<=0) return;
+    const err = verifieChamp("goalWeight", v);
+    if(err){ toast(err); return; }
+    /* le profil et l'objectif doivent rester d'accord */
+    if(db.profile) { db.profile.goalWeight = v; }
     db.settings.goal = v; coachGoal = null; save(); closeSheet(); render();
     toast("Objectif : "+fmtKg(v)+" kg");
   };
@@ -4143,12 +4175,14 @@ function renderWeightSection(sec){
   document.getElementById("wt-add").onclick=()=>{
     openSheet(`<h3>Noter mon poids</h3>
       <div class="stack">
-        <input type="number" inputmode="decimal" step="0.1" min="0" id="wt-in" placeholder="kg" value="${cur!==null?cur:""}">
+        <input type="number" inputmode="decimal" step="0.1" min="30" max="300" id="wt-in" placeholder="kg" value="${cur!==null?cur:""}">
         <button class="btn btn-accent" id="wt-ok">Enregistrer</button>
       </div>`);
     document.getElementById("wt-ok").onclick=()=>{
       const kg = parseFloat(document.getElementById("wt-in").value);
       if(!kg) return;
+      const err = verifieChamp("weight", kg);
+      if(err){ toast(err); return; }
       const today = dayKey();
       db.weights = db.weights.filter(w=>dayKey(w.date)!==today);
       db.weights.push({date:new Date().toISOString(), kg});
