@@ -1641,9 +1641,13 @@ function showPlan(justCreated){
         <button class="btn btn-sm" id="pl-tdee" style="flex:0 0 auto;">Ajuster</button>
       </div>
     </div>
+    <div class="inj-note" style="margin:0 0 12px; font-size:12.5px;">
+      ⚕️ Ces chiffres sont des <b>estimations</b>, pas des prescriptions médicales.
+      <button class="inj-swap" id="pl-sante">En savoir plus</button></div>
     ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">Ajouter les ${manquantes.length} séances à mes programmes</button>`:""}
     <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : "C'est parti"}</button>`);
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
+  document.getElementById("pl-sante").onclick = openSante;
   const add = document.getElementById("pl-add");
   if(add) add.onclick=()=>{ addCoachProgram(pl.program); closeSheet(); render(); toast("Séances ajoutées ✓"); };
   document.getElementById("pl-ok").onclick=()=>{ closeSheet(); render(); };
@@ -1714,7 +1718,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "v13 · 16 août 2026";
+const BUILD = "v14 · 26 août 2026";
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -4112,11 +4116,81 @@ function openTplEditor(id){
   draw();
 }
 
+/* ================= AIDE & LÉGAL ================= */
+const CONTACT_MAIL = "nicoponcin30900@gmail.com";
+const URL_CONF = "confidentialite.html";
+function openLegal(){
+  openSheet(`<h3>Aide &amp; légal</h3>
+    <div class="stack">
+      <button class="btn" id="lg-sante">⚕️ Avertissement santé</button>
+      <button class="btn" id="lg-conf">🔒 Confidentialité — mes données</button>
+      <button class="btn" id="lg-cgu">📘 Conditions d'utilisation</button>
+      <button class="btn" id="lg-contact">✉️ Nous contacter</button>
+      <button class="btn" id="lg-bug">🐞 Signaler un problème</button>
+      <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5; padding-top:2px;">
+        Tonnage ${BUILD}<br>Application gratuite, sans publicité et sans collecte de données.</div>
+      <button class="btn btn-accent" id="lg-ok">Fermer</button>
+    </div>`);
+  document.getElementById("lg-sante").onclick = openSante;
+  document.getElementById("lg-conf").onclick = openConfidentialite;
+  document.getElementById("lg-cgu").onclick = openCGU;
+  document.getElementById("lg-contact").onclick = ()=>{
+    location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnage — question")}`;
+  };
+  document.getElementById("lg-bug").onclick = ()=>{
+    const corps = `\n\n---\nNe pas effacer : version ${BUILD}, écran ${screen.width}×${screen.height}.`;
+    location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnage — problème")}&body=${encodeURIComponent("Décris ce qui s'est passé :"+corps)}`;
+  };
+  document.getElementById("lg-ok").onclick = closeSheet;
+}
+function openSante(){
+  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
+  openSheet(`<h3>Avertissement santé</h3>
+    <div class="inj-note" style="margin:0 0 14px;">
+      <b style="color:var(--bad);">⚕️ Tonnage n'est pas un dispositif médical.</b><br>
+      C'est une application de suivi sportif. Les calories, protéines, charges et estimations de récupération
+      qu'elle affiche sont des <b>ordres de grandeur</b>, pas des prescriptions.</div>
+    ${b("Les chiffres sont des estimations", "Ta dépense énergétique est calculée par une formule statistique : elle peut se tromper de 300 à 500 kcal sur une personne donnée. La seule mesure fiable reste l'évolution de ton poids sur plusieurs semaines.")}
+    ${b("Demande un avis médical", "Avant de suivre les recommandations de l'app en cas de maladie chronique, de blessure, de trouble du comportement alimentaire, de grossesse, ou si tu prends un traitement. En cas de douleur pendant un exercice, arrête-toi.")}
+    ${b("Ce que l'app refuse de faire", "Elle ne construit pas de plan pour descendre sous un IMC de 18,5, et déconseille les pertes de poids supérieures à 20 % du poids de corps sans passer par des paliers. Ces garde-fous ne remplacent pas un suivi professionnel.")}
+    ${b("Réservée aux adultes", "Les formules utilisées sont établies pour des adultes. L'application n'est pas adaptée aux moins de 14 ans.")}
+    <button class="btn btn-accent" id="sa-ok" style="width:100%;">Compris</button>`);
+  document.getElementById("sa-ok").onclick = closeSheet;
+}
+function openConfidentialite(){
+  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
+  openSheet(`<h3>Mes données</h3>
+    <div class="card" style="background:var(--surface2); margin-bottom:14px;">
+      <div style="font-size:14px; line-height:1.6;"><b>Tonnage ne collecte rien.</b> Tout ce que tu saisis reste
+      dans la mémoire de ton téléphone : aucun serveur ne reçoit tes séances, ton poids ni tes repas.</div></div>
+    ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience.")}
+    ${b("Une seule connexion réseau", "Au lancement, l'app vérifie s'il existe une nouvelle version. Rien de personnel n'est envoyé. Ensuite elle fonctionne hors ligne.")}
+    ${b("Ce que ça implique", "Si tu désinstalles l'app, effaces les données du navigateur ou changes de téléphone, tout disparaît. Pense à enregistrer un fichier de sauvegarde depuis les réglages.")}
+    ${b("Tout effacer", "Réglages → Détails de sauvegarde → Tout effacer. La suppression est immédiate et définitive.")}
+    <button class="btn" id="cf-web" style="width:100%; margin-bottom:8px;">Lire la politique complète</button>
+    <button class="btn btn-accent" id="cf-ok" style="width:100%;">Compris</button>`);
+  document.getElementById("cf-web").onclick = ()=>window.open(URL_CONF, "_blank");
+  document.getElementById("cf-ok").onclick = closeSheet;
+}
+function openCGU(){
+  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
+  openSheet(`<h3>Conditions d'utilisation</h3>
+    ${b("Le service", "Tonnage est une application de suivi d'entraînement et d'alimentation, fournie gratuitement, en l'état, sans garantie de disponibilité ni d'exactitude des estimations.")}
+    ${b("Ton usage", "Tu utilises l'application sous ta seule responsabilité. Tu restes responsable de l'exactitude des informations que tu saisis et des décisions que tu prends à partir de ce qu'elle affiche.")}
+    ${b("Tes données", "Elles t'appartiennent et restent sur ton appareil. L'éditeur n'y a pas accès et ne peut donc ni les restaurer, ni les récupérer en cas de perte.")}
+    ${b("Responsabilité", "L'éditeur ne peut être tenu responsable d'une blessure, d'un problème de santé ou d'une perte de données liés à l'usage de l'application. Les recommandations affichées ne constituent pas un avis médical.")}
+    ${b("Évolutions", "L'application évolue régulièrement. Les fonctions peuvent changer ou disparaître. Toute évolution des présentes conditions sera signalée dans l'application.")}
+    ${b("Contact", `Pour toute question : ${CONTACT_MAIL}`)}
+    <button class="btn btn-accent" id="cg-ok" style="width:100%;">Compris</button>`);
+  document.getElementById("cg-ok").onclick = closeSheet;
+}
+
 /* ================= RÉGLAGES / DONNÉES ================= */
 function openSettings(){
   openSheet(`<h3>Réglages</h3>
     <div class="stack">
       <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
+      <button class="btn" id="st-legal">📄 Aide, confidentialité et conditions</button>
       <button class="btn" id="st-ecran">
         <span class="grow" style="text-align:left;">Garder l'écran allumé en séance</span>
         <span style="font-weight:800; color:var(--accent);">${db.settings.ecranAllume===false? "Non" : "Oui"}</span>
@@ -4177,6 +4251,7 @@ function openSettings(){
     save(); appliquerTheme();
     e.currentTarget.lastElementChild.textContent = db.settings.theme==="clair" ? "☀️ Clair" : "🌙 Sombre";
   };
+  document.getElementById("st-legal").onclick = openLegal;
   document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast("Les explications réapparaîtront ✓"); };
   /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
   const autoBox = document.getElementById("st-auto");
