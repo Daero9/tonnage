@@ -1678,6 +1678,7 @@ function applyDefaults(){
     });
     db.mealsV2 = 1;
   }
+  if(!db.plafond) db.plafond = {};     /* exercices où la charge ne peut plus monter */
   if(!db.hbPerso) db.hbPerso = {};     /* aliments ajoutés aux propositions, par type de repas */
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "clair";
@@ -1881,6 +1882,36 @@ function parseReps(reps){
   const lo = parseInt(m[1]), hi = m[2]? parseInt(m[2]) : parseInt(m[1]);
   return {lo, hi:Math.max(lo,hi)};
 }
+/* charge bloquée : ni haltères plus lourds, ni lest disponible */
+const REPS_PLAFOND = 25;                       /* au-delà, mieux vaut durcir le mouvement */
+function chargeBloquee(exId){
+  const ex = getEx(exId);
+  return !!db.plafond[exId] || (estPoidsDuCorps(ex) && !db.plafond["libre:"+exId]);
+}
+/* une variante plus dure du même mouvement, prise dans la bibliothèque */
+function varianteDure(exId){
+  const ex = getEx(exId);
+  const dures = {
+    "Pompes":"Dips", "Dips":"Tractions", "Squat":"Fentes bulgares", "Fentes":"Fentes bulgares",
+    "Fentes bulgares":"Hack squat", "Crunch":"Relevés de jambes", "Gainage":"Roulette abdominale",
+    "Tractions":"Tractions lestées", "Curl haltères":"Curl incliné haltères", "Mollets debout":"Mollets debout une jambe"
+  };
+  const cible = dures[ex.name];
+  if(cible && allEx().some(e=>e.name===cible)) return cible;
+  return null;
+}
+/* que proposer quand la charge ne peut pas monter : reps -> série -> variante */
+function progressionSansCharge(exId, repsActuelles, nbSeries){
+  const v = varianteDure(exId);
+  if(repsActuelles >= REPS_PLAFOND){
+    return v ? {mode:"variante", cible:v, text:`Tu plafonnes à ${repsActuelles} reps — passe à « ${v} », plus dur à charge égale.`}
+             : {mode:"tempo", text:`Tu plafonnes à ${repsActuelles} reps — ralentis la descente (3 s) et marque 2 s en bas plutôt que d'en rajouter.`};
+  }
+  if(repsActuelles >= REPS_PLAFOND - 5 && nbSeries < 5){
+    return {mode:"serie", text:`Ajoute une série plutôt que des reps : tu es déjà à ${repsActuelles}.`};
+  }
+  return {mode:"reps", reps: repsActuelles + 2, text:`Vise ${repsActuelles+2} reps — et termine à une rep de l'échec.`};
+}
 function suggestFor(exId, target){
   const last = lastPerf(exId);
   if(!last || !last.sets.length) return null;
@@ -1892,11 +1923,13 @@ function suggestFor(exId, target){
   const avgRir = rirs.length? rirs.reduce((a,b)=>a+b,0)/rirs.length : null;
   const allTop = last.sets.every(s=>(s.r||0)>=rng.hi);
   const anyBelow = last.sets.some(s=>(s.r||0)<rng.lo);
-  /* au poids du corps sans lest : on progresse en répétitions, pas en kilos */
-  if(estPoidsDuCorps(getEx(exId)) && !(maxW>0)){
+  /* charge bloquée (poids du corps, ou pas d'haltères plus lourds) : on progresse autrement */
+  if(chargeBloquee(exId)){
     const maxR = Math.max(...last.sets.map(s=>s.r||0));
-    if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
-      return {mode:"reps", w:0, text:`Tu tiens ${maxR} reps sans forcer — vise ${maxR+1} reps, ou ajoute un peu de lest.`};
+    if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow)){
+      const pr = progressionSansCharge(exId, maxR, last.sets.length);
+      return {mode:pr.mode, w:maxW, text:pr.text};
+    }
     if(anyBelow && avgRir!==null && avgRir<0.5)
       return {mode:"hold", w:0, text:`Dernière fois tu étais à bout — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`};
     if(anyBelow)
@@ -3348,9 +3381,21 @@ function openHistoExo(ei){
           prochain && prochain.w ? `${fmtKg(prochain.w)} kg${prochain.r? ` × ${prochain.r} reps`:""}` : "À toi de choisir la charge"}</div>
         ${sug? `<div class="hist-ex-line" style="margin-top:4px;">${esc(sug.text)}</div>`:""}
       </div>
+      <label class="row" style="gap:9px; align-items:center; cursor:pointer; padding-top:2px;">
+        <input type="checkbox" id="hx-plafond" ${chargeBloquee(en.exId)?"checked":""} style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
+        <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je n'ai pas de charge plus lourde<br>
+          <span style="font-size:11.5px; color:var(--ink-mute);">Je progresse alors en répétitions, en séries, puis en variante plus difficile.</span></span>
+      </label>
       <button class="btn btn-accent" id="hx-ok">Compris</button>
     </div>`);
-  document.getElementById("hx-ok").onclick = closeSheet;
+  document.getElementById("hx-plafond").onchange = e=>{
+    const bloque = e.target.checked;
+    const auto = estPoidsDuCorps(ex);
+    if(bloque){ db.plafond[en.exId] = true; delete db.plafond["libre:"+en.exId]; }
+    else { delete db.plafond[en.exId]; if(auto) db.plafond["libre:"+en.exId] = true; }
+    save();
+  };
+  document.getElementById("hx-ok").onclick = ()=>{ closeSheet(); renderSurPlace(); };
 }
 /* le conseil de prudence, et le remplacement en un geste */
 function openBlessureExo(ei){
@@ -3499,14 +3544,13 @@ function renderActive(app){
                 if(inp) inp.value = (valeur===""? "" : valeur);
               });
             };
-            const sansCharge = estPoidsDuCorps(ex) && !((st.w||0) > 0);
+            const sansCharge = chargeBloquee(en.exId);
             let msg;
             if(rir>=3){
               if(sansCharge){
-                const nr = (st.r||0)+2;
-                msg = next ? `Trop léger — vise ${nr} reps sur les séries suivantes.`
-                            : `Trop léger — la prochaine fois, vise ${nr} reps ou ajoute du lest.`;
-                if(next) appliquerSuite("r", nr);
+                const pr = progressionSansCharge(en.exId, st.r||0, en.sets.filter(x=>!x.warm).length);
+                msg = `Trop léger — ${pr.text.charAt(0).toLowerCase()}${pr.text.slice(1)}`;
+                if(next && pr.mode==="reps") appliquerSuite("r", pr.reps);
               } else {
                 const nw = (st.w||0)+inc;
                 msg = next ? `Trop léger — séries suivantes à ${fmtKg(nw)} kg.`
