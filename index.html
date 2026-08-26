@@ -175,6 +175,17 @@
     border-radius:99px; padding:3px 11px; white-space:nowrap;}
   .car-wrap{position:relative;}
 
+  /* ---- jauge de récupération ---- */
+  .recup-card{display:flex; align-items:center; gap:11px; width:100%; margin-top:14px;
+    background:var(--hero); color:#fff; border-radius:16px; padding:10px 14px 10px 10px;
+    box-shadow:0 5px 16px rgba(0,0,0,.18);}
+  .recup-card .rc-ring{flex:0 0 auto; display:block; line-height:0;}
+  .recup-card .rc-t{display:block; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55);}
+  .recup-card .rc-s{display:block; font-size:15px; font-weight:800; margin-top:2px;}
+  .recup-card .rc-bar{flex:0 0 64px; height:7px; border-radius:5px; background:rgba(255,255,255,.16); overflow:hidden;}
+  .recup-card .rc-bar i{display:block; height:100%; border-radius:5px;}
+  .mp-body .mp-fig{max-width:118px;}
+
   /* ---- bouton + flottant ---- */
   .fab{width:58px; height:58px; border-radius:50%; background:var(--accent); color:#fff;
     display:flex; align-items:center; justify-content:center; font-size:31px; font-weight:300;
@@ -1036,6 +1047,34 @@ const AIMS = [
      attention:"C'est un mode de croisière, pas une fin en soi : quand la vie se calme, repasse sur un objectif de progression."
    }}
 ];
+/* IMC et seuils de sécurité : on refuse d'accompagner un objectif dangereux */
+function imc(kg, cm){ return (kg>0 && cm>0) ? kg/Math.pow(cm/100,2) : 0; }
+function poidsMiniSain(cm, sexe){ return Math.round(18.5*Math.pow(cm/100,2)*10)/10; }   /* IMC 18,5 */
+/* niveau : null (ok) | "prudence" | "danger" — accompagné d'un message */
+function alerteObjectif(p){
+  const kg = p.weight, cm = p.height, cible = p.goalWeight;
+  if(!(kg>0) || !(cm>0) || !(cible>0)) return null;
+  const perte = kg - cible;
+  const imcCible = imc(cible, cm), imcActuel = imc(kg, cm);
+  const mini = poidsMiniSain(cm);
+  if(imcCible < 17){
+    return {niveau:"danger", titre:"Cet objectif est dangereux pour ta santé",
+      txt:`À ${fmtKg(cible)} kg pour ${cm} cm, ton IMC serait de ${imcCible.toFixed(1)} — c'est le seuil de la dénutrition. En dessous de <b>${fmtKg(mini)} kg</b> (IMC 18,5), le corps puise dans le muscle, les os et les hormones. Je ne peux pas te construire un plan pour y aller. Si ce poids te semble nécessaire, parles-en à un médecin ou à un diététicien.`};
+  }
+  if(imcCible < 18.5){
+    return {niveau:"danger", titre:"Objectif sous le poids de santé",
+      txt:`À ${fmtKg(cible)} kg, ton IMC tomberait à ${imcCible.toFixed(1)}, sous le seuil de 18,5 considéré comme le minimum sain pour ${cm} cm. Le plancher raisonnable est <b>${fmtKg(mini)} kg</b>. Choisis un objectif au-dessus, ou consulte un professionnel de santé avant d'aller plus bas.`};
+  }
+  if(perte > 0 && perte/kg > 0.20){
+    return {niveau:"prudence", titre:"C'est beaucoup d'un coup",
+      txt:`${fmtKg(perte)} kg à perdre, soit ${Math.round(perte/kg*100)} % de ton poids. Une perte de ce genre se conduit par paliers : vise d'abord <b>${fmtKg(Math.round((kg-kg*0.1)*10)/10)} kg</b> (−10 %), tiens-le un mois, puis on réévalue. Aller plus vite coûte du muscle et se reprend presque toujours.`};
+  }
+  if(perte < 0 && imcActuel >= 25 && imc(cible, cm) >= 30){
+    return {niveau:"prudence", titre:"Vérifie ton objectif",
+      txt:`Prendre jusqu'à ${fmtKg(cible)} kg te mettrait à un IMC de ${imc(cible,cm).toFixed(1)}. En prise de masse, une partie du gain part en gras : mieux vaut viser plus bas et progresser par étapes.`};
+  }
+  return null;
+}
 function aimWarning(aimId, weight, goalWeight){
   if(!(weight>0) || !(goalWeight>0)) return null;
   const d = Math.round((goalWeight - weight)*10)/10;
@@ -1133,6 +1172,10 @@ function openKcalTips(sens, pl){
 function openKcalInfo(pl){
   const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
   openSheet(`<h3>Tes calories du jour</h3>
+    ${pl && pl.tdeeSource!=="formule" ? b("Chiffre recalé sur toi",
+      pl.tdeeSource==="manuel"
+        ? `Tu as indiqué toi-même une dépense de <b>${pl.tdee} kcal</b> : c'est elle qui sert de base, pas la formule.`
+        : `Ta dépense a été recalculée d'après tes ${pl.mesure.jours} jours de suivi et l'évolution de ton poids : <b>${pl.tdee} kcal</b> au lieu du chiffre théorique.`) : ""}
     ${b("D'où vient le chiffre", pl
       ? `Ton corps brûle environ <b>${pl.tdee} kcal</b> par jour au repos et en activité (calcul à partir de ta taille, ton poids, ton âge, tes ${pl.seances} séances par semaine et ton métabolisme). Pour ${pl.aim==="seche"?"perdre du gras":(pl.aim==="masse"?"prendre du muscle":"progresser")}, on ${pl.delta>=0?"ajoute":"retire"} <b>${Math.abs(pl.delta)} kcal</b>.`
       : "Renseigne ton profil (poids, taille, âge, objectif) pour obtenir une cible personnalisée.")}
@@ -1156,10 +1199,35 @@ const PACE_PCT = {
 };
 const PACE_RATE = {masse:1, seche:1, force:1};   /* objectifs où un rythme se calcule */
 function aimOf(id){ return AIMS.find(a=>a.id===id) || AIMS[0]; }
+/* Recalage : compare ce que tu as réellement mangé avec l'évolution réelle du poids.
+   7 700 kcal ≈ 1 kg. Si le poids ne bouge pas, ta dépense = ce que tu manges. */
+function tdeeMesure(){
+  const jours = Object.keys(db.habitSel||{}).filter(k=>dayKcal(k) > 800).sort();
+  if(jours.length < 10) return null;                       /* pas assez de jours renseignés */
+  const debut = jours[0], fin = jours[jours.length-1];
+  const nJours = Math.round((new Date(fin) - new Date(debut))/864e5) + 1;
+  if(nJours < 14) return null;                             /* il faut au moins deux semaines */
+  if(jours.length < nJours*0.6) return null;               /* trop de trous dans le suivi */
+  const moyKcal = jours.reduce((a,k)=>a+dayKcal(k),0)/jours.length;
+  const pesees = (db.weights||[]).map(w=>({t:new Date(w.date), kg:w.kg}))
+                   .filter(w=>w.t >= new Date(debut) && w.t <= new Date(fin+"T23:59:59"))
+                   .sort((a,b)=>a.t-b.t);
+  if(pesees.length < 2) return null;
+  const dKg = pesees[pesees.length-1].kg - pesees[0].kg;
+  const dJours = Math.max(7, (pesees[pesees.length-1].t - pesees[0].t)/864e5);
+  const tdee = moyKcal - (dKg*7700)/dJours;
+  if(!(tdee > 1200) || tdee > 6000) return null;
+  return {tdee:Math.round(tdee), jours:jours.length, moyKcal:Math.round(moyKcal), dKg:Math.round(dKg*10)/10, dJours:Math.round(dJours)};
+}
 function planFor(p){
   if(!p || !(p.weight>0) || !(p.height>0) || !(p.age>0) || !(p.goalWeight>0)) return null;
   const bmr = 10*p.weight + 6.25*p.height - 5*p.age + (p.sex==="f" ? -161 : 5);
-  const tdee = bmr * (ACTIVITY[p.days]||1.55) * (METAB_ADJ[p.metab]||1);
+  let tdee = bmr * (ACTIVITY[p.days]||1.55) * (METAB_ADJ[p.metab]||1);
+  /* correction manuelle (réglages) puis mesure réelle : le vécu prime sur la formule */
+  const mesure = (typeof tdeeMesure === "function") ? tdeeMesure() : null;
+  let tdeeSource = "formule";
+  if(p.tdeeManuel > 0){ tdee = p.tdeeManuel; tdeeSource = "manuel"; }
+  else if(mesure){ tdee = mesure.tdee; tdeeSource = "mesure"; }
   const diff = p.goalWeight - p.weight;
   const aimId = p.aim || (diff > 1 ? "masse" : (diff < -1 ? "seche" : "recomp"));
   const aim = aimOf(aimId);
@@ -1182,7 +1250,7 @@ function planFor(p){
   const kcalMin = Math.round(kcal*0.95/10)*10;
   const kcalMax = Math.round(kcal*1.05/10)*10;
   return {
-    bmr: Math.round(bmr), tdee: Math.round(tdee),
+    bmr: Math.round(bmr), tdee: Math.round(tdee), tdeeSource, mesure,
     kcal: Math.round(kcal/10)*10, kcalMin, kcalMax, prot: Math.round(prot), perKg,
     aim: aim.id, aimLabel: aim.label, pace, rythme, semaines,
     diff: Math.round(diff*10)/10, delta: Math.round(deltaReel), plafonne,
@@ -1288,6 +1356,11 @@ function openOnboarding(first, brouillon, depart){
         <div><span class="label" style="display:block; margin-bottom:5px;">Poids que tu vises (kg)</span>
         <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${d.goalWeight||""}" placeholder="${d.weight||70}"></div>
         ${warn? `<div class="inj-note" style="margin:0;">⚠️ ${esc(warn)}</div>`:""}
+        ${(()=>{ const a = alerteObjectif(d); if(!a) return "";
+          const rouge = a.niveau==="danger";
+          return `<div class="inj-note" style="margin:0; border-color:${rouge?"var(--bad)":"var(--accent)"}; background:${rouge?"rgba(224,85,74,.10)":"rgba(245,130,32,.10)"};">
+            <b style="color:${rouge?"var(--bad)":"var(--accent)"};">${rouge?"⛔":"⚠️"} ${esc(a.titre)}</b><br>${a.txt}</div>`;
+        })()}
       </div>`;
     }
 
@@ -1430,12 +1503,53 @@ function showPlan(justCreated){
       <div style="font-weight:800; margin-bottom:3px;">${esc(prog.title)}</div>
       <div style="font-size:13px; color:var(--ink-soft);">${esc(coachDesc(pl.program))}</div>
     </div>
-    <div style="font-size:12px; color:var(--ink-mute); margin-bottom:14px; line-height:1.5;">Estimations calculées à partir de ta taille, ton poids, ton âge et ton activité (formule Mifflin-St Jeor), soit ${pl.tdee} kcal de dépense quotidienne${pl.delta? (pl.delta>0? ` et ${pl.delta} kcal de surplus`:` et ${-pl.delta} kcal de déficit`):""}. Ajuste selon ce que dit la balance semaine après semaine.</div>
+    <div class="card" style="background:var(--surface2); margin-bottom:14px;">
+      <div class="row" style="justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-mute);">Ta dépense estimée</div>
+          <div style="font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;">${pl.tdee} <span style="font-size:13px; font-weight:600; color:var(--ink-mute);">kcal / jour</span></div>
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:3px;">${
+            pl.tdeeSource==="manuel" ? "Valeur que tu as saisie toi-même."
+            : pl.tdeeSource==="mesure" ? `Recalculée sur tes ${pl.mesure.jours} jours suivis : ${pl.mesure.moyKcal} kcal en moyenne pour ${pl.mesure.dKg>=0?"+":"−"}${fmtKg(Math.abs(pl.mesure.dKg))} kg en ${pl.mesure.dJours} jours.`
+            : "Calculée par formule (taille, poids, âge, séances). Elle se corrigera d'elle-même quand tu auras deux semaines de suivi."}</div>
+        </div>
+        <button class="btn btn-sm" id="pl-tdee" style="flex:0 0 auto;">Ajuster</button>
+      </div>
+    </div>
     ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">Ajouter les ${manquantes.length} séances à mes programmes</button>`:""}
     <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : "C'est parti"}</button>`);
+  document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
   const add = document.getElementById("pl-add");
   if(add) add.onclick=()=>{ addCoachProgram(pl.program); closeSheet(); render(); toast("Séances ajoutées ✓"); };
   document.getElementById("pl-ok").onclick=()=>{ closeSheet(); render(); };
+}
+/* « la formule dit 3 200 kcal mais je mange 2 200 et je ne bouge pas » : on croit la balance */
+function openAjustTdee(){
+  const pl = planFor(db.profile);
+  if(!pl) return;
+  const m = pl.mesure;
+  openSheet(`<h3>Ajuster ma dépense</h3>
+    <p style="margin:0 0 12px; font-size:13.5px; color:var(--ink-soft); line-height:1.6;">
+      Les formules donnent une moyenne de population : elles se trompent facilement de 300 à 500 kcal sur une personne donnée.
+      La vraie mesure, c'est ta balance. <b>Si ton poids ne bouge pas, ta dépense est égale à ce que tu manges.</b></p>
+    ${m? `<div class="card" style="background:var(--surface2); margin-bottom:12px;">
+      <div style="font-size:13px; color:var(--ink-soft); line-height:1.6;">Sur tes <b>${m.jours} jours</b> suivis : <b>${m.moyKcal} kcal</b> par jour en moyenne, pour <b>${m.dKg>=0?"+":"−"}${fmtKg(Math.abs(m.dKg))} kg</b> en ${m.dJours} jours.<br>
+      Ta dépense réelle ressort à <b style="color:var(--accent);">${m.tdee} kcal</b>.</div></div>`
+    : `<div class="inj-note" style="margin:0 0 12px;">Pas encore assez de données pour la mesurer : il me faut deux semaines de repas cochés et deux pesées. En attendant, tu peux la corriger à la main.</div>`}
+    <div class="stack">
+      <div><span class="label" style="display:block; margin-bottom:5px;">Ma dépense réelle (kcal / jour)</span>
+      <input type="number" inputmode="numeric" step="50" min="1000" id="aj-tdee" value="${db.profile.tdeeManuel||""}" placeholder="${pl.tdee}"></div>
+      <div style="font-size:12px; color:var(--ink-mute); line-height:1.5;">Laisse vide pour laisser l'app décider toute seule. Si tu manges ${m? m.moyKcal : "2 200"} kcal et que ton poids est stable depuis trois semaines, saisis ce chiffre.</div>
+      <button class="btn btn-accent" id="aj-ok">Enregistrer</button>
+      ${db.profile.tdeeManuel? `<button class="btn btn-ghost" id="aj-reset">Revenir au calcul automatique</button>`:""}
+    </div>`);
+  document.getElementById("aj-ok").onclick = ()=>{
+    const v = parseFloat(document.getElementById("aj-tdee").value);
+    db.profile.tdeeManuel = (v>=1000 && v<=6000) ? Math.round(v) : 0;
+    save(); closeSheet(); render(); showPlan(false);
+  };
+  const rz = document.getElementById("aj-reset");
+  if(rz) rz.onclick = ()=>{ db.profile.tdeeManuel = 0; save(); closeSheet(); render(); showPlan(false); };
 }
 function addCoachProgram(goal){
   COACH_PROGRAMS[goal].templates.forEach(t=>{
@@ -1777,6 +1891,30 @@ function hero(inner){
   </div>`;
 }
 function topbar(){ return ""; }
+/* l'avatar en haut à gauche : profil, plan, objectif — tout ce qui te concerne */
+function openProfil(){
+  const pl = planFor(db.profile);
+  const p = db.profile || {};
+  const kg = currentWeight() || p.weight || 0;
+  const i = imc(kg, p.height);
+  openSheet(`<h3>Mon profil</h3>
+    ${p.name? `<div style="text-align:center; font-size:20px; font-weight:800; margin-bottom:2px;">${esc(p.name)}</div>`:""}
+    <div style="text-align:center; font-size:13px; color:var(--ink-mute); margin-bottom:14px;">
+      ${p.height? p.height+" cm · ":""}${kg? fmtKg(kg)+" kg":""}${i? ` · IMC ${i.toFixed(1)}`:""}</div>
+    ${pl? `<div class="tiles" style="margin-bottom:14px;">
+      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">kcal / jour</div></div>
+      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">protéines</div></div>
+      <div class="tile"><div class="v">${p.goalWeight? fmtKg(p.goalWeight)+" kg" : "—"}</div><div class="u">objectif</div></div>
+    </div>`:""}
+    <div class="stack">
+      <button class="btn btn-accent" id="pr-plan">${pl? "Voir mon plan" : "Créer mon plan"}</button>
+      <button class="btn" id="pr-edit">Modifier mon profil et mon objectif</button>
+      <button class="btn btn-ghost" id="pr-ok">Fermer</button>
+    </div>`);
+  document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else openOnboarding(true); };
+  document.getElementById("pr-edit").onclick = ()=>openOnboarding(false);
+  document.getElementById("pr-ok").onclick = closeSheet;
+}
 async function quickBackup(){
   const stamp = dayKey();
   try{
@@ -1792,7 +1930,7 @@ async function quickBackup(){
 }
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
-  const u = document.getElementById("tb-user"); if(u) u.onclick = ()=>openOnboarding(true);
+  const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
 }
 let curTab = "seance";
 function renderTabs(){
@@ -2844,24 +2982,31 @@ function suggestedTemplate(){
 }
 /* photo d'ambiance d'une séance : choisie sur le nom, sinon sur les muscles travaillés */
 const PHOTOS = ["push","pull","jambes","abdos","cardio"];
+/* la photo suit d'abord les exercices choisis, le nom ne sert que de repli */
 function photoSeance(t){
   if(t && t.photo && PHOTOS.includes(t.photo)) return t.photo;
+  const score = {push:0, pull:0, jambes:0, abdos:0};
+  ((t && t.items) || []).forEach(it=>{
+    const ex = getEx(it.exId);
+    const m = (ex.muscle || "").toLowerCase();
+    if(/pector|épaul|epaul|triceps/.test(m)) score.push++;
+    else if(/dos|biceps/.test(m)) score.pull++;
+    else if(/jambe|fessier|mollet/.test(m)) score.jambes++;
+    else if(/abdo|gainage/.test(m)) score.abdos++;
+  });
+  const total = score.push + score.pull + score.jambes + score.abdos;
+  if(total){
+    const best = Object.keys(score).sort((a,b)=>score[b]-score[a])[0];
+    /* une majorité nette (au moins 40 % des exercices) suffit à choisir la photo */
+    if(score[best] / total >= 0.4) return best;
+  }
   const n = ((t && t.name) || "").toLowerCase();
   if(/push|poussée|pousse|pec|torse/.test(n)) return "push";
   if(/pull|tirage|dos/.test(n)) return "pull";
   if(/jambe|leg|cuisse|fessier|squat/.test(n)) return "jambes";
   if(/abdo|gainage|core|ceinture/.test(n)) return "abdos";
   if(/cardio|course|run|hiit|marche/.test(n)) return "cardio";
-  const score = {push:0, pull:0, jambes:0, abdos:0};
-  ((t && t.items) || []).forEach(it=>{
-    const m = (getEx(it.exId).muscle || "").toLowerCase();
-    if(/pector|épaul|epaul|triceps/.test(m)) score.push++;
-    else if(/dos|biceps/.test(m)) score.pull++;
-    else if(/jambe/.test(m)) score.jambes++;
-    else if(/abdo/.test(m)) score.abdos++;
-  });
-  const best = Object.keys(score).sort((a,b)=>score[b]-score[a])[0];
-  return score[best] ? best : "push";
+  return "push";
 }
 function photoUrl(nom){ return `img/${nom}.jpg`; }
 function dureeSeance(t){ return Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5); }
@@ -2904,6 +3049,18 @@ function renderSeance(app){
       </div>
     </div>
     <div id="start-zone"></div>
+    ${db.history.length? `<button class="recup-card" id="recup-btn">
+      ${(()=>{ const r = recuperation();
+        const c = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
+        return `<span class="rc-ring">${anneau(r.global, 44, c)}</span>
+          <span class="grow" style="text-align:left;">
+            <span class="rc-t">Récupération</span>
+            <span class="rc-s">${(()=>{ const w = recupPire(r);
+              return w.pct < 65 ? `${esc(w.nom)} à ${w.pct} %` : recupTitre(r.global); })()}</span>
+          </span>
+          <span class="rc-bar"><i style="width:${r.global}%; background:${c};"></i></span>`;
+      })()}
+    </button>`:""}
     <div class="car-wrap"><div class="car" id="car"></div></div>
     <div class="fab-row"><button class="fab" id="fab" aria-label="Ajouter">＋</button></div>
     <div class="section-t" style="margin-top:14px;"><i>▤</i>Historique</div>
@@ -2911,6 +3068,8 @@ function renderSeance(app){
   wireTopbar();
   document.getElementById("bilan-btn").onclick=openBilan;
   document.getElementById("fab").onclick=openAjout;
+  const rc = document.getElementById("recup-btn");
+  if(rc) rc.onclick = openRecup;
 
   /* carte de démarrage : visible tant que la première séance n'est pas faite */
   const profilOk = !!planFor(db.profile);
@@ -3402,10 +3561,24 @@ function openPicker(cb){
   const listEl = document.getElementById("pk-list");
   const draw = q=>{
     q=(q||"").toLowerCase();
-    const filtered = allEx().filter(e=>e.name.toLowerCase().includes(q) || (e.equip||"").toLowerCase().includes(q));
+    /* on cherche aussi dans le groupe musculaire et dans les muscles sollicités :
+       « abdos » doit sortir le relevé de jambes, « fessier » les squats… */
+    const sansAccent = t => (t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const qn = sansAccent(q);
+    /* score : le groupe et le nom priment sur les muscles secondaires */
+    const score = e=>{
+      if(!qn) return 0;
+      if(sansAccent(e.muscle).includes(qn)) return 3;
+      if(sansAccent(e.name).includes(qn)) return 2;
+      if(sansAccent(e.equip||"").includes(qn)) return 2;
+      return (MUSCLE_WORK[e.name]||[]).some(x=>sansAccent(x[0]).includes(qn)) ? 1 : 0;
+    };
+    const filtered = allEx().filter(e=>!qn || score(e) > 0);
     const groups = {};
     filtered.forEach(e=>{ (groups[e.muscle||"Autres"] = groups[e.muscle||"Autres"]||[]).push(e); });
-    listEl.innerHTML = Object.keys(groups).map(m=>
+    const ordre = Object.keys(groups).sort((a,b)=>
+      Math.max(...groups[b].map(score)) - Math.max(...groups[a].map(score)));
+    listEl.innerHTML = ordre.map(m=>
       `<div class="pk-h">${esc(m)}</div>`+groups[m].map(e=>
         `<div class="pk-row" data-pk="${e.id}"><div class="th">${exIcon(e, true)}</div>
           <div class="grow" style="min-width:0;"><div class="nm">${esc(e.name)}</div>
@@ -3565,7 +3738,6 @@ function openTplEditor(id){
 function openSettings(){
   openSheet(`<h3>Réglages</h3>
     <div class="stack">
-      <button class="btn" id="st-profile">👤 Mon profil et mon plan</button>
       <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
       <button class="btn" id="st-ecran">
         <span class="grow" style="text-align:left;">Garder l'écran allumé en séance</span>
@@ -3575,12 +3747,10 @@ function openSettings(){
         <span class="grow" style="text-align:left;">Apparence</span>
         <span style="font-weight:800; color:var(--accent);">${db.settings.theme==="clair"? "☀️ Clair" : "🌙 Sombre"}</span>
       </button>
-      <div><span class="label" style="display:block; margin-bottom:5px;">Prénom</span>
-      <input type="text" id="st-name" value="${esc(db.settings.name)}"></div>
+
       <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
       <input type="number" inputmode="numeric" step="15" min="0" id="st-rest" value="${db.settings.rest}"></div>
-      <div><span class="label" style="display:block; margin-bottom:5px;">Objectif de poids (kg)</span>
-      <input type="number" inputmode="decimal" step="0.5" min="0" id="st-goal" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80"></div>
+
       <button class="btn" id="st-bk-toggle" style="margin-top:4px;">
         <span class="grow" style="text-align:left;">Détails de sauvegarde</span>
         <span id="st-bk-caret" style="font-weight:800; color:var(--accent);">▸</span>
@@ -3608,21 +3778,17 @@ function openSettings(){
   /* enregistrement au fil de la saisie : rien n'est perdu si la fiche est fermée d'un geste */
   const applySettings = ()=>{
     const el = id => document.getElementById(id);
-    if(!el("st-name")) return;                      /* la fiche n'est plus à l'écran */
-    db.settings.name = el("st-name").value.trim()||"Champion";
+    if(!el("st-rest")) return;                      /* la fiche n'est plus à l'écran */
     db.settings.rest = parseInt(el("st-rest").value)||90;
-    const g = parseFloat(el("st-goal").value);
-    if(g>0){ if(g!==db.settings.goal) coachGoal = null; db.settings.goal = g; }
     save();
   };
-  ["st-name","st-rest","st-goal"].forEach(id=>{
+  ["st-rest"].forEach(id=>{
     const el = document.getElementById(id);
     if(el){ el.oninput = applySettings; el.onchange = applySettings; }
   });
   /* quelle que soit la façon de fermer (bouton, clic à côté, touche retour) : on enregistre */
   onSheetClose = ()=>{ render(); };
   document.getElementById("st-ok").onclick=()=>{ applySettings(); closeSheet(); };
-  document.getElementById("st-profile").onclick=()=>openOnboarding(false);
   document.getElementById("st-ecran").onclick=(e)=>{
     db.settings.ecranAllume = (db.settings.ecranAllume === false);
     save(); syncWakeLock();
@@ -4003,6 +4169,122 @@ function groupeDe(nom){
   if(base==="Brachial") return "Biceps";
   return null;   /* Avant-bras, Adducteurs… : pas de zone sur la silhouette */
 }
+/* ===== Récupération : ce que tes séances récentes ont laissé comme fatigue ===== */
+/* heures de récupération complète après une sollicitation lourde, par groupe */
+const RECUP_H = {
+  "Pectoraux":48, "Grand dorsal":48, "Trapèzes":36, "Deltoïdes":36,
+  "Biceps":36, "Triceps":36, "Quadriceps":72, "Ischio-jambiers":72,
+  "Fessiers":60, "Mollets":36, "Abdos":36, "Lombaires":60
+};
+/* état de chaque groupe : 100 % = frais, 0 % = à plat */
+function recuperation(){
+  const now = Date.now();
+  const fat = {};
+  MP_MUSCLES.forEach(m=>fat[m]=0);
+  db.history.forEach(sess=>{
+    const t = new Date(sess.date).getTime();
+    const heures = (now - t)/36e5;
+    if(heures < 0 || heures > 96) return;
+    sess.entries.forEach(en=>{
+      const ex = getEx(en.exId);
+      const series = (en.sets||[]).filter(x=>x.done && !x.warm).length;
+      if(!series) return;
+      (MUSCLE_WORK[ex.name]||[]).forEach(([mus, niveau])=>{
+        const g = groupeDe(mus);
+        if(!g) return;
+        const plein = RECUP_H[g] || 48;
+        if(heures >= plein) return;
+        const reste = 1 - heures/plein;              /* la fatigue s'efface avec le temps */
+        const charge = series * (niveau/3) * 11;     /* ~11 points pour 1 série lourde */
+        fat[g] += charge * reste;
+      });
+    });
+  });
+  const muscles = {};
+  MP_MUSCLES.forEach(m=>{
+    const pct = Math.max(0, Math.min(100, Math.round(100 - fat[m])));
+    muscles[m] = {pct, etat: pct>=85? "frais" : (pct>=50? "recup" : "fatigue")};
+  });
+  const vals = MP_MUSCLES.map(m=>muscles[m].pct);
+  const global = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+  const n = {frais:0, recup:0, fatigue:0};
+  MP_MUSCLES.forEach(m=>n[muscles[m].etat]++);
+  return {global, muscles, n};
+}
+const RECUP_C = {frais:"#4caf50", recup:"#e8a33d", fatigue:"#e0554a"};
+const RECUP_LAB = {frais:"Prêt", recup:"En récup", fatigue:"Fatigué"};
+function recupTitre(g){
+  if(g >= 85) return "Prêt à t'entraîner";
+  if(g >= 65) return "Presque remis";
+  if(g >= 45) return "Récupération en cours";
+  return "Repos conseillé";
+}
+/* le groupe le plus entamé, pour nuancer une moyenne flatteuse */
+function recupPire(r){
+  const m = MP_MUSCLES.slice().sort((a,b)=>r.muscles[a].pct - r.muscles[b].pct)[0];
+  return {nom:m, pct:r.muscles[m].pct, etat:r.muscles[m].etat};
+}
+/* anneau de progression, comme sur la maquette */
+function anneau(pct, taille, couleur){
+  const r = taille/2 - 5, c = 2*Math.PI*r;
+  return `<svg viewBox="0 0 ${taille} ${taille}" style="width:${taille}px; height:${taille}px;">
+    <circle cx="${taille/2}" cy="${taille/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="6"/>
+    <circle cx="${taille/2}" cy="${taille/2}" r="${r}" fill="none" stroke="${couleur}" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct/100)}" transform="rotate(-90 ${taille/2} ${taille/2})"/>
+    <text x="${taille/2}" y="${taille/2+6}" text-anchor="middle" font-size="${taille*0.30}" font-weight="800" fill="#fff">${pct}<tspan font-size="${taille*0.16}">%</tspan></text>
+  </svg>`;
+}
+function openRecup(){
+  const r = recuperation();
+  const coul = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
+  const st = {};
+  MP_MUSCLES.forEach(m=>{
+    const o = r.muscles[m];
+    st[m] = {color: RECUP_C[o.etat], op: o.etat==="frais"? 0.55 : (o.etat==="recup"? 0.8 : 1)};
+  });
+  const ordre = MP_MUSCLES.slice().sort((a,b)=>r.muscles[a].pct - r.muscles[b].pct);
+  openSheet(`<h3>Récupération</h3>
+    <div class="card" style="background:var(--hero); color:#fff; border:none; margin-bottom:14px;">
+      <div class="row" style="gap:14px; align-items:center; margin-bottom:12px;">
+        ${anneau(r.global, 78, coul)}
+        <div>
+          <div style="font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55);">Corps entier</div>
+          <div style="font-size:21px; font-weight:800; line-height:1.15;">${recupTitre(r.global)}</div>
+          ${(()=>{ const w = recupPire(r);
+            return w.pct < 65 ? `<div style="font-size:12.5px; color:${RECUP_C[w.etat]}; margin-top:3px;">Épargne tes ${esc(w.nom.toLowerCase())} : encore ${w.pct} %</div>` : "";
+          })()}
+        </div>
+      </div>
+      <div class="mp-body" style="display:flex; gap:8px; justify-content:center;">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
+      <div class="row" style="gap:8px; align-items:center; margin:12px 0 10px; font-size:11.5px; color:rgba(255,255,255,.65);">
+        <span>Fatigué</span>
+        <span style="flex:1; height:7px; border-radius:5px; background:linear-gradient(90deg, ${RECUP_C.fatigue}, ${RECUP_C.recup}, ${RECUP_C.frais});"></span>
+        <span>Frais</span>
+      </div>
+      <div class="row" style="gap:7px;">
+        ${[["fatigue","Fatigués"],["recup","En récup"],["frais","Frais"]].map(([k,lab])=>`
+          <div style="flex:1; background:rgba(255,255,255,.07); border-radius:11px; padding:8px 10px;">
+            <div style="font-size:17px; font-weight:800;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:${RECUP_C[k]}; vertical-align:2px; margin-right:5px;"></span>${r.n[k]}</div>
+            <div style="font-size:10.5px; color:rgba(255,255,255,.6);">${lab}</div>
+          </div>`).join("")}
+      </div>
+    </div>
+    <div class="section-t" style="margin-top:0;">Détail par groupe</div>
+    <div class="stack" style="gap:7px; max-height:38dvh; overflow-y:auto;">${ordre.map(m=>{
+      const o = r.muscles[m];
+      return `<div class="row" style="gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 12px;">
+        <span style="width:4px; align-self:stretch; border-radius:3px; background:${RECUP_C[o.etat]};"></span>
+        <div class="grow">
+          <div style="font-weight:700; font-size:14px;">${esc(m)}</div>
+          <div style="font-size:12px; color:var(--ink-mute);"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${RECUP_C[o.etat]}; margin-right:4px;"></span>${RECUP_LAB[o.etat]}</div>
+        </div>
+        <div style="font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; color:${RECUP_C[o.etat]};">${o.pct}<span style="font-size:11px;">%</span></div>
+      </div>`;}).join("")}</div>
+    <div style="font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-top:12px;">Estimation d'après tes séances des 4 derniers jours : nombre de séries, intensité de sollicitation de chaque muscle et temps écoulé. Les grosses masses (cuisses, ischios) mettent jusqu'à 72 h à revenir, les petites 36 h.</div>
+    <button class="btn btn-accent" id="rc-ok" style="width:100%; margin-top:12px;">Compris</button>`);
+  document.getElementById("rc-ok").onclick = closeSheet;
+}
+
 function muscleProfile(){
   const bw = currentWeight() || 75;
   const byEx = {};
