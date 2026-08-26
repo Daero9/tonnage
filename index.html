@@ -395,6 +395,10 @@
   .mp-fig{position:relative; width:46%; max-width:160px;}
   .mp-fig img{width:100%; display:block; filter:var(--figure);}
   .mp-fig svg{position:absolute; inset:0; width:100%; height:100%;}
+  .mp-mask{position:absolute; inset:0; display:block; pointer-events:none;
+    -webkit-mask-size:100% 100%; mask-size:100% 100%;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    -webkit-mask-position:center; mask-position:center;}
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(78px + env(safe-area-inset-bottom)); z-index:80;
     background:var(--good); color:#0d1a12; font-weight:700; font-size:14px; padding:11px 18px; border-radius:12px;
     box-shadow:0 8px 26px rgba(0,0,0,.5); transition:opacity .4s; max-width:88%; text-align:center;}
@@ -1356,11 +1360,11 @@ function openOnboarding(first, brouillon, depart){
         <div><span class="label" style="display:block; margin-bottom:5px;">Poids que tu vises (kg)</span>
         <input type="number" inputmode="decimal" step="0.5" id="ob-goal" value="${d.goalWeight||""}" placeholder="${d.weight||70}"></div>
         ${warn? `<div class="inj-note" style="margin:0;">⚠️ ${esc(warn)}</div>`:""}
-        ${(()=>{ const a = alerteObjectif(d); if(!a) return "";
+        <div id="ob-alerte">${(()=>{ const a = alerteObjectif(d); if(!a) return "";
           const rouge = a.niveau==="danger";
           return `<div class="inj-note" style="margin:0; border-color:${rouge?"var(--bad)":"var(--accent)"}; background:${rouge?"rgba(224,85,74,.10)":"rgba(245,130,32,.10)"};">
             <b style="color:${rouge?"var(--bad)":"var(--accent)"};">${rouge?"⛔":"⚠️"} ${esc(a.titre)}</b><br>${a.txt}</div>`;
-        })()}
+        })()}</div>
       </div>`;
     }
 
@@ -1418,7 +1422,16 @@ function openOnboarding(first, brouillon, depart){
     const info = document.getElementById("ob-aiminfo");
     if(info) info.onclick = ()=>{ lire(); openAimInfo(d.aim, draw); };
     const goal = document.getElementById("ob-goal");
-    if(goal) goal.oninput = ()=>{ lire(); const w=document.getElementById("ob-aimwarnlive"); if(w) w.remove(); };
+    if(goal) goal.oninput = ()=>{
+      lire();
+      const zone = document.getElementById("ob-alerte");
+      if(!zone) return;
+      const a = alerteObjectif(d);
+      if(!a){ zone.innerHTML = ""; return; }
+      const rouge = a.niveau === "danger";
+      zone.innerHTML = `<div class="inj-note" style="margin:0; border-color:${rouge?"var(--bad)":"var(--accent)"}; background:${rouge?"rgba(224,85,74,.10)":"rgba(245,130,32,.10)"};">
+        <b style="color:${rouge?"var(--bad)":"var(--accent)"};">${rouge?"⛔":"⚠️"} ${esc(a.titre)}</b><br>${a.txt}</div>`;
+    };
     document.querySelectorAll("[data-dy]").forEach(b=>b.onclick=()=>{ d.days=parseInt(b.dataset.dy); draw(); });
     document.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{ d.metab=b.dataset.mt; draw(); });
     document.querySelectorAll("[data-pace]").forEach(b=>b.onclick=()=>{ d.pace=b.dataset.pace; draw(); });
@@ -4348,17 +4361,33 @@ const MP_ZONES = {
     ["Mollets",132,448,16,36,1],["Mollets",168,448,16,36,-1]
   ]
 };
+/* Masques par muscle : PNG blanc détouré, recoloré en CSS. Tant que la liste est vide,
+   on garde les taches elliptiques. Ajouter un nom ici suffit à activer le masque. */
+const MASK_DIR = "img/muscles/";
+const MASK_OK = {front:[], back:[]};
+function slugMuscle(m){
+  return (m||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+function masqueHtml(cle, muscle, s){
+  const url = `${MASK_DIR}${cle}-${slugMuscle(muscle)}.png`;
+  return `<span class="mp-mask" style="background:${s.color}; opacity:${(0.85*s.op).toFixed(2)};
+    -webkit-mask-image:url('${url}'); mask-image:url('${url}');"></span>`;
+}
 function mpBodyHtml(back, st){
   const img = back? MP_BACK : MP_FRONT;
   if(!img.startsWith("data:")) return mpBodySvg(back, st);   /* fallback si build non exécuté */
   const cle = back? "back" : "front";
   const [W,H] = MP_TAILLE[cle];
+  const masques = MP_ZONES[cle].map(z=>z[0]).filter((m,i,a)=>a.indexOf(m)===i)
+    .filter(m=>MASK_OK[cle].includes(m) && st[m] && !st[m].nodata)
+    .map(m=>masqueHtml(cle, m, st[m])).join("");
   const zones = MP_ZONES[cle].map(z=>{
     const s = st[z[0]];
-    if(!s || s.nodata) return "";
+    if(!s || s.nodata || MASK_OK[cle].includes(z[0])) return "";
     return `<ellipse cx="${z[1]}" cy="${z[2]}" rx="${z[3]}" ry="${z[4]}" transform="rotate(${z[5]} ${z[1]} ${z[2]})" fill="${s.color}" fill-opacity="${0.6*s.op}"/>`;
   }).join("");
   return `<div class="mp-fig"><img src="${img}" alt="${back?'dos':'face'}">
+    ${masques}
     <svg viewBox="0 0 ${W} ${H}"><g style="filter:blur(4px);">${zones}</g></svg></div>`;
 }
 function mpBodySvg(back, st){
