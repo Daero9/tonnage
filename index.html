@@ -332,7 +332,12 @@
   .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center;}
   .overlay.show{display:flex;}
   .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
-  .sheet h3{font-size:18px; margin-bottom:14px; text-align:center;}
+  .sheet h3{font-size:18px; margin-bottom:14px; text-align:center; padding:0 34px;}
+  /* croix de fermeture, présente sur toutes les fiches */
+  .sheet-x{position:absolute; top:10px; right:12px; z-index:5; width:32px; height:32px; border-radius:50%;
+    background:var(--surface2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center;
+    font-size:17px; line-height:1;}
+  .sheet{position:relative;}
   .sheet{background:var(--sheet);}
   /* ---- fiche « nouvelle séance » ---- */
   .f-lab{font-size:10.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-mute); display:block; margin-bottom:6px;}
@@ -2128,7 +2133,9 @@ let onSheetClose = null;   /* action à exécuter quand la fiche se ferme, quell
 function openSheet(html){
   sheet.style.transition = ""; sheet.style.transform = "";
   sheet.scrollTop = 0;
-  sheet.innerHTML = '<div class="grab"></div>'+html;
+  sheet.innerHTML = '<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="Fermer">✕</button>'+html;
+  const croix = document.getElementById("sheet-x");
+  if(croix) croix.onclick = closeSheet;
   overlay.classList.add("show");
   if(!sheetOpen){
     sheetOpen = true;
@@ -2855,7 +2862,9 @@ function openCardioList(){
           <button class="icon-btn" data-cdel="${c.id}" style="color:var(--bad); width:32px; height:32px;">✕</button></div>`;
       }).join("") : `<div class="empty">Aucune sortie enregistrée.</div>`
     }</div>
-    <button class="btn btn-accent" id="cd-new" style="width:100%; margin-top:12px;">＋ Ajouter une sortie</button>`);
+    <button class="btn btn-accent" id="cd-new" style="width:100%; margin-top:12px;">＋ Ajouter une sortie</button>
+    <button class="btn btn-ghost" id="cd-close2" style="width:100%; margin-top:8px;">Fermer</button>`);
+  document.getElementById("cd-close2").onclick = closeSheet;
   document.getElementById("cd-new").onclick = ()=>openCardioAdd();
   document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.cedit));
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=()=>{
@@ -3939,7 +3948,9 @@ function openPicker(cb){
   openSheet(`<h3>${browse? "Bibliothèque d'exercices" : "Choisir un exercice"}</h3>
     <input id="pk-search" placeholder="Rechercher un exercice ou un matériel…" style="margin-bottom:2px;">
     <div id="pk-list" style="max-height:52dvh; overflow-y:auto;"></div>
-    <button class="btn-dash" id="pk-new" style="margin-top:14px;">＋ Créer un exercice perso</button>`);
+    <button class="btn-dash" id="pk-new" style="margin-top:14px;">＋ Créer un exercice perso</button>
+    <button class="btn btn-ghost" id="pk-close" style="width:100%; margin-top:8px;">Fermer</button>`);
+  document.getElementById("pk-close").onclick = closeSheet;
   const listEl = document.getElementById("pk-list");
   const draw = q=>{
     q=(q||"").toLowerCase();
@@ -3983,7 +3994,9 @@ function openPicker(cb){
         <div><span class="label" style="display:block; margin-bottom:5px;">Matériel</span>
         <select id="ne-equip">${["Barre","Haltères","Poulie","Machine","Poids du corps","Barre fixe","Autre"].map(m=>`<option>${m}</option>`).join("")}</select></div>
         <button class="btn btn-accent" id="ne-ok">${browse? "Créer" : "Créer et sélectionner"}</button>
+        <button class="btn btn-ghost" id="ne-cancel">Annuler</button>
       </div>`);
+    document.getElementById("ne-cancel").onclick = ()=>openPicker(cb);
     document.getElementById("ne-ok").onclick=()=>{
       const name = document.getElementById("ne-name").value.trim();
       if(!name) return;
