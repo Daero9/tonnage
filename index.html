@@ -241,7 +241,13 @@
   /* rest timer */
   .restbar{position:fixed; left:12px; right:12px; bottom:calc(64px + env(safe-area-inset-bottom)); z-index:45; max-width:536px; margin:0 auto;
     background:var(--accent); color:var(--accent-ink); border-radius:16px; padding:10px 14px;
-    display:none; align-items:center; gap:10px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
+    display:none; align-items:center; gap:10px; box-shadow:0 8px 30px rgba(0,0,0,.5);
+    touch-action:none; transition:top .22s ease, bottom .22s ease;}
+  /* posé en haut de l'écran */
+  .restbar.haut{bottom:auto; top:calc(10px + env(safe-area-inset-top));}
+  .restbar.drag{transition:none; box-shadow:0 14px 40px rgba(0,0,0,.55); cursor:grabbing;}
+  .restbar .grip{width:16px; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; opacity:.5; margin-right:2px;}
+  .restbar .grip i{display:block; height:2px; border-radius:2px; background:var(--accent-ink);}
   .restbar.show{display:flex;}
   .restbar .t{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; min-width:86px;}
   .restbar .lbl{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.75;}
@@ -421,6 +427,7 @@
 <div id="app"></div>
 
 <div class="restbar" id="restbar">
+  <div class="grip" aria-hidden="true"><i></i><i></i><i></i></div>
   <div style="cursor:pointer;">
     <div class="lbl" id="rest-lbl">Repos</div>
     <div class="t"><span id="rest-t">1:30</span> <span id="rest-picon" style="font-size:15px; opacity:.65;">⏸</span></div>
@@ -1931,6 +1938,7 @@ function startRest(sec){
   rest.end = Date.now() + sec*1000;
   restbar.classList.add("show");
   restbar.classList.remove("ending", "paused");
+  placerRest();
   document.getElementById("rest-lbl").textContent = "Repos";
   document.getElementById("rest-picon").textContent = "⏸";
   rest.int = setInterval(tickRest, 250);
@@ -1980,7 +1988,52 @@ function tickRest(){
 document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; restbar.classList.remove("show","paused"); };
 document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); } };
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); } };
-restbar.addEventListener("click", e=>{ if(e.target.closest("button")) return; togglePauseRest(); });
+restbar.addEventListener("click", e=>{
+  if(e.target.closest("button")) return;
+  if(Date.now() - restDrag.tFin < 350) return;    /* on vient de le déplacer, pas de pause */
+  togglePauseRest();
+});
+
+/* le minuteur se déplace : relâché au-dessus du milieu il se cale en haut, en dessous il revient en bas */
+const restDrag = {actif:false, bouge:false, y0:0, top0:0, tFin:0};
+function placerRest(){ restbar.classList.toggle("haut", db.settings.restHaut === true); }
+function restDragStart(y, cible){
+  if(cible.closest("button")) return;
+  const r = restbar.getBoundingClientRect();
+  restDrag.actif = true; restDrag.bouge = false; restDrag.y0 = y; restDrag.top0 = r.top;
+  restbar.classList.add("drag");
+}
+function restDragMove(y){
+  if(!restDrag.actif) return;
+  const dy = y - restDrag.y0;
+  if(Math.abs(dy) > 4) restDrag.bouge = true;
+  if(!restDrag.bouge) return;
+  const h = restbar.offsetHeight;
+  const top = Math.max(6, Math.min(window.innerHeight - h - 6, restDrag.top0 + dy));
+  restbar.style.top = top + "px";
+  restbar.style.bottom = "auto";
+}
+function restDragEnd(){
+  if(!restDrag.actif) return;
+  restDrag.actif = false;
+  restbar.classList.remove("drag");
+  if(!restDrag.bouge) return;
+  restDrag.tFin = Date.now();
+  restDrag.bouge = false;
+  const r = restbar.getBoundingClientRect();
+  const enHaut = (r.top + r.height/2) < window.innerHeight/2;
+  db.settings.restHaut = enHaut;
+  save();
+  restbar.style.top = ""; restbar.style.bottom = "";
+  placerRest();
+  if(navigator.vibrate) navigator.vibrate(12);
+}
+restbar.addEventListener("touchstart", e=>{ restDragStart(e.touches[0].clientY, e.target); }, {passive:true});
+restbar.addEventListener("touchmove", e=>{ if(restDrag.actif && restDrag.bouge) e.preventDefault(); restDragMove(e.touches[0].clientY); }, {passive:false});
+["touchend","touchcancel"].forEach(ev=>restbar.addEventListener(ev, restDragEnd));
+restbar.addEventListener("pointerdown", e=>{ if(e.pointerType==="touch") return; restDragStart(e.clientY, e.target); });
+window.addEventListener("pointermove", e=>{ if(restDrag.actif && e.pointerType!=="touch") restDragMove(e.clientY); });
+window.addEventListener("pointerup", e=>{ if(e.pointerType!=="touch") restDragEnd(); });
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && rest.int) tickRest(); });
 
 
@@ -2222,6 +2275,27 @@ function cardioKcal(km, min, pente, kg, courir){
   const vo2 = run ? 0.2*v + 0.9*v*g + 3.5 : 0.1*v + 1.8*v*g + 3.5;  /* ACSM, ml/kg/min */
   return vo2 * kg / 1000 * 5 * min;
 }
+/* Machines et activités. MET = coût énergétique (léger / modéré / intense), valeurs du Compendium. */
+const MACHINES = [
+  ["course",     "Marche / course", "🏃", null],
+  ["velo",       "Vélo",            "🚴", [4.0, 6.8, 10.0]],
+  ["rameur",     "Rameur",          "🚣", [4.8, 7.0, 10.0]],
+  ["elliptique", "Elliptique",      "⚡", [4.6, 5.5, 8.0]],
+  ["stepper",    "Stepper",         "🪜", [5.0, 7.0, 9.0]],
+  ["corde",      "Corde à sauter",  "🪢", [8.8, 11.8, 12.3]],
+  ["natation",   "Natation",        "🏊", [5.3, 7.0, 9.8]],
+  ["autre",      "Autre",           "💪", [4.0, 6.0, 8.0]]
+];
+const INTENSITES = [["leger","Léger"],["modere","Modéré"],["intense","Intense"]];
+function machineOf(c){ return MACHINES.find(m=>m[0]===(c && c.machine)) || MACHINES[0]; }
+function machineNom(c){ const m = machineOf(c); return m[2]+" "+m[1]; }
+/* kcal d'une machine : MET × 3,5 × poids / 200 × minutes */
+function metKcal(c, kg){
+  const m = machineOf(c);
+  if(!m[3] || !c.min) return 0;
+  const i = Math.max(0, INTENSITES.findIndex(x=>x[0]===(c.intensite||"modere")));
+  return m[3][i] * 3.5 * kg / 200 * c.min;
+}
 /* marche, course ou mixte : le choix de l'utilisateur prime, sinon on devine d'après l'allure */
 function cardioType(c){
   if(c && c.type) return c.type;
@@ -2247,6 +2321,7 @@ function sortieKcal(c, kg){
       return vo2 * kg / 1000 * 5 * c.min;
     }
   }
+  if(c.machine && c.machine !== "course") return metKcal(c, kg);
   const t = cardioType(c);
   if(t === "mixte" && c.runMin > 0 && c.runMin < c.min){
     /* on ne connaît que le temps couru : la distance se répartit au prorata des allures
@@ -2261,6 +2336,10 @@ function sortieKcal(c, kg){
 function sourceKcal(c){
   if(c.kcalM > 0) return "d'après ta montre";
   if(c.hr > 0) return "d'après ta FC moyenne";
+  if(c.machine && c.machine !== "course"){
+    const lab = (INTENSITES.find(x=>x[0]===(c.intensite||"modere"))||INTENSITES[1])[1].toLowerCase();
+    return `effort ${lab}`;
+  }
   return cardioType(c) === "mixte" ? "en séparant marche et course" : "";
 }
 function weekStartDate(){
@@ -2297,15 +2376,26 @@ function openCardioAdd(idExistant){
   openSheet(`<h3>${c? "Modifier la sortie" : "Ajouter une sortie"}</h3>
     ${c? `<div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${fmtDate(c.date)}</div>`:""}
     <div class="stack">
+      <div>
+        <span class="label" style="display:block; margin-bottom:5px;">Activité</span>
+        <div class="chips" style="gap:6px;">${MACHINES.map(([id,lab,ic])=>
+          `<button class="chip chip-sm" data-cmach="${id}">${ic} ${lab}</button>`).join("")}</div>
+      </div>
+      <div id="cd-intwrap" style="display:none;">
+        <span class="label" style="display:block; margin-bottom:5px;">Intensité</span>
+        <div class="chips" style="gap:6px;">${INTENSITES.map(([id,lab])=>
+          `<button class="chip chip-sm" data-cint="${id}">${lab}</button>`).join("")}</div>
+        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px;" id="cd-inthint"></div>
+      </div>
       <div class="row">
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Distance (km)</span>
+        <div class="grow" id="cd-kmwrap"><span class="label" style="display:block; margin-bottom:5px;">Distance (km)</span>
         <input type="number" inputmode="decimal" step="0.1" min="0" id="cd-km" placeholder="5" value="${c? c.km : ""}"></div>
         <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Durée (min)</span>
         <input type="number" inputmode="numeric" min="0" id="cd-min" placeholder="30" value="${c? Math.round(c.min) : ""}"></div>
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">Pente (%)</span>
+        <div class="grow" id="cd-pentewrap"><span class="label" style="display:block; margin-bottom:5px;">Pente (%)</span>
         <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="${(c && c.pente)? c.pente : ""}"></div>
       </div>
-      <div>
+      <div id="cd-typewrap">
         <span class="label" style="display:block; margin-bottom:5px;">C'était quoi ?</span>
         <div class="chips" style="gap:6px;">
           <button class="chip chip-sm" data-ctype="marche">🚶 Marche</button>
@@ -2333,6 +2423,26 @@ function openCardioAdd(idExistant){
     </div>`);
   const annul = document.getElementById("cd-cancel");
   if(annul) annul.onclick = openCardioList;
+  let cMach = (c && c.machine) || "course";
+  let cInt  = (c && c.intensite) || "modere";
+  const majMachine = ()=>{
+    const m = MACHINES.find(x=>x[0]===cMach) || MACHINES[0];
+    const machine = cMach !== "course";
+    document.querySelectorAll("[data-cmach]").forEach(b=>b.classList.toggle("on", b.dataset.cmach===cMach));
+    document.querySelectorAll("[data-cint]").forEach(b=>b.classList.toggle("on", b.dataset.cint===cInt));
+    document.getElementById("cd-intwrap").style.display = machine? "block":"none";
+    document.getElementById("cd-typewrap").style.display = machine? "none":"block";
+    document.getElementById("cd-pentewrap").style.display = machine? "none":"block";
+    document.getElementById("cd-kmwrap").style.display = (cMach==="rameur"||cMach==="natation"||cMach==="corde"||cMach==="autre")? "none":"block";
+    const h = document.getElementById("cd-inthint");
+    if(machine && m[3]){
+      const kg = currentWeight() || 75;
+      const i = Math.max(0, INTENSITES.findIndex(x=>x[0]===cInt));
+      h.textContent = `≈ ${Math.round(m[3][i]*3.5*kg/200)} kcal par minute pour toi.`;
+    }
+  };
+  document.querySelectorAll("[data-cmach]").forEach(b=>b.onclick=()=>{ cMach = b.dataset.cmach; majMachine(); });
+  document.querySelectorAll("[data-cint]").forEach(b=>b.onclick=()=>{ cInt = b.dataset.cint; majMachine(); });
   let cType = c ? cardioType(c) : null;      /* null = pas encore choisi : on devine d'après l'allure */
   const kmEl = document.getElementById("cd-km"), minEl = document.getElementById("cd-min");
   const majType = ()=>{
@@ -2348,17 +2458,19 @@ function openCardioAdd(idExistant){
   };
   document.querySelectorAll("[data-ctype]").forEach(b=>b.onclick=()=>{ cType = b.dataset.ctype; majType(); });
   kmEl.oninput = majType; minEl.oninput = majType;
-  majType();
+  majType(); majMachine();
   if(c && (c.hr || c.kcalM)) document.getElementById("cd-watch").style.display = "block";
   document.getElementById("cd-more").onclick = ()=>{
     const w = document.getElementById("cd-watch");
     w.style.display = w.style.display==="none" ? "block" : "none";
   };
   document.getElementById("cd-ok").onclick=()=>{
-    const km = parseFloat(document.getElementById("cd-km").value);
+    const machine = cMach !== "course";
+    const km = parseFloat(document.getElementById("cd-km").value) || 0;
     const min = parseFloat(document.getElementById("cd-min").value);
-    const pente = parseFloat(document.getElementById("cd-pente").value)||0;
-    if(!km || !min){ toast("Indique la distance et la durée"); return; }
+    const pente = machine? 0 : (parseFloat(document.getElementById("cd-pente").value)||0);
+    if(!min){ toast("Indique la durée"); return; }
+    if(!machine && !km){ toast("Indique la distance et la durée"); return; }
     const type = cType || ((km/(min/60) >= 7) ? "course" : "marche");
     let runMin = parseFloat(document.getElementById("cd-runmin").value)||0;
     if(type!=="mixte") runMin = 0;
@@ -2367,10 +2479,11 @@ function openCardioAdd(idExistant){
     const kcalM = parseFloat(document.getElementById("cd-kcalm").value)||0;
     if(c){
       c.km = km; c.min = min; c.pente = pente; c.type = type; c.runMin = runMin; c.hr = hr; c.kcalM = kcalM;
+      c.machine = cMach; c.intensite = cInt;
       save(); openCardioList(); toast("Sortie modifiée ✓");
       return;
     }
-    const sortie = {id:uid(), date:new Date().toISOString(), km, min, pente, type, runMin, hr, kcalM};
+    const sortie = {id:uid(), date:new Date().toISOString(), km, min, pente, type, runMin, hr, kcalM, machine:cMach, intensite:cInt};
     db.cardio.push(sortie);
     save();
     const kg = currentWeight() || 75;
@@ -2378,7 +2491,10 @@ function openCardioAdd(idExistant){
     const vkmh = Math.round(km/(min/60)*10)/10;
     const src = sourceKcal(sortie);
     openSheet(`<h3>Belle sortie ! 🎉</h3>
-      <p style="margin:0 0 14px; font-size:14.5px; color:var(--ink-soft);">Tu as ${CARDIO_VERBE[type]} <b style="color:var(--ink);">${fmtKg(km)} km</b> en ${Math.round(min)} min${type==="mixte"? ` dont ${Math.round(runMin)} min de course` : ` à ${vkmh.toLocaleString("fr-FR")} km/h`}${pente?` avec ${pente.toLocaleString("fr-FR")} % de pente`:""}, soit environ <b style="color:var(--accent);">${kcal} kcal</b> brûlées${src? ` (${src})`:""}${kcalEquiv(kcal)}.</p>
+      <p style="margin:0 0 14px; font-size:14.5px; color:var(--ink-soft);">${machine
+        ? `<b style="color:var(--ink);">${esc(machineNom(sortie))}</b> pendant ${Math.round(min)} min${km? ` (${fmtKg(km)} km)`:""}`
+        : `Tu as ${CARDIO_VERBE[type]} <b style="color:var(--ink);">${fmtKg(km)} km</b> en ${Math.round(min)} min${type==="mixte"? ` dont ${Math.round(runMin)} min de course` : ` à ${vkmh.toLocaleString("fr-FR")} km/h`}${pente?` avec ${pente.toLocaleString("fr-FR")} % de pente`:""}`
+      }, soit environ <b style="color:var(--accent);">${kcal} kcal</b> brûlées${src? ` (${src})`:""}${kcalEquiv(kcal)}.</p>
       <button class="btn btn-accent" id="cd-close" style="width:100%;">Continuer</button>`);
     document.getElementById("cd-close").onclick=()=>{ closeSheet(); render(); };
   };
@@ -2389,10 +2505,15 @@ function openCardioList(){
   openSheet(`<h3>Mes sorties</h3>
     <div id="cd-list" style="max-height:60dvh; overflow-y:auto;">${
       list.length? list.map(c=>{
-        const vkmh = Math.round(c.km/(c.min/60)*10)/10;
+        const vkmh = c.km? Math.round(c.km/(c.min/60)*10)/10 : 0;
+        const machine = c.machine && c.machine !== "course";
         return `<div class="pick-row"><div class="grow">
-          <div>${fmtKg(c.km)} km · ${Math.round(c.min)} min · ${vkmh.toLocaleString("fr-FR")} km/h${c.pente?` · ${c.pente.toLocaleString("fr-FR")} %`:""}</div>
-          <div class="eq" style="text-transform:capitalize;">${fmtDate(c.date)} · ${CARDIO_NOM[cardioType(c)]} · ≈ ${Math.round(sortieKcal(c,kg))} kcal</div></div>
+          <div>${machine
+            ? `${esc(machineNom(c))} · ${Math.round(c.min)} min${c.km? ` · ${fmtKg(c.km)} km`:""}`
+            : `${fmtKg(c.km)} km · ${Math.round(c.min)} min · ${vkmh.toLocaleString("fr-FR")} km/h${c.pente?` · ${c.pente.toLocaleString("fr-FR")} %`:""}`}</div>
+          <div class="eq" style="text-transform:capitalize;">${fmtDate(c.date)} · ${machine
+            ? (INTENSITES.find(x=>x[0]===(c.intensite||"modere"))||INTENSITES[1])[1]
+            : CARDIO_NOM[cardioType(c)]} · ≈ ${Math.round(sortieKcal(c,kg))} kcal</div></div>
           <button class="icon-btn" data-cedit="${c.id}" style="width:32px; height:32px;">✎</button>
           <button class="icon-btn" data-cdel="${c.id}" style="color:var(--bad); width:32px; height:32px;">✕</button></div>`;
       }).join("") : `<div class="empty">Aucune sortie enregistrée.</div>`
