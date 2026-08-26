@@ -298,6 +298,11 @@
   .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
   .rir-ask .q.ok{margin:0; color:var(--accent);}
   .rir-ask .row button{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 0; font-weight:700; font-size:14px;}
+  .icon-btn.inj-btn{color:var(--bad); font-size:15px;}
+  .icon-btn svg{width:17px; height:17px;}
+  .chrono.pause{opacity:.5;}
+  .chrono::after{content:"";}
+  .hist-ex-line{font-size:13.5px; color:var(--ink-soft); line-height:1.6;}
   .set-row.drop{margin-top:-3px;}
   .set-row.drop .n{font-size:14px; color:var(--accent); text-align:right;}
   .set-row.drop input{padding:6px 6px; font-size:13.5px; background:var(--surface2);}
@@ -1916,6 +1921,7 @@ const ICONS = {
   prg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M7 15l3.5-4 2.5 2.5L17 9"/></svg>'
 };
 const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]];
+const IC_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
 const ICON_SAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>';
 function backupStale(){ return !isEmptyDb(db) && (!db.lastBackup || Date.now()-db.lastBackup > 7*864e5); }
 const IC_USER = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.6 20c.6-4 3.7-6 7.4-6s6.8 2 7.4 6z"/></svg>';
@@ -3294,6 +3300,75 @@ function startWorkout(tplId){
   save(); render();
 }
 
+/* durée réellement écoulée, pauses déduites */
+function dureeSeance2(a){
+  const fin = a.pauseAt || Date.now();
+  return Math.max(0, fin - a.start - (a.pauseTotal||0));
+}
+function basculerChrono(a){
+  if(a.pauseAt){
+    a.pauseTotal = (a.pauseTotal||0) + (Date.now() - a.pauseAt);
+    a.pauseAt = null;
+    toast("Chrono relancé");
+  } else {
+    a.pauseAt = Date.now();
+    toast("Chrono en pause");
+  }
+  save();
+}
+/* toute validation de série relance le chrono : on n'oublie pas de le remettre en marche */
+function reprendreChrono(a){
+  if(a && a.pauseAt){
+    a.pauseTotal = (a.pauseTotal||0) + (Date.now() - a.pauseAt);
+    a.pauseAt = null;
+    save();
+  }
+}
+/* ce qu'il faut savoir avant d'attaquer l'exercice : la dernière fois, l'objectif, la charge du jour */
+function openHistoExo(ei){
+  const a = db.active; if(!a) return;
+  const en = a.entries[ei], ex = getEx(en.exId);
+  const last = lastPerf(en.exId);
+  const sug = suggestFor(en.exId, en.target);
+  const prochain = en.sets.find(x=>!x.done && !x.warm) || en.sets.find(x=>!x.warm);
+  openSheet(`<h3>${esc(ex.name)}</h3>
+    <div class="stack" style="gap:12px;">
+      <div>
+        <span class="label" style="display:block; margin-bottom:4px;">La dernière fois</span>
+        <div class="hist-ex-line">${last
+          ? `<b style="color:var(--ink);">${fmtDateShort(last.date)}</b> — ${last.sets.map(x=>`${fmtKg(x.w)}×${x.r}`).join(" · ")}`
+          : "Premier passage sur cet exercice."}</div>
+      </div>
+      ${en.target && en.target.reps? `<div>
+        <span class="label" style="display:block; margin-bottom:4px;">Objectif du jour</span>
+        <div class="hist-ex-line">${en.target.sets} séries de ${esc(String(en.target.reps))} répétitions</div></div>`:""}
+      <div>
+        <span class="label" style="display:block; margin-bottom:4px;">À faire maintenant</span>
+        <div class="hist-ex-line" style="color:var(--accent); font-weight:700; font-size:15px;">${
+          prochain && prochain.w ? `${fmtKg(prochain.w)} kg${prochain.r? ` × ${prochain.r} reps`:""}` : "À toi de choisir la charge"}</div>
+        ${sug? `<div class="hist-ex-line" style="margin-top:4px;">${esc(sug.text)}</div>`:""}
+      </div>
+      <button class="btn btn-accent" id="hx-ok">Compris</button>
+    </div>`);
+  document.getElementById("hx-ok").onclick = closeSheet;
+}
+/* le conseil de prudence, et le remplacement en un geste */
+function openBlessureExo(ei){
+  const a = db.active; if(!a) return;
+  const en = a.entries[ei], ex = getEx(en.exId);
+  const note = injuryNote(ex.name);
+  if(!note) return;
+  openSheet(`<h3>${esc(ex.name)}</h3>
+    <div class="inj-note" style="margin:0 0 14px;">
+      <b style="color:var(--bad);">⚠️ ${esc(note.injury)} sensible</b><br>${esc(note.tip)}</div>
+    <div class="stack">
+      ${note.alts.length? `<button class="btn btn-accent" id="bl-swap">Remplacer par un autre exercice</button>`:""}
+      <button class="btn btn-ghost" id="bl-ok">Je continue avec celui-ci</button>
+    </div>`);
+  const sw = document.getElementById("bl-swap");
+  if(sw) sw.onclick = ()=>openSwap(ei, true);
+  document.getElementById("bl-ok").onclick = closeSheet;
+}
 function renderActive(app){
   const a = db.active;
   app.innerHTML = `
@@ -3309,8 +3384,15 @@ function renderActive(app){
       <button class="btn btn-accent grow" id="finish-w">Terminer la séance</button>
     </div>`;
 
-  const tick=()=>{ const el=document.getElementById("chrono"); if(el) el.textContent = mmss((Date.now()-a.start)/1000); };
+  /* le chrono se met en pause d'un appui ; cocher une série le relance */
+  const tick=()=>{
+    const el=document.getElementById("chrono"); if(!el) return;
+    el.textContent = mmss(dureeSeance2(a)/1000);
+    el.classList.toggle("pause", !!a.pauseAt);
+  };
   tick(); chronoInt = setInterval(tick, 1000);
+  const chr = document.getElementById("chrono");
+  if(chr) chr.onclick = ()=>{ basculerChrono(a); tick(); };
 
   const list = document.getElementById("ex-list");
   list.innerHTML = a.entries.length ? "" : `<div class="card empty">Ajoute un premier exercice pour commencer.</div>`;
@@ -3320,18 +3402,17 @@ function renderActive(app){
     const lastTxt = last ? `Dernière fois (${fmtDateShort(last.date)}) : ${last.sets.map(s=>`${fmtKg(s.w)}×${s.r}`).join(" · ")}` : "Premier passage sur cet exercice";
     const target = en.target && en.target.reps ? ` · Objectif ${en.target.sets} × ${esc(String(en.target.reps))}` : "";
     const sug = suggestFor(en.exId, en.target);
-    const sugLine = sug ? `<div class="hint" style="color:var(--accent);">→ ${esc(sug.text)}</div>` : "";
+
     const note = injuryNote(ex.name);
-    const noteLine = note ? `<div class="inj-note">⚠️ <b>${esc(note.injury)} sensible.</b> ${esc(note.tip)}${note.alts.length? ` <button class="inj-swap" data-injswap="${ei}">Voir les variantes</button>`:""}</div>` : "";
     const card = document.createElement("div");
     card.className="ex-card";
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
-        <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="Fiche de l'exercice">ⓘ</button>
-        <span class="pill">${esc(ex.equip||ex.muscle)}</span></div>
-      <div style="margin-bottom:8px;">${musclesHtml(ex.name)}</div>
-      <div class="hint" style="margin-bottom:${sug?'2px':'10px'};">${lastTxt}${target}</div>${sugLine}${noteLine}
+        <button class="icon-btn info-btn" data-hist-ex="${ei}" title="Dernière fois et charge du jour">${IC_LISTE}</button>
+        ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
+        <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="Fiche de l'exercice">ⓘ</button></div>
+      <div style="margin-bottom:10px;">${musclesHtml(ex.name)}</div>
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)" : (facteurCharge(en.exId)===2? "kg / haltère" : "kg")}</span><span>reps</span><span>dég.</span><span>✓</span></div>
       <div class="sets"></div>
@@ -3369,6 +3450,7 @@ function renderActive(app){
       rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); save(); };
       row.querySelector(".ck").onclick=()=>{
         ensureAudio();
+        reprendreChrono(a);
         st.w = parseFloat(wIn.value)||0; st.r = parseInt(rIn.value)||0;
         st.done = !st.done;
         if(!st.done) delete st.rir;
@@ -3521,9 +3603,11 @@ function renderActive(app){
     };
     wireHints(card);
     card.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
+    const hx = card.querySelector("[data-hist-ex]");
+    if(hx) hx.onclick = (e)=>{ e.stopPropagation(); openHistoExo(parseInt(hx.dataset.histEx)); };
+    const bl = card.querySelector("[data-injinfo]");
+    if(bl) bl.onclick = (e)=>{ e.stopPropagation(); openBlessureExo(parseInt(bl.dataset.injinfo)); };
     card.querySelector('[data-act="swap"]').onclick=()=>openSwap(ei);
-    const injBtn = card.querySelector("[data-injswap]");
-    if(injBtn) injBtn.onclick=()=>openSwap(ei, true);
     card.querySelector('[data-act="delex"]').onclick=()=>{
       askConfirm("Retirer l'exercice ?", ex.name+" sera retiré de cette séance (les autres exercices sont conservés).", "Retirer", true, ()=>{
         a.entries.splice(ei,1); save(); render();
@@ -3543,11 +3627,11 @@ function renderActive(app){
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm("Aucune série validée","Valide au moins une série (bouton ○) avant de terminer, ou annule la séance.","OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
-    const kcal = liftKcal(Date.now()-a.start, vol, doneSets);
+    const kcal = liftKcal(dureeSeance2(a), vol, doneSets);
     askConfirm("Terminer la séance ?", `${doneSets} séries validées · ${fmtKg(vol)} kg soulevés · environ ${kcal} kcal brûlées. On enregistre ?`, "Enregistrer", false, ()=>{
       db.history.push({
         id:uid(), date:new Date().toISOString(), name:a.name, templateId:a.templateId,
-        start:a.start, end:Date.now(),
+        start:a.start, end:a.start + dureeSeance2(a),
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length)
       });
       db.active=null; save(); render();
