@@ -61,7 +61,7 @@
 
   .label{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-mute);}
   .section-t i{font-style:normal; font-size:13px; margin-right:6px; vertical-align:-1px;}
-  .section-t{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-mute); margin:26px 0 10px;}
+  .section-t{font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin:26px 0 10px;}
 
   .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
   .stack{display:flex; flex-direction:column; gap:10px;}
@@ -115,9 +115,11 @@
   .hero{position:relative; color:var(--hero-ink);
     margin:calc(-16px - env(safe-area-inset-top)) -16px 0;}
   .hero-bg{display:block; width:100%; height:auto;}
-  :root[data-theme="dark"] .hero-bg{filter:brightness(2.3);}   /* la forme reste lisible sur fond noir */
   .hero-in{position:absolute; inset:0; padding:calc(14px + env(safe-area-inset-top)) 18px 0;
     display:flex; flex-direction:column;}
+  /* tout ce qui suit le bandeau se dessine par-dessus lui */
+  #app > *{position:relative; z-index:2;}
+  #app > .hero{z-index:1;}
   .hero-top{display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2;}
   .hero-ic{width:31px; height:31px; border-radius:50%; background:#fff; color:#1b1b1d;
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
@@ -149,7 +151,7 @@
   /* ---- carrousel de séances ---- */
   .car{--cardw:min(63vw, 320px);
     display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory;
-    margin:0 -16px; padding:14px calc((100% - var(--cardw))/2) 10px; -webkit-overflow-scrolling:touch;}
+    margin:0 -16px -14px; padding:16px calc((100% - var(--cardw))/2) 34px; -webkit-overflow-scrolling:touch;}
   .car::-webkit-scrollbar{display:none;}
   .prog-slot{position:relative; flex:0 0 var(--cardw); scroll-snap-align:center; padding-top:13px;
     transform:scale(.86); transform-origin:center 62%; opacity:.72; transition:transform .08s linear, opacity .08s linear;}
@@ -162,11 +164,12 @@
     background:linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.82) 100%);}
   .prog-card .in{position:absolute; inset:0; padding:12px; display:flex; flex-direction:column; justify-content:flex-end;}
   .prog-card .nm{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1;}
-  .prog-card .ex{font-size:10.5px; line-height:1.5; color:rgba(255,255,255,.88); margin-top:5px;}
+  .prog-card .ex{font-size:12px; font-weight:600; line-height:1.45; color:rgba(255,255,255,.92); margin-top:6px;}
   .prog-card .dur{position:absolute; top:10px; right:10px; z-index:2; background:rgba(255,255,255,.92);
     color:#1b1b1d; font-size:11px; font-weight:800; border-radius:99px; padding:3px 9px;}
-  .prog-card .pen{position:absolute; bottom:10px; right:10px; z-index:2; width:26px; height:26px;
-    border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; font-size:13px;}
+  .prog-card .pen{position:absolute; bottom:10px; right:10px; z-index:2; width:30px; height:30px;
+    border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; padding:0;}
+  .prog-card .pen img{width:17px; height:17px; display:block;}
   .prog-slot .sug{position:absolute; top:0; left:50%; transform:translateX(-50%); z-index:4;
     background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:800;
     border-radius:99px; padding:3px 11px; white-space:nowrap;}
@@ -191,7 +194,7 @@
     background:rgba(255,255,255,.9); color:#1b1b1d; font-size:9.5px; font-weight:800;
     border-radius:99px; padding:2px 7px; white-space:nowrap;}
   .hist-c .nm{font-size:15px; font-weight:800; line-height:1.1;}
-  .hist-c .st{font-size:9px; line-height:1.45; color:rgba(255,255,255,.85); margin-top:2px;}
+  .hist-c .st{font-size:10px; font-weight:600; line-height:1.4; color:rgba(255,255,255,.9); margin-top:3px;}
 
   /* ---- alimentation : jauges, onglets de repas, pastilles ---- */
   .eat-card{background:var(--surface); border-radius:16px; padding:13px 15px 15px; box-shadow:0 6px 22px rgba(0,0,0,.16);}
@@ -2824,7 +2827,7 @@ function renderSeance(app){
             <div class="nm">${esc(t.name)}</div>
             <div class="ex">${liste || "Aucun exercice"}</div>
           </div>
-          <button class="pen" data-edit="${t.id}" aria-label="Modifier">✎</button>
+          <button class="pen" data-edit="${t.id}" aria-label="Modifier"><img src="img/modif.png" alt=""></button>
         </div>
       </div>`;
     }).join("");
@@ -3457,7 +3460,11 @@ function openSettings(){
       <input type="number" inputmode="numeric" step="15" min="0" id="st-rest" value="${db.settings.rest}"></div>
       <div><span class="label" style="display:block; margin-bottom:5px;">Objectif de poids (kg)</span>
       <input type="number" inputmode="decimal" step="0.5" min="0" id="st-goal" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80"></div>
-      <div class="section-t" style="margin-top:6px;">Sauvegarde</div>
+      <button class="btn" id="st-bk-toggle" style="margin-top:4px;">
+        <span class="grow" style="text-align:left;">Détails de sauvegarde</span>
+        <span id="st-bk-caret" style="font-weight:800; color:var(--accent);">▸</span>
+      </button>
+      <div id="st-backup" class="stack" style="display:none;">
       <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.</p>
       <div id="st-auto"></div>
       <button class="btn" id="st-file">💾 Enregistrer un fichier</button>
@@ -3468,8 +3475,15 @@ function openSettings(){
       <div class="section-t" style="margin-top:6px;">État de la sauvegarde</div>
       <div id="st-diag" style="font-size:13px; line-height:1.9;"></div>
       <button class="btn btn-danger" id="st-reset">Tout effacer</button>
+      </div>
       <button class="btn btn-accent" id="st-ok">Fermer</button>
     </div>`);
+  document.getElementById("st-bk-toggle").onclick = ()=>{
+    const z = document.getElementById("st-backup");
+    const ouvert = z.style.display !== "none";
+    z.style.display = ouvert ? "none" : "flex";
+    document.getElementById("st-bk-caret").textContent = ouvert ? "▸" : "▾";
+  };
   /* enregistrement au fil de la saisie : rien n'est perdu si la fiche est fermée d'un geste */
   const applySettings = ()=>{
     const el = id => document.getElementById(id);
@@ -3738,8 +3752,9 @@ function renderProgress(app){
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    ${hero(`<div class="big">Progression</div>`)}
-    <div class="under-hero" style="height:14px;"></div>
+    <div class="topbar" style="margin-bottom:10px;">
+      <div style="font-size:22px; font-weight:800;">Progression</div>
+      <button class="icon-btn" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button></div>
     <div class="date-line">Progression</div>
     <div id="wt-sec"></div>
     <div class="section-t"><i>📈</i>Par exercice</div>
