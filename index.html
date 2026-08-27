@@ -306,6 +306,8 @@
   .chrono.pause{opacity:.5;}
   .chrono::after{content:"";}
   .hist-ex-line{font-size:13.5px; color:var(--ink-soft); line-height:1.6;}
+  .rir-lourd{display:block; width:100%; margin-top:7px; padding:9px; border-radius:10px;
+    border:1px dashed var(--border); background:none; color:var(--ink-mute); font-size:12.5px; font-weight:700;}
   .set-row.drop{margin-top:-3px;}
   .set-row.drop .n{font-size:14px; color:var(--accent); text-align:right;}
   .set-row.drop input{padding:6px 6px; font-size:13.5px; background:var(--surface2);}
@@ -1764,6 +1766,7 @@ function applyDefaults(){
     db.mealsV2 = 1;
   }
   if(!db.plafond) db.plafond = {};     /* exercices où la charge ne peut plus monter */
+  if(!db.unilat) db.unilat = {};       /* exercices faits un bras / une jambe à la fois */
   if(!db.hbPerso) db.hbPerso = {};     /* aliments ajoutés aux propositions, par type de repas */
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "clair";
@@ -1921,6 +1924,8 @@ function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+Strin
 /* avec deux haltères, la charge saisie est celle d'UN haltère : le tonnage compte les deux */
 function facteurCharge(exId){
   const ex = getEx(exId);
+  /* unilatéral : la charge saisie est celle d'un côté, on compte les deux */
+  if(db.unilat && db.unilat[exId]) return 2;
   return (ex && ex.equip==="Haltères" && !/haltère$|nuque/i.test(ex.name)) ? 2 : 1;
 }
 function sessionVolume(sess){
@@ -3498,6 +3503,11 @@ function openHistoExo(ei){
         <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je n'ai pas de charge plus lourde<br>
           <span style="font-size:11.5px; color:var(--ink-mute);">Je progresse alors en répétitions, en séries, puis en variante plus difficile.</span></span>
       </label>
+      <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
+        <input type="checkbox" id="hx-unilat" ${db.unilat[en.exId]?"checked":""} style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
+        <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je le fais un côté à la fois<br>
+          <span style="font-size:11.5px; color:var(--ink-mute);">La charge saisie est celle d'un bras ou d'une jambe : le tonnage et le profil musculaire comptent les deux côtés.</span></span>
+      </label>
       <button class="btn btn-accent" id="hx-ok">Compris</button>
     </div>`);
   document.getElementById("hx-plafond").onchange = e=>{
@@ -3505,6 +3515,10 @@ function openHistoExo(ei){
     const auto = estPoidsDuCorps(ex);
     if(bloque){ db.plafond[en.exId] = true; delete db.plafond["libre:"+en.exId]; }
     else { delete db.plafond[en.exId]; if(auto) db.plafond["libre:"+en.exId] = true; }
+    save();
+  };
+  document.getElementById("hx-unilat").onchange = e=>{
+    if(e.target.checked) db.unilat[en.exId] = true; else delete db.unilat[en.exId];
     save();
   };
   document.getElementById("hx-ok").onclick = ()=>{ closeSheet(); renderSurPlace(); };
@@ -3571,7 +3585,8 @@ function renderActive(app){
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="Fiche de l'exercice">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(ex.name)}</div>
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
-      <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)" : (facteurCharge(en.exId)===2? "kg / haltère" : "kg")}</span><span>reps</span><span>dég.</span><span>✓</span></div>
+      <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)"
+        : (db.unilat[en.exId]? "kg / bras" : (facteurCharge(en.exId)===2? "kg / haltère" : "kg"))}</span><span>reps</span><span>dég.</span><span>✓</span></div>
       <div class="sets"></div>
       ${hintBox("degressif","<b>Dégressif ?</b> Le bouton <b>↓</b> d'une série ajoute une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté. Appui long sur la ligne pour supprimer la série.")}
       <div class="row">
@@ -3636,14 +3651,15 @@ function renderActive(app){
               <button data-rir="0">Non, 0</button>
               <button data-rir="1">1-2</button>
               <button data-rir="3">3-5+</button>
-            </div>`;
+            </div>
+            <button class="rir-lourd" data-rir="-1">C'était trop lourd — baisse la charge</button>`;
           /* la question se place sous la série, dégressifs compris */
           let ancre = row, nx = row.nextElementSibling;
           while(nx && nx.classList.contains("drop")){ ancre = nx; nx = nx.nextElementSibling; }
           ancre.after(ask);
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
-            st.rir = rir;
+            st.rir = rir < 0 ? 0 : rir;        /* « trop lourd » = tu étais à bout : 0 rep en réserve */
             if(!dejaVu("rir")) marquerVu("rir");
             const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
             const next = en.sets.find(s=>!s.done && !s.warm);   /* jamais l'échauffement */
@@ -3661,7 +3677,19 @@ function renderActive(app){
             };
             const sansCharge = chargeBloquee(en.exId);
             let msg;
-            if(rir>=3){
+            if(rir === -1){
+              /* demande explicite : on descend franchement, pas d'un cran symbolique */
+              if(sansCharge){
+                const nr = Math.max(1, Math.round((st.r||0)*0.8));
+                msg = `Trop lourd — vise ${nr} reps sur les séries suivantes.`;
+                if(next) appliquerSuite("r", nr);
+              } else {
+                const bas = Math.max(0, Math.round(((st.w||0) - Math.max(inc, (st.w||0)*0.08))*2)/2);
+                msg = next ? `Trop lourd — séries suivantes à ${fmtKg(bas)} kg.`
+                            : `Trop lourd — repars de ${fmtKg(bas)} kg à la prochaine séance.`;
+                if(next) appliquerSuite("w", bas);
+              }
+            } else if(rir>=3){
               if(sansCharge){
                 const pr = progressionSansCharge(en.exId, st.r||0, en.sets.filter(x=>!x.warm).length);
                 msg = `Trop léger — ${pr.text.charAt(0).toLowerCase()}${pr.text.slice(1)}`;
@@ -4752,7 +4780,9 @@ function muscleProfile(){
     const ref = STRENGTH_REF[ex.name];
     const sets = workSets(en);
     if(!ref || !sets.length) return;
-    const best = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
+    /* un exercice fait bras par bras : la charge d'un côté vaut le double en équivalent bilatéral */
+    const f = db.unilat && db.unilat[en.exId] ? 2 : 1;
+    const best = Math.max(...sets.map(st=>e1rm((st.w||0)*f, st.r||0)));
     if(best<=0) return;
     (byEx[en.exId] = byEx[en.exId] || {nom:ex.name, ref, vals:[]}).vals.push(best);
   }));
@@ -4775,13 +4805,29 @@ function muscleProfile(){
   });
   return out;
 }
-function mpStatus(score){
+/* moyenne de tes propres scores : c'est elle qui sert de référence, pas un barème absolu */
+function mpMoyenne(prof){
+  const vals = MP_MUSCLES.map(m=>prof[m]).filter(v=>v!==null);
+  if(vals.length < 3) return null;                 /* trop peu de groupes pour se comparer à soi-même */
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+/* score : ton niveau sur ce groupe. moy : ta moyenne. On compare l'écart en points de pourcentage. */
+function mpStatus(score, moy){
   if(score===null) return {tag:"Pas encore assez de données", color:"#3b352c", op:1, nodata:true};
-  if(score>=115) return {tag:"Point fort", color:"var(--good)", op:1};
-  if(score>=105) return {tag:"Point fort léger", color:"var(--good)", op:.7};
-  if(score>=95)  return {tag:"Équilibré", color:"#b9a97f", op:1};
-  if(score>=85)  return {tag:"Point faible léger", color:"var(--bad)", op:.7};
-  return {tag:"Point faible", color:"var(--bad)", op:1};
+  if(moy === null || moy <= 0){
+    /* pas encore de quoi comparer : on retombe sur le barème absolu */
+    if(score>=115) return {tag:"Point fort", color:"var(--good)", op:1};
+    if(score>=105) return {tag:"Point fort léger", color:"var(--good)", op:.7};
+    if(score>=95)  return {tag:"Équilibré", color:"#b9a97f", op:1};
+    if(score>=85)  return {tag:"Point faible léger", color:"var(--bad)", op:.7};
+    return {tag:"Point faible", color:"var(--bad)", op:1};
+  }
+  const ecart = (score - moy) / moy * 100;          /* en % de ta moyenne */
+  if(ecart >= 15) return {tag:"Point fort", color:"var(--good)", op:1, ecart};
+  if(ecart >= 6)  return {tag:"Point fort léger", color:"var(--good)", op:.7, ecart};
+  if(ecart > -6)  return {tag:"Équilibré", color:"#b9a97f", op:1, ecart};
+  if(ecart > -15) return {tag:"Point faible léger", color:"var(--bad)", op:.7, ecart};
+  return {tag:"Point faible", color:"var(--bad)", op:1, ecart};
 }
 /* Illustrations anatomiques : Termininja — Wikimedia Commons, CC BY-SA 3.0 (converties en PNG, désaturées) */
 /* Les silhouettes sont dessinées par les masques de img/muscles/ : plus d'images en base64. */
@@ -4930,20 +4976,24 @@ function analyseProfil(prof){
 function renderMuscleSection(sec){
   if(!db.history.length) return;
   const prof = muscleProfile();
-  const st = {}; MP_MUSCLES.forEach(m=>st[m]=mpStatus(prof[m]));
+  const moy = mpMoyenne(prof);
+  const st = {}; MP_MUSCLES.forEach(m=>st[m]=mpStatus(prof[m], moy));
   const rows = MP_MUSCLES.map(m=>{
     const s = st[m], score = prof[m];
     return `<div class="mp-row">
       <div class="mp-head"><span class="mp-name">${m}</span><span class="mp-tag" style="color:${s.nodata?'var(--ink-mute)':s.color};">${s.nodata?"":s.tag}</span></div>
       <div class="mp-bar">${s.nodata
         ? `<div class="mp-nodata">Pas encore assez de données</div>`
-        : `<div class="mp-fill" style="width:${Math.max(14,Math.min(100,score/1.3))}%; background:${s.color}; opacity:${s.op};">${score}</div>`}</div>
+        : `<div class="mp-fill" style="width:${moy? Math.max(14, Math.min(100, 50 + (score-moy)/moy*160)) : Math.max(14,Math.min(100,score/1.3))}%; background:${s.color}; opacity:${s.op};">${
+             moy? ((score>=moy?"+":"−") + Math.abs(Math.round((score-moy)/moy*100)) + " %") : score}</div>`}</div>
     </div>`;
   }).join("");
   const div = document.createElement("div");
   div.innerHTML = `<div class="section-t"><i>💪</i>Profil musculaire</div>
     <div class="card">
-      <p style="margin:0 0 4px; font-size:13px; color:var(--ink-soft);">Tes points forts (<b style="color:var(--good);">vert</b>), points faibles (<b style="color:var(--bad);">rouge</b>) et muscles équilibrés (<b style="color:#b9a97f;">beige</b>), d'après tes 1RM estimés rapportés à ton poids de corps.</p>
+      <p style="margin:0 0 4px; font-size:13px; color:var(--ink-soft);">${moy
+        ? `Chaque groupe est comparé à <b>ta propre moyenne</b> : un point faible est un muscle en retard <b>sur toi-même</b>, pas sur un barème. Écart affiché en % de ta moyenne.`
+        : `Comparaison à un barème lié à ton poids de corps. Dès que trois groupes auront assez de données, l'app te comparera à ta propre moyenne.`}</p>
       <div class="mp-bodies">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
       ${rows}
       ${analyseProfil(prof) || ""}
