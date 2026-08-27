@@ -1922,11 +1922,17 @@ function fmtDateShort(iso){ return new Date(iso).toLocaleDateString("fr-FR",{day
 function fmtDur(ms){ const m=Math.round(ms/60000); return m<60? m+" min" : Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"); }
 function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
 /* avec deux haltères, la charge saisie est celle d'UN haltère : le tonnage compte les deux */
-function facteurCharge(exId){
+/* vrai quand la charge saisie est déjà celle d'un seul côté par nature :
+   deux haltères = l'app compte déjà les deux. L'option « un côté à la fois » n'a alors aucun sens. */
+function dejaParCote(exId){
   const ex = getEx(exId);
+  return !!(ex && ex.equip==="Haltères" && !/haltère$|nuque/i.test(ex.name));
+}
+function facteurCharge(exId){
+  if(dejaParCote(exId)) return 2;
   /* unilatéral : la charge saisie est celle d'un côté, on compte les deux */
   if(db.unilat && db.unilat[exId]) return 2;
-  return (ex && ex.equip==="Haltères" && !/haltère$|nuque/i.test(ex.name)) ? 2 : 1;
+  return 1;
 }
 function sessionVolume(sess){
   let v=0;
@@ -3503,11 +3509,14 @@ function openHistoExo(ei){
         <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je n'ai pas de charge plus lourde<br>
           <span style="font-size:11.5px; color:var(--ink-mute);">Je progresse alors en répétitions, en séries, puis en variante plus difficile.</span></span>
       </label>
-      <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
-        <input type="checkbox" id="hx-unilat" ${db.unilat[en.exId]?"checked":""} style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
-        <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je le fais un côté à la fois<br>
-          <span style="font-size:11.5px; color:var(--ink-mute);">La charge saisie est celle d'un bras ou d'une jambe : le tonnage et le profil musculaire comptent les deux côtés.</span></span>
-      </label>
+      ${dejaParCote(en.exId)
+        ? `<div style="font-size:11.5px; color:var(--ink-mute); line-height:1.45; padding-left:2px;">
+             Deux haltères : tu saisis la charge <b>d'un seul haltère</b>, l'app compte déjà les deux côtés.</div>`
+        : `<label class="row" style="gap:9px; align-items:center; cursor:pointer;">
+             <input type="checkbox" id="hx-unilat" ${db.unilat[en.exId]?"checked":""} style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
+             <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je le fais un bras (ou une jambe) à la fois<br>
+               <span style="font-size:11.5px; color:var(--ink-mute);">Tu saisis la charge d'un seul côté : l'app compte les deux dans ton tonnage et ton profil.</span></span>
+           </label>`}
       <button class="btn btn-accent" id="hx-ok">Compris</button>
     </div>`);
   document.getElementById("hx-plafond").onchange = e=>{
@@ -3517,7 +3526,8 @@ function openHistoExo(ei){
     else { delete db.plafond[en.exId]; if(auto) db.plafond["libre:"+en.exId] = true; }
     save();
   };
-  document.getElementById("hx-unilat").onchange = e=>{
+  const uni = document.getElementById("hx-unilat");
+  if(uni) uni.onchange = e=>{
     if(e.target.checked) db.unilat[en.exId] = true; else delete db.unilat[en.exId];
     save();
   };
@@ -3586,7 +3596,7 @@ function renderActive(app){
       <div style="margin-bottom:10px;">${musclesHtml(ex.name)}</div>
       ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)"
-        : (db.unilat[en.exId]? "kg / bras" : (facteurCharge(en.exId)===2? "kg / haltère" : "kg"))}</span><span>reps</span><span>dég.</span><span>✓</span></div>
+        : (dejaParCote(en.exId)? "kg / haltère" : (db.unilat[en.exId]? "kg / bras" : "kg"))}</span><span>reps</span><span>dég.</span><span>✓</span></div>
       <div class="sets"></div>
       ${hintBox("degressif","<b>Dégressif ?</b> Le bouton <b>↓</b> d'une série ajoute une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté. Appui long sur la ligne pour supprimer la série.")}
       <div class="row">
@@ -4781,7 +4791,7 @@ function muscleProfile(){
     const sets = workSets(en);
     if(!ref || !sets.length) return;
     /* un exercice fait bras par bras : la charge d'un côté vaut le double en équivalent bilatéral */
-    const f = db.unilat && db.unilat[en.exId] ? 2 : 1;
+    const f = (db.unilat && db.unilat[en.exId] && !dejaParCote(en.exId)) ? 2 : 1;
     const best = Math.max(...sets.map(st=>e1rm((st.w||0)*f, st.r||0)));
     if(best<=0) return;
     (byEx[en.exId] = byEx[en.exId] || {nom:ex.name, ref, vals:[]}).vals.push(best);
