@@ -212,6 +212,8 @@
   .onb-choix .ch.on{background:var(--accent); color:#fff;}
   .onb-desc{font-size:12.5px; color:var(--ink-soft); text-align:center; line-height:1.5; margin-top:10px;}
   @keyframes chIn{to{opacity:1; transform:none;}}
+  /* redessin apres un choix : les boutons sont deja la, ils ne rejouent pas l'apparition */
+  .onb-choix .ch.fixe{animation:none; opacity:1; transform:none;}
   @media (prefers-reduced-motion:reduce){ .onb-choix .ch{animation:none; opacity:1; transform:none;} }
 
   /* saisie du prénom */
@@ -251,13 +253,14 @@
   .regle{position:relative; margin-top:6px;}
   .regle-val{text-align:center; font-size:32px; font-weight:800; letter-spacing:-.01em;}
   .regle-lab{text-align:center; font-size:13px; color:var(--ink-soft); margin-bottom:2px;}
-  .regle-box{position:relative; height:74px; overflow:hidden;
+  .regle-box{position:relative; height:98px; overflow:hidden;
     -webkit-mask-image:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
     mask-image:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);}
   .regle-scroll{height:100%; overflow-x:scroll; scroll-snap-type:x mandatory; display:flex; align-items:flex-start;
     scrollbar-width:none; padding-top:12px;}
   .regle-scroll::-webkit-scrollbar{display:none;}
-  .regle-t{flex:0 0 10px; scroll-snap-align:center; display:flex; justify-content:center;}
+  .regle-t{flex:0 0 10px; scroll-snap-align:center; display:flex; justify-content:center;
+    transform-origin:top center; will-change:transform;}
   .regle-t i{width:2px; border-radius:2px; background:var(--ink-mute); opacity:.5;}
   .regle-t.maj i{opacity:1; background:var(--ink);}
   .regle-aig{position:absolute; left:50%; top:4px; width:3px; height:46px; border-radius:2px;
@@ -340,7 +343,7 @@
     border-radius:10px; padding:7px 8px; text-align:left; min-width:0;}
   .fchip .ic{font-size:14px; flex:0 0 auto;}
   .fchip .tx{flex:1; min-width:0;}
-  .fchip .nm{display:block; font-size:11.5px; font-weight:700; line-height:1.2; overflow-wrap:anywhere;}
+  .fchip .nm{display:block; font-size:11.5px; font-weight:700; line-height:1.2; overflow-wrap:break-word; hyphens:auto;}
   .fchip .q{display:block; font-size:9.5px; line-height:1.3; color:var(--ink-mute); margin-top:1px;}
   .fchip .g{margin-left:auto; font-size:12px; font-weight:800; flex:0 0 auto;}
   .fchip.on{color:#fff; border-color:transparent;}
@@ -1254,7 +1257,7 @@ const AIMS = [
 /* bornes plausibles pour un humain : au-delà, c'est une faute de frappe */
 const BORNES = {
   weight:     [30, 300, "Le poids doit être compris entre 30 et 300 kg."],
-  goalWeight: [30, 300, "Le poids visé doit être compris entre 30 et 300 kg."],
+  goalWeight: [30, 200, "Le poids visé doit être compris entre 30 et 200 kg."],
   height:     [120, 230, "La taille doit être comprise entre 120 et 230 cm."],
   age:        [14, 100, "L'âge doit être compris entre 14 et 100 ans."]
 };
@@ -1291,9 +1294,18 @@ function alerteObjectif(p){
     return {niveau:"prudence", titre:"C'est beaucoup d'un coup",
       txt:`${fmtKg(perte)} kg à perdre, soit ${Math.round(perte/kg*100)} % de ton poids. Une perte de ce genre se conduit par paliers : vise d'abord <b>${fmtKg(Math.round((kg-kg*0.1)*10)/10)} kg</b> (−10 %), tiens-le un mois, puis on réévalue. Aller plus vite coûte du muscle et se reprend presque toujours.`};
   }
-  if(perte < 0 && imcActuel >= 25 && imc(cible, cm) >= 30){
-    return {niveau:"prudence", titre:"Vérifie ton objectif",
-      txt:`Prendre jusqu'à ${fmtKg(cible)} kg te mettrait à un IMC de ${imc(cible,cm).toFixed(1)}. En prise de masse, une partie du gain part en gras : mieux vaut viser plus bas et progresser par étapes.`};
+  const prise = cible - kg;
+  if(prise > 0.5 && imcCible >= 35){
+    return {niveau:"danger", titre:"Cet objectif met ta santé en jeu",
+      txt:`À ${fmtKg(cible)} kg pour ${cm} cm, ton IMC serait de ${imcCible.toFixed(1)} — le seuil de l'obésité sévère. Au-delà de 35, le risque de diabète de type 2, d'hypertension, d'apnée du sommeil et de problèmes articulaires augmente nettement, et prendre autant de poids volontairement n'apporte aucun bénéfice musculaire. Je ne peux pas te construire un plan pour y aller. Vise plus bas, et si cette prise de poids est prescrite, parles-en à un médecin ou à un diététicien.`};
+  }
+  if(prise > 0.5 && imcCible >= 30){
+    return {niveau:"prudence", titre:"Prise de poids à surveiller",
+      txt:`À ${fmtKg(cible)} kg, ton IMC serait de ${imcCible.toFixed(1)}, dans la zone d'obésité. En prise de masse, une bonne partie du gain part en gras au-delà d'un certain point : vise plutôt <b>${fmtKg(Math.round(24.9*Math.pow(cm/100,2)*10)/10)} kg</b> dans un premier temps, tiens-le, puis on réévalue. Fais surveiller ta tension et ta glycémie si tu montes durablement.`};
+  }
+  if(prise > 0.5 && prise/kg > 0.25){
+    return {niveau:"prudence", titre:"C'est beaucoup d'un coup",
+      txt:`${fmtKg(prise)} kg à prendre, soit ${Math.round(prise/kg*100)} % de ton poids. Le muscle se construit à 0,25 kg par semaine au mieux : au-delà, tout le surplus part en gras. Vise d'abord <b>${fmtKg(Math.round((kg+kg*0.1)*10)/10)} kg</b> (+10 %), puis on refait le point.`};
   }
   return null;
 }
@@ -1609,9 +1621,9 @@ function openOnboarding(first, brouillon, depart){
       onbEl.querySelector("#onb-next").onclick = action || (()=>{ i++; dessiner(); });
     };
     /* liste de choix : apparition bouton par bouton */
-    const choix = (items, actif, desc)=>
+    const choix = (items, actif, desc, anime)=>
       `<div class="onb-choix">${items.map(([v,l],n)=>
-        `<button class="ch ${actif===v?"on":""}" data-ch="${v}" style="animation-delay:${n*55}ms">${l}</button>` +
+        `<button class="ch ${actif===v?"on":""} ${anime?"":"fixe"}" data-ch="${v}" ${anime?`style="animation-delay:${n*55}ms"`:""}>${l}</button>` +
         (actif===v && desc && desc(v) ? `<div class="onb-desc">${desc(v)}</div>` : "")).join("")}</div>`;
     const brancher = fn => corps.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{ clicRoue(); fn(b.dataset.ch); });
 
@@ -1666,33 +1678,33 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 3. sexe */
     if(etape === "sexe"){
-      const dess = ()=>{
+      const dess = anime=>{
         corps.innerHTML = `<h2>Tu es…</h2>
           <div class="sous">La dépense au repos n'est pas la même. Sans cette information, l'estimation calorique se trompe d'environ 150 kcal par jour.</div>
           ${choix([["h","Un homme"],["f","Une femme"],["n","Je préfère ne pas répondre"]], d.sex,
-            v => v==="n" ? "On prendra une valeur intermédiaire entre les deux." : "")}`;
-        brancher(v=>{ d.sex = v; dess(); });
+            v => v==="n" ? "On prendra une valeur intermédiaire entre les deux." : "", anime)}`;
+        brancher(v=>{ d.sex = v; dess(false); });
       };
-      dess(); suivant();
+      dess(true); suivant();
       return;
     }
 
     /* -------------------------------------------------------- 4. objectif */
     if(etape === "objectif"){
-      const dess = ()=>{
+      const dess = anime=>{
         corps.innerHTML = `<h2>Quel est ton objectif ?</h2>
           <div class="sous">Il détermine tes calories, tes protéines et la forme de tes séances.</div>
-          ${choix(AIMS.map(a=>[a.id, esc(a.label)]), d.aim, v=>esc(aimOf(v).desc))}
+          ${choix(AIMS.map(a=>[a.id, esc(a.label)]), d.aim, v=>esc(aimOf(v).desc), anime)}
           <button class="onb-lien" id="onb-info" style="margin-top:14px;">ⓘ <b>Tout savoir sur cet objectif</b></button>`;
         brancher(v=>{
           const ancienne = aimOf(d.aim).prot;
           d.aim = v;
           if(d.protPerKg && Math.abs(d.protPerKg - ancienne) < 0.05) d.protPerKg = null;
-          dess();
+          dess(false);
         });
         corps.querySelector("#onb-info").onclick = ()=>openAimInfo(d.aim, ()=>{});
       };
-      dess(); suivant();
+      dess(true); suivant();
       return;
     }
 
@@ -1768,7 +1780,7 @@ function openOnboarding(first, brouillon, depart){
         <div id="reg-alerte" style="margin-top:18px;"></div>`;
       const scroll = corps.querySelector("#reg");
       let html = "";
-      for(let k = 60; k <= 600; k++){                  /* de 30 à 300 kg, par pas de 500 g */
+      for(let k = 60; k <= 400; k++){                  /* de 30 à 200 kg, par pas de 500 g */
         const v = k/2, maj = k % 10 === 0;
         html += `<div class="regle-t${maj?" maj":""}" data-v="${v}"><i style="height:${maj?34:19}px"></i></div>`;
       }
@@ -1788,11 +1800,26 @@ function openOnboarding(first, brouillon, depart){
           : (w ? `<div class="inj-note" style="margin:0;">⚠️ ${w}</div>` : "");
       };
       let pose = false;
+      /* les graduations suivent un arc de cercle : la règle se lit comme le cadran d'une balance */
+      const R = 620;
+      const courber = (mid, centre0, large)=>{
+        const demi = Math.ceil(scroll.clientWidth/large/2) + 4;
+        const idx = Math.round((mid - centre0)/large);
+        for(let n = idx - demi; n <= idx + demi; n++){
+          const t = ticks[n];
+          if(!t) continue;
+          const dx = centre0 + n*large - mid;
+          if(Math.abs(dx) >= R){ t.style.transform = ""; continue; }
+          const bas = R - Math.sqrt(R*R - dx*dx);
+          t.style.transform = `translateY(${bas.toFixed(1)}px) rotate(${(Math.asin(dx/R)*180/Math.PI).toFixed(2)}deg)`;
+        }
+      };
       const auScroll = ()=>{
         if(ticks.length < 2 || !scroll.isConnected || !scroll.clientWidth) return;
         const t0 = ticks[0], large = (ticks[1].offsetLeft - t0.offsetLeft) || 10;
         const centre0 = t0.offsetLeft + t0.offsetWidth/2;
         const mid = scroll.scrollLeft + scroll.clientWidth/2;
+        courber(mid, centre0, large);
         const idx = Math.max(0, Math.min(ticks.length-1, Math.round((mid - centre0)/large)));
         const v = parseFloat(ticks[idx].dataset.v);
         if(v !== d.goalWeight){ d.goalWeight = v; if(pose) clicRoue(); majAff(); }
@@ -1802,6 +1829,7 @@ function openOnboarding(first, brouillon, depart){
         if(!scroll.isConnected) return;
         const cible = ticks.find(t => parseFloat(t.dataset.v) === d.goalWeight) || ticks[0];
         scroll.scrollLeft = cible.offsetLeft + cible.offsetWidth/2 - scroll.clientWidth/2;
+        auScroll();
         majAff();
         setTimeout(()=>{ pose = true; }, 300);
       });
@@ -1820,13 +1848,13 @@ function openOnboarding(first, brouillon, depart){
                     4:"Rythme confortable pour séparer le haut et le bas du corps.",
                     5:"Il faut déjà bien récupérer et manger en conséquence.",
                     6:"Réservé aux pratiquants confirmés, avec un sommeil solide."};
-      const dess = ()=>{
+      const dess = anime=>{
         corps.innerHTML = `<h2>Combien de séances<br>par semaine ?</h2>
           <div class="sous">Sois réaliste : mieux vaut 3 séances tenues que 5 abandonnées.</div>
-          ${choix([2,3,4,5,6].map(n=>[String(n), `${n} fois par semaine`]), String(d.days), v=>AIDE[parseInt(v)])}`;
-        brancher(v=>{ d.days = parseInt(v); dess(); });
+          ${choix([2,3,4,5,6].map(n=>[String(n), `${n} fois par semaine`]), String(d.days), v=>AIDE[parseInt(v)], anime)}`;
+        brancher(v=>{ d.days = parseInt(v); dess(false); });
       };
-      dess(); suivant();
+      dess(true); suivant();
       return;
     }
 
@@ -1890,8 +1918,10 @@ function openOnboarding(first, brouillon, depart){
     /* -------------------------------------------------------- 11. réglages fins */
     if(etape === "affiner"){
       const perKg = ()=> d.protPerKg || aimOf(d.aim).prot;
-      const dess = ()=>{
+      const dess = anime=>{
         const reco = aimOf(d.aim).prot;
+        const cl = anime ? "" : " fixe";
+        const del = n => anime ? `style="animation-delay:${n*50}ms"` : "";
         corps.innerHTML = `<h2>Affiner mon profil</h2>
           <div class="sous">Tout est facultatif : les valeurs par défaut conviennent à la plupart des gens.</div>
 
@@ -1899,33 +1929,33 @@ function openOnboarding(first, brouillon, depart){
           <div class="onb-aide">Comment ton corps réagit quand tu manges plus. Ajuste ta dépense estimée de ±7 %.</div>
           <div class="onb-choix" style="margin-bottom:22px;">${
             [["rapide","Rapide — je peine à prendre du poids"],["normal","Normal"],["lent","Lent — je prends facilement"]]
-            .map(([v,l],n)=>`<button class="ch ${d.metab===v?"on":""}" data-mt="${v}" style="animation-delay:${n*50}ms">${l}</button>`).join("")}</div>
+            .map(([v,l],n)=>`<button class="ch ${d.metab===v?"on":""}${cl}" data-mt="${v}" ${del(n)}>${l}</button>`).join("")}</div>
 
           ${PACE_RATE[d.aim] ? `<div class="onb-lab">Rythme de progression</div>
           <div class="onb-aide">Plus le rythme est rapide, plus les résultats arrivent tôt — et moins ils sont propres.</div>
           <div class="onb-choix" style="margin-bottom:22px;">${
-            PACES.map(([v,l],n)=>`<button class="ch ${d.pace===v?"on":""}" data-pc="${v}" style="animation-delay:${n*50}ms">${l}</button>`).join("")}</div>` : ""}
+            PACES.map(([v,l],n)=>`<button class="ch ${d.pace===v?"on":""}${cl}" data-pc="${v}" ${del(n)}>${l}</button>`).join("")}</div>` : ""}
 
           <div class="onb-lab">Protéines par kilo</div>
           <div class="onb-aide">Conseillé pour « ${esc(aimOf(d.aim).label.toLowerCase())} » : ${reco.toLocaleString("fr-FR")} g par kilo de poids de corps.</div>
           <div class="onb-choix" style="margin-bottom:22px;">${
-            fourchetteProt(reco).map(([v,l],n)=>`<button class="ch ${Math.abs(perKg()-v)<0.05?"on":""}" data-pk="${v}" style="animation-delay:${n*50}ms">${
+            fourchetteProt(reco).map(([v,l],n)=>`<button class="ch ${Math.abs(perKg()-v)<0.05?"on":""}${cl}" data-pk="${v}" ${del(n)}>${
               v.toLocaleString("fr-FR")} g/kg · ${Math.round((d.weight||75)*v)} g par jour — ${l}</button>`).join("")}</div>
 
           <div class="onb-lab">Zones sensibles</div>
           <div class="onb-aide">Les exercices à risque seront signalés, avec une variante plus sûre. Ces conseils sont généraux : en cas de douleur, arrête et consulte un professionnel de santé.</div>
           <div class="onb-choix">${
-            INJURIES.map((z,n)=>`<button class="ch ${d.injuries.includes(z.id)?"on":""}" data-inj="${z.id}" style="animation-delay:${n*50}ms">${esc(z.label)}</button>`).join("")}</div>`;
-        corps.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{ d.metab = b.dataset.mt; clicRoue(); dess(); });
-        corps.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{ d.pace = b.dataset.pc; clicRoue(); dess(); });
-        corps.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{ d.protPerKg = parseFloat(b.dataset.pk); clicRoue(); dess(); });
+            INJURIES.map((z,n)=>`<button class="ch ${d.injuries.includes(z.id)?"on":""}${cl}" data-inj="${z.id}" ${del(n)}>${esc(z.label)}</button>`).join("")}</div>`;
+        corps.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{ d.metab = b.dataset.mt; clicRoue(); dess(false); });
+        corps.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{ d.pace = b.dataset.pc; clicRoue(); dess(false); });
+        corps.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{ d.protPerKg = parseFloat(b.dataset.pk); clicRoue(); dess(false); });
         corps.querySelectorAll("[data-inj]").forEach(b=>b.onclick=()=>{
           const z = b.dataset.inj;
           d.injuries = d.injuries.includes(z) ? d.injuries.filter(x=>x!==z) : d.injuries.concat(z);
-          clicRoue(); dess();
+          clicRoue(); dess(false);
         });
       };
-      dess();
+      dess(true);
       suivant("Créer mon programme", enregistrer);
       return;
     }
@@ -2788,7 +2818,7 @@ function renderEat(app){
   panel.querySelectorAll("[data-opt]").forEach(b=>{
     const label = b.dataset.opt;
     const deb = ()=>{ lpFired=false; clearTimeout(lpT);
-      lpT = setTimeout(()=>{ lpFired=true; if(navigator.vibrate) navigator.vibrate(18); openModifAliment(mealCur, label); }, 550); };
+      lpT = setTimeout(()=>{ lpFired=true; if(navigator.vibrate) navigator.vibrate(18); openModifAliment(mealCur, label); }, 340); };
     const fin = ()=>clearTimeout(lpT);
     b.addEventListener("touchstart", deb, {passive:true});
     ["touchend","touchmove","touchcancel"].forEach(e=>b.addEventListener(e, fin));
@@ -2823,10 +2853,13 @@ function openAjoutAliment(meal){
       <div id="ot-mwrap" style="display:none;">
         <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
         <input id="ot-name" placeholder="Ex : plat du resto" style="margin-bottom:9px;">
+        <span class="label" style="display:block; margin-bottom:5px;">Poids de la portion (g, facultatif)</span>
+        <input type="number" inputmode="numeric" step="10" min="0" id="ot-gram" placeholder="250" style="margin-bottom:9px;">
         <span class="label" style="display:block; margin-bottom:5px;">Protéines (g)</span>
         <input type="number" inputmode="decimal" step="1" min="0" id="ot-prot" placeholder="25" style="margin-bottom:9px;">
         <span class="label" style="display:block; margin-bottom:5px;">Calories (facultatif)</span>
         <input type="number" inputmode="numeric" step="10" min="0" id="ot-kcal" placeholder="400">
+        <p style="margin:7px 0 0; font-size:11.5px; color:var(--ink-mute); line-height:1.5;">Le poids est facultatif, mais si tu le donnes tu pourras ensuite ajuster la portion au gramme près.</p>
       </div>
       <div id="ot-live" style="font-size:14.5px; font-weight:700; color:var(--accent); min-height:20px;"></div>
       <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
@@ -2875,8 +2908,10 @@ function openAjoutAliment(meal){
       if(isNaN(pr)||pr<0) return;
       const kc = parseFloat(document.getElementById("ot-kcal").value);
       const nom = document.getElementById("ot-name").value.trim()||"Autre";
+      const gr = parseFloat(document.getElementById("ot-gram").value);
+      const tete = (gr > 0) ? `${nom} ${Math.round(gr)} g` : nom;   /* le poids rend la portion réglable */
       prot = pr; kcal = isNaN(kc)? 0 : Math.round(kc);
-      label = isNaN(kc) ? `${nom} (~${pr} g prot.)` : `${nom} (~${pr} g prot. · ${kcal} kcal)`;
+      label = isNaN(kc) ? `${tete} (~${pr} g prot.)` : `${tete} (~${pr} g prot. · ${kcal} kcal)`;
     } else {
       const r = calc();
       if(!r) return;
@@ -3259,11 +3294,12 @@ let chronoInt = null;
 /* ===== Nutrition sans chiffres : checklist + verdict de la balance ===== */
 /* [libellé avec portion réelle, protéines (g), calories] — portions courantes, pas symboliques */
 const HB_OPTS = {
-  prot: [["Poulet (150 g cuit)",46,250],["Steak de bœuf (150 g cuit)",39,255],["Œufs (×3)",19,235],["Thon (1 boîte égouttée)",24,110],["Poisson blanc (150 g cuit)",34,160],["Saumon (150 g cuit)",38,345],["Jambon (2 tranches)",16,90]],
-  carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,315],["Patates (250 g)",5,220],["Pain (2 tranches)",6,180],["Semoule (200 g cuite)",8,225],["Légumineuses (150 g cuites)",13,175]],
-  snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuits (×4)",3,180],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Amandes / noix (30 g)",6,180]],
-  bkProt: [["Œufs (×3)",19,235],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (2 tranches)",16,90],["Fromage blanc (200 g)",16,100]],
-  bkCarb: [["Avoine (60 g)",8,230],["Pain (2 tranches)",6,180],["Banane",1,105],["Biscuits (×4)",3,180],["Compote (1 gourde)",0,60]]
+  /* une pièce par proposition : on ajoute la quantité ensuite (appui long -> ×2, ×3…) */
+  prot: [["Poulet (150 g cuit)",46,250],["Steak de bœuf (150 g cuit)",39,255],["Œuf",6,78],["Thon (1 boîte égouttée)",24,110],["Poisson blanc (150 g cuit)",34,160],["Saumon (150 g cuit)",38,345],["Jambon (1 tranche)",8,45]],
+  carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,315],["Patates (250 g)",5,220],["Pain (1 tranche)",3,90],["Semoule (200 g cuite)",8,225],["Légumineuses (150 g cuites)",13,175]],
+  snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Amandes / noix (30 g)",6,180]],
+  bkProt: [["Œuf",6,78],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (1 tranche)",8,45],["Fromage blanc (200 g)",16,100]],
+  bkCarb: [["Avoine (60 g)",8,230],["Pain (1 tranche)",3,90],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60]]
 };
 const HB_PROT_MAP = {
   /* anciens libellés, pour ne pas perdre les journées déjà enregistrées */
@@ -3275,7 +3311,8 @@ const HB_PROT_MAP = {
   "Biscuits":3,"Compote":0,"Whey + eau":24,"Whey + lait":34,
   "Poulet (150 g)":34,"Steak de bœuf (150 g)":32,"Thon (1 boîte)":24,"Poisson (150 g)":27,
   "Pâtes (200 g cuites)":10,"Patates (250 g)":5,"Semoule (200 g cuite)":8,"Légumineuses (150 g)":13,
-  "Whey + lait (1 dose)":34,"Fruits secs (30 g)":6,"Biscuits (×4)":3
+  "Whey + lait (1 dose)":34,"Fruits secs (30 g)":6,"Biscuits (×4)":3,
+  "Œufs (×3)":19,"Jambon (2 tranches)":16,"Pain (2 tranches)":6
 };
 const HB_KCAL_MAP = {
   "150 g de poulet":185,"1 steak de bœuf":210,"3 œufs":235,"1 boîte de thon":110,"150 g de poisson":125,"Autre protéine":200,
@@ -3286,7 +3323,8 @@ const HB_KCAL_MAP = {
   "Biscuits":180,"Compote":60,"Whey + eau":120,"Whey + lait":260,
   "Poulet (150 g)":185,"Steak de bœuf (150 g)":210,"Poisson (150 g)":125,
   "Pâtes (200 g cuites)":315,"Patates (250 g)":220,"Semoule (200 g cuite)":225,
-  "Whey + lait (1 dose)":260,"Fruits secs (30 g)":180,"Biscuits (×4)":180
+  "Whey + lait (1 dose)":260,"Fruits secs (30 g)":180,"Biscuits (×4)":180,
+  "Œufs (×3)":235,"Jambon (2 tranches)":90,"Pain (2 tranches)":180
 };
 Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
   if(!(l in HB_PROT_MAP) || g>HB_PROT_MAP[l]) HB_PROT_MAP[l]=g;
