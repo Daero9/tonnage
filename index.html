@@ -1979,6 +1979,11 @@ function parseReps(reps){
 }
 /* charge bloquée : ni haltères plus lourds, ni lest disponible */
 const REPS_PLAFOND = 25;                       /* au-delà, mieux vaut durcir le mouvement */
+/* vrai seulement quand il n'y a physiquement rien à retirer : poids du corps sans lest.
+   « Je n'ai pas de charge plus lourde » plafonne vers le haut, mais on peut toujours descendre. */
+function sansChargeDuTout(exId, poidsSaisi){
+  return estPoidsDuCorps(getEx(exId)) && !((poidsSaisi||0) > 0);
+}
 function chargeBloquee(exId){
   const ex = getEx(exId);
   return !!db.plafond[exId] || (estPoidsDuCorps(ex) && !db.plafond["libre:"+exId]);
@@ -2019,7 +2024,7 @@ function suggestFor(exId, target){
   const allTop = last.sets.every(s=>(s.r||0)>=rng.hi);
   const anyBelow = last.sets.some(s=>(s.r||0)<rng.lo);
   /* charge bloquée (poids du corps, ou pas d'haltères plus lourds) : on progresse autrement */
-  if(chargeBloquee(exId)){
+  if(chargeBloquee(exId)){                    /* plafonné : on progresse en reps / séries / variante */
     const maxR = Math.max(...last.sets.map(s=>s.r||0));
     if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow)){
       const pr = progressionSansCharge(exId, maxR, last.sets.length);
@@ -3507,7 +3512,7 @@ function openHistoExo(ei){
       <label class="row" style="gap:9px; align-items:center; cursor:pointer; padding-top:2px;">
         <input type="checkbox" id="hx-plafond" ${chargeBloquee(en.exId)?"checked":""} style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
         <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je n'ai pas de charge plus lourde<br>
-          <span style="font-size:11.5px; color:var(--ink-mute);">Je progresse alors en répétitions, en séries, puis en variante plus difficile.</span></span>
+          <span style="font-size:11.5px; color:var(--ink-mute);">Pour progresser, l'app ajoute des répétitions, puis une série, puis une variante plus dure. Si c'est trop lourd, elle baisse quand même la charge.</span></span>
       </label>
       ${dejaParCote(en.exId)
         ? `<div style="font-size:11.5px; color:var(--ink-mute); line-height:1.45; padding-left:2px;">
@@ -3685,22 +3690,25 @@ function renderActive(app){
               });
               save();
             };
-            const sansCharge = chargeBloquee(en.exId);
+            const plafonne = chargeBloquee(en.exId);          /* ne peut pas monter en charge */
+            const rienARetirer = sansChargeDuTout(en.exId, st.w); /* ne peut pas descendre non plus */
             let msg;
             if(rir === -1){
-              /* demande explicite : on descend franchement, pas d'un cran symbolique */
-              if(sansCharge){
+              /* trop lourd : on descend la charge en gardant les répétitions visées.
+                 Le plafond ne concerne que la montée — descendre est toujours possible. */
+              if(rienARetirer){
                 const nr = Math.max(1, Math.round((st.r||0)*0.8));
-                msg = `Trop lourd — vise ${nr} reps sur les séries suivantes.`;
+                msg = `Trop lourd — vise ${nr} reps sur les séries suivantes, la qualité prime.`;
                 if(next) appliquerSuite("r", nr);
               } else {
                 const bas = Math.max(0, Math.round(((st.w||0) - Math.max(inc, (st.w||0)*0.08))*2)/2);
-                msg = next ? `Trop lourd — séries suivantes à ${fmtKg(bas)} kg.`
+                const cible = Math.max(st.r||0, rng.lo);
+                msg = next ? `Trop lourd — séries suivantes à ${fmtKg(bas)} kg, on garde ${cible} reps.`
                             : `Trop lourd — repars de ${fmtKg(bas)} kg à la prochaine séance.`;
-                if(next) appliquerSuite("w", bas);
+                if(next){ appliquerSuite("w", bas); appliquerSuite("r", cible); }
               }
             } else if(rir>=3){
-              if(sansCharge){
+              if(plafonne){
                 const pr = progressionSansCharge(en.exId, st.r||0, en.sets.filter(x=>!x.warm).length);
                 msg = `Trop léger — ${pr.text.charAt(0).toLowerCase()}${pr.text.slice(1)}`;
                 if(next && pr.mode==="reps") appliquerSuite("r", pr.reps);
@@ -3711,13 +3719,14 @@ function renderActive(app){
                 if(next) appliquerSuite("w", nw);
               }
             } else if(rir===0 && (st.r||0) < rng.lo){
-              if(sansCharge){
+              if(rienARetirer){
                 const nr = Math.max(1,(st.r||0)-1);
                 msg = next ? `Trop dur — vise ${nr} reps sur les séries suivantes, la qualité prime.`
                             : `Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`;
                 if(next) appliquerSuite("r", nr);
               } else {
                 const nw = Math.max(0,(st.w||0)-inc);
+                if(next) appliquerSuite("r", Math.max(st.r||0, rng.lo));
                 msg = next ? `Trop lourd — séries suivantes à ${fmtKg(nw)} kg.`
                             : `Trop lourd — garde cette charge la prochaine fois, elle viendra.`;
                 if(next) appliquerSuite("w", nw);
