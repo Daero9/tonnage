@@ -422,6 +422,10 @@
   .mp-fig .mp-lignes{position:absolute; top:0; left:0; width:100%; aspect-ratio:658/1200; height:auto;
     display:block; pointer-events:none;}
   .mp-fig svg{position:absolute; inset:0; width:100%; height:100%;}
+  /* silhouette absente : on n'affiche ni couleurs ni tracé, juste un mot d'explication */
+  .mp-fig.ko{min-height:60px; display:flex; align-items:center; justify-content:center;}
+  .mp-fig.ko .mp-mask, .mp-fig.ko .mp-lignes, .mp-fig.ko .mp-base{display:none;}
+  .mp-fig.ko::after{content:"Silhouette indisponible"; font-size:11.5px; color:var(--ink-mute); text-align:center;}
   .mp-mask{position:absolute; top:0; left:0; width:100%; aspect-ratio:658/1200; height:auto;
     display:block; pointer-events:none;
     -webkit-mask-size:100% 100%; mask-size:100% 100%;
@@ -880,9 +884,9 @@ function exoBodyHtml(exName, back){
     .map(m=>masqueHtml(cle, m, {color:NIVEAU_COULEUR[niveaux[m]], op: niveaux[m]===3? 1 : (niveaux[m]===2? 0.75 : 0.5)})).join("");
   if(!masques) return "";
   return `<div class="mp-fig" style="max-width:110px;">
-    <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}">
+    <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}" onerror="figKo(this)">
     ${masques}
-    <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true">
+    <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true" onerror="figKo(this)">
     <div style="text-align:center; font-size:9.5px; font-weight:800; letter-spacing:.1em; color:var(--ink-mute); margin-top:2px;">${back?"VUE DOS":"VUE FACE"}</div></div>`;
 }
 function openExoInfo(exId){
@@ -4878,6 +4882,17 @@ const MASK_OK = {
 function slugMuscle(m){
   return (m||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
+/* Si la silhouette ne charge pas (réseau coupé, cache incomplet), on réessaie une fois,
+   puis on masque tout le calque : mieux vaut rien qu'un pâté de couleur sans corps. */
+function figKo(img){
+  if(!img.dataset.reessai){
+    img.dataset.reessai = "1";
+    img.src = img.src.split("?")[0] + "?r=" + Date.now();
+    return;
+  }
+  const fig = img.closest(".mp-fig");
+  if(fig) fig.classList.add("ko");
+}
 function masqueHtml(cle, muscle, s){
   const url = `${MASK_DIR}${cle}-${slugMuscle(muscle)}.png`;
   return `<span class="mp-mask" style="background:${s.color}; opacity:${(0.85*s.op).toFixed(2)};
@@ -4889,9 +4904,9 @@ function mpBodyHtml(back, st){
     .filter(m => st[m] && !st[m].nodata)
     .map(m => masqueHtml(cle, m, st[m])).join("");
   return `<div class="mp-fig">
-    <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}">
+    <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}" onerror="figKo(this)">
     ${masques}
-    <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true">
+    <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true" onerror="figKo(this)">
   </div>`;
 }
 /* gains de tour de membre réalistes, par mois de travail ciblé et régulier */
