@@ -4682,6 +4682,14 @@ const RECUP_H = {
   "Biceps":36, "Triceps":36, "Avant-bras":24, "Quadriceps":72, "Ischio-jambiers":72,
   "Fessiers":60, "Mollets":36, "Abdos":36, "Lombaires":60
 };
+/* Coût d'une série : l'échec coûte plus cher, la réserve moins.
+   Un dégressif prolonge la série au-delà de l'échec, il ajoute sa part. */
+function poidsFatigue(st){
+  const r = (st.rir === undefined || st.rir === null) ? 1.5 : st.rir;
+  let f = r <= 0 ? 1.35 : (r <= 2 ? 1 : 0.7);
+  f += (st.drops || []).length * 0.35;
+  return f;
+}
 /* état de chaque groupe : 100 % = frais, 0 % = à plat */
 function recuperation(){
   const now = Date.now();
@@ -4693,16 +4701,17 @@ function recuperation(){
     if(heures < 0 || heures > 96) return;
     sess.entries.forEach(en=>{
       const ex = getEx(en.exId);
-      const series = (en.sets||[]).filter(x=>x.done && !x.warm).length;
-      if(!series) return;
+      const series = (en.sets||[]).filter(x=>x.done && !x.warm);
+      if(!series.length) return;
+      /* une série menée à l'échec fatigue bien plus qu'une série gardée en réserve */
+      const cout = series.reduce((a,st)=>a + poidsFatigue(st), 0);
       (MUSCLE_WORK[ex.name]||[]).forEach(([mus, niveau])=>{
         const g = groupeDe(mus);
         if(!g) return;
         const plein = RECUP_H[g] || 48;
         if(heures >= plein) return;
         const reste = 1 - heures/plein;              /* la fatigue s'efface avec le temps */
-        const charge = series * (niveau/3) * 11;     /* ~11 points pour 1 série lourde */
-        fat[g] += charge * reste;
+        fat[g] += cout * (niveau/3) * 11 * reste;    /* ~11 points pour 1 série lourde à 1-2 reps de l'échec */
       });
     });
   });
@@ -4786,7 +4795,7 @@ function openRecup(){
         </div>
         <div style="font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; color:${RECUP_C[o.etat]};">${o.pct}<span style="font-size:11px;">%</span></div>
       </div>`;}).join("")}</div>
-    <div style="font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-top:12px;">Estimation d'après tes séances des 4 derniers jours : nombre de séries, intensité de sollicitation de chaque muscle et temps écoulé. Les grosses masses (cuisses, ischios) mettent jusqu'à 72 h à revenir, les petites 36 h.</div>
+    <div style="font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-top:12px;">Estimation d'après tes séances des 4 derniers jours : nombre de séries, <b>intensité réelle de chaque série</b> (ta réponse « aurais-tu pu faire plus ? »), dégressifs, sollicitation de chaque muscle et temps écoulé. Les grosses masses (cuisses, ischios) mettent jusqu'à 72 h à revenir, les petites 36 h.</div>
     <button class="btn btn-accent" id="rc-ok" style="width:100%; margin-top:12px;">Compris</button>`);
   document.getElementById("rc-ok").onclick = closeSheet;
 }

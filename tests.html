@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tonnage — tests des calculs</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       background:#14140f; color:#eee; margin:0; padding:20px 16px 60px; line-height:1.5;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .sub{color:#8e8e90; font-size:13px; margin-bottom:18px;}
+  #bilan{position:sticky; top:0; background:#14140f; padding:10px 0 14px; font-size:17px; font-weight:800;}
+  .ok{color:#6fbf8b;} .ko{color:#e06c5a;}
+  .grp{margin:16px 0 6px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#8e8e90;}
+  .l{font-size:13.5px; padding:3px 0; border-bottom:1px solid #262620;}
+  .l .d{color:#8e8e90; font-size:12px;}
+  iframe{display:none;}
+</style>
+
+<h1>Tests des calculs</h1>
+<div class="sub">Vérifie les fonctions de calcul de Tonnage sans toucher à tes données.
+Ouvre cette page après chaque publication.</div>
+<div id="bilan">Chargement de l'application…</div>
+<div id="sortie"></div>
+<iframe id="app" src="index.html"></iframe>
+
+<script>
+const sortie = document.getElementById("sortie");
+let total = 0, echecs = 0, groupe = "";
+function grp(nom){ groupe = nom; sortie.insertAdjacentHTML("beforeend", `<div class="grp">${nom}</div>`); }
+function ligne(ok, nom, detail){
+  total++; if(!ok) echecs++;
+  sortie.insertAdjacentHTML("beforeend",
+    `<div class="l"><span class="${ok?'ok':'ko'}">${ok?"✔":"✘"}</span> ${nom}` +
+    (detail? ` <span class="d">— ${detail}</span>`:"") + `</div>`);
+}
+function eq(nom, obtenu, attendu){
+  const ok = JSON.stringify(obtenu) === JSON.stringify(attendu);
+  ligne(ok, nom, ok? "" : `obtenu ${JSON.stringify(obtenu)}, attendu ${JSON.stringify(attendu)}`);
+}
+function pres(nom, obtenu, attendu, tol){
+  const ok = Math.abs(obtenu - attendu) <= tol;
+  ligne(ok, nom, ok? "" : `obtenu ${obtenu}, attendu ${attendu} ±${tol}`);
+}
+function vrai(nom, cond, detail){ ligne(!!cond, nom, cond? "" : (detail||"")); }
+
+document.getElementById("app").addEventListener("load", () => setTimeout(lancer, 400));
+
+function lancer(){
+  const F = document.getElementById("app").contentWindow;
+  /* « db » est déclaré avec let dans l'app : il n'apparaît pas sur window, on va chercher la référence */
+  const DB = F.eval("db");
+  const profilType = {name:"Test", sex:"h", age:28, height:188, weight:74, goalWeight:80,
+                      metab:"normal", days:4, injuries:[], aim:"masse", pace:"modere", protPerKg:1.9};
+  /* base d'essai : on n'écrit jamais, on remplace l'objet en mémoire de l'iframe */
+  const neuf = () => {
+    DB.profile = JSON.parse(JSON.stringify(profilType));
+    DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
+    DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
+  };
+  const id = n => F.libId(n);
+  const serie = (w,r,rir,drops) => ({w, r, done:true, warm:false, rir:(rir===undefined?1:rir), drops});
+  const seance = (heuresAvant, entrees) => ({
+    id:"t"+Math.random(), date:new Date(Date.now()-heuresAvant*36e5).toISOString(),
+    name:"Test", templateId:"x", start:Date.now()-heuresAvant*36e5-3.4e6, end:Date.now()-heuresAvant*36e5,
+    entries:entrees
+  });
+
+  /* ---------------------------------------------------------- force et tonnage */
+  grp("Force et tonnage");
+  neuf();
+  pres("1RM Epley : 100 kg × 1", F.e1rm(100,1), 100, 0.01);
+  pres("1RM Epley : 60 kg × 10", F.e1rm(60,10), 80, 0.01);
+  eq("Tonnage d'une série simple", F.volSerie({w:60, r:10}), 600);
+  eq("Tonnage avec dégressif", F.volSerie({w:12, r:6, drops:[{w:10, r:4}]}), 112);
+  eq("Barre : facteur 1", F.facteurCharge(id("Développé couché")), 1);
+  eq("Haltères : facteur 2", F.facteurCharge(id("Développé incliné haltères")), 2);
+  DB.unilat[id("Extension poulie")] = true;
+  eq("Unilatéral coché : facteur 2", F.facteurCharge(id("Extension poulie")), 2);
+  DB.unilat[id("Développé incliné haltères")] = true;
+  eq("Haltères + unilatéral : reste 2, jamais 4", F.facteurCharge(id("Développé incliné haltères")), 2);
+  neuf();
+
+  /* ---------------------------------------------------------- dates */
+  grp("Dates");
+  const d = new Date(2026, 0, 5, 23, 30);
+  eq("Clé du jour en heure locale (pas UTC)", F.dayKey(d), "2026-01-05");
+  eq("Clé du jour, 1er janvier", F.dayKey(new Date(2026, 0, 1, 0, 5)), "2026-01-01");
+
+  /* ---------------------------------------------------------- plan calorique */
+  grp("Plan calorique");
+  neuf();
+  let pl = F.planFor(DB.profile);
+  pres("Métabolisme de base (Mifflin-St Jeor)", pl.bmr, 1780, 2);
+  vrai("Dépense supérieure au métabolisme de base", pl.tdee > pl.bmr);
+  vrai("Prise de masse : surplus positif", pl.delta > 0);
+  vrai("Fourchette cohérente (min < cible < max)", pl.kcalMin < pl.kcal && pl.kcal < pl.kcalMax);
+  pres("Protéines = 1,9 g/kg", pl.prot, Math.round(74*1.9), 1);
+  DB.profile.aim = "seche"; DB.profile.goalWeight = 68;
+  pl = F.planFor(DB.profile);
+  vrai("Sèche : déficit", pl.delta < 0);
+  vrai("Jamais sous 1,2 × le métabolisme de base", pl.kcal >= pl.bmr*1.2 - 1);
+  DB.profile.tdeeManuel = 2200;
+  pl = F.planFor(DB.profile);
+  eq("Dépense saisie à la main : elle prime", pl.tdee, 2200);
+  eq("…et la source est signalée", pl.tdeeSource, "manuel");
+  neuf();
+
+  /* ---------------------------------------------------------- garde-fous santé */
+  grp("Garde-fous santé");
+  pres("IMC 74 kg / 188 cm", F.imc(74,188), 20.9, 0.1);
+  eq("Poids plancher pour 188 cm (IMC 18,5)", F.poidsMiniSain(188), 65.4);
+  eq("Objectif sain : aucune alerte", F.alerteObjectif({weight:74, height:188, goalWeight:80}), null);
+  eq("IMC cible 18,1 : danger", F.alerteObjectif({weight:74, height:188, goalWeight:64}).niveau, "danger");
+  eq("IMC cible 15,6 : danger", F.alerteObjectif({weight:74, height:188, goalWeight:55}).niveau, "danger");
+  eq("Perte de 27 % : prudence", F.alerteObjectif({weight:110, height:175, goalWeight:80}).niveau, "prudence");
+  vrai("Poids de 3000 kg refusé", !!F.verifieChamp("weight", 3000));
+  vrai("Poids de 74 kg accepté", !F.verifieChamp("weight", 74));
+  vrai("Taille de 250 cm refusée", !!F.verifieChamp("height", 250));
+  vrai("Âge de 8 ans refusé", !!F.verifieChamp("age", 8));
+
+  /* ---------------------------------------------------------- alimentation */
+  grp("Alimentation");
+  eq("Protéines lues dans le libellé", F.protOf("Poulet (150 g cuit)"), 46);
+  eq("Calories lues dans le libellé", F.kcalOf("Poulet (150 g cuit)"), 250);
+  eq("Ancien libellé toujours reconnu", F.protOf("150 g de poulet"), 34);
+  eq("Libellé calculé : protéines", F.protOf("Œuf ×3 (~19 g prot. · 234 kcal)"), 19);
+  eq("Libellé calculé : calories", F.kcalOf("Œuf ×3 (~19 g prot. · 234 kcal)"), 234);
+  eq("Découpage nom / portion", F.partsAliment("Poulet (150 g cuit)", 46).nom, "Poulet");
+  eq("Portion raccourcie (sans « cuit »)", F.partsAliment("Poulet (150 g cuit)", 46).qCourt, "150 g");
+  eq("Portion : première mesure seulement", F.partsAliment("Whey + lait (1 dose, 300 ml)", 34).qCourt, "1 dose");
+  eq("Multiplicateur reconnu", F.partsAliment("Œuf ×3 (~19 g prot.)", 19).q, "×3");
+  neuf();
+  const jour = F.dayKey();
+  DB.habitSel[jour] = {midi:["Poulet (150 g cuit)","Riz (200 g cuit)"]};
+  eq("Total protéines du jour", F.dayProt(jour), 51);
+  eq("Total calories du jour", F.dayKcal(jour), 510);
+  DB.dayFix[jour] = {prot:100};
+  eq("Correction manuelle prioritaire", F.dayProt(jour), 100);
+  neuf();
+
+  /* ---------------------------------------------------------- cardio */
+  grp("Cardio");
+  const base = {km:6, min:50, pente:0, runMin:0, hr:0, kcalM:0, machine:"course", intensite:"modere"};
+  const marche = F.sortieKcal({...base, type:"marche"}, 74);
+  const course = F.sortieKcal({...base, type:"course"}, 74);
+  const mixte  = F.sortieKcal({...base, type:"mixte", runMin:15}, 74);
+  vrai("Courir coûte plus que marcher", course > marche);
+  vrai("Mixte se situe entre les deux", mixte > marche && mixte < course);
+  eq("Calories de la montre : prioritaires", Math.round(F.sortieKcal({...base, type:"course", kcalM:410}, 74)), 410);
+  vrai("FC prise en compte à défaut de montre",
+       F.sortieKcal({...base, type:"marche", hr:160}, 74) > F.sortieKcal({...base, type:"marche", hr:120}, 74));
+  pres("Vélo intense 45 min (10 MET, 74 kg)",
+       F.sortieKcal({km:18, min:45, pente:0, machine:"velo", intensite:"intense"}, 74), 583, 5);
+  vrai("Vélo léger < vélo intense",
+       F.sortieKcal({km:12, min:45, machine:"velo", intensite:"leger"}, 74) <
+       F.sortieKcal({km:18, min:45, machine:"velo", intensite:"intense"}, 74));
+  eq("Type déduit de l'allure : marche", F.cardioType({km:4, min:60}), "marche");
+  eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
+  eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
+
+  /* ---------------------------------------------------------- récupération */
+  grp("Récupération");
+  neuf();
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
+  const r1 = F.recuperation();
+  vrai("Quadriceps entamés juste après la séance", r1.muscles["Quadriceps"].pct < 70);
+  vrai("Pectoraux intacts", r1.muscles["Pectoraux"].pct === 100);
+  DB.history = [seance(80, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
+  eq("Quadriceps récupérés après 80 h", F.recuperation().muscles["Quadriceps"].pct, 100);
+  /* même séance, même volume : seule l'intensité change */
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,0),serie(80,8,0),serie(80,8,0)]}])];
+  const echec = F.recuperation().muscles["Quadriceps"].pct;
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,3),serie(80,8,3),serie(80,8,3)]}])];
+  const reserve = F.recuperation().muscles["Quadriceps"].pct;
+  vrai("Séries à l'échec fatiguent plus que séries en réserve", echec < reserve, `échec ${echec} % vs réserve ${reserve} %`);
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,1,[{w:60,r:5}]),serie(80,8,1),serie(80,8,1)]}])];
+  const avecDrop = F.recuperation().muscles["Quadriceps"].pct;
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,1),serie(80,8,1),serie(80,8,1)]}])];
+  const sansDrop = F.recuperation().muscles["Quadriceps"].pct;
+  vrai("Un dégressif ajoute de la fatigue", avecDrop < sansDrop, `avec ${avecDrop} % vs sans ${sansDrop} %`);
+  eq("Poids de fatigue : à l'échec", F.poidsFatigue({rir:0}), 1.35);
+  eq("Poids de fatigue : 3 reps en réserve", F.poidsFatigue({rir:3}), 0.7);
+  neuf();
+
+  /* ---------------------------------------------------------- profil musculaire */
+  grp("Profil musculaire");
+  neuf();
+  DB.history = [1,2].map(n => seance(n*24, [
+    {exId:id("Développé couché"), sets:[serie(60,9),serie(60,8)]},
+    {exId:id("Extension poulie"), sets:[serie(14,10),serie(14,10)]},
+    {exId:id("Squat"), sets:[serie(80,9),serie(80,8)]},
+    {exId:id("Développé militaire"), sets:[serie(35,9),serie(35,8)]}
+  ]));
+  const prof = F.muscleProfile(), moy = F.mpMoyenne(prof);
+  vrai("Une moyenne personnelle est calculée", moy !== null);
+  vrai("Triceps en retard sur la moyenne", prof["Triceps"] < moy);
+  eq("Étiquette : point faible", F.mpStatus(prof["Triceps"], moy).tag, "Point faible");
+  eq("Étiquette : équilibré au niveau de la moyenne", F.mpStatus(moy, moy).tag, "Équilibré");
+  eq("Étiquette : point fort à +20 %", F.mpStatus(moy*1.2, moy).tag, "Point fort");
+  eq("Sans moyenne, on retombe sur le barème", F.mpStatus(100, null).tag, "Équilibré");
+  const avant = F.muscleProfile()["Triceps"];
+  DB.unilat[id("Extension poulie")] = true;
+  vrai("Unilatéral : le score double", F.muscleProfile()["Triceps"] > avant*1.9);
+  neuf();
+
+  /* ---------------------------------------------------------- progression sans charge */
+  grp("Progression sans charge");
+  eq("Sous le plafond : on ajoute des reps", F.progressionSansCharge(id("Pompes"), 12, 3).mode, "reps");
+  eq("Proche du plafond : on ajoute une série", F.progressionSansCharge(id("Pompes"), 21, 3).mode, "serie");
+  eq("Au plafond : on change de variante", F.progressionSansCharge(id("Pompes"), 26, 3).mode, "variante");
+  eq("Variante plus dure des pompes", F.varianteDure(id("Pompes")), "Dips");
+  vrai("Poids du corps : charge plafonnée d'office", F.chargeBloquee(id("Pompes")));
+  vrai("Poulie : charge libre par défaut", !F.chargeBloquee(id("Extension poulie")));
+  vrai("Pompes sans lest : rien à retirer", F.sansChargeDuTout(id("Pompes"), 0));
+  vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie"), 20));
+
+  /* ---------------------------------------------------------- bilan */
+  const bilan = document.getElementById("bilan");
+  bilan.innerHTML = echecs === 0
+    ? `<span class="ok">✔ ${total} tests passés</span>`
+    : `<span class="ko">✘ ${echecs} test${echecs>1?"s":""} en échec</span> sur ${total}`;
+  window.RESULTS = {total, echecs};
+}
+</script>
+</html>
