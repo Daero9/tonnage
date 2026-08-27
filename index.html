@@ -3616,10 +3616,13 @@ function renderActive(app){
         : (dejaParCote(en.exId)? "kg / haltère" : (db.unilat[en.exId]? "kg / bras" : "kg"))}</span><span>reps</span><span>dég.</span><span>✓</span></div>
       <div class="sets"></div>
       ${hintBox("degressif","<b>Dégressif ?</b> Le bouton <b>↓</b> d'une série ajoute une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté. Appui long sur la ligne pour supprimer la série.")}
-      <div class="row">
-        <button class="btn btn-sm btn-ghost grow" data-act="addset">＋ série</button>
-        <button class="btn btn-sm btn-ghost" data-act="swap">⇄ Remplacer</button>
-        <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border);">Retirer</button>
+      <div class="row" style="flex-wrap:wrap;">
+        <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ série</button>
+        ${en.sets.filter(x=>!x.warm).length > 1
+          ? `<button class="btn btn-sm btn-ghost" data-act="delset" title="Supprimer la dernière série" aria-label="Supprimer la dernière série" style="color:var(--bad); flex:0 0 auto; padding-inline:14px;">✕</button>`
+          : ""}
+        <button class="btn btn-sm btn-ghost" data-act="swap" style="white-space:nowrap;">⇄ Remplacer</button>
+        <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">Retirer</button>
       </div>`;
     const setsDiv = card.querySelector(".sets");
     en.sets.forEach((st,si)=>{
@@ -3821,6 +3824,18 @@ function renderActive(app){
       const prev = en.sets[en.sets.length-1];
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
       save(); renderSurPlace();
+    };
+    const delSet = card.querySelector('[data-act="delset"]');
+    if(delSet) delSet.onclick=()=>{
+      /* on retire la dernière série de travail ; l'échauffement n'est jamais concerné */
+      let i = -1;
+      for(let j=en.sets.length-1; j>=0; j--){ if(!en.sets[j].warm){ i = j; break; } }
+      if(i < 0 || en.sets.filter(x=>!x.warm).length <= 1) return;
+      const st = en.sets[i];
+      const retirer = ()=>{ en.sets.splice(i,1); save(); renderSurPlace(); };
+      if(st.done) askConfirm("Supprimer la dernière série ?",
+        `${fmtKg(st.w||0)} kg × ${st.r||0} reps sera retirée de cette séance.`, "Supprimer", true, retirer);
+      else retirer();
     };
     wireHints(card);
     card.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
