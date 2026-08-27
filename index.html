@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <title>Tonnage</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#131110">
+<meta name="theme-color" content="#1b1b1d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -36,6 +36,19 @@
     --radius:16px;
     --matin:#4aa8ea; --midi:#f58220; --collation:#6f6fe0; --soir:#f2607b; --extra:#5cba60;
   }
+  /* Le parcours de profil se lit toujours sur fond clair, même si l'app est en thème sombre :
+     ces écrans sont conçus clairs, et on veut la même lecture pour tout le monde. */
+  :root[data-onb]{
+    --bg:#eae7e0; --surface:#ffffff; --surface2:#f2efe9; --border:#e0dbd1;
+    --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
+    --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
+    --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
+    --good:#3f9c62; --bad:#e0554a;
+    --barre:rgba(255,255,255,.96);
+    --sheet:#f4f1eb; --field:#ffffff;
+    --figure:invert(1);
+  }
+  :root[data-onb] .onb-prog{background:#d9d4c9;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   /* Aucune règle overflow ici : sur Android, borner la largeur du document
      (hidden comme clip) empêchait tout défilement vertical. */
@@ -1524,7 +1537,11 @@ function proteinTarget(){
    Plein écran, une question par étape. Rejoué par « Modifier mon profil » :
    dans ce cas une croix permet de sortir sans rien changer. */
 let onbEl = null;
-function fermerOnb(){ if(onbEl){ onbEl.remove(); onbEl = null; } }
+function fermerOnb(){
+  if(onbEl){ onbEl.remove(); onbEl = null; }
+  document.documentElement.removeAttribute("data-onb");
+  appliquerTheme();
+}
 /* petit clic de roulette, sans fichier son */
 let onbAudio = null;
 function clicRoue(){
@@ -1572,6 +1589,9 @@ function openOnboarding(first, brouillon, depart){
   onbEl = document.createElement("div");
   onbEl.className = "onb";
   document.body.appendChild(onbEl);
+  document.documentElement.setAttribute("data-onb", "1");
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", "#eae7e0");
 
   const quitter = ()=>{
     if(!dejaRempli) return;
@@ -1600,12 +1620,14 @@ function openOnboarding(first, brouillon, depart){
   function dessiner(){
     const etape = ETAPES[i];
     const intro = etape === "intro";
+    /* sur les deux dernières pages, pas de croix : on part avec un plan ou on choisit « non merci » */
+    const derniere = etape === "fin" || etape === "affiner";
     const avancement = Math.round((i+1) / ETAPES.length * 100);
     onbEl.innerHTML = `
       ${intro ? "" : `<div class="onb-top">
         <button class="onb-back" id="onb-back" aria-label="Retour">‹</button>
         <div class="onb-prog"><i style="width:${avancement}%"></i></div>
-        ${dejaRempli ? `<button class="onb-x" id="onb-x" aria-label="Quitter">✕</button>`
+        ${(dejaRempli && !derniere) ? `<button class="onb-x" id="onb-x" aria-label="Quitter">✕</button>`
                      : `<span style="width:30px; flex:0 0 auto;"></span>`}
       </div>`}
       <div class="onb-body" id="onb-body"></div>
@@ -2047,7 +2069,9 @@ function showPlan(justCreated){
       ⚕️ Ces chiffres sont des <b>estimations</b>, pas des prescriptions médicales.
       <button class="inj-swap" id="pl-sante">En savoir plus</button></div>
     ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">Ajouter les ${manquantes.length} séances à mes programmes</button>`:""}
-    <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : "C'est parti"}</button>`);
+    <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : "C'est parti"}</button>`,
+    /* premier plan : on ne peut pas balayer la feuille sans avoir tranché */
+    {verrou: !!justCreated});
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
   document.getElementById("pl-sante").onclick = openSante;
   const add = document.getElementById("pl-add");
@@ -2537,10 +2561,14 @@ const overlay = document.getElementById("overlay");
 const sheet = document.getElementById("sheet");
 let sheetOpen = false;
 let onSheetClose = null;   /* action à exécuter quand la fiche se ferme, quelle qu'en soit la façon */
-function openSheet(html){
+/* verrou : la feuille ne se ferme ni au glissement, ni par le fond, ni par une croix.
+   Réservé aux moments où l'utilisateur doit vraiment choisir (le plan de départ). */
+let sheetVerrou = false;
+function openSheet(html, opts){
+  sheetVerrou = !!(opts && opts.verrou);
   sheet.style.transition = ""; sheet.style.transform = "";
   sheet.scrollTop = 0;
-  sheet.innerHTML = '<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="Fermer">✕</button>'+html;
+  sheet.innerHTML = (sheetVerrou ? "" : '<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="Fermer">✕</button>')+html;
   const croix = document.getElementById("sheet-x");
   if(croix) croix.onclick = closeSheet;
   overlay.classList.add("show");
@@ -2553,7 +2581,7 @@ function openSheet(html){
 function hideSheet(){
   sheet.style.transition = ""; sheet.style.transform = "";
   overlay.classList.remove("show");
-  sheetOpen = false;
+  sheetOpen = false; sheetVerrou = false;
   if(onSheetClose){ const f = onSheetClose; onSheetClose = null; try{ f(); }catch(e){} }
 }
 function closeSheet(){
@@ -2563,7 +2591,7 @@ function closeSheet(){
   }
   hideSheet();
 }
-overlay.addEventListener("click", e=>{ if(e.target===overlay) closeSheet(); });
+overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) closeSheet(); });
 
 /* fermeture au glissement vers le bas (geste attendu sur iPhone) */
 (function glisserPourFermer(){
@@ -2576,6 +2604,7 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay) closeSheet(); });
     return false;
   };
   sheet.addEventListener("touchstart", e=>{
+    if(sheetVerrou){ y0 = null; return; }
     if(e.touches.length !== 1){ y0 = null; return; }
     if(sheet.scrollTop > 0){ y0 = null; return; }
     if(e.target.closest('input[type="range"], select, textarea')){ y0 = null; return; }
@@ -3779,14 +3808,222 @@ function renderSeance(app){
 }
 
 /* le bouton ＋ de l'accueil */
+
+/* ================= « PROPOSE-MOI » : génération de séances =================
+   Un moule décrit les rôles d'une séance (pectoraux lourd, dos horizontal…).
+   Chaque rôle a plusieurs exercices interchangeables : on en tire un au sort en
+   évitant ceux déjà faits cette semaine, pour que deux propositions ne se ressemblent pas. */
+const RESERVOIRS = {
+  pecLourd:  ["Développé couché","Développé incliné barre","Développé couché haltères","Développé incliné haltères","Développé machine","Développé couché à la Smith"],
+  pecComp:   ["Écartés poulie","Butterfly (pec deck)","Écartés haltères","Écartés poulie haute","Dips","Pompes"],
+  epaule:    ["Développé militaire","Développé militaire haltères","Arnold press","Développé machine épaules"],
+  epauleIso: ["Élévations latérales","Élévations latérales poulie","Élévations frontales"],
+  triceps:   ["Extension poulie","Extension poulie corde","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie"],
+  dosVert:   ["Tractions","Tirage vertical","Tirage vertical prise neutre"],
+  dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Tractions australiennes"],
+  dosComp:   ["Pull-over poulie","Haussements d'épaules","Tirage horizontal","Rowing haltère"],
+  arriere:   ["Face pull","Oiseau","Rowing menton"],
+  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration"],
+  quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses"],
+  posterieur:["Soulevé de terre roumain","Soulevé de terre","Good morning","Hip thrust","Soulevé de terre sumo"],
+  uniJambe:  ["Fentes","Fentes bulgares","Montées sur banc","Presse à cuisses","Leg extension"],
+  ischio:    ["Leg curl","Kickback fessier poulie","Abducteurs machine","Adducteurs machine"],
+  mollets:   ["Mollets debout","Mollets assis"],
+  abdos:     ["Crunch","Gainage","Relevés de jambes","Crunch câble","Russian twist","Roulette abdominale","Planche latérale","Mountain climber"]
+};
+/* rôles à faible charge : plus de répétitions, moins de repos */
+const ROLES_LEGERS = ["epauleIso","arriere","mollets","abdos","dosComp","triceps","biceps","ischio"];
+const MOULES = {
+  push:   {nom:"Push",           sous:"Pectoraux, épaules, triceps", roles:["pecLourd","pecComp","epaule","epauleIso","triceps"]},
+  pull:   {nom:"Pull",           sous:"Dos et biceps",               roles:["dosVert","dosHoriz","dosComp","arriere","biceps"]},
+  jambes: {nom:"Jambes",         sous:"Cuisses, fessiers, mollets",  roles:["quadLourd","posterieur","uniJambe","ischio","mollets","abdos"]},
+  haut:   {nom:"Haut du corps",  sous:"Tout le buste en une fois",   roles:["pecLourd","dosHoriz","epaule","dosVert","biceps","triceps"]},
+  bas:    {nom:"Bas du corps",   sous:"Jambes, fessiers et gainage", roles:["quadLourd","posterieur","uniJambe","mollets","abdos"]},
+  full:   {nom:"Full body",      sous:"Tout le corps en une séance", roles:["quadLourd","pecLourd","dosHoriz","epauleIso","abdos"]}
+};
+const MUSCLES_TYPE = {
+  push:["Pectoraux","Épaules","Triceps"], pull:["Dos","Biceps"], jambes:["Jambes"],
+  haut:["Pectoraux","Dos","Épaules"], bas:["Jambes"], full:["Jambes","Pectoraux","Dos"]
+};
+/* séries, répétitions et repos selon l'objectif */
+const DOSES = {
+  masse:     {lourd:{s:4, r:"8-12", p:150}, moyen:{s:3, r:"8-12", p:120}, leger:{s:3, r:"12-15", p:75}},
+  seche:     {lourd:{s:3, r:"10-15", p:90}, moyen:{s:3, r:"10-15", p:75}, leger:{s:3, r:"15-20", p:50}},
+  force:     {lourd:{s:5, r:"4-6",  p:210}, moyen:{s:4, r:"6-8",  p:150}, leger:{s:3, r:"10-12", p:75}},
+  recomp:    {lourd:{s:4, r:"8-12", p:120}, moyen:{s:3, r:"8-12", p:105}, leger:{s:3, r:"12-15", p:60}},
+  entretien: {lourd:{s:3, r:"8-12", p:120}, moyen:{s:3, r:"8-12", p:90},  leger:{s:3, r:"12-15", p:60}}
+};
+/* les types de séance qui ont du sens pour ce nombre de séances par semaine */
+function typesProposables(){
+  const j = (db.profile && db.profile.days) || 3;
+  if(j <= 2) return ["full","haut","bas"];
+  if(j === 3) return ["full","haut","bas","push","pull","jambes"];
+  if(j === 4) return ["haut","bas","push","pull","jambes","full"];
+  return ["push","pull","jambes","haut","bas","full"];
+}
+/* exercices déjà faits ces derniers jours : on préfère en proposer d'autres */
+function exercicesRecents(jours){
+  const limite = Date.now() - (jours||7)*864e5;
+  const noms = new Set();
+  (db.history||[]).forEach(h=>{
+    if(new Date(h.date).getTime() < limite) return;
+    (h.entries||[]).forEach(en=>{ const ex = getEx(en.exId); if(ex && ex.name) noms.add(ex.name); });
+  });
+  return noms;
+}
+/* dernière fois que ce type de séance a été travaillé, en jours (null = jamais) */
+function joursDepuisType(type){
+  const cibles = MUSCLES_TYPE[type] || [];
+  let recent = null;
+  (db.history||[]).forEach(h=>{
+    const touche = (h.entries||[]).some(en=>cibles.includes((getEx(en.exId)||{}).muscle));
+    if(!touche) return;
+    const t = new Date(h.date).getTime();
+    if(recent === null || t > recent) recent = t;
+  });
+  return recent === null ? null : Math.floor((Date.now() - recent)/864e5);
+}
+/* le type le plus en retard parmi ceux qui conviennent au profil */
+function typeQuiManque(){
+  const types = typesProposables();
+  let meilleur = types[0], score = -1;
+  types.forEach(t=>{
+    const j = joursDepuisType(t);
+    const v = (j === null) ? 999 : j;
+    if(v > score){ score = v; meilleur = t; }
+  });
+  return {type:meilleur, jours:joursDepuisType(meilleur)};
+}
+function melanger(arr){
+  const a = arr.slice();
+  for(let i=a.length-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; }
+  return a;
+}
+/* génère une séance : un exercice par rôle, sans doublon, en évitant le récent et le risqué */
+function genererSeance(type, evites){
+  const moule = MOULES[type] || MOULES.full;
+  const recents = exercicesRecents(6);
+  const bannis = new Set(evites || []);
+  const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
+  const items = [];
+  moule.roles.forEach((role, n)=>{
+    const pool = melanger(RESERVOIRS[role] || []).filter(nom=>libId(nom) && !items.some(it=>it.nom===nom));
+    if(!pool.length) return;
+    /* 1er choix : ni banni, ni récent, ni déconseillé par une blessure. Puis on relâche. */
+    const sain = nom => !injuryNote(nom);
+    const choisi = pool.find(n2=>!bannis.has(n2) && !recents.has(n2) && sain(n2))
+                || pool.find(n2=>!bannis.has(n2) && sain(n2))
+                || pool.find(n2=>!recents.has(n2))
+                || pool[0];
+    const niveau = ROLES_LEGERS.includes(role) ? "leger" : (n === 0 ? "lourd" : "moyen");
+    const d = dose[niveau];
+    items.push({nom:choisi, sets:d.s, reps:d.r, rest:d.p, role});
+  });
+  return {type, nom:moule.nom, sous:moule.sous, items};
+}
+/* nom unique, pour ne pas écraser une séance existante */
+function nomLibre(base){
+  if(!db.templates.some(t=>t.name === base)) return base;
+  for(let n=2; n<40; n++){ const c = `${base} ${n}`; if(!db.templates.some(t=>t.name === c)) return c; }
+  return `${base} ${Date.now().toString(36)}`;
+}
+function enregistrerProposition(prop){
+  const tpl = {
+    id: uid(),
+    name: nomLibre(`${prop.nom} · ${aimOf((db.profile&&db.profile.aim)||"masse").label}`),
+    items: prop.items.map(it=>({exId:libId(it.nom), sets:it.sets, reps:it.reps, rest:it.rest})).filter(it=>it.exId)
+  };
+  db.templates.push(tpl);
+  save();
+  return tpl;
+}
+
+function openPropose(){
+  const manque = typeQuiManque();
+  const types = typesProposables();
+  const autres = types.filter(t=>t !== manque.type);
+  const aim = aimOf((db.profile && db.profile.aim) || "masse");
+  const jours = (db.profile && db.profile.days) || 3;
+  const depuis = manque.jours === null
+    ? "Tu n'as encore rien enregistré : autant commencer par là."
+    : (manque.jours === 0 ? "Fait aujourd'hui — à garder pour un autre jour."
+      : `Pas travaillé depuis ${manque.jours} jour${manque.jours>1?"s":""}.`);
+  openSheet(`<h3 style="text-align:center;">Propose-moi une séance</h3>
+    <p style="margin:0 0 14px; font-size:13px; color:var(--ink-soft); text-align:center; line-height:1.5;">
+      D'après ton objectif <b>${esc(aim.label.toLowerCase())}</b> et tes ${jours} séances par semaine.
+      Les exercices changent à chaque proposition.</p>
+    <div class="stack">
+      <button class="btn btn-accent" id="pp-top" style="display:block; text-align:left; padding:13px 15px;">
+        <span style="display:block; font-size:15px; font-weight:800;">🎯 ${esc(MOULES[manque.type].nom)} — la séance qui manque</span>
+        <span style="display:block; font-size:12px; font-weight:600; opacity:.85; margin-top:2px;">${esc(depuis)}</span>
+      </button>
+      <div class="label" style="margin-top:4px;">Ou choisis toi-même</div>
+      <div class="chips" id="pp-types">${autres.map(t=>
+        `<button class="chip" data-pptype="${t}">${esc(MOULES[t].nom)}</button>`).join("")}</div>
+      <button class="btn" id="pp-hasard">🎲 Surprends-moi</button>
+      <button class="btn" id="pp-prog" style="background:var(--hero); color:#fff; border-color:var(--hero);">📋 Le programme complet (${esc(aim.label.toLowerCase())})</button>
+      <p style="margin:0; font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5;">
+        Le programme complet ajoute les ${COACH_PROGRAMS[aim.prog].templates.length} séances d'un coup. Une proposition, c'est une seule séance, tirée au sort dans une liste d'exercices équivalents.</p>
+    </div>`);
+  document.getElementById("pp-top").onclick = ()=>apercuProposition(manque.type);
+  document.querySelectorAll("[data-pptype]").forEach(b=>b.onclick=()=>apercuProposition(b.dataset.pptype));
+  document.getElementById("pp-hasard").onclick = ()=>apercuProposition(types[Math.floor(Math.random()*types.length)]);
+  document.getElementById("pp-prog").onclick = ()=>{
+    addCoachProgram(aim.prog); closeSheet(); render(); toast("Programme ajouté ✓");
+  };
+}
+
+/* aperçu d'une proposition, avec la possibilité d'en redemander une autre */
+function apercuProposition(type, evites){
+  const prop = genererSeance(type, evites);
+  const dejaVus = (evites || []).concat(prop.items.map(it=>it.nom));
+  const total = prop.items.reduce((a,it)=>a+it.sets, 0);
+  const minutes = Math.round(prop.items.reduce((a,it)=>a + it.sets*(it.rest+40), 0)/60);
+  openSheet(`<h3 style="text-align:center;">${esc(prop.nom)}</h3>
+    <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">
+      ${esc(prop.sous)} · ${prop.items.length} exercices · ${total} séries · ~${minutes} min</p>
+    <div class="stack" style="gap:7px; margin-bottom:14px;">
+      ${prop.items.map(it=>{
+        const bless = injuryNote(it.nom);
+        return `<div class="card" style="padding:11px 13px;">
+          <div class="row" style="justify-content:space-between; gap:10px; align-items:center;">
+            <div style="min-width:0;">
+              <div style="font-weight:800; font-size:14.5px;">${esc(it.nom)}</div>
+              <div style="font-size:12px; color:var(--ink-mute);">${it.sets} × ${esc(it.reps)} · repos ${it.rest} s</div>
+            </div>
+            <button class="btn btn-sm" data-ppswap="${esc(it.nom)}" style="flex:0 0 auto;">↻</button>
+          </div>
+          ${bless? `<div class="inj-note" style="margin:8px 0 0; font-size:11.5px;">⚠️ ${esc(bless.injury)} : ${esc(bless.tip)}</div>`:""}
+        </div>`;
+      }).join("")}
+    </div>
+    <button class="btn btn-accent" id="pp-add" style="width:100%; margin-bottom:8px;">Ajouter à mes séances</button>
+    <button class="btn" id="pp-go" style="width:100%; margin-bottom:8px;">Ajouter et démarrer maintenant</button>
+    <button class="btn btn-ghost" id="pp-again" style="width:100%; margin-bottom:8px;">↻ Une autre proposition</button>
+    <button class="btn btn-ghost" id="pp-back" style="width:100%;">Retour</button>`);
+  /* ↻ sur une ligne : on ne rejoue que cet exercice */
+  document.querySelectorAll("[data-ppswap]").forEach(b=>b.onclick=()=>{
+    apercuProposition(type, (evites||[]).concat(b.dataset.ppswap));
+  });
+  document.getElementById("pp-again").onclick = ()=>apercuProposition(type, dejaVus);
+  document.getElementById("pp-back").onclick = openPropose;
+  document.getElementById("pp-add").onclick = ()=>{
+    enregistrerProposition(prop); closeSheet(); render(); toast("Séance ajoutée ✓");
+  };
+  document.getElementById("pp-go").onclick = ()=>{
+    const tpl = enregistrerProposition(prop); closeSheet(); startWorkout(tpl.id);
+  };
+}
 function openAjout(){
   openSheet(`<h3 style="text-align:center;">Ajouter</h3>
     <div class="stack">
-      <button class="btn btn-accent" id="aj-seance">＋ Nouvelle séance</button>
+      <button class="btn btn-accent" id="aj-propose">✨ Propose-moi une séance</button>
+      <button class="btn" id="aj-seance">＋ Nouvelle séance (je choisis tout)</button>
       <button class="btn" id="aj-cardio">＋ Sortie cardio</button>
       <button class="btn" id="aj-lib" style="background:var(--hero); color:#fff; border-color:var(--hero);">Bibliothèque d'exercices</button>
       <button class="btn btn-ghost" id="aj-libre">Démarrer une séance libre</button>
     </div>`);
+  document.getElementById("aj-propose").onclick=()=>openPropose();
   document.getElementById("aj-seance").onclick=()=>{ closeSheet(); setTimeout(()=>openTplEditor(null), 60); };
   document.getElementById("aj-cardio").onclick=()=>{ closeSheet(); setTimeout(openCardioAdd, 60); };
   document.getElementById("aj-lib").onclick=()=>{ closeSheet(); setTimeout(()=>openPicker(null), 60); };

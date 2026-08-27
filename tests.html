@@ -220,6 +220,41 @@ function lancer(){
   vrai("Pompes sans lest : rien à retirer", F.sansChargeDuTout(id("Pompes"), 0));
   vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie"), 20));
 
+  /* ---------------------------------------------------------- propositions de seances */
+  grp("Propose-moi une séance");
+  neuf();
+  /* déclarés avec const : comme db, ils ne sont pas sur window */
+  const RES = F.eval("RESERVOIRS"), MOU = F.eval("MOULES");
+  vrai("Tous les exercices proposables existent dans la bibliothèque",
+    Object.values(RES).every(l=>l.every(n=>F.libId(n))));
+  const pushA = F.genererSeance("push");
+  eq("Une séance push a un exercice par rôle", pushA.items.length, MOU.push.roles.length);
+  vrai("Aucun doublon dans une séance", new Set(pushA.items.map(i=>i.nom)).size === pushA.items.length);
+  vrai("Le premier exercice est le plus lourd", pushA.items[0].sets >= pushA.items[pushA.items.length-1].sets);
+  vrai("Repos plus longs sur le premier exercice", pushA.items[0].rest >= pushA.items[pushA.items.length-1].rest);
+  const pushB = F.genererSeance("push", pushA.items.map(i=>i.nom));
+  vrai("Une nouvelle proposition change tous les exercices",
+    pushB.items.every(i=>!pushA.items.some(j=>j.nom===i.nom)));
+  DB.profile.injuries = ["epaule","genou"];
+  let risques = 0, roles = 0;
+  ["push","pull","jambes","haut","bas","full"].forEach(t=>{
+    for(let i=0;i<4;i++){ const g = F.genererSeance(t);
+      if(g.items.length === MOU[t].roles.length) roles++;
+      g.items.forEach(it=>{ if(F.injuryNote(it.nom)) risques++; }); }
+  });
+  eq("Blessures déclarées : aucun exercice à risque proposé", risques, 0);
+  eq("Tous les rôles sont remplis sur les 24 tirages", roles, 24);
+  DB.profile.injuries = [];
+  DB.profile.days = 2;
+  eq("2 séances par semaine : full body proposé en premier", F.typesProposables()[0], "full");
+  DB.profile.days = 5;
+  eq("5 séances par semaine : push en premier", F.typesProposables()[0], "push");
+  neuf();
+  DB.templates = [{id:"a", name:"Push · Prise de muscle", items:[]}];
+  eq("Un nom déjà pris est numéroté", F.nomLibre("Push · Prise de muscle"), "Push · Prise de muscle 2");
+  eq("Un nom libre est gardé tel quel", F.nomLibre("Pull · Prise de muscle"), "Pull · Prise de muscle");
+  neuf();
+
   /* ---------------------------------------------------------- parcours d'accueil */
   grp("Parcours d'accueil");
   neuf();
