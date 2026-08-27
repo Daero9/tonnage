@@ -4956,8 +4956,12 @@ function analyseProfil(prof){
   }
   const tries = connus.slice().sort((a,b)=>prof[a]-prof[b]);
   const faible = tries[0], fort = tries[tries.length-1];
-  const moyenne = Math.round(connus.reduce((a,m)=>a+prof[m],0)/connus.length);
-  const ecart = prof[fort] - prof[faible];
+  const moyenneBrute = connus.reduce((a,m)=>a+prof[m],0)/connus.length;
+  const moyenne = Math.round(moyenneBrute);
+  /* tout est exprimé en % de ta moyenne, comme les barres juste au-dessus */
+  const pc = m => Math.round((prof[m] - moyenneBrute) / moyenneBrute * 100);
+  const signe = v => (v>=0? "+" : "−") + Math.abs(v) + " %";
+  const ecart = Math.round((prof[fort] - prof[faible]) / moyenneBrute * 100);
 
   /* ce que tu fais réellement */
   const freq = {};
@@ -4970,9 +4974,9 @@ function analyseProfil(prof){
   const dansProgrammes = pourFaible.filter(e=>db.templates.some(t=>t.items.some(i=>i.exId===e.id)));
 
   /* 1. le constat, avec tes chiffres */
-  let constat = `Sur tes ${nbSeances} séances, ton meilleur score est <b style="color:var(--good);">${fort.toLowerCase()}</b> à ${prof[fort]}`;
+  let constat = `Sur tes ${nbSeances} séances, ton point fort est <b style="color:var(--good);">${fort.toLowerCase()}</b>, à ${signe(pc(fort))} de ta moyenne`;
   constat += exFort ? `, porté par ${freq[exFort.id]} passage${freq[exFort.id]>1?"s":""} sur ${exFort.name.toLowerCase()}. ` : `. `;
-  constat += `Ton retard est sur <b style="color:var(--bad);">${faible.toLowerCase()}</b> à ${prof[faible]}`;
+  constat += `Ton retard est sur <b style="color:var(--bad);">${faible.toLowerCase()}</b>, à ${signe(pc(faible))}`;
   if(!faits.length) constat += `, et c'est logique : tu n'as encore enregistré aucun exercice qui le cible directement.`;
   else if(faits.length && freq[faits[0].id] <= 2) constat += `, avec seulement ${freq[faits[0].id]} passage${freq[faits[0].id]>1?"s":""} sur ${faits[0].name.toLowerCase()}.`;
   else constat += `, malgré ${freq[faits[0].id]} passages sur ${faits[0].name.toLowerCase()} — la fréquence est là, c'est donc la charge ou l'intensité qu'il faut monter.`;
@@ -4981,13 +4985,13 @@ function analyseProfil(prof){
   const lien = lienEntre(fort, faible);
   let diagnostic;
   if(ecart < 20){
-    diagnostic = `Seulement ${ecart} points séparent tes deux extrêmes : ton développement est <b>remarquablement homogène</b>. À ce stade, inutile de chasser un point faible — continue à charger partout.`;
+    diagnostic = `Seulement ${ecart} % séparent tes deux extrêmes : ton développement est <b>remarquablement homogène</b>. À ce stade, inutile de chasser un point faible — continue à charger partout.`;
   } else if(lien){
-    diagnostic = `${ecart} points d'écart entre les deux. ${lien}`;
+    diagnostic = `${ecart} % d'écart entre les deux. ${lien}`;
   } else if(ecart < 45){
-    diagnostic = `${ecart} points d'écart. Ces deux muscles ne travaillent pas ensemble, il n'y a donc aucun risque à cet écart — c'est simplement là que tu as le plus de marge de progression facile.`;
+    diagnostic = `${ecart} % d'écart. Ces deux muscles ne travaillent pas ensemble, il n'y a donc aucun risque à cet écart — c'est simplement là que tu as le plus de marge de progression facile.`;
   } else {
-    diagnostic = `${ecart} points d'écart. Ces deux muscles sont indépendants, donc pas d'inquiétude côté blessure : c'est un simple retard de travail, et le rattraper est ce qui changera le plus vite ta silhouette.`;
+    diagnostic = `${ecart} % d'écart. Ces deux muscles sont indépendants, donc pas d'inquiétude côté blessure : c'est un simple retard de travail, et le rattraper est ce qui changera le plus vite ta silhouette.`;
   }
 
   /* 3. l'action, à partir de tes programmes */
@@ -4999,7 +5003,7 @@ function analyseProfil(prof){
       <p style="margin:0 0 8px;">${constat}</p>
       <p style="margin:0 0 8px;">${diagnostic}</p>
       <p style="margin:0 0 8px;">Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : 2,5 kg de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.</p>
-      <p style="margin:0; font-size:11px; color:var(--ink-mute);">Moyenne générale ${moyenne}. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.</p>
+      <p style="margin:0; font-size:11px; color:var(--ink-mute);">Écarts calculés par rapport à ta propre moyenne, sur ${connus.length} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.</p>
     </div>`;
   }
   if(dansProgrammes.length){
@@ -5021,7 +5025,7 @@ function analyseProfil(prof){
     <p style="margin:0 0 8px;">${constat}</p>
     <p style="margin:0 0 8px;">${diagnostic}</p>
     <p style="margin:0 0 8px;">${action} ${projection}</p>
-    <p style="margin:0; font-size:11px; color:var(--ink-mute);">Moyenne générale ${moyenne}. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.</p>
+    <p style="margin:0; font-size:11px; color:var(--ink-mute);">Écarts calculés par rapport à ta propre moyenne, sur ${connus.length} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.</p>
   </div>`;
 }
 function renderMuscleSection(sec){
