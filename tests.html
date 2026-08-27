@@ -214,6 +214,21 @@ function lancer(){
   vrai("Pompes sans lest : rien à retirer", F.sansChargeDuTout(id("Pompes"), 0));
   vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie"), 20));
 
+  /* ---------------------------------------------------------- parcours d'accueil */
+  grp("Parcours d'accueil");
+  neuf();
+  const sansSexe = F.planFor({...profilType, sex:"n"});
+  const homme = F.planFor({...profilType, sex:"h"});
+  const femme = F.planFor({...profilType, sex:"f"});
+  vrai("Sexe non renseigné : entre homme et femme", sansSexe.bmr < homme.bmr && sansSexe.bmr > femme.bmr);
+  pres("Sexe non renseigné : moyenne des deux", sansSexe.bmr, (homme.bmr+femme.bmr)/2, 1);
+  const fk = F.fourchetteProt(1.9);
+  eq("Fourchette protéines : trois choix", fk.length, 3);
+  eq("Fourchette protéines : la valeur conseillée est au centre", fk[1][0], 1.9);
+  vrai("Fourchette protéines : ordre croissant", fk[0][0] < fk[1][0] && fk[1][0] < fk[2][0]);
+  vrai("Fourchette protéines : jamais en dessous de 1,2 g/kg", F.fourchetteProt(1.3)[0][0] >= 1.2);
+  vrai("Fourchette protéines : jamais au-dessus de 2,6 g/kg", F.fourchetteProt(2.5)[2][0] <= 2.6);
+
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
   bilan.innerHTML = echecs === 0
