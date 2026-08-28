@@ -489,16 +489,16 @@
   .chip-sm{padding:6px 10px; font-size:12.5px;}
   .chip-sm i{font-style:normal; font-size:10.5px; color:var(--ink-mute); margin-left:4px; font-weight:700;}
   .chip-sm.on i{color:var(--accent-ink); opacity:.7;}
-  .pr-plot{position:relative; display:flex; gap:4px; align-items:flex-end; height:110px;}
-  .pr-target{position:absolute; left:0; right:0; border-top:1.5px dashed var(--ink-mute); opacity:.7; z-index:2;}
-  .pr-target i{position:absolute; right:0; top:-13px; font-style:normal; font-size:9.5px; font-weight:700; color:var(--ink-mute); background:var(--surface); padding:0 3px;}
+  .pr-plot{position:relative; display:flex; gap:5px; align-items:flex-end; height:132px; padding-left:32px;}
+  .pr-target{position:absolute; left:32px; right:0; border-top:1.5px dashed var(--ink-mute); opacity:.7; z-index:2;}
+  .pr-target i{position:absolute; left:-32px; top:-8px; font-style:normal; font-size:10.5px; font-weight:700; color:var(--ink-mute); background:var(--surface); padding:0 2px;}
   .pr-col{flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; padding:0; background:none; border:none; min-width:0;}
-  .pr-col .pr-val{height:15px; line-height:15px; font-size:8.5px; font-weight:800; font-variant-numeric:tabular-nums; text-align:center;}
+  .pr-col .pr-val{height:17px; line-height:17px; font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; text-align:center;}
   .pr-col .pr-barwrap{flex:1; display:flex; align-items:flex-end; width:100%;}
   .pr-col .pr-b{width:100%; border-radius:4px 4px 2px 2px; display:block;}
   .pr-col:active .pr-b{opacity:.6;}
-  .pr-labels{display:flex; gap:4px; margin-top:4px;}
-  .pr-labels span{flex:1; text-align:center; font-size:9px; font-weight:700; color:var(--ink-mute);}
+  .pr-labels{display:flex; gap:5px; margin-top:5px; padding-left:32px;}
+  .pr-labels span{flex:1; text-align:center; font-size:11px; font-weight:700; color:var(--ink-mute);}
   .week-dots{display:flex; gap:8px; margin:12px 0 14px;}
   .wd{flex:1; text-align:center;}
   .wd i{display:block; height:26px; border-radius:9px; background:var(--surface2); border:1px solid var(--border); margin-bottom:4px;}
@@ -513,6 +513,32 @@
   .hscroll::-webkit-scrollbar{display:none;}
   .sess-card{flex:0 0 76%; max-width:260px; scroll-snap-align:start; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px;}
   .sugg-badge{display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); background:var(--accent); border-radius:99px; padding:3px 9px; margin-bottom:8px;}
+  /* ---- écran Progression ---- */
+  .card-t{font-size:21px; font-weight:800; letter-spacing:-.01em; line-height:1.15;}
+  .card-sub{font-size:13px; color:var(--ink-soft); margin-top:1px;}
+  .card-i{width:20px; height:20px; flex:0 0 auto; border-radius:50%; border:1.5px solid var(--accent);
+    color:var(--accent); font-size:12px; font-weight:800; line-height:1;
+    display:inline-flex; align-items:center; justify-content:center; vertical-align:2px;}
+  /* jauge de progression vers le poids visé */
+  .jauge{height:15px; border-radius:99px; background:var(--surface2); border:1px solid var(--border);
+    overflow:hidden; margin-top:12px;}
+  .jauge i{display:block; height:100%; border-radius:99px; background:var(--accent); transition:width .35s ease;}
+  .jauge-txt{text-align:center; font-size:12.5px; color:var(--ink-mute); margin-top:7px;}
+  /* languette qui déplie un graphique, à cheval sur le bas de la carte */
+  .pli{display:flex; justify-content:center; margin-top:-12px; position:relative; z-index:4;}
+  .pli button{display:flex; align-items:center; justify-content:center; gap:6px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:6px 20px;
+    box-shadow:0 3px 10px rgba(0,0,0,.08); color:var(--ink-soft);}
+  .pli svg{width:17px; height:11px; transition:transform .25s ease;}
+  .pli button[aria-expanded="true"] svg{transform:rotate(180deg);}
+  /* bloc d'analyse repliable */
+  .depli{border:1.5px dashed var(--border); border-radius:12px; margin-top:14px; overflow:hidden;}
+  .depli-h{width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 14px; font-size:15px; font-weight:800; color:var(--ink);}
+  .depli-h svg{width:17px; height:11px; flex:0 0 auto; color:var(--ink-soft); transition:transform .25s ease;}
+  .depli-h[aria-expanded="true"] svg{transform:rotate(180deg);}
+  .depli-c{padding:0 14px 13px;}
+  .depli-c .analyse{margin-top:0; background:none; border:none; padding:0;}
   .analyse{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 13px; margin-top:14px; font-size:13px; line-height:1.6; color:var(--ink-soft);}
   .analyse b{color:var(--ink);}
   .mp-row{margin-bottom:13px;}
@@ -5188,18 +5214,21 @@ function openHistEdit(id){
 
 /* ================= PROGRESSION ================= */
 let prgEx = null, prgMetric = "max";
+/* ce que l'utilisateur a déplié : conservé d'un rendu à l'autre */
+const prgPlis = {poids:false, analyse:false};
+const CHEV = '<svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l7 5 7-5"/><path d="M3 8.5l7 3 7-3" opacity=".45"/></svg>';
+/* une languette centrée qui déplie le bloc « cible » */
+function pliBouton(id, ouvert, libelle){
+  return `<div class="pli"><button id="${id}" aria-expanded="${ouvert}" aria-label="${esc(libelle)}">${CHEV}</button></div>`;
+}
 function renderProgress(app){
   const counts = {};
   db.history.forEach(s=>s.entries.forEach(en=>{ counts[en.exId]=(counts[en.exId]||0)+1; }));
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    <div class="topbar" style="margin-bottom:10px;">
-      <div style="font-size:22px; font-weight:800;">Progression</div>
-      <button class="icon-btn" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button></div>
-    <div class="date-line">Progression</div>
-    <div id="wt-sec"></div>
-    <div class="section-t"><i>📈</i>Par exercice</div>
+    ${hero(`<div class="big">Progression</div>`)}
+    <div class="under-hero stack" id="wt-sec"></div>
     <div id="prg-body"></div>`;
   wireTopbar();
   renderWeightSection(document.getElementById("wt-sec"));
@@ -5208,21 +5237,25 @@ function renderProgress(app){
   renderCardioSection(document.getElementById("wt-sec"));
   const body = document.getElementById("prg-body");
   if(!exIds.length){
-    body.innerHTML = `<div class="card empty"><div class="big">📈</div>Tes courbes par exercice apparaîtront ici après tes premières séances.</div>`;
+    body.innerHTML = `<div class="card" style="margin-top:14px;">
+      <div class="card-t">Évolution des charges</div>
+      <div class="empty" style="padding:20px 10px;">Tes courbes par exercice apparaîtront ici après tes premières séances.</div>
+    </div>`;
     return;
   }
   if(!prgEx || !exIds.includes(prgEx)) prgEx = exIds[0];
 
   body.innerHTML = `
-    <select id="prg-sel" style="margin-bottom:12px;">${exIds.map(id=>`<option value="${id}" ${id===prgEx?"selected":""}>${esc(getEx(id).name)}</option>`).join("")}</select>
-    <div class="chips" style="margin-bottom:14px;">
-      <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">Charge max</button>
-      <button class="chip ${prgMetric==="1rm"?"on":""}" data-m="1rm">1RM estimé</button>
-      <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">Volume</button>
-    </div>
-    <div class="tiles" id="prg-tiles"></div>
-    <div class="card" style="margin-top:12px; padding:14px 8px 8px;">
-      <div class="chart-wrap" id="chart-wrap"><div class="chart-tip" id="chart-tip"></div></div>
+    <div class="card" style="margin-top:14px;">
+      <div class="card-t" style="margin-bottom:10px;">Évolution des charges</div>
+      <select id="prg-sel" style="margin-bottom:12px;">${exIds.map(id=>`<option value="${id}" ${id===prgEx?"selected":""}>${esc(getEx(id).name)}</option>`).join("")}</select>
+      <div class="chips" style="margin-bottom:14px;">
+        <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">Charge max</button>
+        <button class="chip ${prgMetric==="1rm"?"on":""}" data-m="1rm">1RM estimé</button>
+        <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">Volume</button>
+      </div>
+      <div class="tiles" id="prg-tiles"></div>
+      <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;"><div class="chart-tip" id="chart-tip"></div></div>
     </div>`;
   document.getElementById("prg-sel").onchange=e=>{ prgEx=e.target.value; render(); };
   body.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ prgMetric=b.dataset.m; render(); });
@@ -5259,25 +5292,44 @@ function renderWeightSection(sec){
   const delta = (cur!==null && goal>0)? Math.round((goal-cur)*10)/10 : null;
   const first = ws.length? ws[0].kg : null;
   const total = (cur!==null && first!==null)? Math.round((cur-first)*10)/10 : null;
+  /* où en est-on entre la première pesée et le poids visé ? */
+  const depart = (db.profile && db.profile.weight > 0 && ws.length) ? ws[0].kg : first;
+  let pct = null;
+  if(cur !== null && goal > 0 && depart !== null && Math.abs(goal - depart) > 0.05)
+    pct = Math.max(0, Math.min(100, (cur - depart)/(goal - depart)*100));
+  const ouvert = prgPlis.poids;
   sec.innerHTML = `
-    <div class="section-t" style="margin-top:0;"><i>⚖️</i>Poids corporel</div>
     <div class="card">
-      <div class="row">
-        <div class="grow">
-          <div style="font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;">${cur!==null? fmtKg(cur)+" kg" : "—"}</div>
-          <div style="font-size:12.5px; color:var(--ink-mute);"><button class="inline-edit" id="wt-goal">${goal>0
-            ? (delta===null ? `objectif ${fmtKg(goal)} kg` : (delta>0 ? `objectif ${fmtKg(goal)} kg · encore ${fmtKg(delta)} kg` : `objectif ${fmtKg(goal)} kg atteint 🎉`))
-            : "définir un objectif"} <span class="pen">✎</span></button></div>
-        </div>
-        <button class="btn btn-accent btn-sm" id="wt-add">＋ Noter</button>
+      <div class="row" style="align-items:center; gap:11px;">
+        <div class="card-t grow">Poids</div>
+        <div style="font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;">${
+          cur!==null? fmtKg(cur)+` <span style="font-size:16px;">kg</span>` : "—"}</div>
+        <button class="btn btn-accent btn-sm" id="wt-add" style="flex:0 0 auto;">＋ Noter</button>
       </div>
-      ${ws.length? `<div class="chart-wrap" id="wt-chart" style="margin-top:12px;"></div>
-        ${ws.length>1? `<div class="row" style="justify-content:space-between; margin-top:8px; font-size:12.5px;">
-          <span style="color:var(--ink-mute);">Depuis la 1re pesée</span>
-          <span style="font-weight:800; color:${total>0?'var(--good)':(total<0?'var(--bad)':'var(--ink-soft)')};">${total>0?"+":""}${fmtKg(total)} kg</span></div>`
-        : `<div style="font-size:12.5px; color:var(--ink-mute); margin-top:8px;">Note-toi à nouveau dans quelques jours : la courbe se dessinera.</div>`}`
-      : `<div class="empty" style="padding:20px 10px;">Ta courbe de poids apparaîtra ici dès ta première pesée.</div>`}
-    </div>`;
+      ${goal>0 ? `<div class="jauge"><i style="width:${pct===null? (cur!==null?100:0) : pct.toFixed(1)}%"></i></div>` : ""}
+      <div class="jauge-txt"><button class="inline-edit" id="wt-goal">${goal>0
+        ? (delta===null ? `Objectif ${fmtKg(goal)} kg` : (Math.abs(delta) < 0.05 ? `Objectif ${fmtKg(goal)} kg atteint 🎉`
+          : `Objectif ${fmtKg(goal)} · Encore ${fmtKg(Math.abs(delta))} kg`))
+        : "Définir un objectif"} <span class="pen">✎</span></button></div>
+      <div id="wt-plie" ${ouvert?"":"hidden"} style="margin-top:14px;">
+        ${ws.length? `<div class="chart-wrap" id="wt-chart"></div>
+          ${ws.length>1? `<div class="row" style="justify-content:space-between; margin-top:8px; font-size:12.5px;">
+            <span style="color:var(--ink-mute);">Depuis la 1re pesée</span>
+            <span style="font-weight:800; color:${total>0?'var(--good)':(total<0?'var(--bad)':'var(--ink-soft)')};">${total>0?"+":""}${fmtKg(total)} kg</span></div>`
+          : `<div style="font-size:12.5px; color:var(--ink-mute);">Note-toi à nouveau dans quelques jours : la courbe se dessinera.</div>`}`
+        : `<div class="empty" style="padding:20px 10px;">Ta courbe de poids apparaîtra ici dès ta première pesée.</div>`}
+      </div>
+    </div>
+    ${pliBouton("wt-pli", ouvert, "Afficher la courbe de poids")}`;
+  const pli = document.getElementById("wt-pli");
+  pli.onclick = ()=>{
+    prgPlis.poids = !prgPlis.poids;
+    const zone = document.getElementById("wt-plie");
+    zone.hidden = !prgPlis.poids;
+    pli.setAttribute("aria-expanded", prgPlis.poids);
+    /* le graphique se mesure une fois visible, jamais avant */
+    if(prgPlis.poids && ws.length) drawChart(document.getElementById("wt-chart"), ws.map(w=>({date:w.date, v:w.kg})), "kg", goal);
+  };
   document.getElementById("wt-goal").onclick=editGoal;
   document.getElementById("wt-add").onclick=()=>{
     openSheet(`<h3>Noter mon poids</h3>
@@ -5296,7 +5348,7 @@ function renderWeightSection(sec){
       save(); closeSheet(); render();
     };
   };
-  if(ws.length) drawChart(document.getElementById("wt-chart"), ws.map(w=>({date:w.date, v:w.kg})), "kg", goal);
+  if(ws.length && ouvert) drawChart(document.getElementById("wt-chart"), ws.map(w=>({date:w.date, v:w.kg})), "kg", goal);
 }
 
 /* ===== Profil musculaire : 1RM estimés vs standards relatifs au poids de corps ===== */
@@ -5594,7 +5646,6 @@ function analyseProfil(prof){
   const nbSeances = db.history.length;
   if(connus.length < 2){
     return `<div class="analyse">
-      <div class="label" style="margin-bottom:6px;">📋 Ce que dit ton profil</div>
       <p style="margin:0;">Avec ${nbSeances} séance${nbSeances>1?"s":""} enregistrée${nbSeances>1?"s":""}, il me manque encore de la matière pour te dire quelque chose d'utile. Il faut deux passages sur un même exercice pour qu'un muscle apparaisse ici. Continue à logger, l'analyse se remplira toute seule.</p>
     </div>`;
   }
@@ -5643,7 +5694,6 @@ function analyseProfil(prof){
   if(ecart < 20){
     const g0 = GAIN_MENSUEL[faible] || {};
     return `<div class="analyse">
-      <div class="label" style="margin-bottom:6px;">📋 Ce que dit ton profil</div>
       <p style="margin:0 0 8px;">${constat}</p>
       <p style="margin:0 0 8px;">${diagnostic}</p>
       <p style="margin:0 0 8px;">Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : 2,5 kg de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.</p>
@@ -5665,7 +5715,6 @@ function analyseProfil(prof){
     : `Deux passages par semaine suffisent à combler ce retard en quelques semaines.`;
 
   return `<div class="analyse">
-    <div class="label" style="margin-bottom:6px;">📋 Ce que dit ton profil</div>
     <p style="margin:0 0 8px;">${constat}</p>
     <p style="margin:0 0 8px;">${diagnostic}</p>
     <p style="margin:0 0 8px;">${action} ${projection}</p>
@@ -5693,18 +5742,45 @@ function renderMuscleSection(sec){
     </div>`;
   }).join("");
   const div = document.createElement("div");
-  div.innerHTML = `<div class="section-t"><i>💪</i>Profil musculaire</div>
+  const analyse = analyseProfil(prof) || "";
+  const ouvert = prgPlis.analyse;
+  div.innerHTML = `
     <div class="card">
-      <p style="margin:0 0 4px; font-size:13px; color:var(--ink-soft);">${moy
-        ? `Chaque groupe est comparé à <b>ta propre moyenne</b> : un point faible est un muscle en retard <b>sur toi-même</b>, pas sur un barème. Écart affiché en % de ta moyenne.`
-        : `Comparaison à un barème lié à ton poids de corps. Dès que trois groupes auront assez de données, l'app te comparera à ta propre moyenne.`}</p>
+      <div class="row" style="align-items:center; gap:8px; margin-bottom:12px;">
+        <span class="card-t">Profil musculaire</span>
+        <button class="card-i" id="mp-info" aria-label="À quoi sert le profil musculaire ?">i</button>
+      </div>
       <div class="mp-bodies">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
       ${rows}
-      ${analyseProfil(prof) || ""}
-      ${currentWeight()===null? `<p style="margin:8px 0 0; font-size:12px; color:var(--ink-mute);">Note ton poids corporel pour des scores plus précis.</p>`:""}
-      
+      ${analyse? `<div class="depli">
+        <button class="depli-h" id="mp-depli" aria-expanded="${ouvert}">
+          <span>Analyse de ton profil</span>${CHEV}</button>
+        <div class="depli-c" id="mp-analyse" ${ouvert?"":"hidden"}>${analyse}</div>
+      </div>`:""}
+      ${currentWeight()===null? `<p style="margin:10px 0 0; font-size:12px; color:var(--ink-mute);">Note ton poids corporel pour des scores plus précis.</p>`:""}
     </div>`;
   sec.appendChild(div);
+  div.querySelector("#mp-info").onclick = ()=>openInfoProfil(moy);
+  const dep = div.querySelector("#mp-depli");
+  if(dep) dep.onclick = ()=>{
+    prgPlis.analyse = !prgPlis.analyse;
+    div.querySelector("#mp-analyse").hidden = !prgPlis.analyse;
+    dep.setAttribute("aria-expanded", prgPlis.analyse);
+  };
+}
+/* le ⓘ du profil musculaire : ce que ces barres représentent vraiment */
+function openInfoProfil(moy){
+  openSheet(`<h3>Ton profil musculaire</h3>
+    <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.6;">
+      <p style="margin:0 0 11px;">Pour chaque groupe musculaire, l'app estime ta force à partir des charges que tu as réellement soulevées : elle prend ton meilleur 1RM estimé sur les exercices qui sollicitent ce groupe, puis le rapporte à ton poids de corps.</p>
+      <p style="margin:0 0 11px;">${moy
+        ? `Chaque groupe est ensuite comparé à <b>ta propre moyenne</b>. Un « point faible » est donc un muscle en retard <b>sur toi-même</b>, pas sur un barème extérieur : c'est ce qui rend l'information utile pour rééquilibrer tes séances. L'écart est affiché en pourcentage de ta moyenne.`
+        : `Tant que trois groupes n'ont pas assez de données, la comparaison se fait sur un barème lié à ton poids de corps. Ensuite, l'app basculera sur <b>ta propre moyenne</b> — plus juste, parce qu'elle ne compare qu'à toi.`}</p>
+      <p style="margin:0 0 11px;">Il faut <b>deux passages sur un même exercice</b> pour qu'un muscle sorte de « pas assez de données ». Les groupes que tu ne travailles jamais restent vides : ce n'est pas une erreur, c'est une information.</p>
+      <p style="margin:0;">Ce profil ne dit rien de ton esthétique ni de ta santé. C'est un indicateur d'équilibre entre tes groupes musculaires, rien de plus.</p>
+    </div>
+    <button class="btn btn-accent" id="mpi-ok" style="width:100%; margin-top:16px;">J'ai compris</button>`);
+  document.getElementById("mpi-ok").onclick = closeSheet;
 }
 
 function renderProteinSection(sec){
@@ -5724,17 +5800,21 @@ function renderProteinSection(sec){
   const hit = days.filter(x=>x.v>=target).length;
   const div = document.createElement("div");
   if(!any){
-    div.innerHTML = `<div class="section-t"><i>🥩</i>Protéines · 7 derniers jours</div>
-      <div class="card empty" style="padding:22px 16px;">Coche tes repas sur l'écran <b>Séance</b> : ton historique de protéines s'affichera ici, jour par jour.</div>`;
+    div.innerHTML = `<div class="card">
+      <div class="card-t">Protéines</div>
+      <div class="empty" style="padding:22px 16px;">Coche tes repas sur l'écran <b>Séance</b> : ton historique de protéines s'affichera ici, jour par jour.</div></div>`;
     sec.appendChild(div);
     return;
   }
   const moyKcal = Math.round(days.filter(x=>x.kc>0).reduce((a,x)=>a+x.kc,0) / Math.max(1, days.filter(x=>x.kc>0).length));
-  div.innerHTML = `<div class="section-t"><i>🥩</i>Protéines · 7 derniers jours</div>
+  div.innerHTML = `
     <div class="card">
-      <div class="row" style="justify-content:space-between; margin-bottom:10px;">
-        <span style="font-size:13.5px; color:var(--ink-soft);">Objectif <b style="color:var(--ink);">${target} g</b> / jour</span>
-        <span style="font-size:13.5px; font-weight:700; color:${hit>=5?'var(--good)':'var(--ink-soft)'};">${hit} jour${hit>1?"s":""} au quota</span>
+      <div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+        <div>
+          <div class="card-t">Protéines</div>
+          <div class="card-sub">Objectif <b style="color:var(--ink);">${target} g</b> / jour</div>
+        </div>
+        <span style="font-size:12.5px; font-weight:700; white-space:nowrap; color:${hit>=5?'var(--good)':'var(--ink-soft)'};">${hit} jour${hit>1?"s":""} au quota</span>
       </div>
       <div class="pr-plot">
         <div class="pr-target" style="bottom:calc(${(target/cap).toFixed(3)} * (100% - 15px));"><i>${target} g</i></div>
@@ -5745,8 +5825,8 @@ function renderProteinSection(sec){
       </div>
       <div class="pr-labels">${days.map(x=>`<span>${["D","L","M","M","J","V","S"][x.d.getDay()]}</span>`).join("")}</div>
       <div class="row" style="justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:12.5px;">
-        <span style="color:var(--ink-mute);">Calories moyennes ${kcalCible? `(objectif ${kcalCible})`:""}</span>
-        <span style="font-weight:800; font-variant-numeric:tabular-nums; color:${(kcalCible && moyKcal>=kcalCible*0.9)?'var(--good)':'var(--ink)'};">≈ ${moyKcal||0} kcal</span>
+        <span style="color:var(--ink-mute);">Calories moyennes</span>
+        <span style="font-weight:800; font-variant-numeric:tabular-nums; color:${(kcalCible && moyKcal>=kcalCible*0.9)?'var(--good)':'var(--ink)'};">≈ ${moyKcal||0} kcal${kcalCible? ` <span style="font-weight:600; color:var(--ink-mute);">/ ${kcalCible}</span>`:""}</span>
       </div>
       <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px;">Touche un jour pour voir le détail ou corriger un oubli.</div>
     </div>`;
@@ -5831,8 +5911,10 @@ function renderCardioSection(sec){
   if(keys.length < 2) return;
   const pts = keys.map(k=>({date:k, v:Math.round(weeks[k]*10)/10}));
   const div = document.createElement("div");
-  div.innerHTML = `<div class="section-t"><i>👟</i>Cardio · km par semaine</div>
-    <div class="card"><div class="chart-wrap" id="cd-chart"></div></div>`;
+  div.innerHTML = `<div class="card">
+    <div class="card-t">Cardio</div>
+    <div class="card-sub" style="margin-bottom:10px;">Kilomètres par semaine</div>
+    <div class="chart-wrap" id="cd-chart"></div></div>`;
   sec.appendChild(div);
   drawChart(div.querySelector("#cd-chart"), pts, "km");
 }
