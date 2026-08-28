@@ -198,7 +198,9 @@
 
   /* ================= PARCOURS D'ACCUEIL (plein écran) ================= */
   .onb{position:fixed; inset:0; z-index:55; background:var(--bg); color:var(--ink);
-    display:flex; flex-direction:column; min-height:100dvh; overflow:hidden;}
+    /* svh = hauteur d'écran STABLE : sur iPhone, dvh change pendant qu'on fait défiler
+       (la barre d'outils se replie), ce qui redimensionnait tout en continu. */
+    display:flex; flex-direction:column; min-height:100vh; min-height:100svh; overflow:hidden;}
   .onb-top{display:flex; align-items:center; gap:12px; padding:calc(14px + env(safe-area-inset-top)) 20px 0;
     width:100%; max-width:540px; margin-inline:auto;}
   .onb-back{width:30px; height:30px; flex:0 0 auto; font-size:22px; line-height:1; color:var(--ink);
@@ -283,12 +285,19 @@
 
   /* carrousel d'introduction */
   .onb-hero{display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding-top:8px;}
-  .onb-tel{position:relative; flex:1 1 auto; min-height:0; width:100%; max-width:300px; margin-bottom:22px;}
+  /* la taille du visuel vient de la LARGEUR, jamais de la hauteur disponible :
+     sinon le moindre changement de hauteur d'écran le fait grandir et rétrécir. */
+  .onb-tel{position:relative; flex:0 0 auto; width:min(74%, 300px); aspect-ratio:325/691;
+    max-height:60vh; max-height:60svh; margin-bottom:20px;}
   .onb-tel img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
-    opacity:0; transition:opacity .55s ease;}
+    opacity:0; transition:opacity .55s ease;
+    /* calque dédié : évite le clignotement des fondus d'images sur iOS */
+    transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
   .onb-tel img.on{opacity:1;}
-  .onb-titre{font-size:27px; font-weight:800; text-align:center; line-height:1.2; min-height:66px;
+  /* place réservée pour trois lignes : un titre plus long ne doit pas décaler le visuel */
+  .onb-titre{font-size:27px; font-weight:800; text-align:center; line-height:1.2; min-height:98px;
     transition:opacity .3s ease;}
+  @media (max-width:360px){ .onb-titre{font-size:24px;} }
   .onb-dots{display:flex; gap:7px; justify-content:center; margin-top:16px;}
   .onb-dots i{width:7px; height:7px; border-radius:50%; background:var(--ink-mute); opacity:.35;}
   .onb-dots i.on{opacity:1; background:var(--ink);}
