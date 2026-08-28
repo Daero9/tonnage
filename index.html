@@ -134,6 +134,7 @@
   .hero{position:relative; color:var(--hero-ink);
     margin:calc(-16px - env(safe-area-inset-top)) -16px 0;}
   .hero-bg{display:block; width:100%; height:auto; aspect-ratio:605/446;}
+  .hero-bg rect{transition:none;}
   .hero-in{position:absolute; inset:0; padding:calc(14px + env(safe-area-inset-top)) 18px 0;
     display:flex; flex-direction:column;}
   /* tout ce qui suit le bandeau se dessine par-dessus lui */
@@ -341,13 +342,20 @@
   .eat-side svg{width:21px; height:21px;}
 
   /* les onglets passent DERRIÈRE le panneau blanc : leur bas est masqué, aucun trou possible */
-  .meal-tabs{display:flex; gap:4px; margin:18px 0 -18px; position:relative; z-index:1; align-items:flex-end;}
-  .meal-tab{flex:1; border-radius:12px 12px 0 0; background:var(--surface2); color:var(--ink-mute);
+  .meal-tabs{display:flex; gap:5px; margin:18px 0 0; position:relative; z-index:1; align-items:flex-end;}
+  /* chaque onglet porte un bloc blanc qui rejoint le panneau : la couleur encadre la page */
+  .meal-tab{position:relative; flex:1; border-radius:13px 13px 0 0; background:var(--surface2); color:var(--ink-mute);
     font-size:9.5px; font-weight:800; letter-spacing:.02em; text-transform:uppercase;
-    padding:6px 1px 29px; text-align:center; transform:translateY(9px);
-    transition:transform .2s ease, background .2s ease, color .2s ease;}
+    padding:7px 2px 26px; text-align:center; transform:translateY(10px);
+    transition:transform .34s cubic-bezier(.34,1.56,.64,1), background .22s ease, color .22s ease;}
+  .meal-tab i{position:absolute; left:5px; right:5px; bottom:0; height:20px; display:block;
+    border-radius:8px 8px 0 0; background:var(--surface);}
   .meal-tab.on{transform:translateY(0); color:#fff;}
-  .meal-panel{background:var(--surface); border-radius:14px; padding:16px 13px 22px; position:relative; z-index:2;
+  @media (prefers-reduced-motion:reduce){ .meal-tab{transition:background .2s ease, color .2s ease;} }
+  @keyframes repasIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
+  .meal-panel.swap{animation:repasIn .3s cubic-bezier(.22,.9,.35,1);}
+  @media (prefers-reduced-motion:reduce){ .meal-panel.swap{animation:none;} }
+  .meal-panel{background:var(--surface); border-radius:0 0 14px 14px; padding:16px 13px 22px; position:relative; z-index:2;
     box-shadow:0 -2px 14px rgba(0,0,0,.06), 0 6px 22px rgba(0,0,0,.10); min-height:52vh;}
   .meal-h{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-mute); text-align:center; margin:2px 0 9px;}
@@ -2517,9 +2525,23 @@ async function quickBackup(){
 const IC_USER = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.6 20c.6-4 3.7-6 7.4-6s6.8 2 7.4 6z"/></svg>';
 const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm9 3.4c0 .6-.05 1.1-.14 1.7l2 1.5-1.9 3.3-2.4-1a7.8 7.8 0 0 1-2.9 1.7L15.3 22h-3.8l-.35-2.6c-1.05-.3-2-.85-2.85-1.6l-2.4 1L4 15.5l2-1.5A8.6 8.6 0 0 1 5.9 12c0-.55.05-1.1.14-1.6L4 8.9l1.9-3.3 2.4 1c.85-.75 1.8-1.3 2.85-1.6L11.5 2h3.8l.35 2.6c1.05.3 2.05.85 2.9 1.6l2.4-1L22.85 8.9l-2 1.5c.1.5.15 1.05.15 1.6z"/></svg>';
 /* bandeau sombre : l'image fournie en fond, avatar à gauche, réglages à droite */
+/* Le disque sombre est dessiné, plus chargé : une image réinsérée à chaque rendu
+   scintillait. Le liseré et le trou central sont évidés — la page se voit au travers,
+   donc le bandeau s'adapte tout seul au thème. */
+function heroSvg(){
+  return `<svg class="hero-bg" viewBox="0 0 1210 892" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <defs><mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="892">
+      <rect width="1210" height="892" fill="#000"/>
+      <path d="M0 0 H1210 V642 A911 911 0 0 1 0 642 Z" fill="#fff"/>
+      <circle cx="605" cy="-45" r="711" fill="none" stroke="#000" stroke-width="23"/>
+      <circle cx="605" cy="-60" r="171" fill="#000"/>
+    </mask></defs>
+    <rect width="1210" height="892" fill="var(--hero)" mask="url(#hero-m)"/>
+  </svg>`;
+}
 function hero(inner){
   return `<div class="hero">
-    <img class="hero-bg" src="img/hero.png" width="1210" height="892" alt="" aria-hidden="true" decoding="sync" fetchpriority="high">
+    ${heroSvg()}
     <div class="hero-in">
       <div class="hero-top">
         <button class="hero-ic" id="tb-user" title="Mon profil" aria-label="Mon profil">${IC_USER}</button>
@@ -2838,16 +2860,33 @@ function renderEat(app){
     </div>
     <div class="meal-tabs">${MEALS.map(([id,lab])=>`
       <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
-        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${lab}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span></button>`).join("")}</div>
+        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${lab}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span><i></i></button>`).join("")}</div>
     <div class="meal-panel" id="meal-panel"></div>`;
   wireTopbar();
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
   document.getElementById("eat-plan").onclick  = ()=>showPlan(false);
   document.getElementById("eat-tips").onclick  = ()=>openKcalTips(enHausse? "up":"down", plan);
-  document.querySelectorAll("[data-meal]").forEach(b=>b.onclick=()=>{ mealCur = b.dataset.meal; renderSurPlace(); });
+  /* changer de repas ne redessine que le panneau : l'onglet peut alors s'animer */
+  document.querySelectorAll("[data-meal]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.meal === mealCur) return;
+    mealCur = b.dataset.meal;
+    document.querySelectorAll("[data-meal]").forEach(x=>{
+      const actif = x.dataset.meal === mealCur;
+      x.classList.toggle("on", actif);
+      x.style.background = actif ? MEAL_C[mealCur] : "";
+    });
+    const pan = document.getElementById("meal-panel");
+    pan.classList.remove("swap"); void pan.offsetWidth; pan.classList.add("swap");
+    dessineRepas(pan);
+  });
 
-  /* ---- pastilles d'aliments du repas courant ---- */
-  const panel = document.getElementById("meal-panel");
+  dessineRepas(document.getElementById("meal-panel"));
+}
+/* ---- pastilles d'aliments du repas courant ---- */
+function dessineRepas(panel){
+  const k = dayKey();
+  const sel = db.habitSel[k] || {};
+  const coul = MEAL_C[mealCur];
   const mySel = sel[mealCur] || [];
   const groups = habitOpts(mealCur);
   const connus = groups.reduce((a,g)=>a.concat(g[2].map(x=>x[0])), []);
@@ -5257,8 +5296,9 @@ function renderProgress(app){
       <div class="tiles" id="prg-tiles"></div>
       <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;"><div class="chart-tip" id="chart-tip"></div></div>
     </div>`;
-  document.getElementById("prg-sel").onchange=e=>{ prgEx=e.target.value; render(); };
-  body.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ prgMetric=b.dataset.m; render(); });
+  /* changer d'exercice ou de mesure ne doit pas renvoyer en haut de page */
+  document.getElementById("prg-sel").onchange=e=>{ prgEx=e.target.value; renderSurPlace(); };
+  body.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ prgMetric=b.dataset.m; renderSurPlace(); });
 
   // series: one point per session containing this exercise
   const pts = [];
@@ -5345,7 +5385,7 @@ function renderWeightSection(sec){
       const today = dayKey();
       db.weights = db.weights.filter(w=>dayKey(w.date)!==today);
       db.weights.push({date:new Date().toISOString(), kg});
-      save(); closeSheet(); render();
+      save(); closeSheet(); renderSurPlace();
     };
   };
   if(ws.length && ouvert) drawChart(document.getElementById("wt-chart"), ws.map(w=>({date:w.date, v:w.kg})), "kg", goal);
