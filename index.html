@@ -426,7 +426,15 @@
   .restbar.paused .bar{display:none;}
 
   /* workout */
-  .chrono{font-variant-numeric:tabular-nums; font-weight:800; font-size:15px; color:var(--accent);}
+  .hero-kicker{font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--hero-soft);}
+  /* deux lignes au maximum : un nom long ne doit pas pousser le chrono hors du bandeau */
+  .hero-seance{font-size:29px; font-weight:800; letter-spacing:-.02em; line-height:1.1; margin:5px 0 14px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  @media (max-width:360px){ .hero-seance{font-size:25px;} }
+  /* le chrono devient une pastille claire posée sur la photo */
+  .chrono{font-variant-numeric:tabular-nums; font-weight:800; font-size:20px; color:var(--ink);
+    background:var(--surface); border-radius:99px; padding:7px 22px; display:inline-block;
+    box-shadow:0 4px 16px rgba(0,0,0,.28);}
   .ex-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
   .ex-name{font-size:17px; font-weight:700;}
@@ -2554,7 +2562,11 @@ const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3
 /* Le disque sombre est dessiné, plus chargé : une image réinsérée à chaque rendu
    scintillait. Le liseré et le trou central sont évidés — la page se voit au travers,
    donc le bandeau s'adapte tout seul au thème. */
-function heroSvg(){
+/* Cadrage de chaque photo dans le bandeau, à la façon d'un object-position.
+   « xMidYMin » garde le haut, « xMidYMax » le bas, « xMidYMid » le centre. */
+const PHOTO_CADRAGE = {push:"xMidYMid", pull:"xMidYMid", jambes:"xMidYMid", abdos:"xMidYMid", cardio:"xMidYMid"};
+function heroSvg(photo){
+  const cadre = PHOTO_CADRAGE[photo] || "xMidYMid";
   return `<svg class="hero-bg" viewBox="0 0 1210 892" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <defs><mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="892">
       <rect width="1210" height="892" fill="#000"/>
@@ -2562,16 +2574,24 @@ function heroSvg(){
       <circle cx="605" cy="-45" r="711" fill="none" stroke="#000" stroke-width="23"/>
       <circle cx="605" cy="-60" r="171" fill="#000"/>
     </mask></defs>
-    <rect width="1210" height="892" fill="var(--hero)" mask="url(#hero-m)"/>
+    <g mask="url(#hero-m)">
+      <rect width="1210" height="892" fill="var(--hero)"/>
+      ${photo ? `<image href="img/${photo}.jpg" x="0" y="0" width="1210" height="892"
+        preserveAspectRatio="${cadre} slice" opacity=".62"/>
+      <rect width="1210" height="892" fill="#0e0e10" opacity=".42"/>` : ""}
+    </g>
   </svg>`;
 }
-function hero(inner){
+/* opts : {photo, icones:false} */
+function hero(inner, opts){
+  const o = opts || {};
   return `<div class="hero">
-    ${heroSvg()}
+    ${heroSvg(o.photo)}
     <div class="hero-in">
       <div class="hero-top">
+        ${o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="Mon profil" aria-label="Mon profil">${IC_USER}</button>
-        <button class="hero-ic" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button>
+        <button class="hero-ic" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button>`}
       </div>
       <div class="hero-h">${inner}</div>
     </div>
@@ -4289,12 +4309,14 @@ function openBlessureExo(ei){
 }
 function renderActive(app){
   const a = db.active;
+  /* la photo du bandeau suit les exercices de la séance, comme sur la carte du programme */
+  const tpl = a.templateId ? db.templates.find(t=>t.id===a.templateId) : null;
+  const photo = photoSeance({photo: tpl && tpl.photo, name: a.name, items: a.entries.map(e=>({exId:e.exId}))});
   app.innerHTML = `
-    <div class="topbar">
-      <div><div class="label">Séance en cours</div><h2 style="font-size:21px;">${esc(a.name)}</h2></div>
-      <div class="chrono" id="chrono"></div>
-    </div>
-    <div style="height:14px"></div>
+    ${hero(`<div class="hero-kicker">Séance en cours</div>
+      <h1 class="hero-seance">${esc(a.name)}</h1>
+      <button class="chrono" id="chrono" aria-label="Mettre le chrono en pause"></button>`, {photo, icones:false})}
+    <div style="height:10px;"></div>
     <div class="stack" id="ex-list"></div>
     <button class="btn btn-ghost" id="add-ex" style="width:100%; margin-top:12px;">＋ Ajouter un exercice</button>
     <div class="row" style="margin-top:20px;">
@@ -4314,6 +4336,8 @@ function renderActive(app){
 
   const list = document.getElementById("ex-list");
   list.innerHTML = a.entries.length ? "" : `<div class="card empty">Ajoute un premier exercice pour commencer.</div>`;
+  /* les explications ne s affichent qu une fois, sur le premier exercice concerne */
+  const iEch = a.entries.findIndex(e=>e.sets.some(x=>x.warm));
   a.entries.forEach((en,ei)=>{
     const ex = getEx(en.exId);
     const last = lastPerf(en.exId);
@@ -4331,11 +4355,11 @@ function renderActive(app){
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="Fiche de l'exercice">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(ex.name)}</div>
-      ${en.sets.some(s=>s.warm)? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
+      ${ei === iEch ? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? "lest (kg)"
         : (dejaParCote(en.exId)? "kg / haltère" : (db.unilat[en.exId]? "kg / bras" : "kg"))}</span><span>reps</span><span>dég.</span><span>✓</span></div>
       <div class="sets"></div>
-      ${hintBox("degressif","<b>Dégressif ?</b> Le bouton <b>↓</b> d'une série ajoute une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté. Appui long sur la ligne pour supprimer la série.")}
+      ${ei === 0 ? hintBox("degressif","<b>Dégressif ?</b> Le bouton <b>↓</b> d'une série ajoute une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté. Appui long sur la ligne pour supprimer la série.") : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ série</button>
         ${en.sets.filter(x=>!x.warm).length > 1
