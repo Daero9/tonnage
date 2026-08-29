@@ -450,27 +450,39 @@
 
   /* ---- la série en cours se détache ---- */
   /* le cadre noir déborde de la carte blanche : marge négative compensée par le rembourrage,
-     la grille reste donc alignée avec l'en-tête des colonnes */
-  .set-row.actif{background:var(--hero); border-radius:14px; transform:scale(1.02);
-    margin-inline:-20px; padding:9px 20px; box-shadow:0 8px 22px rgba(0,0,0,.26);
-    position:relative; z-index:1; animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
-  .set-row.actif .n{color:#fff; font-size:15px;}
-  .set-row.actif input{font-size:17.5px; font-weight:700; padding-block:10px;}
-  /* un dégressif prolonge le cadre noir de sa série : mêmes marges, coins arrondis en bas seulement */
-  .set-row.actif.suite{border-radius:14px 14px 0 0; padding-bottom:2px; margin-bottom:0; box-shadow:none;}
-  .set-row.drop.actif-suite{background:var(--hero); margin-inline:-20px; padding:2px 20px;
-    margin-top:0; transform:scale(1.02); position:relative; z-index:1;
-    animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
-  .set-row.drop.actif-suite .n{color:#fff;}
-  .set-row.drop.actif-suite.fin{padding-bottom:10px; border-radius:0 0 14px 14px;
-    box-shadow:0 8px 22px rgba(0,0,0,.26);}
-  .set-row.actif .dg{border-color:rgba(255,255,255,.5); color:#fff;}
-  .set-row.actif .ck{background:#fff; border-color:#fff; color:var(--hero);}
-  @keyframes serieEntre{from{transform:scale(.95); box-shadow:0 0 0 rgba(0,0,0,0);} to{transform:scale(1.02);}}
+  /* ---- le bloc noir : la série en cours, ses dégressifs et sa question ne font qu'un ----
+     Aucun agrandissement : chaque ligne mise à l'échelle séparément laissait des coutures.
+     Le relief vient du débordement latéral (marge négative + rembourrage égal), qui ne
+     touche pas à la boîte de contenu — la grille reste alignée avec l'en-tête. */
+  /* préfixées par .ex-card : ces règles sont écrites avant celles de .set-row,
+     il leur faut donc une priorité supérieure pour l'emporter */
+  .ex-card .bn{background:var(--hero); margin-inline:-20px; padding-inline:20px;
+    margin-top:0; margin-bottom:0; border-radius:0; position:relative; z-index:1;}
+  .ex-card .set-row.bn{padding-block:9px;}
+  .ex-card .set-row.drop.bn{padding-block:3px;}
+  .ex-card .set-row.bn .n{color:#fff; font-size:15px;}
+  .ex-card .set-row.bn input{font-size:17px; font-weight:700; padding-block:10px;}
+  .ex-card .set-row.bn .dg{border-color:rgba(255,255,255,.5); color:#fff;}
+  .ex-card .set-row.actif.bn .ck{background:#fff; border-color:#fff; color:var(--hero);}
+  .ex-card .bn-debut{border-radius:14px 14px 0 0;}
+  .ex-card .bn-fin{border-radius:0 0 14px 14px; margin-bottom:8px; padding-bottom:11px;
+    box-shadow:0 9px 24px rgba(0,0,0,.26);}
+  .ex-card .bn-debut.bn-fin{border-radius:14px;}
+  /* la question fait partie du même bloc : on comprend qu'elle appartient à cette série */
+  .ex-card .rir-ask.bn{border:none; padding-top:12px;}
+  .rir-ask.bn .rir-intro{color:rgba(255,255,255,.65);}
+  .rir-ask.bn .q{color:rgba(255,255,255,.9);}
+  .rir-ask.bn .row button{background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;}
+  .rir-ask.bn .rir-lourd{color:rgba(255,255,255,.72); border-color:rgba(255,255,255,.25);}
+  .rir-ask.bn .q.ok{color:#ffb15e;}
+  /* deux pulsations sur la coche : l'œil trouve quoi faire, rien ne bouge */
+  @keyframes pulseCk{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55);} 50%{box-shadow:0 0 0 8px rgba(255,255,255,0);}}
+  .set-row.actif.bn .ck{animation:pulseCk 1.9s ease-out 2;}
   /* la question attend une réponse : on la fait remarquer sans bloquer l'écran */
   @keyframes secousse{0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);}
     40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);}}
-  .rir-ask.rappel{animation:secousse .38s ease; border-color:var(--accent);}
+  .rir-ask.rappel{animation:secousse .38s ease;}
+  .rir-intro{font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:8px;}
   @media (prefers-reduced-motion:reduce){ .rir-ask.rappel{animation:none;} }
   /* refermer un exercice ouvert : chevron discret sous les boutons */
   .ex-plier{width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
@@ -503,7 +515,7 @@
   @keyframes finiIn{from{opacity:0;} to{opacity:1;}}
   @keyframes finiPop{from{transform:scale(.3); opacity:0;} to{transform:scale(1); opacity:1;}}
   @media (prefers-reduced-motion:reduce){
-    .set-row.actif{animation:none; transform:none;}
+    .set-row.actif.bn .ck{animation:none;}
     .ex-done, .ex-fini, .ex-fini .rond{animation:none;}
     .set-row .ck:active, .set-row .dg:active{transform:none;}
   }
@@ -4386,6 +4398,29 @@ function openBlessureExo(ei){
   if(sw) sw.onclick = ()=>openSwap(ei, true);
   document.getElementById("bl-ok").onclick = closeSheet;
 }
+/* Le bloc noir est une suite d'éléments contigus : la ligne de série, ses dégressifs,
+   et éventuellement la question. Seuls le premier et le dernier sont arrondis. */
+function poserBlocNoir(elements, question){
+  elements.forEach((el,i)=>{
+    el.classList.add("bn");
+    if(question) el.classList.add("bnq");     /* bloc d'une question : le défilement n'y touche pas */
+    el.classList.toggle("bn-debut", i === 0);
+    el.classList.toggle("bn-fin", i === elements.length-1);
+  });
+}
+function retirerBlocNoir(avecQuestion){
+  document.querySelectorAll(".bn").forEach(el=>{
+    if(!avecQuestion && el.classList.contains("bnq")) return;
+    el.classList.remove("bn", "bn-debut", "bn-fin", "bnq");
+  });
+}
+/* la ligne d'une série et tous ses dégressifs, dans l'ordre */
+function suiteDeLigne(ligne){
+  const out = [ligne];
+  let n = ligne.nextElementSibling;
+  while(n && n.classList.contains("drop")){ out.push(n); n = n.nextElementSibling; }
+  return out;
+}
 /* Une seule série est mise en avant dans toute la séance : celle de l'exercice
    que tu as sous les yeux. Trop de cadres noirs à la fois, ça ne guide plus rien. */
 function majSerieActive(){
@@ -4403,9 +4438,11 @@ function majSerieActive(){
     const d = (r.top <= milieu && r.bottom >= milieu) ? 0 : Math.min(Math.abs(r.top - milieu), Math.abs(r.bottom - milieu));
     if(d < meilleur){ meilleur = d; choisie = c; }
   });
-  document.querySelectorAll(".set-row.actif, .set-row.actif-suite").forEach(l=>{
-    l.classList.remove("actif", "suite", "actif-suite", "fin");
+  /* la série qui porte une question garde sa mise en avant : elle fait corps avec le bloc */
+  document.querySelectorAll(".set-row.actif").forEach(l=>{
+    if(!l.classList.contains("bnq")) l.classList.remove("actif");
   });
+  retirerBlocNoir(false);                 /* on ne défait pas le bloc d'une question en cours */
   if(!choisie) return;
   /* une question attend sur la carte qu'on regarde : rien d'autre ne doit attirer l'œil */
   if(choisie.querySelector(".rir-ask:not(.repondu)")) return;
@@ -4413,14 +4450,7 @@ function majSerieActive(){
   const ligne = choisie.querySelector('.set-row[data-si="' + en.sets.findIndex(x=>!x.done) + '"]');
   if(!ligne) return;
   ligne.classList.add("actif");
-  /* les dégressifs de cette série continuent le même rectangle */
-  const suites = [];
-  let n = ligne.nextElementSibling;
-  while(n && n.classList.contains("drop")){ suites.push(n); n = n.nextElementSibling; }
-  if(suites.length){
-    ligne.classList.add("suite");
-    suites.forEach((d,k)=>{ d.classList.add("actif-suite"); if(k === suites.length-1) d.classList.add("fin"); });
-  }
+  poserBlocNoir(suiteDeLigne(ligne), false);
 }
 /* le cadre suit le défilement : il reste sur l'exercice qu'on regarde */
 let majSerieTimer = null;
@@ -4564,7 +4594,7 @@ function renderActive(app){
         row.querySelector(".ck").textContent = st.done?"✓":"○";
         if(!st.done) majSerieActive();      /* décochage : la série redevient à faire */
         const oldAsk = card.querySelector(".rir-ask");
-        if(oldAsk) oldAsk.remove();
+        if(oldAsk){ oldAsk.remove(); retirerBlocNoir(true); majSerieActive(); }
         if(st.done && st.warm){
           majSerieActive();
           startRest(60);
@@ -4578,7 +4608,7 @@ function renderActive(app){
           else { restbar.classList.remove("show"); if(rest.int){ clearInterval(rest.int); rest.int=null; } }
           const ask = document.createElement("div");
           ask.className = "rir-ask";
-          ask.innerHTML = `${dejaVu("rir")? "" : `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:8px;">Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.</div>`}
+          ask.innerHTML = `${dejaVu("rir")? "" : `<div class="rir-intro">Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.</div>`}
             <div class="q">Aurais-tu pu faire plus de reps ?</div>
             <div class="row">
               <button data-rir="0">Non, 0</button>
@@ -4590,7 +4620,9 @@ function renderActive(app){
           let ancre = row, nx = row.nextElementSibling;
           while(nx && nx.classList.contains("drop")){ ancre = nx; nx = nx.nextElementSibling; }
           ancre.after(ask);
-          majSerieActive();      /* la question est posée : plus aucune série mise en avant */
+          /* la question ferme le bloc noir de sa série : on voit qu'elle en fait partie */
+          retirerBlocNoir(true);
+          poserBlocNoir(suiteDeLigne(row).concat(ask), true);
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir < 0 ? 0 : rir;        /* « trop lourd » = tu étais à bout : 0 rep en réserve */
@@ -4667,7 +4699,7 @@ function renderActive(app){
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
             majSerieActive();                 /* maintenant seulement, la suivante s'allume */
             const reste = en.sets.some(s2=>!s2.done);
-            setTimeout(()=>{ ask.remove(); }, reste ? 2600 : 1200);
+            setTimeout(()=>{ ask.remove(); retirerBlocNoir(true); majSerieActive(); }, reste ? 2600 : 1200);
             /* plus rien à faire sur cet exercice : on félicite, puis on replie */
             if(!reste) setTimeout(()=>{
               if(!document.body.contains(card)) return;

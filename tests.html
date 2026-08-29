@@ -336,11 +336,16 @@ function lancer(){
     q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
     r.querySelector(".ck").click(); })();
   vrai("Une question apparaît après la série", !!D.querySelector(".rir-ask"));
-  eq("Aucune série mise en avant tant qu'on n'a pas répondu", actives().reduce((a,b)=>a+b,0), 0);
+  eq("La série concernée reste dans le bloc noir pendant la question", actives().indexOf(1), 1);
+  eq("…et elle seule", actives().reduce((a,b)=>a+b,0), 1);
+  vrai("La question fait partie du même bloc noir", !!D.querySelector(".rir-ask.bn"));
   lignes()[2].querySelector(".ck").click();
   vrai("La série suivante refuse d'être validée avant la réponse", !DB.active.entries[0].sets[2].done);
   D.querySelector('.rir-ask [data-rir="1"]').click();
-  eq("Une fois répondu, la suivante s'allume", actives().indexOf(1), 2);
+  eq("Le bloc noir reste le temps du message de réponse", actives().indexOf(1), 1);
+  /* le message s'efface au bout de quelques secondes : on simule sa disparition */
+  D.querySelector(".rir-ask").remove(); F.retirerBlocNoir(true); F.majSerieActive();
+  eq("Puis la série suivante s'allume", actives().indexOf(1), 2);
   lignes()[2].querySelector(".ck").click();
   vrai("…et devient validable", DB.active.entries[0].sets[2].done);
 
