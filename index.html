@@ -444,7 +444,48 @@
   .chrono{font-variant-numeric:tabular-nums; font-weight:800; font-size:20px; color:var(--ink);
     background:var(--surface); border-radius:99px; padding:7px 22px; display:inline-block;
     box-shadow:0 4px 16px rgba(0,0,0,.28);}
-  .ex-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
+  .ex-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px;
+    position:relative;}
+
+  /* ---- la série en cours se détache ---- */
+  .set-row.actif{background:var(--hero); border-radius:12px; transform:scale(1.025);
+    box-shadow:0 7px 20px rgba(0,0,0,.24); position:relative; z-index:1;
+    animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
+  .set-row.actif .n{color:#fff;}
+  .set-row.actif .dg{border-color:rgba(255,255,255,.5); color:#fff;}
+  .set-row.actif .ck{background:#fff; border-color:#fff; color:var(--hero);}
+  @keyframes serieEntre{from{transform:scale(.95); box-shadow:0 0 0 rgba(0,0,0,0);} to{transform:scale(1.025);}}
+  /* petit enfoncement sur les boutons d'une série */
+  .set-row .ck, .set-row .dg{transition:transform .2s cubic-bezier(.22,.9,.35,1);}
+  .set-row .ck:active, .set-row .dg:active{transform:scale(.86); transition-duration:.06s;}
+
+  /* ---- exercice terminé : la carte se replie ---- */
+  .ex-done{display:flex; align-items:center; gap:11px; background:var(--surface2);
+    border:1px solid var(--border); border-radius:var(--radius); padding:12px 13px; width:100%;
+    animation:replieIn .32s cubic-bezier(.22,.9,.35,1);}
+  .ex-done .vu{width:34px; height:34px; flex:0 0 auto; border-radius:9px; background:var(--good); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800;}
+  .ex-done .nm{flex:1; min-width:0; text-align:left; font-size:16px; font-weight:700; color:var(--ink-mute);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ex-done .dep{flex:0 0 auto; color:var(--ink-soft); display:flex;}
+  .ex-done .dep svg{width:20px; height:13px;}
+  @keyframes replieIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:none;}}
+
+  /* ---- « exercice terminé », le temps d'un souffle ---- */
+  .ex-fini{position:absolute; inset:0; z-index:5; border-radius:var(--radius); background:var(--surface);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px;
+    animation:finiIn .28s ease;}
+  .ex-fini .rond{width:60px; height:60px; border-radius:50%; background:var(--good); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:32px;
+    animation:finiPop .5s cubic-bezier(.34,1.56,.64,1);}
+  .ex-fini .txt{font-size:16.5px; font-weight:800; text-align:center; padding:0 18px;}
+  @keyframes finiIn{from{opacity:0;} to{opacity:1;}}
+  @keyframes finiPop{from{transform:scale(.3); opacity:0;} to{transform:scale(1); opacity:1;}}
+  @media (prefers-reduced-motion:reduce){
+    .set-row.actif{animation:none; transform:none;}
+    .ex-done, .ex-fini, .ex-fini .rond{animation:none;}
+    .set-row .ck:active, .set-row .dg:active{transform:none;}
+  }
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
   .ex-name{font-size:17px; font-weight:700;}
   .hint{font-size:12.5px; color:var(--ink-mute); margin-bottom:10px;}
@@ -4320,6 +4361,25 @@ function openBlessureExo(ei){
   if(sw) sw.onclick = ()=>openSwap(ei, true);
   document.getElementById("bl-ok").onclick = closeSheet;
 }
+/* la série en cours = la première non validée. Elle passe en noir et se rapproche. */
+function majSerieActive(setsDiv, en){
+  const suivante = en.sets.findIndex(x=>!x.done);
+  setsDiv.querySelectorAll(".set-row").forEach(l=>{
+    const si = parseInt(l.dataset.si);
+    const actif = (si === suivante) && !isNaN(si);
+    if(actif === l.classList.contains("actif")) return;   /* pas de rejeu inutile de l'animation */
+    l.classList.toggle("actif", actif);
+  });
+}
+/* le nom de l'exercice s'affiche un instant, puis la carte se replie */
+function exerciceFini(card, nom, apres){
+  const v = document.createElement("div");
+  v.className = "ex-fini";
+  v.innerHTML = `<div class="rond">✓</div><div class="txt">${esc(nom)}, terminé</div>`;
+  card.appendChild(v);
+  if(navigator.vibrate) try{ navigator.vibrate([12, 60, 18]); }catch(e){}
+  setTimeout(()=>{ if(typeof apres === "function") apres(); }, 1250);
+}
 function renderActive(app){
   const a = db.active;
   /* la photo du bandeau suit les exercices de la séance, comme sur la carte du programme */
@@ -4362,6 +4422,16 @@ function renderActive(app){
     const target = en.target && en.target.reps ? ` · Objectif ${en.target.sets} × ${esc(String(en.target.reps))}` : "";
     const sug = suggestFor(en.exId, en.target);
 
+    /* exercice terminé et replié : une simple ligne, qu'on rouvre d'un appui */
+    if(en.replie){
+      const plie = document.createElement("button");
+      plie.className = "ex-done";
+      plie.innerHTML = `<span class="vu">✓</span><span class="nm">${esc(ex.name)}</span><span class="dep">${CHEV}</span>`;
+      plie.onclick = ()=>{ delete en.replie; save(); renderSurPlace(); };
+      list.appendChild(plie);
+      return;
+    }
+
     const note = injuryNote(ex.name);
     const card = document.createElement("div");
     card.className="ex-card";
@@ -4386,6 +4456,7 @@ function renderActive(app){
         <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">Retirer</button>
       </div>`;
     const setsDiv = card.querySelector(".sets");
+    /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
       const row = document.createElement("div");
       row.className = "set-row"+(st.done?" done":"")+(st.warm?" warm":"");
@@ -4422,6 +4493,7 @@ function renderActive(app){
         save();
         row.classList.toggle("done", st.done);
         row.querySelector(".ck").textContent = st.done?"✓":"○";
+        majSerieActive(setsDiv, en);          /* la suivante prend le relais tout de suite */
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk) oldAsk.remove();
         if(st.done && st.warm){
@@ -4521,7 +4593,13 @@ function renderActive(app){
             }
             save();
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
-            setTimeout(()=>{ ask.remove(); }, 2600);
+            const reste = en.sets.some(s2=>!s2.done);
+            setTimeout(()=>{ ask.remove(); }, reste ? 2600 : 1200);
+            /* plus rien à faire sur cet exercice : on félicite, puis on replie */
+            if(!reste) setTimeout(()=>{
+              if(!document.body.contains(card)) return;
+              exerciceFini(card, ex.name, ()=>{ en.replie = true; save(); renderSurPlace(); });
+            }, 1300);
           });
         }
       };
@@ -4581,6 +4659,7 @@ function renderActive(app){
         setsDiv.appendChild(dr);
       });
     });
+    majSerieActive(setsDiv, en);              /* met en avant la série à faire maintenant */
     card.querySelector('[data-act="addset"]').onclick=()=>{
       const prev = en.sets[en.sets.length-1];
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
