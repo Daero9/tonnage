@@ -456,6 +456,14 @@
     position:relative; z-index:1; animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
   .set-row.actif .n{color:#fff; font-size:15px;}
   .set-row.actif input{font-size:17.5px; font-weight:700; padding-block:10px;}
+  /* un dégressif prolonge le cadre noir de sa série : mêmes marges, coins arrondis en bas seulement */
+  .set-row.actif.suite{border-radius:14px 14px 0 0; padding-bottom:2px; margin-bottom:0; box-shadow:none;}
+  .set-row.drop.actif-suite{background:var(--hero); margin-inline:-20px; padding:2px 20px;
+    margin-top:0; transform:scale(1.02); position:relative; z-index:1;
+    animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
+  .set-row.drop.actif-suite .n{color:#fff;}
+  .set-row.drop.actif-suite.fin{padding-bottom:10px; border-radius:0 0 14px 14px;
+    box-shadow:0 8px 22px rgba(0,0,0,.26);}
   .set-row.actif .dg{border-color:rgba(255,255,255,.5); color:#fff;}
   .set-row.actif .ck{background:#fff; border-color:#fff; color:var(--hero);}
   @keyframes serieEntre{from{transform:scale(.95); box-shadow:0 0 0 rgba(0,0,0,0);} to{transform:scale(1.02);}}
@@ -4378,16 +4386,48 @@ function openBlessureExo(ei){
   if(sw) sw.onclick = ()=>openSwap(ei, true);
   document.getElementById("bl-ok").onclick = closeSheet;
 }
-/* la série en cours = la première non validée. Elle passe en noir et se rapproche. */
-function majSerieActive(setsDiv, en){
-  const suivante = en.sets.findIndex(x=>!x.done);
-  setsDiv.querySelectorAll(".set-row").forEach(l=>{
-    const si = parseInt(l.dataset.si);
-    const actif = (si === suivante) && !isNaN(si);
-    if(actif === l.classList.contains("actif")) return;   /* pas de rejeu inutile de l'animation */
-    l.classList.toggle("actif", actif);
+/* Une seule série est mise en avant dans toute la séance : celle de l'exercice
+   que tu as sous les yeux. Trop de cadres noirs à la fois, ça ne guide plus rien. */
+function majSerieActive(){
+  const a = db.active;
+  if(!a) return;
+  const cartes = [...document.querySelectorAll(".ex-card[data-ei]")];
+  const milieu = window.innerHeight / 2;
+  let choisie = null, meilleur = Infinity;
+  cartes.forEach(c=>{
+    const en = a.entries[parseInt(c.dataset.ei)];
+    if(!en || !en.sets.some(x=>!x.done)) return;                  /* plus rien à y faire */
+    const r = c.getBoundingClientRect();
+    if(r.bottom < 0 || r.top > window.innerHeight) return;        /* hors de l'écran */
+    /* la carte qui contient le milieu de l'écran gagne ; sinon la plus proche */
+    const d = (r.top <= milieu && r.bottom >= milieu) ? 0 : Math.min(Math.abs(r.top - milieu), Math.abs(r.bottom - milieu));
+    if(d < meilleur){ meilleur = d; choisie = c; }
   });
+  document.querySelectorAll(".set-row.actif, .set-row.actif-suite").forEach(l=>{
+    l.classList.remove("actif", "suite", "actif-suite", "fin");
+  });
+  if(!choisie) return;
+  /* une question attend sur la carte qu'on regarde : rien d'autre ne doit attirer l'œil */
+  if(choisie.querySelector(".rir-ask:not(.repondu)")) return;
+  const en = a.entries[parseInt(choisie.dataset.ei)];
+  const ligne = choisie.querySelector('.set-row[data-si="' + en.sets.findIndex(x=>!x.done) + '"]');
+  if(!ligne) return;
+  ligne.classList.add("actif");
+  /* les dégressifs de cette série continuent le même rectangle */
+  const suites = [];
+  let n = ligne.nextElementSibling;
+  while(n && n.classList.contains("drop")){ suites.push(n); n = n.nextElementSibling; }
+  if(suites.length){
+    ligne.classList.add("suite");
+    suites.forEach((d,k)=>{ d.classList.add("actif-suite"); if(k === suites.length-1) d.classList.add("fin"); });
+  }
 }
+/* le cadre suit le défilement : il reste sur l'exercice qu'on regarde */
+let majSerieTimer = null;
+window.addEventListener("scroll", ()=>{
+  if(!db.active || majSerieTimer) return;
+  majSerieTimer = requestAnimationFrame(()=>{ majSerieTimer = null; majSerieActive(); });
+}, {passive:true});
 /* le nom de l'exercice s'affiche un instant, puis la carte se replie */
 function exerciceFini(card, nom, apres){
   const v = document.createElement("div");
@@ -4452,6 +4492,7 @@ function renderActive(app){
     const note = injuryNote(ex.name);
     const card = document.createElement("div");
     card.className="ex-card";
+    card.dataset.ei = ei;
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
@@ -4521,13 +4562,11 @@ function renderActive(app){
         save();
         row.classList.toggle("done", st.done);
         row.querySelector(".ck").textContent = st.done?"✓":"○";
-        /* pendant la question, plus aucune série n'est mise en avant :
-           la seule chose à faire, c'est répondre */
-        if(!st.done || st.warm) majSerieActive(setsDiv, en);
-        else setsDiv.querySelectorAll(".set-row.actif").forEach(l=>l.classList.remove("actif"));
+        if(!st.done) majSerieActive();      /* décochage : la série redevient à faire */
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk) oldAsk.remove();
         if(st.done && st.warm){
+          majSerieActive();
           startRest(60);
           return;
         }
@@ -4551,6 +4590,7 @@ function renderActive(app){
           let ancre = row, nx = row.nextElementSibling;
           while(nx && nx.classList.contains("drop")){ ancre = nx; nx = nx.nextElementSibling; }
           ancre.after(ask);
+          majSerieActive();      /* la question est posée : plus aucune série mise en avant */
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir < 0 ? 0 : rir;        /* « trop lourd » = tu étais à bout : 0 rep en réserve */
@@ -4625,7 +4665,7 @@ function renderActive(app){
             save();
             ask.classList.add("repondu");
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
-            majSerieActive(setsDiv, en);      /* maintenant seulement, la suivante s'allume */
+            majSerieActive();                 /* maintenant seulement, la suivante s'allume */
             const reste = en.sets.some(s2=>!s2.done);
             setTimeout(()=>{ ask.remove(); }, reste ? 2600 : 1200);
             /* plus rien à faire sur cet exercice : on félicite, puis on replie */
@@ -4692,7 +4732,7 @@ function renderActive(app){
         setsDiv.appendChild(dr);
       });
     });
-    majSerieActive(setsDiv, en);              /* met en avant la série à faire maintenant */
+
     card.querySelector('[data-act="plier"]').onclick=()=>{ en.replie = true; save(); renderSurPlace(); };
     card.querySelector('[data-act="addset"]').onclick=()=>{
       const prev = en.sets[en.sets.length-1];
@@ -4726,6 +4766,8 @@ function renderActive(app){
     list.appendChild(card);
   });
 
+  majSerieActive();                            /* état correct dès le premier affichage */
+  requestAnimationFrame(majSerieActive);       /* affiné une fois la mise en page mesurée */
   document.getElementById("add-ex").onclick=()=>openPicker(exId=>{
     const last = lastPerf(exId);
     const ls = last? last.sets[0] : null;

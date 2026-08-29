@@ -314,6 +314,15 @@ function lancer(){
     r.querySelector(".ck").click(); })();
   eq("Elle passe à la suivante une fois validée", actives().indexOf(1), 1);
   eq("…et toujours une seule", actives().reduce((a,b)=>a+b,0), 1);
+  /* ---- un seul cadre noir dans toute la séance ---- */
+  DB.active = null;
+  DB.templates.push({id:"tr2", name:"Test deux", items:[
+    {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+    {exId:id("Rowing barre"), sets:3, reps:"8-12", rest:120}]});
+  F.startWorkout("tr2");
+  eq("Deux exercices affichés", D.querySelectorAll(".ex-card").length, 2);
+  eq("Une seule série mise en avant sur toute la séance", actives().reduce((a,b)=>a+b,0), 1);
+
   /* ---- la question passe avant la série suivante ---- */
   DB.active = null;
   F.startWorkout("tr");
