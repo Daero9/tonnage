@@ -794,8 +794,72 @@ const LIB = [
   ["Jambes","Goblet squat","Haltères","squat"],["Jambes","Front squat","Barre","squat"],
   ["Jambes","Soulevé de terre sumo","Barre","deadlift"],["Jambes","Good morning","Barre","deadlift"],
   ["Jambes","Montées sur banc","Haltères","bulgarian"],["Jambes","Kickback fessier poulie","Poulie","kickback"],
-  ["Abdos","Russian twist","Poids du corps","crunch"],["Abdos","Mountain climber","Poids du corps","plank"]
+  ["Abdos","Russian twist","Poids du corps","crunch"],["Abdos","Mountain climber","Poids du corps","plank"],
+  /* ---- à faire chez soi : poids du corps, élastique, step ou banc ---- */
+  ["Jambes","Squat au poids du corps","Poids du corps","squat"],["Jambes","Fentes avant","Poids du corps","lunge"],
+  ["Jambes","Fentes latérales","Poids du corps","lunge"],["Jambes","Squat bulgare au poids du corps","Poids du corps","bulgarian"],
+  ["Jambes","Montées sur step","Poids du corps","bulgarian"],["Jambes","Pont fessier","Poids du corps","hipthrust"],
+  ["Jambes","Pont fessier une jambe","Poids du corps","hipthrust"],["Jambes","Chaise contre le mur","Poids du corps","squat"],
+  ["Jambes","Mollets debout au poids du corps","Poids du corps","calf"],["Jambes","Mollets sur marche","Poids du corps","calf"],
+  ["Jambes","Squat élastique","Élastique","squat"],["Jambes","Soulevé de terre élastique","Élastique","deadlift"],
+  ["Jambes","Abduction hanche élastique","Élastique","abductor"],
+  ["Pectoraux","Pompes inclinées","Poids du corps","pushup"],["Pectoraux","Pompes déclinées","Poids du corps","pushup"],
+  ["Pectoraux","Développé couché élastique","Élastique","bench"],["Pectoraux","Écartés élastique","Élastique","cablefly"],
+  ["Épaules","Pompes piquées","Poids du corps","ohp"],["Épaules","Pompes piquées surélevées","Poids du corps","ohp"],
+  ["Épaules","Développé militaire élastique","Élastique","ohp"],["Épaules","Élévations latérales élastique","Élastique","latraise"],
+  ["Épaules","Oiseau élastique","Élastique","reardelt"],
+  ["Dos","Tirage élastique horizontal","Élastique","seatedrow"],["Dos","Tirage élastique vertical","Élastique","latpulldown"],
+  ["Dos","Superman","Poids du corps","plank"],["Dos","Tractions supination","Barre fixe","pullup"],
+  ["Biceps","Curl élastique","Élastique","curl"],["Biceps","Curl marteau élastique","Élastique","curl"],
+  ["Triceps","Dips sur banc","Poids du corps","dips"],["Triceps","Extension triceps élastique","Élastique","pushdown"],
+  /* les deux seuls moyens de travailler dos et biceps avec vraiment rien */
+  ["Biceps","Curl auto-résisté","Poids du corps","curl"],["Dos","Rowing sous la table","Poids du corps","seatedrow"]
 ].map((e,i)=>({id:"lib"+i, muscle:e[0], name:e[1], equip:e[2], icon:e[3]}));
+
+/* ================= MATÉRIEL =================
+   Un exercice ne demande pas un objet mais une liste. Un élément peut être une
+   alternative : ["step","banc"] se lit « un step OU un banc ». Le poids du corps
+   est toujours disponible, il n'apparaît donc jamais dans les listes. */
+const MATERIELS = [
+  {id:"elastique", nom:"Bandes élastiques"},
+  {id:"halteres",  nom:"Haltères"},
+  {id:"barre",     nom:"Barre et disques"},
+  {id:"banc",      nom:"Banc de musculation"},
+  {id:"traction",  nom:"Barre de traction"},
+  {id:"dips",      nom:"Barres de dips"},
+  {id:"step",      nom:"Step ou marche d'escalier"},
+  {id:"poulie",    nom:"Poulie"},
+  {id:"machine",   nom:"Machines de salle"}
+];
+/* déduit du matériel principal ; les exceptions sont listées juste après */
+const MAT_PAR_EQUIP = {"Poids du corps":[], "Barre fixe":["traction"], "Haltères":["halteres"],
+  "Barre":["barre"], "Poulie":["poulie"], "Machine":["machine"], "Élastique":["elastique"]};
+/* exercices qui demandent autre chose, ou en plus */
+const MAT_EXOS = {
+  "Développé couché":["barre","banc"], "Développé incliné barre":["barre","banc"],
+  "Développé couché haltères":["halteres","banc"], "Développé incliné haltères":["halteres","banc"],
+  "Écartés haltères":["halteres","banc"], "Curl incliné haltères":["halteres","banc"],
+  "Curl pupitre":["barre","banc"], "Curl concentration":["halteres",["banc","step"]],
+  "Dips":["dips"], "Fentes bulgares":["halteres",["banc","step"]],
+  "Montées sur banc":["halteres",["banc","step"]], "Hip thrust":["barre",["banc","step"]],
+  "Squat bulgare au poids du corps":[["banc","step"]], "Montées sur step":[["step","banc"]],
+  "Mollets sur marche":[["step","banc"]], "Pompes inclinées":[["step","banc"]],
+  "Pompes déclinées":[["step","banc"]], "Pompes piquées surélevées":[["step","banc"]],
+  "Dips sur banc":[["banc","step"]], "Tractions australiennes":["traction"]
+};
+/* combien d'exercices deviennent utilisables avec ce matériel */
+function nbExosDispo(mat){ return LIB.filter(e=>exoDispo(e, mat)).length; }
+function materielDe(ex){
+  if(!ex) return [];
+  return MAT_EXOS[ex.name] || MAT_PAR_EQUIP[ex.equip] || [];
+}
+/* l'exercice est-il réalisable avec ce que l'utilisateur possède ? */
+function exoDispo(ex, dispo){
+  const mien = dispo || db.materiel;
+  if(!mien) return true;                       /* aucun filtre défini : tout est proposé */
+  return materielDe(ex).every(besoin =>
+    Array.isArray(besoin) ? besoin.some(x=>mien.includes(x)) : mien.includes(besoin));
+}
 
 /* alternatives équivalentes, pour remplacer un exercice (machine prise, matériel manquant…) */
 const ALTS = {
@@ -899,6 +963,38 @@ function altsFor(exId){
 
 /* muscles sollicités : 3 = fort (rouge), 2 = moyen (orange), 1 = léger (vert) */
 const MUSCLE_WORK = {
+  "Squat au poids du corps":[["Quadriceps",3],["Fessiers",2],["Abdos",1]],
+  "Fentes avant":[["Quadriceps",3],["Fessiers",3],["Ischio-jambiers",1]],
+  "Fentes latérales":[["Quadriceps",2],["Fessiers",3],["Ischio-jambiers",1]],
+  "Squat bulgare au poids du corps":[["Quadriceps",3],["Fessiers",3],["Abdos",1]],
+  "Montées sur step":[["Quadriceps",3],["Fessiers",3],["Mollets",1]],
+  "Pont fessier":[["Fessiers",3],["Ischio-jambiers",2],["Lombaires",1]],
+  "Pont fessier une jambe":[["Fessiers",3],["Ischio-jambiers",2],["Abdos",1]],
+  "Chaise contre le mur":[["Quadriceps",3],["Fessiers",1]],
+  "Mollets debout au poids du corps":[["Mollets",3]],
+  "Mollets sur marche":[["Mollets",3]],
+  "Squat élastique":[["Quadriceps",3],["Fessiers",2],["Abdos",1]],
+  "Soulevé de terre élastique":[["Ischio-jambiers",3],["Fessiers",3],["Lombaires",2]],
+  "Abduction hanche élastique":[["Fessiers",3]],
+  "Pompes inclinées":[["Pectoraux",3],["Triceps",2],["Deltoïdes",1]],
+  "Pompes déclinées":[["Pectoraux (haut)",3],["Deltoïdes",2],["Triceps",2]],
+  "Développé couché élastique":[["Pectoraux",3],["Triceps",2],["Deltoïdes",1]],
+  "Écartés élastique":[["Pectoraux",3],["Deltoïdes",1]],
+  "Pompes piquées":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
+  "Pompes piquées surélevées":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
+  "Développé militaire élastique":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
+  "Élévations latérales élastique":[["Deltoïdes",3]],
+  "Oiseau élastique":[["Deltoïdes",3],["Trapèzes",2]],
+  "Tirage élastique horizontal":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2]],
+  "Tirage élastique vertical":[["Grand dorsal",3],["Biceps",2],["Trapèzes",1]],
+  "Superman":[["Lombaires",3],["Fessiers",2]],
+  "Tractions supination":[["Grand dorsal",3],["Biceps",3],["Trapèzes",1]],
+  "Curl élastique":[["Biceps",3],["Avant-bras",1]],
+  "Curl marteau élastique":[["Biceps",3],["Avant-bras",2]],
+  "Dips sur banc":[["Triceps",3],["Deltoïdes",1],["Pectoraux",1]],
+  "Extension triceps élastique":[["Triceps",3]],
+  "Curl auto-résisté":[["Biceps",3],["Avant-bras",1]],
+  "Rowing sous la table":[["Grand dorsal",3],["Biceps",2],["Trapèzes",2]],
   "Développé incliné barre":[["Pectoraux (haut)",3],["Deltoïdes",2],["Triceps",2]],
   "Écartés haltères":[["Pectoraux",3],["Deltoïdes",1]],
   "Rowing T-bar":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2],["Lombaires",1]],
@@ -1733,14 +1829,16 @@ function openOnboarding(first, brouillon, depart){
     metab: base.metab || "normal",
     days: base.days || 4,
     injuries: (base.injuries || []).slice(),
-    tdeeManuel: base.tdeeManuel || 0
+    tdeeManuel: base.tdeeManuel || 0,
+    lieu: base.lieu || (db.materiel === null ? "salle" : "maison"),
+    materiel: (db.materiel || []).slice()
   };
   const unites = db.settings.unites || (db.settings.unites = {taille:"cm", poids:"kg"});
   const demiTour = v => Math.round(v*2)/2;
 
   /* le carrousel n'apparaît qu'à la toute première ouverture */
   const ETAPES = (dejaRempli ? [] : ["intro"])
-    .concat(["nom","sexe","objectif","corps","age","cible","frequence","projection","fin"]);
+    .concat(["nom","sexe","objectif","corps","age","cible","lieu","frequence","projection","fin"]);
   let i = Math.min(depart != null ? depart : 0, ETAPES.length - 1);
 
   fermerOnb();
@@ -1763,8 +1861,10 @@ function openOnboarding(first, brouillon, depart){
       name: d.name || "Champion", sex: d.sex, age: d.age, height: d.height,
       weight: d.weight, goalWeight: d.goalWeight || d.weight, aim: d.aim, pace: d.pace,
       protPerKg: d.protPerKg || aimOf(d.aim).prot, metab: d.metab, days: d.days,
-      injuries: d.injuries, tdeeManuel: d.tdeeManuel, avance: true
+      injuries: d.injuries, tdeeManuel: d.tdeeManuel, lieu: d.lieu, avance: true
     };
+    /* en salle : aucun filtre. Chez soi : on ne propose que ce qu'il possède. */
+    db.materiel = d.lieu === "salle" ? null : d.materiel.slice();
     db.settings.name = db.profile.name;
     db.settings.goal = db.profile.goalWeight;
     const today = dayKey();
@@ -2021,6 +2121,52 @@ function openOnboarding(first, brouillon, depart){
       return;
     }
 
+    /* -------------------------------------------------------- 7 bis. où t'entraînes-tu */
+    if(etape === "lieu"){
+      const dess = anime=>{
+        corps.innerHTML = `<h2>Où t'entraînes-tu ?</h2>
+          <div class="sous">Tes séances ne seront construites qu'avec des exercices que tu peux réellement faire.</div>
+          ${choix([["salle","En salle de sport"],["maison","Chez moi"]], d.lieu,
+            v => v === "salle" ? "On considère que tu as accès à tout le matériel habituel."
+                               : "On te demandera juste après ce dont tu disposes.", anime)}`;
+        brancher(v=>{ d.lieu = v; dess(false); });
+      };
+      dess(true);
+      suivant("Suivant", ()=>{
+        const j = ETAPES.indexOf("materiel");
+        if(d.lieu === "salle"){
+          if(j > 0) ETAPES.splice(j, 1);                 /* en salle : pas de page matériel */
+        } else if(j < 0){
+          ETAPES.splice(i+1, 0, "materiel");             /* chez soi : on l'insère juste après */
+        }
+        i++; dessiner();
+      });
+      return;
+    }
+
+    /* -------------------------------------------------------- 7 ter. le matériel */
+    if(etape === "materiel"){
+      const dess = anime=>{
+        const n = d.materiel.length;
+        corps.innerHTML = `<h2>De quoi disposes-tu<br>chez toi ?</h2>
+          <div class="sous">Coche tout ce que tu as sous la main. Sans rien, on te construira quand même des séances au poids du corps.</div>
+          <div class="onb-choix">${MATERIELS.filter(m=>m.id !== "machine").map((m,k)=>`
+            <button class="ch ${d.materiel.includes(m.id)?"on":""}${anime?"":" fixe"}" data-mt2="${m.id}"
+              ${anime?`style="animation-delay:${k*50}ms"`:""}>${esc(m.nom)}</button>`).join("")}</div>
+          <div class="onb-desc" style="margin-top:14px;">${
+            n ? `${n} élément${n>1?"s":""} — ${nbExosDispo(d.materiel)} exercices utilisables.`
+              : `Rien de coché : ${nbExosDispo([])} exercices au poids du corps restent utilisables.`}</div>`;
+        corps.querySelectorAll("[data-mt2]").forEach(b=>b.onclick=()=>{
+          const m = b.dataset.mt2;
+          d.materiel = d.materiel.includes(m) ? d.materiel.filter(x=>x!==m) : d.materiel.concat(m);
+          clicRoue(); dess(false);
+        });
+      };
+      dess(true);
+      suivant();
+      return;
+    }
+
     /* -------------------------------------------------------- 8. fréquence */
     if(etape === "frequence"){
       const AIDE = {2:"Deux full body : le minimum pour progresser vraiment.",
@@ -2264,10 +2410,31 @@ function openAjustTdee(){
   const rz = document.getElementById("aj-reset");
   if(rz) rz.onclick = ()=>{ db.profile.tdeeManuel = 0; save(); closeSheet(); render(); showPlan(false); };
 }
+/* Un exercice indisponible est remplacé par un équivalent du même rôle,
+   pris dans les réservoirs de « Propose-moi ». Sinon la ligne saute. */
+function remplacantDispo(nom){
+  const id = libId(nom);
+  if(id && exoDispo(getEx(id))) return nom;
+  for(const role of Object.keys(RESERVOIRS)){
+    if(!RESERVOIRS[role].includes(nom)) continue;
+    const autre = melanger(RESERVOIRS[role]).find(n2=>{
+      const i2 = libId(n2);
+      return i2 && exoDispo(getEx(i2));
+    });
+    if(autre) return autre;
+  }
+  return null;
+}
 function addCoachProgram(goal){
   COACH_PROGRAMS[goal].templates.forEach(t=>{
     if(db.templates.some(x=>x.name===t.name)) return;
-    db.templates.push({id:uid(), name:t.name, items:t.items.map(it=>({exId:libId(it[0]), sets:it[1], reps:it[2], rest:it[3]})).filter(it=>it.exId)});
+    const items = t.items.map(it=>{
+      const nom = remplacantDispo(it[0]);
+      if(!nom) return null;
+      const exId = libId(nom);
+      return exId ? {exId, sets:it[1], reps:it[2], rest:it[3]} : null;
+    }).filter(Boolean);
+    if(items.length) db.templates.push({id:uid(), name:t.name, items});
   });
   save();
 }
@@ -2349,6 +2516,8 @@ function applyDefaults(){
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "clair";
   if(db.settings.son === undefined) db.settings.son = true;
+  /* null = aucun filtre, tout le matériel est supposé disponible (utilisateurs existants) */
+  if(db.materiel === undefined) db.materiel = null;
   if(!db.seq) db.seq = 1;
   if(!("active" in db)) db.active = null;
 }
@@ -4071,22 +4240,22 @@ function renderSeance(app){
    Chaque rôle a plusieurs exercices interchangeables : on en tire un au sort en
    évitant ceux déjà faits cette semaine, pour que deux propositions ne se ressemblent pas. */
 const RESERVOIRS = {
-  pecLourd:  ["Développé couché","Développé incliné barre","Développé couché haltères","Développé incliné haltères","Développé machine","Développé couché à la Smith"],
-  pecComp:   ["Écartés poulie","Butterfly (pec deck)","Écartés haltères","Écartés poulie haute","Dips","Pompes"],
-  epaule:    ["Développé militaire","Développé militaire haltères","Arnold press","Développé machine épaules"],
-  epauleIso: ["Élévations latérales","Élévations latérales poulie","Élévations frontales"],
-  triceps:   ["Extension poulie","Extension poulie corde","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie"],
-  dosVert:   ["Tractions","Tirage vertical","Tirage vertical prise neutre"],
-  dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Tractions australiennes"],
-  dosComp:   ["Pull-over poulie","Haussements d'épaules","Tirage horizontal","Rowing haltère"],
-  arriere:   ["Face pull","Oiseau","Rowing menton"],
-  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration"],
-  quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses"],
-  posterieur:["Soulevé de terre roumain","Soulevé de terre","Good morning","Hip thrust","Soulevé de terre sumo"],
-  uniJambe:  ["Fentes","Fentes bulgares","Montées sur banc","Presse à cuisses","Leg extension"],
-  ischio:    ["Leg curl","Kickback fessier poulie","Abducteurs machine","Adducteurs machine"],
-  mollets:   ["Mollets debout","Mollets assis"],
-  abdos:     ["Crunch","Gainage","Relevés de jambes","Crunch câble","Russian twist","Roulette abdominale","Planche latérale","Mountain climber"]
+  pecLourd:  ["Développé couché","Développé incliné barre","Développé couché haltères","Développé incliné haltères","Développé machine","Développé couché à la Smith","Pompes","Pompes inclinées","Développé couché élastique"],
+  pecComp:   ["Écartés poulie","Butterfly (pec deck)","Écartés haltères","Écartés poulie haute","Dips","Pompes","Pompes déclinées","Écartés élastique"],
+  epaule:    ["Développé militaire","Développé militaire haltères","Arnold press","Développé machine épaules","Pompes piquées","Pompes piquées surélevées","Développé militaire élastique"],
+  epauleIso: ["Élévations latérales","Élévations latérales poulie","Élévations frontales","Élévations latérales élastique"],
+  triceps:   ["Extension poulie","Extension poulie corde","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie","Dips sur banc","Extension triceps élastique"],
+  dosVert:   ["Tractions","Tirage vertical","Tirage vertical prise neutre","Tractions supination","Tirage élastique vertical"],
+  dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Tractions australiennes","Tirage élastique horizontal","Rowing sous la table"],
+  dosComp:   ["Pull-over poulie","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
+  arriere:   ["Face pull","Oiseau","Rowing menton","Oiseau élastique"],
+  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination","Curl auto-résisté"],
+  quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses","Squat au poids du corps","Squat élastique","Chaise contre le mur"],
+  posterieur:["Soulevé de terre roumain","Soulevé de terre","Good morning","Hip thrust","Soulevé de terre sumo","Pont fessier","Soulevé de terre élastique"],
+  uniJambe:  ["Fentes","Fentes bulgares","Montées sur banc","Presse à cuisses","Leg extension","Fentes avant","Fentes latérales","Squat bulgare au poids du corps","Montées sur step"],
+  ischio:    ["Leg curl","Kickback fessier poulie","Abducteurs machine","Adducteurs machine","Pont fessier une jambe","Abduction hanche élastique"],
+  mollets:   ["Mollets debout","Mollets assis","Mollets debout au poids du corps","Mollets sur marche"],
+  abdos:     ["Crunch","Gainage","Relevés de jambes","Crunch câble","Russian twist","Planche latérale","Mountain climber"]   /* la roulette demande du matériel : on ne la tire pas au sort */
 };
 /* rôles à faible charge : plus de répétitions, moins de repos */
 const ROLES_LEGERS = ["epauleIso","arriere","mollets","abdos","dosComp","triceps","biceps","ischio"];
@@ -4111,12 +4280,24 @@ const DOSES = {
   entretien: {lourd:{s:3, r:"8-12", p:120}, moyen:{s:3, r:"8-12", p:90},  leger:{s:3, r:"12-15", p:60}}
 };
 /* les types de séance qui ont du sens pour ce nombre de séances par semaine */
+/* combien de rôles de ce moule peuvent être remplis avec le matériel disponible */
+function rolesRemplissables(type){
+  const moule = MOULES[type];
+  if(!moule) return 0;
+  return moule.roles.filter(role => (RESERVOIRS[role]||[]).some(nom=>{
+    const id = libId(nom);
+    return id && exoDispo(getEx(id));
+  })).length;
+}
 function typesProposables(){
   const j = (db.profile && db.profile.days) || 3;
-  if(j <= 2) return ["full","haut","bas"];
-  if(j === 3) return ["full","haut","bas","push","pull","jambes"];
-  if(j === 4) return ["haut","bas","push","pull","jambes","full"];
-  return ["push","pull","jambes","haut","bas","full"];
+  const base = j <= 2 ? ["full","haut","bas"]
+    : j === 3 ? ["full","haut","bas","push","pull","jambes"]
+    : j === 4 ? ["haut","bas","push","pull","jambes","full"]
+    : ["push","pull","jambes","haut","bas","full"];
+  /* une séance d'un ou deux exercices n'a pas d'intérêt : on ne la propose pas */
+  const tenables = base.filter(t=>rolesRemplissables(t) >= 3);
+  return tenables.length ? tenables : ["full"];
 }
 /* exercices déjà faits ces derniers jours : on préfère en proposer d'autres */
 function exercicesRecents(jours){
@@ -4164,7 +4345,8 @@ function genererSeance(type, evites){
   const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
   const items = [];
   moule.roles.forEach((role, n)=>{
-    const pool = melanger(RESERVOIRS[role] || []).filter(nom=>libId(nom) && !items.some(it=>it.nom===nom));
+    const pool = melanger(RESERVOIRS[role] || [])
+      .filter(nom=>libId(nom) && !items.some(it=>it.nom===nom) && exoDispo(getEx(libId(nom))));
     if(!pool.length) return;
     /* 1er choix : ni banni, ni récent, ni déconseillé par une blessure. Puis on relâche. */
     const sain = nom => !injuryNote(nom);

@@ -255,6 +255,46 @@ function lancer(){
   eq("Un nom libre est gardé tel quel", F.nomLibre("Pull · Prise de muscle"), "Pull · Prise de muscle");
   neuf();
 
+  /* ---------------------------------------------------------- materiel disponible */
+  grp("Matériel disponible");
+  neuf();
+  const MAT = F.eval("MATERIELS");
+  const ex = n => F.getEx(id(n));
+  DB.materiel = null;
+  vrai("Sans filtre, tout est proposable", F.exoDispo(ex("Presse à cuisses")));
+  DB.materiel = [];
+  vrai("Sans matériel : les pompes, oui", F.exoDispo(ex("Pompes")));
+  vrai("Sans matériel : la presse à cuisses, non", !F.exoDispo(ex("Presse à cuisses")));
+  vrai("Le développé couché demande une barre ET un banc",
+    !F.exoDispo(ex("Développé couché"), ["barre"]) && !F.exoDispo(ex("Développé couché"), ["banc"])
+    && F.exoDispo(ex("Développé couché"), ["barre","banc"]));
+  vrai("Le squat bulgare accepte un step OU un banc",
+    F.exoDispo(ex("Squat bulgare au poids du corps"), ["step"])
+    && F.exoDispo(ex("Squat bulgare au poids du corps"), ["banc"])
+    && !F.exoDispo(ex("Squat bulgare au poids du corps"), []));
+  vrai("Chaque groupe musculaire a du répondant sans matériel", (()=>{
+    const groupes = ["Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos"];
+    return groupes.every(g => F.eval("LIB").some(e=>e.muscle===g && F.exoDispo(e, [])));
+  })());
+  DB.profile = JSON.parse(JSON.stringify(profilType));
+  DB.materiel = [];
+  vrai("Sans matériel, aucune séance impossible n'est proposée",
+    F.typesProposables().every(t => F.genererSeance(t).items.every(it => F.exoDispo(ex(it.nom)))));
+  vrai("Sans matériel, chaque séance proposée tient au moins 3 exercices",
+    F.typesProposables().every(t => F.genererSeance(t).items.length >= 3));
+  const rolesRien = F.rolesRemplissables("pull");
+  DB.materiel = ["elastique"];
+  vrai("Un élastique élargit ce qui est faisable pour le dos", F.rolesRemplissables("pull") > rolesRien);
+  vrai("Avec un élastique, toutes les séances restent réalisables",
+    F.typesProposables().every(t => F.genererSeance(t).items.every(it => F.exoDispo(ex(it.nom)))));
+  DB.materiel = ["halteres"];
+  DB.templates = [];
+  F.addCoachProgram("masse");
+  vrai("Le programme du coach est adapté au matériel",
+    DB.templates.length > 0 && DB.templates.every(t=>t.items.every(it=>F.exoDispo(F.getEx(it.exId)))));
+  DB.materiel = null;
+  neuf();
+
   /* ---------------------------------------------------------- parcours d'accueil */
   grp("Parcours d'accueil");
   neuf();
