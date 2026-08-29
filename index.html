@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <title>Tonnage</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1b1b1d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -52,7 +52,8 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   /* Aucune règle overflow ici : sur Android, borner la largeur du document
      (hidden comme clip) empêchait tout défilement vertical. */
-  html,body{margin:0; padding:0;}
+  /* pas de zoom par double appui ni de loupe intempestive pendant une séance */
+  html,body{margin:0; padding:0; touch-action:manipulation;}
   body{
     background:var(--bg); color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -458,6 +459,11 @@
   .set-row.actif .dg{border-color:rgba(255,255,255,.5); color:#fff;}
   .set-row.actif .ck{background:#fff; border-color:#fff; color:var(--hero);}
   @keyframes serieEntre{from{transform:scale(.95); box-shadow:0 0 0 rgba(0,0,0,0);} to{transform:scale(1.02);}}
+  /* la question attend une réponse : on la fait remarquer sans bloquer l'écran */
+  @keyframes secousse{0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);}
+    40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);}}
+  .rir-ask.rappel{animation:secousse .38s ease; border-color:var(--accent);}
+  @media (prefers-reduced-motion:reduce){ .rir-ask.rappel{animation:none;} }
   /* refermer un exercice ouvert : chevron discret sous les boutons */
   .ex-plier{width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
     padding:10px 0 0; margin-top:6px; color:var(--ink-mute); font-size:12px; font-weight:700;}
@@ -2424,6 +2430,10 @@ function save(){
   idbSet(json);
   autoFileSchedule();
 }
+/* Zoom : le méta viewport suffit sur Android, pas sur iOS où Safari l'ignore.
+   On refuse donc explicitement le geste de pincement. */
+["gesturestart","gesturechange","gestureend"].forEach(ev=>
+  document.addEventListener(ev, e=>e.preventDefault(), {passive:false}));
 /* demande au navigateur de ne pas effacer les données */
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 function uid(){ return "x"+(db.seq++)+"_"+Date.now().toString(36); }
@@ -4493,6 +4503,16 @@ function renderActive(app){
       wIn.oninput=()=>{ st.w = wIn.value===""?"":parseFloat(wIn.value); if(!st.warm) propager("w", st.w); save(); };
       rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); save(); };
       row.querySelector(".ck").onclick=()=>{
+        /* une question attend sa réponse : on ne passe pas à la série suivante avant */
+        const enAttente = card.querySelector(".rir-ask:not(.repondu)");
+        if(enAttente && !st.done){
+          enAttente.classList.remove("rappel");
+          void enAttente.offsetWidth;
+          enAttente.classList.add("rappel");
+          enAttente.scrollIntoView({block:"nearest", behavior:"smooth"});
+          if(navigator.vibrate) try{ navigator.vibrate(14); }catch(e){}
+          return;
+        }
         ensureAudio();
         reprendreChrono(a);
         st.w = parseFloat(wIn.value)||0; st.r = parseInt(rIn.value)||0;
@@ -4501,7 +4521,10 @@ function renderActive(app){
         save();
         row.classList.toggle("done", st.done);
         row.querySelector(".ck").textContent = st.done?"✓":"○";
-        majSerieActive(setsDiv, en);          /* la suivante prend le relais tout de suite */
+        /* pendant la question, plus aucune série n'est mise en avant :
+           la seule chose à faire, c'est répondre */
+        if(!st.done || st.warm) majSerieActive(setsDiv, en);
+        else setsDiv.querySelectorAll(".set-row.actif").forEach(l=>l.classList.remove("actif"));
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk) oldAsk.remove();
         if(st.done && st.warm){
@@ -4600,7 +4623,9 @@ function renderActive(app){
                           : "Parfait — c'est noté pour ta prochaine séance.";
             }
             save();
+            ask.classList.add("repondu");
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
+            majSerieActive(setsDiv, en);      /* maintenant seulement, la suivante s'allume */
             const reste = en.sets.some(s2=>!s2.done);
             setTimeout(()=>{ ask.remove(); }, reste ? 2600 : 1200);
             /* plus rien à faire sur cet exercice : on félicite, puis on replie */

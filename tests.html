@@ -314,6 +314,27 @@ function lancer(){
     r.querySelector(".ck").click(); })();
   eq("Elle passe à la suivante une fois validée", actives().indexOf(1), 1);
   eq("…et toujours une seule", actives().reduce((a,b)=>a+b,0), 1);
+  /* ---- la question passe avant la série suivante ---- */
+  DB.active = null;
+  F.startWorkout("tr");
+  /* l'échauffement ne déclenche pas de question : on le valide d'abord */
+  (()=>{ const r = lignes()[0]; const [w,q] = r.querySelectorAll("input");
+    w.value = 30; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    q.value = 12; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click(); })();
+  (()=>{ const r = lignes()[1]; const [w,q] = r.querySelectorAll("input");
+    w.value = 60; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click(); })();
+  vrai("Une question apparaît après la série", !!D.querySelector(".rir-ask"));
+  eq("Aucune série mise en avant tant qu'on n'a pas répondu", actives().reduce((a,b)=>a+b,0), 0);
+  lignes()[2].querySelector(".ck").click();
+  vrai("La série suivante refuse d'être validée avant la réponse", !DB.active.entries[0].sets[2].done);
+  D.querySelector('.rir-ask [data-rir="1"]').click();
+  eq("Une fois répondu, la suivante s'allume", actives().indexOf(1), 2);
+  lignes()[2].querySelector(".ck").click();
+  vrai("…et devient validable", DB.active.entries[0].sets[2].done);
+
   DB.active.entries[0].replie = true;
   F.render();
   vrai("Un exercice replié tient sur une ligne", !!D.querySelector(".ex-done") && !D.querySelector(".ex-card"));
