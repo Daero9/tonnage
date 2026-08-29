@@ -448,13 +448,20 @@
     position:relative;}
 
   /* ---- la série en cours se détache ---- */
-  .set-row.actif{background:var(--hero); border-radius:12px; transform:scale(1.025);
-    box-shadow:0 7px 20px rgba(0,0,0,.24); position:relative; z-index:1;
-    animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
-  .set-row.actif .n{color:#fff;}
+  /* le cadre noir déborde de la carte blanche : marge négative compensée par le rembourrage,
+     la grille reste donc alignée avec l'en-tête des colonnes */
+  .set-row.actif{background:var(--hero); border-radius:14px; transform:scale(1.02);
+    margin-inline:-20px; padding:9px 20px; box-shadow:0 8px 22px rgba(0,0,0,.26);
+    position:relative; z-index:1; animation:serieEntre .36s cubic-bezier(.34,1.45,.6,1);}
+  .set-row.actif .n{color:#fff; font-size:15px;}
+  .set-row.actif input{font-size:17.5px; font-weight:700; padding-block:10px;}
   .set-row.actif .dg{border-color:rgba(255,255,255,.5); color:#fff;}
   .set-row.actif .ck{background:#fff; border-color:#fff; color:var(--hero);}
-  @keyframes serieEntre{from{transform:scale(.95); box-shadow:0 0 0 rgba(0,0,0,0);} to{transform:scale(1.025);}}
+  @keyframes serieEntre{from{transform:scale(.95); box-shadow:0 0 0 rgba(0,0,0,0);} to{transform:scale(1.02);}}
+  /* refermer un exercice ouvert : chevron discret sous les boutons */
+  .ex-plier{width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
+    padding:10px 0 0; margin-top:6px; color:var(--ink-mute); font-size:12px; font-weight:700;}
+  .ex-plier svg{width:18px; height:12px; transform:rotate(180deg);}
   /* petit enfoncement sur les boutons d'une série */
   .set-row .ck, .set-row .dg{transition:transform .2s cubic-bezier(.22,.9,.35,1);}
   .set-row .ck:active, .set-row .dg:active{transform:scale(.86); transition-duration:.06s;}
@@ -4454,7 +4461,8 @@ function renderActive(app){
           : ""}
         <button class="btn btn-sm btn-ghost" data-act="swap" style="white-space:nowrap;">⇄ Remplacer</button>
         <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">Retirer</button>
-      </div>`;
+      </div>
+      <button class="ex-plier" data-act="plier" aria-label="Replier cet exercice">Replier ${CHEV}</button>`;
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
@@ -4660,6 +4668,7 @@ function renderActive(app){
       });
     });
     majSerieActive(setsDiv, en);              /* met en avant la série à faire maintenant */
+    card.querySelector('[data-act="plier"]').onclick=()=>{ en.replie = true; save(); renderSurPlace(); };
     card.querySelector('[data-act="addset"]').onclick=()=>{
       const prev = en.sets[en.sets.length-1];
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
