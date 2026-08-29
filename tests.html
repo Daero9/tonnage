@@ -300,6 +300,25 @@ function lancer(){
   vrai("« Trop lourd » baisse la charge des séries suivantes", (()=>{ repondre("-1"); const s2 = DB.active.entries[0].sets[2]; return s2.w < 60; })());
   vrai("« 1-2 » garde la charge des séries suivantes", (()=>{ repondre("1"); const s2 = DB.active.entries[0].sets[2]; return s2.w === 60; })());
   F.onerror = null;
+
+  /* ---- mise en avant de la série en cours et repli de l exercice ---- */
+  DB.active = null;
+  F.startWorkout("tr");
+  const lignes = () => [...D.querySelectorAll(".set-row")];
+  const actives = () => lignes().map(l=>l.classList.contains("actif") ? 1 : 0);
+  eq("Une seule série est mise en avant", actives().reduce((a,b)=>a+b,0), 1);
+  eq("C'est la première non validée", actives().indexOf(1), 0);
+  (()=>{ const r = lignes()[0]; const [w,q] = r.querySelectorAll("input");
+    w.value = 60; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click(); })();
+  eq("Elle passe à la suivante une fois validée", actives().indexOf(1), 1);
+  eq("…et toujours une seule", actives().reduce((a,b)=>a+b,0), 1);
+  DB.active.entries[0].replie = true;
+  F.render();
+  vrai("Un exercice replié tient sur une ligne", !!D.querySelector(".ex-done") && !D.querySelector(".ex-card"));
+  D.querySelector(".ex-done").click();
+  vrai("Il se rouvre d'un appui", !!D.querySelector(".ex-card") && !D.querySelector(".ex-done"));
   DB.active = null;
   neuf();
 
