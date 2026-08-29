@@ -17,7 +17,7 @@
     --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
     --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
     --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
-    --good:#3f9c62; --bad:#e0554a;
+    --good:#5cb22e; --bad:#e0554a;
     --barre:rgba(255,255,255,.96);
     --sheet:#f4f1eb; --field:#ffffff;
     --figure:invert(1);
@@ -29,7 +29,7 @@
     --ink:#f4f2ef; --ink-soft:#b3b1ad; --ink-mute:#85837f;
     --accent:#f58220; --accent-deep:#c96a12; --accent-ink:#1a1207;
     --hero:#0e0e10; --hero-ink:#ffffff; --hero-soft:#b0aeaa;
-    --good:#6fbf8b; --bad:#e06c5a;
+    --good:#68c23a; --bad:#e06c5a;
     --barre:rgba(20,20,22,.96);
     --sheet:#1f1f22; --field:#2a2a2e;
     --figure:none;
@@ -43,7 +43,7 @@
     --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
     --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
     --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
-    --good:#3f9c62; --bad:#e0554a;
+    --good:#5cb22e; --bad:#e0554a;
     --barre:rgba(255,255,255,.96);
     --sheet:#f4f1eb; --field:#ffffff;
     --figure:invert(1);
@@ -470,10 +470,10 @@
   .ex-card .bn-debut.bn-fin{border-radius:14px;}
   /* la question fait partie du même bloc : on comprend qu'elle appartient à cette série */
   .ex-card .rir-ask.bn{border:none; padding-top:12px;}
-  .rir-ask.bn .rir-intro{color:rgba(255,255,255,.65);}
-  .rir-ask.bn .q{color:rgba(255,255,255,.9);}
-  .rir-ask.bn .row button{background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;}
-  .rir-ask.bn .rir-lourd{color:rgba(255,255,255,.72); border-color:rgba(255,255,255,.25);}
+  .rir-ask.bn .rir-intro{color:rgba(255,255,255,.78);}
+  .rir-ask.bn .q{color:#fff;}
+  .rir-ask.bn .row button{background:#fff; border-color:#fff; color:var(--hero);}
+  .rir-ask.bn .rir-lourd{color:#fff; border-color:#fff;}
   .rir-ask.bn .q.ok{color:#ffb15e;}
   /* deux pulsations sur la coche : l'œil trouve quoi faire, rien ne bouge */
   @keyframes pulseCk{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55);} 50%{box-shadow:0 0 0 8px rgba(255,255,255,0);}}
@@ -535,7 +535,13 @@
   .inj-note{background:rgba(224,108,90,.12); border:1px solid rgba(224,108,90,.35); border-radius:10px; padding:9px 11px; margin-bottom:10px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
   .inj-note b{color:var(--bad);}
   .inj-swap{color:var(--accent); font-weight:700; text-decoration:underline; font-size:12.5px;}
-  .set-row.done .ck{background:var(--good); border-color:var(--good); color:#0d1a12;}
+  .set-row.done .ck{background:var(--good); border-color:var(--good); color:#fff; border-radius:11px;}
+  .set-row .ck svg{width:23px; height:23px; display:block;}
+  /* la coche arrive comme un appui : elle enfonce puis rebondit */
+  @keyframes cochePop{0%{transform:scale(.45); opacity:0;} 55%{transform:scale(1.18); opacity:1;}
+    75%{transform:scale(.94);} 100%{transform:scale(1);}}
+  .set-row .ck.pop svg{animation:cochePop .42s cubic-bezier(.3,1.4,.5,1);}
+  @media (prefers-reduced-motion:reduce){ .set-row .ck.pop svg{animation:none;} }
   .rir-ask{background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:2px 0 10px;}
   .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
   .rir-ask .q.ok{margin:0; color:var(--accent);}
@@ -2644,6 +2650,8 @@ async function quickBackup(){
   }
 }
 const IC_USER = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.6 20c.6-4 3.7-6 7.4-6s6.8 2 7.4 6z"/></svg>';
+/* coche épaisse, dessinée : le caractère « ✓ » est trop fin et change d'un téléphone à l'autre */
+const IC_COCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.6l4.6 4.6L19 7.4"/></svg>';
 const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm9 3.4c0 .6-.05 1.1-.14 1.7l2 1.5-1.9 3.3-2.4-1a7.8 7.8 0 0 1-2.9 1.7L15.3 22h-3.8l-.35-2.6c-1.05-.3-2-.85-2.85-1.6l-2.4 1L4 15.5l2-1.5A8.6 8.6 0 0 1 5.9 12c0-.55.05-1.1.14-1.6L4 8.9l1.9-3.3 2.4 1c.85-.75 1.8-1.3 2.85-1.6L11.5 2h3.8l.35 2.6c1.05.3 2.05.85 2.9 1.6l2.4-1L22.85 8.9l-2 1.5c.1.5.15 1.05.15 1.6z"/></svg>';
 /* bandeau sombre : l'image fournie en fond, avatar à gauche, réglages à droite */
 /* Le disque sombre est dessiné, plus chargé : une image réinsérée à chaque rendu
@@ -4482,10 +4490,10 @@ function renderActive(app){
       {photo, icones:false, classe:"hero-en-cours"})}
     <div style="height:10px;"></div>
     <div class="stack" id="ex-list"></div>
-    <button class="btn btn-ghost" id="add-ex" style="width:100%; margin-top:12px;">＋ Ajouter un exercice</button>
+    <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ Ajouter un exercice</button>
     <div class="row" style="margin-top:20px;">
-      <button class="btn btn-danger" id="cancel-w" style="flex:0 0 auto; padding-inline:14px;">Annuler</button>
-      <button class="btn btn-accent grow" id="finish-w">Terminer la séance</button>
+      <button class="btn" id="cancel-w" style="flex:0 0 auto; padding-inline:18px; background:var(--hero); color:#fff; border-color:var(--hero);">Annuler</button>
+      <button class="btn grow" id="finish-w" style="background:var(--good); color:#fff; border-color:var(--good);">Terminer la séance</button>
     </div>`;
 
   /* le chrono se met en pause d'un appui ; cocher une série le relance */
@@ -4555,7 +4563,7 @@ function renderActive(app){
         <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="${estPoidsDuCorps(ex)? "0" : "kg"}" value="${st.w!==""?st.w:""}">
         <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
         ${st.warm? "<span></span>" : `<button class="dg" title="Ajouter un dégressif">↓</button>`}
-        <button class="ck">${st.done?"✓":"○"}</button>`;
+        <button class="ck">${st.done? IC_COCHE : "○"}</button>`;
       const [wIn, rIn] = row.querySelectorAll("input");
       /* ce que tu saisis se reporte sur les séries suivantes non validées, jamais sur les précédentes */
       const ligneDe = j => setsDiv.querySelector('.set-row[data-si="'+j+'"]');
@@ -4591,7 +4599,10 @@ function renderActive(app){
         if(!st.done) delete st.rir;
         save();
         row.classList.toggle("done", st.done);
-        row.querySelector(".ck").textContent = st.done?"✓":"○";
+        const ck = row.querySelector(".ck");
+        ck.innerHTML = st.done ? IC_COCHE : "○";
+        ck.classList.remove("pop");
+        if(st.done){ void ck.offsetWidth; ck.classList.add("pop"); }
         if(!st.done) majSerieActive();      /* décochage : la série redevient à faire */
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk){ oldAsk.remove(); retirerBlocNoir(true); majSerieActive(); }
