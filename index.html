@@ -775,6 +775,23 @@
   .pk-row.absent .eq{color:var(--bad);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
   .info-btn{width:30px; height:30px; flex:none; font-size:15px; color:var(--accent); background:none; border:none;}
+  /* ---- réglages : des sections, pas une pile de boutons ---- */
+  .rg-c{background:var(--surface); border-radius:16px; padding:6px 14px 8px; margin-bottom:12px;}
+  .rg-t{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-mute); padding:12px 0 6px;}
+  .rg-l{display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:none;
+    border:0; border-top:1px solid var(--border); padding:13px 0; font-size:15px; font-weight:600;
+    color:var(--ink); min-height:52px;}
+  .rg-c .rg-t + .rg-l{border-top:0;}
+  .rg-l em{display:block; font-style:normal; font-size:12.5px; font-weight:400; line-height:1.45;
+    color:var(--ink-mute); margin-top:2px;}
+  .rg-l .val{flex:0 0 auto; font-weight:800; color:var(--accent); white-space:nowrap;}
+  .rg-l .fl{flex:0 0 auto; font-size:20px; color:var(--ink-mute); line-height:1;}
+  .rg-nb{flex:0 0 auto; display:flex; align-items:baseline; gap:4px; font-weight:800; color:var(--ink-mute);}
+  .rg-nb input{width:64px; text-align:center; padding:8px 4px; font-size:16px; font-weight:800;}
+  .rg-resume{font-size:13px; line-height:1.6; color:var(--ink-soft); padding:2px 0 10px;}
+  .rg-resume b{color:var(--ink);}
+
   /* ---- fiche d'un exercice : un en-tête, puis des cartes blanches ---- */
   .exo-h{display:flex; gap:12px; align-items:center; margin:2px 0 16px;}
   .exo-h h3{margin:0; padding:0; font-size:22px; line-height:1.15; text-align:left;}
@@ -2682,7 +2699,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 01h42";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 01h55";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3033,6 +3050,7 @@ async function quickBackup(){
     openSettings();
   }
 }
+const IC_CROIX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const IC_USER = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.2" r="3.8"/><path d="M4.6 20c.6-4 3.7-6 7.4-6s6.8 2 7.4 6z"/></svg>';
 /* coche épaisse, dessinée : le caractère « ✓ » est trop fin et change d'un téléphone à l'autre */
 const IC_COCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.6l4.6 4.6L19 7.4"/></svg>';
@@ -3081,7 +3099,9 @@ function hero(inner, opts){
     ${heroSvg(o.photo)}
     <div class="hero-in">
       <div class="hero-top">
-        ${o.icones === false ? "<span></span><span></span>" : `
+        ${o.fermer ? `<span></span>
+        <button class="hero-ic" id="tb-close" title="Fermer" aria-label="Fermer">${IC_CROIX}</button>`
+        : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="Mon profil" aria-label="Mon profil">${IC_USER}</button>
         <button class="hero-ic" id="tb-settings" title="Réglages" aria-label="Réglages">${IC_GEAR}</button>`}
       </div>
@@ -3117,6 +3137,8 @@ function openProfil(){
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
   const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
+  const x = document.getElementById("tb-close");
+  if(x) x.onclick = ()=>{ curTab = "seance"; render(); };
 }
 let curTab = "seance";
 function renderTabs(){
@@ -3133,7 +3155,6 @@ function render(){
   const app = document.getElementById("app");
   if(curTab==="seance") renderSeance(app);
   else if(curTab==="eat") renderEat(app);
-  else if(curTab==="prog") renderProgs(app);
   else if(curTab==="hist") renderHist(app);
   else renderProgress(app);
   if(gardeDefilement){ window.scrollTo(0, posDefilement); gardeDefilement = false; }
@@ -5465,59 +5486,6 @@ function openPicker(cb){
 }
 
 /* ================= PROGRAMMES ================= */
-function renderProgs(app){
-  app.innerHTML = `
-    ${hero(`<div class="big">Mes programmes</div>`)}
-    <div class="under-hero" style="height:14px;"></div>
-    <div class="stack" id="prog-list"></div>
-    <button class="btn btn-accent" id="new-tpl" style="width:100%; margin-top:14px;">＋ Nouvelle séance</button>
-    <button class="btn" id="lib-btn" style="width:100%; margin-top:10px;">Bibliothèque d'exercices</button>
-    <div id="coach-card"></div>`;
-  const cur = currentWeight(), obj = db.settings.goal;
-  if(!coachGoal) coachGoal = (cur!==null && obj>0 && obj<cur) ? "seche" : "masse";
-  const prog = COACH_PROGRAMS[coachGoal];
-  const missing = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
-  document.getElementById("coach-card").innerHTML = `
-    <div class="section-t"><i>🎯</i>Programmes conseillés</div>
-    <div class="chips" style="margin-bottom:10px;">
-      ${Object.keys(COACH_PROGRAMS).map(k=>`<button class="chip ${k===coachGoal?'on':''}" data-goal="${k}">${COACH_PROGRAMS[k].label}</button>`).join("")}
-    </div>
-    <div class="card">
-      <div style="font-weight:700; margin-bottom:4px;">${prog.title}</div>
-      <p style="margin:0 0 10px; font-size:13.5px; color:var(--ink-soft);">${coachDesc(coachGoal)}</p>
-      ${missing.length
-        ? `<button class="btn btn-accent" id="coach-add" style="width:100%;">Ajouter les ${missing.length} séance${missing.length>1?"s":""}</button>`
-        : `<div style="font-size:13.5px; color:var(--good); font-weight:600;">✓ Séances déjà dans tes programmes</div>`}
-    </div>`;
-  document.querySelectorAll("[data-goal]").forEach(b=>b.onclick=()=>{ coachGoal=b.dataset.goal; render(); });
-  if(missing.length) document.getElementById("coach-add").onclick=()=>{ addCoachProgram(coachGoal); render(); };
-  const list = document.getElementById("prog-list");
-  if(!db.templates.length){
-    list.innerHTML=`<div class="card empty"><div class="big">📋</div>Crée tes séances types ici — par exemple <b>Push</b>, <b>Pull</b>, <b>Legs</b> — pour les lancer en un clic.</div>`;
-  } else {
-    list.innerHTML = db.templates.map(t=>`
-      <div class="lrow">
-        <button class="inline-edit grow" data-preview="${t.id}" style="padding:0; margin:0;">
-          <div><div class="t1">${esc(t.name)}</div>
-          <div class="t2">${t.items.length} exercice${t.items.length>1?"s":""} · voir le détail</div></div>
-        </button>
-        <button class="icon-btn" data-edit="${t.id}">✎</button>
-        <button class="icon-btn" data-del="${t.id}" style="color:var(--bad);">✕</button>
-      </div>`).join("");
-    list.querySelectorAll("[data-preview]").forEach(b=>b.onclick=()=>openPreview(b.dataset.preview));
-    list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openTplEditor(b.dataset.edit));
-    list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
-      const t = db.templates.find(x=>x.id===b.dataset.del);
-      askConfirm("Supprimer la séance ?", `"${t.name}" sera supprimée. Ton historique de séances passées est conservé.`, "Supprimer", true, ()=>{
-        db.templates = db.templates.filter(x=>x.id!==t.id); save(); render();
-      });
-    });
-  }
-  document.getElementById("new-tpl").onclick=()=>openTplEditor(null);
-  document.getElementById("lib-btn").onclick=()=>openPicker(null);
-  wireTopbar();
-}
-
 function openTplEditor(id){
   let tpl = id ? JSON.parse(JSON.stringify(db.templates.find(t=>t.id===id))) : {id:uid(), name:"", items:[]};
   const draw = ()=>{
@@ -5657,26 +5625,43 @@ function openCGU(){
 /* ================= RÉGLAGES / DONNÉES ================= */
 function openSettings(){
   openSheet(`<h3>Réglages</h3>
-    <div class="stack">
-      <button class="btn" id="st-hints">💡 Revoir les explications de l'app</button>
-      <button class="btn" id="st-legal">📄 Aide, confidentialité et conditions</button>
-      <button class="btn" id="st-ecran">
-        <span class="grow" style="text-align:left;">Garder l'écran allumé en séance</span>
-        <span style="font-weight:800; color:var(--accent);">${db.settings.ecranAllume===false? "Non" : "Oui"}</span>
+    <div class="rg-c">
+      <div class="rg-t">Pendant la séance</div>
+      <button class="rg-l" id="st-ecran">
+        <span class="grow">Garder l'écran allumé
+          <em>L'écran ne s'éteint pas entre deux séries.</em></span>
+        <span class="val">${db.settings.ecranAllume===false? "Non" : "Oui"}</span>
       </button>
-      <button class="btn" id="st-theme">
-        <span class="grow" style="text-align:left;">Apparence</span>
-        <span style="font-weight:800; color:var(--accent);">${db.settings.theme==="clair"? "☀️ Clair" : "🌙 Sombre"}</span>
-      </button>
+      <div class="rg-l">
+        <span class="grow">Repos par défaut
+          <em>Utilisé quand un exercice n'a pas son propre temps.</em></span>
+        <span class="rg-nb"><input type="number" inputmode="numeric" step="15" min="0" id="st-rest"
+          value="${db.settings.rest}"> s</span>
+      </div>
+    </div>
 
-      <div><span class="label" style="display:block; margin-bottom:5px;">Repos par défaut (secondes)</span>
-      <input type="number" inputmode="numeric" step="15" min="0" id="st-rest" value="${db.settings.rest}"></div>
-
-      <button class="btn" id="st-bk-toggle" style="margin-top:4px;">
-        <span class="grow" style="text-align:left;">Détails de sauvegarde</span>
-        <span id="st-bk-caret" style="font-weight:800; color:var(--accent);">▸</span>
+    <div class="rg-c">
+      <div class="rg-t">Apparence</div>
+      <button class="rg-l" id="st-theme">
+        <span class="grow">Thème</span>
+        <span class="val">${db.settings.theme==="clair"? "☀️ Clair" : "🌙 Sombre"}</span>
       </button>
-      <div id="st-backup" class="stack" style="display:none;">
+      <button class="rg-l" id="st-hints">
+        <span class="grow">Revoir les explications
+          <em>Les bandeaux d'aide réapparaîtront dans l'app.</em></span>
+        <span class="fl">›</span>
+      </button>
+    </div>
+
+    <div class="rg-c">
+      <div class="rg-t">Mes données</div>
+      <div id="st-resume" class="rg-resume"></div>
+      <button class="rg-l" id="st-bk-toggle">
+        <span class="grow">Sauvegarde et transfert
+          <em>Copier tes données sur un autre appareil, ou les mettre à l'abri.</em></span>
+        <span class="fl" id="st-bk-caret">›</span>
+      </button>
+      <div id="st-backup" class="stack" style="display:none; padding:4px 2px 2px;">
       <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.</p>
       <div id="st-auto"></div>
       <button class="btn" id="st-file">💾 Enregistrer un fichier</button>
@@ -5684,17 +5669,24 @@ function openSettings(){
       <input type="file" id="st-restore-in" accept=".json,application/json,text/plain" style="display:none;">
       <button class="btn" id="st-export">Exporter en texte</button>
       <button class="btn" id="st-import">Importer un texte</button>
-      <div class="section-t" style="margin-top:6px;">État de la sauvegarde</div>
+      <div class="rg-t" style="margin-top:10px;">État de la sauvegarde</div>
       <div id="st-diag" style="font-size:13px; line-height:1.9;"></div>
       <button class="btn btn-danger" id="st-reset">Tout effacer</button>
       </div>
-      <button class="btn btn-accent" id="st-ok">Fermer</button>
-    </div>`);
+    </div>
+
+    <div class="rg-c">
+      <div class="rg-t">À propos</div>
+      <button class="rg-l" id="st-legal">
+        <span class="grow">Aide, confidentialité et conditions</span><span class="fl">›</span>
+      </button>
+    </div>
+    <button class="btn btn-accent" id="st-ok" style="width:100%;">Fermer</button>`);
   document.getElementById("st-bk-toggle").onclick = ()=>{
     const z = document.getElementById("st-backup");
     const ouvert = z.style.display !== "none";
     z.style.display = ouvert ? "none" : "flex";
-    document.getElementById("st-bk-caret").textContent = ouvert ? "▸" : "▾";
+    document.getElementById("st-bk-caret").textContent = ouvert ? "›" : "⌄";
   };
   /* enregistrement au fil de la saisie : rien n'est perdu si la fiche est fermée d'un geste */
   const applySettings = ()=>{
@@ -5755,6 +5747,14 @@ function openSettings(){
   };
   const ico = v => v==="ok" ? '<span style="color:var(--good);">✓</span>' : (v==="?" ? '<span style="color:var(--ink-mute);">…</span>' : '<span style="color:var(--bad);">✕</span>');
   const survived = (diag.lsMark || diag.idbMark) ? true : false;
+  /* ce que contient l app, en une phrase : plus parlant qu une liste de diagnostics */
+  const resume = document.getElementById("st-resume");
+  if(resume){
+    const n = (x,un,pl)=>`<b>${x}</b> ${x>1? (pl||un+"s") : un}`;
+    resume.innerHTML = `${n(db.history.length,"séance")} enregistrée${db.history.length>1?"s":""}, `
+      + `${n(db.weights.length,"pesée")}, ${n((db.templates||[]).length,"séance type","séances types")}.<br>`
+      + `Tout est dans ce téléphone. Dernière sauvegarde fichier : ${ago(db.lastBackup)}.`;
+  }
   document.getElementById("st-diag").innerHTML = `
     <div>${ico(diag.ls)} Mémoire principale : ${diag.ls}</div>
     <div>${ico(diag.idb)} Mémoire de secours : ${diag.idb}</div>
@@ -5822,7 +5822,7 @@ function openSettings(){
 /* ================= HISTORIQUE ================= */
 function renderHist(app){
   app.innerHTML = `
-    ${hero(`<div class="big">Historique</div>`)}
+    ${hero(`<div class="big">Historique</div>`, {fermer:true})}
     <div class="under-hero" style="height:14px;"></div>
     <div class="stack" id="h-list"></div>`;
   wireTopbar();
