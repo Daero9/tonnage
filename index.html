@@ -135,7 +135,7 @@
   /* le fond est l'image fournie : forme sombre détourée, transparente ailleurs */
   .hero{position:relative; color:var(--hero-ink);
     margin:calc(-16px - env(safe-area-inset-top)) -16px 0;}
-  .hero-bg{display:block; width:100%; height:auto; aspect-ratio:605/446;}
+  .hero-bg{display:block; width:100%; height:auto; aspect-ratio:1210/1000;}
   .hero-bg rect{transition:none;}
   .hero-in{position:absolute; inset:0; padding:calc(14px + env(safe-area-inset-top)) 18px 0;
     display:flex; flex-direction:column;}
@@ -412,27 +412,32 @@
   /* posé en haut de l'écran */
   .restbar.haut{bottom:auto; top:calc(10px + env(safe-area-inset-top));}
   .restbar.drag{transition:none; box-shadow:0 14px 40px rgba(0,0,0,.55); cursor:grabbing;}
-  .restbar .grip{width:16px; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; opacity:.5; margin-right:2px;}
+  .restbar .grip{width:13px; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; opacity:.5; margin-right:2px;}
   .restbar .grip i{display:block; height:2px; border-radius:2px; background:var(--accent-ink);}
   .restbar.show{display:flex;}
   .restbar .t{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; min-width:86px;}
   .restbar .lbl{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.75;}
   .restbar button{background:rgba(26,20,8,.14); border-radius:10px; padding:8px 12px; font-weight:800; font-size:14px; color:var(--accent-ink);}
   /* le son : plein et franc quand il est actif, en contour et en retrait quand il est coupé */
-  .rb-ic{background:none !important; padding:2px !important; display:flex; align-items:center; color:#fff;}
-  .rb-ic svg{width:25px; height:23px; display:block;}
+  .restbar .rb-ic{background:none !important; padding:2px !important; display:flex; align-items:center; color:#fff;}
+  .rb-ic svg{width:23px; height:21px; display:block;}
   .rb-ic.muet{opacity:.55;}
-  .rb-rond{background:none !important; border:2.2px solid rgba(255,255,255,.92); border-radius:50% !important;
-    width:31px; height:31px; padding:0 !important; flex:0 0 auto; color:#fff; font-size:21px; line-height:0;
+  /* pastilles blanches pleines, symbole dans l'orange de la barre */
+  /* préfixé par .restbar : sinon « .restbar button » impose sa couleur blanche
+     et le symbole devient invisible sur la pastille blanche */
+  .restbar .rb-rond{background:#fff !important; border:none; border-radius:50% !important;
+    width:28px; height:28px; padding:0 !important; flex:0 0 auto; color:var(--accent);
+    font-size:20px; font-weight:800; line-height:1;
     display:flex; align-items:center; justify-content:center;}
   /* les deux côtés se partagent l'espace à parts égales : la pastille tombe pile au milieu */
-  .rb-cote{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:9px;}
+  .rb-cote{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:7px;}
   .rb-cote.fin{justify-content:flex-end;}
-  .rb-pill{background:#fff; border-radius:15px; padding:4px 26px 5px; text-align:center; cursor:pointer;
-    flex:0 0 auto; min-width:118px;}
+  .rb-pill{background:#fff; border-radius:15px; padding:4px 14px 5px; text-align:center; cursor:pointer;
+    flex:0 1 auto; min-width:96px;}
   .rb-pill .lbl{font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-mute); opacity:1;}
   .rb-pill .t{font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); min-width:0; line-height:1.1;}
-  .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:14px !important; padding:10px 15px !important; white-space:nowrap;}
+  .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:13px !important; padding:8px 12px !important;
+    font-size:13px; white-space:nowrap;}
   .restbar .bar{position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(26,20,8,.18); overflow:hidden;}
   .restbar .bar i{display:block; height:100%; background:var(--accent-ink); border-radius:2px;}
   @keyframes flashEnd{0%,100%{background:var(--accent);}50%{background:#fff;}}
@@ -462,7 +467,7 @@
      la longueur du sous-titre, il grandit vers le haut et ne déborde jamais sur le clair. */
   /* Le liseré est un arc : il remonte sur les côtés. Le texte est donc borné en largeur
      et calé plus haut, pour que même ses extrémités restent dans le noir. */
-  .hero-accueil .hero-h{position:absolute; left:0; right:0; bottom:44%; margin-top:0;
+  .hero-accueil .hero-h{position:absolute; left:0; right:0; bottom:42%; margin-top:0;
     max-width:66%; margin-inline:auto;}
   .hero-en-cours .chrono{display:block; width:max-content; margin:14px auto 0; transform:translateY(50%);}
   /* le chrono devient une pastille claire posée sur la photo */
@@ -2883,22 +2888,26 @@ const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8.6a3
    Les photos étant en portrait dans un cadre horizontal, il y a 865 px de marge. */
 const PHOTO_CADRAGE = {push:50, pull:50, jambes:50, abdos:50, cardio:50};
 const PHOTO_L = 640, PHOTO_H = 929;    /* format d'origine des photos de séance */
+/* Disque et liseré agrandis d'environ 12 % pour que le bandeau descende davantage.
+   Le liseré reste à 74,7 % de la hauteur : rien de ce qui s'y aligne n'a bougé.
+   Le rond clair du haut garde sa position et sa taille exactes. */
+const HERO_H = 1000;
 function heroSvg(photo){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
-  const decal = Math.round(-(haut - 892) * Math.max(0, Math.min(100, pc)) / 100);
-  return `<svg class="hero-bg" viewBox="0 0 1210 892" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-    <defs><mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="892">
-      <rect width="1210" height="892" fill="#000"/>
-      <path d="M0 0 H1210 V642 A911 911 0 0 1 0 642 Z" fill="#fff"/>
-      <circle cx="605" cy="-45" r="711" fill="none" stroke="#000" stroke-width="23"/>
+  const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
+  return `<svg class="hero-bg" viewBox="0 0 1210 ${HERO_H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <defs><mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="${HERO_H}">
+      <rect width="1210" height="${HERO_H}" fill="#000"/>
+      <path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
+      <circle cx="605" cy="-50" r="797" fill="none" stroke="#000" stroke-width="16"/>
       <circle cx="605" cy="-60" r="171" fill="#000"/>
     </mask></defs>
     <g mask="url(#hero-m)">
-      <rect width="1210" height="892" fill="var(--hero)"/>
+      <rect width="1210" height="${HERO_H}" fill="var(--hero)"/>
       ${photo ? `<image href="img/${photo}.jpg" x="0" y="${decal}" width="${larg}" height="${haut}"
         preserveAspectRatio="none" opacity=".62"/>
-      <rect width="1210" height="892" fill="#0e0e10" opacity=".42"/>` : ""}
+      <rect width="1210" height="${HERO_H}" fill="#0e0e10" opacity=".42"/>` : ""}
     </g>
   </svg>`;
 }
