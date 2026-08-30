@@ -425,10 +425,14 @@
   .rb-rond{background:none !important; border:2.2px solid rgba(255,255,255,.92); border-radius:50% !important;
     width:31px; height:31px; padding:0 !important; flex:0 0 auto; color:#fff; font-size:21px; line-height:0;
     display:flex; align-items:center; justify-content:center;}
-  .rb-pill{background:#fff; border-radius:15px; padding:4px 15px 5px; text-align:center; cursor:pointer; flex:0 0 auto;}
+  /* les deux côtés se partagent l'espace à parts égales : la pastille tombe pile au milieu */
+  .rb-cote{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:9px;}
+  .rb-cote.fin{justify-content:flex-end;}
+  .rb-pill{background:#fff; border-radius:15px; padding:4px 26px 5px; text-align:center; cursor:pointer;
+    flex:0 0 auto; min-width:118px;}
   .rb-pill .lbl{font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-mute); opacity:1;}
   .rb-pill .t{font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); min-width:0; line-height:1.1;}
-  .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:14px !important; padding:10px 15px !important;}
+  .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:14px !important; padding:10px 15px !important; white-space:nowrap;}
   .restbar .bar{position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(26,20,8,.18); overflow:hidden;}
   .restbar .bar i{display:block; height:100%; background:var(--accent-ink); border-radius:2px;}
   @keyframes flashEnd{0%,100%{background:var(--accent);}50%{background:#fff;}}
@@ -768,15 +772,19 @@
 <div id="app"></div>
 
 <div class="restbar" id="restbar">
-  <div class="grip" aria-hidden="true"><i></i><i></i><i></i></div>
-  <button class="rb-ic" id="rest-son" title="Son de fin de repos" aria-label="Son de fin de repos"></button>
-  <button class="rb-rond" id="rest-minus" aria-label="Moins 15 secondes">−</button>
+  <div class="rb-cote">
+    <div class="grip" aria-hidden="true"><i></i><i></i><i></i></div>
+    <button class="rb-ic" id="rest-son" title="Son de fin de repos" aria-label="Son de fin de repos"></button>
+    <button class="rb-rond" id="rest-minus" aria-label="Moins 15 secondes">−</button>
+  </div>
   <div class="rb-pill" id="rest-pill">
     <div class="lbl" id="rest-lbl">Repos</div>
     <div class="t"><span id="rest-t">1:30</span><span id="rest-picon"></span></div>
   </div>
-  <button class="rb-rond" id="rest-plus" aria-label="Plus 15 secondes">+</button>
-  <button class="rb-skip" id="rest-skip">Passer</button>
+  <div class="rb-cote fin">
+    <button class="rb-rond" id="rest-plus" aria-label="Plus 15 secondes">+</button>
+    <button class="rb-skip" id="rest-skip">Passer</button>
+  </div>
   <div class="bar"><i id="rest-bar" style="width:100%"></i></div>
 </div>
 
@@ -3181,13 +3189,16 @@ function tickRest(){
 document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; annulerBip(); restbar.classList.remove("show","paused"); };
 document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); planifierBip(); } };
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); planifierBip(); } };
-document.getElementById("rest-son").onclick=()=>{
+document.getElementById("rest-son").onclick=e=>{
+  e.stopPropagation();
   db.settings.son = db.settings.son === false;      /* faux -> vrai, vrai -> faux */
   save(); majIconeSon(); planifierBip();
   toast(db.settings.son ? "Son de fin de repos activé" : "Son coupé — la vibration reste");
 };
-restbar.addEventListener("click", e=>{
-  if(e.target.closest("button")) return;
+/* La pause se déclenche sur la pastille blanche, et sur elle seule.
+   Auparavant c'était toute la barre : le bouton du son remplaçant son icône au clic,
+   l'élément visé disparaissait du document et n'était plus reconnu comme un bouton. */
+document.getElementById("rest-pill").addEventListener("click", e=>{
   if(Date.now() - restDrag.tFin < 350) return;    /* on vient de le déplacer, pas de pause */
   togglePauseRest();
 });
