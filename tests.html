@@ -297,6 +297,24 @@ function lancer(){
   DB.materiel = null;
   neuf();
 
+  /* ---------------------------------------------------------- fiches d'exercice */
+  grp("Fiches d'exercice");
+  neuf();
+  const LIBT = F.eval("LIB"), INFO = F.eval("EXO_INFO"), TRAVAIL = F.eval("MUSCLE_WORK");
+  vrai("Chaque exercice a sa fiche d'exécution",
+    LIBT.every(e => INFO[e.name]));
+  vrai("Aucune fiche ne traîne sans exercice",
+    Object.keys(INFO).every(n => LIBT.some(e => e.name === n)));
+  vrai("Chaque fiche a une astuce et au moins trois étapes",
+    Object.values(INFO).every(i => i.tip && i.tip.length > 20 && i.steps && i.steps.length >= 3));
+  vrai("Aucune étape vide ou tronquée",
+    Object.values(INFO).every(i => i.steps.every(t => typeof t === "string" && t.length > 10)));
+  vrai("Chaque exercice déclare les muscles qu'il sollicite",
+    LIBT.every(e => (TRAVAIL[e.name] || []).length > 0));
+  vrai("Chaque exercice a un muscle principal",
+    LIBT.every(e => (TRAVAIL[e.name] || []).some(([, n]) => n === 3)));
+  neuf();
+
   /* ---------------------------------------------------------- parcours d'accueil */
   grp("Parcours d'accueil");
   neuf();
