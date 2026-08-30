@@ -49,6 +49,7 @@
     --figure:invert(1);
   }
   :root[data-onb] .onb-prog{background:#d9d4c9;}
+  :root[data-onb], :root[data-onb] body{overflow:hidden;}   /* rien ne défile derrière le parcours */
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   /* Aucune règle overflow ici : sur Android, borner la largeur du document
      (hidden comme clip) empêchait tout défilement vertical. */
@@ -198,12 +199,14 @@
   .car-wrap{position:relative;}
 
   /* ================= PARCOURS D'ACCUEIL (plein écran) ================= */
-  .onb{position:fixed; top:0; left:0; right:0; z-index:55; background:var(--bg); color:var(--ink);
-    /* svh = hauteur d'écran STABLE : sur iPhone, dvh change pendant qu'on fait défiler
-       (la barre d'outils se replie), ce qui redimensionnait tout en continu.
-       Hauteur imposée, pas minimale : sinon le bas de la page tombait sous la barre
-       d'outils de Safari et il fallait faire défiler pour atteindre le bouton. */
-    height:100vh; height:100svh; display:flex; flex-direction:column; overflow:hidden;}
+  /* Les quatre côtés épinglés : la page occupe exactement la zone visible, sur tous
+     les navigateurs, sans aucune unité de hauteur à interpréter. Une hauteur en vh
+     débordait sous la barre d'outils de Safari (il fallait défiler pour voir le bouton) ;
+     une hauteur en svh laissait à l'inverse une bande en bas, par laquelle on
+     apercevait l'application et sa barre d'onglets. */
+  .onb{position:fixed; top:0; right:0; bottom:0; left:0; z-index:55;
+    background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; overflow:hidden;}
   .onb-top{display:flex; align-items:center; gap:12px; padding:calc(14px + env(safe-area-inset-top)) 20px 0;
     width:100%; max-width:540px; margin-inline:auto;}
   .onb-back{width:30px; height:30px; flex:0 0 auto; font-size:22px; line-height:1; color:var(--ink);
@@ -295,10 +298,8 @@
   /* Le visuel se règle sur la hauteur STABLE de l'écran, sans jamais dépasser sa
      largeur naturelle. flex:0 1 auto le laisse en plus se réduire tout seul sur les
      petits écrans : c'est lui qui cède la place, jamais le texte ni le bouton. */
-  .onb-tel{position:relative; flex:0 1 auto; aspect-ratio:600/1090; width:auto;
-    height:min(56vh, calc(min(74vw, 300px) * 1090 / 600));
-    height:min(56svh, calc(min(74vw, 300px) * 1090 / 600));
-    min-height:120px; margin-bottom:20px;}
+  .onb-tel{position:relative; flex:0 1 auto; width:min(74vw, 300px); aspect-ratio:600/1090;
+    max-height:56vh; max-height:56svh; min-height:110px; margin-bottom:20px;}
   .onb-tel video, .onb-tel img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
     opacity:0; transition:opacity .55s ease;
     /* calque dédié : évite le clignotement des fondus d'images sur iOS */
@@ -2013,7 +2014,7 @@ function openOnboarding(first, brouillon, depart){
       jouer(0);
       /* Une seule fonction décide de tout ce qui change ensemble : la vidéo, le point
          et le titre. Ils ne peuvent plus se désaccorder. */
-      let n = 0, fondu = null;
+      let n = 0, fondu = null, reveil = null;
       const maPage = onbEl;                    /* on ne pilote que SA page, jamais la suivante */
       const montrer = k=>{
         n = k;
@@ -2022,20 +2023,22 @@ function openOnboarding(first, brouillon, depart){
         maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
         const t = maPage.querySelector("#onb-titre");
         if(!t) return;
-        if(fondu) clearTimeout(fondu);
+        clearTimeout(fondu); clearTimeout(reveil);
         t.style.opacity = 0;
         /* Le nouveau titre n'est écrit qu'une fois l'ancien réellement effacé : on attend
            la FIN du fondu annoncée par le navigateur, au lieu de deviner une durée. Deux
-           titres ne peuvent donc jamais se chevaucher. */
+           titres ne peuvent donc jamais se chevaucher. On écrit toujours la vue courante
+           et on redonne toujours l'opacité : quel que soit le chemin pris, le titre
+           réapparaît — il ne peut pas rester effacé. */
         const poser = ()=>{
           t.removeEventListener("transitionend", poser);
-          if(fondu){ clearTimeout(fondu); fondu = null; }
-          if(n !== k || !t.isConnected) return;   /* une vue plus récente a pris la main */
-          t.innerHTML = vues[k].titre;
-          requestAnimationFrame(()=>{ if(n === k) t.style.opacity = 1; });
+          clearTimeout(fondu);
+          if(!t.isConnected) return;
+          t.innerHTML = vues[n].titre;
+          reveil = setTimeout(()=>{ t.style.opacity = 1; }, 20);
         };
         t.addEventListener("transitionend", poser);
-        fondu = setTimeout(poser, 500);        /* filet : page en arrière-plan, aucune transition */
+        fondu = setTimeout(poser, 450);        /* filet : page en arrière-plan, aucune transition */
       };
       /* Chaîne de délais plutôt qu'un intervalle : quand le téléphone met la page en
          veille, un intervalle rattrape ses tours en retard d'un coup et le titre saute
@@ -2048,7 +2051,7 @@ function openOnboarding(first, brouillon, depart){
       };
       if(onbTour) clearTimeout(onbTour);
       onbTour = setTimeout(suite, 5000);
-      const stop = ()=>{ if(onbTour){ clearTimeout(onbTour); onbTour = null; } if(fondu) clearTimeout(fondu); };
+      const stop = ()=>{ if(onbTour){ clearTimeout(onbTour); onbTour = null; } clearTimeout(fondu); clearTimeout(reveil); };
       pied.innerHTML = `<button class="onb-btn" id="onb-next">${dejaRempli ? "Continuer" : "Commencer"}</button>
         ${dejaRempli ? "" : `<button class="onb-lien" id="onb-tard">Plus tard, <b>je veux d'abord regarder</b></button>`}`;
       onbEl.querySelector("#onb-next").onclick = ()=>{ stop(); i++; dessiner(); };
