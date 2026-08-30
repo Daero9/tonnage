@@ -3127,6 +3127,15 @@ function planifierBip(){
     });
   }catch(e){}
 }
+/* Au retour d'une mise en veille, l'horloge audio a été gelée en même temps que l'app :
+   le son programmé partirait avec le retard accumulé. On le jette et on refait le calcul
+   sur l'heure réelle — et si le repos est déjà terminé, on ne sonne plus du tout. */
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState !== "visible") return;
+  if(!restbar.classList.contains("show") || rest.paused) return;
+  annulerBip();
+  if(rest.end - Date.now() > 300) planifierBip();
+});
 function majIconeSon(){
   const b = document.getElementById("rest-son");
   if(!b) return;
