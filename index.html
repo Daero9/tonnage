@@ -297,7 +297,7 @@
   .onb-tel video.on, .onb-tel img.on{opacity:1;}
   /* place réservée pour trois lignes : un titre plus long ne doit pas décaler le visuel */
   .onb-titre{font-size:27px; font-weight:800; text-align:center; line-height:1.2; min-height:98px;
-    transition:opacity .3s ease;}
+    transition:opacity .25s ease;}
   @media (max-width:360px){ .onb-titre{font-size:24px;} }
   .onb-dots{display:flex; gap:7px; justify-content:center; margin-top:16px;}
   .onb-dots i{width:7px; height:7px; border-radius:50%; background:var(--ink-mute); opacity:.35;}
@@ -1849,7 +1849,7 @@ function proteinTarget(){
    dans ce cas une croix permet de sortir sans rien changer. */
 let onbEl = null, onbTour = null;
 function fermerOnb(){
-  if(onbTour){ clearInterval(onbTour); onbTour = null; }   /* sinon elle continue d'écrire dans la page suivante */
+  if(onbTour){ clearTimeout(onbTour); onbTour = null; }   /* sinon elle continue d'écrire dans la page suivante */
   if(onbEl){ onbEl.remove(); onbEl = null; }
   document.documentElement.removeAttribute("data-onb");
   appliquerTheme();
@@ -1894,10 +1894,11 @@ function openOnboarding(first, brouillon, depart){
   const unites = db.settings.unites || (db.settings.unites = {taille:"cm", poids:"kg"});
   const demiTour = v => Math.round(v*2)/2;
 
-  /* le carrousel n'apparaît qu'à la toute première ouverture */
-  const ETAPES = (dejaRempli ? [] : ["intro"])
+  /* Le carrousel est toujours la page 0, mais on ne l'impose qu'au premier lancement :
+     ensuite il reste atteignable d'un retour depuis la première question. */
+  const ETAPES = ["intro"]
     .concat(["nom","sexe","objectif","corps","age","cible","lieu","frequence","projection","fin"]);
-  let i = Math.min(depart != null ? depart : 0, ETAPES.length - 1);
+  let i = Math.min(depart != null ? depart : (dejaRempli ? 1 : 0), ETAPES.length - 1);
 
   fermerOnb();
   onbEl = document.createElement("div");
@@ -1935,15 +1936,17 @@ function openOnboarding(first, brouillon, depart){
 
   function dessiner(){
     /* on quitte le carrousel : sa minuterie ne doit pas survivre à l'écran suivant */
-    if(onbTour){ clearInterval(onbTour); onbTour = null; }
+    if(onbTour){ clearTimeout(onbTour); onbTour = null; }
     const etape = ETAPES[i];
     const intro = etape === "intro";
     /* sur les deux dernières pages, pas de croix : on part avec un plan ou on choisit « non merci » */
     const derniere = etape === "fin" || etape === "affiner";
-    const avancement = Math.round((i+1) / ETAPES.length * 100);
+    /* la barre ne compte que les questions : le carrousel est à zéro */
+    const avancement = Math.round(i / (ETAPES.length - 1) * 100);
     onbEl.innerHTML = `
-      ${intro ? "" : `<div class="onb-top">
-        <button class="onb-back" id="onb-back" aria-label="Retour">‹</button>
+      ${(intro && !dejaRempli) ? "" : `<div class="onb-top">
+        ${i > 0 ? `<button class="onb-back" id="onb-back" aria-label="Retour">‹</button>`
+                : `<span style="width:30px; flex:0 0 auto;"></span>`}
         <div class="onb-prog"><i style="width:${avancement}%"></i></div>
         ${(dejaRempli && !derniere) ? `<button class="onb-x" id="onb-x" aria-label="Quitter">✕</button>`
                      : `<span style="width:30px; flex:0 0 auto;"></span>`}
@@ -1952,7 +1955,7 @@ function openOnboarding(first, brouillon, depart){
       <div class="onb-foot" id="onb-foot"></div>`;
     const corps = onbEl.querySelector("#onb-body"), pied = onbEl.querySelector("#onb-foot");
     const retour = onbEl.querySelector("#onb-back");
-    if(retour) retour.onclick = ()=>{ if(i > 0){ i--; dessiner(); } else quitter(); };
+    if(retour) retour.onclick = ()=>{ if(i > 0){ i--; dessiner(); } };
     const croix = onbEl.querySelector("#onb-x");
     if(croix) croix.onclick = quitter;
 
@@ -1998,25 +2001,42 @@ function openOnboarding(first, brouillon, depart){
         if(pr && pr.catch) pr.catch(()=>{ try{ f.currentTime = 0.05; }catch(e){} });
       });
       jouer(0);
-      let n = 0;
+      /* Une seule fonction décide de tout ce qui change ensemble : la vidéo, le point
+         et le titre. Ils ne peuvent plus se désaccorder. */
+      let n = 0, fondu = null;
       const maPage = onbEl;                    /* on ne pilote que SA page, jamais la suivante */
-      if(onbTour) clearInterval(onbTour);
-      const tour = onbTour = setInterval(()=>{
-        if(!maPage.isConnected){ clearInterval(tour); if(onbTour === tour) onbTour = null; return; }
-        n = (n+1) % vues.length;
-        maPage.querySelectorAll(".onb-tel video").forEach((im,k)=>im.classList.toggle("on", k===n));
-        jouer(n);
-        maPage.querySelectorAll(".onb-dots i").forEach((pt,k)=>pt.classList.toggle("on", k===n));
+      const montrer = k=>{
+        n = k;
+        maPage.querySelectorAll(".onb-tel video").forEach((f,j)=>f.classList.toggle("on", j===k));
+        jouer(k);
+        maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
         const t = maPage.querySelector("#onb-titre");
         if(!t) return;
+        if(fondu) clearTimeout(fondu);         /* le titre précédent n'écrira plus rien */
         t.style.opacity = 0;
-        setTimeout(()=>{ if(t.isConnected){ t.innerHTML = vues[n].titre; t.style.opacity = 1; } }, 240);
-      }, 5000);
-      pied.innerHTML = `<button class="onb-btn" id="onb-next">Commencer</button>
-        <button class="onb-lien" id="onb-tard">Plus tard, <b>je veux d'abord regarder</b></button>`;
-      onbEl.querySelector("#onb-next").onclick = ()=>{ clearInterval(tour); i++; dessiner(); };
-      onbEl.querySelector("#onb-tard").onclick = ()=>{
-        clearInterval(tour);
+        fondu = setTimeout(()=>{
+          fondu = null;
+          if(t.isConnected){ t.innerHTML = vues[k].titre; t.style.opacity = 1; }
+        }, 270);                               /* après la fin du fondu, jamais pendant */
+      };
+      /* Chaîne de délais plutôt qu'un intervalle : quand le téléphone met la page en
+         veille, un intervalle rattrape ses tours en retard d'un coup et le titre saute
+         plusieurs vues. Ici le tour suivant n'est programmé qu'une fois le précédent joué. */
+      const suite = ()=>{
+        onbTour = null;
+        if(!maPage.isConnected) return;
+        montrer((n+1) % vues.length);
+        onbTour = setTimeout(suite, 5000);
+      };
+      if(onbTour) clearTimeout(onbTour);
+      onbTour = setTimeout(suite, 5000);
+      const stop = ()=>{ if(onbTour){ clearTimeout(onbTour); onbTour = null; } if(fondu) clearTimeout(fondu); };
+      pied.innerHTML = `<button class="onb-btn" id="onb-next">${dejaRempli ? "Continuer" : "Commencer"}</button>
+        ${dejaRempli ? "" : `<button class="onb-lien" id="onb-tard">Plus tard, <b>je veux d'abord regarder</b></button>`}`;
+      onbEl.querySelector("#onb-next").onclick = ()=>{ stop(); i++; dessiner(); };
+      const tard = onbEl.querySelector("#onb-tard");
+      if(tard) tard.onclick = ()=>{
+        stop();
         db.profile = {skipped:true}; save();
         fermerOnb(); render();
       };
@@ -2977,8 +2997,9 @@ function openProfil(){
       <button class="btn" id="pr-edit">Modifier mon profil et mon objectif</button>
       <button class="btn btn-ghost" id="pr-ok">Fermer</button>
     </div>`);
-  document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else openOnboarding(true); };
-  document.getElementById("pr-edit").onclick = ()=>openOnboarding(false);
+  /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
+  document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
+  document.getElementById("pr-edit").onclick = ()=>{ closeSheet(); openOnboarding(false); };
   document.getElementById("pr-ok").onclick = closeSheet;
 }
 function wireTopbar(){
