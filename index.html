@@ -3097,45 +3097,15 @@ function beep(){
     });
   }catch(e){}
 }
-/* Le bip est confié à l'horloge audio dès le lancement du repos, et non à une
-   minuterie JavaScript : il part même écran éteint, quand la page est mise en veille.
-   Contrepartie : toute modification du repos doit le reprogrammer. */
-let bipPrevu = [];
-function annulerBip(){
-  bipPrevu.forEach(o=>{ try{ o.stop(); }catch(e){} });
-  bipPrevu = [];
-}
-function planifierBip(){
-  annulerBip();
+/* Le son sonne à l'arrivée à zéro, quand l'app est à l'écran. Rien n'est programmé
+   d'avance : l'horloge audio se fige avec l'appareil, ce qui décalait la sonnerie au
+   réveil. Le bip en arrière-plan reviendra avec les notifications de l'app empaquetée. */
+function bipRepos(){
   if(db.settings.son === false) return;
-  if(!restbar.classList.contains("show") || rest.paused) return;
+  if(document.visibilityState !== "visible") return;   /* écran éteint : on ne sonne pas dans le vide */
   ensureAudio();
-  if(!audioCtx) return;
-  const dans = (rest.end - Date.now())/1000;
-  if(dans <= 0.05) return;
-  try{
-    [0,.25,.5].forEach((t,i)=>{
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      const t0 = audioCtx.currentTime + dans + t;
-      o.type = "sine"; o.frequency.value = i===2 ? 1320 : 880;
-      g.gain.setValueAtTime(.001, t0);
-      g.gain.exponentialRampToValueAtTime(.4, t0+.02);
-      g.gain.exponentialRampToValueAtTime(.001, t0+.2);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(t0); o.stop(t0+.22);
-      bipPrevu.push(o);
-    });
-  }catch(e){}
+  beep();
 }
-/* Au retour d'une mise en veille, l'horloge audio a été gelée en même temps que l'app :
-   le son programmé partirait avec le retard accumulé. On le jette et on refait le calcul
-   sur l'heure réelle — et si le repos est déjà terminé, on ne sonne plus du tout. */
-document.addEventListener("visibilitychange", ()=>{
-  if(document.visibilityState !== "visible") return;
-  if(!restbar.classList.contains("show") || rest.paused) return;
-  annulerBip();
-  if(rest.end - Date.now() > 300) planifierBip();
-});
 function majIconeSon(){
   const b = document.getElementById("rest-son");
   if(!b) return;
@@ -3162,7 +3132,6 @@ function startRest(sec){
   rest.int = setInterval(tickRest, 250);
   tickRest();
   majIconeSon();
-  planifierBip();
   if(!dejaVu("repos")){
     marquerVu("repos");
     setTimeout(()=>toast("Repos lancé — touche la barre pour la mettre en pause"), 500);
@@ -3179,7 +3148,6 @@ function togglePauseRest(){
     if(rest.int) clearInterval(rest.int);
     rest.int = setInterval(tickRest, 250);
     tickRest();
-    planifierBip();                 /* on repart : le bip est reprogrammé sur le temps restant */
   } else {
     rest.remaining = Math.max(0, rest.end - Date.now());
     rest.paused = true;
@@ -3188,7 +3156,6 @@ function togglePauseRest(){
     document.getElementById("rest-picon").textContent = " ▶";
     if(rest.int) clearInterval(rest.int);
     rest.int = null;
-    annulerBip();                   /* en pause : plus rien ne doit sonner */
   }
 }
 function tickRest(){
@@ -3198,9 +3165,9 @@ function tickRest(){
     document.getElementById("rest-t").textContent="0:00";
     document.getElementById("rest-bar").style.width="0%";
     restbar.classList.add("ending");
-    /* le son programmé est en train de jouer : on oublie les oscillateurs sans les arrêter,
-       sinon on couperait les deuxième et troisième notes du bip */
-    bipPrevu = [];
+    /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
+       le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
+    if(left > -2) bipRepos();
     if(navigator.vibrate) navigator.vibrate([200,100,200]);
     if(rest.hideTo) clearTimeout(rest.hideTo);
     rest.hideTo = setTimeout(()=>{ restbar.classList.remove("show","ending"); rest.hideTo=null; }, 1600);
@@ -3209,13 +3176,13 @@ function tickRest(){
   document.getElementById("rest-t").textContent = mmss(left);
   document.getElementById("rest-bar").style.width = (left/rest.total*100)+"%";
 }
-document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; annulerBip(); restbar.classList.remove("show","paused"); };
-document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); planifierBip(); } };
-document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); planifierBip(); } };
+document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; restbar.classList.remove("show","paused"); };
+document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); } };
+document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); } };
 document.getElementById("rest-son").onclick=e=>{
   e.stopPropagation();
   db.settings.son = db.settings.son === false;      /* faux -> vrai, vrai -> faux */
-  save(); majIconeSon(); planifierBip();
+  save(); majIconeSon();
   toast(db.settings.son ? "Son de fin de repos activé" : "Son coupé — la vibration reste");
 };
 /* La pause se déclenche sur la pastille blanche, et sur elle seule.
