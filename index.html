@@ -298,12 +298,14 @@
      bouton se servent d'abord, lui se contente du reste. Aucune proportion imposée à la
      boîte, donc rien qui puisse déborder sous le bouton, quel que soit l'écran ; c'est la
      vidéo qui se met à l'échelle dedans (object-fit) en gardant ses proportions. */
-  /* Hauteur posée en pixels par calerCarrousel() : trois formulations CSS successives
-     (proportion imposée, plafond en pourcentage, unités d'écran) donnaient un visuel
-     trop grand sur iPhone, qui chassait le titre et les points hors de l'écran. Une
-     mesure au moment de l'affichage ne peut pas être interprétée différemment. */
-  .onb-tel{position:relative; flex:0 0 auto; min-height:0; height:34vh;
-    width:66vw; max-width:250px; margin-bottom:18px;}
+  /* Les proportions de la maquette, posées en dur. Les versions qui mesuraient l'écran
+     en JavaScript donnaient un visuel juste sur mes essais et minuscule sur son iPhone :
+     une des mesures y valait autre chose. Ici, rien n'est mesuré, rien ne peut varier. */
+  .onb-tel{position:relative; flex:0 0 auto; width:62vw; max-width:280px; height:44vh;
+    margin-bottom:16px;}
+  /* ecrans courts : le visuel cede la place, le texte et le bouton gardent la leur */
+  @media (max-height:640px){ .onb-tel{height:38vh;} }
+  @media (max-height:520px){ .onb-tel{height:30vh;} }
   .onb-tel video, .onb-tel img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
     opacity:0; transition:opacity .55s ease;
     /* calque dédié : évite le clignotement des fondus d'images sur iOS */
@@ -2026,35 +2028,6 @@ function openOnboarding(first, brouillon, depart){
          et le titre. Ils ne peuvent plus se désaccorder. */
       let n = 0;
       const maPage = onbEl;                    /* on ne pilote que SA page, jamais la suivante */
-      /* On mesure l'écran et la place prise par le texte, puis on donne au visuel ce
-         qui reste — jamais plus d'un tiers de l'écran. Le titre, les points et le
-         bouton ont ainsi leur place garantie, sur n'importe quel téléphone. */
-      const caler = ()=>{
-        if(!maPage.isConnected){ window.removeEventListener("resize", caler); return; }
-        const tel = maPage.querySelector(".onb-tel"), titre = maPage.querySelector("#onb-titre"),
-              pts = maPage.querySelector(".onb-dots"), pied = maPage.querySelector("#onb-foot"),
-              haut = maPage.querySelector(".onb-top"), corps2 = maPage.querySelector("#onb-body");
-        if(!tel || !titre || !pts || !corps2){ window.removeEventListener("resize", caler); return; }
-        const ecran = window.innerHeight || document.documentElement.clientHeight;
-        maPage.style.height = ecran + "px";          /* la page fait exactement l'écran visible */
-        const cs = getComputedStyle(corps2);
-        const marges = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-        const libre = ecran - (haut ? haut.offsetHeight : 0) - (pied ? pied.offsetHeight : 0) - marges;
-        const reste = libre - titre.offsetHeight - pts.offsetHeight - 34;
-        /* Le visuel prend le reste, sans dépasser ni la hauteur naturelle de la vidéo à
-           cette largeur (sinon du vide au-dessus et en dessous), ni 46 % de l'écran —
-           la proportion de la maquette, très légèrement réduite. */
-        const naturel = Math.round(tel.offsetWidth * 1090 / 600);
-        const haute = Math.max(110, Math.min(reste, naturel, Math.round(ecran * 0.46)));
-        tel.style.height = haute + "px";
-        /* filet : s il reste quelques pixels de trop, on les reprend au visuel */
-        const trop = corps2.scrollHeight - corps2.clientHeight;
-        if(trop > 0) tel.style.height = Math.max(110, haute - trop) + "px";
-      };
-      caler();
-      requestAnimationFrame(caler);                  /* une fois les polices posées */
-      setTimeout(caler, 90);                         /* et une fois la mise en page stabilisée */
-      window.addEventListener("resize", caler);
       const montrer = k=>{
         n = k;
         maPage.querySelectorAll(".onb-tel video").forEach((f,j)=>f.classList.toggle("on", j===k));
@@ -2074,18 +2047,17 @@ function openOnboarding(first, brouillon, depart){
       };
       if(onbTour) clearTimeout(onbTour);
       onbTour = setTimeout(suite, 5000);
-      const stop = ()=>{
-        if(onbTour){ clearTimeout(onbTour); onbTour = null; }
-        window.removeEventListener("resize", caler);
-        maPage.style.height = "";                    /* les autres pages reprennent le CSS */
-      };
+      const stop = ()=>{ if(onbTour){ clearTimeout(onbTour); onbTour = null; } };
       pied.innerHTML = `<button class="onb-btn" id="onb-next">${dejaRempli ? "Continuer" : "Commencer"}</button>
-        ${dejaRempli ? "" : `<button class="onb-lien" id="onb-tard">Plus tard, <b>je veux d'abord regarder</b></button>`}`;
+        <button class="onb-lien" id="onb-tard">${dejaRempli
+          ? `Plus tard, <b>retourner à l'app</b>`
+          : `Plus tard, <b>je veux d'abord regarder</b>`}</button>`;
       onbEl.querySelector("#onb-next").onclick = ()=>{ stop(); i++; dessiner(); };
       const tard = onbEl.querySelector("#onb-tard");
       if(tard) tard.onclick = ()=>{
         stop();
-        db.profile = {skipped:true}; save();
+        /* premier lancement : on note le refus. Profil déjà rempli : on ne touche à rien. */
+        if(!dejaRempli){ db.profile = {skipped:true}; save(); }
         fermerOnb(); render();
       };
       return;
@@ -2618,7 +2590,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 00h06";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 00h19";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
