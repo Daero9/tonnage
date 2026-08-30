@@ -717,6 +717,9 @@
   .muscle-h{font-size:11px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--accent); margin:14px 0 6px;}
   .pick-row{display:flex; align-items:center; gap:11px; padding:8px 4px; border-bottom:1px solid var(--border); font-weight:600;}
   .pick-row:active{background:var(--surface2);}
+  /* exercice hors de ton matériel : proposé en dernier, en retrait, mais choisissable */
+  .pk-row.absent{opacity:.45;}
+  .pk-row.absent .eq{color:var(--bad);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
   .info-btn{width:30px; height:30px; flex:none; font-size:15px; color:var(--accent); background:none; border:none;}
   .astuce{background:var(--surface2); border-radius:12px; padding:12px 13px; font-size:13.5px; line-height:1.6; color:var(--ink-soft); margin-top:12px;}
@@ -848,6 +851,16 @@ const MAT_EXOS = {
   "Dips sur banc":[["banc","step"]], "Tractions australiennes":["traction"]
 };
 /* combien d'exercices deviennent utilisables avec ce matériel */
+/* ce qu'il te manque pour cet exercice, en toutes lettres */
+function manqueTexte(ex){
+  const mien = db.materiel || [];
+  const noms = materielDe(ex).filter(b=>Array.isArray(b) ? !b.some(x=>mien.includes(x)) : !mien.includes(b))
+    .map(b=>{
+      const ids = Array.isArray(b) ? b : [b];
+      return ids.map(x=>((MATERIELS.find(m=>m.id===x)||{}).nom || x).toLowerCase()).join(" ou ");
+    });
+  return noms.length ? "il te manque : " + noms.join(", ") : "";
+}
 function nbExosDispo(mat){ return LIB.filter(e=>exoDispo(e, mat)).length; }
 function materielDe(ex){
   if(!ex) return [];
@@ -5217,13 +5230,16 @@ function openPicker(cb){
     const filtered = allEx().filter(e=>!qn || score(e) > 0);
     const groups = {};
     filtered.forEach(e=>{ (groups[e.muscle||"Autres"] = groups[e.muscle||"Autres"]||[]).push(e); });
+    /* ce que tu n'as pas passe à la fin de son groupe, sans disparaître :
+       on peut toujours le choisir, chez un ami ou dans une autre salle */
+    Object.keys(groups).forEach(m=>groups[m].sort((a,b)=>(exoDispo(a)?0:1) - (exoDispo(b)?0:1)));
     const ordre = Object.keys(groups).sort((a,b)=>
       Math.max(...groups[b].map(score)) - Math.max(...groups[a].map(score)));
     listEl.innerHTML = ordre.map(m=>
       `<div class="pk-h">${esc(m)}</div>`+groups[m].map(e=>
-        `<div class="pk-row" data-pk="${e.id}"><div class="th">${exIcon(e, true)}</div>
+        `<div class="pk-row${exoDispo(e)?"":" absent"}" data-pk="${e.id}"><div class="th">${exIcon(e, true)}</div>
           <div class="grow" style="min-width:0;"><div class="nm">${esc(e.name)}</div>
-            <div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}</div>${musclesHtml(e.name,3)}</div>
+            <div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}${exoDispo(e)?"":" · "+esc(manqueTexte(e))}</div>${musclesHtml(e.name,3)}</div>
           <button class="icon-btn info-btn" data-exinfo="${e.id}" title="Fiche de l'exercice">ⓘ</button>
           ${browse? "" : `<span class="pk-add">＋</span>`}</div>`).join("")
     ).join("") || `<div class="empty">Aucun résultat.</div>`;
