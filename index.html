@@ -198,10 +198,12 @@
   .car-wrap{position:relative;}
 
   /* ================= PARCOURS D'ACCUEIL (plein écran) ================= */
-  .onb{position:fixed; inset:0; z-index:55; background:var(--bg); color:var(--ink);
+  .onb{position:fixed; top:0; left:0; right:0; z-index:55; background:var(--bg); color:var(--ink);
     /* svh = hauteur d'écran STABLE : sur iPhone, dvh change pendant qu'on fait défiler
-       (la barre d'outils se replie), ce qui redimensionnait tout en continu. */
-    display:flex; flex-direction:column; min-height:100vh; min-height:100svh; overflow:hidden;}
+       (la barre d'outils se replie), ce qui redimensionnait tout en continu.
+       Hauteur imposée, pas minimale : sinon le bas de la page tombait sous la barre
+       d'outils de Safari et il fallait faire défiler pour atteindre le bouton. */
+    height:100vh; height:100svh; display:flex; flex-direction:column; overflow:hidden;}
   .onb-top{display:flex; align-items:center; gap:12px; padding:calc(14px + env(safe-area-inset-top)) 20px 0;
     width:100%; max-width:540px; margin-inline:auto;}
   .onb-back{width:30px; height:30px; flex:0 0 auto; font-size:22px; line-height:1; color:var(--ink);
@@ -285,21 +287,29 @@
     background:var(--accent); transform:translateX(-50%); pointer-events:none;}
 
   /* carrousel d'introduction */
-  .onb-hero{display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding-top:8px;}
+  .onb-body.intro{overflow:hidden;}      /* le carrousel tient sur l'écran, toujours */
+  .onb-hero{display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:100%; min-height:0; padding-top:8px;}
   /* la taille du visuel vient de la LARGEUR, jamais de la hauteur disponible :
      sinon le moindre changement de hauteur d'écran le fait grandir et rétrécir. */
-  .onb-tel{position:relative; flex:0 0 auto; width:min(74%, 300px); aspect-ratio:600/1090;
-    max-height:60vh; max-height:60svh; margin-bottom:20px;}
+  /* Le visuel se règle sur la hauteur STABLE de l'écran, sans jamais dépasser sa
+     largeur naturelle. flex:0 1 auto le laisse en plus se réduire tout seul sur les
+     petits écrans : c'est lui qui cède la place, jamais le texte ni le bouton. */
+  .onb-tel{position:relative; flex:0 1 auto; aspect-ratio:600/1090; width:auto;
+    height:min(56vh, calc(min(74vw, 300px) * 1090 / 600));
+    height:min(56svh, calc(min(74vw, 300px) * 1090 / 600));
+    min-height:120px; margin-bottom:20px;}
   .onb-tel video, .onb-tel img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
     opacity:0; transition:opacity .55s ease;
     /* calque dédié : évite le clignotement des fondus d'images sur iOS */
     transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
   .onb-tel video.on, .onb-tel img.on{opacity:1;}
   /* place réservée pour trois lignes : un titre plus long ne doit pas décaler le visuel */
-  .onb-titre{font-size:27px; font-weight:800; text-align:center; line-height:1.2; min-height:98px;
+  /* seul le visuel se réduit quand l'écran est court : le texte et les points gardent leur taille */
+  .onb-titre{flex:0 0 auto; font-size:clamp(21px, 6.6vw, 27px); font-weight:800; text-align:center;
+    line-height:1.2; min-height:3.6em;   /* trois lignes réservées : un titre long ne décale rien */
     transition:opacity .25s ease;}
-  @media (max-width:360px){ .onb-titre{font-size:24px;} }
-  .onb-dots{display:flex; gap:7px; justify-content:center; margin-top:16px;}
+  .onb-dots{flex:0 0 auto; display:flex; gap:7px; justify-content:center; margin-top:16px;}
   .onb-dots i{width:7px; height:7px; border-radius:50%; background:var(--ink-mute); opacity:.35;}
   .onb-dots i.on{opacity:1; background:var(--ink);}
 
@@ -1951,7 +1961,7 @@ function openOnboarding(first, brouillon, depart){
         ${(dejaRempli && !derniere) ? `<button class="onb-x" id="onb-x" aria-label="Quitter">✕</button>`
                      : `<span style="width:30px; flex:0 0 auto;"></span>`}
       </div>`}
-      <div class="onb-body" id="onb-body"></div>
+      <div class="onb-body${intro ? " intro" : ""}" id="onb-body"></div>
       <div class="onb-foot" id="onb-foot"></div>`;
     const corps = onbEl.querySelector("#onb-body"), pied = onbEl.querySelector("#onb-foot");
     const retour = onbEl.querySelector("#onb-back");
@@ -2012,12 +2022,20 @@ function openOnboarding(first, brouillon, depart){
         maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
         const t = maPage.querySelector("#onb-titre");
         if(!t) return;
-        if(fondu) clearTimeout(fondu);         /* le titre précédent n'écrira plus rien */
+        if(fondu) clearTimeout(fondu);
         t.style.opacity = 0;
-        fondu = setTimeout(()=>{
-          fondu = null;
-          if(t.isConnected){ t.innerHTML = vues[k].titre; t.style.opacity = 1; }
-        }, 270);                               /* après la fin du fondu, jamais pendant */
+        /* Le nouveau titre n'est écrit qu'une fois l'ancien réellement effacé : on attend
+           la FIN du fondu annoncée par le navigateur, au lieu de deviner une durée. Deux
+           titres ne peuvent donc jamais se chevaucher. */
+        const poser = ()=>{
+          t.removeEventListener("transitionend", poser);
+          if(fondu){ clearTimeout(fondu); fondu = null; }
+          if(n !== k || !t.isConnected) return;   /* une vue plus récente a pris la main */
+          t.innerHTML = vues[k].titre;
+          requestAnimationFrame(()=>{ if(n === k) t.style.opacity = 1; });
+        };
+        t.addEventListener("transitionend", poser);
+        fondu = setTimeout(poser, 500);        /* filet : page en arrière-plan, aucune transition */
       };
       /* Chaîne de délais plutôt qu'un intervalle : quand le téléphone met la page en
          veille, un intervalle rattrape ses tours en retard d'un coup et le titre saute
