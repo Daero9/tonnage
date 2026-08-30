@@ -775,9 +775,27 @@
   .pk-row.absent .eq{color:var(--bad);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
   .info-btn{width:30px; height:30px; flex:none; font-size:15px; color:var(--accent); background:none; border:none;}
-  .astuce{background:var(--surface2); border-radius:12px; padding:12px 13px; font-size:13.5px; line-height:1.6; color:var(--ink-soft); margin-top:12px;}
-  .etape{display:flex; gap:12px; align-items:flex-start; padding:9px 0; border-top:1px solid var(--border); font-size:13.5px; line-height:1.55; color:var(--ink-soft);}
-  .etape .num{flex:none; font-size:15px; font-weight:800; color:var(--ink-mute); font-variant-numeric:tabular-nums;}
+  /* ---- fiche d'un exercice : un en-tête, puis des cartes blanches ---- */
+  .exo-h{display:flex; gap:12px; align-items:center; margin:2px 0 16px;}
+  .exo-h h3{margin:0; padding:0; font-size:22px; line-height:1.15; text-align:left;}
+  .exo-h .sous{font-size:13px; color:var(--ink-mute); margin-top:3px;}
+  .exo-c{background:var(--surface); border-radius:16px; padding:16px 15px; margin-bottom:12px;}
+  .exo-c.tip{border:1.5px solid var(--ink);}   /* le conseil est encadré : on ne le rate pas */
+  .exo-t{font-size:16px; font-weight:800; letter-spacing:-.01em; margin-bottom:13px;}
+  .exo-txt{font-size:13.5px; line-height:1.6; color:var(--ink-soft);}
+  .exo-etape{display:flex; gap:14px; align-items:flex-start; padding:11px 0;
+    border-top:1px solid var(--border); font-size:13.5px; line-height:1.55; color:var(--ink-soft);}
+  .exo-etapes .exo-etape:first-child{border-top:0; padding-top:0;}
+  .exo-etape .num{flex:none; width:20px; padding-top:1px; font-size:13px; font-weight:800;
+    color:var(--ink-mute); font-variant-numeric:tabular-nums;}
+  .exo-mus{display:flex; gap:16px; align-items:flex-start;}
+  .exo-vues{display:flex; gap:10px; flex:0 0 auto;}
+  .exo-leg .rol{display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:800;
+    letter-spacing:.09em; color:var(--ink-mute);}
+  .exo-leg .rol i{width:7px; height:7px; border-radius:50%; flex:none;}
+  .exo-leg .nom{font-size:18px; font-weight:800; line-height:1.25; margin:3px 0 14px;}
+  .exo-leg .nom:last-child{margin-bottom:0;}
+  .exo-leg .aide{font-size:14.5px; line-height:1.6; margin-top:3px;}
   .mw{display:flex; flex-wrap:wrap; gap:4px 8px; margin-top:3px;}
   .mw-item{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
   .mw-item i{width:7px; height:7px; border-radius:50%; flex:none;}
@@ -1322,11 +1340,11 @@ function exoBodyHtml(exName, back){
   const masques = MASK_OK[cle].filter(m=>niveaux[m])
     .map(m=>masqueHtml(cle, m, {color:NIVEAU_COULEUR[niveaux[m]], op: niveaux[m]===3? 1 : (niveaux[m]===2? 0.75 : 0.5)})).join("");
   if(!masques) return "";
-  return `<div class="mp-fig" style="max-width:110px;">
+  return `<div class="mp-fig" style="max-width:88px;">
     <img class="mp-base" src="${MASK_DIR}${cle}-base.png" alt="${back?'dos':'face'}" onerror="figKo(this)">
     ${masques}
     <img class="mp-lignes" src="${MASK_DIR}${cle}-ligne.png" alt="" aria-hidden="true" onerror="figKo(this)">
-    <div style="text-align:center; font-size:9.5px; font-weight:800; letter-spacing:.1em; color:var(--ink-mute); margin-top:2px;">${back?"VUE DOS":"VUE FACE"}</div></div>`;
+    <div style="text-align:center; font-size:9px; font-weight:800; letter-spacing:.09em; color:var(--ink-mute); margin-top:4px;">${back?"VUE DE DOS":"VUE DE FACE"}</div></div>`;
 }
 function openExoInfo(exId){
   const ex = getEx(exId);
@@ -1338,29 +1356,37 @@ function openExoInfo(exId){
   /* on n'affiche que les vues où l'exercice a réellement des zones */
   const face = exoBodyHtml(ex.name,false), dos = exoBodyHtml(ex.name,true);
   openSheet(`
-    <div class="row" style="gap:12px; align-items:center; margin-bottom:4px;">
+    <div class="exo-h">
       ${exIcon(ex)}
-      <div class="grow"><h3 style="margin:0;">${esc(ex.name)}</h3>
-      <div style="font-size:12.5px; color:var(--ink-mute);">${esc(ex.equip||"")} · ${esc(ex.muscle)}</div></div>
+      <div class="grow"><h3>${esc(ex.name)}</h3>
+        <div class="sous">${[ex.equip, ex.muscle].filter(Boolean).map(esc).join(" · ")}</div></div>
     </div>
-    ${note? `<div class="inj-note" style="margin:12px 0;">⚠️ <b>${esc(note.injury)} sensible.</b> ${esc(note.tip)}</div>`:""}
-    ${info? `<div class="astuce"><div class="label" style="color:var(--accent); margin-bottom:5px;">✨ Astuce de pro</div>${esc(info.tip)}</div>`:""}
-    ${info? `<div class="label" style="margin:16px 0 8px;">Comment l'exécuter · ${info.steps.length} étapes</div>
-      <div>${info.steps.map((t,i)=>`<div class="etape"><span class="num">${String(i+1).padStart(2,"0")}</span><span>${esc(t)}</span></div>`).join("")}</div>`
-      : `<div style="font-size:13px; color:var(--ink-mute); margin:14px 0;">Pas encore de fiche d'exécution pour cet exercice.</div>`}
-    ${muscles.length? `<div class="label" style="margin:18px 0 8px;">Muscles sollicités</div>
-      <div class="row" style="gap:14px; align-items:flex-start;">
-        ${(face||dos)? `<div class="row" style="gap:6px; flex:0 0 auto;">${face}${dos}</div>`:""}
-        <div class="grow">
-          ${principaux.map(([m])=>`<div style="margin-bottom:8px;">
-            <div class="mw-item" style="font-size:10.5px; color:var(--bad); letter-spacing:.08em;"><i style="background:var(--bad);"></i>PRINCIPAL</div>
-            <div style="font-size:16px; font-weight:800; line-height:1.2;">${esc(m)}</div>
-          </div>`).join("")}
-          ${assistes.length? `<div class="mw-item" style="font-size:10.5px; letter-spacing:.08em; margin-top:10px;"><i style="background:var(--ink-mute);"></i>ASSISTÉS · ${assistes.length}</div>
-            <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.7;">${assistes.map(([m,n])=>`${esc(m)} <span style="color:${NIVEAU_COULEUR[n]};">●</span>`).join("<br>")}</div>`:""}
+    ${note? `<div class="exo-c" style="border:1.5px solid var(--bad);">
+        <div class="exo-t" style="color:var(--bad);">⚠️ ${esc(note.injury)} sensible</div>
+        <div class="exo-txt">${esc(note.tip)}</div></div>`:""}
+    ${info? `<div class="exo-c tip">
+        <div class="exo-t">Astuce de Pro ✨</div>
+        <div class="exo-txt">${esc(info.tip)}</div></div>`:""}
+    ${info? `<div class="exo-c">
+        <div class="exo-t">Comment l'exécuter</div>
+        <div class="exo-etapes">${info.steps.map((t,i)=>
+          `<div class="exo-etape"><span class="num">${String(i+1).padStart(2,"0")}</span><span>${esc(t)}</span></div>`).join("")}</div>
+      </div>`
+      : `<div class="exo-c"><div class="exo-txt">Pas encore de fiche d'exécution pour cet exercice.</div></div>`}
+    ${muscles.length? `<div class="exo-c">
+        <div class="exo-t">Muscles sollicités</div>
+        <div class="exo-mus">
+          ${(face||dos)? `<div class="exo-vues">${face}${dos}</div>`:""}
+          <div class="exo-leg grow">
+            ${principaux.length? `<div class="rol" style="color:var(--bad);"><i style="background:var(--bad);"></i>PRINCIPAL</div>
+              <div class="nom">${principaux.map(([m])=>esc(m)).join("<br>")}</div>`:""}
+            ${assistes.length? `<div class="rol"><i style="background:var(--ink-mute);"></i>ASSISTÉS</div>
+              <div class="aide">${assistes.map(([m,n])=>
+                `${esc(m)} <span style="color:${NIVEAU_COULEUR[n]};">●</span>`).join("<br>")}</div>`:""}
+          </div>
         </div>
       </div>`:""}
-    <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:18px;">Fermer</button>`);
+    <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:4px;">Fermer</button>`);
   document.getElementById("ei-ok").onclick = closeSheet;
 }
 
@@ -2590,7 +2616,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 00h19";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 01h32";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
