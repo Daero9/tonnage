@@ -294,7 +294,7 @@
     opacity:0; transition:opacity .55s ease;
     /* calque dédié : évite le clignotement des fondus d'images sur iOS */
     transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
-  .onb-tel img.on{opacity:1;}
+  .onb-tel video.on, .onb-tel img.on{opacity:1;}
   /* place réservée pour trois lignes : un titre plus long ne doit pas décaler le visuel */
   .onb-titre{font-size:27px; font-weight:800; text-align:center; line-height:1.2; min-height:98px;
     transition:opacity .3s ease;}
@@ -1847,8 +1847,9 @@ function proteinTarget(){
 /* ================= PARCOURS D'ACCUEIL =================
    Plein écran, une question par étape. Rejoué par « Modifier mon profil » :
    dans ce cas une croix permet de sortir sans rien changer. */
-let onbEl = null;
+let onbEl = null, onbTour = null;
 function fermerOnb(){
+  if(onbTour){ clearInterval(onbTour); onbTour = null; }   /* sinon elle continue d'écrire dans la page suivante */
   if(onbEl){ onbEl.remove(); onbEl = null; }
   document.documentElement.removeAttribute("data-onb");
   appliquerTheme();
@@ -1933,6 +1934,8 @@ function openOnboarding(first, brouillon, depart){
   }
 
   function dessiner(){
+    /* on quitte le carrousel : sa minuterie ne doit pas survivre à l'écran suivant */
+    if(onbTour){ clearInterval(onbTour); onbTour = null; }
     const etape = ETAPES[i];
     const intro = etape === "intro";
     /* sur les deux dernières pages, pas de croix : on part avec un plan ou on choisit « non merci » */
@@ -1974,30 +1977,41 @@ function openOnboarding(first, brouillon, depart){
       ];
       corps.innerHTML = `<div class="onb-hero">
         <div class="onb-tel">${vues.map((x,n)=>
-          `<video src="${x.v}" class="${n===0?"on":""}" muted playsinline autoplay loop preload="${n===0?"auto":"metadata"}"
-            poster="img/tel1.png" aria-hidden="true"></video>`).join("")}</div>
+          `<video src="${x.v}" class="${n===0?"on":""}" muted playsinline webkit-playsinline autoplay loop
+            preload="auto" poster="img/tel1.png" aria-hidden="true"></video>`).join("")}</div>
         <div class="onb-titre" id="onb-titre">${vues[0].titre}</div>
         <div class="onb-dots">${vues.map((x,n)=>`<i class="${n===0?"on":""}"></i>`).join("")}</div>
       </div>`;
-      /* seule la vue affichée tourne : les autres restent au repos */
+      /* Seule la vue affichée tourne. iOS n'accepte la lecture automatique que si
+         « muet » est posé en propriété, pas seulement en attribut ; et si la lecture
+         est refusée, on force au moins l'affichage de la première image. */
       const films = [...corps.querySelectorAll(".onb-tel video")];
+      films.forEach(f=>{
+        f.muted = true; f.defaultMuted = true; f.playsInline = true;
+        f.addEventListener("loadeddata", ()=>{ if(f.paused) try{ f.currentTime = 0.05; }catch(e){} });
+      });
       const jouer = k => films.forEach((f,j)=>{
-        if(j === k){ f.currentTime = 0; const pr = f.play(); if(pr) pr.catch(()=>{}); }
-        else f.pause();
+        if(j !== k){ f.pause(); return; }
+        f.muted = true;
+        try{ f.currentTime = 0; }catch(e){}
+        const pr = f.play();
+        if(pr && pr.catch) pr.catch(()=>{ try{ f.currentTime = 0.05; }catch(e){} });
       });
       jouer(0);
       let n = 0;
-      const tour = setInterval(()=>{
-        if(!document.body.contains(onbEl)){ clearInterval(tour); return; }
+      const maPage = onbEl;                    /* on ne pilote que SA page, jamais la suivante */
+      if(onbTour) clearInterval(onbTour);
+      const tour = onbTour = setInterval(()=>{
+        if(!maPage.isConnected){ clearInterval(tour); if(onbTour === tour) onbTour = null; return; }
         n = (n+1) % vues.length;
-        onbEl.querySelectorAll(".onb-tel video").forEach((im,k)=>im.classList.toggle("on", k===n));
+        maPage.querySelectorAll(".onb-tel video").forEach((im,k)=>im.classList.toggle("on", k===n));
         jouer(n);
-        onbEl.querySelectorAll(".onb-dots i").forEach((pt,k)=>pt.classList.toggle("on", k===n));
-        const t = onbEl.querySelector("#onb-titre");
+        maPage.querySelectorAll(".onb-dots i").forEach((pt,k)=>pt.classList.toggle("on", k===n));
+        const t = maPage.querySelector("#onb-titre");
         if(!t) return;
         t.style.opacity = 0;
         setTimeout(()=>{ if(t.isConnected){ t.innerHTML = vues[n].titre; t.style.opacity = 1; } }, 240);
-      }, 2600);
+      }, 5000);
       pied.innerHTML = `<button class="onb-btn" id="onb-next">Commencer</button>
         <button class="onb-lien" id="onb-tard">Plus tard, <b>je veux d'abord regarder</b></button>`;
       onbEl.querySelector("#onb-next").onclick = ()=>{ clearInterval(tour); i++; dessiner(); };
