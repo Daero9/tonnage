@@ -291,8 +291,9 @@
 
   /* carrousel d'introduction */
   .onb-body.intro{overflow:hidden;}      /* le carrousel tient sur l'écran, toujours */
-  .onb-hero{display:flex; flex-direction:column; align-items:center; justify-content:center;
-    height:100%; min-height:0; padding-top:8px;}
+  /* tout est calé en haut, comme sur la maquette : le visuel, puis le titre, puis les points */
+  .onb-hero{display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    height:100%; min-height:0; padding-top:4px;}
   /* Le visuel prend LA PLACE QUI RESTE, ni plus ni moins : le titre, les points et le
      bouton se servent d'abord, lui se contente du reste. Aucune proportion imposée à la
      boîte, donc rien qui puisse déborder sous le bouton, quel que soit l'écran ; c'est la
@@ -310,9 +311,13 @@
   .onb-tel video.on, .onb-tel img.on{opacity:1;}
   /* place réservée pour trois lignes : un titre plus long ne doit pas décaler le visuel */
   /* seul le visuel se réduit quand l'écran est court : le texte et les points gardent leur taille */
-  .onb-titre{flex:0 0 auto; font-size:clamp(21px, 6.6vw, 27px); font-weight:800; text-align:center;
-    line-height:1.2; min-height:3.6em;   /* trois lignes réservées : un titre long ne décale rien */
-    transition:opacity .25s ease;}
+  /* Aucun effet sur le titre, volontairement. Faire varier l'opacité d'un texte qu'on
+     réécrit laissait sur iPhone les anciens titres peints à l'écran, jusqu'à trois
+     superposés. Le titre change maintenant d'un coup, en même temps que la vidéo —
+     et la vidéo, elle, garde son fondu. */
+  .onb-titre{flex:0 0 auto; width:100%; display:flex; align-items:center; justify-content:center;
+    font-size:clamp(21px, 6.6vw, 27px); font-weight:800; text-align:center;
+    line-height:1.2; min-height:3.6em;}  /* trois lignes réservées : un titre long ne décale rien */
   .onb-dots{flex:0 0 auto; display:flex; gap:7px; justify-content:center; margin-top:16px;}
   .onb-dots i{width:7px; height:7px; border-radius:50%; background:var(--ink-mute); opacity:.35;}
   .onb-dots i.on{opacity:1; background:var(--ink);}
@@ -1915,6 +1920,7 @@ function openOnboarding(first, brouillon, depart){
   let i = Math.min(depart != null ? depart : (dejaRempli ? 1 : 0), ETAPES.length - 1);
 
   fermerOnb();
+  document.querySelectorAll(".onb").forEach(el=>el.remove());   /* aucun parcours oublié en dessous */
   onbEl = document.createElement("div");
   onbEl.className = "onb";
   document.body.appendChild(onbEl);
@@ -2018,7 +2024,7 @@ function openOnboarding(first, brouillon, depart){
       jouer(0);
       /* Une seule fonction décide de tout ce qui change ensemble : la vidéo, le point
          et le titre. Ils ne peuvent plus se désaccorder. */
-      let n = 0, fondu = null, reveil = null;
+      let n = 0;
       const maPage = onbEl;                    /* on ne pilote que SA page, jamais la suivante */
       /* On mesure l'écran et la place prise par le texte, puis on donne au visuel ce
          qui reste — jamais plus d'un tiers de l'écran. Le titre, les points et le
@@ -2034,11 +2040,20 @@ function openOnboarding(first, brouillon, depart){
         const cs = getComputedStyle(corps2);
         const marges = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
         const libre = ecran - (haut ? haut.offsetHeight : 0) - (pied ? pied.offsetHeight : 0) - marges;
-        const reste = libre - titre.offsetHeight - pts.offsetHeight - 40;
-        tel.style.height = Math.max(110, Math.min(reste, Math.round(ecran * 0.34))) + "px";
+        const reste = libre - titre.offsetHeight - pts.offsetHeight - 34;
+        /* Le visuel prend le reste, sans dépasser ni la hauteur naturelle de la vidéo à
+           cette largeur (sinon du vide au-dessus et en dessous), ni 46 % de l'écran —
+           la proportion de la maquette, très légèrement réduite. */
+        const naturel = Math.round(tel.offsetWidth * 1090 / 600);
+        const haute = Math.max(110, Math.min(reste, naturel, Math.round(ecran * 0.46)));
+        tel.style.height = haute + "px";
+        /* filet : s il reste quelques pixels de trop, on les reprend au visuel */
+        const trop = corps2.scrollHeight - corps2.clientHeight;
+        if(trop > 0) tel.style.height = Math.max(110, haute - trop) + "px";
       };
       caler();
       requestAnimationFrame(caler);                  /* une fois les polices posées */
+      setTimeout(caler, 90);                         /* et une fois la mise en page stabilisée */
       window.addEventListener("resize", caler);
       const montrer = k=>{
         n = k;
@@ -2046,23 +2061,7 @@ function openOnboarding(first, brouillon, depart){
         jouer(k);
         maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
         const t = maPage.querySelector("#onb-titre");
-        if(!t) return;
-        clearTimeout(fondu); clearTimeout(reveil);
-        t.style.opacity = 0;
-        /* Le nouveau titre n'est écrit qu'une fois l'ancien réellement effacé : on attend
-           la FIN du fondu annoncée par le navigateur, au lieu de deviner une durée. Deux
-           titres ne peuvent donc jamais se chevaucher. On écrit toujours la vue courante
-           et on redonne toujours l'opacité : quel que soit le chemin pris, le titre
-           réapparaît — il ne peut pas rester effacé. */
-        const poser = ()=>{
-          t.removeEventListener("transitionend", poser);
-          clearTimeout(fondu);
-          if(!t.isConnected) return;
-          t.innerHTML = vues[n].titre;
-          reveil = setTimeout(()=>{ t.style.opacity = 1; }, 20);
-        };
-        t.addEventListener("transitionend", poser);
-        fondu = setTimeout(poser, 450);        /* filet : page en arrière-plan, aucune transition */
+        if(t) t.innerHTML = vues[k].titre;     /* un seul titre à l'écran, à tout instant */
       };
       /* Chaîne de délais plutôt qu'un intervalle : quand le téléphone met la page en
          veille, un intervalle rattrape ses tours en retard d'un coup et le titre saute
@@ -2077,7 +2076,6 @@ function openOnboarding(first, brouillon, depart){
       onbTour = setTimeout(suite, 5000);
       const stop = ()=>{
         if(onbTour){ clearTimeout(onbTour); onbTour = null; }
-        clearTimeout(fondu); clearTimeout(reveil);
         window.removeEventListener("resize", caler);
         maPage.style.height = "";                    /* les autres pages reprennent le CSS */
       };
@@ -2620,7 +2618,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 août 2026 23h36";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 00h06";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
