@@ -231,9 +231,14 @@
   .onb h2{font-size:29px; font-weight:800; letter-spacing:-.02em; line-height:1.15; margin:0 0 6px;}
   .onb .sous{font-size:13.5px; color:var(--ink-mute); line-height:1.45; margin-bottom:22px;}
   .onb-btn{width:100%; background:var(--hero); color:#fff; border-radius:14px; padding:16px;
-    font-size:16.5px; font-weight:800;}
+    font-size:16.5px; font-weight:800; transition:transform .12s ease;}
+  .onb-btn:active{transform:scale(.975);}
   .onb-btn[disabled]{opacity:.35;}
-  .onb-lien{display:block; width:100%; text-align:center; margin-top:12px; font-size:13.5px; color:var(--ink-soft);}
+  .onb-back{transition:transform .12s ease;}
+  .onb-back:active{transform:scale(.86);}
+  .onb-lien{display:block; width:100%; text-align:center; margin-top:12px; font-size:13.5px; color:var(--ink-soft);
+    transition:opacity .12s ease;}
+  .onb-lien:active{opacity:.55;}
   .onb-lien b{color:var(--ink); text-decoration:underline;}
 
   /* choix multiples : apparition bouton par bouton */
@@ -241,12 +246,17 @@
   .onb-choix .ch{background:var(--surface); border-radius:12px; padding:14px; font-size:14.5px; font-weight:700;
     text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06); opacity:0; transform:translateY(8px);
     animation:chIn .28s ease forwards;}
+  .onb-choix .ch{transition:transform .12s ease, background .16s ease, color .16s ease;}
+  .onb-choix .ch:active{transform:scale(.975);}
   .onb-choix .ch.on{background:var(--accent); color:#fff;}
   .onb-desc{font-size:12.5px; color:var(--ink-soft); text-align:center; line-height:1.5; margin-top:10px;}
   @keyframes chIn{to{opacity:1; transform:none;}}
   /* redessin apres un choix : les boutons sont deja la, ils ne rejouent pas l'apparition */
   .onb-choix .ch.fixe{animation:none; opacity:1; transform:none;}
-  @media (prefers-reduced-motion:reduce){ .onb-choix .ch{animation:none; opacity:1; transform:none;} }
+  @media (prefers-reduced-motion:reduce){
+    .onb-choix .ch{animation:none; opacity:1; transform:none;}
+    .onb-btn:active, .onb-choix .ch:active, .onb-back:active{transform:none;}
+  }
 
   /* saisie du prénom */
   .onb-nom{width:100%; border:none; background:none; padding:0; font-size:31px; font-weight:800;
@@ -2045,11 +2055,28 @@ function fermerOnb(){
   document.documentElement.removeAttribute("data-onb");
   appliquerTheme();
 }
+/* Retour haptique. Un seul point d'entrée pour toute l'app : le réglage se respecte ici,
+   et nulle part ailleurs. Accepte une durée ou un motif [vibre, pause, vibre].
+   À savoir : Safari sur iPhone n'implémente pas la vibration — cette fonction n'y fait
+   rien. Le retour tactile n'arrivera sur iOS qu'avec l'app empaquetée. */
+function vibrer(motif){
+  if(db.settings.vibre === false) return;
+  if(!navigator.vibrate) return;
+  try{ navigator.vibrate(motif || 6); }catch(e){}
+}
+/* Toute action tactile rend un souffle de 6 ms : boutons, onglets, pastilles, lignes de
+   liste. Un seul écouteur pour toute l'app, plutôt qu'un appel dans chaque gestionnaire. */
+document.addEventListener("pointerdown", e=>{
+  const el = e.target && e.target.closest &&
+    e.target.closest('button, [role="button"], label.btn, .fchip, .al-row, .rg-l, .pick-row, .tpl-item, input[type="checkbox"]');
+  if(!el || el.disabled) return;
+  vibrer(6);
+}, {passive:true, capture:true});
+
 /* petit clic de roulette, sans fichier son */
 let onbAudio = null;
 function clicRoue(){
   try{
-    if(navigator.vibrate) navigator.vibrate(3);
     onbAudio = onbAudio || new (window.AudioContext||window.webkitAudioContext)();
     if(onbAudio.state === "suspended") onbAudio.resume();
     const o = onbAudio.createOscillator(), g = onbAudio.createGain();
@@ -2760,7 +2787,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 18h38";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 23h33";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -2807,6 +2834,7 @@ function applyDefaults(){
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "clair";
   if(db.settings.son === undefined) db.settings.son = true;
+  if(db.settings.vibre === undefined) db.settings.vibre = true;
   /* null = aucun filtre, tout le matériel est supposé disponible (utilisateurs existants) */
   if(db.materiel === undefined) db.materiel = null;
   if(!db.seq) db.seq = 1;
@@ -3427,7 +3455,7 @@ function tickRest(){
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
     if(left > -2) bipRepos();
-    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    vibrer([200,100,200]);
     if(rest.hideTo) clearTimeout(rest.hideTo);
     rest.hideTo = setTimeout(()=>{ restbar.classList.remove("show","ending"); rest.hideTo=null; }, 1600);
     return;
@@ -3497,7 +3525,7 @@ function restDragEnd(){
   save();
   restbar.style.top = ""; restbar.style.bottom = "";
   placerRest();
-  if(navigator.vibrate) navigator.vibrate(12);
+  vibrer(12);
 }
 restbar.addEventListener("touchstart", e=>{ restDragStart(e.touches[0].clientY, e.target); }, {passive:true});
 restbar.addEventListener("touchmove", e=>{ if(restDrag.actif && restDrag.bouge) e.preventDefault(); restDragMove(e.touches[0].clientY); }, {passive:false});
@@ -3609,7 +3637,7 @@ function dessineRepas(panel){
   panel.querySelectorAll("[data-opt]").forEach(b=>{
     const label = b.dataset.opt;
     const deb = ()=>{ lpFired=false; clearTimeout(lpT);
-      lpT = setTimeout(()=>{ lpFired=true; if(navigator.vibrate) navigator.vibrate(18); openModifAliment(mealCur, label); }, 340); };
+      lpT = setTimeout(()=>{ lpFired=true; vibrer(18); openModifAliment(mealCur, label); }, 340); };
     const fin = ()=>clearTimeout(lpT);
     b.addEventListener("touchstart", deb, {passive:true});
     ["touchend","touchmove","touchcancel"].forEach(e=>b.addEventListener(e, fin));
@@ -5237,7 +5265,7 @@ function exerciceFini(card, nom, apres){
   v.className = "ex-fini";
   v.innerHTML = `<div class="rond">✓</div><div class="txt">${esc(nom)}, terminé</div>`;
   card.appendChild(v);
-  if(navigator.vibrate) try{ navigator.vibrate([12, 60, 18]); }catch(e){}
+  vibrer([12, 60, 18]);
   setTimeout(()=>{ if(typeof apres === "function") apres(); }, 1250);
 }
 function renderActive(app){
@@ -5360,7 +5388,7 @@ function renderActive(app){
           void enAttente.offsetWidth;
           enAttente.classList.add("rappel");
           enAttente.scrollIntoView({block:"nearest", behavior:"smooth"});
-          if(navigator.vibrate) try{ navigator.vibrate(14); }catch(e){}
+          vibrer(14);
           return;
         }
         ensureAudio();
@@ -5504,7 +5532,7 @@ function renderActive(app){
       let sTimer = null, sLong = false;
       const ouvrirMenu = ()=>{
         sLong = true;
-        if(navigator.vibrate) navigator.vibrate(18);
+        vibrer(18);
         openSheet(`<h3>${st.warm? "Série d'échauffement" : "Série "+num}</h3>
           <div class="stack">
             <button class="btn btn-accent" id="ms-drop">＋ Ajouter un dégressif</button>
@@ -5968,10 +5996,16 @@ function openSettings(){
     </div>
 
     <div class="rg-c">
-      <div class="rg-t">Apparence</div>
+      <div class="rg-t">Apparence et retours</div>
       <button class="rg-l" id="st-theme">
         <span class="grow">Thème</span>
         <span class="val">${db.settings.theme==="clair"? "☀️ Clair" : "🌙 Sombre"}</span>
+      </button>
+      <button class="rg-l" id="st-vibre">
+        <span class="grow">Retour vibrant
+          <em>Un souffle très court à chaque appui. Sans effet sur iPhone tant que l'app
+          n'est pas installée depuis un magasin.</em></span>
+        <span class="val">${db.settings.vibre === false ? "Non" : "Oui"}</span>
       </button>
       <button class="rg-l" id="st-hints">
         <span class="grow">Revoir les explications
@@ -6033,6 +6067,12 @@ function openSettings(){
     db.settings.ecranAllume = (db.settings.ecranAllume === false);
     save(); syncWakeLock();
     e.currentTarget.lastElementChild.textContent = db.settings.ecranAllume===false? "Non" : "Oui";
+  };
+  document.getElementById("st-vibre").onclick=(e)=>{
+    db.settings.vibre = (db.settings.vibre === false);
+    save();
+    e.currentTarget.lastElementChild.textContent = db.settings.vibre === false ? "Non" : "Oui";
+    vibrer(14);                                   /* on sent tout de suite ce qu'on vient d'activer */
   };
   document.getElementById("st-theme").onclick=(e)=>{
     db.settings.theme = (db.settings.theme==="clair") ? "sombre" : "clair";
