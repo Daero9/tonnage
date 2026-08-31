@@ -374,6 +374,23 @@ function lancer(){
   DB.materiel = null;
   neuf();
 
+  /* ---------------------------------------------------------- photo de la séance */
+  grp("Photo de la séance");
+  neuf();
+  const exDe = g => F.eval("LIB").filter(e=>e.muscle===g).slice(0,3).map(e=>({exId:e.id}));
+  eq("Une séance d'abdos n'est pas une séance de dos",
+    F.photoSeance({name:"Abdos", items:exDe("Abdos")}), "abdos");
+  eq("Le nom « Abdos » seul suffit", F.photoSeance({name:"Abdos", items:[]}), "abdos");
+  eq("Une séance de dos reste une séance de dos",
+    F.photoSeance({name:"Pull", items:exDe("Dos")}), "pull");
+  eq("Les pectoraux donnent push", F.photoSeance({name:"Push", items:exDe("Pectoraux")}), "push");
+  eq("Les jambes donnent jambes", F.photoSeance({name:"Legs", items:exDe("Jambes")}), "jambes");
+  eq("Les exercices priment sur le nom",
+    F.photoSeance({name:"Pull", items:exDe("Jambes")}), "jambes");
+  eq("Une photo choisie à la main est respectée",
+    F.photoSeance({photo:"cardio", name:"Abdos", items:exDe("Abdos")}), "cardio");
+  neuf();
+
   /* ---------------------------------------------------------- fiches d'exercice */
   grp("Fiches d'exercice");
   neuf();

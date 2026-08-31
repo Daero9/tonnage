@@ -567,6 +567,9 @@
     display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800;}
   .ex-done .nm{flex:1; min-width:0; text-align:left; font-size:16px; font-weight:700; color:var(--ink-mute);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ex-done .nm em{display:block; font-style:normal; font-size:12.5px; font-weight:700;
+    color:var(--accent-deep); margin-top:1px;}
+  .ex-done .nm em b{color:var(--good);}
   .ex-done .dep{flex:0 0 auto; color:var(--ink-soft); display:flex;}
   .ex-done .dep svg{width:20px; height:13px;}
   @keyframes replieIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:none;}}
@@ -2738,7 +2741,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 03h53";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 04h01";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -4358,6 +4361,44 @@ function weightVerdict(){
   return {txt:`Poids stable — pour perdre, réduis un peu les portions ou ajoute du cardio.`, tone:"warn"};
 }
 /* ===== Bilan hebdomadaire : analyse + conseils priorisés ===== */
+/* Le lien entre protéines et tonnage, en une phrase — et seulement si les données la
+   portent : huit semaines regardées, six exploitables, deux au moins dans chaque cas.
+   En dessous de 5 % d'écart, l'app se tait plutôt que d'inventer une conclusion. */
+function lienProtTonnage(){
+  const cible = proteinTarget();
+  if(!cible) return null;
+  const lundiDe = d => { const x = new Date(d); x.setHours(0,0,0,0);
+    x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x.getTime(); };
+  const semaines = {};
+  const base = lundiDe(new Date());
+  for(let k = 1; k <= 8; k++) semaines[base - k*7*864e5] = {vol:0, prot:0, jours:0};
+  db.history.forEach(sess=>{
+    const t = lundiDe(sess.date);
+    if(semaines[t]) semaines[t].vol += sessionVolume(sess);
+  });
+  Object.keys(db.habitSel).forEach(jour=>{
+    const d = new Date(jour);
+    if(isNaN(d.getTime())) return;
+    const t = lundiDe(d);
+    if(!semaines[t]) return;
+    const p = dayProt(jour);
+    if(p > 0){ semaines[t].prot += p; semaines[t].jours++; }
+  });
+  /* une semaine ne compte que si elle a été mangée ET entraînée, et presque tout notée */
+  const utiles = Object.values(semaines).filter(x => x.jours >= 6 && x.vol > 0);
+  if(utiles.length < 6) return null;
+  const tenues = utiles.filter(x => x.prot/7 >= cible*0.9);
+  const ratees = utiles.filter(x => x.prot/7 < cible*0.9);
+  if(tenues.length < 2 || ratees.length < 2) return null;
+  const moyenne = l => l.reduce((a,x)=>a+x.vol, 0) / l.length;
+  const mt = moyenne(tenues), mr = moyenne(ratees);
+  if(!(mr > 0)) return null;
+  const ecart = Math.round((mt - mr)/mr*100);
+  if(Math.abs(ecart) < 5) return null;
+  return ecart > 0
+    ? `Sur ${utiles.length} semaines, celles où tu as tenu tes protéines (${tenues.length}) affichent un tonnage supérieur de ${ecart} % aux autres.`
+    : `Sur ${utiles.length} semaines, ton tonnage n'a pas suivi tes protéines : les semaines au quota sont ${Math.abs(ecart)} % en dessous. Regarde plutôt ton sommeil et ta récupération.`;
+}
 function computeBilan(){
   const now = Date.now(), d7 = now-7*864e5, d14 = now-14*864e5, d28 = now-28*864e5;
   const cur = db.history.filter(s=>new Date(s.date).getTime()>=d7);
@@ -4436,6 +4477,10 @@ function openBilan(){
       <span class="pill">${fmtKg(b.volCur)} kg soulevés</span>
       ${b.kmCur? `<span class="pill">${fmtKg(b.kmCur)} km cardio</span>`:""}
     </div>
+    ${(()=>{ const lien = lienProtTonnage();
+      return lien ? `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:16px;">
+        <div style="font-weight:800; font-size:13.5px; margin-bottom:4px;">🍽️ Alimentation et tonnage</div>
+        <div style="font-size:13px; color:var(--ink-soft); line-height:1.55;">${lien}</div></div>` : ""; })()}
     <div class="label" style="margin-bottom:8px;">🎯 À prioriser</div>
     <div class="stack" style="gap:8px; margin-bottom:16px;">${b.prios.map((p,i)=>`
       <div class="card" style="background:var(--surface2); padding:12px;">
@@ -4490,9 +4535,11 @@ function photoSeance(t){
     const ex = getEx(it.exId);
     const m = (ex.muscle || "").toLowerCase();
     if(/pector|épaul|epaul|triceps/.test(m)) score.push++;
-    else if(/dos|biceps/.test(m)) score.pull++;
+    /* « abdos » contient « dos » : ce test doit passer AVANT celui du dos, sinon
+       toute séance d abdominaux est prise pour une séance de tirage */
+    else if(/abdo|gainage|oblique/.test(m)) score.abdos++;
+    else if(/dos|dorsal|biceps/.test(m)) score.pull++;
     else if(/jambe|fessier|mollet/.test(m)) score.jambes++;
-    else if(/abdo|gainage/.test(m)) score.abdos++;
   });
   const total = score.push + score.pull + score.jambes + score.abdos;
   if(total){
@@ -4501,10 +4548,10 @@ function photoSeance(t){
     if(score[best] / total >= 0.4) return best;
   }
   const n = ((t && t.name) || "").toLowerCase();
+  if(/abdo|gainage|core|ceinture/.test(n)) return "abdos";   /* avant « dos », même piège */
   if(/push|poussée|pousse|pec|torse/.test(n)) return "push";
-  if(/pull|tirage|dos/.test(n)) return "pull";
+  if(/pull|tirage|dos/.test(n)) return "pull";
   if(/jambe|leg|cuisse|fessier|squat/.test(n)) return "jambes";
-  if(/abdo|gainage|core|ceinture/.test(n)) return "abdos";
   if(/cardio|course|run|hiit|marche/.test(n)) return "cardio";
   return "push";
 }
@@ -5193,7 +5240,13 @@ function renderActive(app){
     if(en.replie){
       const plie = document.createElement("button");
       plie.className = "ex-done";
-      plie.innerHTML = `<span class="vu">✓</span><span class="nm">${esc(ex.name)}</span><span class="dep">${CHEV}</span>`;
+      /* le record est dit ici, une fois l'exercice fini : assez près de l'effort pour
+         compter, assez rare pour rester un événement */
+      const rec = recordExo(en);
+      plie.innerHTML = `<span class="vu">✓</span><span class="nm">${esc(ex.name)}${
+        (rec && rec.gain > 0)
+          ? `<em>🏆 Record — ${fmtKg(rec.w)} kg × ${rec.r} <b>+${fmtKg(rec.gain)} kg</b></em>` : ""
+      }</span><span class="dep">${CHEV}</span>`;
       plie.onclick = ()=>{ delete en.replie; save(); renderSurPlace(); };
       list.appendChild(plie);
       return;
@@ -5513,20 +5566,29 @@ function renderActive(app){
   };
 }
 /* records battus pendant la séance : meilleur 1RM estimé face à tout l'historique précédent */
+/* Un exercice bat-il son propre record ? Rend la meilleure série et le gain, ou null.
+   Le passé est cherché dans l'historique, donc la séance en cours n'est pas comparée à
+   elle-même. gain = 0 quand c'est la première fois : ce n'est pas un record, c'est un début. */
+function recordExo(en){
+  const sets = en.sets.filter(s=>s.done && !s.warm);
+  if(!sets.length) return null;
+  let best = 0, meilleure = null;
+  sets.forEach(st=>{ const v = e1rm(st.w||0, st.r||0); if(v > best){ best = v; meilleure = st; } });
+  if(!(best > 0)) return null;
+  let avant = 0;
+  db.history.forEach(h=>h.entries.forEach(e2=>{
+    if(e2.exId !== en.exId) return;
+    e2.sets.filter(s=>!s.warm).forEach(st=>{ avant = Math.max(avant, e1rm(st.w||0, st.r||0)); });
+  }));
+  if(avant === 0) return {gain:0, w:meilleure.w, r:meilleure.r};
+  if(best <= avant*1.005) return null;
+  return {gain: Math.round((best-avant)*10)/10, w:meilleure.w, r:meilleure.r};
+}
 function nouveauxRecords(a){
   const out = [];
   a.entries.forEach(en=>{
-    const sets = en.sets.filter(s=>s.done && !s.warm);
-    if(!sets.length) return;
-    const best = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
-    if(!(best>0)) return;
-    let avant = 0;
-    db.history.forEach(h=>h.entries.forEach(e2=>{
-      if(e2.exId !== en.exId) return;
-      e2.sets.filter(s=>!s.warm).forEach(st=>{ avant = Math.max(avant, e1rm(st.w||0, st.r||0)); });
-    }));
-    if(best > avant*1.005 && avant > 0) out.push({nom:getEx(en.exId).name, gain:Math.round((best-avant)*10)/10});
-    else if(best > 0 && avant === 0) out.push({nom:getEx(en.exId).name, gain:0});
+    const r = recordExo(en);
+    if(r) out.push({nom:getEx(en.exId).name, gain:r.gain});
   });
   return out;
 }
