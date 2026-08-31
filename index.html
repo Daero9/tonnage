@@ -797,6 +797,7 @@
   .al-row.on{background:var(--surface2); border-radius:10px; border-top-color:transparent;
     padding-inline:9px; margin-inline:-9px;}
   .al-row.on .nm{color:var(--accent-deep);}
+  .al-note{font-size:11.5px; color:var(--ink-mute); line-height:1.45; margin:-1px 0 6px;}
   .al-vide{font-size:13px; color:var(--ink-mute); padding:14px 0; text-align:center; line-height:1.5;}
 
   /* ---- récapitulatif des repas : ce qui a été mangé, d'un coup d'œil ---- */
@@ -2731,7 +2732,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 02h36";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 02h57";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3652,7 +3653,9 @@ function openAjoutAliment(meal){
       const gardes = items.map((it,i)=>[it,i]).filter(([it])=> !qn || sansAccent(it[0]).includes(qn));
       if(!gardes.length) return;
       trouves += gardes.length;
-      html += `<div class="al-h">${esc(grp)}</div>` + gardes.map(([it,i])=>{
+      html += `<div class="al-h">${esc(grp)}</div>`
+        + (FOOD_NOTE[grp] ? `<div class="al-note">${esc(FOOD_NOTE[grp])}</div>` : "")
+        + gardes.map(([it,i])=>{
         const v = grp + "|" + i;
         const par = it[3] === "100g" ? "/ 100 g" : (it[3] === "cl" ? "/ 100 ml" : "/ " + it[3]);
         return `<button class="al-row ${foodEl.value===v? "on":""}" data-food="${esc(v)}">
@@ -4116,6 +4119,10 @@ Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
   if(!(l in HB_KCAL_MAP)) HB_KCAL_MAP[l]=k;
 }));
 /* [nom, protéines, calories, unité] — "100g" = valeurs pour 100 g, sinon valeurs POUR UNE PIÈCE */
+/* certaines familles méritent un avertissement : on l'affiche sous leur titre */
+const FOOD_NOTE = {
+  "Plats et repas complets": "Estimations à ±25 % : la taille et la garniture changent tout. Mieux vaut une estimation qu'une case vide."
+};
 const FOOD_100G = [
   ["À la pièce", [
     ["Œuf",6.3,78,"œuf"],["Blanc d'œuf",3.6,17,"blanc"],
@@ -4133,7 +4140,11 @@ const FOOD_100G = [
   /* Les légumes ne sont pas dans la grille du quotidien : ils changent peu les totaux et
      alourdiraient chaque repas. Ils sont là pour qui veut saisir un plat complet — et
      parce que certains comptent vraiment (petits pois, maïs, avocat). */
-  ["Légumes (poids prêt à manger)", [["Brocoli",2.8,35,"100g"],["Haricots verts",1.8,30,"100g"],["Courgette",1.2,20,"100g"],["Carotte",0.8,35,"100g"],["Épinards",2.9,25,"100g"],["Chou-fleur",1.8,25,"100g"],["Poireau",1.5,30,"100g"],["Aubergine",0.8,28,"100g"],["Poivron",1.0,26,"100g"],["Champignons",2.5,25,"100g"],["Tomate",0.8,18,"100g"],["Concombre",0.6,12,"100g"],["Salade verte",1.2,15,"100g"],["Oignon",1.2,40,"100g"],["Betterave",1.8,45,"100g"],["Courge / potiron",1.0,30,"100g"],["Petits pois",5.4,80,"100g"],["Maïs (égoutté)",3.0,95,"100g"],["Avocat",1.8,160,"100g"],["Soupe de légumes",1.3,40,"cl"],["Ratatouille",1.2,60,"100g"]]]
+  ["Légumes (poids prêt à manger)", [["Brocoli",2.8,35,"100g"],["Haricots verts",1.8,30,"100g"],["Courgette",1.2,20,"100g"],["Carotte",0.8,35,"100g"],["Épinards",2.9,25,"100g"],["Chou-fleur",1.8,25,"100g"],["Poireau",1.5,30,"100g"],["Aubergine",0.8,28,"100g"],["Poivron",1.0,26,"100g"],["Champignons",2.5,25,"100g"],["Tomate",0.8,18,"100g"],["Concombre",0.6,12,"100g"],["Salade verte",1.2,15,"100g"],["Oignon",1.2,40,"100g"],["Betterave",1.8,45,"100g"],["Courge / potiron",1.0,30,"100g"],["Petits pois",5.4,80,"100g"],["Maïs (égoutté)",3.0,95,"100g"],["Avocat",1.8,160,"100g"],["Soupe de légumes",1.3,40,"cl"],["Ratatouille",1.2,60,"100g"]]],
+  /* Les plats tout faits sont comptés à la part, jamais aux 100 g : personne ne pèse une
+     pizza. Ils sont approximatifs, et c'est assumé — les jours de sortie étaient jusqu'ici
+     comptés zéro, ce qui est une erreur bien plus grosse que 200 kcal. */
+  ["Plats et repas complets", [["Part de pizza (1/8)",6,140,"part"],["Burger",25,520,"burger"],["Menu fast-food complet",30,1100,"menu"],["Kebab",35,900,"kebab"],["Nuggets 6 pièces",15,280,"portion"],["Frites (portion 150 g)",4,460,"portion"],["Sushi 6 pièces",9,230,"portion"],["Pâtes bolognaise (assiette 300 g)",18,420,"assiette"],["Lasagnes (part 300 g)",19,450,"part"],["Riz cantonais (assiette 300 g)",15,490,"assiette"],["Sandwich jambon-beurre",18,470,"sandwich"],["Wrap poulet",22,450,"wrap"],["Salade César (bol)",25,500,"bol"],["Quiche (part 150 g)",12,390,"part"],["Croissant",4,240,"croissant"],["Pain au chocolat",5,280,"pain"],["Repas léger (salade, soupe, sandwich)",15,400,"repas"],["Repas normal (plat + accompagnement)",30,700,"repas"],["Repas copieux au restaurant",40,1200,"repas"]]]
 ];
 function protOf(label){
   const m = label.match(/\(~(\d+(?:[.,]\d+)?)\s*g prot\./);

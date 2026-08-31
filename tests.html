@@ -162,8 +162,16 @@ function lancer(){
     BASE.every(([, items]) => items.every(([n,pr,kc,u]) => n && pr >= 0 && kc > 0 && u)));
   vrai("Aucun doublon dans un même groupe",
     BASE.every(([, items]) => new Set(items.map(x=>x[0])).size === items.length));
+  vrai("Chaque groupe a bien un nom et une seule liste",
+    BASE.every(g => g.length === 2 && typeof g[0] === "string" && Array.isArray(g[1])));
   vrai("Les légumes sont dans la base",
     BASE.some(([g, items]) => /légumes/i.test(g) && items.length >= 10));
+  vrai("Les plats cuisinés sont dans la base",
+    BASE.some(([g, items]) => /plats/i.test(g) && items.length >= 10));
+  vrai("Un plat se compte à la part, jamais aux 100 g",
+    BASE.filter(([g]) => /plats/i.test(g)).every(([, items]) => items.every(([,,,u]) => u !== "100g")));
+  vrai("Le groupe des plats prévient que c'est approximatif",
+    !!F.eval("FOOD_NOTE")["Plats et repas complets"]);
   vrai("Les légumes ne sont pas dans la grille du quotidien",
     !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) => /brocoli|courgette|salade verte/i.test(lab))));
 
