@@ -374,6 +374,31 @@ function lancer(){
   DB.materiel = null;
   neuf();
 
+  /* ---------------------------------------------------------- charge de la fois suivante */
+  grp("Charge conseillée");
+  neuf();
+  const seanceDe = (reps, rirs) => {
+    const exId = id("Développé couché");
+    DB.history = [{id:"h1", date:new Date().toISOString(), name:"Push", start:0, end:0,
+      entries:[{exId, sets:reps.map((r,i)=>({w:80, r, done:true, rir: rirs? rirs[i] : undefined}))}]}];
+    return F.suggestFor(exId, {reps:"10-12"});
+  };
+  eq("Une seule série courte en fin de séance ne fait pas baisser la charge",
+    seanceDe([10,10,10,8], [2,2,1,0]).mode, "beat");
+  eq("Trois séries pleines sur quatre : on garde la charge",
+    seanceDe([10,10,10,8]).mode, "beat");
+  eq("La majorité des séries sous la cible fait baisser",
+    seanceDe([8,7,6,5], [0,0,0,0]).mode, "down");
+  eq("Deux séries sur quatre ne suffisent pas à baisser",
+    seanceDe([10,10,8,7], [2,2,0,0]).mode, "beat");
+  eq("Toutes les séries au plafond font monter",
+    seanceDe([12,12,12,12]).mode, "up");
+  eq("Beaucoup de réserve fait monter aussi",
+    seanceDe([11,11,11,11], [3,3,3,3]).mode, "up");
+  eq("Une série unique est jugée sur elle-même",
+    seanceDe([8], [0]).mode, "down");
+  neuf();
+
   /* ---------------------------------------------------------- photo de la séance */
   grp("Photo de la séance");
   neuf();
