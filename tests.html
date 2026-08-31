@@ -156,6 +156,17 @@ function lancer(){
   vrai("Chaque proposition sait dire ses protéines et ses calories",
     Object.values(F.eval("HB_OPTS")).every(l => l.every(([lab]) => F.protOf(lab) >= 0 && F.kcalOf(lab) > 0)));
 
+  /* la base d aliments : rien d incomplet, rien en double */
+  const BASE = F.eval("FOOD_100G");
+  vrai("Chaque aliment de la base est complet",
+    BASE.every(([, items]) => items.every(([n,pr,kc,u]) => n && pr >= 0 && kc > 0 && u)));
+  vrai("Aucun doublon dans un même groupe",
+    BASE.every(([, items]) => new Set(items.map(x=>x[0])).size === items.length));
+  vrai("Les légumes sont dans la base",
+    BASE.some(([g, items]) => /légumes/i.test(g) && items.length >= 10));
+  vrai("Les légumes ne sont pas dans la grille du quotidien",
+    !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) => /brocoli|courgette|salade verte/i.test(lab))));
+
   /* récapitulatif par repas */
   neuf();
   const j2 = F.dayKey();
