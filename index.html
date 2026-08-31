@@ -1105,6 +1105,20 @@ function serieEchauffement(exId, reps){
   const w = last ? Math.max(0, Math.round(Math.max(...last.sets.map(s=>s.w||0))*0.5/2.5)*2.5) : "";
   return {w, r:Math.min(12, cible+4), done:false, warm:true};
 }
+/* Le nombre pré-rempli dans une case : le milieu de la fourchette, pas son plancher.
+   Sur 8-12, viser 10 dit mieux l'intention que 8, qui est le minimum acceptable. */
+function repsDepart(rng){ return rng ? Math.floor((rng.lo + rng.hi) / 2) : ""; }
+/* Objectif d'un exercice ajouté à la volée : d'après son rôle (isolation ou non)
+   et l'objectif du profil. Sans ça l'exercice n'avait aucune cible, donc aucune
+   ligne « Objectif », et aucun conseil de charge pour la fois suivante. */
+function cibleParDefaut(exId){
+  const nom = getEx(exId).name;
+  const roles = Object.keys(RESERVOIRS).filter(r => (RESERVOIRS[r] || []).includes(nom));
+  const niveau = (roles.length && roles.every(r => ROLES_LEGERS.includes(r))) ? "leger" : "moyen";
+  const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
+  const d = dose[niveau];
+  return {sets:d.s, reps:d.r, rest:d.p};
+}
 function altsFor(exId){
   const ex = getEx(exId);
   const names = ALTS[ex.name] || [];
@@ -2746,7 +2760,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 18h16";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 18h30";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -5030,7 +5044,7 @@ function startWorkout(tplId){
     for(let i=0;i<it.sets;i++){
       const ls = last && last.sets[Math.min(i,last.sets.length-1)];
       const w = sug && (sug.mode==="up"||sug.mode==="down") ? sug.w : (ls? ls.w:"");
-      const r = sug && (sug.mode==="up"||sug.mode==="down") ? (rng? rng.lo:"") : (ls? ls.r : (rng? rng.lo:""));
+      const r = sug && (sug.mode==="up"||sug.mode==="down") ? repsDepart(rng) : (ls? ls.r : repsDepart(rng));
       sets.push({w, r, done:false});
     }
     return {exId:it.exId, target:it, sets};
@@ -5551,7 +5565,9 @@ function renderActive(app){
   document.getElementById("add-ex").onclick=()=>openPicker(exId=>{
     const last = lastPerf(exId);
     const ls = last? last.sets[0] : null;
-    a.entries.push({exId, target:{sets:4, reps:"", rest:db.settings.rest}, sets:[{w:ls?ls.w:"", r:ls?ls.r:"", done:false}]});
+    const cible = cibleParDefaut(exId);
+    a.entries.push({exId, target:cible,
+      sets:[{w: ls? ls.w:"", r: ls? ls.r : repsDepart(parseReps(cible.reps)), done:false}]});
     save(); closeSheet(); render();
   });
   document.getElementById("cancel-w").onclick=()=>askConfirm("Annuler la séance ?","Tout ce que tu as saisi dans cette séance sera perdu.","Oui, annuler",true,()=>{ db.active=null; save(); render(); });
