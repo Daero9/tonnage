@@ -2059,10 +2059,16 @@ function fermerOnb(){
    et nulle part ailleurs. Accepte une durée ou un motif [vibre, pause, vibre].
    À savoir : Safari sur iPhone n'implémente pas la vibration — cette fonction n'y fait
    rien. Le retour tactile n'arrivera sur iOS qu'avec l'app empaquetée. */
+/* On ne peut pas régler la force : l'API ne connaît que la durée, et le moteur tourne
+   toujours à pleine puissance. Trois niveaux, donc trois durées — 3 ms est à peu près le
+   plancher de ce qu'un téléphone sait produire, en dessous beaucoup ne font plus rien. */
+const VIBRE_FORCE = {aucun:0, doux:0.5, net:1};
+const VIBRE_LABEL = {aucun:"Aucun", doux:"Doux", net:"Net"};
 function vibrer(motif){
-  if(db.settings.vibre === false) return;
-  if(!navigator.vibrate) return;
-  try{ navigator.vibrate(motif || 6); }catch(e){}
+  const f = VIBRE_FORCE[db.settings.vibre];
+  if(!f || !navigator.vibrate) return;
+  const dose = x => Math.max(2, Math.round(x * f));
+  try{ navigator.vibrate(Array.isArray(motif) ? motif.map(dose) : dose(motif || 6)); }catch(e){}
 }
 /* Toute action tactile rend un souffle de 6 ms : boutons, onglets, pastilles, lignes de
    liste. Un seul écouteur pour toute l'app, plutôt qu'un appel dans chaque gestionnaire. */
@@ -2787,7 +2793,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 23h33";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 23h43";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -2834,7 +2840,9 @@ function applyDefaults(){
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "clair";
   if(db.settings.son === undefined) db.settings.son = true;
-  if(db.settings.vibre === undefined) db.settings.vibre = true;
+  /* migration de l'ancien réglage oui/non vers les trois niveaux */
+  if(db.settings.vibre === true || db.settings.vibre === undefined) db.settings.vibre = "doux";
+  if(db.settings.vibre === false) db.settings.vibre = "aucun";
   /* null = aucun filtre, tout le matériel est supposé disponible (utilisateurs existants) */
   if(db.materiel === undefined) db.materiel = null;
   if(!db.seq) db.seq = 1;
@@ -6003,9 +6011,9 @@ function openSettings(){
       </button>
       <button class="rg-l" id="st-vibre">
         <span class="grow">Retour vibrant
-          <em>Un souffle très court à chaque appui. Sans effet sur iPhone tant que l'app
-          n'est pas installée depuis un magasin.</em></span>
-        <span class="val">${db.settings.vibre === false ? "Non" : "Oui"}</span>
+          <em>Doux : à peine perceptible. Net : le réglage d'avant. Sans effet sur iPhone
+          tant que l'app n'est pas installée depuis un magasin.</em></span>
+        <span class="val">${VIBRE_LABEL[db.settings.vibre] || "Doux"}</span>
       </button>
       <button class="rg-l" id="st-hints">
         <span class="grow">Revoir les explications
@@ -6069,10 +6077,12 @@ function openSettings(){
     e.currentTarget.lastElementChild.textContent = db.settings.ecranAllume===false? "Non" : "Oui";
   };
   document.getElementById("st-vibre").onclick=(e)=>{
-    db.settings.vibre = (db.settings.vibre === false);
+    const ordre = ["doux", "net", "aucun"];
+    const i = ordre.indexOf(db.settings.vibre);
+    db.settings.vibre = ordre[(i + 1) % ordre.length];
     save();
-    e.currentTarget.lastElementChild.textContent = db.settings.vibre === false ? "Non" : "Oui";
-    vibrer(14);                                   /* on sent tout de suite ce qu'on vient d'activer */
+    e.currentTarget.lastElementChild.textContent = VIBRE_LABEL[db.settings.vibre];
+    vibrer(10);                                   /* on sent tout de suite le niveau choisi */
   };
   document.getElementById("st-theme").onclick=(e)=>{
     db.settings.theme = (db.settings.theme==="clair") ? "sombre" : "clair";
