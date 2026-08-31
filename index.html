@@ -1,11 +1,11 @@
 <meta charset="utf-8">
-<title>Tonnage</title>
+<title>Tonnup</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1b1b1d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Tonnage">
+<meta name="apple-mobile-web-app-title" content="Tonnup">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
@@ -2770,7 +2770,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 23h50";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "1 septembre 2026 00h02";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -2886,7 +2886,7 @@ async function autoFilePick(){
   try{
     const handle = await window.showSaveFilePicker({
       suggestedName: "tonnage-donnees.json",
-      types: [{description:"Sauvegarde Tonnage", accept:{"application/json":[".json"]}}]
+      types: [{description:"Sauvegarde Tonnup", accept:{"application/json":[".json"]}}]
     });
     autoFile.handle = handle; autoFile.ok = true; autoFile.name = handle.name || "";
     await idbPut(AUTOFILE, handle);
@@ -4499,7 +4499,7 @@ function computeBilan(){
   if(volCur && volPrev) {
     const dv = Math.round((volCur-volPrev)/volPrev*100);
     if(dv<=-20) prios.push(["Volume en baisse", `${Math.abs(dv)} % de tonnage en moins que la semaine passée (${fmtKg(volCur)} vs ${fmtKg(volPrev)} kg).`]);
-    else if(dv>=10) wins.push(`Tonnage en hausse de ${dv} % (${fmtKg(volCur)} kg soulevés).`);
+    else if(dv>=10) wins.push(`Volume en hausse de ${dv} % (${fmtKg(volCur)} kg soulevés).`);
   }
   if(!prios.length) prios.push(["Continue exactement comme ça", "Aucun point faible détecté cette semaine. Le seul conseil : ne change rien, la constance fait le reste."]);
   return {cur:cur.length, volCur, volPrev, kmCur, wv, prios:prios.slice(0,3), wins:wins.slice(0,4)};
@@ -5902,18 +5902,18 @@ function openLegal(){
       <button class="btn" id="lg-contact">✉️ Nous contacter</button>
       <button class="btn" id="lg-bug">🐞 Signaler un problème</button>
       <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5; padding-top:2px;">
-        Tonnage ${BUILD}<br>Application gratuite, sans publicité et sans collecte de données.</div>
+        Tonnup ${BUILD}<br>Application gratuite, sans publicité et sans collecte de données.</div>
       <button class="btn btn-accent" id="lg-ok">Fermer</button>
     </div>`);
   document.getElementById("lg-sante").onclick = openSante;
   document.getElementById("lg-conf").onclick = openConfidentialite;
   document.getElementById("lg-cgu").onclick = openCGU;
   document.getElementById("lg-contact").onclick = ()=>{
-    location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnage — question")}`;
+    location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnup — question")}`;
   };
   document.getElementById("lg-bug").onclick = ()=>{
     const corps = `\n\n---\nNe pas effacer : version ${BUILD}, écran ${screen.width}×${screen.height}.`;
-    location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnage — problème")}&body=${encodeURIComponent("Décris ce qui s'est passé :"+corps)}`;
+    location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnup — problème")}&body=${encodeURIComponent("Décris ce qui s'est passé :"+corps)}`;
   };
   document.getElementById("lg-ok").onclick = closeSheet;
 }
@@ -5921,7 +5921,7 @@ function openSante(){
   const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
   openSheet(`<h3>Avertissement santé</h3>
     <div class="inj-note" style="margin:0 0 14px;">
-      <b style="color:var(--bad);">⚕️ Tonnage n'est pas un dispositif médical.</b><br>
+      <b style="color:var(--bad);">⚕️ Tonnup n'est pas un dispositif médical.</b><br>
       C'est une application de suivi sportif. Les calories, protéines, charges et estimations de récupération
       qu'elle affiche sont des <b>ordres de grandeur</b>, pas des prescriptions.</div>
     ${b("Les chiffres sont des estimations", "Ta dépense énergétique est calculée par une formule statistique : elle peut se tromper de 300 à 500 kcal sur une personne donnée. La seule mesure fiable reste l'évolution de ton poids sur plusieurs semaines.")}
@@ -5935,7 +5935,7 @@ function openConfidentialite(){
   const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
   openSheet(`<h3>Mes données</h3>
     <div class="card" style="background:var(--surface2); margin-bottom:14px;">
-      <div style="font-size:14px; line-height:1.6;"><b>Tonnage ne collecte rien.</b> Tout ce que tu saisis reste
+      <div style="font-size:14px; line-height:1.6;"><b>Tonnup ne collecte rien.</b> Tout ce que tu saisis reste
       dans la mémoire de ton téléphone : aucun serveur ne reçoit tes séances, ton poids ni tes repas.</div></div>
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience.")}
     ${b("Une seule connexion réseau", "Au lancement, l'app vérifie s'il existe une nouvelle version. Rien de personnel n'est envoyé. Ensuite elle fonctionne hors ligne.")}
@@ -5949,7 +5949,7 @@ function openConfidentialite(){
 function openCGU(){
   const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
   openSheet(`<h3>Conditions d'utilisation</h3>
-    ${b("Le service", "Tonnage est une application de suivi d'entraînement et d'alimentation, fournie gratuitement, en l'état, sans garantie de disponibilité ni d'exactitude des estimations.")}
+    ${b("Le service", "Tonnup est une application de suivi d'entraînement et d'alimentation, fournie gratuitement, en l'état, sans garantie de disponibilité ni d'exactitude des estimations.")}
     ${b("Ton usage", "Tu utilises l'application sous ta seule responsabilité. Tu restes responsable de l'exactitude des informations que tu saisis et des décisions que tu prends à partir de ce qu'elle affiche.")}
     ${b("Tes données", "Elles t'appartiennent et restent sur ton appareil. L'éditeur n'y a pas accès et ne peut donc ni les restaurer, ni les récupérer en cas de perte.")}
     ${b("Responsabilité", "L'éditeur ne peut être tenu responsable d'une blessure, d'un problème de santé ou d'une perte de données liés à l'usage de l'application. Les recommandations affichées ne constituent pas un avis médical.")}
