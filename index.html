@@ -158,9 +158,10 @@
     box-shadow:0 6px 22px rgba(0,0,0,.14);}
   .wk-top{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px;}
   .wk-top .t{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mute);}
-  .wk-top .ev{font-size:11.5px; font-weight:800; white-space:nowrap;}
-  .wk-top .ev.up{color:var(--good);}
-  .wk-top .ev.down{color:var(--ink-mute);}
+  /* l'écart avec la semaine passée est collé au nombre qu'il qualifie */
+  .wk-nums .ev{font-weight:800; white-space:nowrap;}
+  .wk-nums .ev.up{color:var(--good);}
+  .wk-nums .ev.down{color:var(--ink-mute);}
   .wk-days{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:9px;}
   /* la hauteur de chaque barre porte le volume soulevé ce jour-là */
   .wk-day i{display:flex; align-items:flex-end; height:32px; border-radius:8px;
@@ -468,6 +469,11 @@
     flex:0 1 auto; min-width:96px;}
   .rb-pill .lbl{font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-mute); opacity:1;}
   .rb-pill .t{font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); min-width:0; line-height:1.1;}
+  /* les trois dernières secondes : plus gros, même noir, même place */
+  .rb-pill .t #rest-t.compte-a-rebours{display:inline-block; font-size:40px; line-height:1;
+    animation:battement .5s ease-out;}
+  @keyframes battement{0%{transform:scale(1.28);} 60%{transform:scale(.97);} 100%{transform:scale(1);}}
+  @media (prefers-reduced-motion:reduce){ .rb-pill .t #rest-t.compte-a-rebours{animation:none;} }
   .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:13px !important; padding:8px 12px !important;
     font-size:13px; white-space:nowrap;}
   .restbar .bar{position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(26,20,8,.18); overflow:hidden;}
@@ -2732,7 +2738,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 03h33";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 03h53";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3385,6 +3391,7 @@ function tickRest(){
   const left = (rest.end - Date.now())/1000;
   if(left<=0){
     clearInterval(rest.int); rest.int=null;
+    document.getElementById("rest-t").classList.remove("compte-a-rebours");
     document.getElementById("rest-t").textContent="0:00";
     document.getElementById("rest-bar").style.width="0%";
     restbar.classList.add("ending");
@@ -3396,7 +3403,20 @@ function tickRest(){
     rest.hideTo = setTimeout(()=>{ restbar.classList.remove("show","ending"); rest.hideTo=null; }, 1600);
     return;
   }
-  document.getElementById("rest-t").textContent = mmss(left);
+  /* Sous quatre secondes : le chiffre seul, en très gros. Aucune couleur ne change —
+     du rouge ou un clignotement transformerait une information en pression. */
+  const t = document.getElementById("rest-t");
+  const s = Math.ceil(left);
+  if(s <= 3){
+    if(t.textContent !== String(s)){
+      t.textContent = s;
+      t.classList.remove("compte-a-rebours"); void t.offsetWidth;   /* pour rejouer le battement */
+      t.classList.add("compte-a-rebours");
+    }
+  } else {
+    t.classList.remove("compte-a-rebours");
+    t.textContent = mmss(left);
+  }
   document.getElementById("rest-bar").style.width = (left/rest.total*100)+"%";
 }
 document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; restbar.classList.remove("show","paused"); };
@@ -4527,8 +4547,7 @@ function renderSeance(app){
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
     <div class="under-hero">
       <div class="wk-card">
-        <div class="wk-top"><span class="t">Cette semaine</span>${evol!==null
-          ? `<span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} % vs semaine dernière</span>`:""}</div>
+        <div class="wk-top"><span class="t">Cette semaine</span></div>
         <div class="wk-days">${days.map((d,i)=>{
           /* un jour d'entraînement sans tonnage (cardio seul) garde une barre visible */
           const h = volJour[i] ? Math.max(18, Math.round(volJour[i]/volMax*100)) : (trained.has(i)? 18 : 0);
@@ -4537,7 +4556,9 @@ function renderSeance(app){
         }).join("")}</div>
         <div class="wk-sep"></div>
         <div class="wk-nums">
-          <div class="n"><div class="v">${weekVol? fmtKg(Math.round(weekVol)) : "0"} <span style="font-size:13px;">Kg</span></div><div class="u">Soulevés</div></div>
+          <div class="n"><div class="v">${weekVol? fmtKg(Math.round(weekVol)) : "0"} <span style="font-size:13px;">Kg</span></div>
+            <div class="u">Soulevés${evol!==null
+              ? ` <span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} %</span>`:""}</div></div>
           <div class="n"><div class="v">${Math.round(weekKcal)} <span style="font-size:13px;">Kcal</span></div><div class="u">Brûlées</div></div>
           <button class="wk-bilan" id="bilan-btn">Bilan${bilanNeuf? ' <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#fff; vertical-align:2px;"></span>':""}</button>
         </div>
