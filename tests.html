@@ -146,6 +146,39 @@ function lancer(){
   eq("Correction manuelle prioritaire", F.dayProt(jour), 100);
   neuf();
 
+  /* portions revues : les journées déjà cochées ne doivent rien perdre */
+  eq("Nouvelle portion : un blanc de poulet", F.protOf("Poulet (1 blanc, 130 g cuit)"), 40);
+  eq("Nouvelle portion : ses calories", F.kcalOf("Poulet (1 blanc, 130 g cuit)"), 215);
+  eq("Portion affichée : 1 blanc", F.partsAliment("Poulet (1 blanc, 130 g cuit)", 40).qCourt, "1 blanc");
+  eq("Ancienne portion encore comptée", F.protOf("Poulet (150 g cuit)"), 46);
+  eq("Ancienne portion : ses calories aussi", F.kcalOf("Poulet (150 g cuit)"), 250);
+  eq("Ancien thon toujours compté", F.protOf("Thon (1 boîte égouttée)"), 24);
+  vrai("Chaque proposition sait dire ses protéines et ses calories",
+    Object.values(F.eval("HB_OPTS")).every(l => l.every(([lab]) => F.protOf(lab) >= 0 && F.kcalOf(lab) > 0)));
+
+  /* récapitulatif par repas */
+  neuf();
+  const j2 = F.dayKey();
+  DB.habitSel[j2] = {matin:["Œuf","Œuf"], soir:["Poulet (1 blanc, 130 g cuit)"]};
+  eq("Protéines du matin seul", F.mealProt(j2, "matin"), 12);
+  eq("Protéines du soir seul", F.mealProt(j2, "soir"), 40);
+  eq("Un repas vide vaut zéro", F.mealProt(j2, "midi"), 0);
+  eq("Le total reste la somme des repas", F.dayProt(j2), 52);
+
+  /* habitudes : deux prises minimum, et le plus fréquent en tête */
+  neuf();
+  DB.habitSel = {
+    "2026-08-01":{soir:["Poulet (1 blanc, 130 g cuit)","Riz (200 g cuit)"]},
+    "2026-08-02":{soir:["Poulet (1 blanc, 130 g cuit)","Riz (200 g cuit)"]},
+    "2026-08-03":{soir:["Poulet (1 blanc, 130 g cuit)","Thon (1 boîte, 95 g égoutté)"]}
+  };
+  const hab = F.habitudesDuRepas("soir").map(x=>x[0]);
+  eq("Le plus fréquent arrive en tête", hab[0], "Poulet (1 blanc, 130 g cuit)");
+  vrai("Deux prises suffisent à faire une habitude", hab.includes("Riz (200 g cuit)"));
+  vrai("Une seule prise n'en fait pas une", !hab.includes("Thon (1 boîte, 95 g égoutté)"));
+  vrai("Aucune habitude sur un repas jamais pris", F.habitudesDuRepas("midi").length === 0);
+  neuf();
+
   /* ---------------------------------------------------------- cardio */
   grp("Cardio");
   const base = {km:6, min:50, pente:0, runMin:0, hr:0, kcalM:0, machine:"course", intensite:"modere"};
