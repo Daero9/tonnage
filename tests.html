@@ -413,6 +413,42 @@ function lancer(){
     F.cibleParDefaut(id("Développé couché")).reps, "8-12");
   vrai("L'objectif ajouté a des séries et un repos",
     F.cibleParDefaut(id("Squat")).sets > 0 && F.cibleParDefaut(id("Squat")).rest > 0);
+
+  /* les schémas d'entraînement : ce qui doit rester vrai quel que soit l'objectif */
+  const DOSES = F.eval("DOSES");
+  vrai("En sèche on garde les charges de la prise de masse",
+    DOSES.seche.lourd.r === DOSES.masse.lourd.r && DOSES.seche.moyen.r === DOSES.masse.moyen.r);
+  vrai("En sèche c'est le volume qui baisse, pas l'intensité",
+    DOSES.seche.lourd.s < DOSES.masse.lourd.s);
+  vrai("En entretien aussi, la charge se maintient",
+    DOSES.entretien.lourd.r === DOSES.masse.lourd.r);
+  vrai("Aucun mouvement lourd ne repose moins de 2 minutes",
+    Object.values(DOSES).every(d => d.lourd.p >= 120));
+  vrai("Aucune isolation ne repose moins de 75 secondes",
+    Object.values(DOSES).every(d => d.leger.p >= 75));
+  vrai("La force reste la seule à descendre sous 8 répétitions",
+    Object.keys(DOSES).every(k => k === "force" || parseInt(DOSES[k].lourd.r) >= 8));
+  const PROGS = F.eval("COACH_PROGRAMS");
+  const tousLesItems = Object.values(PROGS).reduce((a,p)=>a.concat(p.templates.reduce((b,t)=>b.concat(t.items), [])), []);
+  vrai("Aucune séance toute faite ne repose moins d'une minute",
+    tousLesItems.every(([nom, sets, reps, repos]) => repos >= 60));
+  DB.materiel = [];
+  vrai("Aucune fourchette impossible au poids du corps", (()=>{
+    for(let k=0;k<60;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom)), r = F.parseReps(it.reps);
+          if(!ex || !r) continue;
+          if(F.estPoidsDuCorps(ex) && r.lo > 8) return false;
+          if(ex.equip === "Barre fixe" && r.hi > 12) return false;
+        }
+      }
+    }
+    return true;
+  })());
+  DB.materiel = null;
+  vrai("En perte de poids, plus aucune série au-delà de 15 répétitions",
+    PROGS.seche.templates.every(t => t.items.every(([nom, sets, reps]) => !/1[6-9]|2[0-9]/.test(String(reps)))));
   neuf();
 
   /* ---------------------------------------------------------- photo de la séance */
