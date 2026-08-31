@@ -443,7 +443,7 @@
   .restbar.haut{bottom:auto; top:calc(10px + env(safe-area-inset-top));}
   .restbar.drag{transition:none; box-shadow:0 14px 40px rgba(0,0,0,.55); cursor:grabbing;}
   .restbar .grip{width:13px; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; opacity:.5; margin-right:2px;}
-  .restbar .grip i{display:block; height:2px; border-radius:2px; background:var(--accent-ink);}
+  .restbar .grip i{display:block; height:2px; border-radius:2px; background:#fff;}
   .restbar.show{display:flex;}
   .restbar .t{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; min-width:86px;}
   .restbar .lbl{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.75;}
@@ -467,17 +467,22 @@
   .rb-grp.fin{justify-content:flex-end;}
   .rb-pill{background:#fff; border-radius:15px; padding:4px 14px 5px; text-align:center; cursor:pointer;
     flex:0 1 auto; min-width:96px;}
-  .rb-pill .lbl{font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-mute); opacity:1;}
-  .rb-pill .t{font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); min-width:0; line-height:1.1;}
+  /* Couleurs fixes, jamais celles du thème : la barre reste orange et la pastille
+     blanche en thème sombre aussi. Avec var(--ink), les chiffres devenaient presque
+     blancs sur fond blanc, donc gris pâles. */
+  .rb-pill .lbl{font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:#8e8e90; opacity:1;}
+  .rb-pill .t{font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; color:#17181a; min-width:0; line-height:1.1;}
   /* les trois dernières secondes : plus gros, même noir, même place */
   .rb-pill .t #rest-t.compte-a-rebours{display:inline-block; font-size:40px; line-height:1;
     animation:battement .5s ease-out;}
   @keyframes battement{0%{transform:scale(1.28);} 60%{transform:scale(.97);} 100%{transform:scale(1);}}
   @media (prefers-reduced-motion:reduce){ .rb-pill .t #rest-t.compte-a-rebours{animation:none;} }
-  .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:13px !important; padding:8px 12px !important;
-    font-size:13px; white-space:nowrap;}
-  .restbar .bar{position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(26,20,8,.18); overflow:hidden;}
-  .restbar .bar i{display:block; height:100%; background:var(--accent-ink); border-radius:2px;}
+  /* préfixé par .restbar, sinon « .restbar button » (plus spécifique) impose sa couleur
+     de thème et le mot devient noir sur orange en thème sombre */
+  .restbar .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:13px !important;
+    padding:8px 12px !important; font-size:13px; white-space:nowrap; color:#fff;}
+  .restbar .bar{position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(255,255,255,.32); overflow:hidden;}
+  .restbar .bar i{display:block; height:100%; background:#fff; border-radius:2px;}
   @keyframes flashEnd{0%,100%{background:var(--accent);}50%{background:#fff;}}
   .restbar.ending{animation:flashEnd .5s 3;}
   .restbar.paused{background:var(--surface2); color:var(--ink);}
@@ -2741,7 +2746,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 04h01";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 15h16";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
