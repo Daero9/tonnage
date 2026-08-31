@@ -457,16 +457,27 @@ function lancer(){
   const vraiVibrate = F.navigator.vibrate;
   let vibrations = [];
   F.navigator.vibrate = m => { vibrations.push(JSON.stringify(m)); return true; };
-  DB.settings.vibre = true;
-  F.vibrer();      eq("Par défaut, un souffle de 6 ms", vibrations[0], "6");
+  DB.settings.vibre = "net";
+  F.vibrer();      eq("Niveau net : 6 ms", vibrations[0], "6");
   vibrations = [];
-  F.vibrer(18);    eq("Une durée donnée est respectée", vibrations[0], "18");
+  F.vibrer(18);    eq("Niveau net : la durée demandée", vibrations[0], "18");
   vibrations = [];
-  F.vibrer([12,60,18]); eq("Un motif passe tel quel", vibrations[0], "[12,60,18]");
+  F.vibrer([12,60,18]); eq("Un motif garde sa forme", vibrations[0], "[12,60,18]");
   vibrations = [];
-  DB.settings.vibre = false;
-  F.vibrer(); F.vibrer(20);
-  vrai("Réglage coupé : plus aucune vibration", vibrations.length === 0);
+  DB.settings.vibre = "doux";
+  F.vibrer();      eq("Niveau doux : moitié moins", vibrations[0], "3");
+  vibrations = [];
+  F.vibrer(18);    eq("Niveau doux : tout est réduit", vibrations[0], "9");
+  vibrations = [];
+  F.vibrer(2);     eq("Jamais en dessous de 2 ms, sinon rien ne se produit", vibrations[0], "2");
+  vibrations = [];
+  DB.settings.vibre = "aucun";
+  F.vibrer(); F.vibrer(20); F.vibrer([12,60,18]);
+  vrai("Niveau aucun : plus rien", vibrations.length === 0);
+  vibrations = [];
+  DB.settings.vibre = true;   /* ancien réglage, avant migration */
+  F.vibrer();
+  vrai("Un ancien réglage oui/non ne fait plus vibrer au hasard", vibrations.length === 0);
   F.navigator.vibrate = vraiVibrate;
   neuf();
 
