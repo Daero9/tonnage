@@ -156,12 +156,20 @@
   /* ---- carte de la semaine ---- */
   .wk-card{background:var(--surface); border-radius:18px; padding:12px 14px 13px;
     box-shadow:0 6px 22px rgba(0,0,0,.14);}
+  .wk-top{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px;}
+  .wk-top .t{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mute);}
+  .wk-top .ev{font-size:11.5px; font-weight:800; white-space:nowrap;}
+  .wk-top .ev.up{color:var(--good);}
+  .wk-top .ev.down{color:var(--ink-mute);}
   .wk-days{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:9px;}
-  .wk-day i{display:block; height:13px; border-radius:7px; background:var(--surface2); border:1.5px solid transparent;}
-  .wk-day.on i{background:var(--accent);}
-  .wk-day.today i{border-color:var(--accent-deep); background:transparent;}
-  .wk-day.today.on i{background:var(--accent);}
+  /* la hauteur de chaque barre porte le volume soulevé ce jour-là */
+  .wk-day i{display:flex; align-items:flex-end; height:32px; border-radius:8px;
+    background:var(--surface2); border:1.5px solid transparent; overflow:hidden;}
+  .wk-day i b{display:block; width:100%; background:var(--accent); border-radius:8px;}
+  /* le jour en cours est cerclé de noir : visible même quand la barre est pleine */
+  .wk-day.today i{outline:1.8px solid var(--ink); outline-offset:1.5px;}
   .wk-day span{display:block; text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-mute); margin-top:3px;}
+  .wk-day.today span{color:var(--ink);}
   .wk-sep{height:1px; background:var(--border); margin:0 -4px 9px;}
   .wk-nums{display:flex; align-items:center; justify-content:space-between; position:relative;}
   .wk-nums .n{flex:1; text-align:center;}
@@ -775,6 +783,14 @@
   .pk-row.absent .eq{color:var(--bad);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
   .info-btn{width:30px; height:30px; flex:none; font-size:15px; color:var(--accent); background:none; border:none;}
+  /* ---- récapitulatif des repas : ce qui a été mangé, d'un coup d'œil ---- */
+  .eat-repas{display:flex; gap:5px; margin-top:9px;}
+  .eat-repas .er{flex:1; min-width:0; background:var(--surface2); border-radius:9px; padding:5px 2px 6px;
+    font-size:10px; font-weight:700; color:var(--ink-mute); line-height:1.25; text-align:center;}
+  .eat-repas .er b{display:block; font-size:12px; font-weight:800; color:var(--ink-mute);}
+  .eat-repas .er.on b{color:var(--ink);}
+  .eat-repas .er.ici{background:var(--btn); box-shadow:inset 0 0 0 1.5px var(--ink);}
+
   /* ---- réglages : des sections, pas une pile de boutons ---- */
   .rg-c{background:var(--surface); border-radius:16px; padding:6px 14px 8px; margin-bottom:12px;}
   .rg-t{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
@@ -2699,7 +2715,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 01h55";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 02h10";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3439,6 +3455,11 @@ function renderEat(app){
           <button class="icon-btn info-btn" id="eat-kinfo" style="margin-left:2px;" title="Comment sont calculées mes calories ?">ⓘ</button></div>
         <div class="eat-bar"><i style="width:${Math.min(100, kRef? kcalNow/kRef*100 : 0)}%; background:${
           !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b>${kRef? kRef+" kcal" : "—"}</b></div>
+        <div class="eat-repas">${MEALS.map(([id,lab])=>{
+          const g = mealProt(k, id);
+          return `<button class="er ${g? "on":""}${mealCur===id? " ici":""}" data-goto="${id}">
+            ${esc(lab)} <b>${g? g+" g" : "—"}</b></button>`;
+        }).join("")}</div>
       </div>
       <div class="eat-side">
         <button id="eat-plan" title="Mon plan" aria-label="Mon plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
@@ -3453,6 +3474,11 @@ function renderEat(app){
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
   document.getElementById("eat-plan").onclick  = ()=>showPlan(false);
   document.getElementById("eat-tips").onclick  = ()=>openKcalTips(enHausse? "up":"down", plan);
+  /* le récapitulatif sert aussi de raccourci vers le repas */
+  document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.goto === mealCur) return;
+    mealCur = b.dataset.goto; renderSurPlace();
+  });
   /* changer de repas ne redessine que le panneau : l'onglet peut alors s'animer */
   document.querySelectorAll("[data-meal]").forEach(b=>b.onclick=()=>{
     if(b.dataset.meal === mealCur) return;
@@ -3475,8 +3501,16 @@ function dessineRepas(panel){
   const sel = db.habitSel[k] || {};
   const coul = MEAL_C[mealCur];
   const mySel = sel[mealCur] || [];
-  const groups = habitOpts(mealCur);
+  let groups = habitOpts(mealCur);
   const connus = groups.reduce((a,g)=>a.concat(g[2].map(x=>x[0])), []);
+  /* tes habitudes de ce repas passent devant, et ne sont plus répétées dessous */
+  const hab = habitudesDuRepas(mealCur);
+  if(hab.length >= 3){
+    const pris = hab.map(x=>x[0]);
+    groups = [["Tes habitudes", "hab", hab]]
+      .concat(groups.map(([t,c,items])=>[t, c, items.filter(x=>!pris.includes(x[0]))])
+                    .filter(g=>g[2].length));
+  }
   const libres = mySel.filter(l=>!connus.includes(l));
   const pastille = (label, prot, on) => {
     const pa = partsAliment(label, prot);
@@ -3976,10 +4010,13 @@ let chronoInt = null;
 /* [libellé avec portion réelle, protéines (g), calories] — portions courantes, pas symboliques */
 const HB_OPTS = {
   /* une pièce par proposition : on ajoute la quantité ensuite (appui long -> ×2, ×3…) */
-  prot: [["Poulet (150 g cuit)",46,250],["Steak de bœuf (150 g cuit)",39,255],["Œuf",6,78],["Thon (1 boîte égouttée)",24,110],["Poisson blanc (150 g cuit)",34,160],["Saumon (150 g cuit)",38,345],["Jambon (1 tranche)",8,45]],
+  /* Portions = l'unité qu'on achète et qu'on mange (un blanc, un steak, une boîte),
+     pas un poids rond. Un blanc de poulet pèse 130 g cuit, soit environ 180 g cru :
+     150 g cuits, c'était près de 200 g crus, au-dessus d'une portion courante. */
+  prot: [["Poulet (1 blanc, 130 g cuit)",40,215],["Steak haché 5 % (100 g cuit)",26,170],["Œuf",6,78],["Thon (1 boîte, 95 g égoutté)",24,110],["Poisson blanc (120 g cuit)",28,125],["Saumon (1 pavé, 120 g cuit)",30,275],["Jambon (1 tranche)",8,45]],
   carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,315],["Patates (250 g)",5,220],["Pain (1 tranche)",3,90],["Semoule (200 g cuite)",8,225],["Légumineuses (150 g cuites)",13,175]],
   snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Amandes / noix (30 g)",6,180]],
-  bkProt: [["Œuf",6,78],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (1 tranche)",8,45],["Fromage blanc (200 g)",16,100]],
+  bkProt: [["Œuf",6,78],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (1 tranche)",8,45],["Fromage blanc 0 % (200 g)",16,100]],
   bkCarb: [["Avoine (60 g)",8,230],["Pain (1 tranche)",3,90],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60]]
 };
 const HB_PROT_MAP = {
@@ -3993,7 +4030,10 @@ const HB_PROT_MAP = {
   "Poulet (150 g)":34,"Steak de bœuf (150 g)":32,"Thon (1 boîte)":24,"Poisson (150 g)":27,
   "Pâtes (200 g cuites)":10,"Patates (250 g)":5,"Semoule (200 g cuite)":8,"Légumineuses (150 g)":13,
   "Whey + lait (1 dose)":34,"Fruits secs (30 g)":6,"Biscuits (×4)":3,
-  "Œufs (×3)":19,"Jambon (2 tranches)":16,"Pain (2 tranches)":6
+  "Œufs (×3)":19,"Jambon (2 tranches)":16,"Pain (2 tranches)":6,
+  /* portions revues le 31 août 2026 : les journées déjà cochées gardent leurs valeurs */
+  "Poulet (150 g cuit)":46,"Steak de bœuf (150 g cuit)":39,"Poisson blanc (150 g cuit)":34,
+  "Saumon (150 g cuit)":38,"Thon (1 boîte égouttée)":24,"Fromage blanc (200 g)":16
 };
 const HB_KCAL_MAP = {
   "150 g de poulet":185,"1 steak de bœuf":210,"3 œufs":235,"1 boîte de thon":110,"150 g de poisson":125,"Autre protéine":200,
@@ -4005,7 +4045,9 @@ const HB_KCAL_MAP = {
   "Poulet (150 g)":185,"Steak de bœuf (150 g)":210,"Poisson (150 g)":125,
   "Pâtes (200 g cuites)":315,"Patates (250 g)":220,"Semoule (200 g cuite)":225,
   "Whey + lait (1 dose)":260,"Fruits secs (30 g)":180,"Biscuits (×4)":180,
-  "Œufs (×3)":235,"Jambon (2 tranches)":90,"Pain (2 tranches)":180
+  "Œufs (×3)":235,"Jambon (2 tranches)":90,"Pain (2 tranches)":180,
+  "Poulet (150 g cuit)":250,"Steak de bœuf (150 g cuit)":255,"Poisson blanc (150 g cuit)":160,
+  "Saumon (150 g cuit)":345,"Thon (1 boîte égouttée)":110,"Fromage blanc (200 g)":100
 };
 Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
   if(!(l in HB_PROT_MAP) || g>HB_PROT_MAP[l]) HB_PROT_MAP[l]=g;
@@ -4048,6 +4090,12 @@ function dayKcal(key){
   if(o && o.kcal!=null) return o.kcal;
   const s = db.habitSel[key];
   return s? Math.round(Object.values(s).flat().reduce((a,l)=>a+kcalOf(l),0)) : 0;
+}
+/* protéines d'un seul repas : sert au récapitulatif d'un coup d'œil */
+function mealProt(key, meal){
+  const s = db.habitSel[key];
+  if(!s || !s[meal]) return 0;
+  return Math.round(s[meal].reduce((a,l)=>a+protOf(l), 0));
 }
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
 const MEALS = [["matin","Matin"],["midi","Midi"],["collation","Collation"],["soir","Soir"],["extra","Extra"]];
@@ -4092,6 +4140,21 @@ function habitType(h){
 }
 /* groupes de propositions : [titre, clé, aliments]. Les aliments masqués par appui long
    disparaissent, ceux ajoutés depuis « Autre » forment un groupe « Mes aliments ». */
+/* Ce que tu prends le plus souvent à CE repas, d'après les journées déjà cochées.
+   Deux fois minimum : une seule prise ne fait pas une habitude. */
+function habitudesDuRepas(meal){
+  const compte = {};
+  Object.keys(db.habitSel).forEach(jour=>{
+    (db.habitSel[jour][meal] || []).forEach(l=>{ compte[l] = (compte[l]||0) + 1; });
+  });
+  /* on garde tout ce qu'on sait chiffrer, meme un aliment propose pour un autre repas :
+     si tu prends du fromage blanc le soir, il a sa place dans tes habitudes du soir */
+  return Object.keys(compte)
+    .filter(l => compte[l] >= 2 && (protOf(l) > 0 || kcalOf(l) > 0))
+    .sort((a,b) => compte[b] - compte[a] || a.localeCompare(b))
+    .slice(0, 6)
+    .map(l => [l, protOf(l)]);
+}
 function habitOpts(h){
   const ty = (h==="matin") ? "petitdej"
     : (h==="collation" || h==="extra") ? "snack"
@@ -4324,6 +4387,14 @@ function renderSeance(app){
   const trained = new Set();
   db.history.concat(db.cardio).forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
   const todayIdx = (now.getDay()+6)%7;
+  /* hauteur des barres : le volume de chaque jour, rapporté au plus gros de la semaine */
+  const volJour = [0,0,0,0,0,0,0];
+  db.history.forEach(x=>{ const d = new Date(x.date); if(d>=w0) volJour[(d.getDay()+6)%7] += sessionVolume(x); });
+  const volMax = Math.max.apply(null, volJour.concat(1));
+  /* comparaison avec la semaine précédente : un repère, pas un jugement */
+  const w1 = new Date(w0.getTime() - 7*864e5);
+  const volPrec = db.history.reduce((a,x)=>{ const d = new Date(x.date); return (d>=w1 && d<w0)? a+sessionVolume(x) : a; }, 0);
+  const evol = (volPrec > 0 && weekVol > 0) ? Math.round((weekVol - volPrec)/volPrec*100) : null;
   const sug = suggestedTemplate();
   const bilanNeuf = (db.history.length||db.weights.length) && (!db.lastBilan || Date.now()-new Date(db.lastBilan).getTime()>6.5*864e5);
   const sub = !db.templates.length
@@ -4338,7 +4409,14 @@ function renderSeance(app){
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
     <div class="under-hero">
       <div class="wk-card">
-        <div class="wk-days">${days.map((d,i)=>`<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}"><i></i><span>${d}</span></div>`).join("")}</div>
+        <div class="wk-top"><span class="t">Cette semaine</span>${evol!==null
+          ? `<span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} % vs semaine dernière</span>`:""}</div>
+        <div class="wk-days">${days.map((d,i)=>{
+          /* un jour d'entraînement sans tonnage (cardio seul) garde une barre visible */
+          const h = volJour[i] ? Math.max(18, Math.round(volJour[i]/volMax*100)) : (trained.has(i)? 18 : 0);
+          return `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">
+            <i>${h? `<b style="height:${h}%"></b>`:""}</i><span>${d}</span></div>`;
+        }).join("")}</div>
         <div class="wk-sep"></div>
         <div class="wk-nums">
           <div class="n"><div class="v">${weekVol? fmtKg(Math.round(weekVol)) : "0"} <span style="font-size:13px;">Kg</span></div><div class="u">Soulevés</div></div>
