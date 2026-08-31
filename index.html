@@ -2746,7 +2746,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 15h16";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 18h16";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3051,7 +3051,14 @@ function suggestFor(exId, target){
   const rirs = last.sets.map(s=>s.rir).filter(r=>r!==undefined && r!==null);
   const avgRir = rirs.length? rirs.reduce((a,b)=>a+b,0)/rirs.length : null;
   const allTop = last.sets.every(s=>(s.r||0)>=rng.hi);
-  const anyBelow = last.sets.some(s=>(s.r||0)<rng.lo);
+  /* La dernière série est toujours la plus dure : la fatigue accumulée fait tomber les
+     répétitions même quand la charge était juste. Une seule série courte ne doit donc pas
+     faire baisser la charge — on regarde si la MAJORITÉ des séries est sous la fourchette.
+     Trois séries à 10 et une à 8 : la charge était bonne, on la garde. */
+  const sousLaCible = last.sets.filter(s=>(s.r||0)<rng.lo).length;
+  const majoriteEnDessous = sousLaCible * 2 > last.sets.length;
+  /* une série unique reste jugée sur elle-même : il n'y a pas de majorité à chercher */
+  const anyBelow = last.sets.length === 1 ? sousLaCible > 0 : majoriteEnDessous;
   /* charge bloquée (poids du corps, ou pas d'haltères plus lourds) : on progresse autrement */
   if(chargeBloquee(exId)){                    /* plafonné : on progresse en reps / séries / variante */
     const maxR = Math.max(...last.sets.map(s=>s.r||0));
@@ -3070,7 +3077,7 @@ function suggestFor(exId, target){
       ? `Toutes les séries à ${rng.hi} reps ou plus la dernière fois — passe à ${fmtKg(maxW+inc)} kg.`
       : `Trop facile la dernière fois (3+ reps en réserve) — passe à ${fmtKg(maxW+inc)} kg.`};
   if(anyBelow && avgRir!==null && avgRir<0.5)
-    return {mode:"down", w:Math.max(0,maxW-inc), text:`Trop lourd la dernière fois — repars à ${fmtKg(Math.max(0,maxW-inc))} kg pour tenir ${rng.lo} reps.`};
+    return {mode:"down", w:Math.max(0,maxW-inc), text:`Trop lourd la dernière fois sur ${sousLaCible} série${sousLaCible>1?"s":""} — repars à ${fmtKg(Math.max(0,maxW-inc))} kg pour tenir ${rng.lo} reps.`};
   if(anyBelow)
     return {mode:"hold", w:maxW, text:`Reste à ${fmtKg(maxW)} kg jusqu'à faire ${rng.lo} reps sur toutes les séries.`};
   return {mode:"beat", w:maxW, text:`Garde ${fmtKg(maxW)} kg et essaie de gratter une rep de plus.`};
