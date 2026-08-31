@@ -2732,7 +2732,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 02h57";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 03h12";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3576,7 +3576,7 @@ function openAjoutAliment(meal){
   openSheet(`<h3 style="text-align:center;">Ajouter un aliment</h3>
     <div class="stack">
       <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
-      <input id="ot-q" placeholder="Rechercher un aliment…" autocomplete="off"
+      <input id="ot-q" placeholder="Aliment, ou famille : poisson, viande, légume…" autocomplete="off"
         enterkeyhint="search" style="margin-bottom:7px;">
       <div class="al-liste" id="ot-liste"></div>
       <!-- la liste déroulante reste, cachée : c'est elle qui porte le choix -->
@@ -3645,13 +3645,9 @@ function openAjoutAliment(meal){
 
   /* la recherche : sans accent et sans casse, « pates » trouve « Pâtes cuites » */
   const qEl = document.getElementById("ot-q"), listeEl = document.getElementById("ot-liste");
-  const sansAccent = t => (t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const dessinerListe = ()=>{
-    const qn = sansAccent(qEl.value.trim());
     let trouves = 0, html = "";
-    FOOD_100G.forEach(([grp, items])=>{
-      const gardes = items.map((it,i)=>[it,i]).filter(([it])=> !qn || sansAccent(it[0]).includes(qn));
-      if(!gardes.length) return;
+    chercherAliments(qEl.value).forEach(([grp, gardes])=>{
       trouves += gardes.length;
       html += `<div class="al-h">${esc(grp)}</div>`
         + (FOOD_NOTE[grp] ? `<div class="al-note">${esc(FOOD_NOTE[grp])}</div>` : "")
@@ -4119,6 +4115,41 @@ Object.values(HB_OPTS).forEach(list=>list.forEach(([l,g,k])=>{
   if(!(l in HB_KCAL_MAP)) HB_KCAL_MAP[l]=k;
 }));
 /* [nom, protéines, calories, unité] — "100g" = valeurs pour 100 g, sinon valeurs POUR UNE PIÈCE */
+/* Familles de recherche : taper « poisson » doit sortir le saumon et le cabillaud,
+   « viande » le poulet et le steak. Les mots sont écrits sans accent, la recherche
+   les compare à une saisie elle aussi débarrassée de ses accents. */
+const FOOD_FAMILLES = [
+  ["poisson poissons crustace crustaces", /saumon|thon|cabillaud|poisson|crevette/i],
+  ["viande viandes", /poulet|dinde|porc|bœuf|veau|agneau|jambon|steak|nugget|kebab/i],
+  ["volaille volailles", /poulet|dinde/i],
+  ["laitage laitages laitier lait", /lait|yaourt|skyr|fromage|comté|emmental|mozzarella|whey/i],
+  ["fromage fromages", /fromage|comté|emmental|mozzarella/i],
+  ["oeuf oeufs", /(?:^|[^b])œuf/i],
+  ["fruit fruits", /banane|pomme|compote|avocat/i],
+  ["sucre sucrerie dessert gouter", /croissant|pain au chocolat|biscuit|compote|barre|banane/i],
+  ["gras graisse huile", /huile|amande|cacahuète|avocat|beurre/i],
+  ["legumineuse legumineuses", /lentille|pois chiche|haricot/i],
+  ["vegetal vegetarien vegan", /tofu|lentille|pois chiche|haricot|quinoa|amande|avoine|légume|brocoli|courgette|carotte|épinard/i],
+  ["fastfood fast food restaurant", /pizza|burger|kebab|nugget|frite|menu|sushi|wrap|sandwich|repas/i]
+];
+/* Qui répond à cette recherche ? Rend les groupes non vides, dans l'ordre de la base.
+   Une famille reconnue l'emporte sur le nom du groupe : « poisson » sort les poissons,
+   pas tout le rayon « Viandes / poissons ». À moins de trois lettres, on ne devine rien. */
+function chercherAliments(q){
+  const sansAccent = t => (t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const qn = sansAccent((q||"").trim());
+  const familles = qn.length >= 3
+    ? FOOD_FAMILLES.filter(([mots]) => mots.split(" ").some(m => m.startsWith(qn))
+        || (qn.includes(" ") && mots.includes(qn)))
+    : [];
+  return FOOD_100G.map(([grp, items])=>{
+    const groupeVise = !familles.length && qn.length >= 3 && sansAccent(grp).includes(qn);
+    return [grp, items.map((it,i)=>[it,i]).filter(([it])=> !qn
+      || sansAccent(it[0]).includes(qn)
+      || groupeVise
+      || familles.some(([, re]) => re.test(it[0])))];
+  }).filter(g => g[1].length);
+}
 /* certaines familles méritent un avertissement : on l'affiche sous leur titre */
 const FOOD_NOTE = {
   "Plats et repas complets": "Estimations à ±25 % : la taille et la garniture changent tout. Mieux vaut une estimation qu'une case vide."

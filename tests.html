@@ -172,6 +172,22 @@ function lancer(){
     BASE.filter(([g]) => /plats/i.test(g)).every(([, items]) => items.every(([,,,u]) => u !== "100g")));
   vrai("Le groupe des plats prévient que c'est approximatif",
     !!F.eval("FOOD_NOTE")["Plats et repas complets"]);
+
+  /* la recherche : par nom, par famille, par groupe */
+  const cherche = q => F.chercherAliments(q).reduce((a,[,items])=>a.concat(items.map(x=>x[0][0])), []);
+  vrai("Sans recherche, toute la base est proposée",
+    cherche("").length === F.eval("FOOD_100G").reduce((a,g)=>a+g[1].length,0));
+  vrai("Le nom sans accent trouve le nom accentué", cherche("pate").includes("Pâtes cuites"));
+  vrai("« poisson » sort le cabillaud", cherche("poisson").includes("Cabillaud"));
+  vrai("« poisson » ne sort pas le poulet", !cherche("poisson").some(n=>/poulet/i.test(n)));
+  vrai("« viande » sort le steak", cherche("viande").some(n=>/steak/i.test(n)));
+  vrai("« légume » sort le brocoli", cherche("légume").includes("Brocoli"));
+  vrai("« féculent » sort le riz", cherche("féculent").includes("Riz cuit"));
+  vrai("« fromage » sort le comté", cherche("fromage").includes("Comté / emmental"));
+  vrai("« œuf » ne ramène pas le bœuf", !cherche("oeuf").some(n=>/b(œ|oe)uf/i.test(n)));
+  vrai("« fruit » ne ramène pas le thon", !cherche("fruit").some(n=>/thon/i.test(n)));
+  vrai("Une recherche en deux mots marche", cherche("fast food").some(n=>/burger/i.test(n)));
+  vrai("Une recherche sans réponse ne rend rien", cherche("zzzzz").length === 0);
   vrai("Les légumes ne sont pas dans la grille du quotidien",
     !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) => /brocoli|courgette|salade verte/i.test(lab))));
 
