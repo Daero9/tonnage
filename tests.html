@@ -167,6 +167,15 @@ function lancer(){
   vrai("Les légumes ne sont pas dans la grille du quotidien",
     !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) => /brocoli|courgette|salade verte/i.test(lab))));
 
+  /* les liquides se comptent au volume */
+  vrai("Le lait est compté en centilitres",
+    BASE.some(([, items]) => items.some(([n,,,u]) => /lait/i.test(n) && u === "cl")));
+  const LIQ = "Lait demi-écrémé 25 cl (~9 g prot. · 118 kcal)";
+  eq("Portion en centilitres reconnue", F.partsAliment(LIQ, 9).qCourt, "25 cl");
+  eq("Nom séparé du volume", F.partsAliment(LIQ, 9).nom, "Lait demi-écrémé");
+  eq("Protéines lues sur un liquide", F.protOf(LIQ), 9);
+  eq("Calories lues sur un liquide", F.kcalOf(LIQ), 118);
+
   /* récapitulatif par repas */
   neuf();
   const j2 = F.dayKey();

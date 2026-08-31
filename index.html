@@ -2731,7 +2731,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 02h33";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 02h36";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3619,19 +3619,26 @@ function openAjoutAliment(meal){
     const f = trouver(foodEl.value);
     if(!f) return null;
     const [nom, prot100, kcal100, unite] = f;
-    const piece = unite !== "100g";
-    document.getElementById("ot-glabel").textContent = piece ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})` : "Quantité mangée (g)";
-    gEl.step = piece ? 1 : 10;
-    gEl.placeholder = piece ? "2" : "150";
+    /* trois façons de compter : au poids, au volume (valeurs pour 100 ml), à la pièce */
+    const liquide = unite === "cl";
+    const piece = unite !== "100g" && !liquide;
+    document.getElementById("ot-glabel").textContent = piece
+      ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})`
+      : (liquide ? "Quantité bue (cl)" : "Quantité mangée (g)");
+    gEl.step = piece ? 1 : (liquide ? 5 : 10);
+    gEl.placeholder = piece ? "2" : (liquide ? "20" : "150");
     const q = parseFloat(gEl.value);
     if(!q || q<=0){ liveEl.textContent = ""; return null; }
-    const prot = Math.round(piece ? prot100*q : prot100*q/100);
-    const kcal = Math.round(piece ? kcal100*q : kcal100*q/100);
+    const part = piece ? q : (liquide ? q/10 : q/100);   /* combien de fois la valeur de référence */
+    const prot = Math.round(prot100*part);
+    const kcal = Math.round(kcal100*part);
     const court = nom.replace(/\s*\(.*?\)/,"");
     liveEl.textContent = piece
       ? `${q} ${unite}${q>1?"s":""} ≈ ${prot} g de protéines · ${kcal} kcal`
-      : `${q} g de ${court.toLowerCase()} ≈ ${prot} g de protéines · ${kcal} kcal`;
-    return {label: piece ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)` : `${court} ${q} g (~${prot} g prot. · ${kcal} kcal)`, prot, kcal};
+      : `${q} ${liquide?"cl":"g"} de ${court.toLowerCase()} ≈ ${prot} g de protéines · ${kcal} kcal`;
+    return {label: piece
+      ? `${court} ×${q} (~${prot} g prot. · ${kcal} kcal)`
+      : `${court} ${q} ${liquide?"cl":"g"} (~${prot} g prot. · ${kcal} kcal)`, prot, kcal};
   };
   foodEl.onchange = calc; gEl.oninput = calc;
 
@@ -3647,7 +3654,7 @@ function openAjoutAliment(meal){
       trouves += gardes.length;
       html += `<div class="al-h">${esc(grp)}</div>` + gardes.map(([it,i])=>{
         const v = grp + "|" + i;
-        const par = it[3] === "100g" ? "/ 100 g" : "/ " + it[3];
+        const par = it[3] === "100g" ? "/ 100 g" : (it[3] === "cl" ? "/ 100 ml" : "/ " + it[3]);
         return `<button class="al-row ${foodEl.value===v? "on":""}" data-food="${esc(v)}">
           <span class="nm">${esc(it[0])}</span>
           <span class="vl">${it[1]} g · ${it[2]} kcal <em>${esc(par)}</em></span></button>`;
@@ -4121,12 +4128,12 @@ const FOOD_100G = [
     ["Cuillère à soupe d'huile d'olive",0,120,"cuillère"],["Cuillère de beurre de cacahuète (30 g)",7.5,175,"cuillère"]
   ]],
   ["Viandes / poissons (poids cuit)", [["Poulet (blanc)",31,165,"100g"],["Dinde (escalope)",30,135,"100g"],["Porc (filet mignon)",26,143,"100g"],["Bœuf haché 5 %",26,170,"100g"],["Bœuf (entrecôte, faux-filet)",26,280,"100g"],["Veau",27,150,"100g"],["Agneau",25,280,"100g"],["Saumon",25,230,"100g"],["Thon frais",29,145,"100g"],["Cabillaud",23,105,"100g"],["Crevettes",24,100,"100g"],["Jambon blanc",20,110,"100g"],["Poulet (blanc) — pesé cru",22.5,120,"100g"],["Bœuf haché 5 % — pesé cru",21,137,"100g"],["Poisson blanc — pesé cru",18,82,"100g"]]],
-  ["Laitages (au poids)", [["Fromage blanc 0 %",8,50,"100g"],["Skyr",11,60,"100g"],["Yaourt grec",9,100,"100g"],["Lait demi-écrémé",3.3,46,"100g"],["Lait entier",3.2,64,"100g"],["Comté / emmental",28,400,"100g"],["Mozzarella",20,250,"100g"],["Whey en poudre",78,390,"100g"]]],
+  ["Laitages", [["Fromage blanc 0 %",8,50,"100g"],["Skyr",11,60,"100g"],["Yaourt grec",9,100,"100g"],["Lait demi-écrémé",3.4,47,"cl"],["Lait entier",3.3,65,"cl"],["Comté / emmental",28,400,"100g"],["Mozzarella",20,250,"100g"],["Whey en poudre",78,390,"100g"]]],
   ["Féculents / végétal (poids cuit)", [["Riz cuit",2.7,130,"100g"],["Pâtes cuites",5,158,"100g"],["Pain",9,260,"100g"],["Avoine (sèche)",13,380,"100g"],["Semoule cuite",4,112,"100g"],["Patate",2,87,"100g"],["Quinoa cuit",4.4,120,"100g"],["Lentilles cuites",9,116,"100g"],["Pois chiches cuits",9,164,"100g"],["Haricots rouges cuits",9,127,"100g"],["Tofu",12,120,"100g"],["Amandes",21,580,"100g"],["Beurre de cacahuète",25,590,"100g"]]],
   /* Les légumes ne sont pas dans la grille du quotidien : ils changent peu les totaux et
      alourdiraient chaque repas. Ils sont là pour qui veut saisir un plat complet — et
      parce que certains comptent vraiment (petits pois, maïs, avocat). */
-  ["Légumes (poids prêt à manger)", [["Brocoli",2.8,35,"100g"],["Haricots verts",1.8,30,"100g"],["Courgette",1.2,20,"100g"],["Carotte",0.8,35,"100g"],["Épinards",2.9,25,"100g"],["Chou-fleur",1.8,25,"100g"],["Poireau",1.5,30,"100g"],["Aubergine",0.8,28,"100g"],["Poivron",1.0,26,"100g"],["Champignons",2.5,25,"100g"],["Tomate",0.8,18,"100g"],["Concombre",0.6,12,"100g"],["Salade verte",1.2,15,"100g"],["Oignon",1.2,40,"100g"],["Betterave",1.8,45,"100g"],["Courge / potiron",1.0,30,"100g"],["Petits pois",5.4,80,"100g"],["Maïs (égoutté)",3.0,95,"100g"],["Avocat",1.8,160,"100g"],["Soupe de légumes",1.3,40,"100g"],["Ratatouille",1.2,60,"100g"]]]
+  ["Légumes (poids prêt à manger)", [["Brocoli",2.8,35,"100g"],["Haricots verts",1.8,30,"100g"],["Courgette",1.2,20,"100g"],["Carotte",0.8,35,"100g"],["Épinards",2.9,25,"100g"],["Chou-fleur",1.8,25,"100g"],["Poireau",1.5,30,"100g"],["Aubergine",0.8,28,"100g"],["Poivron",1.0,26,"100g"],["Champignons",2.5,25,"100g"],["Tomate",0.8,18,"100g"],["Concombre",0.6,12,"100g"],["Salade verte",1.2,15,"100g"],["Oignon",1.2,40,"100g"],["Betterave",1.8,45,"100g"],["Courge / potiron",1.0,30,"100g"],["Petits pois",5.4,80,"100g"],["Maïs (égoutté)",3.0,95,"100g"],["Avocat",1.8,160,"100g"],["Soupe de légumes",1.3,40,"cl"],["Ratatouille",1.2,60,"100g"]]]
 ];
 function protOf(label){
   const m = label.match(/\(~(\d+(?:[.,]\d+)?)\s*g prot\./);
@@ -4185,7 +4192,7 @@ function partsAliment(label, prot){
   let m = net.match(/^(.*?)\s*\(([^()]+)\)\s*(?:×\s*([\d.,]+))?$/);
   if(m){ nom = m[1]; q = m[2]; if(m[3]) q += " ×"+m[3]; }
   else if((m = net.match(/^(.*?)\s*×\s*([\d.,]+)$/))){ nom = m[1]; q = "×"+m[2]; }
-  else if((m = net.match(/^(.*?)\s+([\d.,]+\s*(?:g|ml|kg))$/i))){ nom = m[1]; q = m[2]; }
+  else if((m = net.match(/^(.*?)\s+([\d.,]+\s*(?:g|kg|ml|cl|l))$/i))){ nom = m[1]; q = m[2]; }
   /* « 150 g cuit » -> « 150 g » : la mention crue/cuite reste dans la fiche détaillée */
   const court = q.replace(/\s*(cuit(?:e|s|es)?|cru(?:e|s|es)?|égoutté(?:e|s|es)?)(?=\s|$)/gi,"")
                  .split(",")[0].replace(/\s+/g," ").trim();
