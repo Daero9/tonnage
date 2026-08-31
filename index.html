@@ -2732,7 +2732,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "31 août 2026 03h12";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "31 août 2026 03h33";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3236,7 +3236,11 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
 
 /* fermeture au glissement vers le bas (geste attendu sur iPhone) */
 (function glisserPourFermer(){
-  let y0 = null, dy = 0, glisse = false;
+  let y0 = null, dy = 0, glisse = false, dernierY = 0, dernierT = 0, vitesse = 0;
+  /* Combien faut-il descendre pour fermer ? Assez pour que ce soit une décision.
+     Un glissement lent doit parcourir un quart de la fiche ; un geste vif et net
+     ferme plus tôt, parce que la vitesse dit déjà l'intention. */
+  const seuilFermeture = ()=> Math.min(220, Math.max(140, Math.round(sheet.clientHeight * 0.25)));
   const zoneDefilante = el => {
     while(el && el !== sheet){
       if(el.scrollHeight > el.clientHeight + 2 && el.scrollTop > 0) return true;
@@ -3251,20 +3255,26 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
     if(e.target.closest('input[type="range"], select, textarea')){ y0 = null; return; }
     if(zoneDefilante(e.target)){ y0 = null; return; }
     y0 = e.touches[0].clientY; dy = 0; glisse = false;
+    dernierY = y0; dernierT = performance.now(); vitesse = 0;
     sheet.style.transition = "none";
   }, {passive:true});
   sheet.addEventListener("touchmove", e=>{
     if(y0 === null) return;
-    dy = e.touches[0].clientY - y0;
+    const y = e.touches[0].clientY, t = performance.now();
+    if(t > dernierT) vitesse = (y - dernierY) / (t - dernierT);   /* px par milliseconde */
+    dernierY = y; dernierT = t;
+    dy = y - y0;
     if(dy <= 0){ if(glisse){ sheet.style.transform = ""; glisse = false; } return; }
-    if(!glisse && dy < 8) return;
+    /* on ne suit le doigt qu'à partir d'un vrai mouvement : sinon la fiche tremble
+       au moindre appui un peu glissant */
+    if(!glisse && dy < 14) return;
     glisse = true;
     sheet.style.transform = `translateY(${dy}px)`;
     e.preventDefault();
   }, {passive:false});
   const fin = ()=>{
     if(y0 === null) return;
-    const assez = glisse && dy > 90;
+    const assez = glisse && (dy > seuilFermeture() || (vitesse > 0.9 && dy > 70));
     sheet.style.transition = "transform .2s ease";
     if(assez){
       sheet.style.transform = "translateY(100%)";
