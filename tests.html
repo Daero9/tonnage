@@ -397,6 +397,22 @@ function lancer(){
     seanceDe([11,11,11,11], [3,3,3,3]).mode, "up");
   eq("Une série unique est jugée sur elle-même",
     seanceDe([8], [0]).mode, "down");
+
+  /* le nombre pré-rempli : le milieu de la fourchette, pas son plancher */
+  eq("8-12 propose 10", F.repsDepart(F.parseReps("8-12")), 10);
+  eq("12-15 propose 13", F.repsDepart(F.parseReps("12-15")), 13);
+  eq("6-12 propose 9", F.repsDepart(F.parseReps("6-12")), 9);
+  eq("Sans fourchette, rien n'est proposé", F.repsDepart(null), "");
+
+  /* un exercice ajouté en cours de séance reçoit un objectif */
+  DB.profile = JSON.parse(JSON.stringify(profilType));
+  DB.profile.aim = "masse";
+  eq("Le curl est traité comme de l'isolation",
+    F.cibleParDefaut(id("Curl haltères")).reps, "12-15");
+  eq("Le développé couché garde la fourchette lourde",
+    F.cibleParDefaut(id("Développé couché")).reps, "8-12");
+  vrai("L'objectif ajouté a des séries et un repos",
+    F.cibleParDefaut(id("Squat")).sets > 0 && F.cibleParDefaut(id("Squat")).rest > 0);
   neuf();
 
   /* ---------------------------------------------------------- photo de la séance */
