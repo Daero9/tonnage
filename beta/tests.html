@@ -67,6 +67,218 @@ function lancer(){
     entries:entrees
   });
 
+  /* ---------------------------------------------------------- langue et unités */
+  grp("Langue et unités");
+  neuf();
+  DB.settings = DB.settings || {};
+  /* pds, fmtKg et EN_PRET sont des const : elles n'apparaissent pas sur window */
+  const PDS = F.eval("pds"), ENPRET = F.eval("EN_PRET");
+  const TR = F.eval("TR");
+  const enLangue = (l, u, f) => { DB.settings.lang = l; DB.settings.units = u; const r = f(); return r; };
+
+  eq("Français : les kilos restent des kilos",
+     enLangue("fr", "metrique", () => PDS(80)), "80 kg");
+  eq("English : conversion en livres",
+     enLangue("en", "imperial", () => PDS(80)), "176,4 lb".replace(",", "."));
+  eq("Le choix des unités ne dépend pas de la langue",
+     enLangue("en", "metrique", () => PDS(80)), "80 kg");
+  eq("Taille en centimètres",
+     enLangue("fr", "metrique", () => F.affTaille(178)), "178 cm");
+  eq("Taille en pieds et pouces",
+     enLangue("fr", "imperial", () => F.affTaille(178)), "5'10\"");
+  eq("Le pied juste, sans 12 pouces",
+     enLangue("fr", "imperial", () => F.affTaille(183)), "6'0\"");
+
+  /* un champ <input type=number> refuse la virgule : jamais de séparateur français */
+  vrai("Le champ de saisie n'a pas de virgule",
+       enLangue("fr", "imperial", () => !/,/.test(F.saisiePoids(80))));
+  pres("Aller-retour livres → kilos",
+       enLangue("fr", "imperial", () => F.versKg(F.saisiePoids(80))), 80, 0.05);
+  eq("Le pas suit les unités : 0,5 kg",
+     enLangue("fr", "metrique", () => F.stepPoids()), 0.5);
+  eq("Le pas suit les unités : 1 lb",
+     enLangue("fr", "imperial", () => F.stepPoids()), 1);
+
+  /* le repli : tant qu'une phrase n'est pas traduite, on affiche le français */
+  eq("Traduit : la navigation",
+     enLangue("en", "metrique", () => F.TR("Séance")), "Workout");
+  eq("Non traduit : repli sur le français",
+     enLangue("en", "metrique", () => F.TR("Une phrase que personne n'a traduite")),
+     "Une phrase que personne n'a traduite");
+  eq("En français, le dictionnaire n'est jamais consulté",
+     enLangue("fr", "metrique", () => F.TR("Séance")), "Séance");
+
+  /* Les distances sont stockées en km. fmtKg() les convertissait en livres :
+     10 km s'affichaient « 22 km » en impérial. D'où ces tests. */
+  const DIST = F.eval("dist"), VKM = F.eval("versKm"), UD = F.eval("uDist");
+  eq("Distance en kilomètres", enLangue("fr", "metrique", () => DIST(10)), "10 km");
+  eq("Distance en miles", enLangue("fr", "imperial", () => DIST(10)), "6,2 mi");
+  eq("L'unité de distance suit le réglage",
+     enLangue("fr", "imperial", () => UD()), "mi");
+  pres("Aller-retour miles → kilomètres",
+       enLangue("fr", "imperial", () => VKM("6.2")), 10, 0.05);
+  eq("En métrique, la saisie est déjà en km",
+     enLangue("fr", "metrique", () => VKM("10")), 10);
+
+  /* La regle : le francais aux telephones francophones, l'anglais aux autres.
+     L'inverse enverrait du francais a un telephone allemand ou japonais. */
+  const LSYS = F.eval("langueSysteme");
+  const simuleLangue = (code, f) => {
+    const nav = F.navigator;
+    const vraiL = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(nav), "languages")
+               || Object.getOwnPropertyDescriptor(nav, "languages");
+    try {
+      Object.defineProperty(nav, "languages", {value:[code], configurable:true});
+      return f();
+    } finally {
+      if (vraiL) { try { Object.defineProperty(nav, "languages", vraiL); } catch(e){} }
+    }
+  };
+  eq("Téléphone français → français", simuleLangue("fr-FR", LSYS), "fr");
+  eq("Téléphone canadien francophone → français", simuleLangue("fr-CA", LSYS), "fr");
+  eq("Téléphone américain → anglais", simuleLangue("en-US", LSYS), "en");
+  eq("Téléphone allemand → anglais, pas français", simuleLangue("de-DE", LSYS), "en");
+  eq("Téléphone espagnol → anglais, pas français", simuleLangue("es-ES", LSYS), "en");
+  eq("Téléphone japonais → anglais, pas français", simuleLangue("ja-JP", LSYS), "en");
+
+  /* le garde-fou : « auto » ne doit pas basculer en anglais avant la fin du chantier */
+  eq("« Auto » reste en français tant que la traduction n'est pas finie",
+     enLangue("auto", "auto", () => F.langue()), ENPRET ? F.langueSysteme() : "fr");
+
+  /* Le nom affiché change de langue, mais la CLÉ reste le français. Si un jour
+     quelqu'un branche une recherche sur le nom affiché, ces tests le voient. */
+  DB.settings.lang = "en"; DB.settings.units = "metrique";
+  const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
+  const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
+
+  eq("Les 107 exercices sont là", LIBEN.length, 107);
+  eq("Un nom s'affiche en anglais", LIBEN[0].name, "Bench press");
+  eq("…mais sa clé reste le français", LIBEN[0].nameFr, "Développé couché");
+  eq("Les 107 noms sont traduits",
+     LIBEN.filter(e => e.name === e.nameFr && !/^(Dips|Squat|Crunch|Superman|Hip thrust|Face pull|Leg curl|Leg extension|Hack squat|Arnold press|Goblet squat|Front squat|Good morning|Russian twist)$/.test(e.nameFr)).length, 0);
+
+  vrai("En anglais, chaque exercice retrouve sa fiche",
+       LIBEN.every(e => !!EXOI[CANONX(e)]),
+       "sans fiche : " + LIBEN.filter(e => !EXOI[CANONX(e)]).map(e => e.nameFr).join(", "));
+  vrai("En anglais, chaque exercice retrouve ses muscles",
+       LIBEN.every(e => !!MWK[CANONX(e)]),
+       "sans muscles : " + LIBEN.filter(e => !MWK[CANONX(e)]).map(e => e.nameFr).join(", "));
+  vrai("libId retrouve l'exercice par son nom français",
+       F.libId("Développé couché") === LIBEN[0].id);
+  vrai("libId le retrouve aussi par son nom anglais",
+       F.libId("Bench press") === LIBEN[0].id);
+  eq("Aucun doublon parmi les noms anglais",
+     LIBEN.length - new Set(LIBEN.map(e => e.name)).size, 0);
+
+  /* un exercice créé par la personne garde son propre nom, jamais traduit */
+  DB.custom = [{id:"x1", name:"Ma variante", muscle:"Pectoraux", equip:"Barre"}];
+  eq("Un exercice personnel n'est pas traduit", F.getEx("x1").name, "Ma variante");
+  eq("…et son nom canonique est le sien", CANONX(F.getEx("x1")), "Ma variante");
+  DB.custom = [];
+
+  /* --- les 107 fiches en anglais --- */
+  const FEN = F.eval("EXO_INFO_EN"), FICHE = F.eval("ficheDe");
+  eq("Chaque fiche a sa version anglaise",
+     Object.keys(EXOI).filter(n => !FEN[n]).length, 0);
+  eq("Aucune fiche anglaise orpheline",
+     Object.keys(FEN).filter(n => !EXOI[n]).length, 0);
+  eq("Autant d'étapes des deux côtés",
+     Object.keys(EXOI).reduce((a,n)=>a+EXOI[n].steps.length,0),
+     Object.keys(FEN).reduce((a,n)=>a+FEN[n].steps.length,0));
+  vrai("Chaque fiche anglaise a un conseil et au moins 3 étapes",
+       Object.keys(FEN).every(n => FEN[n].tip && FEN[n].tip.length > 20 && FEN[n].steps.length >= 3));
+  vrai("Aucune fiche anglaise n'a gardé du français",
+       !Object.keys(FEN).some(n => /[éèêàçùôîû]|\b(les|des|une|tes|pour|avec|dans)\b/i
+         .test(FEN[n].tip + " " + FEN[n].steps.join(" "))),
+       Object.keys(FEN).filter(n => /[éèêàçùôîû]/.test(FEN[n].tip + FEN[n].steps.join(""))).join(", "));
+
+  /* c'est bien la fiche anglaise qui sort quand la langue est l'anglais */
+  DB.settings.lang = "en";
+  vrai("En anglais, ficheDe rend la fiche anglaise",
+       FICHE(LIBEN[0]).tip === FEN["Développé couché"].tip);
+  DB.settings.lang = "fr";
+  vrai("En français, ficheDe rend la fiche française",
+       FICHE(LIBEN[0]).tip === EXOI["Développé couché"].tip);
+
+  /* --- les chemins d'appel, en anglais --- */
+  /* Ces fonctions cherchent par nom FRANÇAIS. Si un appelant leur passe le nom
+     traduit, elles ne trouvent rien et échouent en silence : pas d'erreur, juste
+     un avertissement de blessure qui n'apparaît plus. D'où ces tests. */
+  DB.profile.injuries = ["epaule"];
+  const BLESS = F.eval("injuryNote"), SILH = F.eval("exoBodyHtml");
+  const dc = LIBEN.find(e => e.nameFr === "Développé couché");
+
+  DB.settings.lang = "fr";
+  vrai("En français, l'épaule sensible avertit sur le développé couché",
+       !!BLESS(F.eval("nomCanon")(dc)));
+  const silhFr = SILH(F.eval("nomCanon")(dc), false);
+
+  DB.settings.lang = "en";
+  vrai("En anglais aussi, l'avertissement de blessure s'affiche",
+       !!BLESS(F.eval("nomCanon")(dc)),
+       "l'appelant transmet sûrement ex.name au lieu de nomCanon(ex)");
+  vrai("En anglais aussi, la silhouette anatomique se construit",
+       SILH(F.eval("nomCanon")(dc), false).length > 0);
+  /* on compare les ZONES colorées, pas le HTML entier : la légende est traduite */
+  const zones = h => (h.match(/muscles\/[a-z-]+\.png/g) || []).sort().join("|");
+  eq("Les mêmes zones anatomiques dans les deux langues",
+     zones(SILH(F.eval("nomCanon")(dc), false)), zones(silhFr));
+
+  /* le tour complet : chaque exercice, dans les deux langues */
+  DB.profile.injuries = ["epaule", "dos", "genou", "coude", "poignet"];
+  const compte = () => LIBEN.filter(e => !!BLESS(F.eval("nomCanon")(e))).length;
+  DB.settings.lang = "fr"; const nFr = compte();
+  DB.settings.lang = "en"; const nEn = compte();
+  eq("Autant d'exercices déconseillés dans les deux langues", nEn, nFr);
+  vrai("Et il y en a bien (sinon le test ne prouve rien)", nFr > 0);
+  DB.profile.injuries = [];
+
+  /* Les tables évaluées au chargement (MATERIELS, COACH_PROGRAMS) ne doivent PAS
+     appeler TR() : la langue serait figée au démarrage, et db n'existe pas encore.
+     On vérifie donc que leurs libellés restent en français dans la table... */
+  const MATOS = F.eval("MATERIELS");
+  eq("Le matériel garde le français comme clé",
+     MATOS.find(m => m.id === "elastique").nom, "Bandes élastiques");
+  /* ...et qu'ils ressortent bien traduits à l'affichage. */
+  DB.settings.lang = "en";
+  eq("...mais s'affiche traduit", TR("Bandes élastiques"), "Resistance bands");
+  DB.settings.lang = "fr";
+  eq("...et reste français en français", TR("Bandes élastiques"), "Bandes élastiques");
+
+  DB.settings.lang = "auto"; DB.settings.units = "auto";
+
+  /* ------------------------------------------------- progression sur plusieurs semaines */
+  grp("Progression semaine après semaine");
+  neuf();
+  /* Le cas signalé par Nico : répondre « 1-2 » (RIR 1) à chaque série.
+     Avant correction, l'app conseillait « gratte une rep » mais pré-remplissait
+     les mêmes reps : la charge ne montait JAMAIS. */
+  const modele = {id:"tp1", name:"Push", items:[{exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]};
+  DB.templates = [modele];
+  const START = F.eval("startWorkout");
+
+  let charge = 60, reps = 10, monte = false, journal = [];
+  for(let sem = 0; sem < 5; sem++){
+    START("tp1");                                /* l'app propose la séance */
+    const prop = DB.active.entries[0].sets.filter(x=>!x.warm);
+    journal.push((Number(prop[0].w) || charge) + "×" + prop[0].r);
+    /* à la 1re séance l'app ne propose pas de charge : il n'y a pas d'historique */
+    const propose = Number(prop[0].w) || charge;
+    if(propose > charge){ monte = true; }
+    charge = propose; reps = prop[0].r;
+    /* on fait exactement ce qui est proposé, en répondant « 1-2 » partout */
+    /* chaque séance doit être PLUS RÉCENTE que la précédente : heures-avant décroissantes */
+    DB.history.push(seance((6 - sem) * 48, [{exId:id("Développé couché"), target:modele.items[0],
+      sets:[serie(charge, reps, 1), serie(charge, reps, 1), serie(charge, reps, 1)]}]));
+    DB.history.sort((x,y)=> new Date(x.date) - new Date(y.date));
+  }
+  vrai("En répondant toujours « 1-2 », la charge finit par monter", monte,
+       "séances proposées : " + journal.join(" → "));
+  vrai("Les répétitions progressent d'une séance à l'autre",
+       journal[1].split("×")[1] > journal[0].split("×")[1],
+       "séances proposées : " + journal.join(" → "));
+  DB.templates = [];
+
   /* ---------------------------------------------------------- force et tonnage */
   grp("Force et tonnage");
   neuf();
@@ -183,6 +395,40 @@ function lancer(){
   vrai("« viande » sort le steak", cherche("viande").some(n=>/steak/i.test(n)));
   vrai("« légume » sort le brocoli", cherche("légume").includes("Brocoli"));
   vrai("« féculent » sort le riz", cherche("féculent").includes("Riz cuit"));
+
+  /* --- les mêmes aliments, en anglais --- */
+  DB.settings.lang = "en";
+  const FOODS = F.eval("FOOD_100G"), TT = F.eval("TR");
+  const tousNoms = FOODS.reduce((a, g) => a.concat(g[1].map(x => x[0])), []);
+
+  eq("Les 94 aliments sont là", tousNoms.length, 94);
+  eq("Chaque aliment a sa traduction",
+     tousNoms.filter(n => TT(n) === n &&
+       !/^(Skyr|Tofu|Mozzarella|Burger|Kebab|Croissant|Ratatouille|Pain au chocolat)$/.test(n)).length, 0);
+  /* ces huit-là s'écrivent pareil dans les deux langues : c'est voulu, pas un oubli */
+  eq("Chaque famille a sa traduction",
+     FOODS.filter(g => TT(g[0]) === g[0]).length, 0);
+  eq("Un aliment s'affiche en anglais", TT("Blanc de poulet (130 g cuit)"), "Chicken breast (130 g cooked)");
+
+  /* la recherche doit marcher dans la langue affichée ET en français */
+  vrai("En anglais, « chicken » trouve le poulet",
+       cherche("chicken").some(n => /poulet/i.test(n)));
+  vrai("En anglais, le nom français marche encore",
+       cherche("poulet").some(n => /poulet/i.test(n)));
+  vrai("En anglais, « broccoli » trouve le brocoli",
+       cherche("broccoli").includes("Brocoli"));
+
+  /* un libellé anglais doit être relu correctement, et un ancien libellé français aussi */
+  eq("Protéines lues dans un libellé anglais",
+     F.protOf("Chicken breast 130 g (~40 g protein · 215 kcal)"), 40);
+  eq("Protéines lues dans un ancien libellé français",
+     F.protOf("Poulet 130 g (~40 g prot. · 215 kcal)"), 40);
+  eq("Calories lues dans un libellé anglais",
+     F.kcalOf("Chicken breast 130 g (~40 g protein · 215 kcal)"), 215);
+  eq("« cooked » retiré de la portion comme « cuit »",
+     F.partsAliment("Chicken breast (130 g cooked)", 40).qCourt, "130 g");
+
+  DB.settings.lang = "auto";
   vrai("« fromage » sort le comté", cherche("fromage").includes("Comté / emmental"));
   vrai("« œuf » ne ramène pas le bœuf", !cherche("oeuf").some(n=>/b(œ|oe)uf/i.test(n)));
   vrai("« fruit » ne ramène pas le thon", !cherche("fruit").some(n=>/thon/i.test(n)));
