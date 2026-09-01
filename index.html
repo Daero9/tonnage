@@ -1546,7 +1546,15 @@ function openExoInfo(exId){
           </div>
         </div>
       </div>`:""}
+    <div class="exo-c">
+      <div class="exo-t">Mon matériel</div>
+      ${blocChargeFixe(ex.id, "ei-plafond")}
+    </div>
     <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:4px;">Fermer</button>`);
+  document.getElementById("ei-plafond").onchange = e=>{
+    reglerChargeFixe(ex.id, e.target.checked);
+    toast(e.target.checked ? "Charge fixe : progression en répétitions ✓" : "Charge libre ✓");
+  };
   document.getElementById("ei-ok").onclick = closeSheet;
 }
 
@@ -2776,7 +2784,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "1 septembre 2026 01h33";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "1 septembre 2026 10h53";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3043,6 +3051,27 @@ const REPS_PLAFOND = 25;                       /* au-delà, mieux vaut durcir le
 function sansChargeDuTout(exId, poidsSaisi){
   return estPoidsDuCorps(getEx(exId)) && !((poidsSaisi||0) > 0);
 }
+/* Charge fixe : l'exercice ne montera plus en poids, l'app fera progresser autrement.
+   Pour un exercice au poids du corps c'est l'état normal ; le décocher revient à dire
+   « je peux le lester », d'où le drapeau « libre: ». */
+function reglerChargeFixe(exId, fixe){
+  const auto = estPoidsDuCorps(getEx(exId));
+  if(fixe){ db.plafond[exId] = true; delete db.plafond["libre:"+exId]; }
+  else { delete db.plafond[exId]; if(auto) db.plafond["libre:"+exId] = true; }
+  save();
+}
+/* le bloc de réglage, identique dans le menu de la séance et dans la fiche de l'exercice */
+function blocChargeFixe(exId, id){
+  return `<label class="row" style="gap:9px; align-items:flex-start; cursor:pointer;">
+    <input type="checkbox" id="${id}" ${chargeBloquee(exId)?"checked":""}
+      style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto; margin-top:1px;">
+    <span style="font-size:13.5px; color:var(--ink); line-height:1.45;">Charge fixe — je n'ai pas plus lourd<br>
+      <span style="font-size:12px; color:var(--ink-mute);">Pour un seul haltère ou une seule barre.
+      L'app ne touche plus au poids, ni pour monter ni pour descendre : elle fait progresser
+      en répétitions, puis en séries, puis avec une variante plus dure. Et si une séance est
+      trop dure, c'est la cible en répétitions qui baisse.</span></span>
+  </label>`;
+}
 function chargeBloquee(exId){
   const ex = getEx(exId);
   return !!db.plafond[exId] || (estPoidsDuCorps(ex) && !db.plafond["libre:"+exId]);
@@ -3096,10 +3125,16 @@ function suggestFor(exId, target){
       const pr = progressionSansCharge(exId, maxR, last.sets.length);
       return {mode:pr.mode, w:maxW, text:pr.text};
     }
-    if(anyBelow && avgRir!==null && avgRir<0.5)
-      return {mode:"hold", w:0, text:`Dernière fois tu étais à bout — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`};
+    if(anyBelow && avgRir!==null && avgRir<0.5){
+      /* Charge fixe : la barre ne peut pas s'alléger, donc le seul levier qui reste est la
+         cible en répétitions. On vise ce que la plus faible série a tenu — donc un nombre
+         atteignable sur TOUTES les séries — et on remontera de là. */
+      const basse = Math.max(1, Math.min(...last.sets.map(x=>x.r||0)));
+      return {mode:"hold", w:maxW, reps:basse,
+        text:`Trop dur la dernière fois, et tu ne peux pas alléger : vise ${basse} reps sur toutes les séries, puis remonte de là.`};
+    }
     if(anyBelow)
-      return {mode:"hold", w:0, text:`Continue à viser ${rng.lo} reps sur toutes les séries avant de charger.`};
+      return {mode:"hold", w:maxW, reps:rng.lo, text:`Continue à viser ${rng.lo} reps sur toutes les séries avant de charger.`};
     return {mode:"beat", w:0, text:`Essaie de gratter une répétition de plus sur la première série.`};
   }
   if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
@@ -5080,7 +5115,9 @@ function startWorkout(tplId){
     for(let i=0;i<it.sets;i++){
       const ls = last && last.sets[Math.min(i,last.sets.length-1)];
       const w = sug && (sug.mode==="up"||sug.mode==="down") ? sug.w : (ls? ls.w:"");
-      const r = sug && (sug.mode==="up"||sug.mode==="down") ? repsDepart(rng) : (ls? ls.r : repsDepart(rng));
+      /* un conseil qui fixe une cible en répétitions l'emporte sur la dernière performance */
+      const r = (sug && sug.reps) ? sug.reps
+        : (sug && (sug.mode==="up"||sug.mode==="down") ? repsDepart(rng) : (ls? ls.r : repsDepart(rng)));
       sets.push({w, r, done:false});
     }
     return {exId:it.exId, target:it, sets};
@@ -5141,11 +5178,8 @@ function openHistoExo(ei){
           prochain && prochain.w ? `${fmtKg(prochain.w)} kg${prochain.r? ` × ${prochain.r} reps`:""}` : "À toi de choisir la charge"}</div>
         ${sug? `<div class="hist-ex-line" style="margin-top:4px;">${esc(sug.text)}</div>`:""}
       </div>
-      <label class="row" style="gap:9px; align-items:center; cursor:pointer; padding-top:2px;">
-        <input type="checkbox" id="hx-plafond" ${chargeBloquee(en.exId)?"checked":""} style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
-        <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">Je n'ai pas de charge plus lourde<br>
-          <span style="font-size:11.5px; color:var(--ink-mute);">Pour progresser, l'app ajoute des répétitions, puis une série, puis une variante plus dure. Si c'est trop lourd, elle baisse quand même la charge.</span></span>
-      </label>
+      <div><span class="label" style="display:block; margin-bottom:6px;">Mon matériel</span>
+        ${blocChargeFixe(en.exId, "hx-plafond")}</div>
       ${dejaParCote(en.exId)
         ? `<div style="font-size:11.5px; color:var(--ink-mute); line-height:1.45; padding-left:2px;">
              Deux haltères : tu saisis la charge <b>d'un seul haltère</b>, l'app compte déjà les deux côtés.</div>`
@@ -5157,11 +5191,8 @@ function openHistoExo(ei){
       <button class="btn btn-accent" id="hx-ok">Compris</button>
     </div>`);
   document.getElementById("hx-plafond").onchange = e=>{
-    const bloque = e.target.checked;
-    const auto = estPoidsDuCorps(ex);
-    if(bloque){ db.plafond[en.exId] = true; delete db.plafond["libre:"+en.exId]; }
-    else { delete db.plafond[en.exId]; if(auto) db.plafond["libre:"+en.exId] = true; }
-    save();
+    reglerChargeFixe(en.exId, e.target.checked);
+    renderSurPlace();                       /* le conseil de charge change tout de suite */
   };
   const uni = document.getElementById("hx-unilat");
   if(uni) uni.onchange = e=>{
@@ -5413,7 +5444,9 @@ function renderActive(app){
               <button data-rir="1">1-2</button>
               <button data-rir="3">3-5+</button>
             </div>
-            <button class="rir-lourd" data-rir="-1">C'était trop lourd — baisse la charge</button>`;
+            <button class="rir-lourd" data-rir="-1">C'était trop lourd — ${
+              chargeBloquee(en.exId) || sansChargeDuTout(en.exId, st.w)
+                ? "baisse les répétitions" : "baisse la charge"}</button>`;
           /* la question se place sous la série, dégressifs compris */
           let ancre = row, nx = row.nextElementSibling;
           while(nx && nx.classList.contains("drop")){ ancre = nx; nx = nx.nextElementSibling; }
@@ -5443,9 +5476,11 @@ function renderActive(app){
             const rienARetirer = sansChargeDuTout(en.exId, st.w); /* ne peut pas descendre non plus */
             let msg;
             if(rir === -1){
-              /* trop lourd : on descend la charge en gardant les répétitions visées.
-                 Le plafond ne concerne que la montée — descendre est toujours possible. */
-              if(rienARetirer){
+              /* Trop lourd : normalement on descend la charge en gardant les répétitions.
+                 Mais quand il n'y a qu'une charge disponible — poids du corps, ou « charge
+                 fixe » cochée — la barre ne peut pas s'alléger : c'est la cible en
+                 répétitions qui baisse, sur les séries suivantes. */
+              if(rienARetirer || plafonne){
                 const nr = Math.max(1, Math.round((st.r||0)*0.8));
                 msg = `Trop lourd — vise ${nr} reps sur les séries suivantes, la qualité prime.`;
                 if(next) appliquerSuite("r", nr);
