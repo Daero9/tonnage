@@ -968,6 +968,24 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "kcal / jour":"kcal / day",
+  "Ajuster":"Adjust",
+  "Non merci":"No thanks",
+  "Ces chiffres sont des <b>estimations</b>, pas des prescriptions médicales.":"These figures are <b>estimates</b>, not medical prescriptions.",
+  "Ajouter les {} séances à mes programmes":"Add the {} workouts to my programs",
+  "Recalculée sur tes {j} jours suivis : {k} kcal en moyenne pour {d} en {n} jours.":"Recalculated from your {j} tracked days: {k} kcal on average for {d} over {n} days.",
+  "Objectif +{d} ({a} → {b}), soit environ {n} semaines à un rythme propre. ":"Target +{d} ({a} → {b}), so about {n} weeks at a clean pace. ",
+  "Objectif −{d} ({a} → {b}), soit environ {n} semaines à −0,5 kg/semaine, un rythme sain. ":"Target −{d} ({a} → {b}), so about {n} weeks at a healthy 0.5 kg a week. ",
+  "3 séances en 8 à 12 répétitions sur les gros mouvements — la zone de référence pour prendre du muscle — avec des repos longs, 3 à 4 fois par semaine en alternant. Côté assiette : ~300-500 kcal au-dessus de tes besoins et 1,6-2 g de protéines par kilo.":"3 sessions of 8 to 12 reps on the big lifts — the reference zone for building muscle — with long rests, 3 or 4 times a week, alternating. On the plate: ~300-500 kcal above your needs and 1.6-2 g of protein per kilo.",
+  "2 séances full body (8 à 12 reps sur les gros mouvements, 12 à 15 en isolation) pour garder le muscle + 2-3 sorties cardio par semaine (à enregistrer dans l'onglet Séance). Côté assiette : ~400-500 kcal sous tes besoins.":"2 full-body sessions (8 to 12 reps on the big lifts, 12 to 15 on isolation) to hold your muscle, plus 2-3 cardio sessions a week (log them in the Workout tab). On the plate: ~400-500 kcal below your needs.",
+  "3 séances organisées autour du squat, du développé couché et du soulevé de terre : peu de répétitions (3 à 6), charges lourdes et repos très longs (3 à 4 min) pour récupérer entre les séries. Progresse en ajoutant du poids, pas des répétitions.":"3 sessions built around the squat, bench press and deadlift: few reps (3 to 6), heavy loads and very long rests (3 to 4 min) to recover between sets. Progress by adding weight, not reps.",
+  "2 séances full body par semaine suffisent largement à conserver muscle et force. Séries de 8 à 12 répétitions, intensité modérée, sans chercher la performance — l'objectif est la régularité sur le long terme.":"2 full-body sessions a week are plenty to hold on to muscle and strength. Sets of 8 to 12 reps, moderate intensity, no chasing performance — the goal is consistency over the long run.",
+  "3 séances (haut / bas / full body) à intensité moyenne-haute pour construire du muscle tout en perdant du gras. Côté assiette : mange à ta maintenance avec beaucoup de protéines (2 g/kg), et le corps fait l'échange gras → muscle.":"3 sessions (upper / lower / full body) at medium-high intensity to build muscle while losing fat. On the plate: eat at maintenance with plenty of protein (2 g/kg), and your body makes the fat-to-muscle trade.",
+  "Prêt pour ta séance <b style=\"color:#fff;\">{}</b> ?":"Ready for your <b style=\"color:#fff;\">{}</b> workout?",
+  "Corps entier":"Whole body",
+  "Presque remis":"Almost recovered",
+  "Épargne tes {m} : encore {p} %":"Go easy on your {m}: still {p}%",
+  "Corriger":"Correct",
   "Pas encore assez de données pour la mesurer : il me faut deux semaines de repas cochés et deux pesées. En attendant, tu peux la corriger à la main.":"Not enough data to measure it yet: I need two weeks of ticked meals and two weigh-ins. In the meantime, you can correct it by hand.",
   "Laisse vide pour laisser l'app décider toute seule. Si tu manges {} kcal et que ton poids est stable depuis trois semaines, saisis ce chiffre.":"Leave it empty to let the app decide on its own. If you eat {} kcal and your weight has been steady for three weeks, enter that figure.",
   "Le programme complet ({})":"The full program ({})",
@@ -4202,41 +4220,41 @@ function showPlan(justCreated){
   if(!pl){ closeSheet(); render(); return; }
   const prog = COACH_PROGRAMS[pl.program];
   const manquantes = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
-  openSheet(`<h3>${justCreated? TR("Ton plan est prêt 🎯") : "Mon plan"}</h3>
+  openSheet(`<h3>${TR(justCreated? "Ton plan est prêt 🎯" : "Mon plan")}</h3>
     <div class="row" style="gap:6px; margin-bottom:12px; flex-wrap:wrap;">
-      <span class="pill" style="background:var(--accent); color:var(--accent-ink); font-weight:800;">${esc(pl.aimLabel)}</span>
+      <span class="pill" style="background:var(--accent); color:var(--accent-ink); font-weight:800;">${esc(TR(pl.aimLabel))}</span>
       ${PACE_RATE[pl.aim]? `<span class="pill">${esc(TR((PACES.find(x=>x[0]===pl.pace)||[])[1]||""))} · ${esc(pl.rythme)}</span>`:""}
     </div>
     ${(()=>{ const w = aimWarning(db.profile.aim, db.profile.weight, db.profile.goalWeight);
-      return w? `<div class="inj-note" style="margin:0 0 12px;">⚠️ ${esc(w)}</div>` : ""; })()}
+      return w? `<div class="inj-note" style="margin:0 0 12px;">⚠️ ${esc(TR(w))}</div>` : ""; })()}
     <p style="margin:0 0 14px; font-size:14px; color:var(--ink-soft); line-height:1.6;">${planAdvice(pl, db.profile)}</p>
     <div class="tiles" style="margin-bottom:14px;">
-      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">kcal / jour</div></div>
-      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">protéines (${pl.perKg.toLocaleString(loc())} g/kg)</div></div>
+      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">${TR("kcal / jour")}</div></div>
+      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">${TR("protéines")} (${pl.perKg.toLocaleString(loc())} g/kg)</div></div>
       <div class="tile"><div class="v">${pl.seances}</div><div class="u">${TR("séances / sem.")}</div></div>
     </div>
     <div class="card" style="background:var(--surface2); margin-bottom:14px;">
-      <div style="font-weight:800; margin-bottom:3px;">${esc(prog.title)}</div>
+      <div style="font-weight:800; margin-bottom:3px;">${esc(TR(prog.title))}</div>
       <div style="font-size:13px; color:var(--ink-soft);">${esc(coachDesc(pl.program))}</div>
     </div>
     <div class="card" style="background:var(--surface2); margin-bottom:14px;">
       <div class="row" style="justify-content:space-between; align-items:flex-start; gap:10px;">
         <div>
           <div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-mute);">${TR("Ta dépense estimée")}</div>
-          <div style="font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;">${pl.tdee} <span style="font-size:13px; font-weight:600; color:var(--ink-mute);">kcal / jour</span></div>
+          <div style="font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;">${pl.tdee} <span style="font-size:13px; font-weight:600; color:var(--ink-mute);">${TR("kcal / jour")}</span></div>
           <div style="font-size:12px; color:var(--ink-soft); margin-top:3px;">${
             pl.tdeeSource==="manuel" ? TR("Valeur que tu as saisie toi-même.")
-            : pl.tdeeSource==="mesure" ? `Recalculée sur tes ${pl.mesure.jours} jours suivis : ${pl.mesure.moyKcal} kcal en moyenne pour ${pl.mesure.dKg>=0?"+":"−"}${pds(Math.abs(pl.mesure.dKg))} en ${pl.mesure.dJours} jours.`
+            : pl.tdeeSource==="mesure" ? TR("Recalculée sur tes {j} jours suivis : {k} kcal en moyenne pour {d} en {n} jours.").replace("{j}", pl.mesure.jours).replace("{k}", pl.mesure.moyKcal).replace("{d}", (pl.mesure.dKg>=0?"+":"−")+pds(Math.abs(pl.mesure.dKg))).replace("{n}", pl.mesure.dJours)
             : TR("Calculée par formule (taille, poids, âge, séances). Elle se corrigera d'elle-même quand tu auras deux semaines de suivi.")}</div>
         </div>
-        <button class="btn btn-sm" id="pl-tdee" style="flex:0 0 auto;">Ajuster</button>
+        <button class="btn btn-sm" id="pl-tdee" style="flex:0 0 auto;">${TR("Ajuster")}</button>
       </div>
     </div>
     <div class="inj-note" style="margin:0 0 12px; font-size:12.5px;">
-      ⚕️ Ces chiffres sont des <b>estimations</b>, pas des prescriptions médicales.
+      ⚕️ ${TR("Ces chiffres sont des <b>estimations</b>, pas des prescriptions médicales.")}
       <button class="inj-swap" id="pl-sante">${TR("En savoir plus")}</button></div>
-    ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">Ajouter les ${manquantes.length} séances à mes programmes</button>`:""}
-    <button class="btn" id="pl-ok" style="width:100%;">${manquantes.length? "Non merci" : TR("C'est parti")}</button>`,
+    ${manquantes.length? `<button class="btn btn-accent" id="pl-add" style="width:100%; margin-bottom:8px;">${TR("Ajouter les {} séances à mes programmes").replace("{}", manquantes.length)}</button>`:""}
+    <button class="btn" id="pl-ok" style="width:100%;">${TR(manquantes.length? "Non merci" : "C'est parti")}</button>`,
     /* premier plan : on ne peut pas balayer la feuille sans avoir tranché */
     {verrou: !!justCreated});
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
@@ -4309,22 +4327,22 @@ function coachDesc(goal){
   const cur = currentWeight(), obj = db.settings.goal;
   const delta = (cur!==null && obj>0)? Math.round((obj-cur)*10)/10 : null;
   if(goal==="masse"){
-    let p = "3 séances en 8 à 12 répétitions sur les gros mouvements — la zone de référence pour prendre du muscle — avec des repos longs, 3 à 4 fois par semaine en alternant. Côté assiette : ~300-500 kcal au-dessus de tes besoins et 1,6-2 g de protéines par kilo.";
-    if(delta!==null && delta>0) p = `Objectif +${pds(delta)} (${fmtKg(cur)} → ${pds(obj)}), soit environ ${Math.max(2,Math.round(delta/0.375))} semaines à un rythme propre. `+p;
+    let p = TR("3 séances en 8 à 12 répétitions sur les gros mouvements — la zone de référence pour prendre du muscle — avec des repos longs, 3 à 4 fois par semaine en alternant. Côté assiette : ~300-500 kcal au-dessus de tes besoins et 1,6-2 g de protéines par kilo.");
+    if(delta!==null && delta>0) p = TR("Objectif +{d} ({a} → {b}), soit environ {n} semaines à un rythme propre. ").replace("{d}", pds(delta)).replace("{a}", fmtKg(cur)).replace("{b}", pds(obj)).replace("{n}", Math.max(2,Math.round(delta/0.375)))+p;
     return p;
   }
   if(goal==="seche"){
-    let p = "2 séances full body (8 à 12 reps sur les gros mouvements, 12 à 15 en isolation) pour garder le muscle + 2-3 sorties cardio par semaine (à enregistrer dans l'onglet Séance). Côté assiette : ~400-500 kcal sous tes besoins.";
-    if(delta!==null && delta<0) p = `Objectif −${pds(-delta)} (${fmtKg(cur)} → ${pds(obj)}), soit environ ${Math.max(1,Math.round(-delta/0.5))} semaines à −0,5 kg/semaine, un rythme sain. `+p;
+    let p = TR("2 séances full body (8 à 12 reps sur les gros mouvements, 12 à 15 en isolation) pour garder le muscle + 2-3 sorties cardio par semaine (à enregistrer dans l'onglet Séance). Côté assiette : ~400-500 kcal sous tes besoins.");
+    if(delta!==null && delta<0) p = TR("Objectif −{d} ({a} → {b}), soit environ {n} semaines à −0,5 kg/semaine, un rythme sain. ").replace("{d}", pds(-delta)).replace("{a}", fmtKg(cur)).replace("{b}", pds(obj)).replace("{n}", Math.max(1,Math.round(-delta/0.5)))+p;
     return p;
   }
   if(goal==="force"){
-    return "3 séances organisées autour du squat, du développé couché et du soulevé de terre : peu de répétitions (3 à 6), charges lourdes et repos très longs (3 à 4 min) pour récupérer entre les séries. Progresse en ajoutant du poids, pas des répétitions.";
+    return TR("3 séances organisées autour du squat, du développé couché et du soulevé de terre : peu de répétitions (3 à 6), charges lourdes et repos très longs (3 à 4 min) pour récupérer entre les séries. Progresse en ajoutant du poids, pas des répétitions.");
   }
   if(goal==="entretien"){
-    return "2 séances full body par semaine suffisent largement à conserver muscle et force. Séries de 8 à 12 répétitions, intensité modérée, sans chercher la performance — l'objectif est la régularité sur le long terme.";
+    return TR("2 séances full body par semaine suffisent largement à conserver muscle et force. Séries de 8 à 12 répétitions, intensité modérée, sans chercher la performance — l'objectif est la régularité sur le long terme.");
   }
-  return "3 séances (haut / bas / full body) à intensité moyenne-haute pour construire du muscle tout en perdant du gras. Côté assiette : mange à ta maintenance avec beaucoup de protéines (2 g/kg), et le corps fait l'échange gras → muscle.";
+  return TR("3 séances (haut / bas / full body) à intensité moyenne-haute pour construire du muscle tout en perdant du gras. Côté assiette : mange à ta maintenance avec beaucoup de protéines (2 g/kg), et le corps fait l'échange gras → muscle.");
 }
 function exIcon(ex, sm){
   const body = EX_ICONS[ex.icon] || EX_ICONS[EQUIP_ICON[equipCanon(ex)]] || EX_ICONS.dumbbell;
@@ -4332,7 +4350,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "1 septembre 2026 23h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 01h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4816,7 +4834,7 @@ function openProfil(){
     <div style="text-align:center; font-size:13px; color:var(--ink-mute); margin-bottom:14px;">
       ${p.height? affTaille(p.height)+" · ":""}${kg? pds(kg):""}${i? ` · ${TR("IMC")} ${i.toFixed(1)}`:""}</div>
     ${pl? `<div class="tiles" style="margin-bottom:14px;">
-      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">kcal / jour</div></div>
+      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">${TR("kcal / jour")}</div></div>
       <div class="tile"><div class="v">${pl.prot} g</div><div class="u">${TR("protéines")}</div></div>
       <div class="tile"><div class="v">${p.goalWeight? fmtKg(p.goalWeight)+" kg" : "—"}</div><div class="u">objectif</div></div>
     </div>`:""}
@@ -5162,7 +5180,7 @@ function renderEat(app){
         <div class="eat-repas">${MEALS.map(([id,lab])=>{
           const g = mealProt(k, id);
           return `<button class="er ${g? "on":""}${mealCur===id? " ici":""}" data-goto="${id}">
-            ${esc(lab)} <b>${g? g+" g" : "—"}</b></button>`;
+            ${esc(TR(lab))} <b>${g? g+" g" : "—"}</b></button>`;
         }).join("")}</div>
       </div>
       <div class="eat-side">
@@ -6241,7 +6259,8 @@ function renderSeance(app){
   const weekVol = week.reduce((a,s)=>a+sessionVolume(s),0);
   const cs = cardioWeekStats();
   const weekKcal = week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s), nbSeries(s)),0) + cs.kcal;
-  const days = ["L","M","M","J","V","S","D"];
+  /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
+  const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
   db.history.concat(db.cardio).forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
   const todayIdx = (now.getDay()+6)%7;
@@ -6257,7 +6276,7 @@ function renderSeance(app){
   const bilanNeuf = (db.history.length||db.weights.length) && (!db.lastBilan || Date.now()-new Date(db.lastBilan).getTime()>6.5*864e5);
   const sub = !db.templates.length
     ? TR("Crée ta première séance avec le bouton ＋")
-    : `Prêt pour ta séance <b style="color:#fff;">${esc(sug.name)}</b> ?`;
+    : TR("Prêt pour ta séance <b style=\"color:#fff;\">{}</b> ?").replace("{}", esc(TR(sug.name)));
 
   app.innerHTML = `
     ${hero(`<h1>${db.settings.name? "Salut "+esc(db.settings.name)+"," : "Bienvenue,"}</h1>
@@ -8239,7 +8258,7 @@ const RECUP_C = {frais:"#4caf50", recup:"#e8a33d", fatigue:"#e0554a"};
 const RECUP_LAB = {frais:TR("Prêt"), recup:TR("En récup"), fatigue:"Fatigué"};
 function recupTitre(g){
   if(g >= 85) return TR("Prêt à t'entraîner");
-  if(g >= 65) return "Presque remis";
+  if(g >= 65) return TR("Presque remis");
   if(g >= 45) return TR("Récupération en cours");
   return TR("Repos conseillé");
 }
@@ -8272,10 +8291,10 @@ function openRecup(){
       <div class="row" style="gap:14px; align-items:center; margin-bottom:12px;">
         ${anneau(r.global, 78, coul)}
         <div>
-          <div style="font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55);">Corps entier</div>
+          <div style="font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55);">${TR("Corps entier")}</div>
           <div style="font-size:21px; font-weight:800; line-height:1.15;">${recupTitre(r.global)}</div>
           ${(()=>{ const w = recupPire(r);
-            return w.pct < 65 ? `<div style="font-size:12.5px; color:${RECUP_C[w.etat]}; margin-top:3px;">Épargne tes ${esc(w.nom.toLowerCase())} : encore ${w.pct} %</div>` : "";
+            return w.pct < 65 ? `<div style="font-size:12.5px; color:${RECUP_C[w.etat]}; margin-top:3px;">${TR("Épargne tes {m} : encore {p} %").replace("{m}", esc(TR(w.nom).toLowerCase())).replace("{p}", w.pct)}</div>` : "";
           })()}
         </div>
       </div>
@@ -8630,7 +8649,7 @@ function renderProteinSection(sec){
             <span class="pr-barwrap"><span class="pr-b" style="height:${Math.max(x.v>0?4:2, Math.min(100, x.v/cap*100))}%; background:${x.v>=target?'var(--good)':(x.v>0?'var(--accent)':'var(--surface2)')};"></span></span>
           </button>`).join("")}
       </div>
-      <div class="pr-labels">${days.map(x=>`<span>${["D","L","M","M","J","V","S"][x.d.getDay()]}</span>`).join("")}</div>
+      <div class="pr-labels">${days.map(x=>`<span>${(langue()==="en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"])[x.d.getDay()]}</span>`).join("")}</div>
       <div class="row" style="justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:12.5px;">
         <span style="color:var(--ink-mute);">Calories moyennes</span>
         <span style="font-weight:800; font-variant-numeric:tabular-nums; color:${(kcalCible && moyKcal>=kcalCible*0.9)?'var(--good)':'var(--ink)'};">≈ ${moyKcal||0} kcal${kcalCible? ` <span style="font-weight:600; color:var(--ink-mute);">/ ${kcalCible}</span>`:""}</span>
@@ -8681,7 +8700,7 @@ function openDayEdit(key){
   const d = new Date(key+"T12:00:00");
   const target = proteinTarget();
   const plan = planFor(db.profile);
-  openSheet(`<h3 style="text-transform:capitalize;">Corriger ${d.toLocaleDateString(loc(),{weekday:"long", day:"numeric", month:"long"})}</h3>
+  openSheet(`<h3 style="text-transform:capitalize;">${TR("Corriger")} ${d.toLocaleDateString(loc(),{weekday:"long", day:"numeric", month:"long"})}</h3>
     <p style="margin:0 0 14px; font-size:13px; color:var(--ink-soft); line-height:1.55;">${TR("Tu as oublié de cocher, ou tu as mangé dehors ? Saisis directement tes totaux de la journée. Ils remplaceront le calcul automatique.")}</p>
     <div class="stack">
       <div><span class="label" style="display:block; margin-bottom:5px;">Protéines (g) · objectif ${target}</span>
