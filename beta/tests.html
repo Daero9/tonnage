@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tonnup — tests des calculs</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       background:#14140f; color:#eee; margin:0; padding:20px 16px 60px; line-height:1.5;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .sub{color:#8e8e90; font-size:13px; margin-bottom:18px;}
+  #bilan{position:sticky; top:0; background:#14140f; padding:10px 0 14px; font-size:17px; font-weight:800;}
+  .ok{color:#6fbf8b;} .ko{color:#e06c5a;}
+  .grp{margin:16px 0 6px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#8e8e90;}
+  .l{font-size:13.5px; padding:3px 0; border-bottom:1px solid #262620;}
+  .l .d{color:#8e8e90; font-size:12px;}
+  iframe{display:none;}
+</style>
+
+<h1>Tests des calculs</h1>
+<div class="sub">Vérifie les fonctions de calcul de Tonnup sans toucher à tes données.
+Ouvre cette page après chaque publication.</div>
+<div id="bilan">Chargement de l'application…</div>
+<div id="sortie"></div>
+<!-- on charge la source directement : plus besoin d une copie index.html a cote -->
+<iframe id="app" src="tonnage.html"></iframe>
+
+<script>
+const sortie = document.getElementById("sortie");
+let total = 0, echecs = 0, groupe = "";
+function grp(nom){ groupe = nom; sortie.insertAdjacentHTML("beforeend", `<div class="grp">${nom}</div>`); }
+function ligne(ok, nom, detail){
+  total++; if(!ok) echecs++;
+  sortie.insertAdjacentHTML("beforeend",
+    `<div class="l"><span class="${ok?'ok':'ko'}">${ok?"✔":"✘"}</span> ${nom}` +
+    (detail? ` <span class="d">— ${detail}</span>`:"") + `</div>`);
+}
+function eq(nom, obtenu, attendu){
+  const ok = JSON.stringify(obtenu) === JSON.stringify(attendu);
+  ligne(ok, nom, ok? "" : `obtenu ${JSON.stringify(obtenu)}, attendu ${JSON.stringify(attendu)}`);
+}
+function pres(nom, obtenu, attendu, tol){
+  const ok = Math.abs(obtenu - attendu) <= tol;
+  ligne(ok, nom, ok? "" : `obtenu ${obtenu}, attendu ${attendu} ±${tol}`);
+}
+function vrai(nom, cond, detail){ ligne(!!cond, nom, cond? "" : (detail||"")); }
+
+document.getElementById("app").addEventListener("load", () => setTimeout(lancer, 400));
+
+function lancer(){
+  const F = document.getElementById("app").contentWindow;
+  /* « db » est déclaré avec let dans l'app : il n'apparaît pas sur window, on va chercher la référence */
+  const DB = F.eval("db");
+  const profilType = {name:"Test", sex:"h", age:28, height:188, weight:74, goalWeight:80,
+                      metab:"normal", days:4, injuries:[], aim:"masse", pace:"modere", protPerKg:1.9};
+  /* base d'essai : on n'écrit jamais, on remplace l'objet en mémoire de l'iframe */
+  const neuf = () => {
+    DB.profile = JSON.parse(JSON.stringify(profilType));
+    DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
+    DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
+    DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
+  };
+  const id = n => F.libId(n);
+  const serie = (w,r,rir,drops) => ({w, r, done:true, warm:false, rir:(rir===undefined?1:rir), drops});
+  const seance = (heuresAvant, entrees) => ({
+    id:"t"+Math.random(), date:new Date(Date.now()-heuresAvant*36e5).toISOString(),
+    name:"Test", templateId:"x", start:Date.now()-heuresAvant*36e5-3.4e6, end:Date.now()-heuresAvant*36e5,
+    entries:entrees
+  });
+
+  /* ---------------------------------------------------------- force et tonnage */
+  grp("Force et tonnage");
+  neuf();
+  pres("1RM Epley : 100 kg × 1", F.e1rm(100,1), 100, 0.01);
+  pres("1RM Epley : 60 kg × 10", F.e1rm(60,10), 80, 0.01);
+  eq("Tonnup d'une série simple", F.volSerie({w:60, r:10}), 600);
+  eq("Tonnup avec dégressif", F.volSerie({w:12, r:6, drops:[{w:10, r:4}]}), 112);
+  eq("Barre : facteur 1", F.facteurCharge(id("Développé couché")), 1);
+  eq("Haltères : facteur 2", F.facteurCharge(id("Développé incliné haltères")), 2);
+  DB.unilat[id("Extension poulie")] = true;
+  eq("Unilatéral coché : facteur 2", F.facteurCharge(id("Extension poulie")), 2);
+  DB.unilat[id("Développé incliné haltères")] = true;
+  eq("Haltères + unilatéral : reste 2, jamais 4", F.facteurCharge(id("Développé incliné haltères")), 2);
+  neuf();
+
+  /* ---------------------------------------------------------- dates */
+  grp("Dates");
+  const d = new Date(2026, 0, 5, 23, 30);
+  eq("Clé du jour en heure locale (pas UTC)", F.dayKey(d), "2026-01-05");
+  eq("Clé du jour, 1er janvier", F.dayKey(new Date(2026, 0, 1, 0, 5)), "2026-01-01");
+
+  /* ---------------------------------------------------------- plan calorique */
+  grp("Plan calorique");
+  neuf();
+  let pl = F.planFor(DB.profile);
+  pres("Métabolisme de base (Mifflin-St Jeor)", pl.bmr, 1780, 2);
+  vrai("Dépense supérieure au métabolisme de base", pl.tdee > pl.bmr);
+  vrai("Prise de masse : surplus positif", pl.delta > 0);
+  vrai("Fourchette cohérente (min < cible < max)", pl.kcalMin < pl.kcal && pl.kcal < pl.kcalMax);
+  pres("Protéines = 1,9 g/kg", pl.prot, Math.round(74*1.9), 1);
+  DB.profile.aim = "seche"; DB.profile.goalWeight = 68;
+  pl = F.planFor(DB.profile);
+  vrai("Sèche : déficit", pl.delta < 0);
+  vrai("Jamais sous 1,2 × le métabolisme de base", pl.kcal >= pl.bmr*1.2 - 1);
+  DB.profile.tdeeManuel = 2200;
+  pl = F.planFor(DB.profile);
+  eq("Dépense saisie à la main : elle prime", pl.tdee, 2200);
+  eq("…et la source est signalée", pl.tdeeSource, "manuel");
+  neuf();
+
+  /* ---------------------------------------------------------- garde-fous santé */
+  grp("Garde-fous santé");
+  pres("IMC 74 kg / 188 cm", F.imc(74,188), 20.9, 0.1);
+  eq("Poids plancher pour 188 cm (IMC 18,5)", F.poidsMiniSain(188), 65.4);
+  eq("Objectif sain : aucune alerte", F.alerteObjectif({weight:74, height:188, goalWeight:80}), null);
+  eq("IMC cible 18,1 : danger", F.alerteObjectif({weight:74, height:188, goalWeight:64}).niveau, "danger");
+  eq("IMC cible 15,6 : danger", F.alerteObjectif({weight:74, height:188, goalWeight:55}).niveau, "danger");
+  eq("Perte de 27 % : prudence", F.alerteObjectif({weight:110, height:175, goalWeight:80}).niveau, "prudence");
+  eq("IMC cible 36,8 en prise : danger", F.alerteObjectif({weight:74, height:188, goalWeight:130}).niveau, "danger");
+  eq("IMC cible 31,1 en prise : prudence", F.alerteObjectif({weight:74, height:188, goalWeight:110}).niveau, "prudence");
+  eq("Prise de 28 % : prudence", F.alerteObjectif({weight:74, height:188, goalWeight:95}).niveau, "prudence");
+  eq("Obèse qui maintient : pas d'alerte de prise", F.alerteObjectif({weight:120, height:175, goalWeight:120}), null);
+  vrai("Poids visé de 250 kg refusé", !!F.verifieChamp("goalWeight", 250));
+  vrai("Poids visé de 200 kg accepté", !F.verifieChamp("goalWeight", 200));
+  vrai("Poids de 3000 kg refusé", !!F.verifieChamp("weight", 3000));
+  vrai("Poids de 74 kg accepté", !F.verifieChamp("weight", 74));
+  vrai("Taille de 250 cm refusée", !!F.verifieChamp("height", 250));
+  vrai("Âge de 8 ans refusé", !!F.verifieChamp("age", 8));
+
+  /* ---------------------------------------------------------- alimentation */
+  grp("Alimentation");
+  eq("Protéines lues dans le libellé", F.protOf("Poulet (150 g cuit)"), 46);
+  eq("Calories lues dans le libellé", F.kcalOf("Poulet (150 g cuit)"), 250);
+  eq("Ancien libellé toujours reconnu", F.protOf("150 g de poulet"), 34);
+  eq("Libellé calculé : protéines", F.protOf("Œuf ×3 (~19 g prot. · 234 kcal)"), 19);
+  eq("Libellé calculé : calories", F.kcalOf("Œuf ×3 (~19 g prot. · 234 kcal)"), 234);
+  eq("Découpage nom / portion", F.partsAliment("Poulet (150 g cuit)", 46).nom, "Poulet");
+  eq("Portion raccourcie (sans « cuit »)", F.partsAliment("Poulet (150 g cuit)", 46).qCourt, "150 g");
+  eq("Portion : première mesure seulement", F.partsAliment("Whey + lait (1 dose, 300 ml)", 34).qCourt, "1 dose");
+  eq("Multiplicateur reconnu", F.partsAliment("Œuf ×3 (~19 g prot.)", 19).q, "×3");
+  neuf();
+  const jour = F.dayKey();
+  DB.habitSel[jour] = {midi:["Poulet (150 g cuit)","Riz (200 g cuit)"]};
+  eq("Total protéines du jour", F.dayProt(jour), 51);
+  eq("Total calories du jour", F.dayKcal(jour), 510);
+  DB.dayFix[jour] = {prot:100};
+  eq("Correction manuelle prioritaire", F.dayProt(jour), 100);
+  neuf();
+
+  /* portions revues : les journées déjà cochées ne doivent rien perdre */
+  eq("Nouvelle portion : un blanc de poulet", F.protOf("Poulet (1 blanc, 130 g cuit)"), 40);
+  eq("Nouvelle portion : ses calories", F.kcalOf("Poulet (1 blanc, 130 g cuit)"), 215);
+  eq("Portion affichée : 1 blanc", F.partsAliment("Poulet (1 blanc, 130 g cuit)", 40).qCourt, "1 blanc");
+  eq("Ancienne portion encore comptée", F.protOf("Poulet (150 g cuit)"), 46);
+  eq("Ancienne portion : ses calories aussi", F.kcalOf("Poulet (150 g cuit)"), 250);
+  eq("Ancien thon toujours compté", F.protOf("Thon (1 boîte égouttée)"), 24);
+  vrai("Chaque proposition sait dire ses protéines et ses calories",
+    Object.values(F.eval("HB_OPTS")).every(l => l.every(([lab]) => F.protOf(lab) >= 0 && F.kcalOf(lab) > 0)));
+
+  /* la base d aliments : rien d incomplet, rien en double */
+  const BASE = F.eval("FOOD_100G");
+  vrai("Chaque aliment de la base est complet",
+    BASE.every(([, items]) => items.every(([n,pr,kc,u]) => n && pr >= 0 && kc > 0 && u)));
+  vrai("Aucun doublon dans un même groupe",
+    BASE.every(([, items]) => new Set(items.map(x=>x[0])).size === items.length));
+  vrai("Chaque groupe a bien un nom et une seule liste",
+    BASE.every(g => g.length === 2 && typeof g[0] === "string" && Array.isArray(g[1])));
+  vrai("Les légumes sont dans la base",
+    BASE.some(([g, items]) => /légumes/i.test(g) && items.length >= 10));
+  vrai("Les plats cuisinés sont dans la base",
+    BASE.some(([g, items]) => /plats/i.test(g) && items.length >= 10));
+  vrai("Un plat se compte à la part, jamais aux 100 g",
+    BASE.filter(([g]) => /plats/i.test(g)).every(([, items]) => items.every(([,,,u]) => u !== "100g")));
+  vrai("Le groupe des plats prévient que c'est approximatif",
+    !!F.eval("FOOD_NOTE")["Plats et repas complets"]);
+
+  /* la recherche : par nom, par famille, par groupe */
+  const cherche = q => F.chercherAliments(q).reduce((a,[,items])=>a.concat(items.map(x=>x[0][0])), []);
+  vrai("Sans recherche, toute la base est proposée",
+    cherche("").length === F.eval("FOOD_100G").reduce((a,g)=>a+g[1].length,0));
+  vrai("Le nom sans accent trouve le nom accentué", cherche("pate").includes("Pâtes cuites"));
+  vrai("« poisson » sort le cabillaud", cherche("poisson").includes("Cabillaud"));
+  vrai("« poisson » ne sort pas le poulet", !cherche("poisson").some(n=>/poulet/i.test(n)));
+  vrai("« viande » sort le steak", cherche("viande").some(n=>/steak/i.test(n)));
+  vrai("« légume » sort le brocoli", cherche("légume").includes("Brocoli"));
+  vrai("« féculent » sort le riz", cherche("féculent").includes("Riz cuit"));
+  vrai("« fromage » sort le comté", cherche("fromage").includes("Comté / emmental"));
+  vrai("« œuf » ne ramène pas le bœuf", !cherche("oeuf").some(n=>/b(œ|oe)uf/i.test(n)));
+  vrai("« fruit » ne ramène pas le thon", !cherche("fruit").some(n=>/thon/i.test(n)));
+  vrai("Une recherche en deux mots marche", cherche("fast food").some(n=>/burger/i.test(n)));
+  vrai("Une recherche sans réponse ne rend rien", cherche("zzzzz").length === 0);
+  vrai("Les légumes ne sont pas dans la grille du quotidien",
+    !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) => /brocoli|courgette|salade verte/i.test(lab))));
+
+  /* les liquides se comptent au volume */
+  vrai("Le lait est compté en centilitres",
+    BASE.some(([, items]) => items.some(([n,,,u]) => /lait/i.test(n) && u === "cl")));
+  const LIQ = "Lait demi-écrémé 25 cl (~9 g prot. · 118 kcal)";
+  eq("Portion en centilitres reconnue", F.partsAliment(LIQ, 9).qCourt, "25 cl");
+  eq("Nom séparé du volume", F.partsAliment(LIQ, 9).nom, "Lait demi-écrémé");
+  eq("Protéines lues sur un liquide", F.protOf(LIQ), 9);
+  eq("Calories lues sur un liquide", F.kcalOf(LIQ), 118);
+
+  /* récapitulatif par repas */
+  neuf();
+  const j2 = F.dayKey();
+  DB.habitSel[j2] = {matin:["Œuf","Œuf"], soir:["Poulet (1 blanc, 130 g cuit)"]};
+  eq("Protéines du matin seul", F.mealProt(j2, "matin"), 12);
+  eq("Protéines du soir seul", F.mealProt(j2, "soir"), 40);
+  eq("Un repas vide vaut zéro", F.mealProt(j2, "midi"), 0);
+  eq("Le total reste la somme des repas", F.dayProt(j2), 52);
+
+  /* habitudes : deux prises minimum, et le plus fréquent en tête */
+  neuf();
+  DB.habitSel = {
+    "2026-08-01":{soir:["Poulet (1 blanc, 130 g cuit)","Riz (200 g cuit)"]},
+    "2026-08-02":{soir:["Poulet (1 blanc, 130 g cuit)","Riz (200 g cuit)"]},
+    "2026-08-03":{soir:["Poulet (1 blanc, 130 g cuit)","Thon (1 boîte, 95 g égoutté)"]}
+  };
+  const hab = F.habitudesDuRepas("soir").map(x=>x[0]);
+  eq("Le plus fréquent arrive en tête", hab[0], "Poulet (1 blanc, 130 g cuit)");
+  vrai("Deux prises suffisent à faire une habitude", hab.includes("Riz (200 g cuit)"));
+  vrai("Une seule prise n'en fait pas une", !hab.includes("Thon (1 boîte, 95 g égoutté)"));
+  vrai("Aucune habitude sur un repas jamais pris", F.habitudesDuRepas("midi").length === 0);
+  neuf();
+
+  /* ---------------------------------------------------------- cardio */
+  grp("Cardio");
+  const base = {km:6, min:50, pente:0, runMin:0, hr:0, kcalM:0, machine:"course", intensite:"modere"};
+  const marche = F.sortieKcal({...base, type:"marche"}, 74);
+  const course = F.sortieKcal({...base, type:"course"}, 74);
+  const mixte  = F.sortieKcal({...base, type:"mixte", runMin:15}, 74);
+  vrai("Courir coûte plus que marcher", course > marche);
+  vrai("Mixte se situe entre les deux", mixte > marche && mixte < course);
+  eq("Calories de la montre : prioritaires", Math.round(F.sortieKcal({...base, type:"course", kcalM:410}, 74)), 410);
+  vrai("FC prise en compte à défaut de montre",
+       F.sortieKcal({...base, type:"marche", hr:160}, 74) > F.sortieKcal({...base, type:"marche", hr:120}, 74));
+  pres("Vélo intense 45 min (10 MET, 74 kg)",
+       F.sortieKcal({km:18, min:45, pente:0, machine:"velo", intensite:"intense"}, 74), 583, 5);
+  vrai("Vélo léger < vélo intense",
+       F.sortieKcal({km:12, min:45, machine:"velo", intensite:"leger"}, 74) <
+       F.sortieKcal({km:18, min:45, machine:"velo", intensite:"intense"}, 74));
+  eq("Type déduit de l'allure : marche", F.cardioType({km:4, min:60}), "marche");
+  eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
+  eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
+
+  /* ---------------------------------------------------------- récupération */
+  grp("Récupération");
+  neuf();
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
+  const r1 = F.recuperation();
+  vrai("Quadriceps entamés juste après la séance", r1.muscles["Quadriceps"].pct < 70);
+  vrai("Pectoraux intacts", r1.muscles["Pectoraux"].pct === 100);
+  DB.history = [seance(80, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
+  eq("Quadriceps récupérés après 80 h", F.recuperation().muscles["Quadriceps"].pct, 100);
+  /* même séance, même volume : seule l'intensité change */
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,0),serie(80,8,0),serie(80,8,0)]}])];
+  const echec = F.recuperation().muscles["Quadriceps"].pct;
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,3),serie(80,8,3),serie(80,8,3)]}])];
+  const reserve = F.recuperation().muscles["Quadriceps"].pct;
+  vrai("Séries à l'échec fatiguent plus que séries en réserve", echec < reserve, `échec ${echec} % vs réserve ${reserve} %`);
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,1,[{w:60,r:5}]),serie(80,8,1),serie(80,8,1)]}])];
+  const avecDrop = F.recuperation().muscles["Quadriceps"].pct;
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8,1),serie(80,8,1),serie(80,8,1)]}])];
+  const sansDrop = F.recuperation().muscles["Quadriceps"].pct;
+  vrai("Un dégressif ajoute de la fatigue", avecDrop < sansDrop, `avec ${avecDrop} % vs sans ${sansDrop} %`);
+  eq("Poids de fatigue : à l'échec", F.poidsFatigue({rir:0}), 1.35);
+  eq("Poids de fatigue : 3 reps en réserve", F.poidsFatigue({rir:3}), 0.7);
+  neuf();
+
+  /* ---------------------------------------------------------- profil musculaire */
+  grp("Profil musculaire");
+  neuf();
+  DB.history = [1,2].map(n => seance(n*24, [
+    {exId:id("Développé couché"), sets:[serie(60,9),serie(60,8)]},
+    {exId:id("Extension poulie"), sets:[serie(14,10),serie(14,10)]},
+    {exId:id("Squat"), sets:[serie(80,9),serie(80,8)]},
+    {exId:id("Développé militaire"), sets:[serie(35,9),serie(35,8)]}
+  ]));
+  const prof = F.muscleProfile(), moy = F.mpMoyenne(prof);
+  vrai("Une moyenne personnelle est calculée", moy !== null);
+  vrai("Triceps en retard sur la moyenne", prof["Triceps"] < moy);
+  eq("Étiquette : point faible", F.mpStatus(prof["Triceps"], moy).tag, "Point faible");
+  eq("Étiquette : équilibré au niveau de la moyenne", F.mpStatus(moy, moy).tag, "Équilibré");
+  eq("Étiquette : point fort à +20 %", F.mpStatus(moy*1.2, moy).tag, "Point fort");
+  eq("Sans moyenne, on retombe sur le barème", F.mpStatus(100, null).tag, "Équilibré");
+  const avant = F.muscleProfile()["Triceps"];
+  DB.unilat[id("Extension poulie")] = true;
+  vrai("Unilatéral : le score double", F.muscleProfile()["Triceps"] > avant*1.9);
+  neuf();
+
+  /* ---------------------------------------------------------- progression sans charge */
+  grp("Progression sans charge");
+  eq("Sous le plafond : on ajoute des reps", F.progressionSansCharge(id("Pompes"), 12, 3).mode, "reps");
+  eq("Proche du plafond : on ajoute une série", F.progressionSansCharge(id("Pompes"), 21, 3).mode, "serie");
+  eq("Au plafond : on change de variante", F.progressionSansCharge(id("Pompes"), 26, 3).mode, "variante");
+  eq("Variante plus dure des pompes", F.varianteDure(id("Pompes")), "Dips");
+  vrai("Poids du corps : charge plafonnée d'office", F.chargeBloquee(id("Pompes")));
+  vrai("Poulie : charge libre par défaut", !F.chargeBloquee(id("Extension poulie")));
+  vrai("Pompes sans lest : rien à retirer", F.sansChargeDuTout(id("Pompes"), 0));
+  vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie"), 20));
+
+  /* ---------------------------------------------------------- propositions de seances */
+  grp("Propose-moi une séance");
+  neuf();
+  /* déclarés avec const : comme db, ils ne sont pas sur window */
+  const RES = F.eval("RESERVOIRS"), MOU = F.eval("MOULES");
+  vrai("Tous les exercices proposables existent dans la bibliothèque",
+    Object.values(RES).every(l=>l.every(n=>F.libId(n))));
+  const pushA = F.genererSeance("push");
+  eq("Une séance push a un exercice par rôle", pushA.items.length, MOU.push.roles.length);
+  vrai("Aucun doublon dans une séance", new Set(pushA.items.map(i=>i.nom)).size === pushA.items.length);
+  vrai("Le premier exercice est le plus lourd", pushA.items[0].sets >= pushA.items[pushA.items.length-1].sets);
+  vrai("Repos plus longs sur le premier exercice", pushA.items[0].rest >= pushA.items[pushA.items.length-1].rest);
+  const pushB = F.genererSeance("push", pushA.items.map(i=>i.nom));
+  vrai("Une nouvelle proposition change tous les exercices",
+    pushB.items.every(i=>!pushA.items.some(j=>j.nom===i.nom)));
+  DB.profile.injuries = ["epaule","genou"];
+  let risques = 0, roles = 0;
+  ["push","pull","jambes","haut","bas","full"].forEach(t=>{
+    for(let i=0;i<4;i++){ const g = F.genererSeance(t);
+      if(g.items.length === MOU[t].roles.length) roles++;
+      g.items.forEach(it=>{ if(F.injuryNote(it.nom)) risques++; }); }
+  });
+  eq("Blessures déclarées : aucun exercice à risque proposé", risques, 0);
+  eq("Tous les rôles sont remplis sur les 24 tirages", roles, 24);
+  DB.profile.injuries = [];
+  DB.profile.days = 2;
+  eq("2 séances par semaine : full body proposé en premier", F.typesProposables()[0], "full");
+  DB.profile.days = 5;
+  eq("5 séances par semaine : push en premier", F.typesProposables()[0], "push");
+  neuf();
+  DB.templates = [{id:"a", name:"Push · Prise de muscle", items:[]}];
+  eq("Un nom déjà pris est numéroté", F.nomLibre("Push · Prise de muscle"), "Push · Prise de muscle 2");
+  eq("Un nom libre est gardé tel quel", F.nomLibre("Pull · Prise de muscle"), "Pull · Prise de muscle");
+  neuf();
+
+  /* ---------------------------------------------------------- materiel disponible */
+  grp("Matériel disponible");
+  neuf();
+  const MAT = F.eval("MATERIELS");
+  const ex = n => F.getEx(id(n));
+  DB.materiel = null;
+  vrai("Sans filtre, tout est proposable", F.exoDispo(ex("Presse à cuisses")));
+  DB.materiel = [];
+  vrai("Sans matériel : les pompes, oui", F.exoDispo(ex("Pompes")));
+  vrai("Sans matériel : la presse à cuisses, non", !F.exoDispo(ex("Presse à cuisses")));
+  vrai("Le développé couché demande une barre ET un banc",
+    !F.exoDispo(ex("Développé couché"), ["barre"]) && !F.exoDispo(ex("Développé couché"), ["banc"])
+    && F.exoDispo(ex("Développé couché"), ["barre","banc"]));
+  vrai("Le squat bulgare accepte un step OU un banc",
+    F.exoDispo(ex("Squat bulgare au poids du corps"), ["step"])
+    && F.exoDispo(ex("Squat bulgare au poids du corps"), ["banc"])
+    && !F.exoDispo(ex("Squat bulgare au poids du corps"), []));
+  vrai("Chaque groupe musculaire a du répondant sans matériel", (()=>{
+    const groupes = ["Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos"];
+    return groupes.every(g => F.eval("LIB").some(e=>e.muscle===g && F.exoDispo(e, [])));
+  })());
+  DB.profile = JSON.parse(JSON.stringify(profilType));
+  DB.materiel = [];
+  vrai("Sans matériel, aucune séance impossible n'est proposée",
+    F.typesProposables().every(t => F.genererSeance(t).items.every(it => F.exoDispo(ex(it.nom)))));
+  vrai("Sans matériel, chaque séance proposée tient au moins 3 exercices",
+    F.typesProposables().every(t => F.genererSeance(t).items.length >= 3));
+  const rolesRien = F.rolesRemplissables("pull");
+  DB.materiel = ["elastique"];
+  vrai("Un élastique élargit ce qui est faisable pour le dos", F.rolesRemplissables("pull") > rolesRien);
+  vrai("Avec un élastique, toutes les séances restent réalisables",
+    F.typesProposables().every(t => F.genererSeance(t).items.every(it => F.exoDispo(ex(it.nom)))));
+  DB.materiel = ["halteres"];
+  DB.templates = [];
+  F.addCoachProgram("masse");
+  vrai("Le programme du coach est adapté au matériel",
+    DB.templates.length > 0 && DB.templates.every(t=>t.items.every(it=>F.exoDispo(F.getEx(it.exId)))));
+  DB.materiel = null;
+  neuf();
+
+  /* ---------------------------------------------------------- charge de la fois suivante */
+  grp("Charge conseillée");
+  neuf();
+  const seanceDe = (reps, rirs) => {
+    const exId = id("Développé couché");
+    DB.history = [{id:"h1", date:new Date().toISOString(), name:"Push", start:0, end:0,
+      entries:[{exId, sets:reps.map((r,i)=>({w:80, r, done:true, rir: rirs? rirs[i] : undefined}))}]}];
+    return F.suggestFor(exId, {reps:"10-12"});
+  };
+  eq("Une seule série courte en fin de séance ne fait pas baisser la charge",
+    seanceDe([10,10,10,8], [2,2,1,0]).mode, "beat");
+  eq("Trois séries pleines sur quatre : on garde la charge",
+    seanceDe([10,10,10,8]).mode, "beat");
+  eq("La majorité des séries sous la cible fait baisser",
+    seanceDe([8,7,6,5], [0,0,0,0]).mode, "down");
+  eq("Deux séries sur quatre ne suffisent pas à baisser",
+    seanceDe([10,10,8,7], [2,2,0,0]).mode, "beat");
+  eq("Toutes les séries au plafond font monter",
+    seanceDe([12,12,12,12]).mode, "up");
+  eq("Beaucoup de réserve fait monter aussi",
+    seanceDe([11,11,11,11], [3,3,3,3]).mode, "up");
+  eq("Une série unique est jugée sur elle-même",
+    seanceDe([8], [0]).mode, "down");
+
+  /* charge fixe : une seule charge disponible, donc seule la répétition bouge */
+  const fixe = (reps, rirs) => {
+    const exId = id("Curl haltères");
+    DB.plafond = {}; DB.plafond[exId] = true;
+    DB.history = [{id:"h2", date:new Date().toISOString(), name:"Bras", start:0, end:0,
+      entries:[{exId, sets:reps.map((r,i)=>({w:12, r, done:true, rir: rirs? rirs[i] : undefined}))}]}];
+    const s = F.suggestFor(exId, {reps:"12-15"});
+    DB.plafond = {};
+    return s;
+  };
+  const rate = fixe([12,10,8], [1,0,0]);
+  eq("Charge fixe : la charge ne bouge pas", rate.w, 12);
+  eq("Charge fixe : la cible en reps devient la médiane, pas la pire série", rate.reps, 10);
+  eq("Charge fixe : quatre séries, médiane des deux du milieu",
+    fixe([12,11,10,8], [0,0,0,0]).reps, 11);
+  vrai("Charge fixe : jamais de baisse de charge", rate.mode !== "down");
+  vrai("Charge fixe : le conseil dit qu'on ne peut pas alléger", /alléger/.test(rate.text));
+  eq("Charge fixe : au plafond, on ajoute des reps", fixe([15,15,15], [2,2,2]).mode, "reps");
+  eq("Sans charge fixe, une séance vraiment ratée fait baisser la charge",
+    seanceDe([9,8,7], [0,0,0]).mode, "down");
+
+  /* le nombre pré-rempli : le milieu de la fourchette, pas son plancher */
+  eq("8-12 propose 10", F.repsDepart(F.parseReps("8-12")), 10);
+  eq("12-15 propose 13", F.repsDepart(F.parseReps("12-15")), 13);
+  eq("6-12 propose 9", F.repsDepart(F.parseReps("6-12")), 9);
+  eq("Sans fourchette, rien n'est proposé", F.repsDepart(null), "");
+
+  /* un exercice ajouté en cours de séance reçoit un objectif */
+  DB.profile = JSON.parse(JSON.stringify(profilType));
+  DB.profile.aim = "masse";
+  eq("Le curl est traité comme de l'isolation",
+    F.cibleParDefaut(id("Curl haltères")).reps, "12-15");
+  eq("Le développé couché garde la fourchette lourde",
+    F.cibleParDefaut(id("Développé couché")).reps, "8-12");
+  vrai("L'objectif ajouté a des séries et un repos",
+    F.cibleParDefaut(id("Squat")).sets > 0 && F.cibleParDefaut(id("Squat")).rest > 0);
+
+  /* les schémas d'entraînement : ce qui doit rester vrai quel que soit l'objectif */
+  const DOSES = F.eval("DOSES");
+  vrai("En sèche on garde les charges de la prise de masse",
+    DOSES.seche.lourd.r === DOSES.masse.lourd.r && DOSES.seche.moyen.r === DOSES.masse.moyen.r);
+  vrai("En sèche c'est le volume qui baisse, pas l'intensité",
+    DOSES.seche.lourd.s < DOSES.masse.lourd.s);
+  vrai("En entretien aussi, la charge se maintient",
+    DOSES.entretien.lourd.r === DOSES.masse.lourd.r);
+  vrai("Aucun mouvement lourd ne repose moins de 2 minutes",
+    Object.values(DOSES).every(d => d.lourd.p >= 120));
+  vrai("Aucune isolation ne repose moins de 75 secondes",
+    Object.values(DOSES).every(d => d.leger.p >= 75));
+  vrai("La force reste la seule à descendre sous 8 répétitions",
+    Object.keys(DOSES).every(k => k === "force" || parseInt(DOSES[k].lourd.r) >= 8));
+  const PROGS = F.eval("COACH_PROGRAMS");
+  const tousLesItems = Object.values(PROGS).reduce((a,p)=>a.concat(p.templates.reduce((b,t)=>b.concat(t.items), [])), []);
+  vrai("Aucune séance toute faite ne repose moins d'une minute",
+    tousLesItems.every(([nom, sets, reps, repos]) => repos >= 60));
+  DB.materiel = [];
+  vrai("Aucune fourchette impossible au poids du corps", (()=>{
+    for(let k=0;k<60;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom)), r = F.parseReps(it.reps);
+          if(!ex || !r) continue;
+          if(F.estPoidsDuCorps(ex) && r.lo > 8) return false;
+          if(ex.equip === "Barre fixe" && r.hi > 12) return false;
+        }
+      }
+    }
+    return true;
+  })());
+  DB.materiel = null;
+  vrai("En perte de poids, plus aucune série au-delà de 15 répétitions",
+    PROGS.seche.templates.every(t => t.items.every(([nom, sets, reps]) => !/1[6-9]|2[0-9]/.test(String(reps)))));
+  neuf();
+
+  /* ---------------------------------------------------------- photo de la séance */
+  grp("Photo de la séance");
+  neuf();
+  const exDe = g => F.eval("LIB").filter(e=>e.muscle===g).slice(0,3).map(e=>({exId:e.id}));
+  eq("Une séance d'abdos n'est pas une séance de dos",
+    F.photoSeance({name:"Abdos", items:exDe("Abdos")}), "abdos");
+  eq("Le nom « Abdos » seul suffit", F.photoSeance({name:"Abdos", items:[]}), "abdos");
+  eq("Une séance de dos reste une séance de dos",
+    F.photoSeance({name:"Pull", items:exDe("Dos")}), "pull");
+  eq("Les pectoraux donnent push", F.photoSeance({name:"Push", items:exDe("Pectoraux")}), "push");
+  eq("Les jambes donnent jambes", F.photoSeance({name:"Legs", items:exDe("Jambes")}), "jambes");
+  eq("Les exercices priment sur le nom",
+    F.photoSeance({name:"Pull", items:exDe("Jambes")}), "jambes");
+  eq("Une photo choisie à la main est respectée",
+    F.photoSeance({photo:"cardio", name:"Abdos", items:exDe("Abdos")}), "cardio");
+  neuf();
+
+  /* ---------------------------------------------------------- fiches d'exercice */
+  grp("Fiches d'exercice");
+  neuf();
+  const LIBT = F.eval("LIB"), INFO = F.eval("EXO_INFO"), TRAVAIL = F.eval("MUSCLE_WORK");
+  vrai("Chaque exercice a sa fiche d'exécution",
+    LIBT.every(e => INFO[e.name]));
+  vrai("Aucune fiche ne traîne sans exercice",
+    Object.keys(INFO).every(n => LIBT.some(e => e.name === n)));
+  vrai("Chaque fiche a une astuce et au moins trois étapes",
+    Object.values(INFO).every(i => i.tip && i.tip.length > 20 && i.steps && i.steps.length >= 3));
+  vrai("Aucune étape vide ou tronquée",
+    Object.values(INFO).every(i => i.steps.every(t => typeof t === "string" && t.length > 10)));
+  vrai("Chaque exercice déclare les muscles qu'il sollicite",
+    LIBT.every(e => (TRAVAIL[e.name] || []).length > 0));
+  vrai("Chaque exercice a un muscle principal",
+    LIBT.every(e => (TRAVAIL[e.name] || []).some(([, n]) => n === 3)));
+  neuf();
+
+  /* ---------------------------------------------------------- parcours d'accueil */
+  grp("Parcours d'accueil");
+  neuf();
+  const sansSexe = F.planFor({...profilType, sex:"n"});
+  const homme = F.planFor({...profilType, sex:"h"});
+  const femme = F.planFor({...profilType, sex:"f"});
+  vrai("Sexe non renseigné : entre homme et femme", sansSexe.bmr < homme.bmr && sansSexe.bmr > femme.bmr);
+  pres("Sexe non renseigné : moyenne des deux", sansSexe.bmr, (homme.bmr+femme.bmr)/2, 1);
+  const fk = F.fourchetteProt(1.9);
+  eq("Fourchette protéines : trois choix", fk.length, 3);
+  eq("Fourchette protéines : la valeur conseillée est au centre", fk[1][0], 1.9);
+  vrai("Fourchette protéines : ordre croissant", fk[0][0] < fk[1][0] && fk[1][0] < fk[2][0]);
+  vrai("Fourchette protéines : jamais en dessous de 1,2 g/kg", F.fourchetteProt(1.3)[0][0] >= 1.2);
+  vrai("Fourchette protéines : jamais au-dessus de 2,6 g/kg", F.fourchetteProt(2.5)[2][0] <= 2.6);
+
+  /* ------------------------------------------------- reponses de fin de serie (vrai parcours) */
+  grp("Réponses de fin de série");
+  neuf();
+  DB.templates = [{id:"tr", name:"Test RIR", items:[{exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+  const D = document.getElementById("app").contentDocument;
+  let erreur = null;
+  F.onerror = m => { erreur = m; };
+  const repondre = valeur => {
+    DB.active = null;
+    F.startWorkout("tr");
+    const rows = [...D.querySelectorAll(".set-row")];
+    const r = rows[1];                                  /* rows[0] = échauffement */
+    const w = r.querySelector("input");
+    w.value = 60; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click();
+    const ask = D.querySelector(".rir-ask");
+    if(!ask) return {ok:false, txt:"la question ne s'affiche pas"};
+    erreur = null;
+    ask.querySelector('[data-rir="' + valeur + '"]').click();
+    const rep = D.querySelector(".rir-ask .q.ok");
+    return {ok: !erreur && !!rep, txt: erreur || (rep? rep.textContent : "aucune réponse")};
+  };
+  [["0","Non, 0"],["1","1-2"],["3","3-5+"],["-1","C'était trop lourd"]].forEach(([v,lab])=>{
+    const r = repondre(v);
+    vrai("« " + lab + " » répond sans planter", r.ok, r.txt);
+  });
+  vrai("« 3-5+ » monte la charge des séries suivantes", (()=>{ repondre("3"); const s2 = DB.active.entries[0].sets[2]; return s2.w > 60; })());
+  vrai("« Trop lourd » baisse la charge des séries suivantes", (()=>{ repondre("-1"); const s2 = DB.active.entries[0].sets[2]; return s2.w < 60; })());
+  vrai("« 1-2 » garde la charge des séries suivantes", (()=>{ repondre("1"); const s2 = DB.active.entries[0].sets[2]; return s2.w === 60; })());
+  F.onerror = null;
+
+  /* ---- mise en avant de la série en cours et repli de l exercice ---- */
+  DB.active = null;
+  F.startWorkout("tr");
+  const lignes = () => [...D.querySelectorAll(".set-row")];
+  const actives = () => lignes().map(l=>l.classList.contains("actif") ? 1 : 0);
+  eq("Une seule série est mise en avant", actives().reduce((a,b)=>a+b,0), 1);
+  eq("C'est la première non validée", actives().indexOf(1), 0);
+  (()=>{ const r = lignes()[0]; const [w,q] = r.querySelectorAll("input");
+    w.value = 60; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click(); })();
+  eq("Elle passe à la suivante une fois validée", actives().indexOf(1), 1);
+  eq("…et toujours une seule", actives().reduce((a,b)=>a+b,0), 1);
+  /* ---- un seul cadre noir dans toute la séance ---- */
+  DB.active = null;
+  DB.templates.push({id:"tr2", name:"Test deux", items:[
+    {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+    {exId:id("Rowing barre"), sets:3, reps:"8-12", rest:120}]});
+  F.startWorkout("tr2");
+  eq("Deux exercices affichés", D.querySelectorAll(".ex-card").length, 2);
+  eq("Une seule série mise en avant sur toute la séance", actives().reduce((a,b)=>a+b,0), 1);
+
+  /* ---- la question passe avant la série suivante ---- */
+  DB.active = null;
+  F.startWorkout("tr");
+  /* l'échauffement ne déclenche pas de question : on le valide d'abord */
+  (()=>{ const r = lignes()[0]; const [w,q] = r.querySelectorAll("input");
+    w.value = 30; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    q.value = 12; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click(); })();
+  (()=>{ const r = lignes()[1]; const [w,q] = r.querySelectorAll("input");
+    w.value = 60; w.dispatchEvent(new F.Event("input", {bubbles:true}));
+    q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    r.querySelector(".ck").click(); })();
+  vrai("Une question apparaît après la série", !!D.querySelector(".rir-ask"));
+  eq("La série concernée reste dans le bloc noir pendant la question", actives().indexOf(1), 1);
+  eq("…et elle seule", actives().reduce((a,b)=>a+b,0), 1);
+  vrai("La question fait partie du même bloc noir", !!D.querySelector(".rir-ask.bn"));
+  lignes()[2].querySelector(".ck").click();
+  vrai("La série suivante refuse d'être validée avant la réponse", !DB.active.entries[0].sets[2].done);
+  D.querySelector('.rir-ask [data-rir="1"]').click();
+  eq("Le bloc noir reste le temps du message de réponse", actives().indexOf(1), 1);
+  /* le message s'efface au bout de quelques secondes : on simule sa disparition */
+  D.querySelector(".rir-ask").remove(); F.retirerBlocNoir(true); F.majSerieActive();
+  eq("Puis la série suivante s'allume", actives().indexOf(1), 2);
+  lignes()[2].querySelector(".ck").click();
+  vrai("…et devient validable", DB.active.entries[0].sets[2].done);
+
+  DB.active.entries[0].replie = true;
+  F.render();
+  vrai("Un exercice replié tient sur une ligne", !!D.querySelector(".ex-done") && !D.querySelector(".ex-card"));
+  D.querySelector(".ex-done").click();
+  vrai("Il se rouvre d'un appui", !!D.querySelector(".ex-card") && !D.querySelector(".ex-done"));
+  DB.active = null;
+  neuf();
+
+  /* ---------------------------------------------------------- bilan */
+  const bilan = document.getElementById("bilan");
+  bilan.innerHTML = echecs === 0
+    ? `<span class="ok">✔ ${total} tests passés</span>`
+    : `<span class="ko">✘ ${echecs} test${echecs>1?"s":""} en échec</span> sur ${total}`;
+  window.RESULTS = {total, echecs};
+}
+</script>
+</html>
