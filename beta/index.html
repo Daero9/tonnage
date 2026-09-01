@@ -904,7 +904,7 @@
   <div class="rb-cote">
     <div class="rb-grp">
       <div class="grip" aria-hidden="true"><i></i><i></i><i></i></div>
-      <button class="rb-ic" id="rest-son" title=TR("Son de fin de repos") aria-label=TR("Son de fin de repos")></button>
+      <button class="rb-ic" id="rest-son" title="Son de fin de repos" aria-label="Son de fin de repos" id="rb-a-son"></button>
     </div>
     <button class="rb-rond" id="rest-minus" aria-label="Moins 15 secondes">−</button>
   </div>
@@ -913,7 +913,7 @@
     <div class="t"><span id="rest-t">1:30</span><span id="rest-picon"></span></div>
   </div>
   <div class="rb-cote fin">
-    <button class="rb-rond" id="rest-plus" aria-label=TR("Plus 15 secondes")>+</button>
+    <button class="rb-rond" id="rest-plus" aria-label="Plus 15 secondes" id="rb-a-plus">+</button>
     <div class="rb-grp fin"><button class="rb-skip" id="rest-skip"><span id="rb-lab-passer">Passer</span></button></div>
   </div>
   <div class="bar"><i id="rest-bar" style="width:100%"></i></div>
@@ -967,6 +967,33 @@ const TRAD = {en:{
   "Kcal brûlés":"kcal burned",
   "protéines":"protein",
   "Supprimer":"Delete",
+  /* --- corrections signalées par Nico --- */
+  "Pas encore assez de données pour la mesurer : il me faut deux semaines de repas cochés et deux pesées. En attendant, tu peux la corriger à la main.":"Not enough data to measure it yet: I need two weeks of ticked meals and two weigh-ins. In the meantime, you can correct it by hand.",
+  "Laisse vide pour laisser l'app décider toute seule. Si tu manges {} kcal et que ton poids est stable depuis trois semaines, saisis ce chiffre.":"Leave it empty to let the app decide on its own. If you eat {} kcal and your weight has been steady for three weeks, enter that figure.",
+  "Le programme complet ({})":"The full program ({})",
+  "— la séance qui manque":"— the workout you're missing",
+  "D'après ton objectif <b>{but}</b> et tes {n} séances par semaine. Les exercices changent à chaque proposition.":"Based on your goal <b>{but}</b> and your {n} sessions a week. The exercises change with every suggestion.",
+  "Full body":"Full body",
+  "Push":"Push",
+  "Pull":"Pull",
+  "Cuisses, fessiers, mollets":"Quads, glutes, calves",
+  "Fermer":"Close",
+  "Nouvelle séance":"New workout",
+  "Ajouter une sortie":"Add a session",
+  "🚴 Vélo":"🚴 Cycling",
+  "🪢 Corde à sauter":"🪢 Jump rope",
+  "prise de muscle":"muscle gain",
+  "Bas du corps":"Lower body",
+  "Haut du corps":"Upper body",
+  "🎯 Haut du corps — la séance qui manque":"🎯 Upper body — the workout you're missing",
+  "🎯 Bas du corps — la séance qui manque":"🎯 Lower body — the workout you're missing",
+  "Le programme complet ajoute les 3 séances d'un coup. Une proposition, c'est une séance à la fois.":"The full program adds all 3 workouts at once. A suggestion is one workout at a time.",
+  "Laisse vide pour laisser l'app décider toute seule. Si tu remplis, c'est ta valeur qui prime.":"Leave it empty to let the app decide on its own. If you fill it in, your value wins.",
+  "Pas encore assez de données pour la mesurer : il me faut deux semaines de repas cochés et deux pesées. En attendant, tu peux la saisir toi-même.":"Not enough data to measure it yet: I need two weeks of ticked meals and two weigh-ins. In the meantime, you can enter it yourself.",
+  "Pour chaque groupe musculaire, l'app estime ta force à partir de tes meilleures séries.":"For each muscle group, the app estimates your strength from your best sets.",
+  "1 portion":"1 portion",
+  "objectif":"target",
+
   /* --- diagnostics de sauvegarde --- */
   "jamais":"never",
   "il y a {} min":"{} min ago",
@@ -3047,7 +3074,7 @@ function openExoInfo(exId){
       <div class="exo-t">${TR("Mon matériel")}</div>
       ${blocChargeFixe(ex.id, "ei-plafond")}
     </div>
-    <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:4px;">Fermer</button>`);
+    <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:4px;">${TR("Fermer")}</button>`);
   document.getElementById("ei-plafond").onchange = e=>{
     reglerChargeFixe(ex.id, e.target.checked);
     toast(e.target.checked ? "Charge fixe : progression en répétitions ✓" : "Charge libre ✓");
@@ -3439,7 +3466,7 @@ function openKcalTips(sens, pl){
     <div class="label" style="margin-bottom:7px;">${TR("Les réflexes")}</div>
     <div class="stack" style="gap:6px; margin-bottom:16px;">${reflexes.map(r=>`
       <div style="font-size:13px; color:var(--ink-soft); line-height:1.5;">• ${esc(TR(r))}</div>`).join("")}</div>
-    <button class="btn btn-accent" id="kt-ok" style="width:100%;">Compris</button>`);
+    <button class="btn btn-accent" id="kt-ok" style="width:100%;">${TR("Compris")}</button>`);
   document.getElementById("kt-ok").onclick = closeSheet;
 }
 function openKcalInfo(pl){
@@ -3682,10 +3709,10 @@ function openOnboarding(first, brouillon, depart){
     const avancement = Math.round(i / (ETAPES.length - 1) * 100);
     onbEl.innerHTML = `
       ${(intro && !dejaRempli) ? "" : `<div class="onb-top">
-        ${i > 0 ? `<button class="onb-back" id="onb-back" aria-label=TR("Retour")>‹</button>`
+        ${i > 0 ? `<button class="onb-back" id="onb-back" aria-label="${TR("Retour")}">‹</button>`
                 : `<span style="width:30px; flex:0 0 auto;"></span>`}
         <div class="onb-prog"><i style="width:${avancement}%"></i></div>
-        ${(dejaRempli && !derniere) ? `<button class="onb-x" id="onb-x" aria-label=TR("Quitter")>✕</button>`
+        ${(dejaRempli && !derniere) ? `<button class="onb-x" id="onb-x" aria-label="${TR("Quitter")}">✕</button>`
                      : `<span style="width:30px; flex:0 0 auto;"></span>`}
       </div>`}
       <div class="onb-body${intro ? " intro" : ""}" id="onb-body"></div>
@@ -3781,7 +3808,7 @@ function openOnboarding(first, brouillon, depart){
     if(etape === "nom"){
       corps.innerHTML = `<h2>${TR("Comment veux-tu<br>qu'on t'appelle ?")}</h2>
         <div class="sous">${TR("Ton prénom sert seulement à personnaliser l'app. Il ne quitte jamais ton téléphone.")}</div>
-        <input class="onb-nom" id="onb-nom" placeholder=TR("Ton prénom") maxlength="20"
+        <input class="onb-nom" id="onb-nom" placeholder="${TR("Ton prénom")}" maxlength="20"
           value="${esc(d.name)}" autocomplete="given-name" enterkeyhint="next">`;
       const valider = ()=>{ d.name = onbEl.querySelector("#onb-nom").value.trim(); i++; dessiner(); };
       suivant(TR("Suivant"), valider);
@@ -4230,12 +4257,12 @@ function openAjustTdee(){
     ${m? `<div class="card" style="background:var(--surface2); margin-bottom:12px;">
       <div style="font-size:13px; color:var(--ink-soft); line-height:1.6;">Sur tes <b>${m.jours} jours</b> suivis : <b>${m.moyKcal} kcal</b> par jour en moyenne, pour <b>${m.dKg>=0?"+":"−"}${pds(Math.abs(m.dKg))}</b> en ${m.dJours} jours.<br>
       Ta dépense réelle ressort à <b style="color:var(--accent);">${m.tdee} kcal</b>.</div></div>`
-    : `<div class="inj-note" style="margin:0 0 12px;">Pas encore assez de données pour la mesurer : il me faut deux semaines de repas cochés et deux pesées. En attendant, tu peux la corriger à la main.</div>`}
+    : `<div class="inj-note" style="margin:0 0 12px;">${TR("Pas encore assez de données pour la mesurer : il me faut deux semaines de repas cochés et deux pesées. En attendant, tu peux la corriger à la main.")}</div>`}
     <div class="stack">
       <div><span class="label" style="display:block; margin-bottom:5px;">${TR("Ma dépense réelle (kcal / jour)")}</span>
       <input type="number" inputmode="numeric" step="50" min="1000" id="aj-tdee" value="${db.profile.tdeeManuel||""}" placeholder="${pl.tdee}"></div>
-      <div style="font-size:12px; color:var(--ink-mute); line-height:1.5;">Laisse vide pour laisser l'app décider toute seule. Si tu manges ${m? m.moyKcal : "2 200"} kcal et que ton poids est stable depuis trois semaines, saisis ce chiffre.</div>
-      <button class="btn btn-accent" id="aj-ok">Enregistrer</button>
+      <div style="font-size:12px; color:var(--ink-mute); line-height:1.5;">${TR("Laisse vide pour laisser l'app décider toute seule. Si tu manges {} kcal et que ton poids est stable depuis trois semaines, saisis ce chiffre.").replace("{}", m? m.moyKcal : "2 200")}</div>
+      <button class="btn btn-accent" id="aj-ok">${TR("Enregistrer")}</button>
       ${db.profile.tdeeManuel? `<button class="btn btn-ghost" id="aj-reset">${TR("Revenir au calcul automatique")}</button>`:""}
     </div>`);
   document.getElementById("aj-ok").onclick = ()=>{
@@ -4305,7 +4332,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "1 septembre 2026 23h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "1 septembre 2026 23h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4369,6 +4396,13 @@ function majTextesFixes(){
   if(q) q.textContent = TR("Passer");
   const r = document.getElementById("rest-lbl");
   if(r) r.textContent = TR("Repos");
+  /* les infobulles de la barre de repos sont dans le HTML statique de la page :
+     aucun gabarit ne s'y applique, on les traduit ici. */
+  [["rb-a-son", "Son de fin de repos"], ["rb-a-plus", "Plus 15 secondes"],
+   ["rest-minus", "Moins 15 secondes"]].forEach(([id, txt])=>{
+    const e = document.getElementById(id);
+    if(e){ e.setAttribute("title", TR(txt)); e.setAttribute("aria-label", TR(txt)); }
+  });
 }
 function appliquerTheme(){
   const sombre = db.settings.theme === "sombre";
@@ -4493,7 +4527,7 @@ function dejaVu(k){ return !!(db.seen && db.seen[k]); }
 function marquerVu(k){ if(!db.seen) db.seen={}; db.seen[k]=true; save(); }
 function hintBox(key, html){
   if(dejaVu(key)) return "";
-  return `<div class="hint-box"><div class="grow">${html}</div><button data-hintx="${key}">Compris</button></div>`;
+  return `<div class="hint-box"><div class="grow">${html}</div><button data-hintx="${key}">${TR("Compris")}</button></div>`;
 }
 function wireHints(root){
   (root||document).querySelectorAll("[data-hintx]").forEach(b=>b.onclick=()=>{
@@ -4762,7 +4796,7 @@ function hero(inner, opts){
     <div class="hero-in">
       <div class="hero-top">
         ${o.fermer ? `<span></span>
-        <button class="hero-ic" id="tb-close" title="Fermer" aria-label="Fermer">${IC_CROIX}</button>`
+        <button class="hero-ic" id="tb-close" title="Fermer" aria-label="${TR("Fermer")}">${IC_CROIX}</button>`
         : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}">${IC_USER}</button>
         <button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button>`}
@@ -4789,7 +4823,7 @@ function openProfil(){
     <div class="stack">
       <button class="btn btn-accent" id="pr-plan">${pl? TR("Voir mon plan") : TR("Créer mon plan")}</button>
       <button class="btn" id="pr-edit">${TR("Modifier mon profil et mon objectif")}</button>
-      <button class="btn btn-ghost" id="pr-ok">Fermer</button>
+      <button class="btn btn-ghost" id="pr-ok">${TR("Fermer")}</button>
     </div>`);
   /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
   document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
@@ -4838,7 +4872,7 @@ function openSheet(html, opts){
   sheetVerrou = !!(opts && opts.verrou);
   sheet.style.transition = ""; sheet.style.transform = "";
   sheet.scrollTop = 0;
-  sheet.innerHTML = (sheetVerrou ? "" : '<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="Fermer">✕</button>')+html;
+  sheet.innerHTML = (sheetVerrou ? "" : '<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="${TR("Fermer")}">✕</button>')+html;
   const croix = document.getElementById("sheet-x");
   if(croix) croix.onclick = closeSheet;
   overlay.classList.add("show");
@@ -5138,7 +5172,7 @@ function renderEat(app){
     </div>
     <div class="meal-tabs">${MEALS.map(([id,lab])=>`
       <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
-        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${lab}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span><i></i></button>`).join("")}</div>
+        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${TR(lab)}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span><i></i></button>`).join("")}</div>
     <div class="meal-panel" id="meal-panel"></div>`;
   wireTopbar();
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
@@ -5231,7 +5265,7 @@ function openAjoutAliment(meal){
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
       <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
-      <input id="ot-q" placeholder=TR("Aliment, ou famille : poisson, viande, légume…") autocomplete="off"
+      <input id="ot-q" placeholder="${TR("Aliment, ou famille : poisson, viande, légume…")}" autocomplete="off"
         enterkeyhint="search" style="margin-bottom:7px;">
       <div class="al-liste" id="ot-liste"></div>
       <!-- la liste déroulante reste, cachée : c'est elle qui porte le choix -->
@@ -5243,7 +5277,7 @@ function openAjoutAliment(meal){
       <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
       <div id="ot-mwrap" style="display:none;">
         <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
-        <input id="ot-name" placeholder=TR("Ex : plat du resto") style="margin-bottom:9px;">
+        <input id="ot-name" placeholder="${TR("Ex : plat du resto")}" style="margin-bottom:9px;">
         <span class="label" style="display:block; margin-bottom:5px;">${TR("Poids de la portion (g, facultatif)")}</span>
         <input type="number" inputmode="numeric" step="10" min="0" id="ot-gram" placeholder="250" style="margin-bottom:9px;">
         <span class="label" style="display:block; margin-bottom:5px;">${TR("Protéines (g)")}</span>
@@ -5257,7 +5291,7 @@ function openAjoutAliment(meal){
         <input type="checkbox" id="ot-save" style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
         <span style="font-size:13.5px; color:var(--ink-soft);">${TR("Garder dans mes propositions")}</span>
       </label>
-      <button class="btn btn-accent" id="ot-ok">Enregistrer</button>
+      <button class="btn btn-accent" id="ot-ok">${TR("Enregistrer")}</button>
       ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? `Restaurer les ${nbMasques()} propositions retirées` : TR("Restaurer la proposition retirée")}</button>`:""}
       <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;">${TR("Astuce : appui long sur une proposition pour la modifier.")}</p>
     </div>`);
@@ -5306,18 +5340,18 @@ function openAjoutAliment(meal){
     let trouves = 0, html = "";
     chercherAliments(qEl.value).forEach(([grp, gardes])=>{
       trouves += gardes.length;
-      html += `<div class="al-h">${esc(grp)}</div>`
-        + (FOOD_NOTE[grp] ? `<div class="al-note">${esc(FOOD_NOTE[grp])}</div>` : "")
+      html += `<div class="al-h">${esc(TR(grp))}</div>`
+        + (FOOD_NOTE[grp] ? `<div class="al-note">${esc(TR(FOOD_NOTE[grp]))}</div>` : "")
         + gardes.map(([it,i])=>{
         const v = grp + "|" + i;
-        const par = it[3] === "100g" ? "/ 100 g" : (it[3] === "cl" ? "/ 100 ml" : "/ " + it[3]);
+        const par = it[3] === "100g" ? "/ 100 g" : (it[3] === "cl" ? "/ 100 ml" : "/ " + TR(it[3]));
         return `<button class="al-row ${foodEl.value===v? "on":""}" data-food="${esc(v)}">
-          <span class="nm">${esc(it[0])}</span>
+          <span class="nm">${esc(TR(it[0]))}</span>
           <span class="vl">${it[1]} g · ${it[2]} kcal <em>${esc(par)}</em></span></button>`;
       }).join("");
     });
     if(!trouves) html = `<div class="al-vide">${TR("Aucun aliment ne correspond. Passe par « je saisis les valeurs ».")}</div>`;
-    html += `<div class="al-h">Autre</div>
+    html += `<div class="al-h">${TR("Autre")}</div>
       <button class="al-row ${foodEl.value==="manuel"? "on":""}" data-food="manuel">
         <span class="nm">${TR("Je saisis les valeurs moi-même")}</span></button>`;
     listeEl.innerHTML = html;
@@ -5709,7 +5743,7 @@ function openCardioList(){
       }).join("") : `<div class="empty">${TR("Aucune sortie enregistrée.")}</div>`
     }</div>
     <button class="btn btn-accent" id="cd-new" style="width:100%; margin-top:12px;">${TR("＋ Ajouter une sortie")}</button>
-    <button class="btn btn-ghost" id="cd-close2" style="width:100%; margin-top:8px;">Fermer</button>`);
+    <button class="btn btn-ghost" id="cd-close2" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.getElementById("cd-close2").onclick = closeSheet;
   document.getElementById("cd-new").onclick = ()=>openCardioAdd();
   document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.cedit));
@@ -5724,6 +5758,14 @@ function openCardioList(){
 
 /* ================= SÉANCE (home) ================= */
 let chronoInt = null;
+/* Une seance qui se termine ou s'annule doit tout eteindre : le compte a rebours
+   de repos comme le chrono de seance. Sans ca, ils continuaient de tourner et la
+   barre de repos restait affichee par-dessus l'accueil. */
+function arreterChronos(){
+  try{ if(rest && rest.int){ clearInterval(rest.int); rest.int = null; } }catch(e){}
+  try{ if(chronoInt){ clearInterval(chronoInt); chronoInt = null; } }catch(e){}
+  try{ const b = document.getElementById("restbar"); if(b) b.classList.remove("show"); }catch(e){}
+}
 /* ===== Nutrition sans chiffres : checklist + verdict de la balance ===== */
 /* [libellé avec portion réelle, protéines (g), calories] — portions courantes, pas symboliques */
 const HB_OPTS = {
@@ -6129,7 +6171,7 @@ function editGoal(){
     <div class="stack">
       <input type="number" inputmode="decimal" step="0.5" min="30" max="300" id="gl-in" value="${db.settings.goal>0?db.settings.goal:""}" placeholder="80">
       ${cur!==null? `<div style="font-size:13px; color:var(--ink-soft);">${TR("Tu es à <b style=\"color:var(--ink);\">{}</b> aujourd'hui.").replace("{}", pds(cur))}</div>`:""}
-      <button class="btn btn-accent" id="gl-ok">Enregistrer</button>
+      <button class="btn btn-accent" id="gl-ok">${TR("Enregistrer")}</button>
     </div>`);
   const inp = document.getElementById("gl-in");
   inp.focus(); inp.select();
@@ -6381,12 +6423,12 @@ const RESERVOIRS = {
 /* rôles à faible charge : plus de répétitions, moins de repos */
 const ROLES_LEGERS = ["epauleIso","arriere","mollets","abdos","dosComp","triceps","biceps","ischio"];
 const MOULES = {
-  push:   {nom:"Push",           sous:TR("Pectoraux, épaules, triceps"), roles:["pecLourd","pecComp","epaule","epauleIso","triceps"]},
-  pull:   {nom:"Pull",           sous:TR("Dos et biceps"),               roles:["dosVert","dosHoriz","dosComp","arriere","biceps"]},
+  push:   {nom:"Push",           sous:"Pectoraux, épaules, triceps", roles:["pecLourd","pecComp","epaule","epauleIso","triceps"]},
+  pull:   {nom:"Pull",           sous:"Dos et biceps",               roles:["dosVert","dosHoriz","dosComp","arriere","biceps"]},
   jambes: {nom:"Jambes",         sous:"Cuisses, fessiers, mollets",  roles:["quadLourd","posterieur","uniJambe","ischio","mollets","abdos"]},
-  haut:   {nom:"Haut du corps",  sous:TR("Tout le buste en une fois"),   roles:["pecLourd","dosHoriz","epaule","dosVert","biceps","triceps"]},
-  bas:    {nom:"Bas du corps",   sous:TR("Jambes, fessiers et gainage"), roles:["quadLourd","posterieur","uniJambe","mollets","abdos"]},
-  full:   {nom:"Full body",      sous:TR("Tout le corps en une séance"), roles:["quadLourd","pecLourd","dosHoriz","epauleIso","abdos"]}
+  haut:   {nom:"Haut du corps",  sous:"Tout le buste en une fois",   roles:["pecLourd","dosHoriz","epaule","dosVert","biceps","triceps"]},
+  bas:    {nom:"Bas du corps",   sous:"Jambes, fessiers et gainage", roles:["quadLourd","posterieur","uniJambe","mollets","abdos"]},
+  full:   {nom:"Full body",      sous:"Tout le corps en une séance", roles:["quadLourd","pecLourd","dosHoriz","epauleIso","abdos"]}
 };
 const MUSCLES_TYPE = {
   push:["Pectoraux","Épaules","Triceps"], pull:["Dos","Biceps"], jambes:["Jambes"],
@@ -6530,18 +6572,18 @@ function openPropose(){
       : `Pas travaillé depuis ${manque.jours} jour${manque.jours>1?"s":""}.`);
   openSheet(`<h3 style="text-align:center;">${TR("Propose-moi une séance")}</h3>
     <p style="margin:0 0 14px; font-size:13px; color:var(--ink-soft); text-align:center; line-height:1.5;">
-      D'après ton objectif <b>${esc(aim.label.toLowerCase())}</b> et tes ${jours} séances par semaine.
-      Les exercices changent à chaque proposition.</p>
+      ${TR("D'après ton objectif <b>{but}</b> et tes {n} séances par semaine. Les exercices changent à chaque proposition.")
+          .replace("{but}", esc(TR(aim.label).toLowerCase())).replace("{n}", jours)}</p>
     <div class="stack">
       <button class="btn btn-accent" id="pp-top" style="display:block; text-align:left; padding:13px 15px;">
-        <span style="display:block; font-size:15px; font-weight:800;">🎯 ${esc(MOULES[manque.type].nom)} — la séance qui manque</span>
+        <span style="display:block; font-size:15px; font-weight:800;">🎯 ${esc(TR(MOULES[manque.type].nom))} ${TR("— la séance qui manque")}</span>
         <span style="display:block; font-size:12px; font-weight:600; opacity:.85; margin-top:2px;">${esc(depuis)}</span>
       </button>
       <div class="label" style="margin-top:4px;">${TR("Ou choisis toi-même")}</div>
       <div class="chips" id="pp-types">${autres.map(t=>
-        `<button class="chip" data-pptype="${t}">${esc(MOULES[t].nom)}</button>`).join("")}</div>
+        `<button class="chip" data-pptype="${t}">${esc(TR(MOULES[t].nom))}</button>`).join("")}</div>
       <button class="btn" id="pp-hasard">🎲 Surprends-moi</button>
-      <button class="btn" id="pp-prog" style="background:var(--hero); color:#fff; border-color:var(--hero);">📋 Le programme complet (${esc(aim.label.toLowerCase())})</button>
+      <button class="btn" id="pp-prog" style="background:var(--hero); color:#fff; border-color:var(--hero);">📋 ${TR("Le programme complet ({})").replace("{}", esc(TR(aim.label).toLowerCase()))}</button>
       <p style="margin:0; font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5;">
         Le programme complet ajoute les ${COACH_PROGRAMS[aim.prog].templates.length} séances d'un coup. Une proposition, c'est une seule séance, tirée au sort dans une liste d'exercices équivalents.</p>
     </div>`);
@@ -6561,7 +6603,7 @@ function apercuProposition(type, evites){
   const minutes = Math.round(prop.items.reduce((a,it)=>a + it.sets*(it.rest+40), 0)/60);
   openSheet(`<h3 style="text-align:center;">${esc(prop.nom)}</h3>
     <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">
-      ${esc(prop.sous)} · ${prop.items.length} exercices · ${total} séries · ~${minutes} min</p>
+      ${esc(TR(prop.sous))} · ${prop.items.length} exercices · ${total} séries · ~${minutes} min</p>
     <div class="stack" style="gap:7px; margin-bottom:14px;">
       ${prop.items.map(it=>{
         const bless = injuryNote(it.nom);
@@ -6623,7 +6665,7 @@ function openHistDetail(id){
       <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)}×${d.r}`).join("")}`).join(" · ")}</div></div>`).join("")}</div>
     <div class="row">
       <button class="btn grow" id="hd-edit">✎ Modifier</button>
-      <button class="btn grow" id="hd-del" style="color:var(--bad);">Supprimer</button>
+      <button class="btn grow" id="hd-del" style="color:var(--bad);">${TR("Supprimer")}</button>
     </div>`);
   document.getElementById("hd-edit").onclick=()=>openHistEdit(id);
   document.getElementById("hd-del").onclick=()=>{
@@ -6654,7 +6696,7 @@ function openPreview(tplId){
         <button class="icon-btn info-btn" data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>`;
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR("Lancer cette séance")}</button>
-    <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">Fermer</button>`);
+    <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
   document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
   document.getElementById("pv-close").onclick=closeSheet;
@@ -6749,7 +6791,7 @@ function openHistoExo(ei){
              <span style="font-size:13px; color:var(--ink-soft); line-height:1.4;">${TR("Je le fais un bras (ou une jambe) à la fois")}<br>
                <span style="font-size:11.5px; color:var(--ink-mute);">${TR("Tu saisis la charge d'un seul côté : l'app compte les deux dans ton tonnage et ton profil.")}</span></span>
            </label>`}
-      <button class="btn btn-accent" id="hx-ok">Compris</button>
+      <button class="btn btn-accent" id="hx-ok">${TR("Compris")}</button>
     </div>`);
   document.getElementById("hx-plafond").onchange = e=>{
     reglerChargeFixe(en.exId, e.target.checked);
@@ -6859,7 +6901,7 @@ function renderActive(app){
   app.innerHTML = `
     ${hero(`<div class="hero-kicker">${TR("Séance en cours")}</div>
       <h1 class="hero-seance" style="--t:${tailleTitre}px">${esc(a.name)}</h1>
-      <button class="chrono" id="chrono" aria-label=TR("Mettre le chrono en pause")></button>`,
+      <button class="chrono" id="chrono" aria-label="${TR("Mettre le chrono en pause")}"></button>`,
       {photo, icones:false, classe:"hero-en-cours"})}
     <div style="height:10px;"></div>
     <div class="stack" id="ex-list"></div>
@@ -6930,7 +6972,7 @@ function renderActive(app){
         <button class="btn btn-sm btn-ghost" data-act="swap" style="white-space:nowrap;">⇄ Remplacer</button>
         <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">Retirer</button>
       </div>
-      <button class="ex-plier" data-act="plier" aria-label=TR("Replier cet exercice")>Replier ${CHEV}</button>`;
+      <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">Replier ${CHEV}</button>`;
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
@@ -7202,7 +7244,7 @@ function renderActive(app){
       sets:[{w: ls? ls.w:"", r: ls? ls.r : repsDepart(parseReps(cible.reps)), done:false}]});
     save(); closeSheet(); render();
   });
-  document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),"Oui, annuler",true,()=>{ db.active=null; save(); render(); });
+  document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),"Oui, annuler",true,()=>{ db.active=null; arreterChronos(); save(); render(); });
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
@@ -7220,7 +7262,7 @@ function renderActive(app){
         start:a.start, end:a.start + dureeSeance2(a),
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length)
       });
-      db.active=null; save(); render();
+      db.active=null; arreterChronos(); save(); render();
       setTimeout(()=>openFinSeance(recap), 260);
     });
   };
@@ -7359,10 +7401,10 @@ function openSwap(ei, fromInjury){
 function openPicker(cb){
   const browse = !cb;
   openSheet(`<h3>${browse? "Bibliothèque d'exercices" : TR("Choisir un exercice")}</h3>
-    <input id="pk-search" placeholder=TR("Rechercher un exercice ou un matériel…") style="margin-bottom:2px;">
+    <input id="pk-search" placeholder="${TR("Rechercher un exercice ou un matériel…")}" style="margin-bottom:2px;">
     <div id="pk-list" style="max-height:52dvh; overflow-y:auto;"></div>
     <button class="btn-dash" id="pk-new" style="margin-top:14px;">${TR("＋ Créer un exercice perso")}</button>
-    <button class="btn btn-ghost" id="pk-close" style="width:100%; margin-top:8px;">Fermer</button>`);
+    <button class="btn btn-ghost" id="pk-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.getElementById("pk-close").onclick = closeSheet;
   const listEl = document.getElementById("pk-list");
   const draw = q=>{
@@ -7404,7 +7446,7 @@ function openPicker(cb){
   document.getElementById("pk-new").onclick=()=>{
     openSheet(`<h3>${TR("Nouvel exercice")}</h3>
       <div class="stack">
-        <div><span class="label" style="display:block; margin-bottom:5px;">Nom</span><input id="ne-name" placeholder=TR("Ex : Curl incliné")></div>
+        <div><span class="label" style="display:block; margin-bottom:5px;">Nom</span><input id="ne-name" placeholder="${TR("Ex : Curl incliné")}"></div>
         <div><span class="label" style="display:block; margin-bottom:5px;">Groupe musculaire</span>
         <select id="ne-muscle">${["Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos","Autres"].map(m=>`<option value="${m}">${TR(m)}</option>`).join("")}</select></div>
         <div><span class="label" style="display:block; margin-bottom:5px;">${TR("Matériel")}</span>
@@ -7431,12 +7473,12 @@ function openTplEditor(id){
     openSheet(`<h3>${id?TR("Modifier la séance"):"Nouvelle séance"}</h3>
       <div class="stack">
         <div><span class="f-lab">${TR("Nom de la séance")}</span>
-        <input id="tp-name" placeholder=TR("Ex : Push, Haut du corps…") value="${esc(TR(tpl.name))}"></div>
+        <input id="tp-name" placeholder="${TR("Ex : Push, Haut du corps…")}" value="${esc(TR(tpl.name))}"></div>
         <div><span class="f-lab">${TR("Exercices")}</span><div id="tp-items"></div>
         <button class="btn-dash" id="tp-add">＋ ${TR("Ajouter un exercice")}</button></div>
         <div class="row" style="gap:9px;">
           <button class="btn grow" id="tp-cancel" style="background:var(--field);">${TR("Annuler")}</button>
-          <button class="btn btn-accent grow" id="tp-save">Enregistrer</button>
+          <button class="btn btn-accent grow" id="tp-save">${TR("Enregistrer")}</button>
         </div>
         ${id? `<button class="btn" id="tp-del" style="background:var(--bad); color:#fff; border-color:var(--bad);">${TR("Supprimer la séance")}</button>`:""}
       </div>`);
@@ -7516,7 +7558,7 @@ function openLegal(){
       <button class="btn" id="lg-bug">${TR("🐞 Signaler un problème")}</button>
       <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5; padding-top:2px;">
         Tonnup ${BUILD}<br>Édité par ${EDITEUR.marque} · Sans publicité, sans collecte de données.</div>
-      <button class="btn btn-accent" id="lg-ok">Fermer</button>
+      <button class="btn btn-accent" id="lg-ok">${TR("Fermer")}</button>
     </div>`);
   document.getElementById("lg-sante").onclick = openSante;
   document.getElementById("lg-conf").onclick = openConfidentialite;
@@ -7595,7 +7637,7 @@ function openCGU(){
     ${b("Évolutions", "L'application évolue régulièrement. Les fonctions peuvent changer ou disparaître. Toute évolution des présentes conditions sera signalée dans l'application.")}
     ${b("Droit applicable et litiges", "Ces conditions relèvent du droit français. En cas de désaccord, écris d'abord à l'éditeur : la plupart des situations se règlent ainsi. Un médiateur de la consommation sera désigné avant la mise en service de tout abonnement, et ses coordonnées figureront ici.")}
     ${b("Contact", `${TR("Pour toute question :")} ${CONTACT_MAIL}`)}
-    <button class="btn btn-accent" id="cg-ok" style="width:100%;">Compris</button>`);
+    <button class="btn btn-accent" id="cg-ok" style="width:100%;">${TR("Compris")}</button>`);
   document.getElementById("cg-ok").onclick = closeSheet;
 }
 
@@ -7682,7 +7724,7 @@ function openSettings(){
         <span class="grow">${TR("Aide, confidentialité et conditions")}</span><span class="fl">›</span>
       </button>
     </div>
-    <button class="btn btn-accent" id="st-ok" style="width:100%;">Fermer</button>`);
+    <button class="btn btn-accent" id="st-ok" style="width:100%;">${TR("Fermer")}</button>`);
   document.getElementById("st-bk-toggle").onclick = ()=>{
     const z = document.getElementById("st-backup");
     const ouvert = z.style.display !== "none";
@@ -7718,12 +7760,14 @@ function openSettings(){
   document.getElementById("st-lang").onclick = ()=>{
     const suite = {auto:"fr", fr:"en", en:"auto"};
     db.settings.lang = suite[db.settings.lang] || "fr";
-    save(); majTextesFixes(); closeSheet(); render(); openSettings();
+    /* pas de closeSheet() : il passe par history.back(), asynchrone, et fermerait
+       la fiche qu'on vient de rouvrir. openSheet() remplace le contenu en place. */
+    save(); majTextesFixes(); render(); openSettings();
   };
   document.getElementById("st-units").onclick = ()=>{
     const suite = {auto:"metrique", metrique:"imperial", imperial:"auto"};
     db.settings.units = suite[db.settings.units] || "metrique";
-    save(); closeSheet(); render(); openSettings();
+    save(); render(); openSettings();
   };
   document.getElementById("st-legal").onclick = openLegal;
   document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast(TR("Les explications réapparaîtront ✓")); };
@@ -7915,7 +7959,7 @@ function openHistEdit(id){
   openSheet(`<h3>${TR("Modifier la séance")}</h3>
     <div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${esc(s.name)} · ${fmtDate(s.date)}</div>
     <div style="max-height:56dvh; overflow-y:auto;">${corps || `<div class="empty">${TR("Séance vide.")}</div>`}</div>
-    <button class="btn btn-accent" id="he-ok" style="width:100%; margin-top:12px;">Enregistrer</button>
+    <button class="btn btn-accent" id="he-ok" style="width:100%; margin-top:12px;">${TR("Enregistrer")}</button>
     <button class="btn btn-ghost" id="he-cancel" style="width:100%; margin-top:8px;">${TR("Annuler")}</button>`);
 
   document.querySelectorAll("[data-hw]").forEach(i=>i.oninput=()=>{
@@ -7982,7 +8026,7 @@ function renderProgress(app){
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    ${hero(`<div class="big">Progression</div>`)}
+    ${hero(`<div class="big">${TR("Progression")}</div>`)}
     <div class="under-hero stack" id="wt-sec"></div>
     <div id="prg-body"></div>`;
   wireTopbar();
@@ -8058,7 +8102,7 @@ function renderWeightSection(sec){
   sec.innerHTML = `
     <div class="card">
       <div class="row" style="align-items:center; gap:11px;">
-        <div class="card-t grow">Poids</div>
+        <div class="card-t grow">${TR("Poids")}</div>
         <div style="font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;">${
           cur!==null? fmtKg(cur)+` <span style="font-size:16px;">${uPoids()}</span>` : "—"}</div>
         <button class="btn btn-accent btn-sm" id="wt-add" style="flex:0 0 auto;">＋ Noter</button>
@@ -8092,7 +8136,7 @@ function renderWeightSection(sec){
     openSheet(`<h3>${TR("Noter mon poids")}</h3>
       <div class="stack">
         <input type="number" inputmode="decimal" step="0.1" min="${estImperial()?66:30}" max="${estImperial()?660:300}" id="wt-in" placeholder="${uPoids()}" value="${saisiePoids(cur)}">
-        <button class="btn btn-accent" id="wt-ok">Enregistrer</button>
+        <button class="btn btn-accent" id="wt-ok">${TR("Enregistrer")}</button>
       </div>`);
     document.getElementById("wt-ok").onclick=()=>{
       const kg = versKg(document.getElementById("wt-in").value);
@@ -8261,7 +8305,7 @@ function openRecup(){
         <div style="font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; color:${RECUP_C[o.etat]};">${o.pct}<span style="font-size:11px;">%</span></div>
       </div>`;}).join("")}</div>
     <div style="font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-top:12px;">${TR("Estimation d'après tes séances des 4 derniers jours : nombre de séries, <b>intensité réelle de chaque série</b> (ta réponse « aurais-tu pu faire plus ? »), dégressifs, sollicitation de chaque muscle et temps écoulé. Les grosses masses (cuisses, ischios) mettent jusqu'à 72 h à revenir, les petites 36 h.")}</div>
-    <button class="btn btn-accent" id="rc-ok" style="width:100%; margin-top:12px;">Compris</button>`);
+    <button class="btn btn-accent" id="rc-ok" style="width:100%; margin-top:12px;">${TR("Compris")}</button>`);
   document.getElementById("rc-ok").onclick = closeSheet;
 }
 
@@ -8511,7 +8555,7 @@ function renderMuscleSection(sec){
     <div class="card">
       <div class="row" style="align-items:center; gap:8px; margin-bottom:12px;">
         <span class="card-t">Profil musculaire</span>
-        <button class="card-i" id="mp-info" aria-label=TR("À quoi sert le profil musculaire ?")>i</button>
+        <button class="card-i" id="mp-info" aria-label="${TR("À quoi sert le profil musculaire ?")}">i</button>
       </div>
       <div class="mp-bodies">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
       ${rows}
@@ -8628,7 +8672,7 @@ function openDayProt(key){
     <div class="mp-bar" style="height:10px; margin-bottom:16px;"><div style="height:100%; width:${Math.min(100,total/target*100)}%; border-radius:7px; background:${total>=target?'var(--good)':'var(--accent)'};"></div></div>
     ${lignes || `<div class="empty" style="padding:18px;">${TR("Rien de coché ce jour-là.")}</div>`}
     <button class="btn" id="dp-edit" style="width:100%; margin-top:10px;">${TR("✎ Corriger ce jour")}</button>
-    <button class="btn btn-accent" id="dp-ok" style="width:100%; margin-top:8px;">Fermer</button>`);
+    <button class="btn btn-accent" id="dp-ok" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.getElementById("dp-ok").onclick=closeSheet;
   document.getElementById("dp-edit").onclick=()=>openDayEdit(key);
 }
@@ -8645,7 +8689,7 @@ function openDayEdit(key){
       <div><span class="label" style="display:block; margin-bottom:5px;">Calories${plan? " · objectif "+plan.kcal:""}</span>
       <input type="number" inputmode="numeric" min="0" id="de-kcal" value="${dayKcal(key)||""}" placeholder="${plan? plan.kcal : 2500}"></div>
       <p style="margin:0; font-size:12px; color:var(--ink-mute); line-height:1.5;">${TR("Pas sûr des chiffres ? Envoie une photo de ton assiette à Claude, il te les estime.")}</p>
-      <button class="btn btn-accent" id="de-ok">Enregistrer</button>
+      <button class="btn btn-accent" id="de-ok">${TR("Enregistrer")}</button>
       ${dayCorrige(key)? `<button class="btn" id="de-clear" style="color:var(--bad);">${TR("Revenir au calcul automatique")}</button>`:""}
       <button class="btn btn-ghost" id="de-cancel">${TR("Annuler")}</button>
     </div>`);
