@@ -2784,7 +2784,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "1 septembre 2026 13h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "1 septembre 2026 14h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -5938,7 +5938,17 @@ function openTplEditor(id){
 }
 
 /* ================= AIDE & LÉGAL ================= */
-const CONTACT_MAIL = "Inncopproject@gmail.com";
+const CONTACT_MAIL = "inncopproject@gmail.com";
+/* Identité de l'éditeur — obligatoire dès lors que l'app est distribuée par un magasin
+   et qu'un abonnement est vendu. Un seul endroit, repris partout. */
+const EDITEUR = {
+  nom: "Nicolas Poncin",
+  forme: "Entrepreneur individuel (micro-entreprise)",
+  adresse: "229 rue Saint-Honoré, 75001 Paris, France",
+  siren: "831 467 907",
+  marque: "Inncop Project",
+  age: 16
+};
 const URL_CONF = "confidentialite.html";
 function openLegal(){
   openSheet(`<h3>Aide &amp; légal</h3>
@@ -5946,15 +5956,17 @@ function openLegal(){
       <button class="btn" id="lg-sante">⚕️ Avertissement santé</button>
       <button class="btn" id="lg-conf">🔒 Confidentialité — mes données</button>
       <button class="btn" id="lg-cgu">📘 Conditions d'utilisation</button>
+      <button class="btn" id="lg-mentions">⚖️ Mentions légales</button>
       <button class="btn" id="lg-contact">✉️ Nous contacter</button>
       <button class="btn" id="lg-bug">🐞 Signaler un problème</button>
       <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5; padding-top:2px;">
-        Tonnup ${BUILD}<br>Application gratuite, sans publicité et sans collecte de données.</div>
+        Tonnup ${BUILD}<br>Édité par ${EDITEUR.marque} · Sans publicité, sans collecte de données.</div>
       <button class="btn btn-accent" id="lg-ok">Fermer</button>
     </div>`);
   document.getElementById("lg-sante").onclick = openSante;
   document.getElementById("lg-conf").onclick = openConfidentialite;
   document.getElementById("lg-cgu").onclick = openCGU;
+  document.getElementById("lg-mentions").onclick = openMentions;
   document.getElementById("lg-contact").onclick = ()=>{
     location.href = `mailto:${CONTACT_MAIL}?subject=${encodeURIComponent("Tonnup — question")}`;
   };
@@ -5974,7 +5986,7 @@ function openSante(){
     ${b("Les chiffres sont des estimations", "Ta dépense énergétique est calculée par une formule statistique : elle peut se tromper de 300 à 500 kcal sur une personne donnée. La seule mesure fiable reste l'évolution de ton poids sur plusieurs semaines.")}
     ${b("Demande un avis médical", "Avant de suivre les recommandations de l'app en cas de maladie chronique, de blessure, de trouble du comportement alimentaire, de grossesse, ou si tu prends un traitement. En cas de douleur pendant un exercice, arrête-toi.")}
     ${b("Ce que l'app refuse de faire", "Elle ne construit pas de plan pour descendre sous un IMC de 18,5, et déconseille les pertes de poids supérieures à 20 % du poids de corps sans passer par des paliers. Ces garde-fous ne remplacent pas un suivi professionnel.")}
-    ${b("Réservée aux adultes", "Les formules utilisées sont établies pour des adultes. L'application n'est pas adaptée aux moins de 14 ans.")}
+    ${b("Réservée aux adultes", `Les formules utilisées sont établies pour des adultes. L'application est réservée aux <b>${EDITEUR.age} ans et plus</b>.`)}
     <button class="btn btn-accent" id="sa-ok" style="width:100%;">Compris</button>`);
   document.getElementById("sa-ok").onclick = closeSheet;
 }
@@ -5986,6 +5998,7 @@ function openConfidentialite(){
       dans la mémoire de ton téléphone : aucun serveur ne reçoit tes séances, ton poids ni tes repas.</div></div>
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience.")}
     ${b("Une seule connexion réseau", "Au lancement, l'app vérifie s'il existe une nouvelle version. Rien de personnel n'est envoyé. Ensuite elle fonctionne hors ligne.")}
+    ${b("Ce que Google sait, lui", "Si tu as installé l'app depuis le Play Store, Google enregistre de son côté l'installation et, le cas échéant, l'achat d'un abonnement. Ces données relèvent de la politique de confidentialité de Google, pas de la nôtre : l'éditeur n'y a pas accès, hormis des statistiques anonymes de téléchargement.")}
     ${b("Ce que ça implique", "Si tu désinstalles l'app, effaces les données du navigateur ou changes de téléphone, tout disparaît. Pense à enregistrer un fichier de sauvegarde depuis les réglages.")}
     ${b("Tout effacer", "Réglages → Détails de sauvegarde → Tout effacer. La suppression est immédiate et définitive.")}
     <button class="btn" id="cf-web" style="width:100%; margin-bottom:8px;">Lire la politique complète</button>
@@ -5993,14 +6006,32 @@ function openConfidentialite(){
   document.getElementById("cf-web").onclick = ()=>window.open(URL_CONF, "_blank");
   document.getElementById("cf-ok").onclick = closeSheet;
 }
+function openMentions(){
+  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
+  openSheet(`<h3>Mentions légales</h3>
+    ${b("Éditeur", `<b>${EDITEUR.nom}</b>, exerçant sous le nom <b>${EDITEUR.marque}</b>.<br>
+      ${EDITEUR.forme}.<br>${EDITEUR.adresse}<br>SIREN ${EDITEUR.siren}.`)}
+    ${b("Directeur de la publication", EDITEUR.nom)}
+    ${b("Contact", `${CONTACT_MAIL} — c'est la seule adresse de contact de l'application.`)}
+    ${b("Hébergement", "GitHub Pages — GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis. L'hébergeur ne stocke que les fichiers de l'application, jamais tes données.")}
+    ${b("Distribution", "L'application est distribuée par Google Play — Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande.")}
+    ${b("Propriété", "Le code, les textes, les illustrations et la marque Tonnup appartiennent à l'éditeur. Les données que tu saisis t'appartiennent et ne quittent pas ton appareil.")}
+    <button class="btn btn-accent" id="mn-ok" style="width:100%;">Compris</button>`);
+  document.getElementById("mn-ok").onclick = closeSheet;
+}
 function openCGU(){
   const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${t}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${x}</div></div>`;
   openSheet(`<h3>Conditions d'utilisation</h3>
-    ${b("Le service", "Tonnup est une application de suivi d'entraînement et d'alimentation, fournie gratuitement, en l'état, sans garantie de disponibilité ni d'exactitude des estimations.")}
+    ${b("Éditeur", `${EDITEUR.nom} — ${EDITEUR.marque}, ${EDITEUR.forme}, ${EDITEUR.adresse}, SIREN ${EDITEUR.siren}. Détail dans les mentions légales.`)}
+    ${b("Le service", "Tonnup est une application de suivi d'entraînement, de cardio et d'alimentation. Le téléchargement et l'usage courant sont gratuits. Elle est fournie en l'état, sans garantie de disponibilité ni d'exactitude des estimations.")}
+    ${b("Âge minimum", `L'application est réservée aux personnes de <b>${EDITEUR.age} ans ou plus</b>. Les formules de besoins caloriques sont établies pour des adultes, et le suivi du poids ne convient pas à un public plus jeune.`)}
     ${b("Ton usage", "Tu utilises l'application sous ta seule responsabilité. Tu restes responsable de l'exactitude des informations que tu saisis et des décisions que tu prends à partir de ce qu'elle affiche.")}
-    ${b("Tes données", "Elles t'appartiennent et restent sur ton appareil. L'éditeur n'y a pas accès et ne peut donc ni les restaurer, ni les récupérer en cas de perte.")}
+    ${b("Tes données", "Elles t'appartiennent et restent sur ton appareil. L'éditeur n'y a pas accès et ne peut donc ni les restaurer, ni les récupérer en cas de perte. Pense à enregistrer un fichier de sauvegarde depuis les réglages.")}
+    ${b("Fonctions payantes", `Certaines fonctions pourront être proposées par abonnement. Le cas échéant : le prix, la durée et le renouvellement sont affichés avant tout paiement ; <b>l'achat se fait auprès de Google</b>, qui est le vendeur, encaisse le paiement et gère la TVA ; l'abonnement se résilie à tout moment depuis le Play Store (Abonnements), et reste actif jusqu'à la fin de la période payée. Les demandes de remboursement relèvent de Google. Tant qu'aucun abonnement n'est proposé, cette clause reste sans objet.`)}
+    ${b("Droit de rétractation", "Pour un contenu numérique fourni immédiatement, tu disposes de quatorze jours pour te rétracter, sauf si tu as demandé l'accès immédiat et renoncé expressément à ce droit au moment de l'achat — ce que le magasin te fera confirmer.")}
     ${b("Responsabilité", "L'éditeur ne peut être tenu responsable d'une blessure, d'un problème de santé ou d'une perte de données liés à l'usage de l'application. Les recommandations affichées ne constituent pas un avis médical.")}
     ${b("Évolutions", "L'application évolue régulièrement. Les fonctions peuvent changer ou disparaître. Toute évolution des présentes conditions sera signalée dans l'application.")}
+    ${b("Droit applicable et litiges", "Ces conditions relèvent du droit français. En cas de désaccord, écris d'abord à l'éditeur : la plupart des situations se règlent ainsi. Un médiateur de la consommation sera désigné avant la mise en service de tout abonnement, et ses coordonnées figureront ici.")}
     ${b("Contact", `Pour toute question : ${CONTACT_MAIL}`)}
     <button class="btn btn-accent" id="cg-ok" style="width:100%;">Compris</button>`);
   document.getElementById("cg-ok").onclick = closeSheet;
