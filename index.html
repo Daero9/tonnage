@@ -2784,7 +2784,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "1 septembre 2026 10h53";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "1 septembre 2026 10h58";   /* remplacé par build.ps1 : date et heure de la construction */
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
 const diag = {ls:"?", idb:"?", lsMark:null, idbMark:null, loadedSavedAt:null};
@@ -3127,11 +3127,17 @@ function suggestFor(exId, target){
     }
     if(anyBelow && avgRir!==null && avgRir<0.5){
       /* Charge fixe : la barre ne peut pas s'alléger, donc le seul levier qui reste est la
-         cible en répétitions. On vise ce que la plus faible série a tenu — donc un nombre
-         atteignable sur TOUTES les séries — et on remontera de là. */
-      const basse = Math.max(1, Math.min(...last.sets.map(x=>x.r||0)));
+         cible en répétitions. On prend la MÉDIANE des séries, pas la plus faible : la
+         dernière série est toujours la plus basse à cause de la fatigue, et s'aligner
+         dessus reviendrait à se saborder — même raison qu'on ne baisse pas la charge sur
+         une seule série ratée. */
+      const faites = last.sets.map(x=>x.r||0).sort((a,b)=>a-b);
+      const m = faites.length >> 1;
+      const basse = Math.max(1, faites.length % 2
+        ? faites[m]
+        : Math.round((faites[m-1] + faites[m]) / 2));
       return {mode:"hold", w:maxW, reps:basse,
-        text:`Trop dur la dernière fois, et tu ne peux pas alléger : vise ${basse} reps sur toutes les séries, puis remonte de là.`};
+        text:`Trop dur la dernière fois, et tu ne peux pas alléger : vise ${basse} reps sur toutes les séries, puis remonte d'une rep à chaque séance.`};
     }
     if(anyBelow)
       return {mode:"hold", w:maxW, reps:rng.lo, text:`Continue à viser ${rng.lo} reps sur toutes les séries avant de charger.`};
