@@ -398,6 +398,25 @@ function lancer(){
   eq("Une série unique est jugée sur elle-même",
     seanceDe([8], [0]).mode, "down");
 
+  /* charge fixe : une seule charge disponible, donc seule la répétition bouge */
+  const fixe = (reps, rirs) => {
+    const exId = id("Curl haltères");
+    DB.plafond = {}; DB.plafond[exId] = true;
+    DB.history = [{id:"h2", date:new Date().toISOString(), name:"Bras", start:0, end:0,
+      entries:[{exId, sets:reps.map((r,i)=>({w:12, r, done:true, rir: rirs? rirs[i] : undefined}))}]}];
+    const s = F.suggestFor(exId, {reps:"12-15"});
+    DB.plafond = {};
+    return s;
+  };
+  const rate = fixe([12,10,8], [1,0,0]);
+  eq("Charge fixe : la charge ne bouge pas", rate.w, 12);
+  eq("Charge fixe : c'est la répétition qui baisse", rate.reps, 8);
+  vrai("Charge fixe : jamais de baisse de charge", rate.mode !== "down");
+  vrai("Charge fixe : le conseil dit qu'on ne peut pas alléger", /alléger/.test(rate.text));
+  eq("Charge fixe : au plafond, on ajoute des reps", fixe([15,15,15], [2,2,2]).mode, "reps");
+  eq("Sans charge fixe, une séance vraiment ratée fait baisser la charge",
+    seanceDe([9,8,7], [0,0,0]).mode, "down");
+
   /* le nombre pré-rempli : le milieu de la fourchette, pas son plancher */
   eq("8-12 propose 10", F.repsDepart(F.parseReps("8-12")), 10);
   eq("12-15 propose 13", F.repsDepart(F.parseReps("12-15")), 13);
