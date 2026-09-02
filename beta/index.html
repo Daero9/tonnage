@@ -983,6 +983,14 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Il me manque {} pour calculer tes calories et tes protéines.":"I still need {} to work out your calories and protein.",
+  "ton poids":"your weight",
+  "ta taille":"your height",
+  "ton âge":"your age",
+  "ton poids visé":"your target weight",
+  "des informations de profil":"some profile details",
+  "Compléter mon profil":"Complete my profile",
+  "et":"and",
   "Android sauvegarde tes données et les restaure sur un nouveau téléphone. Le bouton ci-dessous te permet d'en garder une copie à toi.":"Android backs up your data and restores it on a new phone. The button below lets you keep a copy of your own.",
   "{n} exercices · {s} séries · ~{m} min":"{n} exercises · {s} sets · ~{m} min",
   "refusé :":"denied:",
@@ -4429,7 +4437,27 @@ function roulette(box, min, max, valeur, unite, onChange){
 }
 function showPlan(justCreated){
   const pl = planFor(db.profile);
-  if(!pl){ closeSheet(); render(); return; }
+  if(!pl){
+    /* Quatre valeurs sont indispensables au calcul. Avant, la feuille se
+       refermait sans rien dire : on appuyait sur « Mon plan » et il ne se
+       passait rien — ce qui ressemble a une panne, pas a un profil a finir. */
+    const p = db.profile || {};
+    const manque = [
+      [!(p.weight > 0),     TR("ton poids")],
+      [!(p.height > 0),     TR("ta taille")],
+      [!(p.age > 0),        TR("ton âge")],
+      [!(p.goalWeight > 0), TR("ton poids visé")]
+    ].filter(x => x[0]).map(x => x[1]);
+    const liste = manque.length > 1
+      ? manque.slice(0, -1).join(", ") + " " + TR("et") + " " + manque[manque.length - 1]
+      : (manque[0] || TR("des informations de profil"));
+    openSheet(`<h3>${TR("Mon plan")}</h3>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="info-bloc">${TR("Il me manque {} pour calculer tes calories et tes protéines.").replace("{}", liste)}</div></div>
+      <button class="btn btn-accent" id="pl-profil" style="width:100%;">${TR("Compléter mon profil")}</button>`);
+    document.getElementById("pl-profil").onclick = ()=>{ closeSheet(); openOnboarding(true); };
+    return;
+  }
   const prog = COACH_PROGRAMS[pl.program];
   const manquantes = prog.templates.filter(t=>!db.templates.some(x=>x.name===t.name));
   openSheet(`<h3>${TR(justCreated? "Ton plan est prêt 🎯" : "Mon plan")}</h3>
@@ -4563,7 +4591,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 20h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 21h03 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
