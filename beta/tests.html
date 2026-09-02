@@ -94,6 +94,22 @@ function lancer(){
        enLangue("fr", "imperial", () => !/,/.test(F.saisiePoids(80))));
   pres("Aller-retour livres → kilos",
        enLangue("fr", "imperial", () => F.versKg(F.saisiePoids(80))), 80, 0.05);
+  /* Les bornes sont stockées en kg/cm : le message doit être converti, sinon
+     l'utilisateur en livres lit « entre 30 et 300 kg » alors qu'il tape des lb. */
+  const VC = F.eval("verifieChamp");
+  eq("Une valeur dans les bornes ne dit rien",
+     enLangue("fr", "metrique", () => VC("weight", 80)), null);
+  vrai("Poids hors bornes : message en kilos",
+       enLangue("fr", "metrique", () => /30 et 300 kg/.test(VC("weight", 400) || "")));
+  vrai("Poids hors bornes : message en livres",
+       enLangue("fr", "imperial", () => /66 et 661 lb/.test(VC("weight", 400) || "")));
+  vrai("Taille hors bornes : message en pouces",
+       enLangue("fr", "imperial", () => /47 et 91 in/.test(VC("height", 300) || "")));
+  vrai("Le message de bornes est traduit",
+       enLangue("en", "imperial", () => /^Weight must be between/.test(VC("weight", 400) || "")));
+  vrai("L'âge n'a pas d'unité collée",
+       enLangue("en", "imperial", () => /between 14 and 100/.test(VC("age", 200) || "")));
+
   eq("Le pas suit les unités : 0,5 kg",
      enLangue("fr", "metrique", () => F.stepPoids()), 0.5);
   eq("Le pas suit les unités : 1 lb",
