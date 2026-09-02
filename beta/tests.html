@@ -520,6 +520,26 @@ function lancer(){
   eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
   eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
 
+  /* ----------------------------------- repères chiffrés dans les conseils */
+  grp("Repères des conseils");
+  neuf();
+  const REP = F.eval("reperePoids"), REPT = F.eval("reperePetiteTaille");
+  eq("2,5 kg reste 2,5 kg en métrique",
+     enLangue("fr", "metrique", () => REP(2.5)), "2,5 kg");
+  eq("2,5 kg devient 5 lb, pas 5,5",
+     enLangue("fr", "imperial", () => REP(2.5)), "5 lb");
+  eq("0,5 kg devient 1 lb, pas 1,1",
+     enLangue("fr", "imperial", () => REP(0.5)), "1 lb");
+  eq("Une valeur hors table est convertie normalement",
+     enLangue("fr", "imperial", () => REP(3)), "7 lb");
+  /* la fourchette doit rester une fourchette : à un seul chiffre après la
+     virgule, 0,4 et 0,6 cm donnent tous les deux 0,2 in et elle s'écrase. */
+  const bas = enLangue("fr", "imperial", () => REPT(0.4));
+  const haut = enLangue("fr", "imperial", () => REPT(0.6));
+  vrai("La fourchette de gain en pouces ne s'écrase pas", bas !== haut, bas + " / " + haut);
+  eq("En métrique, le gain reste en centimètres",
+     enLangue("fr", "metrique", () => REPT(0.4)), "0,4");
+
   /* ------------------------------------------- tractions, dips, poids du corps */
   grp("Poids du corps");
   neuf();
