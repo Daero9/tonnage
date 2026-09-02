@@ -1461,7 +1461,7 @@ const TRAD = {en:{
   "Féculents / énergie":"Starches / energy",
   "Féculents":"Starches",
   "Mes aliments":"My foods",
-  "Poulet (1 blanc, 130 g cuit)":"Chicken (1 breast, 130 g cooked)",
+  "Poulet (1 filet, 130 g cuit)":"Chicken (1 breast, 130 g cooked)",
   "Thon (1 boîte, 95 g égoutté)":"Tuna (1 can, 95 g drained)",
   "Poisson blanc (120 g cuit)":"White fish (120 g cooked)",
   "Saumon (1 pavé, 120 g cuit)":"Salmon (1 fillet, 120 g cooked)",
@@ -3668,15 +3668,20 @@ function openKcalTips(sens, pl){
     <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin-bottom:14px;">${intro}</div>
     ${shaker}
     <div class="label" style="margin-bottom:7px;">${TR(up? "À ajouter dans la journée" : "Les échanges qui rapportent")}</div>
-    <div class="stack" style="gap:8px; margin-bottom:16px;">${liste.map(([nom,k,txt])=>`
-      <div style="display:flex; gap:10px; align-items:flex-start;">
-        <span class="pill" style="flex:0 0 auto; font-variant-numeric:tabular-nums; color:${up?'var(--good)':'var(--accent)'};">${k>0?"+":""}${k}</span>
+    <div class="card" style="padding:2px 14px; margin-bottom:16px;">${liste.map(([nom,k,txt],i)=>`
+      <div style="display:flex; gap:11px; align-items:flex-start; padding:12px 0;${
+        i ? " border-top:1px solid var(--border);" : ""}">
+        <span style="flex:0 0 auto; font-variant-numeric:tabular-nums; font-size:12px; font-weight:800;
+          padding:4px 9px; border-radius:99px; line-height:1.15;
+          background:${up?'var(--good)':'var(--accent)'}; color:${up?'#fff':'var(--accent-ink)'};">${k>0?"+":""}${k}</span>
         <div><div style="font-size:13.5px; font-weight:700;">${esc(TR(nom))}</div>
         <div style="font-size:12.5px; color:var(--ink-mute); line-height:1.5;">${esc(TR(txt))}</div></div>
       </div>`).join("")}</div>
     <div class="label" style="margin-bottom:7px;">${TR("Les réflexes")}</div>
-    <div class="stack" style="gap:6px; margin-bottom:16px;">${reflexes.map(r=>`
+    <div class="card" style="margin-bottom:16px;">
+      <div class="stack" style="gap:9px;">${reflexes.map(r=>`
       <div style="font-size:13px; color:var(--ink-soft); line-height:1.5;">• ${esc(TR(r))}</div>`).join("")}</div>
+    </div>
     <button class="btn btn-accent" id="kt-ok" style="width:100%;">${TR("Compris")}</button>`);
   document.getElementById("kt-ok").onclick = closeSheet;
 }
@@ -4549,7 +4554,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 18h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 19h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6067,7 +6072,7 @@ const HB_OPTS = {
   /* Portions = l'unité qu'on achète et qu'on mange (un blanc, un steak, une boîte),
      pas un poids rond. Un blanc de poulet pèse 130 g cuit, soit environ 180 g cru :
      150 g cuits, c'était près de 200 g crus, au-dessus d'une portion courante. */
-  prot: [["Poulet (1 blanc, 130 g cuit)",40,215],["Steak haché 5 % (100 g cuit)",26,170],["Œuf",6,78],["Thon (1 boîte, 95 g égoutté)",24,110],["Poisson blanc (120 g cuit)",28,125],["Saumon (1 pavé, 120 g cuit)",30,275],["Jambon (1 tranche)",8,45]],
+  prot: [["Poulet (1 filet, 130 g cuit)",40,215],["Steak haché 5 % (100 g cuit)",26,170],["Œuf",6,78],["Thon (1 boîte, 95 g égoutté)",24,110],["Poisson blanc (120 g cuit)",28,125],["Saumon (1 pavé, 120 g cuit)",30,275],["Jambon (1 tranche)",8,45]],
   carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,315],["Patates (250 g)",5,220],["Pain (1 tranche)",3,90],["Semoule (200 g cuite)",8,225],["Légumineuses (150 g cuites)",13,175]],
   snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Amandes / noix (30 g)",6,180]],
   bkProt: [["Œuf",6,78],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (1 tranche)",8,45],["Fromage blanc 0 % (200 g)",16,100]],
@@ -6075,6 +6080,7 @@ const HB_OPTS = {
 };
 const HB_PROT_MAP = {
   /* anciens libellés, pour ne pas perdre les journées déjà enregistrées */
+  "Poulet (1 blanc, 130 g cuit)":40,
   "150 g de poulet":34,"1 steak de bœuf":32,"3 œufs":19,"1 boîte de thon":24,"150 g de poisson":27,"Autre protéine":20,
   "Riz":5,"Pâtes":8,"Patates":4,"Pain":6,"Semoule":6,"Légumineuses":13,"Autre féculent":5,
   "60 g d'avoine":8,"Fruits secs":5,"Autre":3,
@@ -6090,6 +6096,7 @@ const HB_PROT_MAP = {
   "Saumon (150 g cuit)":38,"Thon (1 boîte égouttée)":24,"Fromage blanc (200 g)":16
 };
 const HB_KCAL_MAP = {
+  "Poulet (1 blanc, 130 g cuit)":215,
   "150 g de poulet":185,"1 steak de bœuf":210,"3 œufs":235,"1 boîte de thon":110,"150 g de poisson":125,"Autre protéine":200,
   "Riz":130,"Pâtes":158,"Patates":87,"Pain":180,"Semoule":112,"Légumineuses":175,"Autre féculent":150,
   "60 g d'avoine":230,"Fruits secs":170,"Autre":150,
