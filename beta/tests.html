@@ -141,6 +141,21 @@ function lancer(){
   eq("Téléphone espagnol → anglais, pas français", simuleLangue("es-ES", LSYS), "en");
   eq("Téléphone japonais → anglais, pas français", simuleLangue("ja-JP", LSYS), "en");
 
+  /* Bug signalé par Nico : en impérial, la charge appliquée aux séries suivantes
+     s'affichait en kilos bruts (40 lb saisis → « 18,1436948004014 »). Tout ce qui
+     part dans un champ de saisie doit repasser par saisiePoids(). */
+  const SP = F.eval("saisiePoids"), VK = F.eval("versKg");
+  eq("Impérial : 40 lb saisis se réaffichent 40",
+     enLangue("fr", "imperial", () => SP(VK("40"))), "40");
+  eq("Métrique : 40 kg saisis se réaffichent 40",
+     enLangue("fr", "metrique", () => SP(VK("40"))), "40");
+  vrai("Le champ ne montre jamais un kilo brut en impérial",
+       enLangue("fr", "imperial", () => SP(VK("40"))).indexOf("18") !== 0);
+  /* une charge allégée reste un nombre propre, pas 14 décimales */
+  vrai("Une charge allégée reste lisible",
+       enLangue("fr", "imperial", () => SP(VK("40") * 0.9)).length <= 6,
+       enLangue("fr", "imperial", () => SP(VK("40") * 0.9)));
+
   /* le garde-fou : « auto » ne doit pas basculer en anglais avant la fin du chantier */
   eq("« Auto » reste en français tant que la traduction n'est pas finie",
      enLangue("auto", "auto", () => F.langue()), ENPRET ? F.langueSysteme() : "fr");
