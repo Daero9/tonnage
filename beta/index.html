@@ -968,6 +968,15 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Salut {},":"Hello {},",
+  "Bienvenue,":"Welcome,",
+  "Frais":"Fresh",
+  "Kilocalories":"Calories",
+  "{n} portion — {p} g de protéines":"{n} portion — {p} g of protein",
+  "Quantité ({})":"Amount ({})",
+  "{q} {u} — {p} g de protéines":"{q} {u} — {p} g of protein",
+  "{n} portions — {p} g de protéines":"{n} portions — {p} g of protein",
+  "g":"g",
   "kcal / jour":"kcal / day",
   "Ajuster":"Adjust",
   "Non merci":"No thanks",
@@ -4350,7 +4359,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 01h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 02h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5427,12 +5436,12 @@ function openModifAliment(meal, label){
   const unite = mg ? mg[2].toLowerCase() : "";
   const auPoids = gBase > 0;
 
-  openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(pa.nom)}</h3>
+  openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(TR(pa.nom))}</h3>
     <div class="row" style="justify-content:center; gap:34px; margin-bottom:14px;">
       <div style="text-align:center;"><div id="ma-prot" style="font-size:29px; font-weight:800; line-height:1.05;">${prot}<span style="font-size:16px;"> g</span></div>
-        <div style="font-size:12.5px; color:var(--ink-soft);">Protéines</div></div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Protéines")}</div></div>
       <div style="text-align:center;"><div id="ma-kcal" style="font-size:29px; font-weight:800; line-height:1.05;">${kcal||"—"}</div>
-        <div style="font-size:12.5px; color:var(--ink-soft);">Kilocalories</div></div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Kilocalories")}</div></div>
     </div>
     <div class="stack">
       ${auPoids? `<div class="chips" style="gap:6px; justify-content:center;">
@@ -5440,12 +5449,12 @@ function openModifAliment(meal, label){
         <button class="chip chip-sm" data-mamode="portion">${TR("En portions")}</button>
       </div>`:""}
       <div>
-        <span class="label" style="display:block; margin-bottom:5px;" id="ma-lab">${auPoids? `Quantité (${unite})` : TR("Nombre de portions")}</span>
+        <span class="label" style="display:block; margin-bottom:5px;" id="ma-lab">${auPoids? TR("Quantité ({})").replace("{}", TR(unite)) : TR("Nombre de portions")}</span>
         <input type="number" inputmode="decimal" step="${auPoids?10:0.5}" min="0" id="ma-n" value="${auPoids? gBase : 1}">
       </div>
       <div id="ma-live" style="font-size:13.5px; font-weight:700; color:var(--accent);"></div>
       <button class="btn btn-accent" id="ma-ok">${(db.habitSel[k] && (db.habitSel[k][meal]||[]).includes(label))? TR("Mettre à jour") : TR("Ajouter à ce repas")}</button>
-      <button class="btn" id="ma-del" style="background:var(--hero); color:#fff; border-color:var(--hero);">${grp? TR("Retirer des propositions") : "Supprimer"}</button>
+      <button class="btn" id="ma-del" style="background:var(--hero); color:#fff; border-color:var(--hero);">${TR(grp? "Retirer des propositions" : "Supprimer")}</button>
       <button class="btn btn-ghost" id="ma-cancel">${TR("Annuler")}</button>
     </div>`);
 
@@ -5463,8 +5472,9 @@ function openModifAliment(meal, label){
     document.getElementById("ma-kcal").textContent = kcal? Math.round(kcal*f) : "—";
     if(!f){ live.textContent = ""; return; }
     live.textContent = mode === "poids"
-      ? `${Math.round(gBase*f)} ${unite} — ${Math.round(prot*f)} g de protéines${kcal? ` · ${Math.round(kcal*f)} kcal`:""}`
-      : `${(f).toLocaleString(loc())} portion${f>1?"s":""} — ${Math.round(prot*f)} g de protéines${kcal? ` · ${Math.round(kcal*f)} kcal`:""}`;
+      ? TR("{q} {u} — {p} g de protéines").replace("{q}", Math.round(gBase*f)).replace("{u}", TR(unite)).replace("{p}", Math.round(prot*f)) + (kcal? ` · ${Math.round(kcal*f)} kcal`:"")
+      : TR(f > 1 ? "{n} portions — {p} g de protéines" : "{n} portion — {p} g de protéines")
+          .replace("{n}", (f).toLocaleString(loc())).replace("{p}", Math.round(prot*f)) + (kcal? ` · ${Math.round(kcal*f)} kcal`:"");
   };
   nEl.oninput = maj; maj();
   document.querySelectorAll("[data-mamode]").forEach(b=>b.onclick=()=>{
@@ -6279,7 +6289,7 @@ function renderSeance(app){
     : TR("Prêt pour ta séance <b style=\"color:#fff;\">{}</b> ?").replace("{}", esc(TR(sug.name)));
 
   app.innerHTML = `
-    ${hero(`<h1>${db.settings.name? "Salut "+esc(db.settings.name)+"," : "Bienvenue,"}</h1>
+    ${hero(`<h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}</h1>
       <div class="sub">${sub}</div>`, {classe:"hero-accueil"})}
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">${TR("⚠️ Tes données ne peuvent pas être enregistrées")}</div>
@@ -8255,7 +8265,8 @@ function recuperation(){
   return {global, muscles, n};
 }
 const RECUP_C = {frais:"#4caf50", recup:"#e8a33d", fatigue:"#e0554a"};
-const RECUP_LAB = {frais:TR("Prêt"), recup:TR("En récup"), fatigue:"Fatigué"};
+/* construite au chargement : pas de TR() ici, on traduit à l'affichage */
+const RECUP_LAB = {frais:"Prêt", recup:"En récup", fatigue:"Fatigué"};
 function recupTitre(g){
   if(g >= 85) return TR("Prêt à t'entraîner");
   if(g >= 65) return TR("Presque remis");
@@ -8302,13 +8313,13 @@ function openRecup(){
       <div class="row" style="gap:8px; align-items:center; margin:12px 0 10px; font-size:11.5px; color:rgba(255,255,255,.65);">
         <span>${TR("Fatigué")}</span>
         <span style="flex:1; height:7px; border-radius:5px; background:linear-gradient(90deg, ${RECUP_C.fatigue}, ${RECUP_C.recup}, ${RECUP_C.frais});"></span>
-        <span>Frais</span>
+        <span>${TR("Frais")}</span>
       </div>
       <div class="row" style="gap:7px;">
-        ${[["fatigue",TR("Fatigués")],["recup",TR("En récup")],["frais","Frais"]].map(([k,lab])=>`
+        ${[["fatigue","Fatigués"],["recup","En récup"],["frais","Frais"]].map(([k,lab])=>`
           <div style="flex:1; background:rgba(255,255,255,.07); border-radius:11px; padding:8px 10px;">
             <div style="font-size:17px; font-weight:800;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:${RECUP_C[k]}; vertical-align:2px; margin-right:5px;"></span>${r.n[k]}</div>
-            <div style="font-size:10.5px; color:rgba(255,255,255,.6);">${lab}</div>
+            <div style="font-size:10.5px; color:rgba(255,255,255,.6);">${TR(lab)}</div>
           </div>`).join("")}
       </div>
     </div>
@@ -8319,7 +8330,7 @@ function openRecup(){
         <span style="width:4px; align-self:stretch; border-radius:3px; background:${RECUP_C[o.etat]};"></span>
         <div class="grow">
           <div style="font-weight:700; font-size:14px;">${esc(TR(m))}</div>
-          <div style="font-size:12px; color:var(--ink-mute);"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${RECUP_C[o.etat]}; margin-right:4px;"></span>${RECUP_LAB[o.etat]}</div>
+          <div style="font-size:12px; color:var(--ink-mute);"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${RECUP_C[o.etat]}; margin-right:4px;"></span>${TR(RECUP_LAB[o.etat])}</div>
         </div>
         <div style="font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; color:${RECUP_C[o.etat]};">${o.pct}<span style="font-size:11px;">%</span></div>
       </div>`;}).join("")}</div>
