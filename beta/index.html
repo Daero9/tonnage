@@ -27,7 +27,7 @@
   :root[data-theme="dark"]{
     --bg:#141416; --surface:#1f1f22; --surface2:#2a2a2e; --btn:#2a2a2e; --border:#333338;
     --ink:#f4f2ef; --ink-soft:#b3b1ad; --ink-mute:#85837f;
-    --accent:#f58220; --accent-deep:#c96a12; --accent-ink:#1a1207;
+    --accent:#f58220; --accent-deep:#c96a12; --accent-ink:#ffffff;
     --hero:#0e0e10; --hero-ink:#ffffff; --hero-soft:#b0aeaa;
     --good:#68c23a; --bad:#e06c5a;
     --barre:rgba(20,20,22,.96);
@@ -80,6 +80,11 @@
   .date-line{color:var(--ink-mute); font-size:13px; margin-bottom:18px; text-transform:capitalize;}
 
   .label{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-mute);}
+  /* Bloc explicatif d'une feuille d'info : c'est du texte dense qu'on lit
+     vraiment, pas une legende. Corps plus grand, interligne plus aere, et
+     les CHIFFRES en pleine encre — ce sont eux qu'on vient chercher. */
+  .info-bloc{font-size:14.5px; color:var(--ink-soft); line-height:1.72;}
+  .info-bloc b{color:var(--ink); font-weight:800;}
   .section-t i{font-style:normal; font-size:13px; margin-right:6px; vertical-align:-1px;}
   .section-t{font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin:26px 0 10px;}
 
@@ -3659,7 +3664,7 @@ function openKcalTips(sens, pl){
        "Coupe d'abord le liquide et les matières grasses de cuisson, pas les repas.",
        "Remplis l'assiette de légumes : même volume, moitié moins de calories.",
        "Un déficit lent tient dans la durée ; un déficit brutal se paie en fringales le week-end."];
-  const shaker = up? `<div class="card" style="margin-bottom:14px; background:var(--surface2);">
+  const shaker = up? `<div class="card" style="margin-bottom:14px; padding:13px 15px;">
       <div style="font-weight:800; margin-bottom:6px;">${TR("Le shaker qui règle le problème")}</div>
       <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.6;">${TR("500 ml de lait entier + 60 g d'avoine + 1 banane + 30 g de beurre de cacahuète + 1 dose de whey.")}<br>
       <b style="color:var(--accent);">${TR("≈ 950 kcal et 55 g de protéines")}</b>${TR(", bus en trois minutes. Un par jour et ta fourchette est atteinte.")}</div>
@@ -3688,7 +3693,11 @@ function openKcalTips(sens, pl){
 function openKcalInfo(pl){
   /* le titre ET le corps passent par TR() : un corps construit par gabarit
      retombe simplement sur le français. */
-  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${TR(t)}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${TR(x)}</div></div>`;
+  /* chaque explication dans sa propre carte : sans separation, les sections
+     formaient un mur de texte ou l'oeil ne se raccrochait a rien */
+  const b = (t,x)=>`<div class="card" style="margin-bottom:10px; padding:13px 15px;">
+    <div class="label" style="margin-bottom:6px; color:var(--accent);">${TR(t)}</div>
+    <div class="info-bloc">${TR(x)}</div></div>`;
   openSheet(`<h3>${TR("Tes calories du jour")}</h3>
     ${pl && pl.tdeeSource!=="formule" ? b(TR("Chiffre recalé sur toi"),
       pl.tdeeSource==="manuel"
@@ -4436,11 +4445,11 @@ function showPlan(justCreated){
       <div class="tile"><div class="v">${pl.prot} g</div><div class="u">${TR("protéines")} (${pl.perKg.toLocaleString(loc())} g/kg)</div></div>
       <div class="tile"><div class="v">${pl.seances}</div><div class="u">${TR("séances / sem.")}</div></div>
     </div>
-    <div class="card" style="background:var(--surface2); margin-bottom:14px;">
+    <div class="card" style="margin-bottom:14px;">
       <div style="font-weight:800; margin-bottom:3px;">${esc(TR(prog.title))}</div>
       <div style="font-size:13px; color:var(--ink-soft);">${esc(coachDesc(pl.program))}</div>
     </div>
-    <div class="card" style="background:var(--surface2); margin-bottom:14px;">
+    <div class="card" style="margin-bottom:14px;">
       <div class="row" style="justify-content:space-between; align-items:flex-start; gap:10px;">
         <div>
           <div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-mute);">${TR("Ta dépense estimée")}</div>
@@ -4474,7 +4483,7 @@ function openAjustTdee(){
   openSheet(`<h3>${TR("Ajuster ma dépense")}</h3>
     <p style="margin:0 0 12px; font-size:13.5px; color:var(--ink-soft); line-height:1.6;">
       ${TR("Les formules donnent une moyenne de population : elles se trompent facilement de 300 à 500 kcal sur une personne donnée. La vraie mesure, c'est ta balance.")} <b>${TR("Si ton poids ne bouge pas, ta dépense est égale à ce que tu manges.")}</b></p>
-    ${m? `<div class="card" style="background:var(--surface2); margin-bottom:12px;">
+    ${m? `<div class="card" style="margin-bottom:12px;">
       <div style="font-size:13px; color:var(--ink-soft); line-height:1.6;">${TR("Sur tes <b>{n} jours</b> suivis : <b>{k} kcal</b> par jour en moyenne, pour <b>{p}</b> en {j} jours.")
         .replace("{n}", m.jours).replace("{k}", m.moyKcal)
         .replace("{p}", (m.dKg>=0?"+":"−") + pds(Math.abs(m.dKg))).replace("{j}", m.dJours)}<br>
@@ -4554,7 +4563,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 19h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 20h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6454,13 +6463,13 @@ function openBilan(){
       ${b.kmCur? `<span class="pill">${dist(b.kmCur)} ${TR("cardio")}</span>`:""}
     </div>
     ${(()=>{ const lien = lienProtTonnage();
-      return lien ? `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:16px;">
+      return lien ? `<div class="card" style="padding:13px 14px; margin-bottom:16px;">
         <div style="font-weight:800; font-size:13.5px; margin-bottom:4px;">${TR("🍽️ Alimentation et tonnage")}</div>
         <div style="font-size:13px; color:var(--ink-soft); line-height:1.55;">${lien}</div></div>` : ""; })()}
     <div class="label" style="margin-bottom:8px;">${TR("🎯 À prioriser")}</div>
     <div class="stack" style="gap:8px; margin-bottom:16px;">${b.prios.map((p,i)=>`
-      <div class="card" style="background:var(--surface2); padding:12px;">
-        <div style="font-weight:800; font-size:14.5px; margin-bottom:3px;"><span style="color:var(--accent);">${i+1}.</span> ${esc(p[0])}</div>
+      <div class="card" style="padding:13px 14px;">
+        <div style="font-weight:800; font-size:14.5px; margin-bottom:4px;"><span style="color:var(--accent);">${i+1}.</span> ${esc(p[0])}</div>
         <div style="font-size:13px; color:var(--ink-soft);">${esc(p[1])}</div>
       </div>`).join("")}</div>
     ${b.wins.length? `<div class="label" style="margin-bottom:8px;">${TR("✅ Ce qui roule")}</div>
@@ -7667,7 +7676,7 @@ function openFinSeance(r){
   </div>
   <div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin-bottom:14px;">
     ${r.series} ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} ${r.exos} ${TR(r.exos>1 ? "exercices" : "exercice")}.</div>
-  ${r.records.length? `<div class="card" style="background:var(--surface2); margin-bottom:14px;">
+  ${r.records.length? `<div class="card" style="margin-bottom:14px;">
     <div style="font-weight:800; margin-bottom:6px;">🏆 ${TR(r.records.length>1? "Nouveaux records":"Nouveau record")}</div>
     ${r.records.map(x=>`<div style="font-size:13.5px; color:var(--ink-soft);">${esc(x.nom)}${x.gain? ` — <b style="color:var(--good);">+${x.unite==="reps"
         ? TR("{} reps").replace("{}", x.gain)
@@ -7901,7 +7910,11 @@ function openLegal(){
 function openSante(){
   /* le titre ET le corps passent par TR() : un corps construit par gabarit
      retombe simplement sur le français. */
-  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${TR(t)}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${TR(x)}</div></div>`;
+  /* chaque explication dans sa propre carte : sans separation, les sections
+     formaient un mur de texte ou l'oeil ne se raccrochait a rien */
+  const b = (t,x)=>`<div class="card" style="margin-bottom:10px; padding:13px 15px;">
+    <div class="label" style="margin-bottom:6px; color:var(--accent);">${TR(t)}</div>
+    <div class="info-bloc">${TR(x)}</div></div>`;
   openSheet(`<h3>${TR("Avertissement santé")}</h3>
     <div class="inj-note" style="margin:0 0 14px;">
       <b style="color:var(--bad);">${TR("⚕️ Tonnup n'est pas un dispositif médical.")}</b><br>
@@ -7916,9 +7929,13 @@ function openSante(){
 function openConfidentialite(){
   /* le titre ET le corps passent par TR() : un corps construit par gabarit
      retombe simplement sur le français. */
-  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${TR(t)}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${TR(x)}</div></div>`;
+  /* chaque explication dans sa propre carte : sans separation, les sections
+     formaient un mur de texte ou l'oeil ne se raccrochait a rien */
+  const b = (t,x)=>`<div class="card" style="margin-bottom:10px; padding:13px 15px;">
+    <div class="label" style="margin-bottom:6px; color:var(--accent);">${TR(t)}</div>
+    <div class="info-bloc">${TR(x)}</div></div>`;
   openSheet(`<h3>${TR("Mes données")}</h3>
-    <div class="card" style="background:var(--surface2); margin-bottom:14px;">
+    <div class="card" style="margin-bottom:14px;">
       <div style="font-size:14px; line-height:1.6;"><b>${TR("Tonnup ne collecte rien.")}</b> ${TR("Tout ce que tu saisis reste dans la mémoire de ton téléphone : aucun serveur ne reçoit tes séances, ton poids ni tes repas.")}</div></div>
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience. L'application ne contient aucun outil d'analyse d'un autre éditeur.")}
     ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni appareil photo, ni accès à tes fichiers.")}
@@ -7934,7 +7951,11 @@ function openConfidentialite(){
 function openMentions(){
   /* le titre ET le corps passent par TR() : un corps construit par gabarit
      retombe simplement sur le français. */
-  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${TR(t)}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${TR(x)}</div></div>`;
+  /* chaque explication dans sa propre carte : sans separation, les sections
+     formaient un mur de texte ou l'oeil ne se raccrochait a rien */
+  const b = (t,x)=>`<div class="card" style="margin-bottom:10px; padding:13px 15px;">
+    <div class="label" style="margin-bottom:6px; color:var(--accent);">${TR(t)}</div>
+    <div class="info-bloc">${TR(x)}</div></div>`;
   openSheet(`<h3>${TR("Mentions légales")}</h3>
     ${b("Éditeur", `<b>${EDITEUR.nom}</b>, ${TR("exerçant sous le nom")} <b>${EDITEUR.marque}</b>.<br>
       ${EDITEUR.forme}.<br>${EDITEUR.adresse}<br>SIREN ${EDITEUR.siren}.`)}
@@ -7949,7 +7970,11 @@ function openMentions(){
 function openCGU(){
   /* le titre ET le corps passent par TR() : un corps construit par gabarit
      retombe simplement sur le français. */
-  const b = (t,x)=>`<div style="margin-bottom:12px;"><div class="label" style="margin-bottom:3px;">${TR(t)}</div><div style="font-size:13.5px; color:var(--ink-soft); line-height:1.55;">${TR(x)}</div></div>`;
+  /* chaque explication dans sa propre carte : sans separation, les sections
+     formaient un mur de texte ou l'oeil ne se raccrochait a rien */
+  const b = (t,x)=>`<div class="card" style="margin-bottom:10px; padding:13px 15px;">
+    <div class="label" style="margin-bottom:6px; color:var(--accent);">${TR(t)}</div>
+    <div class="info-bloc">${TR(x)}</div></div>`;
   openSheet(`<h3>${TR("Conditions d'utilisation")}</h3>
     ${b("Éditeur", `${EDITEUR.nom} — ${EDITEUR.marque}, ${TR(EDITEUR.forme)}, ${EDITEUR.adresse}, SIREN ${EDITEUR.siren}. ${TR("Détail dans les mentions légales.")}`)}
     ${b("Le service", "Tonnup est une application de suivi d'entraînement, de cardio et d'alimentation. Le téléchargement et l'usage courant sont gratuits. Elle est fournie en l'état, sans garantie de disponibilité ni d'exactitude des estimations.")}
@@ -8107,7 +8132,7 @@ function openSettings(){
         ? TR("Android sauvegarde tes données et les restaure sur un nouveau téléphone. Le bouton ci-dessous te permet d'en garder une copie à toi.")
         : TR("La sauvegarde automatique dans un fichier n'est pas disponible sur ce navigateur (Safari/iPhone ne la propose pas). Tes données restent enregistrées dans le téléphone.")}</div>`;
   } else if(autoFile.ok){
-    autoBox.innerHTML = `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:2px;">
+    autoBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
       <div style="font-weight:700; color:var(--good); font-size:13.5px;">✓ Sauvegarde automatique active</div>
       <div style="font-size:12.5px; color:var(--ink-soft); margin:3px 0 10px;">${TR("Chaque modification est écrite dans <b>{}</b>, sans rien te demander.").replace("{}", esc(autoFile.name||TR("ton fichier")))}</div>
       <div class="row"><button class="btn btn-sm grow" id="af-change">${TR("Changer de fichier")}</button>
@@ -8115,7 +8140,7 @@ function openSettings(){
     document.getElementById("af-change").onclick = autoFilePick;
     document.getElementById("af-off").onclick = autoFileOff;
   } else if(autoFile.handle){
-    autoBox.innerHTML = `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:2px;">
+    autoBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
       <div style="font-weight:700; color:var(--accent); font-size:13.5px;">${TR("⏸ Sauvegarde automatique en pause")}</div>
       <div style="font-size:12.5px; color:var(--ink-soft); margin:3px 0 10px;">Le navigateur redemande l'autorisation d'écrire dans ${esc(autoFile.name||TR("ton fichier"))}.</div>
       <button class="btn btn-accent btn-sm" id="af-resume" style="width:100%;">${TR("Réactiver")}</button></div>`;
