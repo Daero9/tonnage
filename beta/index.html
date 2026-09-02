@@ -172,7 +172,12 @@
   .wk-day.today span{color:var(--ink);}
   .wk-sep{height:1px; background:var(--border); margin:0 -4px 9px;}
   .wk-nums{display:flex; align-items:center; justify-content:space-between; position:relative;}
-  .wk-nums .n{flex:1; text-align:center;}
+  /* Le bouton Bilan est centre EN ABSOLU au-dessus de la ligne : sans reserve,
+     un tonnage a cinq chiffres glisse dessous. Chaque moitie s'ecarte donc du
+     centre de la largeur du bouton — les deux nombres restent symetriques. */
+  .wk-nums .n{flex:1; text-align:center; min-width:0;}
+  .wk-nums .n:first-child{padding-right:46px;}
+  .wk-nums .n:last-child{padding-left:46px;}
   .wk-nums .v{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
   .wk-nums .u{font-size:11px; color:var(--ink-mute);}
   .wk-bilan{position:absolute; left:50%; top:5px; transform:translateX(-50%);
@@ -4539,7 +4544,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 13h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 14h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4759,6 +4764,11 @@ const fmtKg = v => {
 };
 /* poids + son unité, en un seul morceau : "80 kg" ou "176,4 lb" */
 const pds = v => fmtKg(v) + " " + uPoids();
+/* Un TONNAGE total se lit sans décimale : « 40 679,7 lb » n'apprend rien de plus
+   que « 40 680 », et le dixième faisait déborder la tuile de la semaine sous le
+   bouton Bilan. Le dixième reste pour une charge, où 2,5 kg compte vraiment. */
+const volNb = v => Math.round(estImperial() ? Number(v)*PAR_LB : Number(v)).toLocaleString(loc());
+const volPds = v => volNb(v) + " " + uPoids();
 /* clé d'une journée en heure LOCALE (toISOString donnerait l'heure universelle,
    et ferait basculer le jour avec plusieurs heures d'avance ou de retard) */
 function dayKey(d){
@@ -6514,7 +6524,7 @@ function renderSeance(app){
         }).join("")}</div>
         <div class="wk-sep"></div>
         <div class="wk-nums">
-          <div class="n"><div class="v">${weekVol? fmtKg(Math.round(weekVol)) : "0"} <span style="font-size:13px;">${uPoids()==="lb"?"Lb":"Kg"}</span></div>
+          <div class="n"><div class="v">${weekVol? volNb(weekVol) : "0"} <span style="font-size:13px;">${uPoids()==="lb"?"Lb":"Kg"}</span></div>
             <div class="u">${TR("Soulevés")}${evol!==null
               ? ` <span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} %</span>`:""}</div></div>
           <div class="n"><div class="v">${Math.round(weekKcal)} <span style="font-size:13px;">Kcal</span></div><div class="u">${TR("Brûlées")}</div></div>
@@ -6622,7 +6632,7 @@ function renderSeance(app){
         <div class="dt">◷ ${fmtDateShort(h.date)}</div>
         <div class="in">
           <div class="nm">${esc(h.name)}</div>
-          <div class="st">${pds(vol)} ${TR("soulevés")}<br>${kc} ${TR("Kcal brûlés")}<br>${mn>=60? Math.floor(mn/60)+"H"+String(mn%60).padStart(2,"0") : mn+" min"}</div>
+          <div class="st">${volPds(vol)} ${TR("soulevés")}<br>${kc} ${TR("Kcal brûlés")}<br>${mn>=60? Math.floor(mn/60)+"H"+String(mn%60).padStart(2,"0") : mn+" min"}</div>
         </div>
       </button>`;
     }).join("") + `<button class="hist-c" id="hist-all" style="flex:0 0 76px; background:var(--surface2); color:var(--ink-soft);">
@@ -6898,7 +6908,7 @@ function openHistDetail(id){
   const vol = Math.round(sessionVolume(h));
   const mn = Math.round(((h.end||0)-(h.start||0))/60000);
   openSheet(`<h3>${esc(h.name)}</h3>
-    <div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${fmtDate(h.date)} · ${mn} min · ${pds(vol)}</div>
+    <div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${fmtDate(h.date)} · ${mn} min · ${volPds(vol)}</div>
     <div style="max-height:52dvh; overflow-y:auto; margin-bottom:14px;">${h.entries.map(en=>`
       <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
       <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)}×${d.r}`).join("")}`).join(" · ")}</div></div>`).join("")}</div>
@@ -7496,7 +7506,7 @@ function renderActive(app){
     if(!doneSets){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
     const kcal = liftKcal(dureeSeance2(a), vol, doneSets);
-    askConfirm(TR("Terminer la séance ?"), `${doneSets} ${TR(doneSets > 1 ? "séries validées" : "série validée")} · ${pds(vol)} ${TR("soulevés")} · ${TR("environ")} ${kcal} ${TR("kcal brûlées. On enregistre ?")}`, TR("Enregistrer"), false, ()=>{
+    askConfirm(TR("Terminer la séance ?"), `${doneSets} ${TR(doneSets > 1 ? "séries validées" : "série validée")} · ${volPds(vol)} ${TR("soulevés")} · ${TR("environ")} ${kcal} ${TR("kcal brûlées. On enregistre ?")}`, TR("Enregistrer"), false, ()=>{
       /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
       const recap = {
         nom: a.name, series: doneSets, volume: Math.round(vol), kcal,
@@ -8168,7 +8178,7 @@ function renderHist(app){
       <div class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap;">
         <span class="pill">${fmtDur(s.end-s.start)}</span>
         <span class="pill">${nSets} ${TR(nSets>1?"séries":"série")}</span>
-        <span class="pill" style="color:var(--accent);">${pds(vol)}</span>
+        <span class="pill" style="color:var(--accent);">${volPds(vol)}</span>
         <span class="pill">≈ ${liftKcal(s.end-s.start, vol, nSets)} kcal</span>
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
