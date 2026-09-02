@@ -520,6 +520,21 @@ function lancer(){
   eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
   eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
 
+  /* -------------------------- libellés d'aliments et historique */
+  grp("Libellés d'aliments");
+  neuf();
+  const PROT = F.eval("protOf"), KCAL = F.eval("kcalOf");
+  eq("Le nouveau libellé donne ses protéines",
+     PROT("Poulet (1 filet, 130 g cuit)"), 40);
+  eq("Le nouveau libellé donne ses calories",
+     KCAL("Poulet (1 filet, 130 g cuit)"), 215);
+  /* le point qui compte : une journée cochée AVANT le renommage garde sa valeur */
+  eq("L'ancien libellé reste reconnu",
+     PROT("Poulet (1 blanc, 130 g cuit)"), 40);
+  eq("L'ancien libellé garde ses calories",
+     KCAL("Poulet (1 blanc, 130 g cuit)"), 215);
+  eq("Un libellé inconnu ne casse rien", PROT("Aliment inventé"), 0);
+
   /* -------------------- poids du corps : calories oui, tonnage non */
   grp("Effort et tonnage");
   neuf();
