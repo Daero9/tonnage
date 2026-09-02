@@ -968,6 +968,22 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Objectif :":"Target:",
+  "Trop lourd — vise {} reps sur les séries suivantes, la qualité prime.":"Too heavy — aim for {} reps on the following sets, quality first.",
+  "Trop lourd — séries suivantes à {c}, on garde {r} reps.":"Too heavy — following sets at {c}, keeping {r} reps.",
+  "Trop lourd — repars de {} à la prochaine séance.":"Too heavy — start from {} next session.",
+  "Trop léger —":"Too light —",
+  "Trop léger — séries suivantes à {}.":"Too light — following sets at {}.",
+  "Trop léger — passe à {} à la prochaine séance.":"Too light — move to {} next session.",
+  "Remplacer":"Swap",
+  "Replier":"Collapse",
+  "Oui, annuler":"Yes, cancel",
+  "{n} éléments — {e} exercices utilisables.":"{n} items — {e} exercises available.",
+  "Rien de coché : {} exercices au poids du corps restent utilisables.":"Nothing ticked: {} bodyweight exercises are still available.",
+  "kcal au minimum":"kcal minimum",
+  "de protéines":"of protein",
+  "C'est prêt, {} !":"You're all set, {}!",
+  "C'est prêt !":"You're all set!",
   "Noter":"Log",
   "Profil musculaire":"Muscle profile",
   "Point fort":"Strong point",
@@ -3970,7 +3986,7 @@ function openOnboarding(first, brouillon, depart){
         corps.querySelector("#reg-lab").textContent =
           Math.abs(diff) < 0.4 ? TR("Maintenir mon poids")
                                : (diff > 0 ? `Prendre ${pds(diff)}` : `Perdre ${pds(-diff)}`);
-        corps.querySelector("#reg-val").textContent = fmtKg(d.goalWeight) + " kg";
+        corps.querySelector("#reg-val").textContent = pds(d.goalWeight);
         const a = alerteObjectif(d), w = aimWarning(d.aim, d.weight, d.goalWeight);
         const rouge = a && a.niveau === "danger";
         corps.querySelector("#reg-alerte").innerHTML = a
@@ -4053,8 +4069,8 @@ function openOnboarding(first, brouillon, depart){
             <button class="ch ${d.materiel.includes(m.id)?"on":""}${anime?"":" fixe"}" data-mt2="${m.id}"
               ${anime?`style="animation-delay:${k*50}ms"`:""}>${esc(TR(m.nom))}</button>`).join("")}</div>
           <div class="onb-desc" style="margin-top:14px;">${
-            n ? `${n} élément${n>1?"s":""} — ${nbExosDispo(d.materiel)} exercices utilisables.`
-              : `Rien de coché : ${nbExosDispo([])} exercices au poids du corps restent utilisables.`}</div>`;
+            n ? TR("{n} éléments — {e} exercices utilisables.").replace("{n}", n).replace("{e}", nbExosDispo(d.materiel))
+              : TR("Rien de coché : {} exercices au poids du corps restent utilisables.").replace("{}", nbExosDispo([]))}</div>`;
         corps.querySelectorAll("[data-mt2]").forEach(b=>b.onclick=()=>{
           const m = b.dataset.mt2;
           d.materiel = d.materiel.includes(m) ? d.materiel.filter(x=>x!==m) : d.materiel.concat(m);
@@ -4116,8 +4132,8 @@ function openOnboarding(first, brouillon, depart){
         ${pl ? `<div class="proj" style="margin-top:12px;">
           <h3>${TR("Ton plan quotidien")}</h3>
           <div class="proj-duo">
-            <div><b>${pl.kcalMin}</b><span>kcal au minimum</span></div>
-            <div><b>${pl.prot} g</b><span>de protéines</span></div>
+            <div><b>${pl.kcalMin}</b><span>${TR("kcal au minimum")}</span></div>
+            <div><b>${pl.prot} g</b><span>${TR("de protéines")}</span></div>
           </div></div>` : ""}`;
       suivant();
       return;
@@ -4125,7 +4141,7 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 10. les deux portes */
     if(etape === "fin"){
-      corps.innerHTML = `<h2>C'est prêt${d.name? ", " + esc(d.name) : ""} !</h2>
+      corps.innerHTML = `<h2>${d.name? TR("C'est prêt, {} !").replace("{}", esc(d.name)) : TR("C'est prêt !")}</h2>
         <div class="sous">${TR("Tu peux démarrer tout de suite, ou affiner quelques réglages qui rendront le plan plus juste.")}</div>
         <div class="onb-choix">
           <button class="ch on" id="onb-go" style="animation-delay:0ms">${TR("Créer mon programme")}</button>
@@ -4369,7 +4385,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 02h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 02h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4855,7 +4871,7 @@ function openProfil(){
     ${pl? `<div class="tiles" style="margin-bottom:14px;">
       <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">${TR("kcal / jour")}</div></div>
       <div class="tile"><div class="v">${pl.prot} g</div><div class="u">${TR("protéines")}</div></div>
-      <div class="tile"><div class="v">${p.goalWeight? fmtKg(p.goalWeight)+" kg" : "—"}</div><div class="u">objectif</div></div>
+      <div class="tile"><div class="v">${p.goalWeight? pds(p.goalWeight) : "—"}</div><div class="u">${TR("objectif")}</div></div>
     </div>`:""}
     <div class="stack">
       <button class="btn btn-accent" id="pr-plan">${pl? TR("Voir mon plan") : TR("Créer mon plan")}</button>
@@ -6029,7 +6045,7 @@ function demanderRetrait(label, grp){
       Les journées déjà enregistrées ne changent pas.</div>
     <div class="row" style="gap:8px;">
       <button class="btn grow" id="rt-non">${TR("Annuler")}</button>
-      <button class="btn btn-accent grow" id="rt-oui">Retirer</button>
+      <button class="btn btn-accent grow" id="rt-oui">${TR("Retirer")}</button>
     </div>`);
   document.getElementById("rt-non").onclick = closeSheet;
   document.getElementById("rt-oui").onclick = ()=>{
@@ -6221,7 +6237,7 @@ function editGoal(){
     /* le profil et l'objectif doivent rester d'accord */
     if(db.profile) { db.profile.goalWeight = v; }
     db.settings.goal = v; coachGoal = null; save(); closeSheet(); render();
-    toast("Objectif : "+fmtKg(v)+" kg");
+    toast(TR("Objectif :") + " " + pds(v));
   };
   document.getElementById("gl-ok").onclick = ok;
   inp.onkeydown = e => { if(e.key==="Enter") ok(); };
@@ -7008,10 +7024,10 @@ function renderActive(app){
         ${en.sets.filter(x=>!x.warm).length > 1
           ? `<button class="btn btn-sm btn-ghost" data-act="delset" title="${TR("Supprimer la dernière série")}" aria-label="Supprimer la dernière série" style="color:var(--bad); flex:0 0 auto; padding-inline:14px;">✕</button>`
           : ""}
-        <button class="btn btn-sm btn-ghost" data-act="swap" style="white-space:nowrap;">⇄ Remplacer</button>
-        <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">Retirer</button>
+        <button class="btn btn-sm btn-ghost" data-act="swap" style="white-space:nowrap;">⇄ ${TR("Remplacer")}</button>
+        <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">${TR("Retirer")}</button>
       </div>
-      <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">Replier ${CHEV}</button>`;
+      <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
@@ -7126,24 +7142,24 @@ function renderActive(app){
                  répétitions qui baisse, sur les séries suivantes. */
               if(rienARetirer || plafonne){
                 const nr = Math.max(1, Math.round((st.r||0)*0.8));
-                msg = `Trop lourd — vise ${nr} reps sur les séries suivantes, la qualité prime.`;
+                msg = TR("Trop lourd — vise {} reps sur les séries suivantes, la qualité prime.").replace("{}", nr);
                 if(next) appliquerSuite("r", nr);
               } else {
                 const bas = Math.max(0, Math.round(((st.w||0) - Math.max(inc, (st.w||0)*0.08))*2)/2);
                 const cible = Math.max(st.r||0, rng.lo);
-                msg = next ? `Trop lourd — séries suivantes à ${pds(bas)}, on garde ${cible} reps.`
-                            : `Trop lourd — repars de ${pds(bas)} à la prochaine séance.`;
+                msg = next ? TR("Trop lourd — séries suivantes à {c}, on garde {r} reps.").replace("{c}", pds(bas)).replace("{r}", cible)
+                            : TR("Trop lourd — repars de {} à la prochaine séance.").replace("{}", pds(bas));
                 if(next){ appliquerSuite("w", bas); appliquerSuite("r", cible); }
               }
             } else if(rir>=3){
               if(plafonne){
                 const pr = progressionSansCharge(en.exId, st.r||0, en.sets.filter(x=>!x.warm).length);
-                msg = `Trop léger — ${pr.text.charAt(0).toLowerCase()}${pr.text.slice(1)}`;
+                msg = TR("Trop léger —") + " " + pr.text.charAt(0).toLowerCase() + pr.text.slice(1);
                 if(next && pr.mode==="reps") appliquerSuite("r", pr.reps);
               } else {
                 const nw = (st.w||0)+inc;
-                msg = next ? `Trop léger — séries suivantes à ${pds(nw)}.`
-                            : `Trop léger — passe à ${pds(nw)} à la prochaine séance.`;
+                msg = next ? TR("Trop léger — séries suivantes à {}.").replace("{}", pds(nw))
+                            : TR("Trop léger — passe à {} à la prochaine séance.").replace("{}", pds(nw));
                 if(next) appliquerSuite("w", nw);
               }
             } else if(rir===0 && (st.r||0) < rng.lo){
@@ -7285,7 +7301,7 @@ function renderActive(app){
       sets:[{w: ls? ls.w:"", r: ls? ls.r : repsDepart(parseReps(cible.reps)), done:false}]});
     save(); closeSheet(); render();
   });
-  document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),"Oui, annuler",true,()=>{ db.active=null; arreterChronos(); save(); render(); });
+  document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),TR("Oui, annuler"),true,()=>{ db.active=null; arreterChronos(); save(); render(); });
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
