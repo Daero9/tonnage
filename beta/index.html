@@ -974,6 +974,7 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Android sauvegarde tes données et les restaure sur un nouveau téléphone. Le bouton ci-dessous te permet d'en garder une copie à toi.":"Android backs up your data and restores it on a new phone. The button below lets you keep a copy of your own.",
   "{n} exercices · {s} séries · ~{m} min":"{n} exercises · {s} sets · ~{m} min",
   "refusé :":"denied:",
   "erreur":"error",
@@ -4544,7 +4545,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 14h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 14h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4733,6 +4734,24 @@ function getEx(id){ return allEx().find(e=>e.id===id) || {name:TR("Exercice supp
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 async function useCap(name){
   try{ return (window.claude && window.claude.use) ? await window.claude.use(name) : null; }catch(e){ return null; }
+}
+/* Dans l'application empaquetee (Capacitor), pas dans un navigateur. Sert a
+   distinguer « le navigateur ne sait pas faire » de « on est dans l'app » :
+   les deux manquent de showSaveFilePicker, pour des raisons opposees. */
+function dansLApp(){
+  try{ return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function"
+                 && window.Capacitor.isNativePlatform()); }
+  catch(e){ return false; }
+}
+/* Telechargement ordinaire, qui marche dans TOUS les navigateurs — y compris
+   Safari et Chrome mobile. L'ancien chemin passait par window.claude, absent
+   partout sauf dans le runtime Artifact : le bouton etait mort en production. */
+function telechargerJson(nom, texte){
+  const url = URL.createObjectURL(new Blob([texte], {type:"application/json"}));
+  const a = document.createElement("a");
+  a.href = url; a.download = nom; a.style.display = "none";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} }, 4000);
 }
 /* --- explications affichées une seule fois, la première fois qu'on rencontre une mécanique --- */
 function dejaVu(k){ return !!(db.seen && db.seen[k]); }
@@ -4969,8 +4988,8 @@ async function quickBackup(){
   const stamp = dayKey();
   try{
     const downloads = await useCap("downloads");
-    if(!downloads) throw new Error("unavailable");
-    await downloads.save({filename:`tonnage-sauvegarde-${stamp}.json`, data: JSON.stringify(db)});
+    if(downloads) await downloads.save({filename:`tonnage-sauvegarde-${stamp}.json`, data: JSON.stringify(db)});
+    else telechargerJson(`tonnage-sauvegarde-${stamp}.json`, JSON.stringify(db));
     db.lastBackup = Date.now(); save(); render(); toast(TR("Sauvegarde enregistrée ✓"));
   }catch(e){
     if(e && e.code==="declined") return;
@@ -8043,7 +8062,13 @@ function openSettings(){
   /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
   const autoBox = document.getElementById("st-auto");
   if(!fileApiOk()){
-    autoBox.innerHTML = `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:4px;">La sauvegarde automatique dans un fichier n'est pas disponible sur ce navigateur (Safari/iPhone ne la propose pas). Tes données restent enregistrées dans le téléphone.</div>`;
+    /* Les deux cas manquent de showSaveFilePicker, mais pour des raisons
+       opposees : parler de Safari dans une application Android serait faux
+       trois fois — ni Safari, ni navigateur, ni iPhone. */
+    autoBox.innerHTML = `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:4px;">${
+      dansLApp()
+        ? TR("Android sauvegarde tes données et les restaure sur un nouveau téléphone. Le bouton ci-dessous te permet d'en garder une copie à toi.")
+        : TR("La sauvegarde automatique dans un fichier n'est pas disponible sur ce navigateur (Safari/iPhone ne la propose pas). Tes données restent enregistrées dans le téléphone.")}</div>`;
   } else if(autoFile.ok){
     autoBox.innerHTML = `<div class="card" style="background:var(--surface2); padding:12px; margin-bottom:2px;">
       <div style="font-weight:700; color:var(--good); font-size:13.5px;">✓ Sauvegarde automatique active</div>
@@ -8100,8 +8125,8 @@ function openSettings(){
     const stamp = dayKey();
     try{
       const downloads = await useCap("downloads");
-      if(!downloads) throw new Error("unavailable");
-      await downloads.save({filename:`tonnage-sauvegarde-${stamp}.json`, data: JSON.stringify(db)});
+      if(downloads) await downloads.save({filename:`tonnage-sauvegarde-${stamp}.json`, data: JSON.stringify(db)});
+      else telechargerJson(`tonnage-sauvegarde-${stamp}.json`, JSON.stringify(db));
       db.lastBackup = Date.now(); save();
       btn.textContent = TR("Sauvegarde enregistrée ✓");
     }catch(e){
