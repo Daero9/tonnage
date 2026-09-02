@@ -520,6 +520,74 @@ function lancer(){
   eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
   eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
 
+  /* ------------------------------------------- tractions, dips, poids du corps */
+  grp("Poids du corps");
+  neuf();
+  const CR = F.eval("chargeReelle"), PORTE = F.eval("porteLeCorps");
+  const GETEX = F.eval("getEx");
+  const idTr = id("Tractions"), idDip = id("Dips"), idPmp = id("Pompes"), idDC = id("Développé couché");
+  DB.weights = [{date:new Date().toISOString(), kg:80}];
+
+  vrai("Les tractions portent le corps entier", PORTE(GETEX(idTr)));
+  vrai("Les dips aussi", PORTE(GETEX(idDip)));
+  vrai("Les pompes NON : la fraction soulevée est indevinable", !PORTE(GETEX(idPmp)));
+  vrai("Un exercice à charge externe non plus", !PORTE(GETEX(idDC)));
+
+  eq("Traction sans lest : la charge réelle est ton poids", CR(idTr, {w:0, r:10}), 80);
+  eq("Traction lestée : poids du corps + lest", CR(idTr, {w:10, r:5}), 90);
+  eq("Développé couché : la charge saisie, rien d'autre", CR(idDC, {w:60, r:10}), 60);
+  eq("Pompes : inchangées", CR(idPmp, {w:0, r:20}), 0);
+
+  /* Le tonnage ne doit surtout PAS bouger : il reste « charge externe déplacée ». */
+  eq("Tonnage : une traction sans lest vaut toujours 0",
+     F.volSerie({w:0, r:10}), 0);
+  eq("Tonnage : une traction lestée ne compte que le lest",
+     F.volSerie({w:10, r:5}), 50);
+  DB.history = [seance(2, [{exId:idTr, sets:[serie(0,10), serie(0,8)]}])];
+  eq("Tonnage d'une séance de tractions au poids du corps : 0",
+     F.sessionVolume(DB.history[0]), 0);
+
+  /* Les records : en répétitions au poids du corps, en charge dès qu'il y a du lest. */
+  DB.history = [seance(48, [{exId:idTr, sets:[serie(0,10)]}])];
+  const recTr = F.recordExo({exId:idTr, sets:[serie(0,12)]});
+  vrai("12 tractions battent 10", !!recTr);
+  eq("Le gain est en répétitions", recTr && recTr.unite, "reps");
+  eq("12 après 10, c'est +2 reps", recTr && recTr.gain, 2);
+
+  eq("Refaire 10 tractions n'est pas un record",
+     F.recordExo({exId:idTr, sets:[serie(0,10)]}), null);
+
+  DB.history = [seance(48, [{exId:idTr, sets:[serie(0,10)]}])];
+  const recLest = F.recordExo({exId:idTr, sets:[serie(10,8)]});
+  vrai("8 tractions à +10 kg battent 10 au poids du corps", !!recLest);
+  eq("Là, le gain est une charge", recLest && recLest.unite, "kg");
+
+  /* Le poids du corps sert de constante : le prendre à la date de chaque séance
+     ferait naître un record d'une simple prise de 1 kg. */
+  DB.weights = [{date:new Date(Date.now()-72*36e5).toISOString(), kg:79},
+                {date:new Date().toISOString(), kg:81}];
+  DB.history = [seance(48, [{exId:idTr, sets:[serie(0,10)]}])];
+  eq("Prendre du poids ne fabrique pas de record",
+     F.recordExo({exId:idTr, sets:[serie(0,10)]}), null);
+  DB.weights = [{date:new Date().toISOString(), kg:80}];
+
+  /* Le profil musculaire : sans ces lignes, le dos restait « pas assez de données ». */
+  neuf();
+  DB.weights = [{date:new Date().toISOString(), kg:80}];
+  DB.history = [seance(48, [{exId:idTr, sets:[serie(0,10), serie(0,9)]}]),
+                seance(96, [{exId:idTr, sets:[serie(0,10), serie(0,8)]}])];
+  const mp = F.muscleProfile();
+  vrai("Les tractions nourrissent le grand dorsal",
+       mp["Grand dorsal"] !== null && mp["Grand dorsal"] !== undefined,
+       JSON.stringify(mp["Grand dorsal"]));
+
+  neuf();
+  DB.weights = [{date:new Date().toISOString(), kg:80}];
+  DB.history = [seance(48, [{exId:idPmp, sets:[serie(0,20), serie(0,18)]}])];
+  const mpP = F.muscleProfile();
+  vrai("Les pompes restent hors du profil : rien n'est inventé",
+       !mpP["Pectoraux"], JSON.stringify(mpP["Pectoraux"]));
+
   /* ---------------------------------------------------------- récupération */
   grp("Récupération");
   neuf();
