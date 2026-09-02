@@ -968,6 +968,9 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Record":"Record",
+  "{} reps":"{} reps",
+  "sur ton meilleur":"on your best",
   "{s} enregistrée{e}, {p}, {t}.":"{s} logged, {p}, {t}.",
   "Le programme complet ajoute les {} séances d'un coup. Une proposition, c'est une seule séance, tirée au sort dans une liste d'exercices équivalents.":"The full program adds all {} workouts at once. A suggestion is a single workout, drawn at random from a list of equivalent exercises.",
   "Pour chaque groupe musculaire, l'app estime ta force à partir des charges que tu as réellement soulevées : elle prend ton meilleur 1RM estimé sur les exercices qui sollicitent ce groupe, puis le rapporte à ton poids de corps.":"For each muscle group, the app estimates your strength from the loads you actually lifted: it takes your best estimated 1RM on the exercises that work that group, then scales it to your body weight.",
@@ -2506,6 +2509,22 @@ const ALTS = {
 };
 /* exercices où la charge est ton propre corps : le champ kg sert au lest éventuel */
 function estPoidsDuCorps(ex){ const e = equipCanon(ex); return !!ex && (e==="Poids du corps" || e==="Barre fixe"); }
+/* Mouvements où tu suspends ou soutiens TOUT ton corps : la charge réelle est ton
+   poids plus le lest. Les pompes et les tractions australiennes n'en portent qu'une
+   fraction, qui change avec l'inclinaison et les proportions — l'app ne peut pas la
+   mesurer, donc elle ne l'invente pas : elles restent hors de ce calcul. */
+const CORPS_ENTIER = ["Tractions", "Tractions supination", "Dips"];
+function porteLeCorps(ex){ return !!ex && CORPS_ENTIER.indexOf(nomCanon(ex)) >= 0; }
+/* charge servant aux records et au profil musculaire — jamais au tonnage.
+   Le poids du corps est pris tel quel pour toutes les séances, passées comprises :
+   c'est une constante qui s'annule dans la comparaison, donc un record ne peut plus
+   naître d'une simple variation de poids. */
+function chargeReelle(exId, st){
+  const w = st && st.w ? Number(st.w) : 0;
+  return porteLeCorps(getEx(exId))
+    ? w + (currentWeight() || (db.profile && db.profile.weight) || 75)
+    : w;
+}
 function serieEchauffement(exId, reps){
   const ex = getEx(exId);
   const rng = parseReps(reps);
@@ -4465,7 +4484,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 03h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 12h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7088,7 +7107,11 @@ function renderActive(app){
       const rec = recordExo(en);
       plie.innerHTML = `<span class="vu">✓</span><span class="nm">${esc(ex.name)}${
         (rec && rec.gain > 0)
-          ? `<em>🏆 Record — ${pds(rec.w)} × ${rec.r} <b>+${pds(rec.gain)}</b></em>` : ""
+          ? `<em>🏆 ${TR("Record")} — ${rec.unite==="reps"
+                ? TR("{} reps").replace("{}", rec.r)
+                : pds(rec.w) + " × " + rec.r} <b>+${rec.unite==="reps"
+                ? TR("{} reps").replace("{}", rec.gain)
+                : pds(rec.gain)}</b></em>` : ""
       }</span><span class="dep">${CHEV}</span>`;
       plie.onclick = ()=>{ delete en.replie; save(); renderSurPlace(); };
       list.appendChild(plie);
@@ -7424,22 +7447,33 @@ function recordExo(en){
   const sets = en.sets.filter(s=>s.done && !s.warm);
   if(!sets.length) return null;
   let best = 0, meilleure = null;
-  sets.forEach(st=>{ const v = e1rm(st.w||0, st.r||0); if(v > best){ best = v; meilleure = st; } });
+  sets.forEach(st=>{ const v = e1rm(chargeReelle(en.exId, st), st.r||0); if(v > best){ best = v; meilleure = st; } });
   if(!(best > 0)) return null;
-  let avant = 0;
+  let avant = 0, avantReps = 0;
   db.history.forEach(h=>h.entries.forEach(e2=>{
     if(e2.exId !== en.exId) return;
-    e2.sets.filter(s=>!s.warm).forEach(st=>{ avant = Math.max(avant, e1rm(st.w||0, st.r||0)); });
+    e2.sets.filter(s=>!s.warm).forEach(st=>{
+      avant = Math.max(avant, e1rm(chargeReelle(en.exId, st), st.r||0));
+      if(!(st.w > 0)) avantReps = Math.max(avantReps, st.r||0);
+    });
   }));
-  if(avant === 0) return {gain:0, w:meilleure.w, r:meilleure.r};
+  /* Le gain s'exprime dans l'unité de la série qui a battu le record : en
+     répétitions quand elle est au poids du corps, en charge quand elle est lestée.
+     « +2 reps » se lit ; « +2,7 kg de max estimé » sur des tractions, non. */
+  const enReps = porteLeCorps(getEx(en.exId)) && !(meilleure.w > 0);
+  const base = {w:meilleure.w, r:meilleure.r, unite: enReps ? "reps" : "kg"};
+  if(avant === 0) return Object.assign({gain:0}, base);
   if(best <= avant*1.005) return null;
-  return {gain: Math.round((best-avant)*10)/10, w:meilleure.w, r:meilleure.r};
+  const gain = enReps ? (meilleure.r||0) - avantReps
+                      : Math.round((best-avant)*10)/10;
+  if(!(gain > 0)) return null;
+  return Object.assign({gain}, base);
 }
 function nouveauxRecords(a){
   const out = [];
   a.entries.forEach(en=>{
     const r = recordExo(en);
-    if(r) out.push({nom:getEx(en.exId).name, gain:r.gain});
+    if(r) out.push({nom:getEx(en.exId).name, gain:r.gain, unite:r.unite});
   });
   return out;
 }
@@ -7495,7 +7529,9 @@ function openFinSeance(r){
     ${r.series} ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} ${r.exos} ${TR(r.exos>1 ? "exercices" : "exercice")}.</div>
   ${r.records.length? `<div class="card" style="background:var(--surface2); margin-bottom:14px;">
     <div style="font-weight:800; margin-bottom:6px;">🏆 ${TR(r.records.length>1? "Nouveaux records":"Nouveau record")}</div>
-    ${r.records.map(x=>`<div style="font-size:13.5px; color:var(--ink-soft);">${esc(x.nom)}${x.gain? ` — <b style="color:var(--good);">+${pds(x.gain)}</b> ${TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
+    ${r.records.map(x=>`<div style="font-size:13.5px; color:var(--ink-soft);">${esc(x.nom)}${x.gain? ` — <b style="color:var(--good);">+${x.unite==="reps"
+        ? TR("{} reps").replace("{}", x.gain)
+        : pds(x.gain)}</b> ${x.unite==="reps" ? TR("sur ton meilleur") : TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
   </div>`:""}
   <button class="btn btn-accent" id="fin-ok" style="width:100%;">${TR("Terminé")}</button>`);
   document.getElementById("fin-ok").onclick = closeSheet;
@@ -8324,7 +8360,11 @@ const STRENGTH_REF = {
   "Élévations latérales poulie":0.1, "Développé machine épaules":0.55, "Élévations frontales":0.12,
   "Curl poulie basse":0.4, "Curl incliné haltères":0.14,
   "Extension poulie corde":0.4, "Extension triceps machine":0.5, "Kickback poulie":0.12,
-  "Hack squat":1.4, "Fentes bulgares":0.28, "Abducteurs machine":0.6, "Adducteurs machine":0.6, "Mollets assis":0.7
+  "Hack squat":1.4, "Fentes bulgares":0.28, "Abducteurs machine":0.6, "Adducteurs machine":0.6, "Mollets assis":0.7,
+  /* Poids du corps compris : un 1RM intermédiaire vaut environ 1,25 fois ton poids
+     à la traction et 1,35 aux dips. Sans ces trois lignes, quelqu'un qui travaille
+     son dos aux tractions restait indéfiniment en « pas assez de données ». */
+  "Tractions":1.25, "Tractions supination":1.2, "Dips":1.35
 };
 /* muscles suivis dans le profil, avec le nom court affiché sur la silhouette */
 const MP_MUSCLES = ["Pectoraux","Grand dorsal","Trapèzes","Deltoïdes","Biceps","Triceps","Avant-bras",
@@ -8474,7 +8514,7 @@ function muscleProfile(){
     if(!ref || !sets.length) return;
     /* un exercice fait bras par bras : la charge d'un côté vaut le double en équivalent bilatéral */
     const f = (db.unilat && db.unilat[en.exId] && !dejaParCote(en.exId)) ? 2 : 1;
-    const best = Math.max(...sets.map(st=>e1rm((st.w||0)*f, st.r||0)));
+    const best = Math.max(...sets.map(st=>e1rm(chargeReelle(en.exId, st)*f, st.r||0)));
     if(best<=0) return;
     (byEx[en.exId] = byEx[en.exId] || {nom:nomCanon(ex), ref, vals:[]}).vals.push(best);
   }));
