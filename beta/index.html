@@ -968,6 +968,45 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "{n} exercices · {s} séries · ~{m} min":"{n} exercises · {s} sets · ~{m} min",
+  "refusé :":"denied:",
+  "erreur":"error",
+  "{n} du {d} sera retirée de l'historique et des courbes.":"{n} from {d} will be removed from your history and your charts.",
+  "{c} × {r} reps sera retirée de cette séance.":"{c} × {r} reps will be removed from this workout.",
+  "{} disparaîtra de ton accueil. Les séances déjà faites restent dans ton historique.":"{} will disappear from your home screen. Workouts already done stay in your history.",
+  "{} sera retiré de cette séance.":"{} will be removed from this workout.",
+  "Restaurer les {} propositions retirées":"Restore the {} dismissed suggestions",
+  "≈ {} kcal par minute pour toi.":"≈ {} kcal per minute for you.",
+  "Sur {n} semaines, celles où tu as tenu tes protéines ({t}) affichent un tonnage supérieur de {e} % aux autres.":"Across {n} weeks, the ones where you hit your protein ({t}) show {e} % more tonnage than the rest.",
+  "Sur {n} semaines, ton tonnage n'a pas suivi tes protéines : les semaines au quota sont {e} % en dessous. Regarde plutôt ton sommeil et ta récupération.":"Across {n} weeks, your tonnage didn't follow your protein: the weeks on target came in {e} % lower. Look at your sleep and recovery instead.",
+  "Pas travaillé depuis {n} {j}.":"Not trained for {n} {j}.",
+  "jour":"day",
+  "jours":"days",
+  "dernière fois {}":"last time {}",
+  "Dernière fois ({d}) : {s}":"Last time ({d}): {s}",
+  "Mémoire principale :":"Main storage:",
+  "Mémoire de secours :":"Backup storage:",
+  "Trace de la session précédente :":"Trace of the previous session:",
+  "retrouvée ({})":"found ({})",
+  "{p} à perdre, soit {pct} % de ton poids. Une perte de ce genre se conduit par paliers : vise d'abord <b>{c}</b> (−10 %), tiens-le un mois, puis on réévalue. Aller plus vite coûte du muscle et se reprend presque toujours.":"{p} to lose — {pct} % of your body weight. A loss that size is done in steps: aim for <b>{c}</b> first (−10 %), hold it a month, then we reassess. Going faster costs muscle and almost always comes back.",
+  "Trop dur la dernière fois, et tu ne peux pas alléger : vise {} reps sur toutes les séries, puis remonte d'une rep à chaque séance.":"Too hard last time, and you can't go lighter: aim for {} reps on every set, then add a rep each session.",
+  "Continue à viser {} reps sur toutes les séries avant de charger.":"Keep aiming for {} reps on every set before adding load.",
+  "Essaie de gratter une répétition de plus sur la première série.":"Try to squeeze one more rep out of the first set.",
+  "Toutes les séries à {r} reps ou plus la dernière fois — passe à {c}.":"Every set at {r} reps or more last time — move up to {c}.",
+  "Trop facile la dernière fois (3+ reps en réserve) — passe à {}.":"Too easy last time (3+ reps in reserve) — move up to {}.",
+  "Trop lourd la dernière fois sur {n} {s} — repars à {c} pour tenir {r} reps.":"Too heavy last time on {n} {s} — drop back to {c} to hold {r} reps.",
+  "Reste à {c} jusqu'à faire {r} reps sur toutes les séries.":"Stay at {c} until you hit {r} reps on every set.",
+  "Garde {} et essaie de gratter une rep de plus.":"Keep {} and try to squeeze out one more rep.",
+  "Trop dur — vise {} reps sur les séries suivantes, la qualité prime.":"Too hard — aim for {} reps on the following sets, quality first.",
+  "Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.":"Too hard — stay on this rep count until it goes up cleanly.",
+  "Trop lourd — séries suivantes à {}.":"Too heavy — following sets at {}.",
+  "Trop lourd — garde cette charge la prochaine fois, elle viendra.":"Too heavy — keep this load next time, it will come.",
+  "À la limite — on reste à {} sur les séries suivantes.":"Right at the limit — staying at {} on the following sets.",
+  "Parfait — on reste à {}, pile la bonne zone.":"Perfect — staying at {}, right in the zone.",
+  "Tu plafonnes à {n} reps — passe à « {v} », plus dur à charge égale.":"You're capped at {n} reps — switch to “{v}”, harder at the same load.",
+  "Tu plafonnes à {n} reps — ralentis la descente (3 s) et marque 2 s en bas plutôt que d'en rajouter.":"You're capped at {n} reps — slow the lowering to 3 s and hold 2 s at the bottom instead of adding more.",
+  "Ajoute une série plutôt que des reps : tu es déjà à {n}.":"Add a set rather than reps: you're already at {n}.",
+  "Vise {n} reps — et termine à une rep de l'échec.":"Aim for {n} reps — and finish one rep short of failure.",
   "Record":"Record",
   "{} reps":"{} reps",
   "sur ton meilleur":"on your best",
@@ -3507,7 +3546,9 @@ function alerteObjectif(p){
   }
   if(perte > 0 && perte/kg > 0.20){
     return {niveau:"prudence", titre:TR("C'est beaucoup d'un coup"),
-      txt:`${pds(perte)} à perdre, soit ${Math.round(perte/kg*100)} % de ton poids. Une perte de ce genre se conduit par paliers : vise d'abord <b>${pds(Math.round((kg-kg*0.1)*10)/10)}</b> (−10 %), tiens-le un mois, puis on réévalue. Aller plus vite coûte du muscle et se reprend presque toujours.`};
+      txt:TR("{p} à perdre, soit {pct} % de ton poids. Une perte de ce genre se conduit par paliers : vise d'abord <b>{c}</b> (−10 %), tiens-le un mois, puis on réévalue. Aller plus vite coûte du muscle et se reprend presque toujours.")
+        .replace("{p}", pds(perte)).replace("{pct}", Math.round(perte/kg*100))
+        .replace("{c}", pds(Math.round((kg-kg*0.1)*10)/10))};
   }
   const prise = cible - kg;
   if(prise > 0.5 && imcCible >= 35){
@@ -4497,7 +4538,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 12h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 13h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4815,26 +4856,33 @@ function chargeBloquee(exId){
 /* une variante plus dure du même mouvement, prise dans la bibliothèque */
 function varianteDure(exId){
   const ex = getEx(exId);
+  /* Noms canoniques des DEUX côtés : `ex.name` est traduit, donc le comparer à
+     une clé française ne trouvait rien dès qu'on passait en anglais. */
   const dures = {
     "Pompes":"Dips", "Dips":"Tractions", "Squat":"Fentes bulgares", "Fentes":"Fentes bulgares",
     "Fentes bulgares":"Hack squat", "Crunch":"Relevés de jambes", "Gainage":"Roulette abdominale",
-    "Tractions":TR("Tractions lestées"), "Curl haltères":"Curl incliné haltères", "Mollets debout":TR("Mollets debout une jambe")
+    "Curl haltères":"Curl incliné haltères"
   };
-  const cible = dures[ex.name];
-  if(cible && allEx().some(e=>e.name===cible)) return cible;
+  const cible = dures[nomCanon(ex)];
+  if(cible && allEx().some(e=>nomCanon(e)===cible)) return cible;
   return null;
 }
 /* que proposer quand la charge ne peut pas monter : reps -> série -> variante */
 function progressionSansCharge(exId, repsActuelles, nbSeries){
   const v = varianteDure(exId);
   if(repsActuelles >= REPS_PLAFOND){
-    return v ? {mode:"variante", cible:v, text:`Tu plafonnes à ${repsActuelles} reps — passe à « ${v} », plus dur à charge égale.`}
-             : {mode:"tempo", text:`Tu plafonnes à ${repsActuelles} reps — ralentis la descente (3 s) et marque 2 s en bas plutôt que d'en rajouter.`};
+    return v ? {mode:"variante", cible:v,
+                text: TR("Tu plafonnes à {n} reps — passe à « {v} », plus dur à charge égale.")
+                        .replace("{n}", repsActuelles).replace("{v}", TR(v))}
+             : {mode:"tempo",
+                text: TR("Tu plafonnes à {n} reps — ralentis la descente (3 s) et marque 2 s en bas plutôt que d'en rajouter.")
+                        .replace("{n}", repsActuelles)};
   }
   if(repsActuelles >= REPS_PLAFOND - 5 && nbSeries < 5){
-    return {mode:"serie", text:`Ajoute une série plutôt que des reps : tu es déjà à ${repsActuelles}.`};
+    return {mode:"serie", text: TR("Ajoute une série plutôt que des reps : tu es déjà à {n}.").replace("{n}", repsActuelles)};
   }
-  return {mode:"reps", reps: repsActuelles + 2, text:`Vise ${repsActuelles+2} reps — et termine à une rep de l'échec.`};
+  return {mode:"reps", reps: repsActuelles + 2,
+          text: TR("Vise {n} reps — et termine à une rep de l'échec.").replace("{n}", repsActuelles + 2)};
 }
 function suggestFor(exId, target){
   const last = lastPerf(exId);
@@ -4873,21 +4921,29 @@ function suggestFor(exId, target){
         ? faites[m]
         : Math.round((faites[m-1] + faites[m]) / 2));
       return {mode:"hold", w:maxW, reps:basse,
-        text:`Trop dur la dernière fois, et tu ne peux pas alléger : vise ${basse} reps sur toutes les séries, puis remonte d'une rep à chaque séance.`};
+        text: TR("Trop dur la dernière fois, et tu ne peux pas alléger : vise {} reps sur toutes les séries, puis remonte d'une rep à chaque séance.").replace("{}", basse)};
     }
     if(anyBelow)
-      return {mode:"hold", w:maxW, reps:rng.lo, text:`Continue à viser ${rng.lo} reps sur toutes les séries avant de charger.`};
-    return {mode:"beat", w:0, text:`Essaie de gratter une répétition de plus sur la première série.`};
+      return {mode:"hold", w:maxW, reps:rng.lo,
+              text: TR("Continue à viser {} reps sur toutes les séries avant de charger.").replace("{}", rng.lo)};
+    return {mode:"beat", w:0, text: TR("Essaie de gratter une répétition de plus sur la première série.")};
   }
   if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
     return {mode:"up", w:maxW+inc, text: allTop
-      ? `Toutes les séries à ${rng.hi} reps ou plus la dernière fois — passe à ${pds(maxW+inc)}.`
-      : `Trop facile la dernière fois (3+ reps en réserve) — passe à ${pds(maxW+inc)}.`};
+      ? TR("Toutes les séries à {r} reps ou plus la dernière fois — passe à {c}.")
+          .replace("{r}", rng.hi).replace("{c}", pds(maxW+inc))
+      : TR("Trop facile la dernière fois (3+ reps en réserve) — passe à {}.").replace("{}", pds(maxW+inc))};
   if(anyBelow && avgRir!==null && avgRir<0.5)
-    return {mode:"down", w:Math.max(0,maxW-inc), text:`Trop lourd la dernière fois sur ${sousLaCible} série${sousLaCible>1?"s":""} — repars à ${pds(Math.max(0,maxW-inc))} pour tenir ${rng.lo} reps.`};
+    return {mode:"down", w:Math.max(0,maxW-inc),
+            text: TR("Trop lourd la dernière fois sur {n} {s} — repars à {c} pour tenir {r} reps.")
+                    .replace("{n}", sousLaCible).replace("{s}", TR(sousLaCible>1 ? "séries" : "série"))
+                    .replace("{c}", pds(Math.max(0,maxW-inc))).replace("{r}", rng.lo)};
   if(anyBelow)
-    return {mode:"hold", w:maxW, text:`Reste à ${pds(maxW)} jusqu'à faire ${rng.lo} reps sur toutes les séries.`};
-  return {mode:"beat", w:maxW, text:`Garde ${pds(maxW)} et essaie de gratter une rep de plus.`};
+    return {mode:"hold", w:maxW,
+            text: TR("Reste à {c} jusqu'à faire {r} reps sur toutes les séries.")
+                    .replace("{c}", pds(maxW)).replace("{r}", rng.lo)};
+  return {mode:"beat", w:maxW,
+          text: TR("Garde {} et essaie de gratter une rep de plus.").replace("{}", pds(maxW))};
 }
 
 /* ================= TABS ================= */
@@ -5457,7 +5513,7 @@ function openAjoutAliment(meal){
         <span style="font-size:13.5px; color:var(--ink-soft);">${TR("Garder dans mes propositions")}</span>
       </label>
       <button class="btn btn-accent" id="ot-ok">${TR("Enregistrer")}</button>
-      ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? `Restaurer les ${nbMasques()} propositions retirées` : TR("Restaurer la proposition retirée")}</button>`:""}
+      ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? TR("Restaurer les {} propositions retirées").replace("{}", nbMasques()) : TR("Restaurer la proposition retirée")}</button>`:""}
       <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;">${TR("Astuce : appui long sur une proposition pour la modifier.")}</p>
     </div>`);
   const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
@@ -5618,7 +5674,7 @@ function openModifAliment(meal, label){
   document.querySelectorAll("[data-mamode]").forEach(b=>b.onclick=()=>{
     mode = b.dataset.mamode;
     document.querySelectorAll("[data-mamode]").forEach(x=>x.classList.toggle("on", x.dataset.mamode===mode));
-    document.getElementById("ma-lab").textContent = mode==="poids" ? `Quantité (${unite})` : TR("Nombre de portions");
+    document.getElementById("ma-lab").textContent = mode==="poids" ? TR("Quantité ({})").replace("{}", TR(unite)) : TR("Nombre de portions");
     nEl.step = mode==="poids" ? 10 : 0.5;
     nEl.value = mode==="poids" ? gBase : 1;
     maj();
@@ -5827,7 +5883,7 @@ function openCardioAdd(idExistant){
     if(machine && m[3]){
       const kg = currentWeight() || 75;
       const i = Math.max(0, INTENSITES.findIndex(x=>x[0]===cInt));
-      h.textContent = `≈ ${Math.round(m[3][i]*3.5*kg/200)} kcal par minute pour toi.`;
+      h.textContent = TR("≈ {} kcal par minute pour toi.").replace("{}", Math.round(m[3][i]*3.5*kg/200));
     }
   };
   document.querySelectorAll("[data-cmach]").forEach(b=>b.onclick=()=>{ cMach = b.dataset.cmach; majMachine(); });
@@ -6247,8 +6303,10 @@ function lienProtTonnage(){
   const ecart = Math.round((mt - mr)/mr*100);
   if(Math.abs(ecart) < 5) return null;
   return ecart > 0
-    ? `Sur ${utiles.length} semaines, celles où tu as tenu tes protéines (${tenues.length}) affichent un tonnage supérieur de ${ecart} % aux autres.`
-    : `Sur ${utiles.length} semaines, ton tonnage n'a pas suivi tes protéines : les semaines au quota sont ${Math.abs(ecart)} % en dessous. Regarde plutôt ton sommeil et ta récupération.`;
+    ? TR("Sur {n} semaines, celles où tu as tenu tes protéines ({t}) affichent un tonnage supérieur de {e} % aux autres.")
+        .replace("{n}", utiles.length).replace("{t}", tenues.length).replace("{e}", ecart)
+    : TR("Sur {n} semaines, ton tonnage n'a pas suivi tes protéines : les semaines au quota sont {e} % en dessous. Regarde plutôt ton sommeil et ta récupération.")
+        .replace("{n}", utiles.length).replace("{e}", Math.abs(ecart));
 }
 function computeBilan(){
   const now = Date.now(), d7 = now-7*864e5, d14 = now-14*864e5, d28 = now-28*864e5;
@@ -6748,7 +6806,8 @@ function openPropose(){
   const depuis = manque.jours === null
     ? TR("Tu n'as encore rien enregistré : autant commencer par là.")
     : (manque.jours === 0 ? TR("Fait aujourd'hui — à garder pour un autre jour.")
-      : `Pas travaillé depuis ${manque.jours} jour${manque.jours>1?"s":""}.`);
+      : TR("Pas travaillé depuis {n} {j}.").replace("{n}", manque.jours)
+          .replace("{j}", TR(manque.jours>1 ? "jours" : "jour")));
   openSheet(`<h3 style="text-align:center;">${TR("Propose-moi une séance")}</h3>
     <p style="margin:0 0 14px; font-size:13px; color:var(--ink-soft); text-align:center; line-height:1.5;">
       ${TR("D'après ton objectif <b>{but}</b> et tes {n} séances par semaine. Les exercices changent à chaque proposition.")
@@ -6782,7 +6841,7 @@ function apercuProposition(type, evites){
   const minutes = Math.round(prop.items.reduce((a,it)=>a + it.sets*(it.rest+40), 0)/60);
   openSheet(`<h3 style="text-align:center;">${esc(prop.nom)}</h3>
     <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">
-      ${esc(TR(prop.sous))} · ${prop.items.length} exercices · ${total} séries · ~${minutes} min</p>
+      ${esc(TR(prop.sous))} · ${TR("{n} exercices · {s} séries · ~{m} min").replace("{n}", prop.items.length).replace("{s}", total).replace("{m}", minutes)}</p>
     <div class="stack" style="gap:7px; margin-bottom:14px;">
       ${prop.items.map(it=>{
         const bless = injuryNote(it.nom);
@@ -6848,7 +6907,7 @@ function openHistDetail(id){
     </div>`);
   document.getElementById("hd-edit").onclick=()=>openHistEdit(id);
   document.getElementById("hd-del").onclick=()=>{
-    askConfirm(TR("Supprimer cette séance ?"), `${h.name} du ${fmtDateShort(h.date)} sera retirée de l'historique et des courbes.`, TR("Supprimer"), true, ()=>{
+    askConfirm(TR("Supprimer cette séance ?"), TR("{n} du {d} sera retirée de l'historique et des courbes.").replace("{n}", h.name).replace("{d}", fmtDateShort(h.date)), TR("Supprimer"), true, ()=>{
       db.history = db.history.filter(x=>x.id!==h.id); save(); render();
     });
   };
@@ -6870,7 +6929,7 @@ function openPreview(tplId){
       const note = injuryNote(nomCanon(ex));
       return `<div class="pick-row" style="cursor:default;">${exIcon(ex)}
         <div class="grow"><div>${i+1}. ${esc(ex.name)}</div>
-        <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? ` · dernière fois ${pds(Math.max(...last.sets.map(s=>s.w||0)))}`:""}</div>${musclesHtml(nomCanon(ex),3)}
+        <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? " · " + TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0)))):""}</div>${musclesHtml(nomCanon(ex),3)}
         ${note? `<div class="eq" style="color:var(--bad);">⚠️ ${esc(TR(note.injury))} : ${esc(TR(note.tip))}</div>`:""}</div>
         <button class="icon-btn info-btn" data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>`;
     }).join("")}</div>
@@ -7107,7 +7166,8 @@ function renderActive(app){
   a.entries.forEach((en,ei)=>{
     const ex = getEx(en.exId);
     const last = lastPerf(en.exId);
-    const lastTxt = last ? `Dernière fois (${fmtDateShort(last.date)}) : ${last.sets.map(s=>`${fmtKg(s.w)}×${s.r}`).join(" · ")}` : TR("Premier passage sur cet exercice");
+    const lastTxt = last ? TR("Dernière fois ({d}) : {s}").replace("{d}", fmtDateShort(last.date))
+        .replace("{s}", last.sets.map(s=>`${fmtKg(s.w)}×${s.r}`).join(" · ")) : TR("Premier passage sur cet exercice");
     const target = en.target && en.target.reps ? ` · Objectif ${en.target.sets} × ${esc(String(en.target.reps))}` : "";
     const sug = suggestFor(en.exId, en.target);
 
@@ -7293,26 +7353,26 @@ function renderActive(app){
             } else if(rir===0 && (st.r||0) < rng.lo){
               if(rienARetirer){
                 const nr = Math.max(1,(st.r||0)-1);
-                msg = next ? `Trop dur — vise ${nr} reps sur les séries suivantes, la qualité prime.`
-                            : `Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.`;
+                msg = next ? TR("Trop dur — vise {} reps sur les séries suivantes, la qualité prime.").replace("{}", nr)
+                            : TR("Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.");
                 if(next) appliquerSuite("r", nr);
               } else {
                 const nw = Math.max(0,(st.w||0)-inc);
                 if(next) appliquerSuite("r", Math.max(st.r||0, rng.lo));
-                msg = next ? `Trop lourd — séries suivantes à ${pds(nw)}.`
-                            : `Trop lourd — garde cette charge la prochaine fois, elle viendra.`;
+                msg = next ? TR("Trop lourd — séries suivantes à {}.").replace("{}", pds(nw))
+                            : TR("Trop lourd — garde cette charge la prochaine fois, elle viendra.");
                 if(next) appliquerSuite("w", nw);
               }
             } else if(rir===0){
               /* à la limite : on garde exactement ce que tu viens de faire */
               if(next && !rienARetirer) appliquerSuite("w", st.w);
               msg = rienARetirer ? TR("À la limite — c'est exactement là qu'il faut être.")
-                                : (next ? `À la limite — on reste à ${pds(st.w||0)} sur les séries suivantes.`
+                                : (next ? TR("À la limite — on reste à {} sur les séries suivantes.").replace("{}", pds(st.w||0))
                                         : TR("À la limite — garde cette charge, c'est du bon travail."));
             } else {
               /* zone idéale : les séries suivantes reprennent la charge qui vient de fonctionner */
               if(next && !rienARetirer) appliquerSuite("w", st.w);
-              msg = next ? `Parfait — on reste à ${pds(st.w||0)}, pile la bonne zone.`
+              msg = next ? TR("Parfait — on reste à {}, pile la bonne zone.").replace("{}", pds(st.w||0))
                           : TR("Parfait — c'est noté pour ta prochaine séance.");
             }
             save();
@@ -7401,7 +7461,7 @@ function renderActive(app){
       const st = en.sets[i];
       const retirer = ()=>{ en.sets.splice(i,1); save(); renderSurPlace(); };
       if(st.done) askConfirm(TR("Supprimer la dernière série ?"),
-        `${pds(st.w||0)} × ${st.r||0} reps sera retirée de cette séance.`, TR("Supprimer"), true, retirer);
+        TR("{c} × {r} reps sera retirée de cette séance.").replace("{c}", pds(st.w||0)).replace("{r}", st.r||0), TR("Supprimer"), true, retirer);
       else retirer();
     };
     wireHints(card);
@@ -7717,7 +7777,7 @@ function openTplEditor(id){
     const sup = document.getElementById("tp-del");
     if(sup) sup.onclick=()=>{
       const nom = document.getElementById("tp-name").value.trim() || tpl.name || TR("Cette séance");
-      askConfirm(TR("Supprimer la séance ?"), `${nom} disparaîtra de ton accueil. Les séances déjà faites restent dans ton historique.`, TR("Supprimer"), true, ()=>{
+      askConfirm(TR("Supprimer la séance ?"), TR("{} disparaîtra de ton accueil. Les séances déjà faites restent dans ton historique.").replace("{}", nom), TR("Supprimer"), true, ()=>{
         db.templates = db.templates.filter(t=>t.id!==tpl.id);
         save(); closeSheet(); render(); toast(TR("Séance supprimée"));
       });
@@ -8016,9 +8076,9 @@ function openSettings(){
       + TR("Tout est dans ce téléphone. Dernière sauvegarde fichier : {}.").replace("{}", ago(db.lastBackup));
   }
   document.getElementById("st-diag").innerHTML = `
-    <div>${ico(diag.ls)} Mémoire principale : ${diag.ls}</div>
-    <div>${ico(diag.idb)} Mémoire de secours : ${diag.idb}</div>
-    <div>${survived? '<span style="color:var(--good);">✓</span>' : '<span style="color:var(--bad);">✕</span>'} Trace de la session précédente : ${survived? "retrouvée ("+ago(diag.lsMark||diag.idbMark)+")" : "perdue"}</div>
+    <div>${ico(diag.ls)} ${TR("Mémoire principale :")} ${diag.ls}</div>
+    <div>${ico(diag.idb)} ${TR("Mémoire de secours :")} ${diag.idb}</div>
+    <div>${survived? '<span style="color:var(--good);">✓</span>' : '<span style="color:var(--bad);">✕</span>'} ${TR("Trace de la session précédente :")} ${survived? TR("retrouvée ({})").replace("{}", ago(diag.lsMark||diag.idbMark)) : "perdue"}</div>
     <div style="color:var(--ink-mute);">${TR("Dernier enregistrement chargé :")} ${diag.loadedSavedAt? ago(diag.loadedSavedAt) : TR("aucun")}</div>
     <div style="color:var(--ink-mute);">${TR("Dernière sauvegarde fichier :")} ${ago(db.lastBackup)}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
@@ -8123,7 +8183,7 @@ function renderHist(app){
   list.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>openHistEdit(b.dataset.hedit));
   list.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=()=>{
     const s = db.history.find(x=>x.id===b.dataset.hdel);
-    askConfirm(TR("Supprimer cette séance ?"), `${s.name} du ${fmtDateShort(s.date)} sera retirée de l'historique et des courbes.`, TR("Supprimer"), true, ()=>{
+    askConfirm(TR("Supprimer cette séance ?"), TR("{n} du {d} sera retirée de l'historique et des courbes.").replace("{n}", s.name).replace("{d}", fmtDateShort(s.date)), TR("Supprimer"), true, ()=>{
       db.history = db.history.filter(x=>x.id!==s.id); save(); render();
     });
   });
@@ -8201,7 +8261,7 @@ function openHistEdit(id){
   });
   document.querySelectorAll("[data-hex-del]").forEach(b=>b.onclick=()=>{
     const ei = parseInt(b.dataset.hexDel);
-    askConfirm(TR("Retirer cet exercice ?"), `${getEx(s.entries[ei].exId).name} sera retiré de cette séance.`, TR("Retirer"), true, ()=>{
+    askConfirm(TR("Retirer cet exercice ?"), TR("{} sera retiré de cette séance.").replace("{}", getEx(s.entries[ei].exId).name), TR("Retirer"), true, ()=>{
       s.entries.splice(ei,1); save(); openHistEdit(id);
     });
   });
@@ -9013,7 +9073,7 @@ async function syncWakeLock(){
     } else if(wakeLock){
       await wakeLock.release(); wakeLock = null; wakeEtat = TR("inactif hors séance");
     }
-  }catch(e){ wakeEtat = "refusé : " + (e && e.name ? e.name : "erreur"); }
+  }catch(e){ wakeEtat = TR("refusé :") + " " + (e && e.name ? e.name : TR("erreur")); }
 }
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) syncWakeLock(); });
 /* certains navigateurs n'accordent le verrou qu'après une interaction : on retente au premier contact */
