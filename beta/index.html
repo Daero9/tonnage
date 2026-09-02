@@ -968,6 +968,16 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Noter":"Log",
+  "Profil musculaire":"Muscle profile",
+  "Point fort":"Strong point",
+  "Point faible":"Weak point",
+  "Objectif {}":"Target {}",
+  "Objectif {} atteint 🎉":"Target {} reached 🎉",
+  "Objectif {g} · Encore {r}":"Target {g} · {r} to go",
+  "La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.":"The <b>W-up</b> row is a warm-up set, pre-filled at half your working load. It counts towards neither your tonnage, nor your records, nor your muscle profile.",
+  "{m} à {p} %":"{m} at {p}%",
+  "Retirer ce dégressif":"Remove this drop set",
   "Salut {},":"Hello {},",
   "Bienvenue,":"Welcome,",
   "Frais":"Fresh",
@@ -4359,7 +4369,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 02h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 02h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5428,7 +5438,7 @@ function openAjoutAliment(meal){
 function openModifAliment(meal, label){
   const k = dayKey();
   const prot = protOf(label), kcal = kcalOf(label);
-  const pa = partsAliment(label, prot);
+  const pa = partsAliment(TR(label), prot);
   const grp = trouverGroupe(label);
   /* la portion contient-elle un poids (« 150 g cuit », « 300 ml ») ? alors on peut la régler au gramme */
   const mg = (pa.q || "").match(/([\d.,]+)\s*(g|ml)\b/i);
@@ -6321,7 +6331,7 @@ function renderSeance(app){
           <span class="grow" style="text-align:left;">
             <span class="rc-t">${TR("Récupération")}</span>
             <span class="rc-s">${(()=>{ const w = recupPire(r);
-              return w.pct < 65 ? `${esc(w.nom)} à ${w.pct} %` : recupTitre(r.global); })()}</span>
+              return w.pct < 65 ? TR("{m} à {p} %").replace("{m}", esc(TR(w.nom))).replace("{p}", w.pct) : recupTitre(r.global); })()}</span>
           </span>
           <span class="rc-bar"><i style="width:${r.global}%; background:${c};"></i></span>`;
       })()}
@@ -6988,7 +6998,7 @@ function renderActive(app){
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
-      ${ei === iEch ? hintBox("echauffement","La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.") : ""}
+      ${ei === iEch ? hintBox("echauffement", TR("La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.")) : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>reps</span><span>${TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
@@ -7100,7 +7110,9 @@ function renderActive(app){
                 s2[champ] = valeur;
                 const l = setsDiv.querySelector('.set-row[data-si="'+j+'"]');
                 const inp = l && l.querySelectorAll("input")[champ==="w"?0:1];
-                if(inp) inp.value = (valeur===""? "" : valeur);
+                /* la charge est stockée en kg : elle doit repasser par saisiePoids(),
+                   sinon le champ affiche le kilo brut au lieu de la valeur saisie. */
+                if(inp) inp.value = (champ==="w" ? saisiePoids(valeur) : (valeur===""? "" : valeur));
               });
               save();
             };
@@ -7214,12 +7226,12 @@ function renderActive(app){
         const dr = document.createElement("div");
         dr.className = "set-row drop"+(st.done?" done":"");
         dr.innerHTML = `<div class="n">↳</div>
-          <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${uPoids()}" value="${d.w!==""&&d.w!=null?d.w:""}">
+          <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${uPoids()}" value="${saisiePoids(d.w)}">
           <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${d.r!==""&&d.r!=null?d.r:""}">
           <span></span>
-          <button class="ck" title="Retirer ce dégressif">✕</button>`;
+          <button class="ck" title="${TR("Retirer ce dégressif")}">✕</button>`;
         const [dw, dq] = dr.querySelectorAll("input");
-        dw.oninput = ()=>{ d.w = dw.value===""?"":parseFloat(dw.value); save(); };
+        dw.oninput = ()=>{ d.w = dw.value===""?"":versKg(dw.value); save(); };
         dq.oninput = ()=>{ d.r = dq.value===""?"":parseInt(dq.value); save(); };
         dr.querySelector(".ck").onclick = ()=>{
           st.drops.splice(di,1);
@@ -8134,12 +8146,13 @@ function renderWeightSection(sec){
         <div class="card-t grow">${TR("Poids")}</div>
         <div style="font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;">${
           cur!==null? fmtKg(cur)+` <span style="font-size:16px;">${uPoids()}</span>` : "—"}</div>
-        <button class="btn btn-accent btn-sm" id="wt-add" style="flex:0 0 auto;">＋ Noter</button>
+        <button class="btn btn-accent btn-sm" id="wt-add" style="flex:0 0 auto;">＋ ${TR("Noter")}</button>
       </div>
       ${goal>0 ? `<div class="jauge"><i style="width:${pct===null? (cur!==null?100:0) : pct.toFixed(1)}%"></i></div>` : ""}
       <div class="jauge-txt"><button class="inline-edit" id="wt-goal">${goal>0
-        ? (delta===null ? `Objectif ${pds(goal)}` : (Math.abs(delta) < 0.05 ? `Objectif ${pds(goal)} atteint 🎉`
-          : `Objectif ${fmtKg(goal)} · Encore ${pds(Math.abs(delta))}`))
+        ? (delta===null ? TR("Objectif {}").replace("{}", pds(goal))
+            : (Math.abs(delta) < 0.05 ? TR("Objectif {} atteint 🎉").replace("{}", pds(goal))
+              : TR("Objectif {g} · Encore {r}").replace("{g}", pds(goal)).replace("{r}", pds(Math.abs(delta)))))
         : TR("Définir un objectif")} <span class="pen">✎</span></button></div>
       <div id="wt-plie" ${ouvert?"":"hidden"} style="margin-top:14px;">
         ${ws.length? `<div class="chart-wrap" id="wt-chart"></div>
@@ -8383,18 +8396,18 @@ function mpStatus(score, moy){
   if(score===null) return {tag:TR("Pas encore assez de données"), color:"#3b352c", op:1, nodata:true};
   if(moy === null || moy <= 0){
     /* pas encore de quoi comparer : on retombe sur le barème absolu */
-    if(score>=115) return {tag:"Point fort", color:"var(--good)", op:1};
+    if(score>=115) return {tag:TR("Point fort"), color:"var(--good)", op:1};
     if(score>=105) return {tag:TR("Point fort léger"), color:"var(--good)", op:.7};
     if(score>=95)  return {tag:TR("Équilibré"), color:"#b9a97f", op:1};
     if(score>=85)  return {tag:TR("Point faible léger"), color:"var(--bad)", op:.7};
-    return {tag:"Point faible", color:"var(--bad)", op:1};
+    return {tag:TR("Point faible"), color:"var(--bad)", op:1};
   }
   const ecart = (score - moy) / moy * 100;          /* en % de ta moyenne */
-  if(ecart >= 15) return {tag:"Point fort", color:"var(--good)", op:1, ecart};
+  if(ecart >= 15) return {tag:TR("Point fort"), color:"var(--good)", op:1, ecart};
   if(ecart >= 6)  return {tag:TR("Point fort léger"), color:"var(--good)", op:.7, ecart};
   if(ecart > -6)  return {tag:TR("Équilibré"), color:"#b9a97f", op:1, ecart};
   if(ecart > -15) return {tag:TR("Point faible léger"), color:"var(--bad)", op:.7, ecart};
-  return {tag:"Point faible", color:"var(--bad)", op:1, ecart};
+  return {tag:TR("Point faible"), color:"var(--bad)", op:1, ecart};
 }
 /* Illustrations anatomiques : Termininja — Wikimedia Commons, CC BY-SA 3.0 (converties en PNG, désaturées) */
 /* Les silhouettes sont dessinées par les masques de img/muscles/ : plus d'images en base64. */
@@ -8584,7 +8597,7 @@ function renderMuscleSection(sec){
   div.innerHTML = `
     <div class="card">
       <div class="row" style="align-items:center; gap:8px; margin-bottom:12px;">
-        <span class="card-t">Profil musculaire</span>
+        <span class="card-t">${TR("Profil musculaire")}</span>
         <button class="card-i" id="mp-info" aria-label="${TR("À quoi sert le profil musculaire ?")}">i</button>
       </div>
       <div class="mp-bodies">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
