@@ -4545,7 +4545,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 14h33";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "2 septembre 2026 17h37";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4819,6 +4819,24 @@ function sessionVolume(sess){
   });
   return v;
 }
+/* Volume servant UNIQUEMENT au calcul des calories. Il ajoute le poids du corps
+   aux tractions et aux dips : s'y hisser est un vrai travail mecanique, environ
+   0,55 kcal par repetition, que le tonnage ignore volontairement.
+   Le TONNAGE affiche, lui, ne change pas — il reste « charge externe deplacee ».
+   Deux notions, deux fonctions : ne jamais les confondre. */
+function volumeEffort(sess){
+  let v = 0;
+  (sess.entries||[]).forEach(en=>{
+    const f = facteurCharge(en.exId);
+    en.sets.forEach(st=>{
+      if(!(st.done && !st.warm)) return;
+      const drops = (st.drops||[]).reduce((a,d)=>a + chargeReelle(en.exId, d)*(d.r||0), 0);
+      v += (chargeReelle(en.exId, st)*(st.r||0) + drops) * f;
+    });
+  });
+  return v;
+}
+
 function lastPerf(exId){
   for(let i=db.history.length-1;i>=0;i--){
     const en = db.history[i].entries.find(e=>e.exId===exId);
@@ -4842,7 +4860,15 @@ function liftKcal(durMs, volume, nSeries){
   /* si les séries ont été saisies après coup, la durée mesurée est ridicule :
      on retombe alors sur une estimation à partir du nombre de séries (~2,5 min chacune) */
   const estimee = (nSeries||0) * 2.5;
-  const min = (estimee > 0 && mesuree < estimee*0.5) ? estimee : mesuree;
+  /* Et le piege inverse : une seance qu'on a oublie de fermer reste ouverte toute
+     la nuit. Neuf heures a 80 kg donneraient 5 000 kcal, qui partiraient dans le
+     total de la semaine. Au-dela du double du temps attendu, la duree mesuree ne
+     veut plus rien dire. Plafond absolu de 3 h, au cas ou il n'y aurait aucune
+     serie pour estimer. */
+  let min = mesuree;
+  if(estimee > 0 && mesuree < estimee*0.5)      min = estimee;
+  else if(estimee > 0 && mesuree > estimee*2)   min = estimee*2;
+  min = Math.min(min, 180);
   const base = 6 * 3.5 * kg / 200 * min;       /* dépense liée à la durée d'effort */
   const travail = volume * 0.005;              /* travail mécanique du tonnage soulevé */
   return Math.round(base + travail);
@@ -6506,7 +6532,7 @@ function renderSeance(app){
   const week = db.history.filter(s=>new Date(s.date)>=w0);
   const weekVol = week.reduce((a,s)=>a+sessionVolume(s),0);
   const cs = cardioWeekStats();
-  const weekKcal = week.reduce((a,s)=>a+liftKcal(s.end-s.start, sessionVolume(s), nbSeries(s)),0) + cs.kcal;
+  const weekKcal = week.reduce((a,s)=>a+liftKcal(s.end-s.start, volumeEffort(s), nbSeries(s)),0) + cs.kcal;
   /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
   const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
@@ -6643,7 +6669,7 @@ function renderSeance(app){
   } else {
     hs.innerHTML = passees.map(h=>{
       const vol = Math.round(sessionVolume(h));
-      const kc = liftKcal(h.end-h.start, vol, nbSeries(h));
+      const kc = liftKcal(h.end-h.start, volumeEffort(h), nbSeries(h));
       const mn = Math.round(((h.end||0)-(h.start||0))/60000);
       const t = db.templates.find(x=>x.id===h.templateId);
       return `<button class="hist-c" data-hist="${h.id}">
@@ -7524,7 +7550,7 @@ function renderActive(app){
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
-    const kcal = liftKcal(dureeSeance2(a), vol, doneSets);
+    const kcal = liftKcal(dureeSeance2(a), volumeEffort(a), doneSets);
     askConfirm(TR("Terminer la séance ?"), `${doneSets} ${TR(doneSets > 1 ? "séries validées" : "série validée")} · ${volPds(vol)} ${TR("soulevés")} · ${TR("environ")} ${kcal} ${TR("kcal brûlées. On enregistre ?")}`, TR("Enregistrer"), false, ()=>{
       /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
       const recap = {
@@ -8204,7 +8230,7 @@ function renderHist(app){
         <span class="pill">${fmtDur(s.end-s.start)}</span>
         <span class="pill">${nSets} ${TR(nSets>1?"séries":"série")}</span>
         <span class="pill" style="color:var(--accent);">${volPds(vol)}</span>
-        <span class="pill">≈ ${liftKcal(s.end-s.start, vol, nSets)} kcal</span>
+        <span class="pill">≈ ${liftKcal(s.end-s.start, volumeEffort(s), nSets)} kcal</span>
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
         <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
