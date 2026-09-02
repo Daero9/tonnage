@@ -520,6 +520,61 @@ function lancer(){
   eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
   eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
 
+  /* -------------------- poids du corps : calories oui, tonnage non */
+  grp("Effort et tonnage");
+  neuf();
+  DB.weights = [{date:new Date().toISOString(), kg:80}];
+  const VE = F.eval("volumeEffort");
+  const idTrac = id("Tractions"), idDC2 = id("Développé couché");
+  const seanceTrac = seance(2, [{exId:idTrac, sets:[serie(0,8), serie(0,8)]}]);
+  const seanceDC   = seance(2, [{exId:idDC2,  sets:[serie(80,8), serie(80,8)]}]);
+
+  /* le point que Nico voulait vérifier : le tonnage ne bouge pas */
+  eq("Tonnage des tractions : toujours 0",
+     F.sessionVolume(seanceTrac), 0);
+  eq("Tonnage du développé couché : inchangé",
+     F.sessionVolume(seanceDC), 1280);
+
+  /* mais l'effort, lui, compte le corps */
+  eq("Effort des tractions : 80 kg par répétition",
+     VE(seanceTrac), 80*8*2);
+  eq("Effort du développé couché : identique au tonnage",
+     VE(seanceDC), 1280);
+
+  vrai("Deux tractions lestées ajoutent le lest au corps",
+       VE(seance(2, [{exId:idTrac, sets:[serie(10,5)]}])) === (80+10)*5);
+
+  /* et les calories suivent */
+  const KC2 = F.eval("liftKcal");
+  const kcalTonnage = KC2(45*60000, F.sessionVolume(seanceTrac), 16);
+  const kcalEffort  = KC2(45*60000, VE(seanceTrac), 16);
+  vrai("Une séance de tractions gagne les calories qu'elle mérite",
+       kcalEffort > kcalTonnage, kcalTonnage + " -> " + kcalEffort);
+
+  /* ------------------------------------- calories d'une séance de muscu */
+  grp("Calories d'une séance");
+  neuf();
+  DB.weights = [{date:new Date().toISOString(), kg:80}];
+  const KC = F.eval("liftKcal");
+  const MN = m => m*60000;
+  /* 16 séries -> 40 min attendues */
+  const normale = KC(MN(45), 5000, 16);
+  vrai("Une séance normale reste plausible", normale > 200 && normale < 500, String(normale));
+
+  /* séance oubliée ouverte toute la nuit : la durée mesurée ne veut plus rien dire */
+  const oubliee = KC(MN(9*60), 5000, 16);
+  eq("Neuf heures sont ramenées au plafond", oubliee, KC(MN(80), 5000, 16));
+  vrai("Une séance oubliée ne dépasse pas le double d'une normale",
+       oubliee < normale*2.2, "oubliée " + oubliee + " vs normale " + normale);
+
+  /* saisie après coup : durée ridicule, on retombe sur l'estimation par séries */
+  const apresCoup = KC(MN(1), 5000, 16);
+  eq("Une minute chronométrée retombe sur l'estimation", apresCoup, KC(MN(40), 5000, 16));
+
+  /* aucune série pour estimer : le plafond absolu de 3 h s'applique */
+  vrai("Sans série, le plafond absolu tient",
+       KC(MN(48*60), 0, 0) === KC(MN(180), 0, 0), String(KC(MN(48*60), 0, 0)));
+
   /* ----------------------------------- repères chiffrés dans les conseils */
   grp("Repères des conseils");
   neuf();
