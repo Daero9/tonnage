@@ -2619,6 +2619,14 @@ function exoDispo(ex, dispo){
    db.materiel reste « ce qui filtre les propositions » — donc null quand il y a une salle. */
 function deuxLieux(){ return !!(db.profile && db.profile.lieu === "mixte"); }
 function materielMaison(){ return db.maison || db.materiel || []; }
+/* Rejouer un calcul avec le matériel d'un autre lieu. exoDispo(), rolesRemplissables()
+   et genererSeance() lisent db.materiel : on le prête le temps du tirage et on le rend,
+   même si quelque chose échoue en route. Le réglage de l'app n'est jamais modifié. */
+function avecMateriel(mat, fn){
+  const garde = db.materiel;
+  db.materiel = mat;
+  try{ return fn(); } finally{ db.materiel = garde; }
+}
 /* Cet exercice est-il faisable avec ce matériel ? Sinon, par quoi le remplacer ? On
    cherche d'abord dans les équivalences déjà écrites pour lui, puis, à défaut, dans les
    exercices du même groupe musculaire réalisables sur place — le poids du corps d'abord. */
@@ -4789,7 +4797,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 01h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 01h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6894,7 +6902,7 @@ function photoSeance(t){
     /* « abdos » contient « dos » : ce test doit passer AVANT celui du dos, sinon
        toute séance d abdominaux est prise pour une séance de tirage */
     else if(/abdo|gainage|oblique/.test(m)) score.abdos++;
-    else if(/dos|dorsal|biceps/.test(m)) score.pull++;
+    else if(/\bdos\b|dorsal|biceps/.test(m)) score.pull++;
     else if(/jambe|fessier|mollet/.test(m)) score.jambes++;
   });
   const total = score.push + score.pull + score.jambes + score.abdos;
@@ -6906,7 +6914,7 @@ function photoSeance(t){
   const n = ((t && t.name) || "").toLowerCase();
   if(/abdo|gainage|core|ceinture/.test(n)) return "abdos";   /* avant « dos », même piège */
   if(/push|poussée|pousse|pec|torse/.test(n)) return "push";
-  if(/pull|tirage|dos/.test(n)) return "pull";
+  if(/pull|tirage|\bdos\b/.test(n)) return "pull";
   if(/jambe|leg|cuisse|fessier|squat/.test(n)) return "jambes";
   if(/cardio|course|run|hiit|marche/.test(n)) return "cardio";
   return "push";
@@ -7274,9 +7282,13 @@ function enregistrerProposition(prop){
   return tpl;
 }
 
+/* Lieu retenu pour la proposition en cours. N'a de sens que si les deux existent :
+   sinon db.materiel dit déjà tout, et rien ne change. */
+let lieuProp = "salle";
+function matProp(){ return (deuxLieux() && lieuProp === "maison") ? materielMaison() : db.materiel; }
 function openPropose(){
-  const manque = typeQuiManque();
-  const types = typesProposables();
+  const manque = avecMateriel(matProp(), ()=>typeQuiManque());
+  const types  = avecMateriel(matProp(), ()=>typesProposables());
   const autres = types.filter(t=>t !== manque.type);
   const aim = aimOf((db.profile && db.profile.aim) || "masse");
   const jours = (db.profile && db.profile.days) || 3;
@@ -7289,6 +7301,10 @@ function openPropose(){
     <p style="margin:0 0 14px; font-size:13px; color:var(--ink-soft); text-align:center; line-height:1.5;">
       ${TR("D'après ton objectif <b>{but}</b> et tes {n} séances par semaine. Les exercices changent à chaque proposition.")
           .replace("{but}", esc(TR(aim.label).toLowerCase())).replace("{n}", jours)}</p>
+    ${deuxLieux()? `<div class="chips" style="justify-content:center; margin-bottom:12px;">
+      <button class="chip chip-sm ${lieuProp==="salle"?"on":""}" data-pplieu="salle">${TR("En salle")}</button>
+      <button class="chip chip-sm ${lieuProp==="maison"?"on":""}" data-pplieu="maison">${TR("Chez moi")}</button>
+    </div>`:""}
     <div class="stack">
       <button class="btn btn-accent" id="pp-top" style="display:block; text-align:left; padding:13px 15px;">
         <span style="display:block; font-size:15px; font-weight:800;">🎯 ${esc(TR(MOULES[manque.type].nom))} ${TR("— la séance qui manque")}</span>
@@ -7302,6 +7318,11 @@ function openPropose(){
       <p style="margin:0; font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5;">
         ${TR("Le programme complet ajoute les {} séances d'un coup. Une proposition, c'est une seule séance, tirée au sort dans une liste d'exercices équivalents.").replace("{}", COACH_PROGRAMS[aim.prog].templates.length)}</p>
     </div>`);
+  document.querySelectorAll("[data-pplieu]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.pplieu === lieuProp) return;
+    lieuProp = b.dataset.pplieu;
+    openPropose();                       /* les types proposables changent avec le matériel */
+  });
   document.getElementById("pp-top").onclick = ()=>apercuProposition(manque.type);
   document.querySelectorAll("[data-pptype]").forEach(b=>b.onclick=()=>apercuProposition(b.dataset.pptype));
   document.getElementById("pp-hasard").onclick = ()=>apercuProposition(types[Math.floor(Math.random()*types.length)]);
@@ -7312,13 +7333,14 @@ function openPropose(){
 
 /* aperçu d'une proposition, avec la possibilité d'en redemander une autre */
 function apercuProposition(type, evites){
-  const prop = genererSeance(type, evites);
+  const prop = avecMateriel(matProp(), ()=>genererSeance(type, evites));
   const dejaVus = (evites || []).concat(prop.items.map(it=>it.nom));
   const total = prop.items.reduce((a,it)=>a+it.sets, 0);
   const minutes = Math.round(prop.items.reduce((a,it)=>a + it.sets*(it.rest+40), 0)/60);
   openSheet(`<h3 style="text-align:center;">${esc(prop.nom)}</h3>
     <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">
-      ${esc(TR(prop.sous))} · ${TR("{n} exercices · {s} séries · ~{m} min").replace("{n}", prop.items.length).replace("{s}", total).replace("{m}", minutes)}</p>
+      ${deuxLieux()? `<b>${lieuProp === "maison" ? TR("Chez moi") : TR("En salle")}</b> · ` : ""}${
+        esc(TR(prop.sous))} · ${TR("{n} exercices · {s} séries · ~{m} min").replace("{n}", prop.items.length).replace("{s}", total).replace("{m}", minutes)}</p>
     <div class="stack" style="gap:7px; margin-bottom:14px;">
       ${prop.items.map(it=>{
         const bless = injuryNote(it.nom);
@@ -7348,7 +7370,10 @@ function apercuProposition(type, evites){
     enregistrerProposition(prop); closeSheet(); render(); toast(TR("Séance ajoutée ✓"));
   };
   document.getElementById("pp-go").onclick = ()=>{
-    const tpl = enregistrerProposition(prop); closeSheet(); startWorkout(tpl.id);
+    /* le lieu vient d'être choisi juste au-dessus : inutile de reposer la question */
+    const tpl = enregistrerProposition(prop);
+    closeSheet();
+    startWorkout(tpl.id, deuxLieux() ? lieuProp : undefined);
   };
 }
 function openAjout(){
