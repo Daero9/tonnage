@@ -361,13 +361,19 @@
      marge haute, sans jamais depasser sa taille de maquette. C'est ce qui garantit que
      le titre, les points et le bouton ne sont plus rognes, quel que soit l'ecran —
      le conteneur est en overflow:hidden, ce qui depasse est perdu, pas defilable. */
+  /* Les vues ne se fondent plus l'une dans l'autre : elles sont posées côte à côte sur
+     une piste qu'on fait glisser. C'est ce qui permet au doigt de les emmener. */
   .onb-tel{position:relative; flex:1 1 auto; width:62vw; max-width:300px;
-    min-height:110px; max-height:42vh; margin-bottom:16px;}
-  .onb-tel video, .onb-tel img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
-    opacity:0; transition:opacity .55s ease;
-    /* calque dédié : évite le clignotement des fondus d'images sur iOS */
+    min-height:110px; max-height:42vh; margin-bottom:16px;
+    overflow:hidden; touch-action:pan-y;}   /* le geste horizontal nous revient, pas au navigateur */
+  .onb-piste{position:absolute; inset:0; display:flex;
+    transition:transform .38s cubic-bezier(.22,.61,.36,1); will-change:transform;}
+  .onb-piste.retour{transition-duration:.62s;}  /* le retour à la première vue traverse tout l'écran */
+  .onb-piste.tire{transition:none;}             /* pendant le glissé, la piste colle au doigt */
+  .onb-tel video, .onb-tel img{flex:0 0 100%; width:100%; height:100%; object-fit:contain;
+    pointer-events:none;                        /* le geste est capté par la boîte, jamais par la vidéo */
+    /* calque dédié : évite le clignotement sur iOS */
     transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
-  .onb-tel video.on, .onb-tel img.on{opacity:1;}
   /* place réservée pour trois lignes : un titre plus long ne doit pas décaler le visuel */
   /* seul le visuel se réduit quand l'écran est court : le texte et les points gardent leur taille */
   /* Aucun effet sur le titre, volontairement. Faire varier l'opacité d'un texte qu'on
@@ -378,7 +384,11 @@
     font-size:clamp(21px, 6.6vw, 27px); font-weight:800; text-align:center;
     line-height:1.2; min-height:3.6em;}  /* trois lignes réservées : un titre long ne décale rien */
   .onb-dots{flex:0 0 auto; display:flex; gap:7px; justify-content:center; margin-top:16px;}
-  .onb-dots i{width:7px; height:7px; border-radius:50%; background:var(--ink-mute); opacity:.35;}
+  .onb-dots i{position:relative; width:7px; height:7px; border-radius:50%; background:var(--ink-mute);
+    opacity:.35; cursor:pointer; transition:opacity .2s ease, background .2s ease;}
+  /* zone tactile élargie sans toucher à la mise en page : les points restent minuscules,
+     mais on peut les viser. Les zones se touchent sans se chevaucher. */
+  .onb-dots i::before{content:""; position:absolute; inset:-11px -3px;}
   .onb-dots i.on{opacity:1; background:var(--ink);}
 
   /* projection */
@@ -4001,9 +4011,9 @@ function openOnboarding(first, brouillon, depart){
         {v:"img/demo-progression.mp4",titre:TR("Suis ta progression<br>et tes points faibles")}
       ];
       corps.innerHTML = `<div class="onb-hero">
-        <div class="onb-tel">${vues.map((x,n)=>
-          `<video src="${x.v}" class="${n===0?"on":""}" muted playsinline webkit-playsinline autoplay loop
-            preload="auto" poster="img/tel1.png" aria-hidden="true"></video>`).join("")}</div>
+        <div class="onb-tel" id="onb-tel"><div class="onb-piste" id="onb-piste">${vues.map((x,n)=>
+          `<video src="${x.v}" muted playsinline webkit-playsinline autoplay loop
+            preload="auto" poster="img/tel1.png" aria-hidden="true"></video>`).join("")}</div></div>
         <div class="onb-titre" id="onb-titre">${vues[0].titre}</div>
         <div class="onb-dots">${vues.map((x,n)=>`<i class="${n===0?"on":""}"></i>`).join("")}</div>
       </div>`;
@@ -4027,14 +4037,23 @@ function openOnboarding(first, brouillon, depart){
          et le titre. Ils ne peuvent plus se désaccorder. */
       let n = 0;
       const maPage = onbEl;                    /* on ne pilote que SA page, jamais la suivante */
+      const tel = maPage.querySelector("#onb-tel"), piste = maPage.querySelector("#onb-piste");
+      const poser = px=>{                      /* px : décalage du doigt, en plus de la vue courante */
+        piste.style.transform = `translate3d(calc(${-n*100}% + ${px||0}px), 0, 0)`;
+      };
       const montrer = k=>{
+        /* un saut de plusieurs vues (retour au début, clic sur un point lointain) traverse
+           tout l'écran : on lui laisse un peu plus de temps pour ne pas donner un à-coup */
+        piste.classList.toggle("retour", Math.abs(k - n) > 1);
+        piste.classList.remove("tire");
         n = k;
-        maPage.querySelectorAll(".onb-tel video").forEach((f,j)=>f.classList.toggle("on", j===k));
+        poser(0);
         jouer(k);
         maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
         const t = maPage.querySelector("#onb-titre");
         if(t) t.innerHTML = vues[k].titre;     /* un seul titre à l'écran, à tout instant */
       };
+      poser(0);
       /* Chaîne de délais plutôt qu'un intervalle : quand le téléphone met la page en
          veille, un intervalle rattrape ses tours en retard d'un coup et le titre saute
          plusieurs vues. Ici le tour suivant n'est programmé qu'une fois le précédent joué. */
@@ -4044,9 +4063,56 @@ function openOnboarding(first, brouillon, depart){
         montrer((n+1) % vues.length);
         onbTour = setTimeout(suite, 5000);
       };
-      if(onbTour) clearTimeout(onbTour);
-      onbTour = setTimeout(suite, 5000);
       const stop = ()=>{ if(onbTour){ clearTimeout(onbTour); onbTour = null; } };
+      /* après une action de la main, on repart d'un tour plein : le doigt ne doit jamais
+         être doublé par la minuterie une demi-seconde plus tard */
+      const relancer = ()=>{ stop(); if(maPage.isConnected) onbTour = setTimeout(suite, 5000); };
+      relancer();
+
+      /* ---- le doigt emmène la piste ---------------------------------------- */
+      let xd = 0, yd = 0, ecart = 0, tire = false, tranche = false;
+      const finGeste = ()=>{
+        if(!tire) return;
+        tire = false;
+        piste.classList.remove("tire");
+        const large = tel.clientWidth || 1;
+        const seuil = Math.min(64, large * 0.2);
+        let k = n;
+        if(ecart <= -seuil && n < vues.length - 1) k = n + 1;
+        else if(ecart >= seuil && n > 0)           k = n - 1;
+        ecart = 0;
+        montrer(k);                            /* même si k === n : la vue revient en place */
+        relancer();
+      };
+      tel.addEventListener("pointerdown", e=>{
+        if(e.pointerType === "mouse" && e.button !== 0) return;
+        tire = true; tranche = false; ecart = 0;
+        xd = e.clientX; yd = e.clientY;
+      });
+      tel.addEventListener("pointermove", e=>{
+        if(!tire) return;
+        const dx = e.clientX - xd, dy = e.clientY - yd;
+        if(!tranche){
+          if(Math.abs(dx) < 6 && Math.abs(dy) < 6) return;   /* trop tôt pour trancher */
+          /* geste plutôt vertical : ce n'est pas pour nous, on rend la main */
+          if(Math.abs(dy) > Math.abs(dx)){ tire = false; return; }
+          tranche = true;
+          stop();                              /* la main prend le pas sur la minuterie */
+          piste.classList.remove("retour");
+          piste.classList.add("tire");
+          try{ tel.setPointerCapture(e.pointerId); }catch(err){}
+        }
+        if(e.cancelable) e.preventDefault();
+        /* aux deux extrémités la piste résiste, au lieu de découvrir du vide */
+        ecart = (n === 0 && dx > 0) || (n === vues.length - 1 && dx < 0) ? dx * 0.3 : dx;
+        poser(ecart);
+      });
+      tel.addEventListener("pointerup", finGeste);
+      tel.addEventListener("pointercancel", finGeste);
+      /* les points sont aussi des boutons */
+      maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.onclick = ()=>{
+        if(j !== n){ montrer(j); relancer(); }
+      });
       pied.innerHTML = `<button class="onb-btn" id="onb-next">${dejaRempli ? TR("Continuer") : TR("Commencer")}</button>
         <button class="onb-lien" id="onb-tard">${dejaRempli
           ? TR("Plus tard, <b>retourner à l'app</b>")
@@ -4612,7 +4678,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 14h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 18h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
