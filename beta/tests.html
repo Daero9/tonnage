@@ -399,6 +399,31 @@ function lancer(){
   vrai("Chaque proposition sait dire ses protéines et ses calories",
     Object.values(F.eval("HB_OPTS")).every(l => l.every(([lab]) => F.protOf(lab) >= 0 && F.kcalOf(lab) > 0)));
 
+  /* réglage rapide de la quantité : les boutons + et − des pastilles */
+  eq("Une pastille non réglée vaut une portion", F.facteurAliment("Œuf", "Œuf"), 1);
+  eq("Multiplicateur relu", F.facteurAliment("Œuf", "Œuf ×3 (~19 g prot. · 234 kcal)"), 3);
+  eq("Portion en grammes relue",
+    F.facteurAliment("Steak haché 5 % (100 g cuit)", "Steak haché 5 % 300 g (~78 g prot. · 510 kcal)"), 3);
+  eq("Deux portions d'œuf", F.libelleQuantite("Œuf", 2), "Œuf ×2 (~12 g prot. · 156 kcal)");
+  eq("Une portion : le libellé d'origine, intact", F.libelleQuantite("Œuf", 1), "Œuf");
+  eq("Une portion pesée se compte en grammes",
+    F.libelleQuantite("Steak haché 5 % (100 g cuit)", 2), "Steak haché 5 % 200 g (~52 g prot. · 340 kcal)");
+  eq("Les protéines suivent la quantité", F.protOf(F.libelleQuantite("Œuf", 4)), 24);
+  eq("Les calories aussi", F.kcalOf(F.libelleQuantite("Œuf", 4)), 312);
+  /* aller-retour : ce qu'on écrit doit se relire à l'identique, sans quoi un second « + » compterait faux */
+  eq("Aller-retour sur le facteur",
+    F.facteurAliment("Œuf", F.libelleQuantite("Œuf", 5)), 5);
+  eq("Aller-retour sur une portion pesée",
+    F.facteurAliment("Poulet (150 g cuit)", F.libelleQuantite("Poulet (150 g cuit)", 2)), 2);
+  /* un aliment libre porte sa quantité dans son nom : on doit savoir en extraire UNE portion */
+  eq("Socle d'un aliment déjà multiplié",
+    F.protOf(F.socleAliment("Œuf ×3 (~18 g prot. · 234 kcal)")), 6);
+  eq("Un aliment simple est son propre socle", F.socleAliment("Banane"), "Banane");
+  eq("Le nom sert de clé, quelle que soit la portion",
+    F.cleAliment("Poulet ×2 (~92 g prot.)"), F.cleAliment("Poulet (150 g cuit)"));
+  vrai("Deux aliments différents ne partagent pas de clé",
+    F.cleAliment("Banane") !== F.cleAliment("Pomme"));
+
   /* la base d aliments : rien d incomplet, rien en double */
   const BASE = F.eval("FOOD_100G");
   vrai("Chaque aliment de la base est complet",

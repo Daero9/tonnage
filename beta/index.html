@@ -483,6 +483,15 @@
   .fchip .g{margin-left:auto; font-size:12px; font-weight:800; flex:0 0 auto;}
   .fchip.on{color:#fff; border-color:transparent;}
   .fchip.on .q{color:rgba(255,255,255,.8);}
+  /* Réglage rapide de la quantité, sur une pastille déjà choisie. Le « − » n'apparaît
+     qu'au-delà d'une portion : à une portion, c'est la pastille elle-même qui se retire.
+     Le nom garde ainsi toute sa largeur dans le cas courant. */
+  .fchip .fst{margin-left:auto; display:flex; align-items:center; gap:1px; flex:0 0 auto;}
+  .fchip .st{position:relative; width:20px; height:20px; border-radius:6px; display:flex; align-items:center;
+    justify-content:center; font-size:13px; font-weight:800; line-height:1; background:rgba(255,255,255,.2); color:#fff;}
+  /* le bouton reste petit pour laisser la place au nom, mais se vise sur toute la hauteur */
+  .fchip .st::before{content:""; position:absolute; inset:-9px -2px;}
+  .fchip .st:active{background:rgba(255,255,255,.4);}
   .fab-center{display:flex; justify-content:center; margin-top:14px;}
 
   .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--barre); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);}
@@ -1673,6 +1682,13 @@ const TRAD = {en:{
   "Elles apparaîtront ici une fois terminées.":"They'll show up here once finished.",
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
+  "Avec lest":"Weighted",
+  "Évolution des répétitions":"Rep progress",
+  "Reps max":"Top reps",
+  "Reps totales":"Total reps",
+  "Aucune série de ce type pour cet exercice.":"No sets of this kind for this exercise.",
+  "Une portion de plus":"One more serving",
+  "Une portion de moins":"One less serving",
   "Note-toi à nouveau dans quelques jours : la courbe se dessinera.":"Log yourself again in a few days and the curve will take shape.",
   "Ta courbe de poids apparaîtra ici dès ta première pesée.":"Your weight curve will appear here from your first weigh-in.",
   "Noter mon poids":"Log my weight",
@@ -4678,7 +4694,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 18h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 23h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5625,7 +5641,6 @@ function dessineRepas(panel){
   const coul = MEAL_C[mealCur];
   const mySel = sel[mealCur] || [];
   let groups = habitOpts(mealCur);
-  const connus = groups.reduce((a,g)=>a.concat(g[2].map(x=>x[0])), []);
   /* tes habitudes de ce repas passent devant, et ne sont plus répétées dessous */
   const hab = habitudesDuRepas(mealCur);
   if(hab.length >= 3){
@@ -5634,30 +5649,58 @@ function dessineRepas(panel){
       .concat(groups.map(([t,c,items])=>[t, c, items.filter(x=>!pris.includes(x[0]))])
                     .filter(g=>g[2].length));
   }
-  const libres = mySel.filter(l=>!connus.includes(l));
-  const pastille = (label, prot, on) => {
+  /* Appariement des aliments choisis aujourd'hui avec leur proposition d'origine, en
+     une passe : chaque libellé n'est attribué qu'à UNE pastille. Un libellé dont on a
+     réglé la quantité a perdu la parenthèse d'origine (« Poulet 300 g (~62 g prot.) »),
+     on le rattache alors par son nom — mais une seule fois, sans quoi « Poulet (blanc) »
+     et « Poulet (1 filet) » s'allumeraient ensemble. C'est ce qui garde la pastille dans
+     son groupe au lieu de la faire filer dans « Ajoutés aujourd'hui ». */
+  const restant = mySel.slice(), apparie = {};
+  groups.forEach(([t,c,items])=>items.forEach(([l])=>{
+    if(l in apparie) return;
+    let i = restant.indexOf(l);
+    if(i < 0) i = restant.findIndex(x=>/\(~/.test(x) && cleAliment(x) === cleAliment(l));
+    if(i >= 0) apparie[l] = restant.splice(i, 1)[0];
+  }));
+  const libres = restant;
+  const pastille = (socle, prot, choisiL) => {
+    /* « Tes habitudes » peut proposer un aliment déjà multiplié : on redescend à UNE
+       portion, sans quoi le bouton + doublerait un double. Sur un libellé normal,
+       socleAliment ne change rien. */
+    const soc = socleAliment(socle);
+    const on = !!choisiL;
+    const f = on ? facteurAliment(soc, choisiL) : 1;
     /* on traduit avant de découper : le nom ET la portion ressortent en anglais.
        data-opt garde le libellé français, qui est la clé enregistrée. */
-    const pa = partsAliment(TR(label), prot);
-    return `<button class="fchip ${on?'on':''}" data-opt="${esc(label)}" style="${on? `background:${coul};`:""}">
-      <span class="ic">${foodIcon(label)}</span>
-      <span class="tx"><span class="nm">${esc(pa.nom)}</span>${pa.qCourt? `<span class="q">${esc(pa.qCourt)}</span>`:""}</span>
-      <span class="g">${pa.prot}<span style="font-size:9px;">g</span></span>
+    const pa = partsAliment(TR(on ? choisiL : socle), on ? protOf(choisiL) : prot);
+    /* choisie, la pastille cède sa place de droite aux boutons : les protéines
+       rejoignent la portion, sur la ligne du dessous */
+    const bas = on ? [pa.qCourt, pa.prot + " g"].filter(Boolean).join(" · ") : pa.qCourt;
+    return `<button class="fchip ${on?'on':''}" data-opt="${esc(on ? choisiL : socle)}"
+        data-socle="${esc(soc)}" style="${on? `background:${coul};`:""}">
+      <span class="ic">${foodIcon(socle)}</span>
+      <span class="tx"><span class="nm">${esc(pa.nom)}</span>${bas? `<span class="q">${esc(bas)}</span>`:""}</span>
+      ${on ? `<span class="fst">${f > 1.001
+          ? `<span class="st" data-pas="-1" role="button" aria-label="${TR("Une portion de moins")}">−</span>` : ""}
+          <span class="st" data-pas="1" role="button" aria-label="${TR("Une portion de plus")}">＋</span></span>`
+        : `<span class="g">${pa.prot}<span style="font-size:9px;">g</span></span>`}
     </button>`;
   };
   panel.innerHTML = groups.map(([titre,cle,items])=>`
     <div class="meal-h">${esc(TR(titre))}</div>
-    <div class="fgrid">${items.map(([l,pr])=>pastille(l, pr, mySel.includes(l))).join("")}</div>`).join("")
+    <div class="fgrid">${items.map(([l,pr])=>pastille(l, pr, apparie[l])).join("")}</div>`).join("")
     + (libres.length? `<div class="meal-h">${TR("Ajoutés aujourd'hui")}</div>
-      <div class="fgrid">${libres.map(l=>pastille(l, protOf(l), true)).join("")}</div>`:"")
+      <div class="fgrid">${libres.map(l=>pastille(socleAliment(l), 0, l)).join("")}</div>`:"")
     + `<div class="fab-center"><button class="fab" id="eat-add" style="background:${coul}; box-shadow:0 6px 18px rgba(0,0,0,.2);" aria-label="Ajouter un aliment">＋</button></div>`;
 
   document.getElementById("eat-add").onclick = ()=>openAjoutAliment(mealCur);
 
   let lpT = null, lpFired = false;
   panel.querySelectorAll("[data-opt]").forEach(b=>{
-    const label = b.dataset.opt;
-    const deb = ()=>{ lpFired=false; clearTimeout(lpT);
+    const label = b.dataset.opt, socle = b.dataset.socle;
+    /* l'appui long reste le réglage précis : quantité au gramme, retrait, suppression */
+    const deb = e=>{ if(e.target.closest(".st")) return;
+      lpFired=false; clearTimeout(lpT);
       lpT = setTimeout(()=>{ lpFired=true; if(navigator.vibrate) navigator.vibrate(18); openModifAliment(mealCur, label); }, 340); };
     const fin = ()=>clearTimeout(lpT);
     b.addEventListener("touchstart", deb, {passive:true});
@@ -5668,7 +5711,23 @@ function dessineRepas(panel){
       if(lpFired){ lpFired=false; return; }
       basculerAliment(mealCur, label);
     };
+    b.querySelectorAll(".st").forEach(s=>s.addEventListener("click", e=>{
+      e.stopPropagation(); e.preventDefault();
+      reglerPortions(mealCur, socle, label, parseInt(s.dataset.pas, 10));
+    }));
   });
+}
+/* + ou − une portion sur une pastille déjà choisie. En dessous d'une portion la
+   pastille se retire : c'est le même geste que de la décocher. */
+function reglerPortions(meal, socle, actuel, pas){
+  const k = dayKey();
+  const f = Math.round((facteurAliment(socle, actuel) + pas) * 100) / 100;
+  if(!db.habitSel[k]) db.habitSel[k] = {};
+  const reste = (db.habitSel[k][meal]||[]).filter(x=>x !== actuel);
+  db.habitSel[k][meal] = f < 0.05 ? reste : reste.concat(libelleQuantite(socle, f));
+  if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
+  if(navigator.vibrate) navigator.vibrate(8);
+  save(); renderSurPlace();
 }
 function basculerAliment(meal, label){
   const k = dayKey();
@@ -6398,6 +6457,53 @@ function partsAliment(label, prot){
                  .split(",")[0].replace(/\s+/g," ").trim();
   return {nom:nom.trim(), q:q.trim(), qCourt:court, prot:Math.round(prot)};
 }
+/* ---- quantités : une pastille et sa portion --------------------------------
+   La quantité vit DANS le libellé enregistré (« Œuf ×2 (~13 g prot. · 156 kcal) »).
+   Les trois fonctions qui suivent font l'aller-retour entre ce libellé et le couple
+   « socle + nombre de portions », ce qui permet aux boutons + et − de régler la
+   quantité sans passer par la fiche, et surtout à la pastille de rester à sa place
+   dans son groupe au lieu de filer dans « Ajoutés aujourd'hui ». */
+/* Le nom affiché sert de clé : « Poulet (blanc, 150 g cuit) » et « Poulet ×2 (~62 g
+   prot.) » se ramènent tous les deux à « poulet ». */
+function cleAliment(label){ return partsAliment(label||"", 0).nom.toLowerCase(); }
+/* combien de portions du socle vaut ce libellé */
+function facteurAliment(socle, label){
+  if(!label || socle === label) return 1;
+  const q = partsAliment(label, 0).q || "";
+  let m = q.match(/×\s*([\d.,]+)/);
+  if(m) return parseFloat(m[1].replace(",", ".")) || 1;
+  m = q.match(/([\d.,]+)\s*(g|ml)\b/i);
+  const mb = (partsAliment(socle, 0).q || "").match(/([\d.,]+)\s*(g|ml)\b/i);
+  if(m && mb){
+    const a = parseFloat(m[1].replace(",", ".")), b = parseFloat(mb[1].replace(",", "."));
+    if(a > 0 && b > 0) return a/b;
+  }
+  return 1;
+}
+/* Écrit un libellé pour f portions du socle, dans la même forme que la fiche de
+   quantité — un seul format enregistré, pour toujours. En grammes si la portion en
+   contient (« Poulet 300 g »), en multiples sinon (« Œuf ×2 »). */
+function libelleQuantite(socle, f){
+  if(Math.abs(f - 1) < 0.001) return socle;
+  const prot = protOf(socle), kcal = kcalOf(socle);
+  const pa = partsAliment(socle, prot);
+  const mg = (pa.q || "").match(/([\d.,]+)\s*(g|ml)\b/i);
+  const suff = `(~${Math.round(prot*f)} ${TR("g prot.")}${kcal? ` · ${Math.round(kcal*f)} kcal`:""})`;
+  return mg
+    ? `${pa.nom} ${Math.round(parseFloat(mg[1].replace(",", "."))*f)} ${mg[2].toLowerCase()} ${suff}`
+    : `${pa.nom} ×${(Math.round(f*100)/100).toLocaleString(loc())} ${suff}`;
+}
+/* Un aliment libre (ajouté à la main) porte sa quantité dans son propre nom : on en
+   extrait le socle d'UNE portion, sans quoi un second « + » compterait deux fois. */
+function socleAliment(label){
+  const pa = partsAliment(label, 0);
+  const m = (pa.q || "").match(/×\s*([\d.,]+)/);
+  const f = m ? (parseFloat(m[1].replace(",", ".")) || 1) : 1;
+  if(f === 1 || f <= 0) return label;
+  const prot = protOf(label)/f, kcal = kcalOf(label)/f;
+  return `${pa.nom} (~${Math.round(prot)} ${TR("g prot.")}${kcal? ` · ${Math.round(kcal)} kcal`:""})`;
+}
+
 /* Les habitudes sont enregistrées dans la langue où elles ont été créées :
    ce classement doit donc reconnaître les deux, pour toujours. */
 function habitType(h){
@@ -8601,7 +8707,7 @@ function openHistEdit(id){
 }
 
 /* ================= PROGRESSION ================= */
-let prgEx = null, prgMetric = "max";
+let prgEx = null, prgMetric = "max", prgLest = "avec";
 /* ce que l'utilisateur a déplié : conservé d'un rendu à l'autre */
 const prgPlis = {poids:false, analyse:false};
 const CHEV = '<svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l7 5 7-5"/><path d="M3 8.5l7 3 7-3" opacity=".45"/></svg>';
@@ -8633,14 +8739,35 @@ function renderProgress(app){
   }
   if(!prgEx || !exIds.includes(prgEx)) prgEx = exIds[0];
 
+  /* Tractions et dips se font au poids du corps OU lestés. Mélanger les deux écrase la
+     courbe : une série au poids du corps vaut 0 kg de charge externe, et fait plonger
+     le trait entre deux séances lestées. On sépare donc les deux, et côté poids du
+     corps on compte ce qui progresse vraiment là-bas : les répétitions. */
+  const corps = porteLeCorps(getEx(prgEx));
+  const leste = st => (st.w||0) > 0;
+  const dispo = {avec:false, sans:false};
+  if(corps) db.history.forEach(s=>s.entries.forEach(en=>{
+    if(en.exId !== prgEx) return;
+    workSets(en).forEach(st=>{ dispo[leste(st) ? "avec" : "sans"] = true; });
+  }));
+  const deuxModes = corps && dispo.avec && dispo.sans;
+  /* un seul mode pratiqué : pas de bouton, mais on affiche le bon */
+  const mode = !corps ? null : (dispo[prgLest] ? prgLest : (dispo.avec ? "avec" : "sans"));
+  /* au poids du corps, seul le 1RM estimé reste une charge : lui compte le corps */
+  const enReps = mode === "sans" && prgMetric !== "1rm";
+
   body.innerHTML = `
     <div class="card" style="margin-top:14px;">
-      <div class="card-t" style="margin-bottom:10px;">${TR("Évolution des charges")}</div>
+      <div class="card-t" style="margin-bottom:10px;">${enReps? TR("Évolution des répétitions") : TR("Évolution des charges")}</div>
       <select id="prg-sel" style="margin-bottom:12px;">${exIds.map(id=>`<option value="${id}" ${id===prgEx?"selected":""}>${esc(getEx(id).name)}</option>`).join("")}</select>
+      ${deuxModes? `<div class="chips" style="margin-bottom:8px;">
+        <button class="chip chip-sm ${mode==="avec"?"on":""}" data-lest="avec">${TR("Avec lest")}</button>
+        <button class="chip chip-sm ${mode==="sans"?"on":""}" data-lest="sans">${TR("Poids du corps")}</button>
+      </div>`:""}
       <div class="chips" style="margin-bottom:14px;">
-        <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">${TR("Charge max")}</button>
+        <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">${mode==="sans"? TR("Reps max") : TR("Charge max")}</button>
         <button class="chip ${prgMetric==="1rm"?"on":""}" data-m="1rm">${TR("1RM estimé")}</button>
-        <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">Volume</button>
+        <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">${mode==="sans"? TR("Reps totales") : "Volume"}</button>
       </div>
       <div class="tiles" id="prg-tiles"></div>
       <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;"><div class="chart-tip" id="chart-tip"></div></div>
@@ -8648,28 +8775,39 @@ function renderProgress(app){
   /* changer d'exercice ou de mesure ne doit pas renvoyer en haut de page */
   document.getElementById("prg-sel").onchange=e=>{ prgEx=e.target.value; renderSurPlace(); };
   body.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ prgMetric=b.dataset.m; renderSurPlace(); });
+  body.querySelectorAll("[data-lest]").forEach(b=>b.onclick=()=>{ prgLest=b.dataset.lest; renderSurPlace(); });
 
   // series: one point per session containing this exercise
   const pts = [];
   db.history.forEach(s=>{
     const en = s.entries.find(e=>e.exId===prgEx);
     if(!en) return;
-    const sets = workSets(en);
+    let sets = workSets(en);
+    if(mode) sets = sets.filter(st=>leste(st) === (mode === "avec"));
     if(!sets.length) return;
     let v;
-    if(prgMetric==="max") v = Math.max(...sets.map(st=>st.w||0));
-    else if(prgMetric==="1rm") v = Math.max(...sets.map(st=>e1rm(st.w||0, st.r||0)));
-    else v = sets.reduce((x,st)=>x+volSerie(st),0)*facteurCharge(prgEx);
-    if(estImperial()) v *= PAR_LB;
+    if(prgMetric==="max")
+      v = mode==="sans" ? Math.max(...sets.map(st=>st.r||0)) : Math.max(...sets.map(st=>st.w||0));
+    /* le 1RM d'une traction n'a de sens qu'en comptant le corps qu'on hisse */
+    else if(prgMetric==="1rm") v = Math.max(...sets.map(st=>e1rm(chargeReelle(prgEx, st), st.r||0)));
+    else if(mode==="sans")     v = sets.reduce((x,st)=>x+(st.r||0), 0);
+    else                       v = sets.reduce((x,st)=>x+volSerie(st),0)*facteurCharge(prgEx);
+    if(estImperial() && !enReps) v *= PAR_LB;
     pts.push({date:s.date, v:Math.round(v*10)/10});
   });
+  if(!pts.length){
+    document.getElementById("prg-tiles").innerHTML =
+      `<div class="empty" style="padding:14px 10px; grid-column:1/-1;">${TR("Aucune série de ce type pour cet exercice.")}</div>`;
+    return;
+  }
 
-  const unit = uPoids();
+  const unit = enReps ? TR("reps") : uPoids();
+  const nb = v => enReps ? Math.round(v) : fmtKg(v);
   const record = Math.max(...pts.map(p=>p.v));
   const lastV = pts[pts.length-1].v;
   document.getElementById("prg-tiles").innerHTML = `
-    <div class="tile"><div class="v" style="color:var(--accent);">${fmtKg(record)}</div><div class="u">record (${unit})</div></div>
-    <div class="tile"><div class="v">${fmtKg(lastV)}</div><div class="u">${TR("dernière")} (${unit})</div></div>
+    <div class="tile"><div class="v" style="color:var(--accent);">${nb(record)}</div><div class="u">record (${unit})</div></div>
+    <div class="tile"><div class="v">${nb(lastV)}</div><div class="u">${TR("dernière")} (${unit})</div></div>
     <div class="tile"><div class="v">${pts.length}</div><div class="u">${TR("séance")}${pts.length>1?TR("s"):""}</div></div>`;
 
   drawChart(document.getElementById("chart-wrap"), pts, unit);
