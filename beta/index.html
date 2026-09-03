@@ -1683,6 +1683,13 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Les deux":"Both",
+  "On te demandera où tu es au lancement de chaque séance, et on adaptera les exercices.":"We'll ask where you are when you start a session, and adapt the exercises.",
+  "Tu t'entraînes où aujourd'hui ?":"Where are you training today?",
+  "Chez toi, les exercices que tu ne peux pas faire seront remplacés par leur équivalent.":"At home, anything you can't do will be swapped for its equivalent.",
+  "En salle":"At the gym",
+  "{n} exercices adaptés à ce que tu as chez toi":"{n} exercises adapted to your home setup",
+  "1 exercice adapté à ce que tu as chez toi":"1 exercise adapted to your home setup",
   "Évolution des répétitions":"Rep progress",
   "Reps max":"Top reps",
   "Reps totales":"Total reps",
@@ -2254,6 +2261,7 @@ const TRAD = {en:{
   "Butterfly (pec deck)":"Pec deck",
   "Développé machine":"Machine chest press",
   "Écartés poulie haute":"High cable fly",
+  "Écartés poulie basse":"Low cable fly",
   "Développé couché à la Smith":"Smith machine bench press",
   "Tirage vertical prise neutre":"Neutral-grip lat pulldown",
   "Rowing machine":"Machine row",
@@ -2447,7 +2455,7 @@ const LIB = [
   ["Jambes","Squat","Barre","squat"],["Jambes","Presse à cuisses","Machine","legpress"],["Jambes","Fentes","Haltères","lunge"],["Jambes","Leg curl","Machine","legcurl"],["Jambes","Leg extension","Machine","legext"],["Jambes","Soulevé de terre roumain","Barre","deadlift"],["Jambes","Hip thrust","Barre","hipthrust"],["Jambes","Mollets debout","Machine","calf"],
   ["Abdos","Crunch","Poids du corps","crunch"],["Abdos","Gainage","Poids du corps","plank"],["Abdos","Relevés de jambes","Barre fixe","legraise"],["Abdos","Crunch câble","Poulie","cablecrunch"],
   /* machines et poulies les plus courantes en salle */
-  ["Pectoraux","Butterfly (pec deck)","Machine","pecdeck"],["Pectoraux","Développé machine","Machine","chestpress"],["Pectoraux","Écartés poulie haute","Poulie","cablecross"],["Pectoraux","Développé couché à la Smith","Machine","smith"],
+  ["Pectoraux","Butterfly (pec deck)","Machine","pecdeck"],["Pectoraux","Développé machine","Machine","chestpress"],["Pectoraux","Écartés poulie haute","Poulie","cablecross"],["Pectoraux","Écartés poulie basse","Poulie","cablecross"],["Pectoraux","Développé couché à la Smith","Machine","smith"],
   ["Dos","Tirage vertical prise neutre","Poulie","latpulldown"],["Dos","Rowing machine","Machine","chestpress"],["Dos","Pull-over poulie","Poulie","pullover"],["Dos","Haussements d'épaules","Haltères","shrug"],
   ["Épaules","Élévations latérales poulie","Poulie","cablelat"],["Épaules","Développé machine épaules","Machine","machine"],["Épaules","Élévations frontales","Haltères","frontraise"],
   ["Biceps","Curl poulie basse","Poulie","curlcable"],["Biceps","Curl incliné haltères","Haltères","curl"],
@@ -2553,6 +2561,29 @@ function exoDispo(ex, dispo){
     Array.isArray(besoin) ? besoin.some(x=>mien.includes(x)) : mien.includes(besoin));
 }
 
+/* Deux lieux d'entraînement : la salle donne accès à tout, la maison à ce qui est coché.
+   db.materiel reste « ce qui filtre les propositions » — donc null quand il y a une salle. */
+function deuxLieux(){ return !!(db.profile && db.profile.lieu === "mixte"); }
+function materielMaison(){ return db.maison || db.materiel || []; }
+/* Cet exercice est-il faisable avec ce matériel ? Sinon, par quoi le remplacer ? On
+   cherche d'abord dans les équivalences déjà écrites pour lui, puis, à défaut, dans les
+   exercices du même groupe musculaire réalisables sur place — le poids du corps d'abord. */
+function exoDuLieu(exId, mat, deja){
+  const ex = getEx(exId);
+  if(!ex || exoDispo(ex, mat)) return exId;
+  const pris = deja || [];
+  const equiv = (ALTS[nomCanon(ex)] || [])
+    .map(n => allEx().find(e => nomCanon(e) === n)).filter(Boolean);
+  const groupe = allEx().filter(e => e.muscle === ex.muscle && e.id !== exId);
+  const cands = equiv
+    .concat(groupe.filter(e => e.equip === "Poids du corps"), groupe)
+    .filter(e => exoDispo(e, mat));
+  /* Deux exercices remplacés ne doivent pas atterrir sur le même : la séance perdrait
+     un mouvement au lieu d'en changer un. À défaut de mieux, on accepte le doublon
+     plutôt que de laisser un exercice infaisable. */
+  return (cands.find(e => pris.indexOf(e.id) < 0) || cands[0] || ex).id;
+}
+
 /* alternatives équivalentes, pour remplacer un exercice (machine prise, matériel manquant…) */
 const ALTS = {
   "Développé incliné barre":["Développé incliné haltères","Développé couché","Développé machine"],
@@ -2608,7 +2639,8 @@ const ALTS = {
   "Crunch câble":["Crunch","Relevés de jambes"],
   "Butterfly (pec deck)":["Écartés poulie","Écartés poulie haute","Développé machine"],
   "Développé machine":["Développé couché","Développé couché haltères","Butterfly (pec deck)"],
-  "Écartés poulie haute":["Écartés poulie","Butterfly (pec deck)"],
+  "Écartés poulie haute":["Écartés poulie","Écartés poulie basse","Butterfly (pec deck)"],
+  "Écartés poulie basse":["Écartés poulie","Écartés poulie haute","Développé incliné haltères"],
   "Développé couché à la Smith":["Développé couché","Développé machine","Développé couché haltères"],
   "Tirage vertical prise neutre":["Tirage vertical","Tractions","Rowing machine"],
   "Rowing machine":["Rowing haltère","Tirage horizontal","Rowing barre"],
@@ -2742,6 +2774,7 @@ const MUSCLE_WORK = {
   "Butterfly (pec deck)":[["Pectoraux",3],["Deltoïdes",1]],
   "Développé machine":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2]],
   "Écartés poulie haute":[["Pectoraux (bas)",3],["Deltoïdes",1]],
+  "Écartés poulie basse":[["Pectoraux (haut)",3],["Deltoïdes",1]],
   "Développé couché à la Smith":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2]],
   "Tractions":[["Grand dorsal",3],["Biceps",2],["Avant-bras",2]],
   "Rowing barre":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2],["Lombaires",2]],
@@ -2915,6 +2948,8 @@ Object.assign(EXO_INFO_EN, {
     steps:["Set the seat so the handles are level with your lower chest.","Back flat, feet on the floor.","Press as you exhale to near-full arm extension.","Return slowly without letting the stack rest.","Keep your shoulders down throughout."]},
   "Écartés poulie haute":{tip:"High pulleys, downward path: it's the lower chest that works hardest.",
     steps:["Set the pulleys above head height, one handle in each hand.","Step forward, torso leaning slightly ahead.","Bring your hands down toward each other in front of your hips.","Cross your wrists slightly at the end of the movement.","Return under control."]},
+  "Écartés poulie basse":{tip:"Low pulleys, upward path: it's the upper chest that works hardest — the part a flat bench barely reaches.",
+    steps:["Set the pulleys near the floor, one handle in each hand.","Step forward, chest up, elbows slightly bent and locked there.","Bring your hands up toward each other in front of your collarbones.","Squeeze at the top without shrugging your shoulders.","Return under control, keeping tension in your chest."]},
   "Développé couché à la Smith":{tip:"The guided bar lets you press heavy safely, but the path is fixed: if your shoulder pulls, go back to dumbbells.",
     steps:["Set the bench so the bar comes down on your lower chest.","Unhook the bar by rotating it.","Lower under control, elbows at 45°.","Press to full extension.","Re-hook the bar at the end of the set."]},
   "Tractions":{tip:"Start the movement by pulling your shoulder blades down before bending your elbows: that's what really engages your back rather than your arms.",
@@ -3141,6 +3176,8 @@ const EXO_INFO = {
  steps:["Règle le siège pour que les poignées soient au niveau du bas des pectoraux.","Dos plaqué, pieds au sol.","Pousse en expirant jusqu'à quasi-extension des bras.","Reviens lentement sans laisser les poids se reposer.","Garde les épaules basses tout du long."]},
 "Écartés poulie haute":{tip:"Poulies hautes, mouvement vers le bas : c'est la partie basse des pectoraux qui travaille le plus.",
  steps:["Règle les poulies au-dessus de la tête, une poignée dans chaque main.","Avance d'un pas, buste légèrement penché en avant.","Descends les mains l'une vers l'autre devant les hanches.","Croise légèrement les poignets en fin de mouvement.","Remonte en contrôlant."]},
+"Écartés poulie basse":{tip:"Poulies basses, mouvement vers le haut : c'est la partie haute des pectoraux qui travaille le plus, celle que le développé couché atteint mal.",
+ steps:["Règle les poulies près du sol, une poignée dans chaque main.","Avance d'un pas, poitrine ouverte, coudes légèrement fléchis et bloqués ainsi.","Monte les mains l'une vers l'autre devant les clavicules.","Serre en haut sans hausser les épaules.","Redescends en contrôlant, sans relâcher la tension."]},
 "Développé couché à la Smith":{tip:"La barre guidée te permet de pousser lourd en sécurité, mais la trajectoire est imposée : si ton épaule tire, repasse aux haltères.",
  steps:["Positionne le banc pour que la barre descende sur le bas des pectoraux.","Déverrouille la barre en la faisant pivoter.","Descends en contrôlant, coudes à 45°.","Pousse jusqu'à extension complète.","Reverrouille la barre en fin de série."]},
 "Tractions":{tip:"Initie le mouvement en abaissant les omoplates avant de plier les coudes : c'est ce qui engage vraiment le dos plutôt que les bras.",
@@ -3933,7 +3970,7 @@ function openOnboarding(first, brouillon, depart){
     injuries: (base.injuries || []).slice(),
     tdeeManuel: base.tdeeManuel || 0,
     lieu: base.lieu || (db.materiel === null ? "salle" : "maison"),
-    materiel: (db.materiel || []).slice()
+    materiel: (db.maison || db.materiel || []).slice()
   };
   /* Les roulettes suivent le réglage global : l'impérial est un système,
      pas un choix champ par champ. Basculer la taille bascule aussi le poids. */
@@ -3969,8 +4006,11 @@ function openOnboarding(first, brouillon, depart){
       protPerKg: d.protPerKg || aimOf(d.aim).prot, metab: d.metab, days: d.days,
       injuries: d.injuries, tdeeManuel: d.tdeeManuel, lieu: d.lieu, avance: true
     };
-    /* en salle : aucun filtre. Chez soi : on ne propose que ce qu'il possède. */
-    db.materiel = d.lieu === "salle" ? null : d.materiel.slice();
+    /* En salle : aucun filtre. Chez soi : on ne propose que ce qu'il possède.
+       Les deux : rien n'est filtré (il a accès à tout en salle), mais on retient
+       ce qu'il a chez lui pour adapter les séances les jours où il y reste. */
+    db.materiel = d.lieu === "maison" ? d.materiel.slice() : null;
+    db.maison   = d.lieu === "salle"  ? null : d.materiel.slice();
     db.settings.name = db.profile.name;
     db.settings.goal = db.profile.goalWeight;
     const today = dayKey();
@@ -4328,9 +4368,10 @@ function openOnboarding(first, brouillon, depart){
       const dess = anime=>{
         corps.innerHTML = `<h2>${TR("Où t'entraînes-tu ?")}</h2>
           <div class="sous">${TR("Tes séances ne seront construites qu'avec des exercices que tu peux réellement faire.")}</div>
-          ${choix([["salle",TR("En salle de sport")],["maison",TR("Chez moi")]], d.lieu,
-            v => v === "salle" ? TR("On considère que tu as accès à tout le matériel habituel.")
-                               : TR("On te demandera juste après ce dont tu disposes."), anime)}`;
+          ${choix([["salle",TR("En salle de sport")],["maison",TR("Chez moi")],["mixte",TR("Les deux")]], d.lieu,
+            v => v === "salle"  ? TR("On considère que tu as accès à tout le matériel habituel.")
+               : v === "maison" ? TR("On te demandera juste après ce dont tu disposes.")
+               : TR("On te demandera où tu es au lancement de chaque séance, et on adaptera les exercices."), anime)}`;
         brancher(v=>{ d.lieu = v; dess(false); });
       };
       dess(true);
@@ -4694,7 +4735,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 23h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 23h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6991,7 +7032,7 @@ function renderSeance(app){
    évitant ceux déjà faits cette semaine, pour que deux propositions ne se ressemblent pas. */
 const RESERVOIRS = {
   pecLourd:  ["Développé couché","Développé incliné barre","Développé couché haltères","Développé incliné haltères","Développé machine","Développé couché à la Smith","Pompes","Pompes inclinées","Développé couché élastique"],
-  pecComp:   ["Écartés poulie","Butterfly (pec deck)","Écartés haltères","Écartés poulie haute","Dips","Pompes","Pompes déclinées","Écartés élastique"],
+  pecComp:   ["Écartés poulie","Butterfly (pec deck)","Écartés haltères","Écartés poulie haute","Écartés poulie basse","Dips","Pompes","Pompes déclinées","Écartés élastique"],
   epaule:    ["Développé militaire","Développé militaire haltères","Arnold press","Développé machine épaules","Pompes piquées","Pompes piquées surélevées","Développé militaire élastique"],
   epauleIso: ["Élévations latérales","Élévations latérales poulie","Élévations frontales","Élévations latérales élastique"],
   triceps:   ["Extension poulie","Extension poulie corde","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie","Dips sur banc","Extension triceps élastique"],
@@ -7289,9 +7330,34 @@ function openPreview(tplId){
   document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
   document.getElementById("pv-close").onclick=closeSheet;
 }
-function startWorkout(tplId){
+/* « Tu t'entraînes où aujourd'hui ? » — posée seulement quand les deux lieux existent */
+function demanderLieu(cb){
+  openSheet(`<h3 style="text-align:center;">${TR("Tu t'entraînes où aujourd'hui ?")}</h3>
+    <p style="margin:-4px 0 14px; text-align:center; font-size:13px; color:var(--ink-soft); line-height:1.5;">${
+      TR("Chez toi, les exercices que tu ne peux pas faire seront remplacés par leur équivalent.")}</p>
+    <div class="stack">
+      <button class="btn btn-accent" id="lx-salle">${TR("En salle")}</button>
+      <button class="btn" id="lx-maison">${TR("Chez moi")}</button>
+    </div>`);
+  document.getElementById("lx-salle").onclick  = ()=>{ closeSheet(); cb("salle"); };
+  document.getElementById("lx-maison").onclick = ()=>{ closeSheet(); cb("maison"); };
+}
+function startWorkout(tplId, lieu){
+  /* On demande le lieu AVANT de construire la séance : les charges suggérées et les
+     séries d'échauffement se calculent alors sur les exercices réellement retenus. */
+  if(deuxLieux() && tplId && !lieu){ demanderLieu(l=>startWorkout(tplId, l)); return; }
   const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
-  const entries = tpl ? tpl.items.map(it=>{
+  let remplaces = 0;
+  const pris = tpl ? tpl.items.map(it=>it.exId) : [];
+  const plan = tpl ? tpl.items.map((it, k)=>{
+    if(lieu !== "maison") return it;
+    const nid = exoDuLieu(it.exId, materielMaison(), pris);
+    if(nid === it.exId) return it;
+    remplaces++;
+    pris[k] = nid;                    /* cette place est prise : le suivant cherchera ailleurs */
+    return Object.assign({}, it, {exId:nid});
+  }) : [];
+  const entries = tpl ? plan.map(it=>{
     const last = lastPerf(it.exId);
     const sug = suggestFor(it.exId, it);
     const rng = parseReps(it.reps);
@@ -7319,6 +7385,9 @@ function startWorkout(tplId){
   }
   db.active = {name: tpl? tpl.name : TR("Séance libre"), templateId:tplId, start:Date.now(), entries};
   save(); render();
+  if(remplaces) toast(remplaces > 1
+    ? TR("{n} exercices adaptés à ce que tu as chez toi").replace("{n}", remplaces)
+    : TR("1 exercice adapté à ce que tu as chez toi"));
 }
 
 /* durée réellement écoulée, pauses déduites */
@@ -8739,21 +8808,29 @@ function renderProgress(app){
   }
   if(!prgEx || !exIds.includes(prgEx)) prgEx = exIds[0];
 
-  /* Tractions et dips se font au poids du corps OU lestés. Mélanger les deux écrase la
-     courbe : une série au poids du corps vaut 0 kg de charge externe, et fait plonger
-     le trait entre deux séances lestées. On sépare donc les deux, et côté poids du
-     corps on compte ce qui progresse vraiment là-bas : les répétitions. */
-  const corps = porteLeCorps(getEx(prgEx));
+  /* Un exercice au poids du corps ne déplace aucune charge externe : sa courbe de charge
+     reste plate à zéro et ne dit rien. Ce qui progresse là, ce sont les répétitions —
+     5 tractions au début, 30 un an plus tard. On compte donc les reps, pour les tractions
+     comme pour les pompes ou les dips.
+     Tractions et dips peuvent EN PLUS se faire lestés. Mélanger les deux écrase la courbe
+     (une série à vide vaut 0 kg et fait plonger le trait) : on les sépare alors en deux
+     vues, et l'app n'affiche le choix que si tu as réellement pratiqué les deux. */
+  const ex0 = getEx(prgEx) || {};
+  const auCorps = porteLeCorps(ex0) || ex0.equip === "Poids du corps" || ex0.equip === "Barre fixe";
   const leste = st => (st.w||0) > 0;
   const dispo = {avec:false, sans:false};
-  if(corps) db.history.forEach(s=>s.entries.forEach(en=>{
+  if(auCorps) db.history.forEach(s=>s.entries.forEach(en=>{
     if(en.exId !== prgEx) return;
     workSets(en).forEach(st=>{ dispo[leste(st) ? "avec" : "sans"] = true; });
   }));
-  const deuxModes = corps && dispo.avec && dispo.sans;
+  const deuxModes = dispo.avec && dispo.sans;
   /* un seul mode pratiqué : pas de bouton, mais on affiche le bon */
-  const mode = !corps ? null : (dispo[prgLest] ? prgLest : (dispo.avec ? "avec" : "sans"));
-  /* au poids du corps, seul le 1RM estimé reste une charge : lui compte le corps */
+  const mode = deuxModes ? prgLest : (dispo.sans ? "sans" : null);
+  /* Le 1RM estimé ne veut dire quelque chose au poids du corps que si l'app sait quel
+     poids tu hisses — vrai pour les tractions et les dips, faux pour les pompes, où
+     seule une fraction du corps est soulevée. On retire alors le bouton. */
+  const rmUtile = mode !== "sans" || porteLeCorps(ex0);
+  if(!rmUtile && prgMetric === "1rm") prgMetric = "max";
   const enReps = mode === "sans" && prgMetric !== "1rm";
 
   body.innerHTML = `
@@ -8766,7 +8843,7 @@ function renderProgress(app){
       </div>`:""}
       <div class="chips" style="margin-bottom:14px;">
         <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">${mode==="sans"? TR("Reps max") : TR("Charge max")}</button>
-        <button class="chip ${prgMetric==="1rm"?"on":""}" data-m="1rm">${TR("1RM estimé")}</button>
+        ${rmUtile? `<button class="chip ${prgMetric==="1rm"?"on":""}" data-m="1rm">${TR("1RM estimé")}</button>`:""}
         <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">${mode==="sans"? TR("Reps totales") : "Volume"}</button>
       </div>
       <div class="tiles" id="prg-tiles"></div>
@@ -8893,7 +8970,7 @@ const STRENGTH_REF = {
   "Extension poulie":0.4, "Barre au front":0.35, "Extension nuque haltère":0.15,
   "Squat":1.25, "Presse à cuisses":2.2, "Fentes":0.4, "Leg curl":0.55, "Leg extension":0.65, "Soulevé de terre roumain":1.1, "Hip thrust":1.3, "Mollets debout":1.0,
   "Crunch câble":0.35, "Écartés poulie":0.35,
-  "Butterfly (pec deck)":0.55, "Développé machine":0.9, "Écartés poulie haute":0.35, "Développé couché à la Smith":0.95,
+  "Butterfly (pec deck)":0.55, "Développé machine":0.9, "Écartés poulie haute":0.35, "Écartés poulie basse":0.35, "Développé couché à la Smith":0.95,
   "Tirage vertical prise neutre":0.75, "Rowing machine":0.8, "Pull-over poulie":0.4, "Haussements d'épaules":0.5,
   "Élévations latérales poulie":0.1, "Développé machine épaules":0.55, "Élévations frontales":0.12,
   "Curl poulie basse":0.4, "Curl incliné haltères":0.14,
