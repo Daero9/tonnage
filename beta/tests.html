@@ -520,6 +520,44 @@ function lancer(){
   eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
   eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
 
+  /* ------------------------- changer la date d'une séance */
+  grp("Date d'une séance");
+  neuf();
+  const DK = F.eval("dayKey");
+  /* on refait ici ce que fait le bouton Enregistrer, pour verrouiller la règle */
+  const changerDate = (sess, iso)=>{
+    const [Y,M,D] = iso.split("-").map(Number);
+    const a = new Date(sess.date);
+    const n = new Date(Y, M-1, D, a.getHours(), a.getMinutes(), a.getSeconds());
+    const decal = n.getTime() - a.getTime();
+    sess.date = n.toISOString();
+    if(sess.start) sess.start += decal;
+    if(sess.end)   sess.end   += decal;
+    DB.history.sort((x,y)=> new Date(x.date) - new Date(y.date));
+  };
+  const idEx = id("Squat");
+  DB.history = [seance(72, [{exId:idEx, sets:[serie(80,8)]}]),
+                seance(24, [{exId:idEx, sets:[serie(85,8)]}])];
+  const cible = DB.history[1];
+  const dureeAvant = cible.end - cible.start;
+
+  changerDate(cible, "2026-01-15");
+  eq("La date est bien changée", DK(cible.date), "2026-01-15");
+  eq("La durée de la séance ne bouge pas", cible.end - cible.start, dureeAvant);
+
+  /* le point qui compte : lastPerf() parcourt l'historique À L'ENVERS en
+     supposant l'ordre chronologique. Sans retri, il rendrait la mauvaise séance. */
+  vrai("L'historique reste trié",
+       new Date(DB.history[0].date) <= new Date(DB.history[1].date),
+       DK(DB.history[0].date) + " puis " + DK(DB.history[1].date));
+  eq("La dernière perf est bien la plus récente",
+     F.lastPerf(idEx).sets[0].w, 80);
+
+  /* remettre la séance dans le futur la replace en fin de liste */
+  changerDate(cible, DK(new Date(Date.now()+864e5)));
+  eq("Redatée en avant, elle redevient la dernière",
+     F.lastPerf(idEx).sets[0].w, 85);
+
   /* -------------------------- libellés d'aliments et historique */
   grp("Libellés d'aliments");
   neuf();

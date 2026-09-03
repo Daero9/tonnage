@@ -1002,6 +1002,7 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Date":"Date",
   "Ce navigateur a effacé la mémoire de l'app. Utilise l'icône 💾 pour en garder une copie, et 📂 pour la restaurer.":"This browser cleared the app's storage. Use the 💾 icon to keep a copy, and 📂 to restore it.",
   "Il me manque {} pour calculer tes calories et tes protéines.":"I still need {} to work out your calories and protein.",
   "ton poids":"your weight",
@@ -4611,7 +4612,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 03h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 14h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5950,7 +5951,10 @@ function kcalEquiv(kcal){
 function openCardioAdd(idExistant){
   const c = idExistant ? db.cardio.find(x=>x.id===idExistant) : null;
   openSheet(`<h3>${TR(c? "Modifier la sortie" : "Ajouter une sortie")}</h3>
-    ${c? `<div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${fmtDate(c.date)}</div>`:""}
+    <div class="row" style="gap:10px; align-items:center; margin-bottom:12px;">
+      <span class="label" style="flex:0 0 auto;">${TR("Date")}</span>
+      <input type="date" id="cd-date" value="${dayKey(c? c.date : undefined)}" style="flex:1;">
+    </div>
     <div class="stack">
       <div>
         <span class="label" style="display:block; margin-bottom:5px;">${TR("Activité")}</span>
@@ -6054,14 +6058,27 @@ function openCardioAdd(idExistant){
     if(type==="mixte" && runMin >= min){ toast(TR("Le temps couru doit être inférieur à la durée totale")); return; }
     const hr = parseFloat(document.getElementById("cd-hr").value)||0;
     const kcalM = parseFloat(document.getElementById("cd-kcalm").value)||0;
+    /* Seul le JOUR se change : on rehabille la date choisie avec l'heure
+       d'origine. Et on retrie, car la liste des sorties et l'historique
+       supposent l'ordre chronologique. */
+    const jour = document.getElementById("cd-date").value;
+    const dateChoisie = (base)=>{
+      if(!jour) return base;
+      const [Y, M, D] = jour.split("-").map(Number);
+      const h = new Date(base);
+      return new Date(Y, M - 1, D, h.getHours(), h.getMinutes(), h.getSeconds()).toISOString();
+    };
     if(c){
       c.km = km; c.min = min; c.pente = pente; c.type = type; c.runMin = runMin; c.hr = hr; c.kcalM = kcalM;
       c.machine = cMach; c.intensite = cInt;
+      c.date = dateChoisie(c.date);
+      db.cardio.sort((a, b)=> new Date(a.date) - new Date(b.date));
       save(); openCardioList(); toast(TR("Sortie modifiée ✓"));
       return;
     }
-    const sortie = {id:uid(), date:new Date().toISOString(), km, min, pente, type, runMin, hr, kcalM, machine:cMach, intensite:cInt};
+    const sortie = {id:uid(), date:dateChoisie(new Date().toISOString()), km, min, pente, type, runMin, hr, kcalM, machine:cMach, intensite:cInt};
     db.cardio.push(sortie);
+    db.cardio.sort((a, b)=> new Date(a.date) - new Date(b.date));
     save();
     const kg = currentWeight() || 75;
     const kcal = Math.round(sortieKcal(sortie, kg));
@@ -6740,11 +6757,31 @@ function renderSeance(app){
 
   /* ---- bandeau historique ---- */
   const hs = document.getElementById("hist-strip");
-  const passees = db.history.slice().reverse().slice(0,12);
+  /* Seances ET sorties, melangees par date : la bande est le seul historique
+     visible depuis l'accueil, une sortie qui n'y figure pas semble perdue. */
+  const kgStrip = currentWeight() || 75;
+  const passees = db.history.map(x=>({t:"s", d:x.date, o:x}))
+    .concat((db.cardio||[]).map(x=>({t:"c", d:x.date, o:x})))
+    .sort((a,b)=> new Date(b.d) - new Date(a.d))
+    .slice(0,12);
   if(!passees.length){
     hs.innerHTML = `<div class="card empty" style="flex:1; padding:16px;">${TR("Aucune séance enregistrée pour l'instant.")}</div>`;
   } else {
-    hs.innerHTML = passees.map(h=>{
+    hs.innerHTML = passees.map(it=>{
+      if(it.t === "c"){
+        const c = it.o;
+        const machine = c.machine && c.machine !== "course";
+        const mnC = Math.round(c.min);
+        return `<button class="hist-c" data-hcardio="${c.id}">
+          <div class="ph" style="background-image:url('${photoUrl("cardio")}');"></div>
+          <div class="dt">◷ ${fmtDateShort(c.date)}</div>
+          <div class="in">
+            <div class="nm">${machine? esc(machineNom(c)) : esc(CARDIO_NOM[cardioType(c)])}</div>
+            <div class="st">${c.km? dist(c.km) + "<br>" : ""}${Math.round(sortieKcal(c, kgStrip))} ${TR("Kcal brûlés")}<br>${mnC>=60? Math.floor(mnC/60)+"H"+String(mnC%60).padStart(2,"0") : mnC+" min"}</div>
+          </div>
+        </button>`;
+      }
+      const h = it.o;
       const vol = Math.round(sessionVolume(h));
       const kc = liftKcal(h.end-h.start, volumeEffort(h), nbSeries(h));
       const mn = Math.round(((h.end||0)-(h.start||0))/60000);
@@ -6761,6 +6798,7 @@ function renderSeance(app){
       <div class="in" style="align-items:center; justify-content:center; text-align:center;">
         <div style="font-size:12px; font-weight:700; line-height:1.3;">${TR("Voir")}<br>${TR("tout")}</div></div></button>`;
     hs.querySelectorAll("[data-hist]").forEach(b=>b.onclick=()=>openHistDetail(b.dataset.hist));
+    hs.querySelectorAll("[data-hcardio]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.hcardio));
     const all = document.getElementById("hist-all");
     if(all) all.onclick=()=>{ curTab="hist"; render(); };
   }
@@ -8308,12 +8346,40 @@ function renderHist(app){
     <div class="stack" id="h-list"></div>`;
   wireTopbar();
   const list = document.getElementById("h-list");
-  if(!db.history.length){
+  /* Seances et sorties cardio dans une seule frise, du plus recent au plus
+     ancien. Les deux etaient dans des listes separees : on ne voyait jamais
+     sa semaine d'entrainement d'un seul tenant. */
+  const kgCorps = currentWeight() || 75;
+  const items = db.history.map(x=>({t:"s", d:x.date, o:x}))
+    .concat((db.cardio||[]).map(x=>({t:"c", d:x.date, o:x})))
+    .sort((a,b)=> new Date(b.d) - new Date(a.d));
+  if(!items.length){
     list.innerHTML = `<div class="card empty"><div class="big">🕰️</div>${TR("Aucune séance enregistrée pour l'instant.")}<br>${TR("Elles apparaîtront ici une fois terminées.")}</div>`;
     return;
   }
-  const hist = db.history.slice().reverse();
-  list.innerHTML = hist.map(s=>{
+  list.innerHTML = items.map(it=>{
+    if(it.t === "c"){
+      const c = it.o;
+      const vkmh = c.km? Math.round(c.km/(c.min/60)*10)/10 : 0;
+      const machine = c.machine && c.machine !== "course";
+      return `<div class="card">
+        <div class="row" style="align-items:flex-start;">
+          <div class="grow">
+            <div style="font-weight:700;">${machine? esc(machineNom(c)) : esc(CARDIO_NOM[cardioType(c)])}</div>
+            <div class="t2" style="font-size:12.5px; color:var(--ink-mute); text-transform:capitalize;">${fmtDate(c.date)}</div>
+          </div>
+          <button class="icon-btn" data-cedit="${c.id}" style="width:32px; height:32px;">✎</button>
+          <button class="icon-btn" data-cdel="${c.id}" style="color:var(--bad); width:32px; height:32px;">✕</button>
+        </div>
+        <div class="row" style="gap:6px; margin-top:8px; flex-wrap:wrap;">
+          <span class="pill">${Math.round(c.min)} min</span>
+          ${c.km? `<span class="pill">${dist(c.km)}</span>` : ""}
+          ${(!machine && c.km)? `<span class="pill">${affDist(vkmh)} ${uVitesse()}</span>` : ""}
+          <span class="pill" style="color:var(--accent);">≈ ${Math.round(sortieKcal(c, kgCorps))} kcal</span>
+        </div>
+      </div>`;
+    }
+    const s = it.o;
     const vol = sessionVolume(s);
     const nSets = s.entries.reduce((n,e)=>n+e.sets.length,0);
     return `<div class="card" data-h="${s.id}">
@@ -8342,6 +8408,14 @@ function renderHist(app){
     c.querySelector(".hist-detail").classList.toggle("show");
   }));
   list.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>openHistEdit(b.dataset.hedit));
+  list.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.cedit));
+  list.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=()=>{
+    const c = db.cardio.find(x=>x.id===b.dataset.cdel);
+    if(!c) return;
+    askConfirm(TR("Supprimer cette sortie ?"),
+      TR("{d} du {j} sera retirée de ton historique.").replace("{d}", dist(c.km)).replace("{j}", fmtDateShort(c.date)),
+      TR("Supprimer"), true, ()=>{ db.cardio = db.cardio.filter(x=>x.id!==c.id); save(); render(); });
+  });
   list.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=()=>{
     const s = db.history.find(x=>x.id===b.dataset.hdel);
     askConfirm(TR("Supprimer cette séance ?"), TR("{n} du {d} sera retirée de l'historique et des courbes.").replace("{n}", s.name).replace("{d}", fmtDateShort(s.date)), TR("Supprimer"), true, ()=>{
@@ -8380,7 +8454,11 @@ function openHistEdit(id){
     </div>`;
   }).join("");
   openSheet(`<h3>${TR("Modifier la séance")}</h3>
-    <div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; text-transform:capitalize;">${esc(s.name)} · ${fmtDate(s.date)}</div>
+    <div style="font-size:12.5px; color:var(--ink-mute); margin-bottom:8px; text-transform:capitalize;">${esc(s.name)}</div>
+    <div class="row" style="gap:10px; align-items:center; margin-bottom:12px;">
+      <span class="label" style="flex:0 0 auto;">${TR("Date")}</span>
+      <input type="date" id="he-date" value="${dayKey(s.date)}" style="flex:1;">
+    </div>
     <div style="max-height:56dvh; overflow-y:auto;">${corps || `<div class="empty">${TR("Séance vide.")}</div>`}</div>
     <button class="btn btn-accent" id="he-ok" style="width:100%; margin-top:12px;">${TR("Enregistrer")}</button>
     <button class="btn btn-ghost" id="he-cancel" style="width:100%; margin-top:8px;">${TR("Annuler")}</button>`);
@@ -8428,6 +8506,21 @@ function openHistEdit(id){
   });
   document.getElementById("he-cancel").onclick=()=>{ closeSheet(); render(); };
   document.getElementById("he-ok").onclick=()=>{
+    /* Changer la date DECALE aussi start et end du meme ecart : sans ca la
+       duree de la seance changerait, et avec elle les calories. Et il faut
+       retrier l'historique — lastPerf() le parcourt a l'envers en supposant
+       l'ordre chronologique, il rendrait n'importe quoi sinon. */
+    const nd = document.getElementById("he-date").value;
+    if(nd && nd !== dayKey(s.date)){
+      const [Y, M, D] = nd.split("-").map(Number);
+      const ancien = new Date(s.date);
+      const neuf = new Date(Y, M - 1, D, ancien.getHours(), ancien.getMinutes(), ancien.getSeconds());
+      const decal = neuf.getTime() - ancien.getTime();
+      s.date = neuf.toISOString();
+      if(s.start) s.start += decal;
+      if(s.end)   s.end   += decal;
+      db.history.sort((a, b)=> new Date(a.date) - new Date(b.date));
+    }
     s.entries = s.entries.filter(en=>en.sets.length);
     if(!s.entries.length) db.history = db.history.filter(x=>x.id!==id);
     save(); closeSheet(); render(); toast(TR("Séance modifiée ✓"));
