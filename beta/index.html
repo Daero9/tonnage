@@ -4735,7 +4735,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 23h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 01h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7345,7 +7345,15 @@ function demanderLieu(cb){
 function startWorkout(tplId, lieu){
   /* On demande le lieu AVANT de construire la séance : les charges suggérées et les
      séries d'échauffement se calculent alors sur les exercices réellement retenus. */
-  if(deuxLieux() && tplId && !lieu){ demanderLieu(l=>startWorkout(tplId, l)); return; }
+  if(deuxLieux() && tplId && !lieu){
+    /* L'aperçu de la séance vient de se fermer, et closeSheet() passe par history.back() :
+       la fermeture n'a lieu qu'au tour suivant. Ouvrir notre fiche tout de suite la ferait
+       emporter par celle qui part — l'écran ne montrait alors plus rien du tout. On attend
+       donc que la première soit vraiment partie. Rien d'ouvert : on n'attend pas. */
+    setTimeout(()=>demanderLieu(l=>startWorkout(tplId, l)),
+      overlay.classList.contains("show") ? 260 : 0);
+    return;
+  }
   const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
   let remplaces = 0;
   const pris = tpl ? tpl.items.map(it=>it.exId) : [];
