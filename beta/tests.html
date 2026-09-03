@@ -913,6 +913,21 @@ function lancer(){
     F.typesProposables().every(t => F.genererSeance(t).items.every(it => F.exoDispo(ex(it.nom)))));
   vrai("Sans matériel, chaque séance proposée tient au moins 3 exercices",
     F.typesProposables().every(t => F.genererSeance(t).items.length >= 3));
+  /* En salle, où TOUT est disponible, le dernier recours d'un réservoir ne doit jamais
+     sortir : le tirage au sort se fait dans la meilleure moitié, pas dans la liste entière.
+     Sans ce garde-fou, « développé couché élastique » sortait aussi souvent que le
+     développé couché, et la séance proposée paraissait au rabais. */
+  DB.materiel = null;
+  const replis = ["Développé couché élastique","Pompes","Pompes inclinées","Tirage élastique vertical",
+    "Tirage élastique horizontal","Squat élastique","Chaise contre le mur","Développé militaire élastique",
+    "Élévations latérales élastique","Rowing sous la table","Curl auto-résisté"];
+  const tires = [];
+  for(let i=0;i<80;i++) F.typesProposables().forEach(t=>F.genererSeance(t).items.forEach(it=>tires.push(it.nom)));
+  vrai("En salle, aucun exercice de dernier recours n'est proposé",
+    !tires.some(n=>replis.includes(n)));
+  vrai("En salle, les séances restent variées",
+    new Set(tires).size >= 12);
+  DB.materiel = [];                       /* on rend le terrain comme on l'a trouvé */
   const rolesRien = F.rolesRemplissables("pull");
   DB.materiel = ["elastique"];
   vrai("Un élastique élargit ce qui est faisable pour le dos", F.rolesRemplissables("pull") > rolesRien);
