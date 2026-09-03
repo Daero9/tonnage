@@ -182,10 +182,10 @@ function lancer(){
   const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
-  eq("Les 107 exercices sont là", LIBEN.length, 107);
+  eq("Les 108 exercices sont là", LIBEN.length, 108);
   eq("Un nom s'affiche en anglais", LIBEN[0].name, "Bench press");
   eq("…mais sa clé reste le français", LIBEN[0].nameFr, "Développé couché");
-  eq("Les 107 noms sont traduits",
+  eq("Les 108 noms sont traduits",
      LIBEN.filter(e => e.name === e.nameFr && !/^(Dips|Squat|Crunch|Superman|Hip thrust|Face pull|Leg curl|Leg extension|Hack squat|Arnold press|Goblet squat|Front squat|Good morning|Russian twist)$/.test(e.nameFr)).length, 0);
 
   vrai("En anglais, chaque exercice retrouve sa fiche",
@@ -877,6 +877,20 @@ function lancer(){
     const groupes = ["Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos"];
     return groupes.every(g => F.eval("LIB").some(e=>e.muscle===g && F.exoDispo(e, [])));
   })());
+
+  /* deux lieux : la séance de la salle doit savoir se replier sur ce qu'il y a à la maison */
+  const nomDuLieu = (n, mat, deja) => F.getEx(F.exoDuLieu(id(n), mat, deja)).name;
+  eq("Faisable sur place : on n'y touche pas",
+    nomDuLieu("Pompes", ["halteres"]), "Pompes");
+  vrai("Une poulie devient faisable avec ce qu'on a",
+    F.exoDispo(ex(nomDuLieu("Extension poulie", ["halteres"])), ["halteres"]));
+  vrai("Le remplaçant travaille le même groupe",
+    ex(nomDuLieu("Extension poulie", ["halteres"])).muscle === ex("Extension poulie").muscle);
+  vrai("Sans rien, on retombe sur du poids du corps",
+    F.exoDispo(ex(nomDuLieu("Développé couché", [])), []));
+  vrai("Un exercice déjà pris n'est pas repris",
+    nomDuLieu("Extension poulie", ["halteres"], [id(nomDuLieu("Extension poulie", ["halteres"]))])
+      !== nomDuLieu("Extension poulie", ["halteres"]));
   DB.profile = JSON.parse(JSON.stringify(profilType));
   DB.materiel = [];
   vrai("Sans matériel, aucune séance impossible n'est proposée",
