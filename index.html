@@ -4612,7 +4612,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 14h12";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 14h38";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5848,7 +5848,11 @@ function cardioKcal(km, min, pente, kg, courir){
   const vkmh = km/(min/60);
   const v = vkmh*1000/60;               /* m/min */
   const g = Math.max(0,(pente||0))/100;
-  const run = (courir === undefined) ? vkmh >= 7 : !!courir;
+  /* L'equation ACSM de course n'est pas valide en dessous d'environ 8 km/h :
+     en dessous, le corps MARCHE, quelle que soit la case cochee. Sans ce
+     garde-fou, 10 km en 2 h 30 declares « course » sortaient a 1086 kcal au
+     lieu de 885 — 23 % de trop, parce que l'utilisateur avait coche Course. */
+  const run = ((courir === undefined) ? vkmh >= 7 : !!courir) && vkmh >= 6;
   const vo2 = run ? 0.2*v + 0.9*v*g + 3.5 : 0.1*v + 1.8*v*g + 3.5;  /* ACSM, ml/kg/min */
   return vo2 * kg / 1000 * 5 * min;
 }
@@ -6073,7 +6077,10 @@ function openCardioAdd(idExistant){
       c.machine = cMach; c.intensite = cInt;
       c.date = dateChoisie(c.date);
       db.cardio.sort((a, b)=> new Date(a.date) - new Date(b.date));
-      save(); openCardioList(); toast(TR("Sortie modifiée ✓"));
+      /* render() est indispensable : sans lui la page derriere la feuille garde
+         les anciennes valeurs. On modifiait une sortie, ses calories changeaient
+         dans les donnees, et la bande de l'accueil affichait encore les vieilles. */
+      save(); render(); openCardioList(); toast(TR("Sortie modifiée ✓"));
       return;
     }
     const sortie = {id:uid(), date:dateChoisie(new Date().toISOString()), km, min, pente, type, runMin, hr, kcalM, machine:cMach, intensite:cInt};
@@ -6133,7 +6140,7 @@ function openCardioList(){
     const c = db.cardio.find(x=>x.id===b.dataset.cdel);
     askConfirm(TR("Supprimer cette sortie ?"), TR("{d} du {j} sera retirée de ton historique.").replace("{d}", dist(c.km)).replace("{j}", fmtDateShort(c.date)), TR("Supprimer"), true, ()=>{
       db.cardio = db.cardio.filter(x=>x.id!==c.id);
-      save(); openCardioList();
+      save(); render(); openCardioList();
     });
   });
 }
