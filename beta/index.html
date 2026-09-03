@@ -723,6 +723,9 @@
   }
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
   .ex-name{font-size:17px; font-weight:700;}
+  /* l'accessoire, discretement a cote du nom : on le lit si on le cherche,
+     il ne dispute rien au titre. Il passe a la ligne avec lui si le nom est long. */
+  .ex-name .eqp{font-size:13px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
   .hint{font-size:12.5px; color:var(--ink-mute); margin-bottom:10px;}
   .set-row{display:grid; grid-template-columns:26px 1fr 1fr 34px 44px; gap:8px; align-items:center; margin-bottom:8px;}
   .set-row .dg{width:34px; height:42px; border-radius:10px; border:1px dashed var(--border); background:none;
@@ -4815,7 +4818,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 01h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 01h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7754,7 +7757,8 @@ function renderActive(app){
     card.dataset.ei = ei;
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
-        <div class="grow"><div class="ex-name">${esc(ex.name)}</div></div>
+        <div class="grow"><div class="ex-name">${esc(ex.name)}${
+          ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>` : ""}</div></div>
         <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Dernière fois et charge du jour")}">${IC_LISTE}</button>
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
