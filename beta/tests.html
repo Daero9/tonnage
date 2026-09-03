@@ -520,6 +520,30 @@ function lancer(){
   eq("Type déduit de l'allure : course", F.cardioType({km:10, min:60}), "course");
   eq("Choix de l'utilisateur prioritaire", F.cardioType({km:4, min:60, type:"course"}), "course");
 
+  /* ------------------------- calories d'une sortie cardio */
+  grp("Calories du cardio");
+  neuf();
+  DB.weights = [{date:new Date().toISOString(), kg:73}];
+  const CK = F.eval("cardioKcal"), SK = F.eval("sortieKcal");
+
+  /* le cas signalé par Nico : 10 km en 150 min = 4 km/h, coché « course » */
+  const lent = SK({km:10, min:150, pente:5, type:"course"}, 73);
+  pres("4 km/h coché course reste calculé comme de la marche", lent, 885, 3);
+  vrai("Il ne monte plus à 1086", lent < 950, String(Math.round(lent)));
+  eq("Le résultat est le même que si on avait coché marche",
+     Math.round(lent), Math.round(SK({km:10, min:150, pente:5, type:"marche"}, 73)));
+
+  /* une vraie course garde bien son équation */
+  const vite = SK({km:10, min:50, pente:0, type:"course"}, 73);
+  const viteEnMarche = CK(10, 50, 0, 73, false);
+  vrai("À 12 km/h, la course reste plus coûteuse que la marche",
+       vite > viteEnMarche, Math.round(vite) + " vs " + Math.round(viteEnMarche));
+
+  /* la pente compte : elle double presque la dépense à cette allure */
+  const plat = SK({km:10, min:150, pente:0, type:"marche"}, 73);
+  vrai("5 % de pente augmentent nettement la dépense",
+       lent > plat * 1.4, Math.round(plat) + " -> " + Math.round(lent));
+
   /* ------------------------- changer la date d'une séance */
   grp("Date d'une séance");
   neuf();
