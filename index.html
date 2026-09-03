@@ -140,7 +140,11 @@
   /* le fond est l'image fournie : forme sombre détourée, transparente ailleurs */
   .hero{position:relative; color:var(--hero-ink);
     margin:calc(-16px - env(safe-area-inset-top)) -16px 0;}
-  .hero-bg{display:block; width:100%; height:auto; aspect-ratio:1210/1000;}
+  /* Le bandeau prenait 340 px sur un ecran de 412 de large — 37 % de la page
+     pour un titre, et la premiere carte passait sous la ligne de flottaison.
+     Ramene a 269 px. « slice » est indispensable : sans lui le SVG rentre dans
+     la boite au lieu de la remplir, et laisse des bords crème sur les cotes. */
+  .hero-bg{display:block; width:100%; height:auto; aspect-ratio:1210/790;}
   .hero-bg rect{transition:none;}
   .hero-in{position:absolute; inset:0; padding:calc(14px + env(safe-area-inset-top)) 18px 0;
     display:flex; flex-direction:column;}
@@ -185,6 +189,21 @@
   .wk-nums .n:last-child{padding-left:46px;}
   .wk-nums .v{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
   .wk-nums .u{font-size:11px; color:var(--ink-mute);}
+  /* Texte agrandi = moins de points CSS : a 125 %, un ecran de 412 tombe a 330,
+     et le tonnage revenait toucher le bouton. On reduit alors le chiffre et la
+     reserve centrale plutot que de laisser les deux se chevaucher. */
+  @media (max-width:380px){
+    .wk-nums .v{font-size:18px;}
+    .wk-nums .n:first-child{padding-right:40px;}
+    .wk-nums .n:last-child{padding-left:40px;}
+    .wk-bilan{font-size:11px; padding:3px 9px;}
+  }
+  /* petit ecran ET texte agrandi : il faut descendre encore d'un cran */
+  @media (max-width:320px){
+    .wk-nums .v{font-size:16px;}
+    .wk-nums .n:first-child{padding-right:36px;}
+    .wk-nums .n:last-child{padding-left:36px;}
+  }
   .wk-bilan{position:absolute; left:50%; top:5px; transform:translateX(-50%);
     background:var(--accent); color:var(--accent-ink); font-size:12px; font-weight:800;
     border-radius:99px; padding:3px 12px;}
@@ -4592,7 +4611,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "3 septembre 2026 02h28";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 03h38";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5106,7 +5125,7 @@ function heroSvg(photo){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
   const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
-  return `<svg class="hero-bg" viewBox="0 0 1210 ${HERO_H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  return `<svg class="hero-bg" viewBox="0 0 1210 ${HERO_H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <defs><mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="${HERO_H}">
       <rect width="1210" height="${HERO_H}" fill="#000"/>
       <path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
@@ -9020,7 +9039,7 @@ function renderProteinSection(sec){
   if(!any){
     div.innerHTML = `<div class="card">
       <div class="card-t">${TR("Protéines")}</div>
-      <div class="empty" style="padding:22px 16px;">${TR("Coche tes repas sur l'écran {} : ton historique de protéines s'affichera ici, jour par jour.").replace("{}", "<b>" + TR("Séance") + "</b>")}</div></div>`;
+      <div class="empty" style="padding:22px 16px;">${TR("Coche tes repas sur l'écran {} : ton historique de protéines s'affichera ici, jour par jour.").replace("{}", "<b>" + TR("Alimentation") + "</b>")}</div></div>`;
     sec.appendChild(div);
     return;
   }
