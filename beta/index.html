@@ -494,6 +494,40 @@
   .fchip .st:active{background:rgba(255,255,255,.4);}
   .fab-center{display:flex; justify-content:center; margin-top:14px;}
 
+  /* ---- calendrier des protéines ---- */
+  /* on édite une journée passée : un bandeau le rappelle, sinon on croit corriger aujourd'hui */
+  .jour-passe{display:flex; align-items:center; gap:10px; margin-top:12px;
+    background:var(--surface); border:1px solid var(--accent); border-radius:12px; padding:8px 10px 8px 12px;}
+  .jour-passe span{flex:1; min-width:0; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  .jour-passe button{flex:0 0 auto; font-size:12px; font-weight:800; color:var(--accent);
+    background:var(--surface2); border-radius:9px; padding:6px 10px;}
+  .cal-top{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .cal-top .m{flex:1; text-align:center; font-size:15px; font-weight:800; text-transform:capitalize;}
+  .cal-top button{width:34px; height:34px; border-radius:10px; background:var(--surface2);
+    display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800;}
+  .cal-top button[disabled]{opacity:.3;}
+  .cal-jours{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:5px;}
+  .cal-jours span{text-align:center; font-size:10px; font-weight:800; color:var(--ink-mute);}
+  .cal-grille{display:grid; grid-template-columns:repeat(7,1fr); gap:3px;}
+  /* chaque case porte le numéro du jour et les protéines : le chiffre prime, la couleur résume */
+  .cal-c{aspect-ratio:1; border-radius:9px; background:var(--surface2); display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:2px;
+    font-variant-numeric:tabular-nums;}
+  .cal-c .d{font-size:12px; font-weight:700; line-height:1;}
+  .cal-c .p{font-size:9px; font-weight:800; line-height:1; color:var(--ink-mute);}
+  .cal-c.vide{background:none;}
+  .cal-c.futur{opacity:.28;}
+  .cal-c.rien .p{color:transparent;}
+  .cal-c.atteint{background:var(--good); color:#fff;}
+  .cal-c.atteint .p{color:rgba(255,255,255,.85);}
+  .cal-c.partiel{background:var(--accent); color:#fff;}
+  .cal-c.partiel .p{color:rgba(255,255,255,.85);}
+  .cal-c.auj{box-shadow:0 0 0 2px var(--ink) inset;}
+  .cal-leg{display:flex; gap:12px; justify-content:center; margin-top:12px; font-size:11px; color:var(--ink-mute);}
+  /* la pastille grise se confond avec la fiche : un liseré la rend visible */
+  .cal-leg i{display:inline-block; width:9px; height:9px; border-radius:3px; vertical-align:-1px;
+    margin-right:4px; border:1px solid var(--border);}
+
   .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--barre); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);}
   .tabbar-in{max-width:560px; margin:0 auto; display:flex;}
   .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 0 9px; color:var(--ink-mute); font-size:11px; font-weight:700; letter-spacing:.01em;}
@@ -1683,6 +1717,17 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Calendrier":"Calendar",
+  "Mes protéines":"My protein",
+  "Tu modifies une journée passée.":"You're editing a past day.",
+  "Mois précédent":"Previous month",
+  "Mois suivant":"Next month",
+  "Objectif atteint":"Target met",
+  "En dessous":"Below",
+  "Rien de noté":"Nothing logged",
+  "Objectif : {n} g par jour. Touche un jour pour corriger ses repas.":"Target: {n} g a day. Tap a day to fix its meals.",
+  "✎ Modifier les repas de ce jour":"✎ Edit this day's meals",
+  "✎ Corriger les totaux à la main":"✎ Correct the totals by hand",
   "Les deux":"Both",
   "On te demandera où tu es au lancement de chaque séance, et on adaptera les exercices.":"We'll ask where you are when you start a session, and adapt the exercises.",
   "Tu t'entraînes où aujourd'hui ?":"Where are you training today?",
@@ -4735,7 +4780,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 01h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 01h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5319,6 +5364,8 @@ function renderTabs(){
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
     if(b.dataset.tab===curTab) return;
     if(curTab==="seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
+    /* on ne reste pas coincé sur une vieille date : quitter l'alimentation revient à aujourd'hui */
+    if(curTab === "eat") jourCur = null;
     curTab=b.dataset.tab; render();
   });
 }
@@ -5613,8 +5660,20 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && rest.
 
 
 /* ================= ALIMENTATION ================= */
+/* L'onglet montre aujourd'hui par défaut, mais peut être posé sur une journée passée :
+   les repas d'une date sont déjà tous enregistrés (db.habitSel est rangé par jour et
+   n'est jamais purgé), il ne manquait qu'un moyen d'y revenir. Tout ce qui touche à
+   l'alimentation passe donc par jourAlim() plutôt que par dayKey(). */
+let jourCur = null;
+function jourAlim(){ return jourCur || dayKey(); }
+function poserJour(key){
+  jourCur = (key && key !== dayKey()) ? key : null;
+  curTab = "eat";
+  render();
+}
 function renderEat(app){
-  const k = dayKey();
+  const k = jourAlim();
+  const auj = !jourCur;
   if(!mealCur) mealCur = mealParHeure();
   const sel = db.habitSel[k] || {};
   const plan = planFor(db.profile);
@@ -5626,7 +5685,8 @@ function renderEat(app){
   const coul = MEAL_C[mealCur];
 
   app.innerHTML = `
-    ${hero(`<div class="big">${TR("Aujourd'hui")}</div>`)}
+    ${hero(`<div class="big">${auj ? TR("Aujourd'hui")
+      : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>`)}
     <div class="under-hero" style="display:flex; gap:9px; align-items:stretch;">
       <div class="eat-card" style="flex:1; min-width:0;">
         <div class="eat-line"><span class="v">${protNow} <span style="font-size:14px;">g</span></span><span class="l">${TR("Protéines")}</span></div>
@@ -5643,9 +5703,14 @@ function renderEat(app){
       </div>
       <div class="eat-side">
         <button id="eat-plan" title="${TR("Mon plan")}" aria-label="${TR("Mon plan")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
+        <button id="eat-cal" title="${TR("Calendrier")}" aria-label="${TR("Calendrier")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
         <button id="eat-tips" title="${TR("Idées d'aliments")}" aria-label="${TR("Idées d'aliments")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/></svg></button>
       </div>
     </div>
+    ${auj? "" : `<div class="jour-passe">
+      <span>${TR("Tu modifies une journée passée.")}</span>
+      <button id="eat-auj">${TR("Aujourd'hui")}</button>
+    </div>`}
     <div class="meal-tabs">${MEALS.map(([id,lab])=>`
       <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
         style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${TR(lab)}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span><i></i></button>`).join("")}</div>
@@ -5654,6 +5719,9 @@ function renderEat(app){
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
   document.getElementById("eat-plan").onclick  = ()=>showPlan(false);
   document.getElementById("eat-tips").onclick  = ()=>openKcalTips(enHausse? "up":"down", plan);
+  document.getElementById("eat-cal").onclick   = ()=>openCalendrier();
+  const bAuj = document.getElementById("eat-auj");
+  if(bAuj) bAuj.onclick = ()=>poserJour(null);
   /* le récapitulatif sert aussi de raccourci vers le repas */
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{
     if(b.dataset.goto === mealCur) return;
@@ -5677,7 +5745,7 @@ function renderEat(app){
 }
 /* ---- pastilles d'aliments du repas courant ---- */
 function dessineRepas(panel){
-  const k = dayKey();
+  const k = jourAlim();
   const sel = db.habitSel[k] || {};
   const coul = MEAL_C[mealCur];
   const mySel = sel[mealCur] || [];
@@ -5761,7 +5829,7 @@ function dessineRepas(panel){
 /* + ou − une portion sur une pastille déjà choisie. En dessous d'une portion la
    pastille se retire : c'est le même geste que de la décocher. */
 function reglerPortions(meal, socle, actuel, pas){
-  const k = dayKey();
+  const k = jourAlim();
   const f = Math.round((facteurAliment(socle, actuel) + pas) * 100) / 100;
   if(!db.habitSel[k]) db.habitSel[k] = {};
   const reste = (db.habitSel[k][meal]||[]).filter(x=>x !== actuel);
@@ -5771,7 +5839,7 @@ function reglerPortions(meal, socle, actuel, pas){
   save(); renderSurPlace();
 }
 function basculerAliment(meal, label){
-  const k = dayKey();
+  const k = jourAlim();
   if(!db.habitSel[k]) db.habitSel[k] = {};
   const arr = db.habitSel[k][meal] || [];
   db.habitSel[k][meal] = arr.includes(label)? arr.filter(x=>x!==label) : arr.concat(label);
@@ -5908,7 +5976,7 @@ function openAjoutAliment(meal){
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
       if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal]);
     }
-    const k = dayKey();
+    const k = jourAlim();
     if(!db.habitSel[k]) db.habitSel[k] = {};
     db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).concat(label);
     if(db.dayFix[k]) delete db.dayFix[k];
@@ -5918,7 +5986,7 @@ function openAjoutAliment(meal){
 
 /* appui long sur une pastille : changer la quantité, ou la retirer des propositions */
 function openModifAliment(meal, label){
-  const k = dayKey();
+  const k = jourAlim();
   const prot = protOf(label), kcal = kcalOf(label);
   const pa = partsAliment(TR(label), prot);
   const grp = trouverGroupe(label);
@@ -9460,6 +9528,66 @@ function renderProteinSection(sec){
   div.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>openDayProt(b.dataset.day));
 }
 
+/* ---- calendrier des protéines : un mois entier, jour par jour ----------------
+   Aucune donnée nouvelle n'est enregistrée : les repas de chaque date sont déjà là
+   depuis toujours, l'app ne s'en servait que pour ses moyennes. */
+let calMois = null;                      /* premier jour du mois affiché */
+function openCalendrier(){
+  if(!calMois){ const n = new Date(); calMois = new Date(n.getFullYear(), n.getMonth(), 1); }
+  dessineCalendrier();
+}
+function dessineCalendrier(){
+  const cible = proteinTarget();
+  const an = calMois.getFullYear(), mois = calMois.getMonth();
+  const premier = new Date(an, mois, 1);
+  const nbJours = new Date(an, mois + 1, 0).getDate();
+  /* la semaine commence le lundi en français, le dimanche en anglais */
+  const lundi = langue() !== "en";
+  const decal = lundi ? (premier.getDay() + 6) % 7 : premier.getDay();
+  const noms = lundi ? ["L","M","M","J","V","S","D"] : ["S","M","T","W","T","F","S"];
+  const auj = dayKey();
+  const cases = [];
+  for(let i = 0; i < decal; i++) cases.push(`<div class="cal-c vide"></div>`);
+  for(let j = 1; j <= nbJours; j++){
+    const key = dayKey(new Date(an, mois, j));
+    const p = dayProt(key);
+    const futur = key > auj;
+    const cl = futur ? "futur rien" : (p <= 0 ? "rien" : (p >= cible ? "atteint" : "partiel"));
+    cases.push(`<button class="cal-c ${cl}${key === auj ? " auj" : ""}" ${futur ? "disabled" : `data-cal="${key}"`}>
+      <span class="d">${j}</span><span class="p">${p > 0 ? p : "·"}</span></button>`);
+  }
+  /* on ne remonte pas avant la première journée enregistrée, ni au-delà du mois en cours */
+  const jours = Object.keys(db.habitSel || {}).sort();
+  const debut = jours.length ? jours[0] : auj;
+  const avantPossible = new Date(an, mois, 1) > new Date(Number(debut.slice(0,4)), Number(debut.slice(5,7)) - 1, 1);
+  const apresPossible = new Date(an, mois, 1) < new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  openSheet(`<h3 style="text-align:center;">${TR("Mes protéines")}</h3>
+    <div class="cal-top">
+      <button id="cal-prec" ${avantPossible ? "" : "disabled"} aria-label="${TR("Mois précédent")}">‹</button>
+      <div class="m">${premier.toLocaleDateString(loc(), {month:"long", year:"numeric"})}</div>
+      <button id="cal-suiv" ${apresPossible ? "" : "disabled"} aria-label="${TR("Mois suivant")}">›</button>
+    </div>
+    <div class="cal-jours">${noms.map(n=>`<span>${n}</span>`).join("")}</div>
+    <div class="cal-grille">${cases.join("")}</div>
+    <div class="cal-leg">
+      <span><i style="background:var(--good);"></i>${TR("Objectif atteint")}</span>
+      <span><i style="background:var(--accent);"></i>${TR("En dessous")}</span>
+      <span><i style="background:var(--surface2);"></i>${TR("Rien de noté")}</span>
+    </div>
+    <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; margin-top:10px; line-height:1.5;">${
+      TR("Objectif : {n} g par jour. Touche un jour pour corriger ses repas.").replace("{n}", cible)}</div>
+    <button class="btn btn-accent" id="cal-ok" style="width:100%; margin-top:14px;">${TR("Fermer")}</button>`);
+  const prec = document.getElementById("cal-prec"), suiv = document.getElementById("cal-suiv");
+  if(!prec.disabled) prec.onclick = ()=>{ calMois = new Date(an, mois - 1, 1); dessineCalendrier(); };
+  if(!suiv.disabled) suiv.onclick = ()=>{ calMois = new Date(an, mois + 1, 1); dessineCalendrier(); };
+  document.getElementById("cal-ok").onclick = closeSheet;
+  document.querySelectorAll("[data-cal]").forEach(b=>b.onclick = ()=>{
+    closeSheet();
+    /* la fermeture passe par history.back() : on laisse la fiche partir avant de redessiner */
+    setTimeout(()=>poserJour(b.dataset.cal), 260);
+  });
+}
+
 /* détail des protéines d'une journée */
 function openDayProt(key){
   const sel = db.habitSel[key] || {};
@@ -9490,10 +9618,12 @@ function openDayProt(key){
     </div>
     <div class="mp-bar" style="height:10px; margin-bottom:16px;"><div style="height:100%; width:${Math.min(100,total/target*100)}%; border-radius:7px; background:${total>=target?'var(--good)':'var(--accent)'};"></div></div>
     ${lignes || `<div class="empty" style="padding:18px;">${TR("Rien de coché ce jour-là.")}</div>`}
-    <button class="btn" id="dp-edit" style="width:100%; margin-top:10px;">${TR("✎ Corriger ce jour")}</button>
+    <button class="btn" id="dp-repas" style="width:100%; margin-top:10px;">${TR("✎ Modifier les repas de ce jour")}</button>
+    <button class="btn" id="dp-edit" style="width:100%; margin-top:8px;">${TR("✎ Corriger les totaux à la main")}</button>
     <button class="btn btn-accent" id="dp-ok" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.getElementById("dp-ok").onclick=closeSheet;
   document.getElementById("dp-edit").onclick=()=>openDayEdit(key);
+  document.getElementById("dp-repas").onclick=()=>{ closeSheet(); setTimeout(()=>poserJour(key), 260); };
 }
 /* corriger à la main les valeurs d'une journée (oubli de cocher, repas à l'extérieur…) */
 function openDayEdit(key){

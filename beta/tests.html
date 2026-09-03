@@ -424,6 +424,22 @@ function lancer(){
   vrai("Deux aliments différents ne partagent pas de clé",
     F.cleAliment("Banane") !== F.cleAliment("Pomme"));
 
+  /* calendrier : corriger une journée passée ne doit jamais toucher à aujourd'hui */
+  neuf();
+  const hier = F.dayKey(Date.now() - 864e5);
+  eq("Par défaut, on édite aujourd'hui", F.jourAlim(), F.dayKey());
+  F.eval("jourCur = " + JSON.stringify(hier));
+  eq("Posé sur une date, l'onglet la garde", F.jourAlim(), hier);
+  F.basculerAliment("midi", "Œuf");
+  vrai("L'aliment part sur le bon jour", (DB.habitSel[hier].midi || []).includes("Œuf"));
+  vrai("Aujourd'hui n'a pas bougé",
+    !(DB.habitSel[F.dayKey()] && (DB.habitSel[F.dayKey()].midi || []).length));
+  F.reglerPortions("midi", "Œuf", "Œuf", 1);
+  eq("La quantité aussi va sur le bon jour", F.dayProt(hier), F.protOf("Œuf") * 2);
+  F.eval("jourCur = null");
+  eq("Revenu à aujourd'hui", F.jourAlim(), F.dayKey());
+  neuf();
+
   /* la base d aliments : rien d incomplet, rien en double */
   const BASE = F.eval("FOOD_100G");
   vrai("Chaque aliment de la base est complet",
