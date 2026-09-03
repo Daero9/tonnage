@@ -927,6 +927,15 @@ function lancer(){
     !tires.some(n=>replis.includes(n)));
   vrai("En salle, les séances restent variées",
     new Set(tires).size >= 12);
+  /* proposer une séance pour un autre lieu ne doit jamais modifier le réglage de l'app */
+  DB.materiel = null;
+  const propMaison = F.avecMateriel(["halteres","traction"],
+    ()=>F.genererSeance("haut").items.map(it=>it.nom));
+  vrai("Une proposition « chez moi » ne retient que ce qu'on a à la maison",
+    propMaison.every(n=>F.exoDispo(ex(n), ["halteres","traction"])));
+  eq("Le matériel de l'app est rendu intact", DB.materiel, null);
+  try{ F.avecMateriel([], ()=>{ throw new Error("boum"); }); }catch(e){}
+  eq("Rendu intact même si le tirage échoue", DB.materiel, null);
   DB.materiel = [];                       /* on rend le terrain comme on l'a trouvé */
   const rolesRien = F.rolesRemplissables("pull");
   DB.materiel = ["elastique"];
@@ -1054,6 +1063,21 @@ function lancer(){
     F.photoSeance({name:"Pull", items:exDe("Jambes")}), "jambes");
   eq("Une photo choisie à la main est respectée",
     F.photoSeance({photo:"cardio", name:"Abdos", items:exDe("Abdos")}), "cardio");
+  /* Les essais ci-dessus donnaient tous un nom qui portait déjà la réponse : ils
+     passaient même quand le classement par exercice était cassé. Ceux-ci ne le
+     permettent pas — un nom neutre, et un seul exercice d'épaules au milieu du dos,
+     qui suffisait à faire basculer toute la séance du côté « push ». */
+  const exos = noms => noms.map(n=>({exId:id(n)}));
+  eq("Le dos est reconnu sans l'aide du nom",
+    F.photoSeance({name:"Séance A", items:exos(["Tractions","Rowing barre","Tirage vertical"])}), "pull");
+  eq("Un exercice d'épaules ne renverse pas une séance de dos",
+    F.photoSeance({name:"Séance A",
+      items:exos(["Tractions","Rowing barre","Tirage vertical","Curl haltères","Face pull"])}), "pull");
+  eq("Le biceps compte du côté du tirage",
+    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "pull");
+  eq("La poussée est reconnue sans l'aide du nom",
+    F.photoSeance({name:"Séance A",
+      items:exos(["Développé couché","Développé militaire","Extension poulie"])}), "push");
   neuf();
 
   /* ---------------------------------------------------------- fiches d'exercice */
