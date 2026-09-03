@@ -23,6 +23,8 @@
     --figure:invert(1);
     --radius:16px;
     --matin:#3ca0e8; --midi:#f58220; --collation:#5b5bd6; --soir:#f2506e; --extra:#4caf50;
+    /* bloc inversé : ce qui doit trancher avec la page, quel que soit le thème */
+    --inv-bg:#17181a; --inv-ink:#ffffff; --inv-soft:rgba(255,255,255,.72); --inv-good:#7fd44e;
   }
   :root[data-theme="dark"]{
     --bg:#141416; --surface:#1f1f22; --surface2:#2a2a2e; --btn:#2a2a2e; --border:#333338;
@@ -35,6 +37,9 @@
     --figure:none;
     --radius:16px;
     --matin:#4aa8ea; --midi:#f58220; --collation:#6f6fe0; --soir:#f2607b; --extra:#5cba60;
+    /* thème sombre : c'est le clair qui tranche. Le vert doit alors foncer pour rester
+       lisible — le vert vif de l'app disparaît sur du blanc. */
+    --inv-bg:#f4f2ef; --inv-ink:#17181a; --inv-soft:rgba(23,24,26,.68); --inv-good:#3f8f1c;
   }
   /* Le parcours de profil se lit toujours sur fond clair, même si l'app est en thème sombre :
      ces écrans sont conçus clairs, et on veut la même lecture pour tout le monde. */
@@ -47,6 +52,7 @@
     --barre:rgba(255,255,255,.96);
     --sheet:#f4f1eb; --field:#ffffff;
     --figure:invert(1);
+    --inv-bg:#17181a; --inv-ink:#ffffff; --inv-soft:rgba(255,255,255,.72); --inv-good:#7fd44e;
   }
   :root[data-onb], :root[data-onb] body{overflow:hidden;}   /* rien ne défile derrière le parcours */
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -493,6 +499,18 @@
   .fchip .st::before{content:""; position:absolute; inset:-9px -2px;}
   .fchip .st:active{background:rgba(255,255,255,.4);}
   .fab-center{display:flex; justify-content:center; margin-top:14px;}
+
+  /* ---- records de fin de séance ----
+     Un record mérite mieux qu'une carte de plus : le bloc s'inverse par rapport à la
+     page — blanc sur noir en thème clair, noir sur blanc en thème sombre. Le gain,
+     lui, reste vert dans les deux cas. */
+  .fin-rec{background:var(--inv-bg); color:var(--inv-ink); border-radius:var(--radius);
+    padding:14px 15px; margin-bottom:14px;}
+  .fin-rec .t{font-weight:800; font-size:14.5px; margin-bottom:7px; letter-spacing:.01em;}
+  .fin-rec .l{font-size:13.5px; color:var(--inv-soft); line-height:1.55;}
+  .fin-rec .l + .l{margin-top:3px;}
+  .fin-rec .n{color:var(--inv-ink); font-weight:700;}
+  .fin-rec b{color:var(--inv-good); font-weight:800;}
 
   /* ---- calendrier des protéines ---- */
   /* on édite une journée passée : un bandeau le rappelle, sinon on croit corriger aujourd'hui */
@@ -4797,7 +4815,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 01h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 01h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8139,9 +8157,9 @@ function openFinSeance(r){
   </div>
   <div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin-bottom:14px;">
     ${r.series} ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} ${r.exos} ${TR(r.exos>1 ? "exercices" : "exercice")}.</div>
-  ${r.records.length? `<div class="card" style="margin-bottom:14px;">
-    <div style="font-weight:800; margin-bottom:6px;">🏆 ${TR(r.records.length>1? "Nouveaux records":"Nouveau record")}</div>
-    ${r.records.map(x=>`<div style="font-size:13.5px; color:var(--ink-soft);">${esc(x.nom)}${x.gain? ` — <b style="color:var(--good);">+${x.unite==="reps"
+  ${r.records.length? `<div class="fin-rec">
+    <div class="t">🏆 ${TR(r.records.length>1? "Nouveaux records":"Nouveau record")}</div>
+    ${r.records.map(x=>`<div class="l"><span class="n">${esc(x.nom)}</span>${x.gain? ` — <b>+${x.unite==="reps"
         ? TR("{} reps").replace("{}", x.gain)
         : pds(x.gain)}</b> ${x.unite==="reps" ? TR("sur ton meilleur") : TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
   </div>`:""}
