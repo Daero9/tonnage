@@ -983,6 +983,7 @@ const TRAD = {en:{
   "protéines":"protein",
   "Supprimer":"Delete",
   /* --- corrections signalées par Nico --- */
+  "Ce navigateur a effacé la mémoire de l'app. Utilise l'icône 💾 pour en garder une copie, et 📂 pour la restaurer.":"This browser cleared the app's storage. Use the 💾 icon to keep a copy, and 📂 to restore it.",
   "Il me manque {} pour calculer tes calories et tes protéines.":"I still need {} to work out your calories and protein.",
   "ton poids":"your weight",
   "ta taille":"your height",
@@ -4591,7 +4592,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "2 septembre 2026 21h03 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "3 septembre 2026 02h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4784,6 +4785,15 @@ async function useCap(name){
 /* Dans l'application empaquetee (Capacitor), pas dans un navigateur. Sert a
    distinguer « le navigateur ne sait pas faire » de « on est dans l'app » :
    les deux manquent de showSaveFilePicker, pour des raisons opposees. */
+/* iPad recent se presente comme un Macintosh : le nombre de points de contact
+   est le seul moyen fiable de le distinguer d'un vrai Mac. */
+function estIOS(){
+  try{
+    const ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua)
+        || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  }catch(e){ return false; }
+}
 function dansLApp(){
   try{ return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function"
                  && window.Capacitor.isNativePlatform()); }
@@ -8151,7 +8161,7 @@ function openSettings(){
   document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast(TR("Les explications réapparaîtront ✓")); };
   /* bloc sauvegarde automatique : seulement là où le navigateur le permet */
   const autoBox = document.getElementById("st-auto");
-  if(!fileApiOk()){
+  if(!fileApiOk() || dansLApp()){
     /* Les deux cas manquent de showSaveFilePicker, mais pour des raisons
        opposees : parler de Safari dans une application Android serait faux
        trois fois — ni Safari, ni navigateur, ni iPhone. */
@@ -8209,7 +8219,13 @@ function openSettings(){
     <div style="color:var(--ink-mute);">${TR("Dernière sauvegarde fichier :")} ${ago(db.lastBackup)}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
-    ${!survived? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${TR("iOS efface la mémoire de l'app entre deux ouvertures. Utilise l'icône 💾 avant de fermer, et 📂 pour restaurer.")}</div>`:""}`;
+    ${(!survived && !dansLApp())? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${
+      /* la trace manque aussi a la PREMIERE ouverture, ou c'est normal : dans
+         l'application on ne dit rien, et ailleurs on n'accuse iOS que si c'en
+         est un. Avant, un utilisateur Android lisait un avertissement sur iOS. */
+      estIOS()
+        ? TR("iOS efface la mémoire de l'app entre deux ouvertures. Utilise l'icône 💾 avant de fermer, et 📂 pour restaurer.")
+        : TR("Ce navigateur a effacé la mémoire de l'app. Utilise l'icône 💾 pour en garder une copie, et 📂 pour la restaurer.")}</div>`:""}`;
   document.getElementById("st-file").onclick=async()=>{
     const btn = document.getElementById("st-file");
     const stamp = dayKey();
