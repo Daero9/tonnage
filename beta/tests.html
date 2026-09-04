@@ -1132,13 +1132,27 @@ function lancer(){
     if(!ask) return {ok:false, txt:"la question ne s'affiche pas"};
     erreur = null;
     ask.querySelector('[data-rir="' + valeur + '"]').click();
-    const rep = D.querySelector(".rir-ask .q.ok");
-    return {ok: !erreur && !!rep, txt: erreur || (rep? rep.textContent : "aucune réponse")};
+    /* la réponse se lit sur deux niveaux : un verdict, puis la consigne */
+    const rep = D.querySelector(".rir-ask .rir-rep");
+    const d = rep && rep.querySelector(".d");
+    return {ok: !erreur && !!rep && !!d && !!d.textContent.trim(),
+            txt: erreur || (rep? rep.textContent : "aucune réponse"),
+            ton: rep ? rep.className.replace("rir-rep ", "").trim() : "",
+            verdict: rep && rep.querySelector(".v") ? rep.querySelector(".v").textContent : "",
+            detail: d ? d.textContent : ""};
   };
   [["0","Non, 0"],["1","1-2"],["3","3-5+"],["-1","C'était trop lourd"]].forEach(([v,lab])=>{
     const r = repondre(v);
     vrai("« " + lab + " » répond sans planter", r.ok, r.txt);
+    vrai("« " + lab + " » annonce un verdict avant la consigne", !!r.verdict, r.txt);
+    vrai("« " + lab + " » dit dans quel sens ça va",
+      ["juste","monte","baisse"].includes(r.ton), r.ton);
+    vrai("« " + lab + " » commence sa consigne par une majuscule",
+      /^[A-ZÀÉÈÊ0-9]/.test(r.detail), r.detail);
   });
+  eq("« 3-5+ » invite à monter", repondre("3").ton, "monte");
+  eq("« Trop lourd » invite à baisser", repondre("-1").ton, "baisse");
+  eq("« 1-2 » dit que c'est la bonne zone", repondre("1").ton, "juste");
   vrai("« 3-5+ » monte la charge des séries suivantes", (()=>{ repondre("3"); const s2 = DB.active.entries[0].sets[2]; return s2.w > 60; })());
   vrai("« Trop lourd » baisse la charge des séries suivantes", (()=>{ repondre("-1"); const s2 = DB.active.entries[0].sets[2]; return s2.w < 60; })());
   vrai("« 1-2 » garde la charge des séries suivantes", (()=>{ repondre("1"); const s2 = DB.active.entries[0].sets[2]; return s2.w === 60; })());

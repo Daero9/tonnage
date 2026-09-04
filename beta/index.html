@@ -755,6 +755,32 @@
   .rir-ask .rir-fait{font-size:12.5px; font-weight:700; letter-spacing:.01em;
     color:var(--ink-mute); margin-bottom:8px;}
   .rir-ask.bn .rir-fait{color:rgba(255,255,255,.62);}
+  /* Apparition : le bloc arrive en se posant, sans jamais bousculer ce qui l'entoure.
+     Une seule courbe pour tout ce qui apparaît, pour que l'app ait un seul geste. */
+  @keyframes popEntree{from{opacity:0; transform:scale(.95) translateY(7px);} to{opacity:1; transform:none;}}
+  .rir-ask{animation:popEntree .26s cubic-bezier(.22,1.25,.36,1);}
+  .rir-rep{animation:popEntree .24s cubic-bezier(.22,1.25,.36,1);}
+  .set-row.actif{animation:popEntree .22s cubic-bezier(.22,1.25,.36,1);}
+  @media (prefers-reduced-motion:reduce){
+    .rir-ask, .rir-rep, .set-row.actif{animation:none;}
+  }
+  /* La réponse : un verdict qu'on lit d'un coup d'œil, la consigne juste en dessous.
+     Une phrase à plat se lisait deux fois — une pour trouver le verdict, une pour
+     comprendre la suite. */
+  .rir-rep{display:flex; gap:10px; align-items:flex-start;}
+  .rir-rep .ic{flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:800; line-height:1; color:#fff;}
+  .rir-rep .v{font-size:15px; font-weight:800; line-height:1.2; margin-bottom:2px; color:var(--ink);}
+  .rir-rep .d{font-size:13px; line-height:1.45; color:var(--ink-soft);}
+  .rir-rep.juste .ic{background:var(--good);}
+  .rir-rep.monte .ic, .rir-rep.baisse .ic{background:var(--accent);}
+  .rir-rep.juste .v{color:var(--good);}
+  .rir-rep.monte .v, .rir-rep.baisse .v{color:var(--accent);}
+  /* sur le bloc noir, il faut des tons plus clairs pour rester lisibles */
+  .rir-ask.bn .rir-rep.juste .v{color:#8fe05c;}
+  .rir-ask.bn .rir-rep.monte .v, .rir-ask.bn .rir-rep.baisse .v{color:#ffb15e;}
+  .rir-ask.bn .rir-rep .d{color:rgba(255,255,255,.8);}
   .rir-ask{background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:2px 0 10px;}
   .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
   .rir-ask .q.ok{margin:0; color:var(--accent);}
@@ -4826,7 +4852,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 02h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 02h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7673,21 +7699,25 @@ function majSerieActive(){
     const d = (r.top <= milieu && r.bottom >= milieu) ? 0 : Math.min(Math.abs(r.top - milieu), Math.abs(r.bottom - milieu));
     if(d < meilleur){ meilleur = d; choisie = c; }
   });
+  /* On désigne la série à mettre en avant AVANT de nettoyer, pour ne pas lui retirer
+     puis lui remettre sa classe : son animation d'apparition se rejouerait à chaque
+     défilement, puisque cette fonction suit le défilement.
+     Une question posée sur la carte qu'on regarde interdit toute autre mise en avant,
+     y compris pendant les deux secondes de son message de réponse : deux cadres noirs
+     à la fois ne guident plus rien. */
+  let cible = null;
+  if(choisie && !choisie.querySelector(".rir-ask")){
+    const en = a.entries[parseInt(choisie.dataset.ei)];
+    cible = choisie.querySelector('.set-row[data-si="' + en.sets.findIndex(x=>!x.done) + '"]');
+  }
   /* la série qui porte une question garde sa mise en avant : elle fait corps avec le bloc */
   document.querySelectorAll(".set-row.actif").forEach(l=>{
-    if(!l.classList.contains("bnq")) l.classList.remove("actif");
+    if(l !== cible && !l.classList.contains("bnq")) l.classList.remove("actif");
   });
   retirerBlocNoir(false);                 /* on ne défait pas le bloc d'une question en cours */
-  if(!choisie) return;
-  /* Une question est posée sur la carte qu'on regarde : rien d'autre ne doit attirer
-     l'oeil, y compris pendant les deux secondes ou son message de reponse s'affiche.
-     Deux cadres noirs a la fois ne guident plus rien. */
-  if(choisie.querySelector(".rir-ask")) return;
-  const en = a.entries[parseInt(choisie.dataset.ei)];
-  const ligne = choisie.querySelector('.set-row[data-si="' + en.sets.findIndex(x=>!x.done) + '"]');
-  if(!ligne) return;
-  ligne.classList.add("actif");
-  poserBlocNoir(suiteDeLigne(ligne), false);
+  if(!cible) return;
+  cible.classList.add("actif");
+  poserBlocNoir(suiteDeLigne(cible), false);
 }
 /* le cadre suit le défilement : il reste sur l'exercice qu'on regarde */
 let majSerieTimer = null;
@@ -7910,8 +7940,11 @@ function renderActive(app){
             };
             const plafonne = chargeBloquee(en.exId);          /* ne peut pas monter en charge */
             const rienARetirer = sansChargeDuTout(en.exId, st.w); /* ne peut pas descendre non plus */
-            let msg;
+            /* trois issues seulement : on monte, on baisse, ou on y est. C'est ce que
+               l'icône et la couleur disent avant même qu'on ait lu la phrase. */
+            let msg, ton = "juste";
             if(rir === -1){
+              ton = "baisse";
               /* Trop lourd : normalement on descend la charge en gardant les répétitions.
                  Mais quand il n'y a qu'une charge disponible — poids du corps, ou « charge
                  fixe » cochée — la barre ne peut pas s'alléger : c'est la cible en
@@ -7928,6 +7961,7 @@ function renderActive(app){
                 if(next){ appliquerSuite("w", bas); appliquerSuite("r", cible); }
               }
             } else if(rir>=3){
+              ton = "monte";
               if(plafonne){
                 const pr = progressionSansCharge(en.exId, st.r||0, en.sets.filter(x=>!x.warm).length);
                 msg = TR("Trop léger —") + " " + pr.text.charAt(0).toLowerCase() + pr.text.slice(1);
@@ -7939,6 +7973,7 @@ function renderActive(app){
                 if(next) appliquerSuite("w", nw);
               }
             } else if(rir===0 && (st.r||0) < rng.lo){
+              ton = "baisse";
               if(rienARetirer){
                 const nr = Math.max(1,(st.r||0)-1);
                 msg = next ? TR("Trop dur — vise {} reps sur les séries suivantes, la qualité prime.").replace("{}", nr)
@@ -7965,7 +8000,17 @@ function renderActive(app){
             }
             save();
             ask.classList.add("repondu");
-            ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
+            /* Toutes ces phrases sont bâties « Verdict — ce qu'on en fait ». On coupe
+               au tiret pour en faire deux niveaux de lecture ; si un jour une phrase
+               n'a pas de tiret, elle s'affiche entière en dessous, sans rien casser. */
+            const coupe = msg.indexOf(" — ");
+            const titre = coupe > 0 ? msg.slice(0, coupe) : "";
+            let suite = coupe > 0 ? msg.slice(coupe + 3) : msg;
+            suite = suite.charAt(0).toUpperCase() + suite.slice(1);
+            ask.innerHTML = `<div class="rir-rep ${ton}">
+              <div class="ic">${ton === "juste" ? "✓" : (ton === "monte" ? "↑" : "↓")}</div>
+              <div class="grow">${titre? `<div class="v">${esc(titre)}</div>`:""}<div class="d">${esc(suite)}</div></div>
+            </div>`;
             majSerieActive();                 /* la serie repondue cesse d'etre en avant */
             const reste = en.sets.some(s2=>!s2.done);
             /* la série revient dès la réponse : on la voit cochée pendant que le
