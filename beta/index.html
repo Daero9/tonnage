@@ -139,6 +139,19 @@
   .tb-save .tb-dot{position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%; background:var(--accent); border:2px solid var(--bg);}
 
   /* stat tiles */
+  /* ---- aperçu d'une séance ----
+     Chaque exercice a sa carte : une liste séparée par des filets se lit comme un
+     tableau, des cartes se lisent comme une succession — ce qu'est une séance. */
+  .pv-ex{display:flex; gap:10px; align-items:flex-start; background:var(--surface2);
+    border-radius:14px; padding:11px 12px; margin-bottom:8px;}
+  .pv-ex .num{flex:0 0 auto; width:19px; height:19px; border-radius:50%; background:var(--ink);
+    color:var(--bg); font-size:10.5px; font-weight:800; line-height:1;
+    display:flex; align-items:center; justify-content:center; margin-top:3px;}
+  .pv-ex .nm{font-size:14.5px; font-weight:800; line-height:1.25;}
+  .pv-ex .nm .eqp{font-size:12px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
+  .pv-ex .meta{font-size:12px; color:var(--ink-soft); margin:3px 0 5px; line-height:1.4;}
+  .pv-ex .meta b{color:var(--ink); font-weight:700;}
+  .pv-ex .inj{font-size:11.5px; color:var(--bad); line-height:1.45; margin-top:5px;}
   .tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
   .tile{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 10px; text-align:left;}
   .tile .v{font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.01em; line-height:1.1;}
@@ -1861,6 +1874,7 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "repos":"rest",
   "Une répétition de moins":"One rep fewer",
   "Une répétition de plus":"One rep more",
   "Temps de repos":"Rest time",
@@ -4966,7 +4980,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 22h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 23h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7632,20 +7646,24 @@ function openPreview(tplId){
   const t = db.templates.find(x=>x.id===tplId);
   if(!t) return;
   const mins = Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5);
-  openSheet(`<h3>${esc(TR(t.name))}</h3>
-    <div class="row" style="gap:6px; margin-bottom:14px;">
-      <span class="pill">${t.items.length} exercice${t.items.length>1?"s":""}</span>
-      <span class="pill">~${mins} min</span>
-      ${(()=>{const n=t.items.reduce((a,i)=>a+i.sets,0); return `<span class="pill">${n} ${TR(n>1?"séries":"série")}</span>`;})()}
+  const nSeries = t.items.reduce((a,i)=>a+i.sets, 0);
+  openSheet(`<h3 style="text-align:center;">${esc(TR(t.name))}</h3>
+    <div class="tiles" style="margin:0 0 14px;">
+      <div class="tile"><div class="v">${t.items.length}</div><div class="u">${TR(t.items.length>1? "exercices":"exercice")}</div></div>
+      <div class="tile"><div class="v">${nSeries}</div><div class="u">${TR(nSeries>1? "séries":"série")}</div></div>
+      <div class="tile"><div class="v">~${mins}</div><div class="u">min</div></div>
     </div>
-    <div style="max-height:52dvh; overflow-y:auto;">${t.items.map((it,i)=>{
+    <div style="max-height:50dvh; overflow-y:auto; margin-inline:-2px; padding-inline:2px;">${t.items.map((it,i)=>{
       const ex = getEx(it.exId);
       const last = lastPerf(it.exId);
       const note = injuryNote(nomCanon(ex));
-      return `<div class="pick-row" style="cursor:default;">${exIcon(ex)}
-        <div class="grow"><div>${i+1}. ${esc(ex.name)}</div>
-        <div class="eq">${it.sets} × ${esc(String(it.reps||"?"))} · repos ${it.rest||90} s${last? " · " + TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0)))):""}</div>${musclesHtml(nomCanon(ex),3)}
-        ${note? `<div class="eq" style="color:var(--bad);">⚠️ ${esc(TR(note.injury))} : ${esc(TR(note.tip))}</div>`:""}</div>
+      return `<div class="pv-ex"><span class="num">${i+1}</span>${exIcon(ex)}
+        <div class="grow" style="min-width:0;">
+          <div class="nm">${esc(ex.name)}${ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>`:""}</div>
+          <div class="meta"><b>${it.sets} × ${esc(String(it.reps||"?"))}</b> · ${TR("repos")} ${fmtRepos(it.rest||90)}${
+            last? ` · ${TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0))))}`:""}</div>
+          ${musclesHtml(nomCanon(ex),3)}
+          ${note? `<div class="inj">⚠️ ${esc(TR(note.injury))} : ${esc(TR(note.tip))}</div>`:""}</div>
         <button class="icon-btn info-btn" data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>`;
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR("Lancer cette séance")}</button>
