@@ -112,6 +112,9 @@
   .hint-box{display:flex; gap:10px; align-items:flex-start; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
     border-radius:11px; padding:10px 12px; margin-bottom:11px; font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
   .hint-box b{color:var(--ink);}
+  /* la première ligne dit de quoi on parle : on la lit avant même de lire le reste */
+  .hint-box .ht{display:block; font-size:14.5px; font-weight:800; color:var(--ink);
+    line-height:1.25; margin-bottom:4px;}
   .hint-box button{flex:none; font-size:11.5px; font-weight:800; color:var(--accent); padding:2px 4px; align-self:center;}
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
@@ -1782,6 +1785,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.":"<span class=\"ht\">W-up = warm-up</span>A light set to prime the muscle, filled at half your working load. It counts nowhere: no tonnage, no records.",
+  "<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.<br>Appui long sur une ligne pour la supprimer.":"<span class=\"ht\">↓ = drop set</span>You keep the same set going with less load: 6 × 25 lb, then 4 × 20 lb. It stays one set, and all of it counts toward your tonnage.<br>Long-press a line to delete it.",
   "Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾.":"Can't write to this file here — keep a copy with 💾 instead.",
   "Ce fichier est vide.":"This file is empty.",
   "Fichier incomplet — la copie s'est arrêtée en route.":"Incomplete file — the copy stopped partway.",
@@ -4877,7 +4882,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 15h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 16h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7885,11 +7890,11 @@ function renderActive(app){
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
-      ${ei === iEch ? hintBox("echauffement", TR("La ligne <b>Éch.</b> est une série d'échauffement, pré-remplie à la moitié de ta charge de travail. Elle ne compte ni dans ton tonnage, ni dans tes records, ni dans ton profil musculaire.")) : ""}
+      ${ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>reps</span><span>${TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
-      ${ei === 0 ? hintBox("degressif", TR("<b>Dégressif ?</b> Le bouton <b>↓</b> d'une série ajoute une ligne à charge réduite (6 × 12 kg puis 4 × 10 kg). Ça reste une seule série, mais tout le tonnage est compté. Appui long sur la ligne pour supprimer la série.")) : ""}
+      ${ei === 0 ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.<br>Appui long sur une ligne pour la supprimer.")) : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
         ${en.sets.filter(x=>!x.warm).length > 1
