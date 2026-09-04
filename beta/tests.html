@@ -89,6 +89,15 @@ async function lancer(){
   eq("Le pied juste, sans 12 pouces",
      enLangue("fr", "imperial", () => F.affTaille(183)), "6'0\"");
 
+  /* le temps de repos se lit comme on le dit à voix haute, pas en secondes brutes */
+  eq("Moins d'une minute reste en secondes", F.fmtRepos(45), "45 s");
+  eq("Une minute pile se dit en minutes", F.fmtRepos(60), "1 min");
+  eq("Une minute et demie", F.fmtRepos(90), "1 min 30");
+  eq("Deux minutes pile, sans zéro inutile", F.fmtRepos(120), "2 min");
+  eq("Deux minutes trente", F.fmtRepos(150), "2 min 30");
+  eq("Cinq minutes", F.fmtRepos(300), "5 min");
+  eq("Zéro reste lisible", F.fmtRepos(0), "0 s");
+
   /* un champ <input type=number> refuse la virgule : jamais de séparateur français */
   vrai("Le champ de saisie n'a pas de virgule",
        enLangue("fr", "imperial", () => !/,/.test(F.saisiePoids(80))));
