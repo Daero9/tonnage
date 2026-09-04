@@ -149,6 +149,16 @@
   .pv-ex .num{flex:0 0 auto; width:19px; height:19px; border-radius:50%; background:var(--ink);
     color:var(--bg); font-size:10.5px; font-weight:800; line-height:1;
     display:flex; align-items:center; justify-content:center; margin-top:3px;}
+  /* Poignée de déplacement. Le glissé part d'ici et de nulle part ailleurs : la fiche
+     se ferme d'un glissé vers le bas et défile verticalement, un glissé pris n'importe
+     où déclencherait l'un ou l'autre. touch-action:none rend le geste à la poignée. */
+  .pv-ex .poig{flex:0 0 auto; align-self:stretch; display:flex; align-items:center;
+    padding:0 2px; margin:-11px 0 -11px -4px; color:var(--ink-mute); font-size:15px;
+    line-height:1; cursor:grab; touch-action:none;}
+  .pv-ex .poig:active{cursor:grabbing; color:var(--accent);}
+  .pv-ex.prend{position:relative; z-index:5; box-shadow:0 10px 24px rgba(0,0,0,.18);
+    border-color:var(--accent);}
+  .pv-liste.trie .pv-ex:not(.prend){transition:transform .16s ease;}
   .pv-ex .nm{font-size:14.5px; font-weight:800; line-height:1.25;}
   .pv-ex .nm .eqp{font-size:12px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
   .pv-ex .meta{font-size:12px; color:var(--ink-soft); margin:3px 0 5px; line-height:1.4;}
@@ -1876,6 +1886,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Glisse ⠿ pour changer l'ordre des exercices.":"Drag ⠿ to reorder the exercises.",
+  "Déplacer cet exercice":"Move this exercise",
   "repos":"rest",
   "Une répétition de moins":"One rep fewer",
   "Une répétition de plus":"One rep more",
@@ -4982,7 +4994,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 23h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 23h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7644,6 +7656,79 @@ function openHistDetail(id){
   };
 }
 
+/* L'ordre des cartes fait foi : on reconstruit la liste du plan dans cet ordre, et
+   startWorkout() la parcourt telle quelle — la séance suit donc exactement ce qu'on
+   voit. C'est une fonction à part pour être vérifiable sans dépendre du geste. */
+function appliquerOrdre(t, ordre){
+  t.items = ordre.map(i => t.items[i]);
+  save();
+  majNumerosApercu();
+}
+/* Renumérote les pastilles après un déplacement, et remet data-ord en accord avec
+   la liste qu'on vient d'enregistrer : sans ça, deux déplacements de suite
+   reconstruiraient l'ordre à partir d'indices périmés. */
+function majNumerosApercu(){
+  document.querySelectorAll(".pv-liste .pv-ex").forEach((c,k)=>{
+    c.dataset.ord = k;
+    const n = c.querySelector(".num");
+    if(n) n.textContent = k + 1;
+  });
+}
+/* Glisser-déposer vertical, à la poignée. On déplace vraiment le noeud dans le DOM dès
+   que le centre de la carte dépasse celui d'une voisine, puis on recale le décalage
+   pour que la carte ne bouge pas sous le doigt — sinon elle sauterait d'une hauteur
+   de carte à chaque échange. */
+function trierParGlisse(liste, onFin){
+  if(!liste) return;
+  let el = null, y0 = 0, dy = 0;
+  const bouger = (carte, e)=>{
+    dy = e.clientY - y0;
+    carte.style.transform = `translateY(${dy}px)`;
+  };
+  const echanger = (carte, voisine, avant, e)=>{
+    const hautVisuel = carte.getBoundingClientRect().top;
+    liste.insertBefore(carte, avant ? voisine : voisine.nextElementSibling);
+    /* position de mise en page (sans la translation) après le déplacement */
+    const hautMiseEnPage = carte.getBoundingClientRect().top - dy;
+    dy = hautVisuel - hautMiseEnPage;
+    y0 = e.clientY - dy;
+    carte.style.transform = `translateY(${dy}px)`;
+  };
+  liste.querySelectorAll("[data-poignee]").forEach(p=>{
+    p.addEventListener("pointerdown", e=>{
+      if(e.pointerType === "mouse" && e.button !== 0) return;
+      el = p.closest(".pv-ex");
+      y0 = e.clientY; dy = 0;
+      el.classList.add("prend");
+      try{ p.setPointerCapture(e.pointerId); }catch(err){}
+      e.preventDefault();
+    });
+    p.addEventListener("pointermove", e=>{
+      if(!el) return;
+      e.preventDefault();
+      bouger(el, e);
+      const r = el.getBoundingClientRect(), centre = r.top + r.height/2;
+      const prec = el.previousElementSibling, suiv = el.nextElementSibling;
+      if(prec && prec.classList.contains("pv-ex")){
+        const rp = prec.getBoundingClientRect();
+        if(centre < rp.top + rp.height/2){ echanger(el, prec, true, e); return; }
+      }
+      if(suiv && suiv.classList.contains("pv-ex")){
+        const rs = suiv.getBoundingClientRect();
+        if(centre > rs.top + rs.height/2){ echanger(el, suiv, false, e); return; }
+      }
+    });
+    const lacher = ()=>{
+      if(!el) return;
+      el.style.transform = "";
+      el.classList.remove("prend");
+      el = null;
+      onFin([...liste.querySelectorAll(".pv-ex")].map(c=>Number(c.dataset.ord)));
+    };
+    p.addEventListener("pointerup", lacher);
+    p.addEventListener("pointercancel", lacher);
+  });
+}
 function openPreview(tplId){
   const t = db.templates.find(x=>x.id===tplId);
   if(!t) return;
@@ -7655,11 +7740,15 @@ function openPreview(tplId){
       <div class="tile"><div class="v">${nSeries}</div><div class="u">${TR(nSeries>1? "séries":"série")}</div></div>
       <div class="tile"><div class="v">~${mins}</div><div class="u">min</div></div>
     </div>
-    <div style="max-height:50dvh; overflow-y:auto; margin-inline:-2px; padding-inline:2px;">${t.items.map((it,i)=>{
+    <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
+      t.items.length > 1 ? TR("Glisse ⠿ pour changer l'ordre des exercices.") : ""}</p>
+    <div class="pv-liste trie" style="max-height:50dvh; overflow-y:auto; margin-inline:-2px; padding-inline:2px;">${t.items.map((it,i)=>{
       const ex = getEx(it.exId);
       const last = lastPerf(it.exId);
       const note = injuryNote(nomCanon(ex));
-      return `<div class="pv-ex"><span class="num">${i+1}</span>${exIcon(ex)}
+      return `<div class="pv-ex" data-ord="${i}">${t.items.length>1
+          ? `<span class="poig" data-poignee aria-label="${TR("Déplacer cet exercice")}">⠿</span>`:""}
+        <span class="num">${i+1}</span>${exIcon(ex)}
         <div class="grow" style="min-width:0;">
           <div class="nm">${esc(ex.name)}${ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>`:""}</div>
           <div class="meta"><b>${it.sets} × ${esc(String(it.reps||"?"))}</b> · ${TR("repos")} ${fmtRepos(it.rest||90)}${
@@ -7671,6 +7760,10 @@ function openPreview(tplId){
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR("Lancer cette séance")}</button>
     <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
+  trierParGlisse(document.querySelector(".pv-liste"), ordre=>{
+    appliquerOrdre(t, ordre);
+    render();                                /* la carte de l'accueil suit aussi */
+  });
   document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
   document.getElementById("pv-close").onclick=closeSheet;
 }
