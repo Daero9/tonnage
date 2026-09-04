@@ -1782,6 +1782,16 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Ce fichier est vide.":"This file is empty.",
+  "Fichier incomplet — la copie s'est arrêtée en route.":"Incomplete file — the copy stopped partway.",
+  "Ce n'est pas un fichier de sauvegarde Tonnup.":"This isn't a Tonnup backup file.",
+  "Impossible de lire ce fichier.":"Can't read this file.",
+  "Sauvegarde automatique interrompue — réactive-la dans les réglages.":"Automatic backup interrupted — turn it back on in settings.",
+  "Fichier automatique :":"Automatic file:",
+  "non disponible ici":"not available here",
+  "aucun":"none",
+  "actif":"active",
+  "en pause":"paused",
   "Bien joué":"Well done",
   "Trop léger":"Too light",
   "Entendu":"Got it",
@@ -4867,7 +4877,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 02h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 03h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4982,16 +4992,31 @@ function idbGet(){ return idbTake(KEY); }
 
 /* --- sauvegarde automatique dans un fichier choisi une fois (Android Chrome, PC) --- */
 const AUTOFILE = "tonnage_autofile";
-let autoFile = {handle:null, ok:false, to:null, name:""};
+let autoFile = {handle:null, ok:false, to:null, name:"", err:""};
+let ecritureEnCours = false;
 function fileApiOk(){ return typeof window.showSaveFilePicker === "function"; }
 async function autoFileWrite(){
-  if(!autoFile.ok || !autoFile.handle) return;
+  /* Deux écritures en même temps sur le même fichier : la seconde échoue, et comme
+     l'ouverture a DÉJÀ vidé le fichier, il ne reste qu'un moignon illisible. */
+  if(!autoFile.ok || !autoFile.handle || ecritureEnCours) return;
+  ecritureEnCours = true;
+  const json = JSON.stringify(db);
   try{
     const w = await autoFile.handle.createWritable();
-    await w.write(JSON.stringify(db));
+    await w.write(json);
     await w.close();
+    /* createWritable() vide le fichier AVANT d'écrire : si l'écriture s'arrête en
+       route, il reste un fichier vide ou coupé, qu'on ne découvrirait qu'au moment
+       de vouloir restaurer — le pire moment. On relit donc ce qu'on vient d'écrire. */
+    const f = await autoFile.handle.getFile();
+    if(f.size !== new Blob([json]).size) throw new Error("écriture incomplète");
     db.lastBackup = Date.now();
-  }catch(e){ autoFile.ok = false; }
+    autoFile.err = "";
+  }catch(e){
+    autoFile.ok = false;
+    autoFile.err = String((e && e.message) || e);
+    toast(TR("Sauvegarde automatique interrompue — réactive-la dans les réglages."));
+  }finally{ ecritureEnCours = false; }
 }
 function autoFileSchedule(){
   if(!autoFile.ok) return;
@@ -8857,6 +8882,11 @@ function openSettings(){
     <div>${survived? '<span style="color:var(--good);">✓</span>' : '<span style="color:var(--bad);">✕</span>'} ${TR("Trace de la session précédente :")} ${survived? TR("retrouvée ({})").replace("{}", ago(diag.lsMark||diag.idbMark)) : "perdue"}</div>
     <div style="color:var(--ink-mute);">${TR("Dernier enregistrement chargé :")} ${diag.loadedSavedAt? ago(diag.loadedSavedAt) : TR("aucun")}</div>
     <div style="color:var(--ink-mute);">${TR("Dernière sauvegarde fichier :")} ${ago(db.lastBackup)}</div>
+    <div style="color:var(--ink-mute);">${TR("Fichier automatique :")} ${
+      !fileApiOk() ? TR("non disponible ici")
+      : !autoFile.handle ? TR("aucun")
+      : (autoFile.ok ? TR("actif") : TR("en pause")) + " · " + esc(autoFile.name || "?")
+        + (autoFile.err ? " · " + esc(autoFile.err) : "")}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
     ${(!survived && !dansLApp())? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${
@@ -8884,13 +8914,28 @@ function openSettings(){
     const f = ev.target.files && ev.target.files[0];
     if(!f) return;
     const fr = new FileReader();
+    /* « Fichier illisible » couvrait quatre pannes très différentes : fichier vide,
+       fichier coupé en route, mauvais fichier, ou fichier valide au mauvais format.
+       On ne peut rien y faire tant qu'on ne sait pas laquelle. */
+    fr.onerror = ()=>toast(TR("Impossible de lire ce fichier."));
     fr.onload = ()=>{
-      try{
-        const d = JSON.parse(String(fr.result));
-        if(!d || !Array.isArray(d.history)) throw 0;
-        db = d; applyDefaults(); save(); closeSheet(); render();
-        toast(TR("Sauvegarde restaurée ✓"));
-      }catch(e){ toast("Fichier illisible"); }
+      const txt = String(fr.result || "").trim();
+      if(!txt){ toast(TR("Ce fichier est vide.")); return; }
+      let d = null;
+      try{ d = JSON.parse(txt); }
+      catch(e){
+        /* un JSON qui commence bien mais ne finit pas : l'écriture s'est arrêtée */
+        toast(txt.charAt(0) === "{"
+          ? TR("Fichier incomplet — la copie s'est arrêtée en route.")
+          : TR("Ce n'est pas un fichier de sauvegarde Tonnup."));
+        return;
+      }
+      if(!d || !Array.isArray(d.history)){
+        toast(TR("Ce n'est pas un fichier de sauvegarde Tonnup."));
+        return;
+      }
+      db = d; applyDefaults(); save(); closeSheet(); render();
+      toast(TR("Sauvegarde restaurée ✓"));
     };
     fr.readAsText(f);
   };
