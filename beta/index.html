@@ -326,6 +326,28 @@
   .rou-i{height:40px; line-height:40px; scroll-snap-align:center; font-size:21px; font-weight:700;
     color:var(--ink-soft); transition:color .12s;}
   .rou-i.mid{color:#fff; font-weight:800;}
+  /* roulette compacte, pour une fiche : moins haute que celle du parcours de profil.
+     Les cales du haut et du bas valent toujours (hauteur - 40) / 2. */
+  .rou-box.court{height:150px;}
+  .rou-box.court .rou-vide{height:55px;}
+  .rou-box.court .rou-i{font-size:18px;}
+
+  /* ---- fiche d'exercice : ce qu'il faut savoir avant d'attaquer ---- */
+  /* La charge du jour est la seule chose qu'on vient vraiment chercher : elle a sa
+     carte, en grand. Le reste se range en deux colonnes, pour tenir sans défiler. */
+  .hx-now{background:var(--surface2); border-radius:14px; padding:12px 14px;}
+  .hx-now .v{font-size:21px; font-weight:800; color:var(--accent); line-height:1.15;}
+  .hx-now .t{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:6px;}
+  .hx-duo{display:flex; gap:9px;}
+  .hx-duo > div{flex:1; min-width:0; background:var(--surface2); border-radius:14px; padding:10px 12px;}
+  .hx-k{font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--ink-mute); margin-bottom:4px;}
+  .hx-duo .v{font-size:13.5px; font-weight:700; line-height:1.35;}
+  .hx-duo .s{font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-top:3px; overflow-wrap:anywhere;}
+  .hx-repos{background:var(--surface2); border-radius:14px; padding:11px 12px 4px; text-align:center;}
+  .hx-repos .g{font-size:23px; font-weight:800; line-height:1.1;}
+  .hx-repos .c{font-size:11.5px; color:var(--ink-mute); margin-top:2px;}
+  .hx-repos .r{font-size:11.5px; font-weight:800; color:var(--accent); margin-top:2px;}
   .rou-unite{display:inline-flex; gap:2px; background:var(--hero); border-radius:99px; padding:3px; margin-top:10px;}
   .rou-unite button{padding:5px 13px; border-radius:99px; font-size:12px; font-weight:800; color:rgba(255,255,255,.6);}
   .rou-unite button.on{background:#fff; color:var(--hero);}
@@ -666,19 +688,23 @@
      z-index -1 le teintait — le fond d'un parent est peint AVANT ses enfants negatifs.
      Trois vagues de plus en plus discretes, puis plus rien : assez pour attirer l'oeil,
      assez court pour ne pas devenir un decor. */
+  /* Trois vagues blanches qui rentrent depuis les bords du cadre noir, sur la ligne
+     qui porte la charge et les repetitions — la seule qui demande quelque chose.
+     Une ombre INTERNE : elle se peint dans la boite, donc elle se voit sur le noir.
+     Une ombre externe serait blanche sur une carte blanche, c'est-a-dire invisible. */
   @keyframes onde{
-    0%  {box-shadow:0 0 0 0    rgba(245,130,32,.55);}
-    31% {box-shadow:0 0 0 15px rgba(245,130,32,0);}
-    32% {box-shadow:0 0 0 0    rgba(245,130,32,.36);}
-    64% {box-shadow:0 0 0 15px rgba(245,130,32,0);}
-    65% {box-shadow:0 0 0 0    rgba(245,130,32,.20);}
-    100%{box-shadow:0 0 0 15px rgba(245,130,32,0);}
+    0%  {box-shadow:inset 0 0 0 0   rgba(255,255,255,.40);}
+    31% {box-shadow:inset 0 0 0 9px rgba(255,255,255,0);}
+    32% {box-shadow:inset 0 0 0 0   rgba(255,255,255,.26);}
+    64% {box-shadow:inset 0 0 0 9px rgba(255,255,255,0);}
+    65% {box-shadow:inset 0 0 0 0   rgba(255,255,255,.15);}
+    100%{box-shadow:inset 0 0 0 9px rgba(255,255,255,0);}
   }
-  .ex-card .bn.onde::before{
-    content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  .ex-card .set-row.bn.onde::before{
+    content:""; position:absolute; inset:0; z-index:3; pointer-events:none;
     animation:onde 2.4s cubic-bezier(.25,.6,.3,1);
   }
-  @media (prefers-reduced-motion:reduce){ .ex-card .bn.onde::before{animation:none;} }
+  @media (prefers-reduced-motion:reduce){ .ex-card .set-row.bn.onde::before{animation:none;} }
   .ex-card .set-row.bn{padding-block:9px;}
   .ex-card .set-row.drop.bn{padding-block:3px;}
   .ex-card .set-row.bn .n{color:#fff; font-size:15px;}
@@ -1804,6 +1830,10 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Temps de repos":"Rest time",
+  "Conseillé sur cet exercice : {}":"Recommended for this exercise: {}",
+  "Revenir au conseillé":"Back to recommended",
+  "À toi de choisir la charge":"Your call on the load",
   "<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.":"<span class=\"ht\">W-up = warm-up</span>A light set to prime the muscle, filled at half your working load. It counts nowhere: no tonnage, no records.",
   "<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.":"<span class=\"ht\">↓ = drop set</span>You keep the same set going with less load: 6 × 25 lb, then 4 × 20 lb. It stays one set, and all of it counts toward your tonnage.",
   "Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾.":"Can't write to this file here — keep a copy with 💾 instead.",
@@ -4709,10 +4739,12 @@ function dateDans(jours){
   return new Date(Date.now() + jours*864e5).toLocaleDateString(loc(), {month:"long", year:"numeric"});
 }
 /* roulette verticale : une valeur par ligne, celle du centre est retenue */
-function roulette(box, min, max, valeur, unite, onChange){
-  const H = 40;
+/* opts.pas : l'écart entre deux crans (10 s pour le repos). opts.fmt : comment
+   écrire la valeur (« 90 » devient « 1 min 30 »). Sans opts, rien ne change. */
+function roulette(box, min, max, valeur, unite, onChange, opts){
+  const H = 40, pas = (opts && opts.pas) || 1, fmt = opts && opts.fmt;
   let html = `<div class="rou-vide"></div>`;
-  for(let v = min; v <= max; v++) html += `<div class="rou-i" data-v="${v}">${v}${unite}</div>`;
+  for(let v = min; v <= max; v += pas) html += `<div class="rou-i" data-v="${v}">${fmt? fmt(v) : v+unite}</div>`;
   html += `<div class="rou-vide"></div>`;
   box.innerHTML = html;
   const items = [...box.querySelectorAll(".rou-i")];
@@ -4901,7 +4933,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 18h35 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 21h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5196,6 +5228,14 @@ function fmtDate(iso){ return new Date(iso).toLocaleDateString(loc(),{weekday:"l
 function fmtDateShort(iso){ return new Date(iso).toLocaleDateString(loc(),{day:"numeric", month:"short"}); }
 function fmtDur(ms){ const m=Math.round(ms/60000); return m<60? m+" min" : Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"); }
 function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+/* 45 -> « 45 s », 90 -> « 1 min 30 », 120 -> « 2 min » : on lit un temps de repos
+   en minutes dès qu'il y en a une, comme on le dit à voix haute. */
+function fmtRepos(sec){
+  sec = Math.max(0, Math.round(sec));
+  if(sec < 60) return sec + " s";
+  const m = Math.floor(sec/60), r = sec % 60;
+  return r ? `${m} min ${r}` : `${m} min`;
+}
 /* avec deux haltères, la charge saisie est celle d'UN haltère : le tonnage compte les deux */
 /* vrai quand la charge saisie est déjà celle d'un seul côté par nature :
    deux haltères = l'app compte déjà les deux. L'option « un côté à la fois » n'a alors aucun sens. */
@@ -7680,24 +7720,43 @@ function openHistoExo(ei){
   const last = lastPerf(en.exId);
   const sug = suggestFor(en.exId, en.target);
   const prochain = en.sets.find(x=>!x.done && !x.warm) || en.sets.find(x=>!x.warm);
+  /* le repos conseillé par le plan, retenu une fois pour toutes : il reste affiché
+     comme repère même après que l'utilisateur a choisi le sien */
+  if(en.reposBase === undefined) en.reposBase = (en.target && en.target.rest) || db.settings.rest;
+  const repos = (en.target && en.target.rest) || db.settings.rest;
   openSheet(`<h3>${esc(ex.name)}</h3>
-    <div class="stack" style="gap:12px;">
-      <div>
-        <span class="label" style="display:block; margin-bottom:4px;">${TR("La dernière fois")}</span>
-        <div class="hist-ex-line">${last
-          ? `<b style="color:var(--ink);">${fmtDateShort(last.date)}</b> — ${last.sets.map(x=>`${fmtKg(x.w)}×${x.r}`).join(" · ")}`
-          : TR("Premier passage sur cet exercice.")}</div>
+    <div class="stack" style="gap:11px;">
+      <div class="hx-now">
+        <div class="hx-k">${TR("À faire maintenant")}</div>
+        <div class="v">${prochain && prochain.w
+          ? `${pds(prochain.w)}${prochain.r? ` × ${prochain.r} reps`:""}`
+          : TR("À toi de choisir la charge")}</div>
+        ${sug? `<div class="t">${esc(sug.text)}</div>`:""}
       </div>
-      ${en.target && en.target.reps? `<div>
-        <span class="label" style="display:block; margin-bottom:4px;">${TR("Objectif du jour")}</span>
-        <div class="hist-ex-line">${en.target.sets} séries de ${esc(String(en.target.reps))} répétitions</div></div>`:""}
-      <div>
-        <span class="label" style="display:block; margin-bottom:4px;">${TR("À faire maintenant")}</span>
-        <div class="hist-ex-line" style="color:var(--accent); font-weight:700; font-size:15px;">${
-          prochain && prochain.w ? `${pds(prochain.w)}${prochain.r? ` × ${prochain.r} reps`:""}` : "À toi de choisir la charge"}</div>
-        ${sug? `<div class="hist-ex-line" style="margin-top:4px;">${esc(sug.text)}</div>`:""}
+      <div class="hx-duo">
+        <div>
+          <div class="hx-k">${TR("La dernière fois")}</div>
+          ${last
+            ? `<div class="v">${fmtDateShort(last.date)}</div>
+               <div class="s">${last.sets.map(x=>`${fmtKg(x.w)}×${x.r}`).join(" · ")}</div>`
+            : `<div class="s" style="margin-top:0;">${TR("Premier passage sur cet exercice.")}</div>`}
+        </div>
+        ${en.target && en.target.reps? `<div>
+          <div class="hx-k">${TR("Objectif du jour")}</div>
+          <div class="v">${en.target.sets} ${TR(en.target.sets>1? "séries":"série")}</div>
+          <div class="s">${esc(String(en.target.reps))} ${TR("reps")}</div>
+        </div>`:""}
       </div>
-      <div><span class="label" style="display:block; margin-bottom:6px;">Mon matériel</span>
+      <div>
+        <div class="hx-k" style="margin-bottom:5px;">${TR("Temps de repos")}</div>
+        <div class="hx-repos">
+          <div class="g" id="hx-rep-v">${fmtRepos(repos)}</div>
+          <div class="c">${TR("Conseillé sur cet exercice : {}").replace("{}", fmtRepos(en.reposBase))}</div>
+          <div class="r" id="hx-rep-r" ${repos === en.reposBase? 'style="visibility:hidden;"':""}>${TR("Revenir au conseillé")}</div>
+          <div class="rou-box court"><div class="rou-band"></div><div class="rou-scroll" id="hx-rou"></div></div>
+        </div>
+      </div>
+      <div><div class="hx-k" style="margin-bottom:6px;">${TR("Mon matériel")}</div>
         ${blocChargeFixe(en.exId, "hx-plafond")}</div>
       ${dejaParCote(en.exId)
         ? `<div style="font-size:11.5px; color:var(--ink-mute); line-height:1.45; padding-left:2px;">
@@ -7709,6 +7768,23 @@ function openHistoExo(ei){
            </label>`}
       <button class="btn btn-accent" id="hx-ok">${TR("Compris")}</button>
     </div>`);
+  /* Le temps choisi vaut pour CET exercice : on l'écrit sur la séance en cours et,
+     si le plan existe encore, sur le plan — sinon il faudrait le refaire chaque fois. */
+  const poserRepos = v=>{
+    if(en.target) en.target.rest = v;
+    const tpl = a.templateId ? db.templates.find(t=>t.id === a.templateId) : null;
+    const it = tpl && tpl.items.find(x=>x.exId === en.exId);
+    if(it) it.rest = v;
+    save();
+    const gros = document.getElementById("hx-rep-v");
+    if(gros) gros.textContent = fmtRepos(v);
+    const ret = document.getElementById("hx-rep-r");
+    if(ret) ret.style.visibility = (v === en.reposBase) ? "hidden" : "visible";
+  };
+  roulette(document.getElementById("hx-rou"), 10, 300, Math.round(repos/10)*10, "",
+    poserRepos, {pas:10, fmt:fmtRepos});
+  const ret = document.getElementById("hx-rep-r");
+  if(ret) ret.onclick = ()=>{ closeSheet(); poserRepos(en.reposBase); setTimeout(()=>openHistoExo(ei), 260); };
   document.getElementById("hx-plafond").onchange = e=>{
     reglerChargeFixe(en.exId, e.target.checked);
     renderSurPlace();                       /* le conseil de charge change tout de suite */
@@ -7772,7 +7848,7 @@ let ondeTo = null;
 function ondeSurBloc(){
   clearTimeout(ondeTo);
   document.querySelectorAll(".onde").forEach(e=>e.classList.remove("onde"));
-  const blocs = [...document.querySelectorAll(".bn")];
+  const blocs = [...document.querySelectorAll(".set-row.bn")];
   if(!blocs.length) return;
   void blocs[0].offsetWidth;                       /* relance l'animation à coup sûr */
   blocs.forEach(e=>e.classList.add("onde"));
@@ -8052,9 +8128,10 @@ function renderActive(app){
           /* la série revient dès qu'on n'attend plus rien d'elle */
           const clore = (delai)=>{
             majSerieActive();
+            ondeSurBloc();                  /* sans effet tant qu'aucune ligne n'est dans le cadre */
             rendreLignes(card);
             const reste = en.sets.some(s2=>!s2.done);
-            setTimeout(()=>{ if(ask.isConnected){ ask.remove(); retirerBlocNoir(true); majSerieActive(); } },
+            setTimeout(()=>{ if(ask.isConnected){ ask.remove(); retirerBlocNoir(true); majSerieActive(); ondeSurBloc(); } },
               delai || (reste ? 2600 : 1200));
             if(!reste) setTimeout(()=>{
               if(!document.body.contains(card)) return;
@@ -8145,7 +8222,6 @@ function renderActive(app){
             clore();
           });
 
-          ondeSurBloc();
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir < 0 ? 0 : rir;        /* « trop lourd » = tu étais à bout : 0 rep en réserve */
