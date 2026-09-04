@@ -747,6 +747,14 @@
     75%{transform:scale(.94);} 100%{transform:scale(1);}}
   .set-row .ck.pop svg{animation:cochePop .42s cubic-bezier(.3,1.4,.5,1);}
   @media (prefers-reduced-motion:reduce){ .set-row .ck.pop svg{animation:none;} }
+  /* La série validée s'efface le temps de sa question. Sans cela le bloc noir montrait
+     huit boutons d'un coup — les deux champs, le dégressif, la coche, puis les quatre
+     réponses — et on ne savait plus où regarder. La question reprend elle-même, en une
+     ligne, ce qui vient d'être validé : rien n'est perdu, tout est plus calme. */
+  .set-row.en-question{display:none;}
+  .rir-ask .rir-fait{font-size:12.5px; font-weight:700; letter-spacing:.01em;
+    color:var(--ink-mute); margin-bottom:8px;}
+  .rir-ask.bn .rir-fait{color:rgba(255,255,255,.62);}
   .rir-ask{background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:2px 0 10px;}
   .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
   .rir-ask .q.ok{margin:0; color:var(--accent);}
@@ -4818,7 +4826,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 01h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 02h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7634,6 +7642,13 @@ function retirerBlocNoir(avecQuestion){
     el.classList.remove("bn", "bn-debut", "bn-fin", "bnq");
   });
 }
+/* La série qu'une question concerne disparaît le temps d'y répondre : la question
+   prend sa place plutôt que de s'empiler dessous. On les rend toujours en une fois,
+   pour qu'aucune ligne ne puisse rester cachée si la question part autrement. */
+function rendreLignes(racine){
+  (racine || document).querySelectorAll(".set-row.en-question")
+    .forEach(l=>l.classList.remove("en-question"));
+}
 /* la ligne d'une série et tous ses dégressifs, dans l'ordre */
 function suiteDeLigne(ligne){
   const out = [ligne];
@@ -7664,8 +7679,10 @@ function majSerieActive(){
   });
   retirerBlocNoir(false);                 /* on ne défait pas le bloc d'une question en cours */
   if(!choisie) return;
-  /* une question attend sur la carte qu'on regarde : rien d'autre ne doit attirer l'œil */
-  if(choisie.querySelector(".rir-ask:not(.repondu)")) return;
+  /* Une question est posée sur la carte qu'on regarde : rien d'autre ne doit attirer
+     l'oeil, y compris pendant les deux secondes ou son message de reponse s'affiche.
+     Deux cadres noirs a la fois ne guident plus rien. */
+  if(choisie.querySelector(".rir-ask")) return;
   const en = a.entries[parseInt(choisie.dataset.ei)];
   const ligne = choisie.querySelector('.set-row[data-si="' + en.sets.findIndex(x=>!x.done) + '"]');
   if(!ligne) return;
@@ -7830,7 +7847,7 @@ function renderActive(app){
         if(st.done){ void ck.offsetWidth; ck.classList.add("pop"); }
         if(!st.done) majSerieActive();      /* décochage : la série redevient à faire */
         const oldAsk = card.querySelector(".rir-ask");
-        if(oldAsk){ oldAsk.remove(); retirerBlocNoir(true); majSerieActive(); }
+        if(oldAsk){ oldAsk.remove(); rendreLignes(card); retirerBlocNoir(true); majSerieActive(); }
         if(st.done && st.warm){
           majSerieActive();
           startRest(60);
@@ -7844,7 +7861,15 @@ function renderActive(app){
           else { restbar.classList.remove("show"); if(rest.int){ clearInterval(rest.int); rest.int=null; } }
           const ask = document.createElement("div");
           ask.className = "rir-ask";
-          ask.innerHTML = `${dejaVu("rir")? "" : `<div class="rir-intro">${TR("Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.")}</div>`}
+          /* ce que la question remplace, en une ligne : le numéro de série, la charge,
+             les répétitions, et le nombre de dégressifs s'il y en a */
+          const numSerie = ((row.querySelector(".n") || {}).textContent || "").trim();
+          const nbDrops = (st.drops || []).length;
+          const fait = [numSerie, ((st.w||0) > 0 ? pds(st.w) + " × " : "") + (st.r||0) + " " + TR("reps")]
+            .filter(Boolean).join(" · ")
+            + (nbDrops ? " + " + nbDrops + " " + TR("dég.") : "");
+          ask.innerHTML = `<div class="rir-fait">${esc(fait)}</div>
+            ${dejaVu("rir")? "" : `<div class="rir-intro">${TR("Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.")}</div>`}
             <div class="q">${TR("Aurais-tu pu faire plus de reps ?")}</div>
             <div class="row">
               <button data-rir="0">${TR("Non, 0")}</button>
@@ -7854,13 +7879,15 @@ function renderActive(app){
             <button class="rir-lourd" data-rir="-1">${TR("C'était trop lourd —")} ${
               TR(chargeBloquee(en.exId) || sansChargeDuTout(en.exId, st.w)
                 ? "baisse les répétitions" : "baisse la charge")}</button>`;
-          /* la question se place sous la série, dégressifs compris */
+          /* la question se place sous la série, dégressifs compris… */
           let ancre = row, nx = row.nextElementSibling;
           while(nx && nx.classList.contains("drop")){ ancre = nx; nx = nx.nextElementSibling; }
           ancre.after(ask);
-          /* la question ferme le bloc noir de sa série : on voit qu'elle en fait partie */
+          /* …puis prend sa place : la série et ses dégressifs s'effacent le temps de la
+             réponse. Le bloc noir ne contient donc plus que la question. */
           retirerBlocNoir(true);
-          poserBlocNoir(suiteDeLigne(row).concat(ask), true);
+          suiteDeLigne(row).forEach(l=>{ l.classList.add("en-question"); l.classList.remove("actif"); });
+          poserBlocNoir([ask], true);
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir < 0 ? 0 : rir;        /* « trop lourd » = tu étais à bout : 0 rep en réserve */
@@ -7939,8 +7966,11 @@ function renderActive(app){
             save();
             ask.classList.add("repondu");
             ask.innerHTML = `<div class="q ok">${esc(msg)}</div>`;
-            majSerieActive();                 /* maintenant seulement, la suivante s'allume */
+            majSerieActive();                 /* la serie repondue cesse d'etre en avant */
             const reste = en.sets.some(s2=>!s2.done);
+            /* la série revient dès la réponse : on la voit cochée pendant que le
+               message s'affiche, plutôt que de la retrouver après coup */
+            rendreLignes(card);
             setTimeout(()=>{ ask.remove(); retirerBlocNoir(true); majSerieActive(); }, reste ? 2600 : 1200);
             /* plus rien à faire sur cet exercice : on félicite, puis on replie */
             if(!reste) setTimeout(()=>{
