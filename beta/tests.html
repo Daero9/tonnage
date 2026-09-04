@@ -1179,16 +1179,24 @@ function lancer(){
     q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
     r.querySelector(".ck").click(); })();
   vrai("Une question apparaît après la série", !!D.querySelector(".rir-ask"));
-  eq("La série concernée reste dans le bloc noir pendant la question", actives().indexOf(1), 1);
-  eq("…et elle seule", actives().reduce((a,b)=>a+b,0), 1);
-  vrai("La question fait partie du même bloc noir", !!D.querySelector(".rir-ask.bn"));
+  /* La question REMPLACE la série qu'elle concerne : sans cela le bloc noir affichait
+     huit boutons d'un coup — les deux champs, le dégressif, la coche, puis les quatre
+     réponses. La série revient dès qu'on a répondu. */
+  vrai("La série validée s'efface au profit de la question",
+    lignes()[1].classList.contains("en-question"));
+  eq("Elle est la seule à s'effacer", D.querySelectorAll(".set-row.en-question").length, 1);
+  eq("Plus aucune série n'est mise en avant", actives().reduce((a,b)=>a+b,0), 0);
+  vrai("La question porte seule le bloc noir", !!D.querySelector(".rir-ask.bn"));
+  eq("…et rien d'autre", D.querySelectorAll(".bn").length, 1);
   lignes()[2].querySelector(".ck").click();
   vrai("La série suivante refuse d'être validée avant la réponse", !DB.active.entries[0].sets[2].done);
   D.querySelector('.rir-ask [data-rir="1"]').click();
-  eq("Le bloc noir reste le temps du message de réponse", actives().indexOf(1), 1);
+  vrai("La série revient dès la réponse", !lignes()[1].classList.contains("en-question"));
+  eq("Rien ne s'allume tant que le message de réponse est là", actives().reduce((a,b)=>a+b,0), 0);
   /* le message s'efface au bout de quelques secondes : on simule sa disparition */
   D.querySelector(".rir-ask").remove(); F.retirerBlocNoir(true); F.majSerieActive();
   eq("Puis la série suivante s'allume", actives().indexOf(1), 2);
+  eq("Et elle seule", actives().reduce((a,b)=>a+b,0), 1);
   lignes()[2].querySelector(".ck").click();
   vrai("…et devient validable", DB.active.entries[0].sets[2].done);
 
