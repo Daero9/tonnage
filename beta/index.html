@@ -757,12 +757,14 @@
   .rir-ask.bn .rir-fait{color:rgba(255,255,255,.62);}
   /* Apparition : le bloc arrive en se posant, sans jamais bousculer ce qui l'entoure.
      Une seule courbe pour tout ce qui apparaît, pour que l'app ait un seul geste. */
-  @keyframes popEntree{from{opacity:0; transform:scale(.95) translateY(7px);} to{opacity:1; transform:none;}}
-  .rir-ask{animation:popEntree .26s cubic-bezier(.22,1.25,.36,1);}
-  .rir-rep{animation:popEntree .24s cubic-bezier(.22,1.25,.36,1);}
-  .set-row.actif{animation:popEntree .22s cubic-bezier(.22,1.25,.36,1);}
+  @keyframes popEntree{from{opacity:0; transform:scale(.94) translateY(8px);} to{opacity:1; transform:none;}}
+  .rir-ask{animation:popEntree .42s cubic-bezier(.2,1.1,.3,1);}
+  .rir-rep{animation:popEntree .4s cubic-bezier(.2,1.1,.3,1);}
+  /* .pop est posé sur ce qui ENTRE dans le cadre noir, jamais sur ce qui y était déjà :
+     le cadre suit le défilement, il se rejouerait sinon à chaque pixel parcouru. */
+  .set-row.pop{animation:popEntree .42s cubic-bezier(.2,1.1,.3,1);}
   @media (prefers-reduced-motion:reduce){
-    .rir-ask, .rir-rep, .set-row.actif{animation:none;}
+    .rir-ask, .rir-rep, .set-row.pop{animation:none;}
   }
   /* La réponse : un verdict qu'on lit d'un coup d'œil, la consigne juste en dessous.
      Une phrase à plat se lisait deux fois — une pour trouver le verdict, une pour
@@ -4852,7 +4854,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 02h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 02h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7656,16 +7658,28 @@ function openBlessureExo(ei){
    et éventuellement la question. Seuls le premier et le dernier sont arrondis. */
 function poserBlocNoir(elements, question){
   elements.forEach((el,i)=>{
+    /* Le cadre s'anime en arrivant sur une nouvelle série — c'est ce qui rend le
+       défilement d'un exercice à l'autre lisible. Une ligne déjà dans le cadre n'est
+       pas réanimée : redémarrer l'animation demande un reflow, et à chaque pixel
+       défilé ce serait à la fois clignotant et coûteux. */
+    if(!el.classList.contains("bn")){
+      el.classList.remove("pop");
+      void el.offsetWidth;                    /* redémarre l'animation, une seule fois */
+      el.classList.add("pop");
+    }
     el.classList.add("bn");
     if(question) el.classList.add("bnq");     /* bloc d'une question : le défilement n'y touche pas */
     el.classList.toggle("bn-debut", i === 0);
     el.classList.toggle("bn-fin", i === elements.length-1);
   });
 }
-function retirerBlocNoir(avecQuestion){
+/* garder : les éléments qui restent dans le cadre et ne doivent pas être défaits,
+   sans quoi ils en ressortiraient pour y rentrer aussitôt — et se rejoueraient. */
+function retirerBlocNoir(avecQuestion, garder){
   document.querySelectorAll(".bn").forEach(el=>{
     if(!avecQuestion && el.classList.contains("bnq")) return;
-    el.classList.remove("bn", "bn-debut", "bn-fin", "bnq");
+    if(garder && garder.indexOf(el) >= 0) return;
+    el.classList.remove("bn", "bn-debut", "bn-fin", "bnq", "pop");
   });
 }
 /* La série qu'une question concerne disparaît le temps d'y répondre : la question
@@ -7714,10 +7728,12 @@ function majSerieActive(){
   document.querySelectorAll(".set-row.actif").forEach(l=>{
     if(l !== cible && !l.classList.contains("bnq")) l.classList.remove("actif");
   });
-  retirerBlocNoir(false);                 /* on ne défait pas le bloc d'une question en cours */
+  const bloc = cible ? suiteDeLigne(cible) : null;
+  /* on ne défait ni le bloc d'une question en cours, ni celui qui reste au même endroit */
+  retirerBlocNoir(false, bloc);
   if(!cible) return;
   cible.classList.add("actif");
-  poserBlocNoir(suiteDeLigne(cible), false);
+  poserBlocNoir(bloc, false);
 }
 /* le cadre suit le défilement : il reste sur l'exercice qu'on regarde */
 let majSerieTimer = null;

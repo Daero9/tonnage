@@ -1165,6 +1165,22 @@ function lancer(){
   const actives = () => lignes().map(l=>l.classList.contains("actif") ? 1 : 0);
   eq("Une seule série est mise en avant", actives().reduce((a,b)=>a+b,0), 1);
   eq("C'est la première non validée", actives().indexOf(1), 0);
+  /* Le cadre noir s'anime en arrivant sur une série, jamais en restant sur la même :
+     cette fonction suit le défilement, une ligne réanimée clignoterait à chaque pixel. */
+  vrai("Le cadre s'anime en se posant", lignes()[0].classList.contains("pop"));
+  (()=>{ const avant = lignes()[0];
+    let rejoue = 0, avait = avant.classList.contains("pop");
+    const obs = new F.MutationObserver(ms=>ms.forEach(m=>{
+      const p = m.target.classList.contains("pop");
+      if(p && !avait) rejoue++;
+      avait = p;
+    }));
+    obs.observe(avant, {attributes:true, attributeFilter:["class"]});
+    for(let i=0;i<12;i++) F.majSerieActive();      /* comme un défilement sur place */
+    obs.disconnect();
+    eq("Il ne se rejoue pas tant qu'il ne bouge pas", rejoue, 0);
+    vrai("…et il reste bien là", avant.classList.contains("pop") && avant.classList.contains("bn"));
+  })();
   (()=>{ const r = lignes()[0]; const [w,q] = r.querySelectorAll("input");
     w.value = 60; w.dispatchEvent(new F.Event("input", {bubbles:true}));
     q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
