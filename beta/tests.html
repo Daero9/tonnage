@@ -1108,6 +1108,40 @@ async function lancer(){
     PROGS.seche.templates.every(t => t.items.every(([nom, sets, reps]) => !/1[6-9]|2[0-9]/.test(String(reps)))));
   neuf();
 
+  /* ------------------------------------------------- ordre des exercices d'une séance */
+  grp("Ordre des exercices");
+  neuf();
+  /* Le glissé lui-même se vérifie à la main : l'iframe des tests n'a aucune hauteur,
+     donc toutes les mesures géométriques y valent zéro. Ce qu'on verrouille ici est
+     la chaîne qui compte — l'ordre déposé devient le plan, et le plan devient la
+     séance. C'est là qu'une régression passerait inaperçue. */
+  (()=>{
+    DB.templates = [{id:"tord", name:"Ordre", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+      {exId:id("Rowing barre"),     sets:3, reps:"8-12", rest:120},
+      {exId:id("Squat"),            sets:4, reps:"8-12", rest:150}]}];
+    DB.active = null;
+    const plan = () => DB.templates[0].items.map(i=>F.getEx(i.exId).name);
+    const depart = plan();
+    F.appliquerOrdre(DB.templates[0], [2, 0, 1]);        /* la dernière passe en tête */
+    eq("L'ordre déposé devient celui du plan",
+      plan().join(" / "), [depart[2], depart[0], depart[1]].join(" / "));
+    F.startWorkout("tord");
+    eq("La séance démarre dans cet ordre",
+      DB.active.entries.map(e=>F.getEx(e.exId).name).join(" / "), plan().join(" / "));
+    DB.active = null;
+    /* deux déplacements de suite : le second part de la liste déjà réordonnée */
+    F.appliquerOrdre(DB.templates[0], [1, 2, 0]);
+    eq("Un second déplacement part bien du nouvel ordre",
+      plan().join(" / "), [depart[0], depart[1], depart[2]].join(" / "));
+    vrai("Aucun exercice n'est perdu ni dupliqué",
+      new Set(DB.templates[0].items.map(i=>i.exId)).size === 3);
+    F.startWorkout("tord");
+    eq("Et la séance suit toujours", DB.active.entries.length, 3);
+    DB.active = null;
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- photo de la séance */
   grp("Photo de la séance");
   neuf();
