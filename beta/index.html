@@ -1782,6 +1782,7 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾.":"Can't write to this file here — keep a copy with 💾 instead.",
   "Ce fichier est vide.":"This file is empty.",
   "Fichier incomplet — la copie s'est arrêtée en route.":"Incomplete file — the copy stopped partway.",
   "Ce n'est pas un fichier de sauvegarde Tonnup.":"This isn't a Tonnup backup file.",
@@ -4877,7 +4878,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 03h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 03h22 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -4993,7 +4994,7 @@ function idbGet(){ return idbTake(KEY); }
 /* --- sauvegarde automatique dans un fichier choisi une fois (Android Chrome, PC) --- */
 const AUTOFILE = "tonnage_autofile";
 let autoFile = {handle:null, ok:false, to:null, name:"", err:""};
-let ecritureEnCours = false;
+let ecritureEnCours = false, enEssai = false;
 function fileApiOk(){ return typeof window.showSaveFilePicker === "function"; }
 async function autoFileWrite(){
   /* Deux écritures en même temps sur le même fichier : la seconde échoue, et comme
@@ -5007,15 +5008,21 @@ async function autoFileWrite(){
     await w.close();
     /* createWritable() vide le fichier AVANT d'écrire : si l'écriture s'arrête en
        route, il reste un fichier vide ou coupé, qu'on ne découvrirait qu'au moment
-       de vouloir restaurer — le pire moment. On relit donc ce qu'on vient d'écrire. */
+       de vouloir restaurer — le pire moment. On relit donc ce qu'on vient d'écrire,
+       la taille ET la fin du fichier : sur certains systèmes l'API dit oui, annonce
+       la bonne taille, et rien n'atteint le disque. */
     const f = await autoFile.handle.getFile();
-    if(f.size !== new Blob([json]).size) throw new Error("écriture incomplète");
+    const attendu = new Blob([json]).size;
+    if(f.size !== attendu) throw new Error("fichier de " + f.size + " octets au lieu de " + attendu);
+    const fin = await f.slice(Math.max(0, f.size - 80)).text();
+    if(fin !== json.slice(-fin.length)) throw new Error("contenu différent de ce qui a été écrit");
     db.lastBackup = Date.now();
     autoFile.err = "";
   }catch(e){
     autoFile.ok = false;
     autoFile.err = String((e && e.message) || e);
-    toast(TR("Sauvegarde automatique interrompue — réactive-la dans les réglages."));
+    /* pendant une activation, c'est autoFileEssai qui parle : on ne double pas le message */
+    if(!enEssai) toast(TR("Sauvegarde automatique interrompue — réactive-la dans les réglages."));
   }finally{ ecritureEnCours = false; }
 }
 function autoFileSchedule(){
@@ -5031,14 +5038,28 @@ async function autoFilePick(){
     });
     autoFile.handle = handle; autoFile.ok = true; autoFile.name = handle.name || "";
     await idbPut(AUTOFILE, handle);
-    await autoFileWrite();
-    save();
-    toast(TR("Sauvegarde automatique activée ✓"));
-    openSettings();
+    await autoFileEssai(TR("Sauvegarde automatique activée ✓"));
   }catch(e){
     if(e && e.name === "AbortError") return;
     toast(TR("Ce navigateur ne permet pas la sauvegarde automatique"));
   }
+}
+/* On n'annonce jamais une sauvegarde qu'on n'a pas vérifiée. Vu sur Chrome Android :
+   showSaveFilePicker existe, l'autorisation est accordée, createWritable() vide le
+   fichier — et plus rien n'arrive au disque. L'utilisateur repartait avec un fichier
+   de 0 octet présenté comme sa sauvegarde. C'est pire que pas de sauvegarde du tout,
+   parce qu'on croit être protégé. */
+async function autoFileEssai(messageSiOk){
+  enEssai = true;
+  try{ await autoFileWrite(); } finally { enEssai = false; }
+  save();
+  if(autoFile.ok){ toast(messageSiOk); openSettings(); return true; }
+  const err = autoFile.err;
+  await idbDel(AUTOFILE);
+  autoFile = {handle:null, ok:false, to:null, name:"", err:err};
+  toast(TR("Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾."));
+  openSettings();
+  return false;
 }
 async function autoFileResume(){
   if(!autoFile.handle){ autoFilePick(); return; }
@@ -5046,9 +5067,7 @@ async function autoFileResume(){
     const p = await autoFile.handle.requestPermission({mode:"readwrite"});
     if(p === "granted"){
       autoFile.ok = true;
-      await autoFileWrite(); save();
-      toast(TR("Sauvegarde automatique réactivée ✓"));
-      openSettings();
+      await autoFileEssai(TR("Sauvegarde automatique réactivée ✓"));
     } else toast(TR("Autorisation refusée"));
   }catch(e){ autoFilePick(); }
 }
