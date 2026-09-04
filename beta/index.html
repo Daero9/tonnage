@@ -1080,6 +1080,22 @@
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
   .info-btn{width:30px; height:30px; flex:none; font-size:15px; color:var(--accent); background:none; border:none;}
   /* ---- liste d'aliments cherchable ---- */
+  /* ---- scanner de code-barres ----
+     Plein écran par-dessus tout : on vise un produit, on ne lit rien d'autre. */
+  .scan{position:fixed; inset:0; z-index:200; background:#000; display:flex;
+    flex-direction:column; align-items:center; justify-content:center;}
+  .scan video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .scan .voile{position:absolute; inset:0; background:rgba(0,0,0,.45);}
+  /* la fenêtre de visée : un rectangle clair, aux proportions d'un code-barres */
+  .scan .cadre{position:relative; width:78%; max-width:330px; aspect-ratio:2/1;
+    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
+  .scan .t{position:absolute; top:calc(50% - 150px); left:0; right:0; text-align:center;
+    color:#fff; font-size:14.5px; font-weight:700; padding:0 24px; line-height:1.5;}
+  .scan .bas{position:absolute; left:0; right:0; bottom:calc(28px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; gap:9px; padding:0 22px;}
+  .scan .bas button{padding:13px; border-radius:12px; font-weight:800; font-size:14.5px;}
+  .scan .bas .b1{background:#fff; color:#17181a;}
+  .scan .bas .b2{background:rgba(255,255,255,.16); color:#fff;}
   .al-liste{max-height:38dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
     background:var(--surface); border-radius:12px; padding:2px 11px 11px;}
   .al-h{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
@@ -1898,6 +1914,17 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Valeurs nutritionnelles des produits scannés : Open Food Facts (ODbL). Illustrations anatomiques : Termininja, Wikimedia Commons (CC BY-SA 3.0).":"Nutrition values for scanned products: Open Food Facts (ODbL). Anatomical illustrations: Termininja, Wikimedia Commons (CC BY-SA 3.0).",
+  "Scanner un code-barres":"Scan a barcode",
+  "Vise le code-barres du produit":"Point at the product's barcode",
+  "Saisir le code à la main":"Type the code by hand",
+  "Code-barres (les chiffres sous les barres)":"Barcode (the digits under the bars)",
+  "Ce navigateur ne sait pas lire un code-barres. Saisis les chiffres à la main.":"This browser can't read a barcode. Type the digits by hand.",
+  "Accès à l'appareil photo refusé. Saisis les chiffres à la main.":"Camera access denied. Type the digits by hand.",
+  "Recherche du produit…":"Looking up the product…",
+  "Produit inconnu — saisis-le à la main.":"Unknown product — enter it by hand.",
+  "Pas de réseau : le scan a besoin d'une connexion.":"No network: scanning needs a connection.",
+  "pour 100 g":"per 100 g",
   "Ce navigateur n'écrit rien dans le fichier choisi. Garde plutôt une copie avec 💾.":"This browser writes nothing to the chosen file. Keep a copy with 💾 instead.",
   "Réessayer":"Try again",
   "Retirer {} ?":"Remove {}?",
@@ -5010,7 +5037,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 23h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 00h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6145,10 +6172,103 @@ function basculerAliment(meal, label){
   save(); renderSurPlace();
 }
 
+/* ---- code-barres --------------------------------------------------------------
+   Le lecteur est natif au navigateur (BarcodeDetector) : aucune bibliothèque à
+   embarquer dans un fichier qui pèse déjà 700 Ko. Là où il manque — Safari, vieux
+   navigateurs — on garde la saisie du code à la main, qui marche partout. */
+function scanDispo(){ return typeof window.BarcodeDetector === "function"; }
+/* Rend le code lu, ou null si on abandonne. */
+function scannerCodeBarres(){
+  return new Promise(resolve=>{
+    const boite = document.createElement("div");
+    boite.className = "scan";
+    boite.innerHTML = `<video playsinline muted autoplay></video><div class="voile"></div>
+      <div class="cadre"></div>
+      <div class="t">${TR("Vise le code-barres du produit")}</div>
+      <div class="bas">
+        <button class="b1" data-main>${TR("Saisir le code à la main")}</button>
+        <button class="b2" data-non>${TR("Annuler")}</button>
+      </div>`;
+    document.body.appendChild(boite);
+    let flux = null, boucle = null, fini = false;
+    const finir = code=>{
+      if(fini) return; fini = true;
+      if(boucle) clearInterval(boucle);
+      if(flux) try{ flux.getTracks().forEach(t=>t.stop()); }catch(e){}
+      boite.remove();
+      resolve(code || null);
+    };
+    boite.querySelector("[data-non]").onclick = ()=>finir(null);
+    boite.querySelector("[data-main]").onclick = ()=>{
+      const c = prompt(TR("Code-barres (les chiffres sous les barres)"));
+      finir(c && /^[0-9]{6,14}$/.test(c.trim()) ? c.trim() : null);
+    };
+    if(!scanDispo()){
+      boite.querySelector(".t").textContent = TR("Ce navigateur ne sait pas lire un code-barres. Saisis les chiffres à la main.");
+      return;
+    }
+    const video = boite.querySelector("video");
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})
+      .then(async st=>{
+        if(fini){ st.getTracks().forEach(t=>t.stop()); return; }
+        flux = st; video.srcObject = st;
+        try{ await video.play(); }catch(e){}
+        const lecteur = new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
+        boucle = setInterval(async ()=>{
+          if(fini || video.readyState < 2) return;
+          try{
+            const vus = await lecteur.detect(video);
+            if(vus && vus.length){
+              if(navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
+              finir(vus[0].rawValue);
+            }
+          }catch(e){}
+        }, 250);
+      })
+      .catch(()=>{
+        boite.querySelector(".t").textContent = TR("Accès à l'appareil photo refusé. Saisis les chiffres à la main.");
+      });
+  });
+}
+/* Interroge Open Food Facts. Base ouverte, sans clé ni compte : le code-barres suffit.
+   On ne demande que les cinq champs utiles — 1,7 Ko au lieu de la fiche entière. */
+async function chercherProduit(code){
+  const champs = "product_name,product_name_fr,brands,nutriments,serving_size,quantity";
+  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${champs}`;
+  const r = await fetch(url, {cache:"no-store"});
+  if(!r.ok) throw new Error("reseau");
+  const d = await r.json();
+  if(d.status !== 1 || !d.product) return null;
+  const p = d.product, n = p.nutriments || {};
+  const prot = n["proteins_100g"], kcal = n["energy-kcal_100g"];
+  if(prot === undefined && kcal === undefined) return null;   /* fiche sans valeurs */
+  const nom = (p.product_name_fr || p.product_name || "").trim();
+  if(!nom) return null;
+  /* « 60g », « 30 g », « 1 portion (25 g) » : on ne garde que le nombre s'il y en a un */
+  const mp = String(p.serving_size || "").match(/([\d.,]+)\s*g/i);
+  return {
+    code,
+    nom: nom.slice(0, 44),
+    marque: (p.brands || "").split(",")[0].trim(),
+    prot100: Math.round((Number(prot) || 0) * 10) / 10,
+    kcal100: Math.round(Number(kcal) || 0),
+    portion: mp ? Math.round(parseFloat(mp[1].replace(",", "."))) : 0
+  };
+}
+/* produit scanné en attente, injecté dans la fiche d'ajout comme un aliment de plus */
+let produitScanne = null;
+
 /* fiche « Ajouter un aliment » : liste d'aliments, quantité, garder dans les propositions */
 function openAjoutAliment(meal){
+  /* La fiche prend le produit scanné pour elle et vide la variable tout de suite : il
+     doit vivre aussi longtemps que CETTE fiche — le calcul en direct le relit à chaque
+     frappe — et ne surtout pas coller à la suivante. */
+  const scanne = produitScanne;
+  produitScanne = null;
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
+      <button class="btn" id="ot-scan" style="background:var(--hero); color:#fff; border-color:var(--hero);">
+        ${TR("Scanner un code-barres")}</button>
       <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
       <input id="ot-q" placeholder="${TR("Aliment, ou famille : poisson, viande, légume…")}" autocomplete="off"
         enterkeyhint="search" style="margin-bottom:7px;">
@@ -6156,8 +6276,15 @@ function openAjoutAliment(meal){
       <!-- la liste déroulante reste, cachée : c'est elle qui porte le choix -->
       <select id="ot-food" style="display:none;">${FOOD_100G.map(([grp,items])=>
         `<optgroup label="${TR(grp)}">${items.map(([n,pr,kc,u],i)=>`<option value="${grp}|${i}">${TR(n)}</option>`).join("")}</optgroup>`).join("")}
+        ${scanne? `<option value="scan">${esc(scanne.nom)}</option>`:""}
         <option value="manuel">${TR("Autre — je saisis les valeurs")}</option>
       </select></div>
+      ${scanne? `<div class="card" style="padding:10px 12px;">
+        <div style="font-weight:800; font-size:14px; line-height:1.25;">${esc(scanne.nom)}</div>
+        <div style="font-size:12px; color:var(--ink-mute); margin-top:2px;">${
+          (scanne.marque? esc(scanne.marque)+" · " : "")
+          + scanne.prot100 + " " + TR("g de protéines") + " · " + scanne.kcal100 + " kcal " + TR("pour 100 g")}</div>
+      </div>`:""}
       <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;" id="ot-glabel">${TR("Quantité mangée (g)")}</span>
       <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
       <div id="ot-mwrap" style="display:none;">
@@ -6182,6 +6309,10 @@ function openAjoutAliment(meal){
     </div>`);
   const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
   const trouver = val => {
+    /* le produit scanné se présente exactement comme un aliment de la base :
+       tout le calcul, l'aperçu en direct et le libellé enregistré marchent sans rien changer */
+    if(val === "scan" && scanne)
+      return [scanne.nom, scanne.prot100, scanne.kcal100, "100g"];
     const [grp, idx] = val.split("|");
     const g = FOOD_100G.find(x=>x[0]===grp);
     return g ? g[1][parseInt(idx)] : null;
@@ -6218,6 +6349,24 @@ function openAjoutAliment(meal){
       : `${court} ${q} ${liquide?"cl":"g"} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`, prot, kcal};
   };
   foodEl.onchange = calc; gEl.oninput = calc;
+  /* on rouvre la fiche avec le produit dedans : plus simple et plus sûr que de
+     rafistoler le formulaire en place, et l'utilisateur voit tout d'un coup */
+  document.getElementById("ot-scan").onclick = async ()=>{
+    const code = await scannerCodeBarres();
+    if(!code) return;
+    toast(TR("Recherche du produit…"));
+    try{
+      const p = await chercherProduit(code);
+      if(!p){ toast(TR("Produit inconnu — saisis-le à la main.")); return; }
+      produitScanne = p;
+      openAjoutAliment(meal);
+    }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion.")); }
+  };
+  if(scanne){
+    foodEl.value = "scan";
+    if(scanne.portion) gEl.value = scanne.portion;
+    calc();
+  }
 
   /* la recherche : sans accent et sans casse, « pates » trouve « Pâtes cuites » */
   const qEl = document.getElementById("ot-q"), listeEl = document.getElementById("ot-liste");
@@ -8967,7 +9116,8 @@ function openLegal(){
       <button class="btn" id="lg-contact">✉️ Nous contacter</button>
       <button class="btn" id="lg-bug">${TR("🐞 Signaler un problème")}</button>
       <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5; padding-top:2px;">
-        Tonnup ${BUILD}<br>Édité par ${EDITEUR.marque} · Sans publicité, sans collecte de données.</div>
+        Tonnup ${BUILD}<br>Édité par ${EDITEUR.marque} · Sans publicité, sans collecte de données.<br>
+        ${TR("Valeurs nutritionnelles des produits scannés : Open Food Facts (ODbL). Illustrations anatomiques : Termininja, Wikimedia Commons (CC BY-SA 3.0).")}</div>
       <button class="btn btn-accent" id="lg-ok">${TR("Fermer")}</button>
     </div>`);
   document.getElementById("lg-sante").onclick = openSante;
