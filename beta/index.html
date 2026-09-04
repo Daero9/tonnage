@@ -1914,6 +1914,11 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Prendre une photo du code-barres":"Photograph the barcode",
+  "Prends le code-barres en photo, bien à plat et bien éclairé.":"Photograph the barcode, flat and well lit.",
+  "Lecture de la photo…":"Reading the photo…",
+  "Code illisible. Réessaie de plus près, ou saisis les chiffres.":"Can't read it. Try closer, or type the digits.",
+  "Lecteur indisponible. Saisis les chiffres à la main.":"Reader unavailable. Type the digits by hand.",
   "Valeurs nutritionnelles des produits scannés : Open Food Facts (ODbL). Illustrations anatomiques : Termininja, Wikimedia Commons (CC BY-SA 3.0).":"Nutrition values for scanned products: Open Food Facts (ODbL). Anatomical illustrations: Termininja, Wikimedia Commons (CC BY-SA 3.0).",
   "Scanner un code-barres":"Scan a barcode",
   "Vise le code-barres du produit":"Point at the product's barcode",
@@ -5037,7 +5042,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 00h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 00h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6185,6 +6190,68 @@ function basculerAliment(meal, label){
    embarquer dans un fichier qui pèse déjà 700 Ko. Là où il manque — Safari, vieux
    navigateurs — on garde la saisie du code à la main, qui marche partout. */
 function scanDispo(){ return typeof window.BarcodeDetector === "function"; }
+/* iOS n'a pas de lecteur de codes-barres : aucun navigateur de l'iPhone n'en a, parce
+   qu'ils tournent tous sur le moteur de Safari. On y décode donc une PHOTO, avec zbar
+   compilé en WebAssembly — 255 Ko chargés seulement quand ils manquent, et seulement
+   au moment où l'on scanne. Un utilisateur Android ne les télécharge jamais. */
+let zbarEnCours = null;
+function chargerZbar(){
+  if(zbarEnCours) return zbarEnCours;
+  zbarEnCours = new Promise((ok, ko)=>{
+    if(window.zbarWasm) return ok(window.zbarWasm);
+    const sc = document.createElement("script");
+    sc.src = "vendor/zbar.js";
+    sc.onload = ()=>{
+      if(!window.zbarWasm) return ko(new Error("zbar absent"));
+      /* le module cherche zbar.wasm à côté de la page : on le pointe vers vendor/ */
+      try{ window.zbarWasm.setModuleArgs({locateFile: f => "vendor/" + f}); }catch(e){}
+      ok(window.zbarWasm);
+    };
+    sc.onerror = ()=>{ zbarEnCours = null; ko(new Error("chargement")); };
+    document.head.appendChild(sc);
+  });
+  return zbarEnCours;
+}
+/* Une photo de téléphone fait 12 Mpx : on la réduit avant de la donner au décodeur.
+   1600 px sur le grand côté laissent largement de quoi distinguer les barres, et
+   divisent le travail par vingt. */
+async function imageDataDeFichier(fichier, cote){
+  const url = URL.createObjectURL(fichier);
+  try{
+    const img = await new Promise((ok, ko)=>{
+      const i = new Image();
+      i.onload = ()=>ok(i);
+      i.onerror = ()=>ko(new Error("image"));
+      i.src = url;
+    });
+    const f = Math.min(1, cote / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * f));
+    const h = Math.max(1, Math.round(img.naturalHeight * f));
+    const cv = document.createElement("canvas");
+    cv.width = w; cv.height = h;
+    const cx = cv.getContext("2d", {willReadFrequently:true});
+    cx.drawImage(img, 0, 0, w, h);
+    return cx.getImageData(0, 0, w, h);
+  } finally { URL.revokeObjectURL(url); }
+}
+async function lireCodeSurPhoto(fichier){
+  const z = await chargerZbar();
+  /* Trois échelles, la plus petite d'abord. Ce n'est pas une intuition : sur une
+     matrice de tailles de code-barres, 1100 px lit TOUT, là où 1600 px et la pleine
+     résolution échouent sur certaines tailles. À trop de définition, le rapport entre
+     la largeur d'une barre et celle d'un pixel tombe parfois juste entre deux valeurs
+     et les barres se brouillent toutes de la même façon ; en réduisant, les bords
+     s'adoucissent et le signal redevient lisible. Chaque passe coûte ~50 ms. */
+  for(const cote of [1100, 1600, 2200]){
+    const donnees = await imageDataDeFichier(fichier, cote);
+    const vus = await z.scanImageData(donnees);
+    if(vus && vus.length){
+      const code = vus[0].decode();
+      if(code && /^[0-9]{6,14}$/.test(code)) return code;
+    }
+  }
+  return null;
+}
 /* Rend le code lu, ou null si on abandonne. */
 function scannerCodeBarres(){
   return new Promise(resolve=>{
@@ -6194,9 +6261,11 @@ function scannerCodeBarres(){
       <div class="cadre"></div>
       <div class="t">${TR("Vise le code-barres du produit")}</div>
       <div class="bas">
-        <button class="b1" data-main>${TR("Saisir le code à la main")}</button>
+        ${scanDispo()? "" : `<button class="b1" data-photo>${TR("Prendre une photo du code-barres")}</button>`}
+        <button class="${scanDispo()? "b1" : "b2"}" data-main>${TR("Saisir le code à la main")}</button>
         <button class="b2" data-non>${TR("Annuler")}</button>
-      </div>`;
+      </div>
+      <input type="file" accept="image/*" capture="environment" data-fichier style="display:none;">`;
     document.body.appendChild(boite);
     let flux = null, boucle = null, fini = false;
     const finir = code=>{
@@ -6212,7 +6281,24 @@ function scannerCodeBarres(){
       finir(c && /^[0-9]{6,14}$/.test(c.trim()) ? c.trim() : null);
     };
     if(!scanDispo()){
-      boite.querySelector(".t").textContent = TR("Ce navigateur ne sait pas lire un code-barres. Saisis les chiffres à la main.");
+      /* pas de lecteur en direct : on prend une photo et on la décode ici même */
+      const titre = boite.querySelector(".t");
+      const fich = boite.querySelector("[data-fichier]");
+      titre.textContent = TR("Prends le code-barres en photo, bien à plat et bien éclairé.");
+      boite.querySelector("[data-photo]").onclick = ()=>fich.click();
+      fich.onchange = async ()=>{
+        const f = fich.files && fich.files[0];
+        fich.value = "";
+        if(!f) return;
+        titre.textContent = TR("Lecture de la photo…");
+        try{
+          const code = await lireCodeSurPhoto(f);
+          if(code) return finir(code);
+          titre.textContent = TR("Code illisible. Réessaie de plus près, ou saisis les chiffres.");
+        }catch(e){
+          titre.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main.");
+        }
+      };
       return;
     }
     const video = boite.querySelector("video");
