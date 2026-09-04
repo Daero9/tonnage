@@ -797,15 +797,21 @@
      performance et n'adapte plus rien. Deux appuis suffisent pour dire la vérité.
      Les boutons n'existent que sur la série en cours : ailleurs ce serait vingt
      boutons pour un besoin qui ne concerne jamais qu'une ligne à la fois. */
-  .set-row .rc{display:flex; align-items:center; gap:3px; min-width:0;}
+  .set-row .rc{display:flex; align-items:center; gap:4px; min-width:0;}
   .set-row .rc input{flex:1; min-width:0;}
-  .set-row .rs{display:none; flex:0 0 auto; width:24px; height:42px; border-radius:9px;
-    border:1px solid var(--border); background:var(--surface2); color:var(--ink-soft);
-    font-size:16px; font-weight:800; line-height:1;}
-  .set-row.bn .rs{display:flex; align-items:center; justify-content:center;}
+  /* Deux flèches empilées : une seule colonne au lieu de deux, le nombre garde sa place. */
+  .set-row .rf{display:none; flex:0 0 auto; flex-direction:column; gap:2px;}
+  .set-row.bn .rf{display:flex;}
   .set-row.bn .rc input{padding-inline:3px;}
+  .set-row .rs{position:relative; width:26px; height:20px; border-radius:7px;
+    border:1px solid var(--border); background:var(--surface2); color:var(--ink-soft);
+    font-size:10px; font-weight:800; line-height:1;
+    display:flex; align-items:center; justify-content:center;}
+  /* chaque flèche ne fait que 20 px de haut : on élargit la zone tactile sans la dessiner,
+     juste assez pour que les deux se touchent sans se chevaucher */
+  .set-row .rs::before{content:""; position:absolute; inset:-2px -3px;}
   .set-row.bn .rs{background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;}
-  .set-row .rs:active{transform:scale(.92);}
+  .set-row .rs:active{background:rgba(255,255,255,.32);}
   .set-row .ck{width:44px; height:42px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink-mute);}
   .set-row.done input{background:var(--surface); color:var(--ink-soft); border-color:transparent;}
   .set-row.warm .n{font-size:10px; letter-spacing:.02em; color:var(--accent); font-weight:800;}
@@ -4960,7 +4966,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 22h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 22h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8049,9 +8055,9 @@ function renderActive(app){
       const num = st.warm ? TR("Éch.") : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
       row.innerHTML = `<div class="n">${num}</div>
         <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${estPoidsDuCorps(ex)? "0" : uPoids()}" value="${saisiePoids(st.w)}">
-        <div class="rc"><button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">−</button>
-          <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
-          <button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">+</button></div>
+        <div class="rc"><input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
+          <span class="rf"><button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">▲</button>
+          <button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">▼</button></span></div>
         ${st.warm? "<span></span>" : `<button class="dg" title="${TR("Ajouter un dégressif")}">↓</button>`}
         <button class="ck">${st.done? IC_COCHE : "○"}</button>`;
       const [wIn, rIn] = row.querySelectorAll("input");
@@ -8383,9 +8389,9 @@ function renderActive(app){
         dr.className = "set-row drop"+(st.done?" done":"");
         dr.innerHTML = `<div class="n">↳</div>
           <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${uPoids()}" value="${saisiePoids(d.w)}">
-          <div class="rc"><button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">−</button>
-            <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${d.r!==""&&d.r!=null?d.r:""}">
-            <button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">+</button></div>
+          <div class="rc"><input type="number" inputmode="numeric" min="0" placeholder="reps" value="${d.r!==""&&d.r!=null?d.r:""}">
+            <span class="rf"><button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">▲</button>
+            <button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">▼</button></span></div>
           <span></span>
           <button class="ck" title="${TR("Retirer ce dégressif")}">✕</button>`;
         const [dw, dq] = dr.querySelectorAll("input");
