@@ -1914,6 +1914,10 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Scanner un autre produit":"Scan another product",
+  "Ajouter à ce repas":"Add to this meal",
+  "Indique la quantité mangée.":"Enter how much you ate.",
+  "Ajouté ✓":"Added ✓",
   "Prendre une photo du code-barres":"Photograph the barcode",
   "Prends le code-barres en photo, bien à plat et bien éclairé.":"Photograph the barcode, flat and well lit.",
   "Lecture de la photo…":"Reading the photo…",
@@ -5042,7 +5046,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 00h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 00h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6349,16 +6353,82 @@ async function chercherProduit(code){
     portion: mp ? Math.round(parseFloat(mp[1].replace(",", "."))) : 0
   };
 }
-/* produit scanné en attente, injecté dans la fiche d'ajout comme un aliment de plus */
-let produitScanne = null;
+/* Fiche d'un produit scanné. Rien d'autre à l'écran : ni la liste des aliments, ni le
+   bouton de scan. On vient de désigner un produit précis, la seule question qui reste
+   est « combien ». La mise en page reprend celle du réglage d'un aliment déjà posé —
+   le nom en capitales, les deux chiffres côte à côte — pour qu'on reconnaisse l'écran. */
+function openProduitScanne(meal, p){
+  const k = jourAlim();
+  openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(p.nom)}</h3>
+    ${p.marque? `<div style="text-align:center; font-size:12.5px; color:var(--ink-mute); margin:-6px 0 12px;">${esc(p.marque)}</div>`:""}
+    <div class="row" style="justify-content:center; gap:34px; margin-bottom:14px;">
+      <div style="text-align:center;">
+        <div id="ps-prot" style="font-size:29px; font-weight:800; line-height:1.05;">0<span style="font-size:16px;"> g</span></div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Protéines")}</div></div>
+      <div style="text-align:center;">
+        <div id="ps-kcal" style="font-size:29px; font-weight:800; line-height:1.05;">0</div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Kilocalories")}</div></div>
+    </div>
+    <div class="stack">
+      <div><span class="label" style="display:block; margin-bottom:5px;">${TR("Quantité mangée (g)")}</span>
+        <input type="number" inputmode="decimal" step="10" min="0" id="ps-g" value="${p.portion || 100}"></div>
+      <div style="font-size:12px; color:var(--ink-mute); text-align:center;">${
+        p.prot100 + " " + TR("g de protéines") + " · " + p.kcal100 + " kcal " + TR("pour 100 g")}</div>
+      <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
+        <input type="checkbox" id="ps-save" style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
+        <span style="font-size:13.5px; color:var(--ink-soft);">${TR("Garder dans mes propositions")}</span>
+      </label>
+      <button class="btn btn-accent" id="ps-ok">${TR("Ajouter à ce repas")}</button>
+      <button class="btn" id="ps-autre">${IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
+      <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
+    </div>`);
+  const gEl = document.getElementById("ps-g");
+  /* combien de fois 100 g : tout le reste en découle */
+  const part = ()=>{ const q = parseFloat(gEl.value); return q > 0 ? q/100 : 0; };
+  const maj = ()=>{
+    const f = part();
+    document.getElementById("ps-prot").innerHTML =
+      `${Math.round(p.prot100*f)}<span style="font-size:16px;"> g</span>`;
+    document.getElementById("ps-kcal").textContent = Math.round(p.kcal100*f);
+  };
+  gEl.oninput = maj; maj();
+  document.getElementById("ps-non").onclick = closeSheet;
+  document.getElementById("ps-autre").onclick = ()=>lancerScan(meal);
+  document.getElementById("ps-ok").onclick = ()=>{
+    const f = part();
+    if(!f){ toast(TR("Indique la quantité mangée.")); return; }
+    const q = Math.round(parseFloat(gEl.value));
+    const prot = Math.round(p.prot100*f), kcal = Math.round(p.kcal100*f);
+    /* même écriture que partout ailleurs : la pastille, ses boutons et l'appui long
+       fonctionneront sur ce produit comme sur n'importe quel aliment */
+    const label = `${p.nom} ${q} g (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
+    if(document.getElementById("ps-save").checked){
+      const ty = habitType(meal);
+      const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
+      if(!liste.some(x=>x[0] === label)) liste.push([label, prot, kcal]);
+    }
+    if(!db.habitSel[k]) db.habitSel[k] = {};
+    db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).concat(label);
+    if(db.dayFix[k]) delete db.dayFix[k];
+    save(); closeSheet(); render();
+    toast(TR("Ajouté ✓"));
+  };
+}
+/* Scanner puis ouvrir la fiche du produit. Partagé par le bouton de la fiche d'ajout
+   et par « Scanner un autre produit ». */
+async function lancerScan(meal){
+  const code = await scannerCodeBarres();
+  if(!code) return;
+  toast(TR("Recherche du produit…"));
+  try{
+    const p = await chercherProduit(code);
+    if(!p){ toast(TR("Produit inconnu — saisis-le à la main.")); return; }
+    openProduitScanne(meal, p);
+  }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion.")); }
+}
 
 /* fiche « Ajouter un aliment » : liste d'aliments, quantité, garder dans les propositions */
 function openAjoutAliment(meal){
-  /* La fiche prend le produit scanné pour elle et vide la variable tout de suite : il
-     doit vivre aussi longtemps que CETTE fiche — le calcul en direct le relit à chaque
-     frappe — et ne surtout pas coller à la suivante. */
-  const scanne = produitScanne;
-  produitScanne = null;
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
       <button class="btn" id="ot-scan" style="background:var(--hero); color:#fff; border-color:var(--hero);">
@@ -6370,15 +6440,8 @@ function openAjoutAliment(meal){
       <!-- la liste déroulante reste, cachée : c'est elle qui porte le choix -->
       <select id="ot-food" style="display:none;">${FOOD_100G.map(([grp,items])=>
         `<optgroup label="${TR(grp)}">${items.map(([n,pr,kc,u],i)=>`<option value="${grp}|${i}">${TR(n)}</option>`).join("")}</optgroup>`).join("")}
-        ${scanne? `<option value="scan">${esc(scanne.nom)}</option>`:""}
         <option value="manuel">${TR("Autre — je saisis les valeurs")}</option>
       </select></div>
-      ${scanne? `<div class="card" style="padding:10px 12px;">
-        <div style="font-weight:800; font-size:14px; line-height:1.25;">${esc(scanne.nom)}</div>
-        <div style="font-size:12px; color:var(--ink-mute); margin-top:2px;">${
-          (scanne.marque? esc(scanne.marque)+" · " : "")
-          + scanne.prot100 + " " + TR("g de protéines") + " · " + scanne.kcal100 + " kcal " + TR("pour 100 g")}</div>
-      </div>`:""}
       <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;" id="ot-glabel">${TR("Quantité mangée (g)")}</span>
       <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
       <div id="ot-mwrap" style="display:none;">
@@ -6403,10 +6466,6 @@ function openAjoutAliment(meal){
     </div>`);
   const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
   const trouver = val => {
-    /* le produit scanné se présente exactement comme un aliment de la base :
-       tout le calcul, l'aperçu en direct et le libellé enregistré marchent sans rien changer */
-    if(val === "scan" && scanne)
-      return [scanne.nom, scanne.prot100, scanne.kcal100, "100g"];
     const [grp, idx] = val.split("|");
     const g = FOOD_100G.find(x=>x[0]===grp);
     return g ? g[1][parseInt(idx)] : null;
@@ -6445,22 +6504,7 @@ function openAjoutAliment(meal){
   foodEl.onchange = calc; gEl.oninput = calc;
   /* on rouvre la fiche avec le produit dedans : plus simple et plus sûr que de
      rafistoler le formulaire en place, et l'utilisateur voit tout d'un coup */
-  document.getElementById("ot-scan").onclick = async ()=>{
-    const code = await scannerCodeBarres();
-    if(!code) return;
-    toast(TR("Recherche du produit…"));
-    try{
-      const p = await chercherProduit(code);
-      if(!p){ toast(TR("Produit inconnu — saisis-le à la main.")); return; }
-      produitScanne = p;
-      openAjoutAliment(meal);
-    }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion.")); }
-  };
-  if(scanne){
-    foodEl.value = "scan";
-    if(scanne.portion) gEl.value = scanne.portion;
-    calc();
-  }
+  document.getElementById("ot-scan").onclick = ()=>lancerScan(meal);
 
   /* la recherche : sans accent et sans casse, « pates » trouve « Pâtes cuites » */
   const qEl = document.getElementById("ot-q"), listeEl = document.getElementById("ot-liste");
