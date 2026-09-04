@@ -1289,6 +1289,31 @@ async function lancer(){
     q.value = 10; q.dispatchEvent(new F.Event("input", {bubbles:true}));
     r.querySelector(".ck").click(); })();
   eq("Elle passe à la suivante une fois validée", actives().indexOf(1), 1);
+
+  /* Le champ des reps est pré-rempli avec un OBJECTIF. S'il n'est pas corrigé avant
+     de valider, l'app enregistre l'objectif comme une performance : le tonnage gonfle
+     et l'adaptation de charge ne se déclenche jamais. Les boutons − / + servent à
+     dire la vérité en deux appuis, sans clavier. */
+  (()=>{
+    const act = () => D.querySelector(".set-row.actif");
+    const champ = () => act().querySelectorAll("input")[1];
+    const si = Number(act().dataset.si);
+    DB.active.entries[0].sets.forEach(s=>{ if(!s.warm){ s.w = 60; s.r = 12; } });
+    F.renderSurPlace();
+    vrai("Les boutons n'existent que sur la série en cours",
+      D.querySelectorAll(".set-row .rs").length > 0
+      && [...D.querySelectorAll(".set-row")].filter(l=>l.classList.contains("actif")).length === 1);
+    act().querySelector('[data-rs="-1"]').click();
+    act().querySelector('[data-rs="-1"]').click();
+    eq("Deux appuis font passer de 12 à 10", champ().value, "10");
+    eq("…et c'est bien 10 qui est enregistré", DB.active.entries[0].sets[si].r, 10);
+    vrai("…sans toucher aux séries suivantes",
+      DB.active.entries[0].sets.slice(si+1).every(s=>s.warm || s.r === 12));
+    act().querySelector('[data-rs="1"]').click();
+    eq("Le + remonte d'une répétition", DB.active.entries[0].sets[si].r, 11);
+    for(let k=0;k<20;k++) act().querySelector('[data-rs="-1"]').click();
+    eq("On ne descend jamais sous zéro", DB.active.entries[0].sets[si].r, 0);
+  })();
   eq("…et toujours une seule", actives().reduce((a,b)=>a+b,0), 1);
   /* ---- un seul cadre noir dans toute la séance ---- */
   DB.active = null;

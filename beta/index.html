@@ -786,12 +786,26 @@
      il ne dispute rien au titre. Il passe a la ligne avec lui si le nom est long. */
   .ex-name .eqp{font-size:13px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
   .hint{font-size:12.5px; color:var(--ink-mute); margin-bottom:10px;}
-  .set-row{display:grid; grid-template-columns:26px 1fr 1fr 34px 44px; gap:8px; align-items:center; margin-bottom:8px;}
+  .set-row{display:grid; grid-template-columns:26px .78fr 1.22fr 34px 44px; gap:8px; align-items:center; margin-bottom:8px;}
   .set-row .dg{width:34px; height:42px; border-radius:10px; border:1px dashed var(--border); background:none;
     color:var(--accent); font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center;}
   .set-row.done .dg{opacity:.55;}
   .set-row .n{font-size:13px; font-weight:700; color:var(--ink-mute); font-variant-numeric:tabular-nums;}
   .set-row input{text-align:center; padding:9px 6px;}
+  /* Corriger ses répétitions AVANT de valider, sans clavier. Le champ est pré-rempli
+     avec un objectif ; s'il n'est pas corrigé, l'app enregistre l'objectif comme une
+     performance et n'adapte plus rien. Deux appuis suffisent pour dire la vérité.
+     Les boutons n'existent que sur la série en cours : ailleurs ce serait vingt
+     boutons pour un besoin qui ne concerne jamais qu'une ligne à la fois. */
+  .set-row .rc{display:flex; align-items:center; gap:3px; min-width:0;}
+  .set-row .rc input{flex:1; min-width:0;}
+  .set-row .rs{display:none; flex:0 0 auto; width:24px; height:42px; border-radius:9px;
+    border:1px solid var(--border); background:var(--surface2); color:var(--ink-soft);
+    font-size:16px; font-weight:800; line-height:1;}
+  .set-row.actif .rs{display:flex; align-items:center; justify-content:center;}
+  .set-row.actif .rc input{padding-inline:3px;}
+  .set-row.bn .rs{background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;}
+  .set-row .rs:active{transform:scale(.92);}
   .set-row .ck{width:44px; height:42px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink-mute);}
   .set-row.done input{background:var(--surface); color:var(--ink-soft); border-color:transparent;}
   .set-row.warm .n{font-size:10px; letter-spacing:.02em; color:var(--accent); font-weight:800;}
@@ -857,7 +871,7 @@
   .set-row.drop .n{font-size:14px; color:var(--accent); text-align:right;}
   .set-row.drop input{padding:6px 6px; font-size:13.5px; background:var(--surface2);}
   .set-row.drop .ck{width:44px; height:34px; font-size:14px; color:var(--bad); background:none; border-style:dashed;}
-  .set-cols{display:grid; grid-template-columns:26px 1fr 1fr 34px 44px; gap:8px; margin-bottom:6px;}
+  .set-cols{display:grid; grid-template-columns:26px .78fr 1.22fr 34px 44px; gap:8px; margin-bottom:6px;}
   .set-cols span{font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-mute); text-align:center;}
 
   /* list rows */
@@ -1841,6 +1855,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Une répétition de moins":"One rep fewer",
+  "Une répétition de plus":"One rep more",
   "Temps de repos":"Rest time",
   "Conseillé sur cet exercice : {}":"Recommended for this exercise: {}",
   "Revenir au conseillé":"Back to recommended",
@@ -4944,7 +4960,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 21h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 22h43 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8033,7 +8049,9 @@ function renderActive(app){
       const num = st.warm ? TR("Éch.") : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
       row.innerHTML = `<div class="n">${num}</div>
         <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${estPoidsDuCorps(ex)? "0" : uPoids()}" value="${saisiePoids(st.w)}">
-        <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
+        <div class="rc"><button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">−</button>
+          <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
+          <button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">+</button></div>
         ${st.warm? "<span></span>" : `<button class="dg" title="${TR("Ajouter un dégressif")}">↓</button>`}
         <button class="ck">${st.done? IC_COCHE : "○"}</button>`;
       const [wIn, rIn] = row.querySelectorAll("input");
@@ -8053,6 +8071,16 @@ function renderActive(app){
          faire 5 reps au lieu de 12 est un accident de parcours, pas une nouvelle consigne */
       wIn.oninput=()=>{ st.w = wIn.value===""?"":versKg(wIn.value); if(!st.warm) propager("w", st.w); save(); };
       rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); save(); };
+      /* Les répétitions ne se reportent PAS sur les séries suivantes, au contraire de
+         la charge : en avoir fait 10 au lieu de 12 est un accident de parcours, pas
+         une nouvelle consigne. Le bouton suit donc la même règle que la saisie. */
+      row.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{
+        const pas = parseInt(b.dataset.rs, 10);
+        const v = Math.max(0, (parseInt(rIn.value, 10) || 0) + pas);
+        rIn.value = v;
+        st.r = v; save();
+        if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+      });
       row.querySelector(".ck").onclick=()=>{
         /* une question attend sa réponse : on ne passe pas à la série suivante avant */
         /* un bilan de dégressif n'attend aucune réponse : il n'empêche pas d'avancer */
