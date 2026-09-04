@@ -158,6 +158,14 @@
   .pv-ex .poig:active{cursor:grabbing; color:var(--accent);}
   .pv-ex.prend{position:relative; z-index:5; box-shadow:0 10px 24px rgba(0,0,0,.18);
     border-color:var(--accent);}
+  /* trois actions par exercice : plus petites que les boutons ordinaires, sinon elles
+     mangent la largeur du nom sur un téléphone étroit */
+  .pv-ex .act{flex:0 0 auto; display:flex; gap:4px; align-self:center;}
+  .pv-ex .act button{width:26px; height:26px; border-radius:8px; background:var(--surface2);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--ink-soft);}
+  .pv-ex .act button.sup{color:var(--bad);}
+  .pv-ex .act button:active{background:var(--btn);}
   .pv-liste.trie .pv-ex:not(.prend){transition:transform .16s ease;}
   .pv-ex .nm{font-size:14.5px; font-weight:800; line-height:1.25;}
   .pv-ex .nm .eqp{font-size:12px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
@@ -942,7 +950,11 @@
     border-radius:12px; padding:12px; width:100%;}
   /* ---- fiche « choisir un exercice » ---- */
   .pk-h{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin:14px 0 7px;}
-  .pk-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border);}
+  /* Chaque exercice dans son cadre, comme dans l'aperçu d'une séance : une liste
+     séparée par des filets se lit comme un tableau, des cartes se lisent une par une. */
+  .pk-row{display:flex; align-items:center; gap:10px; padding:9px 11px; margin-bottom:7px;
+    background:var(--surface); border:1px solid var(--border); border-radius:13px;}
+  .pk-row:active{border-color:var(--accent);}
   .pk-row .th{width:44px; height:44px; border-radius:9px; background:var(--surface2); flex:0 0 auto;
     display:flex; align-items:center; justify-content:center;}
   .pk-row .nm{font-size:14px; font-weight:700; line-height:1.25;}
@@ -1886,6 +1898,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Retirer {} ?":"Remove {}?",
+  "L'exercice sera enlevé de cette séance. Tes séances déjà faites ne changent pas.":"The exercise will be removed from this workout. Your completed sessions don't change.",
   "Glisse ⠿ pour changer l'ordre des exercices.":"Drag ⠿ to reorder the exercises.",
   "Déplacer cet exercice":"Move this exercise",
   "repos":"rest",
@@ -4994,7 +5008,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 23h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 23h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7755,7 +7769,11 @@ function openPreview(tplId){
             last? ` · ${TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0))))}`:""}</div>
           ${musclesHtml(nomCanon(ex),3)}
           ${note? `<div class="inj">⚠️ ${esc(TR(note.injury))} : ${esc(TR(note.tip))}</div>`:""}</div>
-        <button class="icon-btn info-btn" data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>`;
+        <span class="act">
+          <button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button>
+          <button data-pvswap="${i}" title="${TR("Remplacer")}" aria-label="${TR("Remplacer")}">⇄</button>
+          <button class="sup" data-pvdel="${i}" title="${TR("Retirer")}" aria-label="${TR("Retirer")}">✕</button>
+        </span></div>`;
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR("Lancer cette séance")}</button>
     <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
@@ -7763,6 +7781,31 @@ function openPreview(tplId){
   trierParGlisse(document.querySelector(".pv-liste"), ordre=>{
     appliquerOrdre(t, ordre);
     render();                                /* la carte de l'accueil suit aussi */
+  });
+  /* Remplacer : on repasse par la bibliothèque, qui sait déjà chercher et filtrer par
+     matériel. Les séries, les reps et le repos de la ligne sont conservés — on change
+     le mouvement, pas la consigne. */
+  document.querySelectorAll("[data-pvswap]").forEach(b=>b.onclick=()=>{
+    const i = Number(b.dataset.pvswap);
+    closeSheet();
+    setTimeout(()=>openPicker(exId=>{
+      t.items[i].exId = exId;
+      save(); render();
+      setTimeout(()=>openPreview(tplId), 60);
+    }), 60);
+  });
+  document.querySelectorAll("[data-pvdel]").forEach(b=>b.onclick=()=>{
+    const i = Number(b.dataset.pvdel);
+    const nom = getEx(t.items[i].exId).name;
+    /* le retrait est immédiat et sans retour : on demande, contrairement à l'éditeur
+       de séance où rien n'est écrit tant qu'on n'a pas enregistré */
+    askConfirm(TR("Retirer {} ?").replace("{}", nom),
+      TR("L'exercice sera enlevé de cette séance. Tes séances déjà faites ne changent pas."),
+      TR("Retirer"), true, ()=>{
+        t.items.splice(i, 1);
+        save(); render();
+        if(t.items.length) setTimeout(()=>openPreview(tplId), 60);
+      });
   });
   document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
   document.getElementById("pv-close").onclick=closeSheet;
