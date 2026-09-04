@@ -1898,6 +1898,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Ce navigateur ouvre bien le sélecteur de fichier, mais n'y écrit rien : la sauvegarde automatique n'est pas possible ici. Utilise 💾 ci-dessous, qui fonctionne.":"This browser opens the file picker but writes nothing to it: automatic backup isn't possible here. Use 💾 below, which works.",
+  "Réessayer":"Try again",
   "Retirer {} ?":"Remove {}?",
   "L'exercice sera enlevé de cette séance. Tes séances déjà faites ne changent pas.":"The exercise will be removed from this workout. Your completed sessions don't change.",
   "Glisse ⠿ pour changer l'ordre des exercices.":"Drag ⠿ to reorder the exercises.",
@@ -5008,7 +5010,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 23h35 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 23h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5187,6 +5189,11 @@ async function autoFileEssai(messageSiOk){
   const err = autoFile.err;
   await idbDel(AUTOFILE);
   autoFile = {handle:null, ok:false, to:null, name:"", err:err};
+  /* Vu sur Chrome Android : le sélecteur de fichier s'ouvre, l'autorisation est
+     donnée, et rien n'atteint le disque. Inutile de faire refaire tout le parcours
+     à chaque fois — on retient que ça ne marche pas ICI, et on propose autre chose. */
+  db.autoFileImpossible = true;
+  save();
   toast(TR("Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾."));
   openSettings();
   return false;
@@ -9200,6 +9207,12 @@ function openSettings(){
       dansLApp()
         ? TR("Android sauvegarde tes données et les restaure sur un nouveau téléphone. Le bouton ci-dessous te permet d'en garder une copie à toi.")
         : TR("La sauvegarde automatique dans un fichier n'est pas disponible sur ce navigateur (Safari/iPhone ne la propose pas). Tes données restent enregistrées dans le téléphone.")}</div>`;
+  } else if(db.autoFileImpossible && !autoFile.handle){
+    /* déjà essayé sur cet appareil, et le fichier est resté vide : on le dit une fois
+       pour toutes, et on laisse une porte de sortie au cas où le navigateur évolue */
+    autoBox.innerHTML = `<div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:4px;">${
+      TR("Ce navigateur ouvre bien le sélecteur de fichier, mais n'y écrit rien : la sauvegarde automatique n'est pas possible ici. Utilise 💾 ci-dessous, qui fonctionne.")}
+      <button id="af-retry" style="color:var(--accent); font-weight:800; padding:0 2px;">${TR("Réessayer")}</button></div>`;
   } else if(autoFile.ok){
     autoBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
       <div style="font-weight:700; color:var(--good); font-size:13.5px;">✓ Sauvegarde automatique active</div>
@@ -9262,6 +9275,8 @@ function openSettings(){
       estIOS()
         ? TR("iOS efface la mémoire de l'app entre deux ouvertures. Utilise l'icône 💾 avant de fermer, et 📂 pour restaurer.")
         : TR("Ce navigateur a effacé la mémoire de l'app. Utilise l'icône 💾 pour en garder une copie, et 📂 pour la restaurer.")}</div>`:""}`;
+  const retry = document.getElementById("af-retry");
+  if(retry) retry.onclick = ()=>{ delete db.autoFileImpossible; save(); autoFilePick(); };
   document.getElementById("st-file").onclick=async()=>{
     const btn = document.getElementById("st-file");
     const stamp = dayKey();
