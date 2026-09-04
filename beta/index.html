@@ -802,8 +802,8 @@
   .set-row .rs{display:none; flex:0 0 auto; width:24px; height:42px; border-radius:9px;
     border:1px solid var(--border); background:var(--surface2); color:var(--ink-soft);
     font-size:16px; font-weight:800; line-height:1;}
-  .set-row.actif .rs{display:flex; align-items:center; justify-content:center;}
-  .set-row.actif .rc input{padding-inline:3px;}
+  .set-row.bn .rs{display:flex; align-items:center; justify-content:center;}
+  .set-row.bn .rc input{padding-inline:3px;}
   .set-row.bn .rs{background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;}
   .set-row .rs:active{transform:scale(.92);}
   .set-row .ck{width:44px; height:42px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink-mute);}
@@ -4960,7 +4960,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 22h43 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 22h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8383,12 +8383,19 @@ function renderActive(app){
         dr.className = "set-row drop"+(st.done?" done":"");
         dr.innerHTML = `<div class="n">↳</div>
           <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${uPoids()}" value="${saisiePoids(d.w)}">
-          <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${d.r!==""&&d.r!=null?d.r:""}">
+          <div class="rc"><button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">−</button>
+            <input type="number" inputmode="numeric" min="0" placeholder="reps" value="${d.r!==""&&d.r!=null?d.r:""}">
+            <button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">+</button></div>
           <span></span>
           <button class="ck" title="${TR("Retirer ce dégressif")}">✕</button>`;
         const [dw, dq] = dr.querySelectorAll("input");
         dw.oninput = ()=>{ d.w = dw.value===""?"":versKg(dw.value); save(); };
         dq.oninput = ()=>{ d.r = dq.value===""?"":parseInt(dq.value); save(); };
+        dr.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{
+          const v = Math.max(0, (parseInt(dq.value, 10) || 0) + parseInt(b.dataset.rs, 10));
+          dq.value = v; d.r = v; save();
+          if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+        });
         dr.querySelector(".ck").onclick = ()=>{
           st.drops.splice(di,1);
           if(!st.drops.length) delete st.drops;
