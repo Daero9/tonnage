@@ -1115,6 +1115,15 @@
   .al-row.on .vl{color:var(--accent-ink); opacity:.85;}
   .al-note{font-size:11.5px; color:var(--ink-mute); line-height:1.45; margin:-1px 0 6px;}
   .al-vide{font-size:13px; color:var(--ink-mute); padding:14px 0; text-align:center; line-height:1.5;}
+  /* La recherche reprend la grille de la page principale : deux colonnes, une émoticône
+     par aliment. On y reconnaît d'avance la pastille qu'on retrouvera dans son repas, et
+     il en tient deux fois plus à l'écran. Le fond doit être surface2 : sur le blanc de
+     la liste, une pastille blanche ne se verrait pas. */
+  .al-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:9px;}
+  .al-c{background:var(--surface2); align-items:flex-start;}
+  .al-c .ic{margin-top:1px;}
+  .al-c.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .al-c.on .q{color:rgba(255,255,255,.85);}
 
   /* ---- récapitulatif des repas : ce qui a été mangé, d'un coup d'œil ---- */
   .eat-repas{display:flex; gap:5px; margin-top:9px;}
@@ -1914,8 +1923,9 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Quantité bue (ml)":"Amount drunk (ml)",
+  "pour 100 ml":"per 100 ml",
   "Scanner un autre produit":"Scan another product",
-  "Ajouter à ce repas":"Add to this meal",
   "Indique la quantité mangée.":"Enter how much you ate.",
   "Ajouté ✓":"Added ✓",
   "Prendre une photo du code-barres":"Photograph the barcode",
@@ -5046,7 +5056,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 00h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 01h03 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6330,8 +6340,31 @@ function scannerCodeBarres(){
 }
 /* Interroge Open Food Facts. Base ouverte, sans clé ni compte : le code-barres suffit.
    On ne demande que les cinq champs utiles — 1,7 Ko au lieu de la fiche entière. */
+/* Boisson ou aliment ? On demande à Open Food Facts ses catégories, et on regarde le
+   suffixe : les catégories y sont au pluriel et rangées du général au précis, si bien
+   qu'« en:sugared-beverages » ou « en:orange-juices » se reconnaissent à leur dernier
+   mot. On teste le suffixe et non le mot n'importe où, sans quoi « en:milk-chocolates »
+   ferait boire le chocolat au lait. */
+const FIN_BOISSON = /(^|[-:])(beverages|drinks|waters|sodas|juices|milks|smoothies|coffees|teas|beers|wines|nectars|syrups|lemonades|cocktails|kefirs|milkshakes)$/;
+/* un volume écrit sur l'étiquette : « 33 cl », « 1 L », « 250 ml » */
+const VOLUME = /([\d.,]+)\s*(ml|cl|dl|l|litres?)\b/i;
+function estBoisson(p){
+  if((p.categories_tags || []).some(t => FIN_BOISSON.test(String(t)))) return true;
+  /* catégories absentes — c'est fréquent sur les fiches peu remplies : le contenant
+     tranche presque toujours, on ne vend pas du riz en litres */
+  return VOLUME.test(String(p.serving_size || "")) || VOLUME.test(String(p.quantity || ""));
+}
+/* une portion écrite en volume, ramenée en millilitres */
+function portionMl(txt){
+  const m = String(txt || "").match(VOLUME);
+  if(!m) return 0;
+  const v = parseFloat(m[1].replace(",", "."));
+  const u = m[2].toLowerCase();
+  const f = u === "ml" ? 1 : u === "cl" ? 10 : u === "dl" ? 100 : 1000;
+  return v > 0 ? Math.round(v * f) : 0;
+}
 async function chercherProduit(code){
-  const champs = "product_name,product_name_fr,brands,nutriments,serving_size,quantity";
+  const champs = "product_name,product_name_fr,brands,nutriments,serving_size,quantity,categories_tags";
   const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${champs}`;
   const r = await fetch(url, {cache:"no-store"});
   if(!r.ok) throw new Error("reseau");
@@ -6344,13 +6377,21 @@ async function chercherProduit(code){
   if(!nom) return null;
   /* « 60g », « 30 g », « 1 portion (25 g) » : on ne garde que le nombre s'il y en a un */
   const mp = String(p.serving_size || "").match(/([\d.,]+)\s*g/i);
+  const liquide = estBoisson(p);
+  /* Pour une boisson, les valeurs « pour 100 g » d'Open Food Facts sont en réalité des
+     valeurs pour 100 ml : le calcul est le même, seule l'unité affichée change. On ne
+     lit le volume que dans la portion, jamais dans le format — une bouteille d'un litre
+     n'est pas un verre. Et une portion d'un litre n'en est pas une non plus : au-dessus
+     d'un demi-litre, la fiche donne le contenant, on repart du verre. */
   return {
     code,
     nom: nom.slice(0, 44),
     marque: (p.brands || "").split(",")[0].trim(),
     prot100: Math.round((Number(prot) || 0) * 10) / 10,
     kcal100: Math.round(Number(kcal) || 0),
-    portion: mp ? Math.round(parseFloat(mp[1].replace(",", "."))) : 0
+    portion: liquide ? (portionMl(p.serving_size) <= 500 ? portionMl(p.serving_size) : 0)
+                     : (mp ? Math.round(parseFloat(mp[1].replace(",", "."))) : 0),
+    liquide
   };
 }
 /* Fiche d'un produit scanné. Rien d'autre à l'écran : ni la liste des aliments, ni le
@@ -6359,6 +6400,9 @@ async function chercherProduit(code){
    le nom en capitales, les deux chiffres côte à côte — pour qu'on reconnaisse l'écran. */
 function openProduitScanne(meal, p){
   const k = jourAlim();
+  /* on boit une boisson, on mange un aliment : l'unité, le pas du champ et le libellé
+     enregistré suivent tous les trois */
+  const ml = !!p.liquide, uni = ml ? "ml" : "g";
   openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(p.nom)}</h3>
     ${p.marque? `<div style="text-align:center; font-size:12.5px; color:var(--ink-mute); margin:-6px 0 12px;">${esc(p.marque)}</div>`:""}
     <div class="row" style="justify-content:center; gap:34px; margin-bottom:14px;">
@@ -6370,16 +6414,20 @@ function openProduitScanne(meal, p){
         <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Kilocalories")}</div></div>
     </div>
     <div class="stack">
-      <div><span class="label" style="display:block; margin-bottom:5px;">${TR("Quantité mangée (g)")}</span>
-        <input type="number" inputmode="decimal" step="10" min="0" id="ps-g" value="${p.portion || 100}"></div>
+      <div><span class="label" style="display:block; margin-bottom:5px;">${
+        TR(ml ? "Quantité bue (ml)" : "Quantité mangée (g)")}</span>
+        <input type="number" inputmode="decimal" step="${ml ? 25 : 10}" min="0" id="ps-g"
+          value="${p.portion || (ml ? 250 : 100)}"></div>
       <div style="font-size:12px; color:var(--ink-mute); text-align:center;">${
-        p.prot100 + " " + TR("g de protéines") + " · " + p.kcal100 + " kcal " + TR("pour 100 g")}</div>
+        p.prot100 + " " + TR("g de protéines") + " · " + p.kcal100 + " kcal "
+        + TR(ml ? "pour 100 ml" : "pour 100 g")}</div>
       <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
         <input type="checkbox" id="ps-save" style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
         <span style="font-size:13.5px; color:var(--ink-soft);">${TR("Garder dans mes propositions")}</span>
       </label>
       <button class="btn btn-accent" id="ps-ok">${TR("Ajouter à ce repas")}</button>
-      <button class="btn" id="ps-autre">${IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
+      <button class="btn" id="ps-autre" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
+        IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
       <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
     </div>`);
   const gEl = document.getElementById("ps-g");
@@ -6401,7 +6449,7 @@ function openProduitScanne(meal, p){
     const prot = Math.round(p.prot100*f), kcal = Math.round(p.kcal100*f);
     /* même écriture que partout ailleurs : la pastille, ses boutons et l'appui long
        fonctionneront sur ce produit comme sur n'importe quel aliment */
-    const label = `${p.nom} ${q} g (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
+    const label = `${p.nom} ${q} ${uni} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
     if(document.getElementById("ps-save").checked){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
@@ -6514,13 +6562,21 @@ function openAjoutAliment(meal){
       trouves += gardes.length;
       html += `<div class="al-h">${esc(TR(grp))}</div>`
         + (FOOD_NOTE[grp] ? `<div class="al-note">${esc(TR(FOOD_NOTE[grp]))}</div>` : "")
-        + gardes.map(([it,i])=>{
+        + `<div class="al-grid">` + gardes.map(([it,i])=>{
         const v = grp + "|" + i;
-        const par = it[3] === "100g" ? "/ 100 g" : (it[3] === "cl" ? "/ 100 ml" : "/ " + TR(it[3]));
-        return `<button class="al-row ${foodEl.value===v? "on":""}" data-food="${esc(v)}">
-          <span class="nm">${esc(TR(it[0]))}</span>
-          <span class="vl">${it[1]} g · ${it[2]} kcal <em>${esc(par)}</em></span></button>`;
-      }).join("");
+        /* « Blanc de poulet (130 g cuit) » : le nom seul sur la première ligne, sa
+           précision avec les calories en dessous. Dans une pastille deux fois moins
+           large, la parenthèse mangeait trois lignes. */
+        const mn = TR(it[0]).match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+        const nom = mn ? mn[1] : TR(it[0]), det = mn ? mn[2] : "";
+        /* à la pièce, l'unité est déjà dans le nom : « 78 kcal » suffit sous « Œuf » */
+        const par = it[3] === "100g" ? " / 100 g" : (it[3] === "cl" ? " / 100 ml" : "");
+        const bas = [det, it[2] + " kcal" + par].filter(Boolean).join(" · ");
+        return `<button class="fchip al-c ${foodEl.value===v? "on":""}" data-food="${esc(v)}">
+          <span class="ic">${foodIcon(it[0])}</span>
+          <span class="tx"><span class="nm">${esc(nom)}</span><span class="q">${esc(bas)}</span></span>
+          <span class="g">${it[1]}<span style="font-size:9px;">g</span></span></button>`;
+      }).join("") + `</div>`;
     });
     if(!trouves) html = `<div class="al-vide">${TR("Aucun aliment ne correspond. Passe par « je saisis les valeurs ».")}</div>`;
     html += `<div class="al-h">${TR("Autre")}</div>

@@ -1110,6 +1110,108 @@ async function lancer(){
 
   /* ------------------------------------------------- ordre des exercices d'une séance */
   /* ------------------------------------------------- fiches empilées */
+  grp("Boisson ou aliment");
+  neuf();
+  /* Un produit scanné se compte en millilitres ou en grammes selon ce qu'il est. La
+     catégorie Open Food Facts tranche quand elle est renseignée, le contenant sinon.
+     Aucun de ces tests ne touche au réseau : on donne la fiche à la main. */
+  (()=>{
+    const boisson = p => F.estBoisson(p);
+    const cat = (...t) => ({categories_tags:t});
+    vrai("La catégorie « boissons » suffit", boisson(cat("en:beverages")));
+    vrai("Un soda est une boisson", boisson(cat("en:sugared-beverages","en:sodas")));
+    vrai("Un jus d'orange aussi", boisson(cat("en:orange-juices")));
+    vrai("Le lait aussi", boisson(cat("en:milks")));
+    vrai("L'eau aussi", boisson(cat("en:waters")));
+    /* on teste la FIN de la catégorie : sans quoi tout ce qui contient du lait
+       deviendrait buvable */
+    vrai("Le chocolat au lait ne se boit pas", !boisson(cat("en:chocolates","en:milk-chocolates")));
+    vrai("Un fromage au lait de vache non plus", !boisson(cat("en:cheeses-made-from-cow-milk")));
+    vrai("Le lait en poudre non plus", !boisson(cat("en:milk-powders")));
+    vrai("Un yaourt non plus", !boisson(cat("en:yogurts")));
+    /* fiche sans catégorie : c'est le contenant qui parle */
+    vrai("Sans catégorie, « 33 cl » trahit la boisson", boisson({quantity:"33 cl"}));
+    vrai("…et « 200 ml » de portion aussi", boisson({serving_size:"200 ml"}));
+    vrai("« 500 g » reste un aliment", !boisson({quantity:"500 g"}));
+    vrai("Une fiche vide reste un aliment", !boisson({}));
+    /* les volumes ramenés en millilitres */
+    eq("250 ml", F.portionMl("250 ml"), 250);
+    eq("33 cl", F.portionMl("33 cl"), 330);
+    eq("2 dl", F.portionMl("2 dl"), 200);
+    eq("1 L", F.portionMl("1 L"), 1000);
+    eq("1,5 l", F.portionMl("1,5 l"), 1500);
+    eq("Des grammes ne font pas un volume", F.portionMl("30 g"), 0);
+  })();
+  neuf();
+  /* la fiche d'un produit scanné : l'unité tient tout le reste */
+  (()=>{
+    const lab = () => F.document.querySelector("#sheet .label").textContent;
+    const jour = F.jourAlim();
+    DB.habitSel = {}; DB.hbPerso = {};
+    F.openProduitScanne("matin", {code:"1", nom:"Cola", marque:"", prot100:0, kcal100:42,
+      portion:330, liquide:true});
+    eq("On boit une boisson", lab(), "Quantité bue (ml)");
+    eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "330");
+    eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "25");
+    F.document.getElementById("ps-ok").click();
+    eq("Le libellé est en millilitres",
+      (DB.habitSel[jour]||{}).matin[0], "Cola 330 ml (~0 g prot. · 139 kcal)");
+    /* le reste de l'application doit savoir relire ce libellé */
+    eq("La pastille affiche le volume", F.partsAliment("Cola 330 ml (~0 g prot. · 139 kcal)", 0).qCourt, "330 ml");
+    eq("Doubler le volume double les calories",
+      F.kcalOf("Cola 330 ml (~0 g prot. · 139 kcal)") * F.facteurAliment("Cola 330 ml (~0 g prot. · 139 kcal)", "Cola 660 ml (~0 g prot. · 278 kcal)"), 278);
+    DB.habitSel = {}; DB.hbPerso = {};
+    F.hideSheet();
+    F.openProduitScanne("matin", {code:"2", nom:"Skyr", marque:"", prot100:10, kcal100:57,
+      portion:140, liquide:false});
+    eq("On mange un aliment", lab(), "Quantité mangée (g)");
+    eq("Le champ avance par dizaines de grammes", F.document.getElementById("ps-g").step, "10");
+    F.document.getElementById("ps-ok").click();
+    eq("Le libellé est en grammes",
+      (DB.habitSel[jour]||{}).matin[0], "Skyr 140 g (~14 g prot. · 80 kcal)");
+    DB.habitSel = {}; DB.hbPerso = {};
+    F.hideSheet();
+  })();
+  neuf();
+
+  grp("Recherche d'aliments");
+  neuf();
+  /* Deux colonnes et une émoticône, comme la grille du repas : on reconnaît d'avance
+     la pastille qu'on retrouvera dans la journée. */
+  (()=>{
+    F.openAjoutAliment("matin");
+    const liste = F.document.getElementById("ot-liste");
+    const cartes = [...liste.querySelectorAll(".al-c")];
+    const total = F.eval("FOOD_100G").reduce((a,g)=>a+g[1].length,0);
+    eq("Un aliment, une pastille", cartes.length, total);
+    eq("Une grille par groupe", liste.querySelectorAll(".al-grid").length, F.eval("FOOD_100G").length);
+    vrai("Chaque pastille porte une émoticône",
+      cartes.every(c=>{ const t = c.querySelector(".ic").textContent.trim(); return t.length > 0; }));
+    vrai("…et ses protéines", cartes.every(c=>/\d/.test(c.querySelector(".g").textContent)));
+    const par = n => cartes.find(c=>c.querySelector(".nm").textContent === n);
+    vrai("Le poulet a son pilon", par("Poulet").querySelector(".ic").textContent === "🍗");
+    vrai("L'œuf a son œuf", par("Œuf").querySelector(".ic").textContent === "🥚");
+    /* la parenthèse passe sous le nom : dans une pastille deux fois moins large,
+       « Blanc de poulet (130 g cuit) » tenait sur trois lignes */
+    eq("Le nom se lit seul sur sa ligne", par("Blanc de poulet").querySelector(".q").textContent,
+      "130 g cuit · 215 kcal");
+    eq("Aux 100 g, la référence est écrite", par("Poulet").querySelector(".q").textContent,
+      "blanc · 165 kcal / 100 g");
+    eq("Un liquide se compte pour 100 ml", par("Lait entier").querySelector(".q").textContent,
+      "65 kcal / 100 ml");
+    eq("À la pièce, le nom porte déjà l'unité", par("Œuf").querySelector(".q").textContent, "78 kcal");
+    /* la sélection reste visible */
+    par("Skyr").click();
+    vrai("La pastille choisie se marque",
+      F.document.querySelector("#ot-liste .al-c.on").querySelector(".nm").textContent === "Skyr");
+    eq("Une seule à la fois", F.document.querySelectorAll("#ot-liste .al-c.on").length, 1);
+    /* la saisie manuelle garde sa ligne pleine largeur, elle n'est pas un aliment */
+    vrai("« Je saisis les valeurs » reste à part",
+      !!liste.querySelector('.al-row[data-food="manuel"]'));
+    F.hideSheet();
+  })();
+  neuf();
+
   grp("Fiches empilées");
   neuf();
   /* Il n'y a qu'une feuille dans la page : en ouvrir une deuxième remplaçait la
