@@ -46,7 +46,7 @@ function vrai(nom, cond, detail){ ligne(!!cond, nom, cond? "" : (detail||"")); }
 
 document.getElementById("app").addEventListener("load", () => setTimeout(lancer, 400));
 
-function lancer(){
+async function lancer(){
   const F = document.getElementById("app").contentWindow;
   /* « db » est déclaré avec let dans l'app : il n'apparaît pas sur window, on va chercher la référence */
   const DB = F.eval("db");
@@ -873,6 +873,41 @@ function lancer(){
   neuf();
 
   /* ---------------------------------------------------------- materiel disponible */
+  /* ---------------------------------------------------------- sauvegarde automatique */
+  grp("Sauvegarde automatique");
+  neuf();
+  /* Vu en vrai sur Chrome Android : showSaveFilePicker existe, l'autorisation est
+     accordée, createWritable() vide le fichier — et plus rien n'atteint le disque.
+     L'utilisateur repartait avec un fichier de 0 octet présenté comme sa sauvegarde,
+     ce qui est pire que pas de sauvegarde : on croit être protégé.
+     L'app doit donc refuser d'activer ce qu'elle n'a pas pu relire.
+     Le faux fichier est construit DANS l'iframe : autoFile est déclaré avec let,
+     il n'existe pas sur window et ne peut se manipuler que de l'intérieur. */
+  const essaiAuto = c => F.eval(`(async () => {
+    const faux = {
+      name: "tonnage-donnees.json",
+      async createWritable(){ return {async write(){}, async close(){}}; },
+      async getFile(){ return new Blob([${'"vide"'} === "${c}" ? "" : JSON.stringify(db)],
+                                       {type:"application/json"}); }
+    };
+    const dits = []; const vraiToast = toast; toast = m => dits.push(m);
+    autoFile = {handle: faux, ok: true, to: null, name: faux.name, err: ""};
+    await autoFileEssai("ok");
+    toast = vraiToast;
+    const r = {dits: dits.slice(), actif: autoFile.ok, garde: !!autoFile.handle, err: autoFile.err};
+    autoFile = {handle: null, ok: false, to: null, name: "", err: ""};
+    return r;
+  })()`);
+  const casse = await essaiAuto("vide");
+  vrai("Un fichier resté vide n'active pas la sauvegarde", !casse.actif);
+  vrai("…et un fichier qui ne marche pas n'est pas gardé", !casse.garde);
+  vrai("…l'utilisateur est prévenu, une seule fois", casse.dits.length === 1, casse.dits.join(" | "));
+  vrai("…et la raison est notée pour le diagnostic", /0 octets/.test(casse.err), casse.err);
+  const sain = await essaiAuto("bon");
+  vrai("Un fichier réellement écrit active bien la sauvegarde", sain.actif);
+  vrai("…sans message d'alerte", sain.dits.length === 1 && sain.dits[0] === "ok", sain.dits.join(" | "));
+  neuf();
+
   grp("Matériel disponible");
   neuf();
   const MAT = F.eval("MATERIELS");
