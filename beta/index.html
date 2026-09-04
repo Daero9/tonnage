@@ -5008,7 +5008,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 23h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 23h35 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5677,13 +5677,32 @@ function openSheet(html, opts){
     try{ history.pushState({tonnage:"sheet"}, ""); }catch(e){}
   }
 }
+/* Il n'y a qu'une seule feuille dans la page : en ouvrir une deuxième remplaçait la
+   première, et la refermer ne laissait rien. On empile donc de quoi ROUVRIR celle
+   d'en dessous — une fonction, pas du HTML : les gestionnaires d'événements sont
+   posés après coup et ne survivraient pas à une copie du balisage. */
+let pileFiches = [];
+function ouvrirParDessus(retour, ouvrir){
+  pileFiches.push(retour);
+  ouvrir();
+}
+/* revient à la fiche précédente s'il y en a une ; dit si elle a été rouverte */
+function retourFiche(){
+  const f = pileFiches.pop();
+  if(!f) return false;
+  try{ f(); }catch(e){ return false; }
+  return true;
+}
 function hideSheet(){
   sheet.style.transition = ""; sheet.style.transform = "";
   overlay.classList.remove("show");
   sheetOpen = false; sheetVerrou = false;
+  pileFiches = [];                    /* on ferme pour de bon : rien ne doit resurgir */
   if(onSheetClose){ const f = onSheetClose; onSheetClose = null; try{ f(); }catch(e){} }
 }
 function closeSheet(){
+  /* une fiche par-dessus une autre : on redescend d'un cran au lieu de tout fermer */
+  if(retourFiche()) return;
   if(sheetOpen && history.state && history.state.tonnage==="sheet"){
     sheetOpen = false;
     try{ history.back(); return; }catch(e){}
@@ -7777,7 +7796,10 @@ function openPreview(tplId){
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR("Lancer cette séance")}</button>
     <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
-  document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
+  document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation();
+    ouvrirParDessus(()=>openPreview(tplId), ()=>openExoInfo(b.dataset.exinfo));
+  });
   trierParGlisse(document.querySelector(".pv-liste"), ordre=>{
     appliquerOrdre(t, ordre);
     render();                                /* la carte de l'accueil suit aussi */
@@ -7787,12 +7809,11 @@ function openPreview(tplId){
      le mouvement, pas la consigne. */
   document.querySelectorAll("[data-pvswap]").forEach(b=>b.onclick=()=>{
     const i = Number(b.dataset.pvswap);
-    closeSheet();
-    setTimeout(()=>openPicker(exId=>{
+    ouvrirParDessus(()=>openPreview(tplId), ()=>openPicker(exId=>{
       t.items[i].exId = exId;
       save(); render();
-      setTimeout(()=>openPreview(tplId), 60);
-    }), 60);
+      retourFiche();                 /* on redescend sur l'aperçu, à jour */
+    }));
   });
   document.querySelectorAll("[data-pvdel]").forEach(b=>b.onclick=()=>{
     const i = Number(b.dataset.pvdel);
@@ -8818,7 +8839,10 @@ function openPicker(cb){
     ).join("") || `<div class="empty">${TR("Aucun résultat.")}</div>`;
     /* on ne ferme pas ici : c'est l'appelant qui décide (rouvrir l'éditeur, ou fermer) */
     if(!browse) listEl.querySelectorAll("[data-pk]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-exinfo]")) return; cb(r.dataset.pk); });
-    listEl.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
+    listEl.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{
+      e.stopPropagation();
+      ouvrirParDessus(()=>openPicker(cb), ()=>openExoInfo(b.dataset.exinfo));
+    });
   };
   draw("");
   document.getElementById("pk-search").oninput=e=>draw(e.target.value);

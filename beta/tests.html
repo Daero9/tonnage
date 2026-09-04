@@ -1109,6 +1109,47 @@ async function lancer(){
   neuf();
 
   /* ------------------------------------------------- ordre des exercices d'une séance */
+  /* ------------------------------------------------- fiches empilées */
+  grp("Fiches empilées");
+  neuf();
+  /* Il n'y a qu'une feuille dans la page : en ouvrir une deuxième remplaçait la
+     première, et la refermer ne laissait rien — on se retrouvait sur l'accueil au
+     lieu de revenir à l'aperçu de la séance. */
+  (()=>{
+    const titre = () => { const h = F.document.querySelector("#sheet h3"); return h ? h.textContent : ""; };
+    const ouverte = () => F.document.getElementById("overlay").classList.contains("show");
+    /* la fermeture pour de bon passe par history.back(), qui n'agit qu'au tour suivant :
+       on regarde donc l'état interne, qui lui est posé tout de suite */
+    const encoreOuverte = () => F.eval("sheetOpen");
+    const pile = () => F.eval("pileFiches").length;
+    DB.templates = [{id:"tpile", name:"Pile", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+      {exId:id("Rowing barre"),     sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.openPreview("tpile");
+    eq("On part de l'aperçu de la séance", titre(), "Pile");
+    F.ouvrirParDessus(()=>F.openPreview("tpile"), ()=>F.openExoInfo(id("Développé couché")));
+    eq("La fiche de l'exercice passe par-dessus", titre(), F.getEx(id("Développé couché")).name);
+    eq("…et l'aperçu est mis de côté", pile(), 1);
+    F.closeSheet();
+    eq("La fermer ramène à l'aperçu", titre(), "Pile");
+    eq("…et la pile est vidée", pile(), 0);
+    vrai("…sans jamais tout fermer", ouverte());
+    F.closeSheet();
+    vrai("Fermer l'aperçu ferme pour de bon", !encoreOuverte());
+    /* le bouton retour du téléphone ne doit rien laisser derrière lui */
+    F.openPreview("tpile");
+    F.ouvrirParDessus(()=>F.openPreview("tpile"), ()=>F.openExoInfo(id("Rowing barre")));
+    eq("Deux fiches ouvertes", pile(), 1);
+    F.hideSheet();
+    eq("Une fermeture nette vide la pile", pile(), 0);
+    F.openSettings();
+    F.closeSheet();
+    vrai("Aucune fiche ne resurgit après coup", !encoreOuverte() && pile() === 0);
+    DB.active = null;
+  })();
+  neuf();
+
   grp("Ordre des exercices");
   neuf();
   /* Le glissé lui-même se vérifie à la main : l'iframe des tests n'a aucune hauteur,
