@@ -1782,6 +1782,19 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Bien joué":"Well done",
+  "Trop léger":"Too light",
+  "Entendu":"Got it",
+  "C'était trop lourd":"That was too heavy",
+  "C'était voulu":"That was on purpose",
+  "Je garde cette charge":"Keep this load",
+  "On ne change rien.":"Nothing changes.",
+  "On reste à {}.":"Staying at {}.",
+  "Parfait — tu es pile dans ta fourchette.":"Perfect — you're right in your range.",
+  "{r} reps avant de descendre, pile dans ta fourchette.":"{r} reps before dropping, right in your range.",
+  "{r} reps à {c} avant de descendre, pile dans ta fourchette. On garde cette charge.":"{r} reps at {c} before dropping, right in your range. Keeping this load.",
+  "{r} reps avant de descendre — séries suivantes à {c}.":"{r} reps before dropping — following sets at {c}.",
+  "{r} reps avant de descendre, au lieu de {lo} à {hi}.":"{r} reps before dropping, instead of {lo} to {hi}.",
   "Temps de séance":"Session time",
   "Calendrier":"Calendar",
   "Mes protéines":"My protein",
@@ -4854,7 +4867,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "4 septembre 2026 02h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "4 septembre 2026 02h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5272,7 +5285,10 @@ function suggestFor(exId, target){
      répétitions même quand la charge était juste. Une seule série courte ne doit donc pas
      faire baisser la charge — on regarde si la MAJORITÉ des séries est sous la fourchette.
      Trois séries à 10 et une à 8 : la charge était bonne, on la garde. */
-  const sousLaCible = last.sets.filter(s=>(s.r||0)<rng.lo).length;
+  /* Une série à dégressifs tombe SOUS la fourchette par construction : on descend la
+     barre justement parce qu'on ne peut plus la tenir. La compter comme « trop lourd »
+     ferait baisser la charge séance après séance alors que le travail est bon. */
+  const sousLaCible = last.sets.filter(s=>(s.r||0)<rng.lo && !(s.drops && s.drops.length)).length;
   const majoriteEnDessous = sousLaCible * 2 > last.sets.length;
   /* une série unique reste jugée sur elle-même : il n'y a pas de majorité à chercher */
   const anyBelow = last.sets.length === 1 ? sousLaCible > 0 : majoriteEnDessous;
@@ -7720,7 +7736,7 @@ function majSerieActive(){
      y compris pendant les deux secondes de son message de réponse : deux cadres noirs
      à la fois ne guident plus rien. */
   let cible = null;
-  if(choisie && !choisie.querySelector(".rir-ask")){
+  if(choisie && !choisie.querySelector(".rir-ask:not(.bilan)")){
     const en = a.entries[parseInt(choisie.dataset.ei)];
     cible = choisie.querySelector('.set-row[data-si="' + en.sets.findIndex(x=>!x.done) + '"]');
   }
@@ -7871,6 +7887,7 @@ function renderActive(app){
       rIn.oninput=()=>{ st.r = rIn.value===""?"":parseInt(rIn.value); save(); };
       row.querySelector(".ck").onclick=()=>{
         /* une question attend sa réponse : on ne passe pas à la série suivante avant */
+        /* un bilan de dégressif n'attend aucune réponse : il n'empêche pas d'avancer */
         const enAttente = card.querySelector(".rir-ask:not(.repondu)");
         if(enAttente && !st.done){
           enAttente.classList.remove("rappel");
@@ -7914,6 +7931,55 @@ function renderActive(app){
           const fait = [numSerie, ((st.w||0) > 0 ? pds(st.w) + " × " : "") + (st.r||0) + " " + TR("reps")]
             .filter(Boolean).join(" · ")
             + (nbDrops ? " + " + nbDrops + " " + TR("dég.") : "");
+          /* Ce qui suit ne dépend pas de la réponse : on le calcule une fois, pour que
+             le bilan d'un dégressif et la réponse à la question partagent exactement
+             les mêmes règles d'ajustement. */
+          const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
+          const next = en.sets.find(s2=>!s2.done && !s2.warm);   /* jamais l'échauffement */
+          const inc = (st.w||0)>=20? 2.5 : 1;
+          /* applique une valeur à toutes les séries restantes, pas seulement à la suivante */
+          const appliquerSuite = (champ, valeur)=>{
+            en.sets.forEach((s2,j)=>{
+              if(s2.done || s2.warm) return;
+              s2[champ] = valeur;
+              const l = setsDiv.querySelector('.set-row[data-si="'+j+'"]');
+              const inp = l && l.querySelectorAll("input")[champ==="w"?0:1];
+              /* la charge est stockée en kg : elle doit repasser par saisiePoids(),
+                 sinon le champ affiche le kilo brut au lieu de la valeur saisie. */
+              if(inp) inp.value = (champ==="w" ? saisiePoids(valeur) : (valeur===""? "" : valeur));
+            });
+            save();
+          };
+          const plafonne = chargeBloquee(en.exId);              /* ne peut pas monter en charge */
+          const rienARetirer = sansChargeDuTout(en.exId, st.w); /* ne peut pas descendre non plus */
+          /* Le bloc de réponse, commun aux deux chemins : un verdict qu'on lit d'un coup
+             d'oeil, la consigne en dessous, et au plus un bouton pour reprendre la main. */
+          const afficherReponse = (ton, verdict, detail, boutons)=>{
+            ask.innerHTML = `<div class="rir-rep ${ton}">
+              <div class="ic">${ton === "juste" ? "✓" : (ton === "monte" ? "↑" : "↓")}</div>
+              <div class="grow">${verdict? `<div class="v">${esc(verdict)}</div>`:""}<div class="d">${esc(detail)}</div></div>
+            </div>${boutons || ""}`;
+          };
+          /* Un bilan n'attend rien de toi : il redevient une carte claire et rend sa
+             place à la série, pendant que le cadre noir file sur la suivante. Le noir
+             désigne ce qu'il reste à faire, jamais ce qui est terminé. */
+          const poserBilan = ()=>{
+            ask.classList.add("repondu", "bilan");
+            retirerBlocNoir(true);
+            rendreLignes(card);
+          };
+          /* la série revient dès qu'on n'attend plus rien d'elle */
+          const clore = (delai)=>{
+            majSerieActive();
+            rendreLignes(card);
+            const reste = en.sets.some(s2=>!s2.done);
+            setTimeout(()=>{ if(ask.isConnected){ ask.remove(); retirerBlocNoir(true); majSerieActive(); } },
+              delai || (reste ? 2600 : 1200));
+            if(!reste) setTimeout(()=>{
+              if(!document.body.contains(card)) return;
+              exerciceFini(card, ex.name, ()=>{ en.replie = true; save(); renderSurPlace(); });
+            }, 1300);
+          };
           ask.innerHTML = `<div class="rir-fait">${esc(fait)}</div>
             ${dejaVu("rir")? "" : `<div class="rir-intro">${TR("Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.")}</div>`}
             <div class="q">${TR("Aurais-tu pu faire plus de reps ?")}</div>
@@ -7934,28 +8000,74 @@ function renderActive(app){
           retirerBlocNoir(true);
           suiteDeLigne(row).forEach(l=>{ l.classList.add("en-question"); l.classList.remove("actif"); });
           poserBlocNoir([ask], true);
+
+          /* ---- dégressif : l'app annonce, elle ne questionne plus ------------------
+             Un dégressif se fait par construction jusqu'à l'échec : « aurais-tu pu faire
+             plus ? » n'a pas de réponse, c'est non, sinon on n'aurait pas descendu la
+             barre. Ce qui compte est le nombre de reps tenu AVANT la première descente —
+             et l'app connaît la fourchette visée, donc elle sait déjà juger.
+             On ne pose donc une question que dans le seul cas où elle ne peut pas
+             trancher : sous la fourchette, où « trop lourd » et « lourd voulu » se
+             ressemblent. Ailleurs on annonce, avec un bouton pour reprendre la main.
+             Sans ça, un débutant qui fait 10 reps puis descend — ce qui est très bien —
+             répondait « trop lourd » et voyait sa charge baisser sans raison. */
+          if(nbDrops){
+            st.rir = 0;                       /* aller à l'échec, c'est zéro rep en réserve */
+            if(!dejaVu("rir")) marquerVu("rir");
+            const hautR = st.r || 0;
+            const tropLourd = `<button class="rir-lourd" data-rir="-1">${TR("C'était trop lourd")}</button>`;
+            if(hautR > rng.hi){
+              /* au-dessus de la fourchette avant même de descendre : la barre est légère */
+              let detail;
+              if(plafonne){
+                const pr = progressionSansCharge(en.exId, hautR, en.sets.filter(x=>!x.warm).length);
+                detail = pr.text;
+                if(next && pr.mode === "reps") appliquerSuite("r", pr.reps);
+              } else {
+                const nw = (st.w||0) + inc;
+                detail = TR("{r} reps avant de descendre — séries suivantes à {c}.")
+                  .replace("{r}", hautR).replace("{c}", pds(nw));
+                if(next) appliquerSuite("w", nw);
+              }
+              poserBilan();
+              afficherReponse("monte", TR("Trop léger"), detail,
+                `<button class="rir-lourd" data-garder="1">${TR("Je garde cette charge")}</button>`);
+              clore(6000);
+            } else if(hautR < rng.lo){
+              /* le seul cas ambigu : barre trop lourde, ou lourd assumé avant descente ? */
+              ask.innerHTML = `<div class="rir-fait">${esc(fait)}</div>
+                <div class="q">${TR("{r} reps avant de descendre, au lieu de {lo} à {hi}.")
+                  .replace("{r}", hautR).replace("{lo}", rng.lo).replace("{hi}", rng.hi)}</div>
+                <div class="row">
+                  <button data-rir="-1">${TR("C'était trop lourd")}</button>
+                  <button data-garder="1">${TR("C'était voulu")}</button>
+                </div>`;
+            } else {
+              /* pile dans la fourchette : rien à corriger, et surtout rien à demander */
+              if(next && !rienARetirer) appliquerSuite("w", st.w);
+              poserBilan();
+              afficherReponse("juste", TR("Bien joué"),
+                rienARetirer
+                  ? TR("{r} reps avant de descendre, pile dans ta fourchette.").replace("{r}", hautR)
+                  : TR("{r} reps à {c} avant de descendre, pile dans ta fourchette. On garde cette charge.")
+                      .replace("{r}", hautR).replace("{c}", pds(st.w||0)),
+                tropLourd);
+              clore(6000);
+            }
+          }
+          /* « je garde » / « c'était voulu » : on ne touche à rien, on le dit, on s'efface */
+          ask.querySelectorAll("[data-garder]").forEach(b=>b.onclick=()=>{
+            if(next && !rienARetirer) appliquerSuite("w", st.w);
+            poserBilan();
+            afficherReponse("juste", TR("Entendu"),
+              rienARetirer ? TR("On ne change rien.") : TR("On reste à {}.").replace("{}", pds(st.w||0)));
+            clore();
+          });
+
           ask.querySelectorAll("[data-rir]").forEach(b=>b.onclick=()=>{
             const rir = parseInt(b.dataset.rir);
             st.rir = rir < 0 ? 0 : rir;        /* « trop lourd » = tu étais à bout : 0 rep en réserve */
             if(!dejaVu("rir")) marquerVu("rir");
-            const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
-            const next = en.sets.find(s=>!s.done && !s.warm);   /* jamais l'échauffement */
-            const inc = (st.w||0)>=20? 2.5 : 1;
-            /* applique une valeur à toutes les séries restantes, pas seulement à la suivante */
-            const appliquerSuite = (champ, valeur)=>{
-              en.sets.forEach((s2,j)=>{
-                if(s2.done || s2.warm) return;
-                s2[champ] = valeur;
-                const l = setsDiv.querySelector('.set-row[data-si="'+j+'"]');
-                const inp = l && l.querySelectorAll("input")[champ==="w"?0:1];
-                /* la charge est stockée en kg : elle doit repasser par saisiePoids(),
-                   sinon le champ affiche le kilo brut au lieu de la valeur saisie. */
-                if(inp) inp.value = (champ==="w" ? saisiePoids(valeur) : (valeur===""? "" : valeur));
-              });
-              save();
-            };
-            const plafonne = chargeBloquee(en.exId);          /* ne peut pas monter en charge */
-            const rienARetirer = sansChargeDuTout(en.exId, st.w); /* ne peut pas descendre non plus */
             /* trois issues seulement : on monte, on baisse, ou on y est. C'est ce que
                l'icône et la couleur disent avant même qu'on ait lu la phrase. */
             let msg, ton = "juste";
@@ -8011,11 +8123,14 @@ function renderActive(app){
             } else {
               /* zone idéale : les séries suivantes reprennent la charge qui vient de fonctionner */
               if(next && !rienARetirer) appliquerSuite("w", st.w);
-              msg = next ? TR("Parfait — on reste à {}, pile la bonne zone.").replace("{}", pds(st.w||0))
-                          : TR("Parfait — c'est noté pour ta prochaine séance.");
+              /* sans charge, « on reste à 0 kg » n'a aucun sens */
+              msg = rienARetirer ? TR("Parfait — tu es pile dans ta fourchette.")
+                  : (next ? TR("Parfait — on reste à {}, pile la bonne zone.").replace("{}", pds(st.w||0))
+                          : TR("Parfait — c'est noté pour ta prochaine séance."));
             }
             save();
             ask.classList.add("repondu");
+            ask.classList.remove("bilan");    /* on répond : ce n'est plus un simple bilan */
             /* Toutes ces phrases sont bâties « Verdict — ce qu'on en fait ». On coupe
                au tiret pour en faire deux niveaux de lecture ; si un jour une phrase
                n'a pas de tiret, elle s'affiche entière en dessous, sans rien casser. */
@@ -8023,21 +8138,8 @@ function renderActive(app){
             const titre = coupe > 0 ? msg.slice(0, coupe) : "";
             let suite = coupe > 0 ? msg.slice(coupe + 3) : msg;
             suite = suite.charAt(0).toUpperCase() + suite.slice(1);
-            ask.innerHTML = `<div class="rir-rep ${ton}">
-              <div class="ic">${ton === "juste" ? "✓" : (ton === "monte" ? "↑" : "↓")}</div>
-              <div class="grow">${titre? `<div class="v">${esc(titre)}</div>`:""}<div class="d">${esc(suite)}</div></div>
-            </div>`;
-            majSerieActive();                 /* la serie repondue cesse d'etre en avant */
-            const reste = en.sets.some(s2=>!s2.done);
-            /* la série revient dès la réponse : on la voit cochée pendant que le
-               message s'affiche, plutôt que de la retrouver après coup */
-            rendreLignes(card);
-            setTimeout(()=>{ ask.remove(); retirerBlocNoir(true); majSerieActive(); }, reste ? 2600 : 1200);
-            /* plus rien à faire sur cet exercice : on félicite, puis on replie */
-            if(!reste) setTimeout(()=>{
-              if(!document.body.contains(card)) return;
-              exerciceFini(card, ex.name, ()=>{ en.replie = true; save(); renderSurPlace(); });
-            }, 1300);
+            afficherReponse(ton, titre, suite);
+            clore();
           });
         }
       };

@@ -973,6 +973,22 @@ function lancer(){
     seanceDe([11,11,11,11], [3,3,3,3]).mode, "up");
   eq("Une série unique est jugée sur elle-même",
     seanceDe([8], [0]).mode, "down");
+  /* Une série à dégressifs tombe sous la fourchette par construction : on descend la
+     barre justement parce qu'on ne peut plus la tenir. La compter comme « trop lourd »
+     ferait baisser la charge séance après séance alors que le travail est bon. */
+  const avecDrops = (reps, rirs) => {
+    const exId = id("Développé couché");
+    DB.history = [{id:"h1", date:new Date().toISOString(), name:"Push", start:0, end:0,
+      entries:[{exId, sets:reps.map((r,i)=>({w:80, r, done:true, rir: rirs? rirs[i] : undefined,
+        drops:[{w:70,r:2},{w:60,r:2}]}))}]}];
+    return F.suggestFor(exId, {reps:"10-12"});
+  };
+  eq("Des dégressifs sous la cible ne font pas baisser la charge",
+    avecDrops([8,7,6,5], [0,0,0,0]).mode, "beat");
+  eq("Les mêmes reps SANS dégressif la font bien baisser",
+    seanceDe([8,7,6,5], [0,0,0,0]).mode, "down");
+  eq("Un dégressif au haut de la fourchette fait quand même monter",
+    avecDrops([12,12,12,12], [0,0,0,0]).mode, "up");
 
   /* charge fixe : une seule charge disponible, donc seule la répétition bouge */
   const fixe = (reps, rirs) => {
@@ -1156,6 +1172,49 @@ function lancer(){
   vrai("« 3-5+ » monte la charge des séries suivantes", (()=>{ repondre("3"); const s2 = DB.active.entries[0].sets[2]; return s2.w > 60; })());
   vrai("« Trop lourd » baisse la charge des séries suivantes", (()=>{ repondre("-1"); const s2 = DB.active.entries[0].sets[2]; return s2.w < 60; })());
   vrai("« 1-2 » garde la charge des séries suivantes", (()=>{ repondre("1"); const s2 = DB.active.entries[0].sets[2]; return s2.w === 60; })());
+
+  /* ---- dégressif : l'app annonce au lieu de questionner ----
+     Un dégressif se fait par construction jusqu'à l'échec : « aurais-tu pu faire plus ? »
+     n'a pas de réponse. Ce qui compte est le nombre de reps tenu AVANT la première
+     descente, et l'app connaît la fourchette : elle sait juger seule. */
+  const degressif = hautR => {
+    DB.active = null;
+    F.startWorkout("tr");                          /* fourchette 8-12 */
+    const en = DB.active.entries[0], i = en.sets.findIndex(s=>!s.warm);
+    en.sets[i].w = 60; en.sets[i].r = hautR; en.sets[i].drops = [{w:50,r:2},{w:40,r:2}];
+    F.save(); F.renderSurPlace();
+    D.querySelector('.set-row[data-si="' + i + '"] .ck').click();
+    const ask = D.querySelector(".rir-ask");
+    const rep = ask.querySelector(".rir-rep");
+    return {ask, bilan: ask.classList.contains("bilan"),
+            noir: ask.classList.contains("bn"),
+            verdict: rep ? rep.querySelector(".v").textContent : null,
+            question: ask.querySelector(".q") ? ask.querySelector(".q").textContent : null,
+            boutons: [...ask.querySelectorAll("button")].length,
+            suite: en.sets.filter(s=>!s.warm && !s.done)[0]};
+  };
+  (()=>{ const d = degressif(10);                  /* 10 reps pour une cible de 8-12 */
+    eq("Dans la fourchette : l'app annonce, elle ne demande rien", d.question, null);
+    eq("…avec un verdict encourageant", d.verdict, "Bien joué");
+    eq("…et un seul bouton pour reprendre la main", d.boutons, 1);
+    vrai("…la charge ne bouge pas", d.suite.w === 60);
+    vrai("Le bilan n'est pas en noir : le noir dit ce qui reste à faire", !d.noir);
+  })();
+  (()=>{ const d = degressif(14);                  /* au-dessus de la fourchette */
+    eq("Au-dessus de la fourchette : trop léger", d.verdict, "Trop léger");
+    vrai("…et la charge monte", d.suite.w > 60);
+  })();
+  (()=>{ const d = degressif(5);                   /* en dessous : le seul cas ambigu */
+    vrai("En dessous, l'app demande — elle ne peut pas trancher", !!d.question);
+    eq("…en deux boutons seulement", d.boutons, 2);
+    vrai("…et rien n'est décidé avant la réponse", !d.bilan);
+    d.ask.querySelector("[data-garder]").click();
+    vrai("« C'était voulu » garde la charge", DB.active.entries[0].sets[2].w === 60);
+  })();
+  (()=>{ const d = degressif(5);
+    d.ask.querySelector('[data-rir="-1"]').click();
+    vrai("« C'était trop lourd » la baisse", DB.active.entries[0].sets[2].w < 60);
+  })();
   F.onerror = null;
 
   /* ---- mise en avant de la série en cours et repli de l exercice ---- */
