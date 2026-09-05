@@ -1415,7 +1415,7 @@ async function lancer(){
   grp("Le minuteur de repos, en rond");
   neuf();
   /* La barre a pris la forme du croquis : un disque qui deborde de part et d autre,
-     un anneau qui se remplit, un bouton de pause pose sur son bord bas. Ce qui compte
+     un anneau fin qui se remplit, un bouton de pause loge dedans. Ce qui compte
      ici n est pas le dessin mais qu il dise l heure : l anneau doit suivre le temps
      ecoule, et le bouton doit changer de sens des qu on met en pause. */
   (()=>{
@@ -1427,16 +1427,24 @@ async function lancer(){
     const pause = D2.getElementById("rest-pause");
     vrai("Le bouton de pause est posé sur le disque",
       !!pause && pause.closest(".rb-disc") === disque);
-    /* le cadran est une piece d horlogerie : sombre dans les deux themes, chiffres clairs */
     const C = n => F.getComputedStyle(n);
-    eq("Le cadran est sombre", C(disque).backgroundColor, "rgb(46, 32, 21)");
-    eq("…et ses chiffres clairs",
-      C(D2.querySelector("#rest-pill .t")).color, "rgb(255, 255, 255)");
+    const barre = D2.getElementById("restbar");
     const tour = F.eval("RB_TOUR");
     const creux = () => parseFloat(arc.style.strokeDashoffset);
 
+    /* une séance de gainage laissait sa marque : le repos suivant repartait en vert */
+    barre.classList.add("tenue");
     F.startRest(120);
+    vrai("Un repos qui commence n'est pas une tenue", !barre.classList.contains("tenue"));
     vrai("Au départ l'anneau est vide", Math.abs(creux() - tour) < 1);
+    /* le cadran est une pièce d'horlogerie : sombre dans les deux thèmes */
+    eq("Le cadran est sombre", C(disque).backgroundColor, "rgb(46, 32, 21)");
+    eq("…et ses chiffres clairs",
+      C(D2.querySelector("#rest-pill .t")).color, "rgb(255, 255, 255)");
+    /* pendant une tenue la barre passe au vert : le cadran suit, sinon le brun jurerait */
+    barre.classList.add("tenue");
+    eq("Le cadran suit la tenue", C(disque).backgroundColor, "rgb(39, 39, 25)");
+    barre.classList.remove("tenue");
     eq("Le libellé annonce le repos", D2.getElementById("rest-lbl").textContent, "Repos");
     eq("Le bouton propose la pause", pause.getAttribute("aria-label"), "Mettre en pause");
     eq("…avec les deux barres", pause.querySelectorAll("rect").length, 2);
