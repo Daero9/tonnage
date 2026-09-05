@@ -5642,7 +5642,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 17h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 18h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6007,23 +6007,6 @@ function sessionVolume(sess){
   });
   return v;
 }
-/* Volume servant UNIQUEMENT au calcul des calories. Il ajoute le poids du corps
-   aux tractions et aux dips : s'y hisser est un vrai travail mecanique, environ
-   0,55 kcal par repetition, que le tonnage ignore volontairement.
-   Le TONNAGE affiche, lui, ne change pas — il reste « charge externe deplacee ».
-   Deux notions, deux fonctions : ne jamais les confondre. */
-function volumeEffort(sess){
-  let v = 0;
-  (sess.entries||[]).forEach(en=>{
-    const f = facteurCharge(en.exId);
-    en.sets.forEach(st=>{
-      if(!(st.done && !st.warm)) return;
-      const drops = (st.drops||[]).reduce((a,d)=>a + chargeReelle(en.exId, d)*(d.r||0), 0);
-      v += (chargeReelle(en.exId, st)*(st.r||0) + drops) * f;
-    });
-  });
-  return v;
-}
 
 function lastPerf(exId){
   for(let i=db.history.length-1;i>=0;i--){
@@ -6041,19 +6024,55 @@ function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
 }
 function e1rm(w,r){ return r>1 ? w*(1+r/30) : w; }
+/* ---- ce que coûte une série, selon l'exercice ----
+   Toutes les séries ne se valent pas : un squat met en jeu les cuisses, les fessiers
+   et tout le tronc ; un curl met en jeu un biceps. MUSCLE_WORK dit déjà quels muscles
+   travaillent et à quelle intensité (1 à 3) — il manquait leur TAILLE. Sans elle, un
+   curl marteau (biceps 3, brachial 3, avant-bras 3) pesait autant qu'un front squat :
+   trois petits muscles comptés comme trois gros. */
+const MASSE_MUSCLE = {
+  "Quadriceps":10, "Fessiers":9, "Ischio-jambiers":7, "Grand dorsal":7,
+  "Adducteurs":5, "Pectoraux":5, "Trapèzes":4, "Deltoïdes":4, "Mollets":4,
+  "Pectoraux (haut)":3, "Abdos":3, "Lombaires":3, "Mollets (jumeaux)":3, "Triceps":3,
+  "Pectoraux (bas)":2, "Abdos (bas)":2, "Obliques":2, "Mollets (soléaire)":2, "Biceps":2,
+  "Brachial":1, "Avant-bras":1
+};
+/* De 3,5 MET pour une série d'isolation à 8 pour un soulevé de terre : l'échelle
+   du compendium des activités physiques, de « léger » à « vigoureux ». */
+function metExercice(exId){
+  const w = MUSCLE_WORK[nomCanon(getEx(exId))];
+  if(!w) return 6;                          /* hors table : la valeur uniforme d'avant */
+  const charge = w.reduce((a, m)=>a + (m[1] || 0) * (MASSE_MUSCLE[m[0]] || 3), 0);
+  return Math.max(3.5, Math.min(8, 3.5 + charge * 0.06));
+}
+/* Le volume d'une série au sens de l'EFFORT : la charge réellement déplacée, poids
+   du corps compris pour les tractions et les dips, dégressifs compris. S'y hisser est
+   un vrai travail mécanique que le tonnage affiché ignore volontairement — celui-ci
+   reste « charge externe déplacée ». Deux notions, deux fonctions, jamais mélangées. */
+function volEffortSerie(exId, st, f){
+  const drops = (st.drops || []).reduce((a, d)=>a + chargeReelle(exId, d) * (d.r || 0), 0);
+  return (chargeReelle(exId, st) * (st.r || 0) + drops) * f;
+}
+const MIN_SERIE = 2.5;      /* durée d'effort attribuée à une série, repos compris */
 /* kcal d'une séance de muscu : ce qui a été FAIT, jamais le temps passé.
    L'horloge ne comptait pas l'effort, elle comptait la présence : une séance laissée
    ouverte, une longue discussion entre deux séries, et le compteur montait tout seul.
-   Une série vaut ~2,5 min d'effort à 6 MET, plus le travail mécanique du tonnage.
    Le chiffre ne bouge donc qu'au moment où l'on valide une série. */
-function liftKcal(volume, nSeries){
+function liftKcal(sess){
   const kg = currentWeight() || (db.profile && db.profile.weight) || 75;
-  const min = (nSeries || 0) * 2.5;
-  const base = 6 * 3.5 * kg / 200 * min;       /* dépense de l'effort lui-même */
-  const travail = volume * 0.005;              /* travail mécanique du tonnage soulevé */
-  return Math.round(base + travail);
+  let kcal = 0;
+  ((sess && sess.entries) || []).forEach(en=>{
+    const met = metExercice(en.exId), f = facteurCharge(en.exId);
+    en.sets.forEach(st=>{
+      /* l'échauffement compte ICI : c'est de l'effort réellement dépensé. Il reste
+         hors du tonnage, qui doit rester comparable d'une séance à l'autre. */
+      if(!st.done) return;
+      kcal += met * 3.5 * kg / 200 * MIN_SERIE          /* l'effort lui-même */
+            + volEffortSerie(en.exId, st, f) * 0.005;   /* le travail mécanique */
+    });
+  });
+  return Math.round(kcal);
 }
-function nbSeries(s){ return s.entries.reduce((n,en)=>n+en.sets.filter(x=>!x.warm).length,0); }
 function parseReps(reps){
   const m = String(reps||"").match(/(\d+)(?:\D+(\d+))?/);
   if(!m) return null;
@@ -8863,7 +8882,7 @@ function renderSeance(app){
   const week = db.history.filter(s=>new Date(s.date)>=w0);
   const weekVol = week.reduce((a,s)=>a+sessionVolume(s),0);
   const cs = cardioWeekStats();
-  const weekKcal = week.reduce((a,s)=>a+liftKcal(volumeEffort(s), nbSeries(s)),0) + cs.kcal;
+  const weekKcal = week.reduce((a,s)=>a+liftKcal(s),0) + cs.kcal;
   /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
   const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
@@ -9015,7 +9034,7 @@ function renderSeance(app){
       }
       const h = it.o;
       const vol = Math.round(sessionVolume(h));
-      const kc = liftKcal(volumeEffort(h), nbSeries(h));
+      const kc = liftKcal(h);
       const mn = Math.round(((h.end||0)-(h.start||0))/60000);
       const t = db.templates.find(x=>x.id===h.templateId);
       return `<button class="hist-c" data-hist="${h.id}">
@@ -9837,10 +9856,7 @@ function renderActive(app){
     const bv = document.getElementById("hs-vol");
     if(bv) bv.textContent = volPds(Math.round(sessionVolume(a)));
     const bk = document.getElementById("hs-kcal");
-    if(bk){
-      const faites = a.entries.reduce((n, en)=>n + en.sets.filter(x=>x.done && !x.warm).length, 0);
-      bk.textContent = liftKcal(volumeEffort(a), faites) + " kcal";
-    }
+    if(bk) bk.textContent = liftKcal(a) + " kcal";
   };
   tick(); chronoInt = setInterval(tick, 1000);
   const chr = document.getElementById("chrono");
@@ -10376,7 +10392,7 @@ function renderActive(app){
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
-    const kcal = liftKcal(volumeEffort(a), doneSets);
+    const kcal = liftKcal(a);
     askConfirm(TR("Terminer la séance ?"), `${doneSets} ${TR(doneSets > 1 ? "séries validées" : "série validée")} · ${volPds(vol)} ${TR("soulevés")} · ${TR("environ")} ${kcal} ${TR("kcal brûlées. On enregistre ?")}`, TR("Enregistrer"), false, ()=>{
       /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
       const recap = {
@@ -11140,7 +11156,7 @@ function renderHist(app){
         <span class="pill">${fmtDur(s.end-s.start)}</span>
         <span class="pill">${nSets} ${TR(nSets>1?"séries":"série")}</span>
         <span class="pill" style="color:var(--accent);">${volPds(vol)}</span>
-        <span class="pill">≈ ${liftKcal(volumeEffort(s), nSets)} kcal</span>
+        <span class="pill">≈ ${liftKcal(s)} kcal</span>
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
         <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
