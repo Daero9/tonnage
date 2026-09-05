@@ -1260,6 +1260,22 @@
   #ot-scan .fl{margin-left:auto; display:flex; opacity:.7;}
   #ot-scan .fl svg{width:19px; height:19px;}
 
+  /* ---- les reflexes ----
+     Une carte qui s annonce : l ampoule et le titre en tete, puis des consignes cochees
+     plutot que des puces. La partie devant les deux points porte le sens, elle est en
+     gras — le reste explique. */
+  .ref-c{padding:15px 16px 14px; margin-bottom:16px;}
+  .ref-c .hd{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+  .ref-c .ic{flex:0 0 auto; width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(245,130,32,.13); color:var(--accent);}
+  .ref-c .ic svg{width:22px; height:22px;}
+  .ref-c .t{font-size:16px; font-weight:800;}
+  .ref-c .li{display:flex; align-items:flex-start; gap:10px; padding:6px 0;}
+  .ref-c .ck{flex:0 0 auto; display:flex; color:var(--accent); margin-top:1px;}
+  .ref-c .d{font-size:13px; color:var(--ink-soft); line-height:1.55;}
+  .ref-c .d b{color:var(--ink); font-weight:700;}
+
   /* ---- la page du plan ----
      L objectif d abord, en clair, avec le conseil a cote : c est la reponse a « pourquoi
      ces chiffres ». Les trois tuiles ne font que les rappeler. */
@@ -4420,10 +4436,18 @@ function openKcalTips(sens, pl){
         <div><div style="font-size:13.5px; font-weight:700;">${esc(TR(nom))}</div>
         <div style="font-size:12.5px; color:var(--ink-mute); line-height:1.5;">${esc(TR(txt))}</div></div>
       </div>`).join("")}</div>
-    <div class="label" style="margin-bottom:7px;">${TR("Les réflexes")}</div>
-    <div class="card" style="margin-bottom:16px;">
-      <div class="stack" style="gap:9px;">${reflexes.map(r=>`
-      <div style="font-size:13px; color:var(--ink-soft); line-height:1.5;">• ${esc(TR(r))}</div>`).join("")}</div>
+    <div class="card ref-c">
+      <div class="hd"><span class="ic">${IC_AMPOULE}</span><div class="t">${TR("Les réflexes")}</div></div>
+      <div>${reflexes.map(r=>{
+        /* « Bois tes calories : un shaker… » — la consigne devant les deux points porte
+           tout le sens, elle passe en gras. Les phrases sans deux points restent d un
+           seul tenant : la quatrieme n en a pas, en francais comme en anglais. */
+        /* on garde la ponctuation telle qu elle a ete ecrite : le francais met une
+           espace avant les deux points, l anglais non. */
+        const m = TR(r).match(/^([^:]{1,58}[^:\s])(\s*:\s*)(.+)$/);
+        return `<div class="li"><span class="ck">${IC_COCHE_RONDE}</span>
+          <div class="d">${m? `<b>${esc(m[1])}</b>${esc(m[2])}${esc(m[3])}` : esc(TR(r))}</div></div>`;
+      }).join("")}</div>
     </div>
     <button class="btn btn-accent" id="kt-ok" style="width:100%;">${TR("Compris")}</button>`);
   document.getElementById("kt-ok").onclick = closeSheet;
@@ -5405,7 +5429,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 05h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 06h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5940,6 +5964,10 @@ const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" s
    des chiffres, pas du texte, et doivent peser autant qu eux. */
 /* Une cible pleine, dans la meme famille que les signes de Nico : trois anneaux et
    un centre. C est le seul des trois que je n avais pas. */
+const IC_COCHE_RONDE = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">'
+  + '<circle cx="12" cy="12" r="10" fill="currentColor"/>'
+  + '<path d="M7.4 12.3 10.6 15.5 16.7 9" fill="none" stroke="#fff" stroke-width="2.2"'
+  + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const IC_COUCHES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"'
   + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
   + '<path d="M12 2.8 21.2 7.4 12 12 2.8 7.4z"/><path d="M2.8 12.6 12 17.2l9.2-4.6"/>'

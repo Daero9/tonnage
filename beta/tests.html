@@ -1312,6 +1312,40 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Les réflexes");
+  neuf();
+  (()=>{
+    const lignes = () => [...F.document.querySelectorAll(".ref-c .li")];
+    F.openKcalTips("up", F.planFor(DB.profile));
+    eq("Quatre réflexes", lignes().length, 4);
+    vrai("La carte s'annonce avec son ampoule",
+      !!F.document.querySelector(".ref-c .hd .ic svg"));
+    eq("…et son titre", F.document.querySelector(".ref-c .t").textContent, "Les réflexes");
+    eq("Chaque ligne est cochée", F.document.querySelectorAll(".ref-c .ck svg").length, 4);
+    /* la consigne devant les deux points passe en gras, le reste explique */
+    eq("La consigne est en gras",
+      lignes()[0].querySelector("b").textContent, "Bois tes calories");
+    vrai("…sans avaler l'espace du français",
+      !/\s$/.test(lignes()[0].querySelector("b").textContent));
+    vrai("…et la ponctuation reste française",
+      /<\/b> : /.test(lignes()[0].querySelector(".d").innerHTML));
+    /* une phrase sans deux points reste d'un seul tenant */
+    vrai("Une phrase sans deux points n'est pas coupée", !lignes()[3].querySelector("b"));
+    F.hideSheet();
+    /* en anglais, pas d'espace avant les deux points */
+    DB.settings.lang = "en";
+    F.openKcalTips("up", F.planFor(DB.profile));
+    vrai("En anglais la ponctuation suit l'anglais",
+      /<\/b>: /.test(F.document.querySelector(".ref-c .li .d").innerHTML));
+    F.hideSheet();
+    DB.settings.lang = "auto";
+    /* l'autre versant : réduire les calories */
+    F.openKcalTips("down", F.planFor(DB.profile));
+    eq("Quatre réflexes aussi pour réduire", lignes().length, 4);
+    F.hideSheet();
+  })();
+  neuf();
+
   grp("Aperçu d'une séance");
   neuf();
   (()=>{
