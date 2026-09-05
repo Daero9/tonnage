@@ -1135,7 +1135,7 @@ async function lancer(){
     vrai("« 500 g » reste un aliment", !boisson({quantity:"500 g"}));
     vrai("Une fiche vide reste un aliment", !boisson({}));
     /* les volumes ramenés en millilitres */
-    eq("250 ml", F.portionMl("250 ml"), 250);
+    eq("250 ml", F.portionMl("250 ml"), 250);   /* portionMl reste en millilitres : c'est la fiche qui divise */
     eq("33 cl", F.portionMl("33 cl"), 330);
     eq("2 dl", F.portionMl("2 dl"), 200);
     eq("1 L", F.portionMl("1 L"), 1000);
@@ -1148,18 +1148,25 @@ async function lancer(){
     const lab = () => F.document.querySelector("#sheet .label").textContent;
     const jour = F.jourAlim();
     DB.habitSel = {}; DB.hbPerso = {};
+    /* une canette se lit en centilitres, comme ce qui est écrit dessus */
     F.openProduitScanne("matin", {code:"1", nom:"Cola", marque:"", prot100:0, kcal100:42,
-      portion:330, liquide:true});
-    eq("On boit une boisson", lab(), "Quantité bue (ml)");
-    eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "330");
-    eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "25");
+      portion:33, liquide:true});
+    eq("On boit une boisson", lab(), "Quantité bue (cl)");
+    eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "33");
+    eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "5");
+    /* les valeurs d'Open Food Facts sont pour 100 ml, donc pour 10 cl : 33 cl = 3,3 fois */
+    eq("Les calories comptent par 10 cl", F.document.getElementById("ps-kcal").textContent, "139");
     F.document.getElementById("ps-ok").click();
-    eq("Le libellé est en millilitres",
-      (DB.habitSel[jour]||{}).matin[0], "Cola 330 ml (~0 g prot. · 139 kcal)");
+    eq("Le libellé est en centilitres",
+      (DB.habitSel[jour]||{}).matin[0], "Cola 33 cl (~0 g prot. · 139 kcal)");
     /* le reste de l'application doit savoir relire ce libellé */
-    eq("La pastille affiche le volume", F.partsAliment("Cola 330 ml (~0 g prot. · 139 kcal)", 0).qCourt, "330 ml");
+    eq("La pastille affiche le volume", F.partsAliment("Cola 33 cl (~0 g prot. · 139 kcal)", 0).qCourt, "33 cl");
     eq("Doubler le volume double les calories",
-      F.kcalOf("Cola 330 ml (~0 g prot. · 139 kcal)") * F.facteurAliment("Cola 330 ml (~0 g prot. · 139 kcal)", "Cola 660 ml (~0 g prot. · 278 kcal)"), 278);
+      F.kcalOf("Cola 33 cl (~0 g prot. · 139 kcal)") * F.facteurAliment("Cola 33 cl (~0 g prot. · 139 kcal)", "Cola 66 cl (~0 g prot. · 278 kcal)"), 278);
+    /* le bouton + de la pastille écrit lui-même le libellé suivant : sans les cl,
+       il repartait en multiples (« Cola ×2 ») et perdait le volume */
+    eq("Le bouton + garde les centilitres",
+      F.libelleQuantite("Cola 33 cl (~0 g prot. · 139 kcal)", 2), "Cola 66 cl (~0 g prot. · 278 kcal)");
     DB.habitSel = {}; DB.hbPerso = {};
     F.hideSheet();
     F.openProduitScanne("matin", {code:"2", nom:"Skyr", marque:"", prot100:10, kcal100:57,
@@ -1191,6 +1198,37 @@ async function lancer(){
     const par = n => cartes.find(c=>c.querySelector(".nm").textContent === n);
     vrai("Le poulet a son pilon", par("Poulet").querySelector(".ic").textContent === "🍗");
     vrai("L'œuf a son œuf", par("Œuf").querySelector(".ic").textContent === "🥚");
+    /* Chaque aliment mérite son icône. Les seules assiettes vides admises sont les trois
+       « Repas … », où l'assiette est justement la bonne réponse : un plat, sans plus de
+       précision. Ce test attrapera tout aliment ajouté plus tard sans émoticône. */
+    (()=>{
+      const sans = [];
+      F.eval("FOOD_100G").forEach(([, items]) => items.forEach(([n]) => {
+        if(F.foodIcon(n) === "🍽️" && !/^Repas /.test(n)) sans.push(n);
+      }));
+      vrai("Aucun aliment ne reste sans émoticône" + (sans.length? " (" + sans.join(", ") + ")" : ""),
+        sans.length === 0);
+    })();
+    /* les pièges d'ordre : la première expression qui correspond gagne */
+    const ic = n => F.foodIcon(n);
+    eq("« sandwich jambon-beurre » est un sandwich, pas du jambon", ic("Sandwich jambon-beurre"), "🥪");
+    eq("« pain au chocolat » est une viennoiserie", ic("Pain au chocolat"), "🥐");
+    eq("« poireau » n'est pas une poire", ic("Poireau"), "🥬");
+    eq("« courgette » n'est pas une courge", ic("Courgette"), "🥒");
+    eq("« semoule » n'est pas une moule", ic("Semoule cuite"), "🍚");
+    eq("« cuillère à soupe d'huile » n'est pas une soupe", ic("Cuillère à soupe d'huile d'olive"), "🫒");
+    eq("« chocolat » n'est pas un cola", ic("Chocolat noir"), "🍫");
+    eq("« veau » n'est pas de l'eau", ic("Veau"), "🥩");
+    eq("« chorizo » n'est pas du riz", ic("Chorizo"), "🍖");
+    eq("« nectarine » n'est pas un nectar", ic("Nectarine"), "🍑");
+    eq("« jus d'orange » est un jus", ic("Jus d'orange"), "🧃");
+    eq("« volaille » n'est pas de l'ail", ic("Volaille rôtie"), "🍗");
+    /* et les nouveaux venus */
+    eq("La tomate", ic("Tomate"), "🍅");
+    eq("La pizza", ic("Part de pizza (1/8)"), "🍕");
+    eq("Le burger", ic("Burger"), "🍔");
+    eq("Les petits pois", ic("Petits pois"), "🫛");
+    eq("Un produit scanné inconnu garde l'assiette", ic("Préparation culinaire"), "🍽️");
     /* la parenthèse passe sous le nom : dans une pastille deux fois moins large,
        « Blanc de poulet (130 g cuit) » tenait sur trois lignes */
     eq("Le nom se lit seul sur sa ligne", par("Blanc de poulet").querySelector(".q").textContent,
