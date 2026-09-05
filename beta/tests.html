@@ -2117,7 +2117,10 @@ async function lancer(){
     /* une canette se lit en centilitres, comme ce qui est écrit dessus */
     F.openProduitScanne("matin", {code:"1", nom:"Cola", marque:"", prot100:0, kcal100:42,
       gluc100:12, lip100:0, portion:33, liquide:true});
-    eq("On boit une boisson", lab(), "Quantité bue (cl)");
+    /* L intitule ne porte plus l unite — elle est ecrite dans le champ. Ce qui dit
+       qu on boit au lieu de manger est l etiquette, a cote de la marque. */
+    eq("On boit une boisson", F.document.querySelector(".ps-type").textContent, "Boisson");
+    eq("L intitulé est le même pour tout", lab(), "Quantité consommée");
     eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "33");
     eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "5");
     /* les valeurs d'Open Food Facts sont pour 100 ml, donc pour 10 cl : 33 cl = 3,3 fois */
@@ -2138,7 +2141,7 @@ async function lancer(){
     /* la bascule cl / ml convertit au lieu de remettre à zéro */
     F.document.getElementById("ps-unite").click();
     eq("33 cl font 330 ml", F.document.getElementById("ps-g").value, "330");
-    eq("L'intitulé suit", F.document.getElementById("ps-lab").textContent, "Quantité bue (ml)");
+    eq("L'unité du champ suit", F.document.getElementById("ps-uni").textContent, "ml");
     eq("Les calories ne bougent pas", F.document.getElementById("ps-kcal").textContent, "139");
     F.document.getElementById("ps-unite").click();
     eq("…et le retour aussi", F.document.getElementById("ps-g").value, "33");
@@ -2163,7 +2166,8 @@ async function lancer(){
     F.hideSheet();
     F.openProduitScanne("matin", {code:"2", nom:"Skyr", marque:"", prot100:10, kcal100:57,
       portion:140, liquide:false});
-    eq("On mange un aliment", lab(), "Quantité mangée (g)");
+    eq("On mange un aliment", F.document.querySelector(".ps-type").textContent, "Aliment");
+    eq("…et le champ le dit en grammes", F.document.getElementById("ps-uni").textContent, "g");
     eq("Le champ avance par dizaines de grammes", F.document.getElementById("ps-g").step, "10");
     F.document.getElementById("ps-ok").click();
     eq("Le libellé est en grammes",
@@ -2260,6 +2264,58 @@ async function lancer(){
       prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
     eq("…et en grammes pour un aliment",
       D2.querySelector(".ps-ref").textContent, "Informations pour 100 g");
+
+    /* ---- boisson ou aliment, dit en toutes lettres ---- */
+    /* L'étiquette explique pourquoi la quantité se compte en grammes ici et en
+       centilitres ailleurs : sans elle, le changement d'unité paraît arbitraire. */
+    eq("Un aliment le dit", D2.querySelector(".ps-type").textContent, "Aliment");
+
+    /* ---- les quantités courantes ---- */
+    const rapides = () => [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent);
+    eq("Cinq quantités pour un aliment", rapides().join(" · "),
+      "30 g · 50 g · 100 g · 150 g · 200 g");
+    const gEl = D2.getElementById("ps-g");
+    D2.querySelector('#ps-rapide [data-q="150"]').click();
+    eq("Un raccourci remplit le champ", gEl.value, "150");
+    eq("…et se marque comme choisi",
+      [...D2.querySelectorAll("#ps-rapide button.on")].map(b=>b.textContent).join(""), "150 g");
+    eq("Les calories suivent", D2.getElementById("ps-kcal").textContent, "150");
+    /* les trois macros de l'aperçu, arrondies comme elles seront enregistrées */
+    eq("Les protéines de l'aperçu", D2.getElementById("ps-prot").textContent, "8");
+    eq("Les glucides", D2.getElementById("ps-gluc").textContent, "3");
+    eq("Les lipides", D2.getElementById("ps-lip").textContent, "2");
+    eq("L'intitulé ne répète plus l'unité",
+      D2.getElementById("ps-lab").textContent, "Quantité consommée");
+
+    /* une boisson se compte en canettes et en bouteilles */
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"7", nom:"Soda test", marque:"M",
+      prot100:0, kcal100:48, gluc100:12, lip100:0, portion:25, liquide:true, photo:""});
+    eq("Une boisson le dit aussi", D2.querySelector(".ps-type").textContent, "Boisson");
+    eq("Cinq volumes pour une boisson",
+      [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent).join(" · "),
+      "10 cl · 25 cl · 33 cl · 50 cl · 1 L");
+    /* cent centilitres se lisent « 1 L » : personne n'écrit « 100 cl » */
+    vrai("Le litre s'écrit en litre",
+      !!D2.querySelector('#ps-rapide [data-q="100"]') &&
+      D2.querySelector('#ps-rapide [data-q="100"]').textContent === "1 L");
+    /* en millilitres, les volumes suivent */
+    D2.getElementById("ps-unite").click();
+    eq("Les volumes suivent le changement d'unité",
+      [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent).join(" · "),
+      "100 ml · 250 ml · 330 ml · 500 ml · 1 L");
+    D2.getElementById("ps-unite").click();
+
+    /* ---- les deux gestes secondaires, côte à côte ---- */
+    eq("Deux boutons de même poids", D2.querySelectorAll(".ps-actions .ps-opts").length, 2);
+    vrai("Garder le produit en est un", !!D2.querySelector(".ps-actions #ps-favbox"));
+    vrai("En scanner un autre aussi", !!D2.querySelector(".ps-actions #ps-autre"));
+    vrai("Ajouter au repas reste seul, en dessous",
+      !!D2.getElementById("ps-ok") && !D2.querySelector(".ps-actions #ps-ok"));
+
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
+      prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
 
     /* ---- l'étoile des favoris ---- */
     /* Il fallait viser une case à cocher de vingt pixels posée à côté de l'étoile.
