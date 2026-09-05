@@ -1550,6 +1550,14 @@
   .ps-tuiles .l{font-size:9.5px; color:var(--ink-soft); margin-top:2px; line-height:1.2;
     white-space:nowrap;}
   .ps-ref{font-size:10.5px; color:var(--ink-mute); margin-top:6px; text-align:center;}
+  /* Tout ce qui touche a la quantite dans un meme cadre : l intitule, le compteur,
+     les raccourcis et l apercu. Sans lui, les trois zones de la fiche — le produit,
+     la quantite, les boutons — flottaient les unes sur les autres sans separation. */
+  .ps-bloc{background:var(--surface2); border:1px solid var(--border);
+    border-radius:16px; padding:11px 9px;}
+  /* sur ce fond creme, les commandes passent au blanc pour se detacher */
+  .ps-bloc .ps-step > button{background:var(--surface);}
+  .ps-bloc .ps-step > button:active{background:var(--btn);}
   /* la ligne de la quantite : son intitule a gauche, le changement d unite a droite */
   .ps-qh{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;}
   .ps-bascule{display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
@@ -1559,7 +1567,8 @@
      regard, donc ils restent sur la même ligne quelle que soit la largeur. C'est ce
      qui explique les tailles serrées ci-dessous — tout doit tenir sur un téléphone. */
   .ps-qrow{display:flex; gap:9px; flex-wrap:nowrap; align-items:flex-start;}
-  .ps-qg{flex:1 1 0; min-width:0;}
+  /* un peu plus large que l apercu : c est ici qu on tape, et « 1000 ml » doit tenir */
+  .ps-qg{flex:1.18 1 0; min-width:0;}
   .ps-step{display:flex; align-items:stretch; gap:5px;}
   /* les quantités courantes, sous le compteur : une canette, un verre, une bouteille */
   .ps-rapide{display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;}
@@ -1568,16 +1577,16 @@
     font-weight:700; color:var(--ink-soft); white-space:nowrap;}
   .ps-rapide button.on{border-color:var(--accent); color:var(--accent);
     box-shadow:inset 0 0 0 1px var(--accent);}
-  .ps-step > button{flex:0 0 38px; border-radius:11px; background:var(--surface2);
+  .ps-step > button{flex:0 0 34px; border-radius:11px; background:var(--surface2);
     border:1px solid var(--border); font-size:17px; font-weight:700; line-height:1;
     display:flex; align-items:center; justify-content:center;}
   .ps-step > button:active{background:var(--btn);}
   .ps-step > button:last-child{color:var(--accent);}
   .ps-step .ch{flex:1; min-width:0; position:relative; display:flex; align-items:center;}
-  .ps-step .ch input{text-align:center; padding:9px 24px 9px 5px; font-size:17px; font-weight:800;}
-  .ps-step .ch .u{position:absolute; right:9px; font-size:12px; font-weight:700;
+  .ps-step .ch input{text-align:center; padding:9px 19px 9px 4px; font-size:17px; font-weight:800;}
+  .ps-step .ch .u{position:absolute; right:6px; font-size:11.5px; font-weight:700;
     color:var(--ink-soft); pointer-events:none;}
-  .ps-live{flex:1.05 1 0; min-width:0; background:rgba(245,130,32,.13);
+  .ps-live{flex:1 1 0; min-width:0; background:rgba(245,130,32,.13);
     border-radius:14px; padding:8px 9px;}
   .ps-live .tete{display:flex; align-items:center; gap:8px;}
   .ps-live .ic{flex:0 0 auto; width:28px; height:28px; border-radius:9px;
@@ -5714,7 +5723,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 19h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 20h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7583,7 +7592,7 @@ function openProduitScanne(meal, p){
       </div>
     </div>
     <div class="stack">
-      <div>
+      <div class="ps-bloc">
         <div class="ps-qh">
           <span class="label" id="ps-lab"></span>
           ${liquide? `<button class="ps-bascule" id="ps-unite">${IC_ECHANGE}<span></span></button>`:""}
