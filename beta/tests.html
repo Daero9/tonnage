@@ -1324,6 +1324,10 @@ async function lancer(){
     const carte = F.document.querySelector(".ex-card");
     const val = () => carte.querySelector("[data-repv]").textContent;
     vrai("Le repos est sur la carte", !!carte.querySelector(".ex-repos"));
+    /* sur un exercice ordinaire il se change ENTRE deux séries : sa place est sous
+       elles, là où le pouce vient de valider */
+    const rangs = [...carte.children].map(n=>n.className);
+    vrai("…sous les séries", rangs.indexOf("ex-repos") > rangs.indexOf("sets"));
     eq("Il part de ce que dit le plan", val(), "1 min 30");
     carte.querySelector('[data-rep="15"]').click();
     eq("Le + ajoute quinze secondes", val(), "1 min 45");
@@ -1371,6 +1375,12 @@ async function lancer(){
     vrai("Pas de dégressif sur un gainage", !carte.querySelector(".dg"));
     /* l'enchaînement : une seule pression, l'app déroule tout */
     vrai("Le bouton est en tête de carte", !!carte.querySelector(".iso-chrono"));
+    /* le repos fait partie de l'enchaînement : on le règle AVANT de lancer, donc
+       au-dessus des séries et non tout en bas de la carte */
+    const rgs = [...carte.children].map(n=>n.className);
+    vrai("Le repos se règle au-dessus des séries",
+      rgs.indexOf("ex-repos") > rgs.indexOf("iso-chrono") &&
+      rgs.indexOf("ex-repos") < rgs.indexOf("set-cols"));
     eq("Il propose de démarrer", carte.querySelector("[data-iso]").textContent, "Démarrer");
     /* trois séries de 40 s avec 60 s de repos : tenue, repos, tenue, repos, tenue */
     DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });

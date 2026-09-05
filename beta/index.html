@@ -1000,6 +1000,7 @@
   /* ---- le repos, reglable sur la carte ----
      Il etait au fond de la fiche d infos : trois gestes pour changer trente secondes,
      entre deux series, essouffle. Ici il est sous les yeux, a portee de pouce. */
+  .ex-card.iso .ex-repos{margin:0 0 10px;}
   .ex-repos{display:flex; align-items:center; gap:9px; margin:10px 0 2px;
     background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:7px 10px;}
   .ex-repos .ic{display:flex; color:var(--accent); flex:0 0 auto;}
@@ -5560,7 +5561,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 15h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 15h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9716,6 +9717,16 @@ function renderActive(app){
 
     const note = injuryNote(nomCanon(ex));
     const iso = estIsometrique(ex);
+    /* Sur un gainage, le repos fait partie de l'enchaînement : on le règle AVANT de
+       lancer, donc au-dessus des séries, juste sous le bouton. Ailleurs il se change
+       entre deux séries, et il est mieux là où le pouce vient de valider. */
+    const bandeRepos = `<div class="ex-repos">
+        <span class="ic">${IC_CHRONO}</span>
+        <span class="l">${TR("Repos")}</span>
+        <button data-rep="-15" aria-label="${TR("Quinze secondes de moins")}">−</button>
+        <span class="v" data-repv>${fmtRepos((en.target && en.target.rest) || db.settings.rest)}</span>
+        <button data-rep="15" aria-label="${TR("Quinze secondes de plus")}">＋</button>
+      </div>`;
     const card = document.createElement("div");
     card.className="ex-card"+(iso? " iso":"");
     card.dataset.ei = ei;
@@ -9743,17 +9754,12 @@ function renderActive(app){
           enCours? TR("Arrêter") : TR("Démarrer")}</button>
       </div>`; })()
       : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : "")}
+      ${iso ? bandeRepos : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
         iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
-      <div class="ex-repos">
-        <span class="ic">${IC_CHRONO}</span>
-        <span class="l">${TR("Repos")}</span>
-        <button data-rep="-15" aria-label="${TR("Quinze secondes de moins")}">−</button>
-        <span class="v" data-repv>${fmtRepos((en.target && en.target.rest) || db.settings.rest)}</span>
-        <button data-rep="15" aria-label="${TR("Quinze secondes de plus")}">＋</button>
-      </div>
+      ${iso ? "" : bandeRepos}
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.")) : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
