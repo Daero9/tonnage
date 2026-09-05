@@ -716,7 +716,29 @@ async function lancer(){
        MET(id("Curl marteau")) < MET(id("Front squat")));
   vrai("…ni un développé couché", MET(id("Curl marteau")) < MET(id("Développé couché")));
   vrai("Aucun exercice ne sort de l'échelle",
-       F.eval("LIB").every(e => MET(e.id) >= 3.5 && MET(e.id) <= 8));
+       F.eval("LIB").every(e => MET(e.id) >= 4 && MET(e.id) <= 9));
+
+  /* ---- le nombre de répétitions compte ---- */
+  /* Un forfait unique par série faisait coûter trois répétitions presque autant que
+     dix : 19 contre 21. Le temps sous tension entre maintenant dans le calcul. */
+  const serieDe = r => KC(seance(2, [{exId:id("Développé couché"), sets:nFois(60, r, 1)}]));
+  vrai("Trois répétitions coûtent moins que dix", serieDe(3) < serieDe(10),
+       serieDe(3) + " vs " + serieDe(10));
+  vrai("…nettement moins, pas de deux kilocalories",
+       serieDe(3) < serieDe(10) * 0.75, serieDe(3) + " vs " + serieDe(10));
+  vrai("Vingt répétitions coûtent plus que dix", serieDe(20) > serieDe(10),
+       serieDe(20) + " vs " + serieDe(10));
+  /* mais une série n'est jamais gratuite : la mise en place et la récupération
+     restent dues, même pour une seule répétition */
+  vrai("Une série d'une répétition coûte quand même", serieDe(1) > 0);
+
+  /* ---- un gainage se compte en secondes ---- */
+  /* Sur un gainage, le champ « reps » porte des SECONDES. Les multiplier par six
+     comme des répétitions donnerait quatre minutes de tension pour un gainage de 45 s.
+     Et rien n'est déplacé : aucun travail mécanique à compter. */
+  const gain = r => KC(seance(2, [{exId:id("Gainage"), sets:[{w:0, r, done:true, warm:false}]}]));
+  vrai("Un gainage long coûte plus qu'un court", gain(60) > gain(20));
+  vrai("Un gainage de 45 s reste raisonnable", gain(45) < 25, String(gain(45)));
   /* à séries égales, une séance de jambes brûle plus qu'une séance de bras */
   const bras = KC(seance(2, [
     {exId:id("Curl barre"),           sets:nFois(15, 12, 4)},
@@ -2257,6 +2279,23 @@ async function lancer(){
     F.closeSheet();
     vrai("Aucune fiche ne resurgit après coup", !encoreOuverte() && pile() === 0);
     DB.active = null;
+  })();
+  neuf();
+
+  grp("Les réglages");
+  neuf();
+  /* Chaque ligne porte son signe : on repère un réglage sans avoir à lire son
+     intitulé. Une ligne ajoutée sans icône se verrait tout de suite. */
+  (()=>{
+    F.openSettings();
+    const D2 = F.document, lignes = [...D2.querySelectorAll("#sheet .rg-l")];
+    vrai("Huit réglages", lignes.length === 8, String(lignes.length));
+    vrai("Chacun porte son signe",
+      lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
+      lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
+    vrai("Le signe vient avant le texte",
+      lignes.every(l => l.firstElementChild.classList.contains("rgi")));
+    F.hideSheet();
   })();
   neuf();
 
