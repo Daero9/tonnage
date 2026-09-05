@@ -1222,6 +1222,42 @@
   .al-row.on .vl{color:var(--accent-ink); opacity:.85;}
   .al-note{font-size:11.5px; color:var(--ink-mute); line-height:1.45; margin:-1px 0 6px;}
   .al-vide{font-size:13px; color:var(--ink-mute); padding:14px 0; text-align:center; line-height:1.5;}
+  /* ---- familles ----
+     Neuf familles ne tiennent pas sur une largeur de telephone : la rangee defile sous
+     le doigt. Elle deborde volontairement des marges de la fiche — une rangee qui
+     touche les bords annonce d elle-meme qu elle continue au-dela. */
+  .al-cats{display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain; margin:0 -16px 10px; padding:1px 16px 3px;
+    scrollbar-width:none;}
+  .al-cats::-webkit-scrollbar{display:none;}
+  .al-cats .cat{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:5px;
+    min-width:66px; padding:8px 10px 7px; border-radius:13px; background:var(--surface2);
+    border:1px solid var(--border); font-size:10px; font-weight:700; color:var(--ink-mute);
+    line-height:1.2; white-space:nowrap;
+    transition:background .16s ease, border-color .16s ease, color .16s ease;}
+  .al-cats .cat .e{font-size:17px; line-height:1;}
+  .al-cats .cat.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+
+  /* ---- le raccourci du scan ----
+     Plus haut et plus large que les autres boutons : c est le chemin qui evite de
+     chercher. Le chevron dit qu il mene ailleurs, il n enregistre rien. */
+  #ot-scan{justify-content:flex-start; gap:12px; padding:15px 16px;}
+  #ot-scan > svg{width:25px; height:25px;}
+  #ot-scan .fl{margin-left:auto; display:flex; opacity:.7;}
+  #ot-scan .fl svg{width:19px; height:19px;}
+
+  /* ---- les favoris ----
+     Une case a cocher posee entre deux boutons ne se voyait pas. Encadree et nommee,
+     elle devient une action a part entiere, et le cadre s allume quand elle est prise. */
+  .fav-box{display:flex; align-items:center; gap:11px; text-align:left; width:100%;
+    background:var(--surface); border:1.5px solid var(--border); border-radius:13px;
+    padding:11px 13px; cursor:pointer;}
+  .fav-box.on{border-color:var(--accent);}
+  .fav-box .et{display:flex; color:var(--accent); flex:0 0 auto;}
+  .fav-box .tx{flex:1; min-width:0;}
+  .fav-box b{display:block; font-size:13.5px; font-weight:700;}
+  .fav-box i{display:block; font-style:normal; font-size:11.5px; color:var(--ink-mute); margin-top:1px;}
+  .fav-box input{width:20px; height:20px; accent-color:var(--accent); flex:0 0 auto;}
   /* La recherche reprend la grille de la page principale : deux colonnes, une émoticône
      par aliment. On y reconnaît d'avance la pastille qu'on retrouvera dans son repas, et
      il en tient deux fois plus à l'écran. Le fond doit être surface2 : sur le blanc de
@@ -2034,6 +2070,15 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Ajouter aux favoris":"Add to favourites",
+  "Tous":"All",
+  "Favoris":"Favourites",
+  "Viandes":"Meat",
+  "Poissons":"Fish",
+  "Produits laitiers":"Dairy",
+  "Fruits":"Fruit",
+  "Plats":"Meals",
+  "Aucun favori pour l'instant. Coche « Ajouter aux favoris » en enregistrant un aliment.":"No favourites yet. Tick « Add to favourites » when you save a food.",
   "Vue d'ensemble de ta journée":"Your day at a glance",
   "Calories":"Calories",
   "Légumes":"Vegetables",
@@ -5178,7 +5223,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 04h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 05h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5708,6 +5753,8 @@ const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" s
   + '<circle cx="12" cy="12" r="4.3" fill="currentColor" stroke="none"/>'
   + '<path d="M12 2.3v2.2M12 19.5v2.2M4.5 4.5l1.6 1.6M17.9 17.9l1.6 1.6'
   + 'M2.3 12h2.2M19.5 12h2.2M4.5 19.5l1.6-1.6M17.9 6.1l1.6-1.6"/></svg>';
+const IC_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"'
+  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 const IC_CODEBARRE = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"'
   + ' stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;">'
   + '<path d="M3 8.5V5.5A1.5 1.5 0 0 1 4.5 4H7.5"/><path d="M16.5 4h3A1.5 1.5 0 0 1 21 5.5v3"/>'
@@ -6597,15 +6644,18 @@ function openProduitScanne(meal, p){
       <div style="font-size:12px; color:var(--ink-mute); text-align:center;">${
         p.prot100 + " " + TR("g de protéines") + " · " + p.kcal100 + " kcal "
         + TR(cl ? "pour 100 ml" : "pour 100 g")}</div>
-      <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
-        <input type="checkbox" id="ps-save" style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
-        <span style="font-size:13.5px; color:var(--ink-soft);">${TR("Garder dans mes propositions")}</span>
+      <label class="fav-box" id="ps-favbox">
+        <span class="et">${icoM("etoile", 21)}</span>
+        <span class="tx"><b>${TR("Ajouter aux favoris")}</b><i>${TR("Garder dans mes propositions")}</i></span>
+        <input type="checkbox" id="ps-save">
       </label>
       <button class="btn btn-accent" id="ps-ok">${TR("Ajouter à ce repas")}</button>
       <button class="btn" id="ps-autre" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
         IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
       <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
     </div>`);
+  const pbox = document.getElementById("ps-favbox"), pchk = document.getElementById("ps-save");
+  pchk.onchange = ()=>pbox.classList.toggle("on", pchk.checked);
   const gEl = document.getElementById("ps-g");
   /* Combien de fois la valeur de reference : tout le reste en decoule. Open Food Facts
      donne toujours ses valeurs pour 100 g — pour une boisson ce sont des valeurs pour
@@ -6658,10 +6708,13 @@ function openAjoutAliment(meal){
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
       <button class="btn" id="ot-scan" style="background:var(--hero); color:#fff; border-color:var(--hero);">
-        ${IC_CODEBARRE}${TR("Scanner un code-barres")}</button>
+        ${IC_CODEBARRE}<span>${TR("Scanner un code-barres")}</span>
+        <span class="fl">${IC_CHEVRON}</span></button>
       <div><span class="label" style="display:block; margin-bottom:5px;">Aliment</span>
       <input id="ot-q" placeholder="${TR("Aliment, ou famille : poisson, viande, légume…")}" autocomplete="off"
-        enterkeyhint="search" style="margin-bottom:7px;">
+        enterkeyhint="search" style="margin-bottom:9px;">
+      <div class="al-cats" id="ot-cats">${FOOD_CATS.map(([cle,nom,ic],i)=>
+        `<button class="cat ${i?"":"on"}" data-cat="${cle}"><span class="e">${ic}</span><span>${TR(nom)}</span></button>`).join("")}</div>
       <div class="al-liste" id="ot-liste"></div>
       <!-- la liste déroulante reste, cachée : c'est elle qui porte le choix -->
       <select id="ot-food" style="display:none;">${FOOD_100G.map(([grp,items])=>
@@ -6682,9 +6735,10 @@ function openAjoutAliment(meal){
         <p style="margin:7px 0 0; font-size:11.5px; color:var(--ink-mute); line-height:1.5;">${TR("Le poids est facultatif, mais si tu le donnes tu pourras ensuite ajuster la portion au gramme près.")}</p>
       </div>
       <div id="ot-live" style="font-size:14.5px; font-weight:700; color:var(--accent); min-height:20px;"></div>
-      <label class="row" style="gap:9px; align-items:center; cursor:pointer;">
-        <input type="checkbox" id="ot-save" style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto;">
-        <span style="font-size:13.5px; color:var(--ink-soft);">${TR("Garder dans mes propositions")}</span>
+      <label class="fav-box" id="ot-favbox">
+        <span class="et">${icoM("etoile", 21)}</span>
+        <span class="tx"><b>${TR("Ajouter aux favoris")}</b><i>${TR("Garder dans mes propositions")}</i></span>
+        <input type="checkbox" id="ot-save">
       </label>
       <button class="btn btn-accent" id="ot-ok">${TR("Enregistrer")}</button>
       ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? TR("Restaurer les {} propositions retirées").replace("{}", nbMasques()) : TR("Restaurer la proposition retirée")}</button>`:""}
@@ -6734,9 +6788,18 @@ function openAjoutAliment(meal){
 
   /* la recherche : sans accent et sans casse, « pates » trouve « Pâtes cuites » */
   const qEl = document.getElementById("ot-q"), listeEl = document.getElementById("ot-liste");
+  /* la famille choisie se combine avec la recherche : « poulet » dans « Viandes »
+     cherche dans les viandes seulement */
+  let cat = "tous";
   const dessinerListe = ()=>{
+    const fam = FOOD_CATS.find(c=>c[0] === cat) || FOOD_CATS[0];
+    const favs = cat === "favoris" ? alimentsFavoris() : null;
+    const garde = nom => cat === "tous" ? true
+      : (cat === "favoris" ? favs.has(cleAliment(nom)) : fam[3].test(nom));
     let trouves = 0, html = "";
-    chercherAliments(qEl.value).forEach(([grp, gardes])=>{
+    chercherAliments(qEl.value).forEach(([grp, tous])=>{
+      const gardes = tous.filter(([it]) => garde(it[0]));
+      if(!gardes.length) return;
       trouves += gardes.length;
       html += `<div class="al-h">${esc(TR(grp))}</div>`
         + (FOOD_NOTE[grp] ? `<div class="al-note">${esc(TR(FOOD_NOTE[grp]))}</div>` : "")
@@ -6756,7 +6819,9 @@ function openAjoutAliment(meal){
           <span class="g">${it[1]}<span style="font-size:9px;">g</span></span></button>`;
       }).join("") + `</div>`;
     });
-    if(!trouves) html = `<div class="al-vide">${TR("Aucun aliment ne correspond. Passe par « je saisis les valeurs ».")}</div>`;
+    if(!trouves) html = `<div class="al-vide">${cat === "favoris"
+      ? TR("Aucun favori pour l'instant. Coche « Ajouter aux favoris » en enregistrant un aliment.")
+      : TR("Aucun aliment ne correspond. Passe par « je saisis les valeurs ».")}</div>`;
     html += `<div class="al-h">${TR("Autre")}</div>
       <button class="al-row ${foodEl.value==="manuel"? "on":""}" data-food="manuel">
         <span class="nm">${TR("Je saisis les valeurs moi-même")}</span></button>`;
@@ -6771,6 +6836,17 @@ function openAjoutAliment(meal){
   };
   qEl.oninput = dessinerListe;
   qEl.onkeydown = e=>{ if(e.key === "Enter") e.preventDefault(); };
+  document.querySelectorAll("#ot-cats [data-cat]").forEach(b=>b.onclick=()=>{
+    cat = b.dataset.cat;
+    document.querySelectorAll("#ot-cats [data-cat]").forEach(x=>x.classList.toggle("on", x === b));
+    /* la famille choisie reste visible : on la ramene dans le champ de vision */
+    b.scrollIntoView({block:"nearest", inline:"nearest", behavior:"smooth"});
+    listeEl.scrollTop = 0;
+    dessinerListe();
+  });
+  /* le cadre des favoris s allume quand la case est prise */
+  const fbox = document.getElementById("ot-favbox"), fchk = document.getElementById("ot-save");
+  fchk.onchange = ()=>fbox.classList.toggle("on", fchk.checked);
   dessinerListe();
   const resto = document.getElementById("ot-restore");
   if(resto) resto.onclick = ()=>{ db.hbMasque = {}; save(); closeSheet(); render(); };
@@ -7299,6 +7375,27 @@ function chercherAliments(q){
       || groupeVise
       || familles.some(([, re]) => re.test(it[0])))];
   }).filter(g => g[1].length);
+}
+/* Les familles du filtre. La base est rangee par mode de pesee — a la piece, aux
+   100 g — ce qui ne dit rien de ce qu on cherche a table : on la retraverse donc par
+   famille. Un oeuf est « a la piece » et reste une proteine. Les recoupements sont
+   voulus : un kebab est une viande ET un plat, on doit le trouver des deux cotes. */
+const FOOD_CATS = [
+  ["tous",     "Tous",              "\uD83C\uDF7D\uFE0F", null],
+  ["favoris",  "Favoris",           "\u2B50", null],
+  ["viande",   "Viandes",           "\uD83E\uDD69", /poulet|dinde|volaille|b(\u0153|oe)uf|steak|porc|veau|agneau|jambon|viande|nugget|kebab|saucisse|burger/i],
+  ["poisson",  "Poissons",          "\uD83D\uDC1F", /thon|saumon|poisson|cabillaud|crevette|colin|merlu|sardine|maquereau|truite|surimi|sushi/i],
+  ["laitier",  "Produits laitiers", "\uD83E\uDD5B", /fromage|skyr|yaourt|lait|whey|comt|emmental|mozzarella/i],
+  ["feculent", "F\u00e9culents",     "\uD83C\uDF5E", /riz|p(\u00e2|a)te|pain|avoine|semoule|patate|quinoa|lentille|pois chiche|haricots? rouges?|tofu|c(\u00e9|e)r(\u00e9|e)ale|biscuit|l(\u00e9|e)gumineuse|frite/i],
+  ["fruit",    "Fruits",            "\uD83C\uDF4E", /banane|pomme|compote|orange|poire|fraise|raisin|kiwi|mangue|ananas|abricot|p(\u00ea|e)che/i],
+  ["legume",   "L\u00e9gumes",       "\uD83E\uDD66", /brocoli|courgette|carotte|(\u00e9|e)pinard|chou|poireau|aubergine|poivron|champignon|tomate|concombre|salade|oignon|betterave|courge|petits pois|haricots? verts?|ma(\u00ef|i)s|avocat|ratatouille/i],
+  ["plat",     "Plats",             "\uD83C\uDF55", /pizza|burger|kebab|nugget|frite|sushi|lasagne|sandwich|wrap|quiche|croissant|repas|menu|bolognaise|cantonais|c(\u00e9|e)sar|pain au chocolat/i]
+];
+/* les aliments deja gardes dans les propositions, reperes par leur nom */
+function alimentsFavoris(){
+  const cles = new Set();
+  Object.values(db.hbPerso || {}).forEach(l => (l||[]).forEach(x => cles.add(cleAliment(x[0]))));
+  return cles;
 }
 /* certaines familles méritent un avertissement : on l'affiche sous leur titre */
 const FOOD_NOTE = {
