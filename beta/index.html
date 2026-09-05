@@ -2331,6 +2331,8 @@ const TRAD = {en:{
   "durée":"time",
   "Quinze secondes de plus":"Fifteen seconds more",
   "Série en cours":"Current set",
+  "Séries à tenir":"Sets to hold",
+  "Départ":"Get set",
   "Repos entre les séries":"Rest between sets",
   "Tu peux le modifier à tout moment.":"You can change it any time.",
   "Mettre en pause":"Pause",
@@ -5582,7 +5584,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 15h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 17h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6529,6 +6531,22 @@ function beep(){
     });
   }catch(e){}
 }
+/* Une note seule. Le compte a rebours l egrene a trois, deux, un ; le triple bip
+   de beep() marque alors le depart sans qu on puisse les confondre. */
+function bipCourt(){
+  if(!audioCtx) return;
+  try{
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "sine"; o.frequency.value = 880;
+    g.gain.setValueAtTime(.001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.35, audioCtx.currentTime + .02);
+    g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .18);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + .2);
+    bipsEnCours.push(o);
+    o.onended = ()=>{ bipsEnCours = bipsEnCours.filter(x=>x !== o); };
+  }catch(e){}
+}
 /* coupe net ce qui est en train de sonner ou de vibrer */
 function couperSon(){
   bipsEnCours.forEach(o=>{ try{ o.stop(); }catch(e){} });
@@ -6566,6 +6584,7 @@ async function autoriserNotifs(){
 async function poserAlarmeRepos(){
   if(db.settings.son === false) return;      /* son coupé : pas de sonnerie du tout */
   if(seqIso) return;                         /* un gainage a déjà posé toute sa suite */
+  if(preIso) return;                         /* cinq secondes de décompte, on reste devant */
   const n = pluginNotifs();
   if(!n || !rest.int || rest.paused) return;
   const dans = rest.end - Date.now();
@@ -6599,6 +6618,12 @@ function bipRepos(){
   if(document.visibilityState !== "visible") return;   /* écran éteint : on ne sonne pas dans le vide */
   ensureAudio();
   beep();
+}
+function bipDecompte(){
+  if(db.settings.son === false) return;
+  if(document.visibilityState !== "visible") return;
+  ensureAudio();
+  bipCourt();
 }
 function majIconeSon(){
   const b = document.getElementById("rest-son");
@@ -6672,21 +6697,48 @@ function arreterSeqIso(fini){
   retirerSonneriesIso();
   restbar.classList.remove("tenue");
   if(!avait) return;
-  if(fini){
-    if(rest.int){ clearInterval(rest.int); rest.int = null; }
-    restbar.classList.remove("show", "ending");
-    toast(TR("Gainage terminé ✓"));
-  }
+  /* Arreter l enchainement arrete aussi le minuteur, fini ou interrompu. Sans cela,
+     appuyer sur « Arreter » pendant une tenue laissait la barre finir son compte
+     toute seule, comme un repos qu on n avait pas demande. */
+  if(rest.int){ clearInterval(rest.int); rest.int = null; }
+  rest.paused = false; rest.end = 0;
+  restbar.classList.remove("show", "ending", "paused");
+  if(fini) toast(TR("Gainage terminé ✓"));
   try{ renderActive(document.getElementById("app")); }catch(e){}
 }
+/* ---- les cinq secondes d'avant ------------------------------------------------
+   On appuie, on pose le téléphone, on se met en position. Sans ce délai la première
+   tenue commence pendant qu'on se relève encore. Le décompte s'entend autant qu'il
+   se voit : une note à trois, deux, un, puis le triple bip du départ. */
+const PRE_ISO = 5;
+let preIso = null;
 function lancerSeqIso(ei){
   if(seqIso){ arreterSeqIso(false); return; }
+  if(preIso){ annulerPreIso(); return; }
   const etapes = etapesIso(ei);
   if(!etapes.length){ toast(TR("Indique d'abord une durée.")); return; }
+  preIso = {ei};
+  ensureAudio();                 /* le geste de l'utilisateur : c'est ici qu'on a le droit */
+  startRest(PRE_ISO);
+  document.getElementById("rest-lbl").textContent = TR("Départ");
+  if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
+  try{ renderActive(document.getElementById("app")); }catch(e){}
+}
+function annulerPreIso(){
+  if(!preIso) return;
+  preIso = null;
+  if(rest.int){ clearInterval(rest.int); rest.int = null; }
+  rest.paused = false; rest.end = 0;
+  restbar.classList.remove("show", "ending", "paused");
+  retirerAlarmeRepos();
+  try{ renderActive(document.getElementById("app")); }catch(e){}
+}
+function demarrerSeqIso(ei){
+  const etapes = etapesIso(ei);
+  if(!etapes.length) return;
   seqIso = {ei, etapes, i:0};
   afficherEtapeIso();
   programmerSonneriesIso();
-  if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
   try{ renderActive(document.getElementById("app")); }catch(e){}
 }
 /* toutes les sonneries a venir, posees d un coup */
@@ -6795,6 +6847,14 @@ function tickRest(){
     document.getElementById("rest-t").textContent="0:00";
     document.getElementById("rest-bar").style.width="0%";
     majAnneau(1);
+    /* le décompte d'avant-tenue ne s'arrête pas là : il enchaîne sur le gainage */
+    if(preIso){
+      const ei = preIso.ei; preIso = null;
+      bipRepos();                                     /* le triple bip du départ */
+      if(navigator.vibrate) try{ navigator.vibrate([90,70,90,70,180]); }catch(e){}
+      demarrerSeqIso(ei);
+      return;
+    }
     restbar.classList.add("ending");
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
@@ -6810,11 +6870,14 @@ function tickRest(){
      du rouge ou un clignotement transformerait une information en pression. */
   const t = document.getElementById("rest-t");
   const s = Math.ceil(left);
-  if(s <= 3){
+  /* pendant le décompte d'avant-tenue, les cinq secondes s'affichent en gros : un
+     « 0:05 » qui deviendrait « 3 » à mi-chemin se lirait comme deux compteurs */
+  if(preIso || s <= 3){
     if(t.textContent !== String(s)){
       t.textContent = s;
       t.classList.remove("compte-a-rebours"); void t.offsetWidth;   /* pour rejouer le battement */
       t.classList.add("compte-a-rebours");
+      if(preIso && s <= 3) bipDecompte();
     }
   } else {
     t.classList.remove("compte-a-rebours");
@@ -8044,7 +8107,8 @@ let chronoInt = null;
    L heure de fin est remise a zero : plus rien ne peut se rallumer tout seul. */
 function arreterChronos(){
   try{ if(rest && rest.int){ clearInterval(rest.int); rest.int = null; } }catch(e){}
-  try{ if(seqIso){ seqIso = null; retirerSonneriesIso(); } }catch(e){}   /* l'enchaînement du gainage aussi */
+  try{ if(seqIso){ seqIso = null; retirerSonneriesIso(); } }catch(e){}
+  try{ preIso = null; }catch(e){}   /* l'enchaînement du gainage aussi */
   try{ if(rest && rest.hideTo){ clearTimeout(rest.hideTo); rest.hideTo = null; } }catch(e){}
   try{ rest.paused = false; rest.end = 0; rest.remaining = 0; }catch(e){}
   try{ retirerAlarmeRepos(); }catch(e){}
@@ -9764,20 +9828,23 @@ function renderActive(app){
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
-      ${iso ? (()=>{ const et = etapesIso(ei), enCours = seqIso && seqIso.ei === ei;
+      ${iso ? (()=>{ const et = etapesIso(ei), enCours = seqIso && seqIso.ei === ei,
+          enAttente = !!preIso && preIso.ei === ei;
         /* le resume ne compte que les series de travail : l echauffement est juste
            en dessous dans le tableau, l annoncer ici ferait « 4 x 20 s » pour une
            seance qui est en realite un echauffement plus trois tenues de 40 */
         const tenues = et.filter(x=>x.type === "tenue" && !(en.sets[x.si] || {}).warm);
         return `<div class="iso-chrono">
         <span class="ic">${IC_CHRONO}</span>
-        <div class="grow"><div class="k">${TR("Série en cours")}</div>
+        <div class="grow"><div class="k">${
+            enCours? TR("Série en cours") : TR("Séries à tenir")}</div>
           <div class="t">${tenues.length
             ? tenues.length + " × " + fmtDuree(tenues[0].sec)
             : TR("Indique une durée")}</div>
           <div class="s">${TR("Tenue et repos s'enchaînent tout seuls.")}</div></div>
-        <button class="btn iso-go ${enCours? "" : "btn-accent"}" data-iso="${ei}">${
-          enCours? IC_STOP : IC_LECTURE}<span>${enCours? TR("Arrêter") : TR("Démarrer")}</span></button>
+        <button class="btn iso-go ${(enCours || enAttente)? "" : "btn-accent"}" data-iso="${ei}">${
+          (enCours || enAttente)? IC_STOP : IC_LECTURE}<span>${
+          enAttente? TR("Annuler") : (enCours? TR("Arrêter") : TR("Démarrer"))}</span></button>
       </div>`; })()
       : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : "")}
       ${iso ? bandeRepos : ""}
