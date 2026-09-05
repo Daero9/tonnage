@@ -1312,6 +1312,42 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Fin de séance : tout s'éteint");
+  neuf();
+  /* Terminer ou annuler doit tout couper, et SANS UN BRUIT. Un repos qui arrivait a
+     zero pendant qu on validait la fin de seance sonnait dans le vide, et la barre
+     restait affichee par-dessus l accueil. */
+  (()=>{
+    DB.templates = [{id:"tfin", name:"Fin", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.startWorkout("tfin");
+    F.startRest(120);
+    const barre = () => F.document.getElementById("restbar").className;
+    vrai("Le repos tourne", !!F.eval("rest").int);
+    vrai("La barre est affichée", /\bshow\b/.test(barre()));
+    vrai("Le chrono de séance tourne", !!F.eval("chronoInt"));
+    F.arreterChronos();
+    const r = F.eval("rest");
+    vrai("Le compte à rebours est arrêté", !r.int);
+    vrai("…et ne peut pas se rallumer", r.end === 0 && !r.hideTo && !r.paused);
+    vrai("Le chrono de séance est arrêté", !F.eval("chronoInt"));
+    vrai("La barre a disparu", !/\bshow\b/.test(barre()));
+    vrai("…sans garder son clignotement", !/\bending\b/.test(barre()));
+    vrai("…ni son état de pause", !/\bpaused\b/.test(barre()));
+    /* le son en cours est coupé net, pas laissé finir */
+    F.ensureAudio(); F.beep();
+    const avant = F.eval("bipsEnCours").length;
+    F.arreterChronos();
+    vrai("Un bip en cours est coupé", avant === 0 || F.eval("bipsEnCours").length === 0);
+    /* les deux chemins réels passent bien par là */
+    vrai("Annuler éteint tout",
+      /arreterChronos\(\)/.test(F.eval("document.getElementById('cancel-w').onclick.toString()")));
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
   grp("Signes des analyses");
   neuf();
   /* Chaque section de la page Progression s ouvre par son signe : en defilant, on
