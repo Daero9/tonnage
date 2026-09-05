@@ -1542,6 +1542,43 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le bandeau d'une séance");
+  neuf();
+  /* Le bandeau est droit : plus d'arc, plus de cercle. Le titre, ce que pèse la séance
+     et le chrono se calent en bas, sur la même ligne de base. */
+  (()=>{
+    DB.active = null; DB.seen = {};
+    DB.templates = [{id:"tban", name:"Test RIR", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+      {exId:id("Rowing barre"), sets:3, reps:"8-12", rest:120}]}];
+    F.startWorkout("tban");
+    const D2 = F.document;
+    vrai("Le bandeau de séance n'a plus l'arc",
+      !/A1021/.test(D2.querySelector(".hero-en-cours .hero-bg").innerHTML));
+    /* ce que pèse la séance, en un coup d'œil */
+    const meta = D2.querySelector(".hero-meta span").textContent;
+    const travail = DB.active.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
+    eq("L'échauffement ne compte pas comme une série", travail, 6);
+    eq("Le bandeau dit ce que pèse la séance",
+      meta.replace(/~\d+ min/, "~m"), "2 exercices · 6 séries · ~m");
+    vrai("…et estime une durée", /~\d+ min/.test(meta));
+    /* l'étiquette du chrono était posée en absolu et plus large que lui : elle
+       sortait de l'écran par la droite. Elle est maintenant à côté, dans un bloc. */
+    const bloc = D2.querySelector(".chrono-bloc");
+    vrai("Le chrono et son étiquette font un bloc", !!bloc);
+    vrai("…l'étiquette est hors du bouton",
+      !D2.getElementById("chrono").querySelector(".lab") && !!bloc.querySelector(".lab"));
+    /* l'encadré de l'échauffement */
+    const enc = D2.querySelector(".hint-box");
+    vrai("L'encadré porte la flamme", !!enc.querySelector(".hi .icm-flamme"));
+    eq("L'abréviation reste en orange", enc.querySelector(".ht i").textContent, "Éch.");
+    eq("…et on peut dire qu'on a compris",
+      enc.querySelector("[data-hintx]").textContent, "Compris");
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
   grp("Fin de séance : tout s'éteint");
   neuf();
   /* Terminer ou annuler doit tout couper, et SANS UN BRUIT. Un repos qui arrivait a

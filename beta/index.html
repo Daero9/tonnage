@@ -123,13 +123,19 @@
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2);
     border:1px solid var(--border); border-radius:99px; padding:3px 9px; white-space:nowrap;}
-  .hint-box{display:flex; gap:10px; align-items:flex-start; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
-    border-radius:11px; padding:10px 12px; margin-bottom:11px; font-size:12.5px; line-height:1.55; color:var(--ink-soft);}
+  .hint-box{display:flex; gap:12px; align-items:center; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
+    border-radius:14px; padding:12px 13px; margin-bottom:11px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
   .hint-box b{color:var(--ink);}
+  /* le signe de l encadre, a gauche : on sait de quoi il parle avant de lire */
+  .hint-box .hi{flex:0 0 auto; display:flex; align-items:center; color:var(--accent);}
   /* la première ligne dit de quoi on parle : on la lit avant même de lire le reste */
-  .hint-box .ht{display:block; font-size:14.5px; font-weight:800; color:var(--ink);
-    line-height:1.25; margin-bottom:4px;}
-  .hint-box button{flex:none; font-size:11.5px; font-weight:800; color:var(--accent); padding:2px 4px; align-self:center;}
+  .hint-box .ht{display:block; font-size:15.5px; font-weight:800; color:var(--ink);
+    line-height:1.25; margin-bottom:3px;}
+  /* l abreviation reste en orange : c est elle qu on retrouve dans le tableau */
+  .hint-box .ht i{font-style:normal; color:var(--accent);}
+  .hint-box button{flex:none; font-size:12px; font-weight:800; color:var(--accent);
+    background:var(--surface); border:1px solid rgba(232,163,61,.55); border-radius:999px;
+    padding:8px 14px; align-self:center;}
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
   .ob-steps i.on{background:var(--accent);}
@@ -824,9 +830,9 @@
   /* Le liseré blanc du bandeau passe à 74,7 % de sa hauteur (cercle de rayon 711
      centré en y = -45, dans un repère de 892 de haut). On y pose le chrono,
      et le titre remonte juste au-dessus — l'image de fond, elle, ne bouge pas. */
-  /* le bloc est calé par le bas sur le liseré ; le chrono, dernier élément,
-     descend de la moitié de sa hauteur pour se centrer pile dessus */
-  .hero-en-cours .hero-h{position:absolute; left:0; right:0; bottom:25.3%; margin-top:0;}
+  /* Le bandeau de séance était calé sur le liseré de l arc, en absolu et sur toute
+     la largeur. L arc a disparu : le bloc revient dans le flux, où il respecte enfin
+     les marges du bandeau — sans cela l étiquette du chrono sortait de l écran. */
   /* translateY en % se calcule sur la hauteur de l'élément lui-même, contrairement à top */
   /* Le texte d'accueil est calé par le bas au-dessus du liseré blanc : quelle que soit
      la longueur du sous-titre, il grandit vers le haut et ne déborde jamais sur le clair. */
@@ -843,7 +849,27 @@
      passe a la ligne sans aller cogner la carte de la semaine */
   .hero-accueil .sub{margin-top:5px; line-height:1.35;}
   .hero-h .hl{color:var(--accent);}
-  .hero-en-cours .chrono{display:block; width:max-content; margin:14px auto 0; transform:translateY(50%);}
+  /* ---- le bandeau d une séance en cours ----
+     Il est droit : sans l'arc, le titre, le compte des séries et le chrono se calent
+     sur la même ligne de base, en bas du panneau. Le panneau est raccourci d'autant —
+     l'arc laissait passer la page dessous, plus maintenant. */
+  .hero-en-cours .hero-bg{aspect-ratio:1210/700;}
+  .hero-en-cours .hero-in{padding-bottom:34px;}
+  .hero-en-cours .hero-h{position:static; margin-top:auto; text-align:left; display:flex;
+    align-items:flex-end; gap:14px;}
+  .hero-en-cours .hero-h .grow{min-width:0;}
+  .hero-meta{display:flex; align-items:center; gap:8px; margin-top:9px;
+    font-size:13px; font-weight:700; color:var(--hero-soft);}
+  .hero-meta svg{width:18px; height:18px; flex:0 0 auto;}
+  /* L etiquette est plus large que la pastille : posee en absolu elle sortait de
+     l ecran par la droite. Les deux forment donc un bloc, et c est le bloc que la
+     mise en page mesure. */
+  .chrono-bloc{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .chrono-bloc .lab{font-size:10px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap;}
+  .hero-en-cours .chrono{display:block; width:max-content; margin:0; transform:none;
+    background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.18);
+    color:#fff; box-shadow:none; padding:9px 17px; font-size:18px;}
   /* le chrono devient une pastille claire posée sur la photo */
   /* Volontairement discret : ce chrono ne demande rien, il informe. Le minuteur de
      repos, lui, compte à rebours et doit se voir. Deux chiffres de même force à
@@ -2440,7 +2466,7 @@ const TRAD = {en:{
   "Conseillé sur cet exercice : {}":"Recommended for this exercise: {}",
   "Revenir au conseillé":"Back to recommended",
   "À toi de choisir la charge":"Your call on the load",
-  "<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.":"<span class=\"ht\">W-up = warm-up</span>A light set to prime the muscle, filled at half your working load. It counts nowhere: no tonnage, no records.",
+  "<span class=\"ht\"><i>Éch.</i> = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte pas dans ton tonnage, ni dans tes records.":"<span class=\"ht\"><i>W-up</i> = warm-up</span>A light set to prime the muscle, filled at half your working load. It counts toward neither your tonnage nor your records.",
   "<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.":"<span class=\"ht\">↓ = drop set</span>You keep the same set going with less load: 6 × 25 lb, then 4 × 20 lb. It stays one set, and all of it counts toward your tonnage.",
   "Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾.":"Can't write to this file here — keep a copy with 💾 instead.",
   "Ce fichier est vide.":"This file is empty.",
@@ -5584,7 +5610,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 17h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 17h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5878,9 +5904,9 @@ function telechargerJson(nom, texte){
 /* --- explications affichées une seule fois, la première fois qu'on rencontre une mécanique --- */
 function dejaVu(k){ return !!(db.seen && db.seen[k]); }
 function marquerVu(k){ if(!db.seen) db.seen={}; db.seen[k]=true; save(); }
-function hintBox(key, html){
+function hintBox(key, html, ico){
   if(dejaVu(key)) return "";
-  return `<div class="hint-box"><div class="grow">${html}</div><button data-hintx="${key}">${TR("Compris")}</button></div>`;
+  return `<div class="hint-box">${ico? `<span class="hi">${ico}</span>` : ""}<div class="grow">${html}</div><button data-hintx="${key}">${TR("Compris")}</button></div>`;
 }
 function wireHints(root){
   (root||document).querySelectorAll("[data-hintx]").forEach(b=>b.onclick=()=>{
@@ -6260,7 +6286,7 @@ const PHOTO_L = 640, PHOTO_H = 929;    /* format d'origine des photos de séance
    Le liseré reste à 74,7 % de la hauteur : rien de ce qui s'y aligne n'a bougé.
    Le rond clair du haut garde sa position et sa taille exactes. */
 const HERO_H = 1000;
-function heroSvg(photo){
+function heroSvg(photo, plat){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
   const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
@@ -6275,9 +6301,10 @@ function heroSvg(photo){
     </radialGradient>
     <mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="${HERO_H}">
       <rect width="1210" height="${HERO_H}" fill="#000"/>
-      <path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
+      ${plat ? `<rect width="1210" height="${HERO_H}" fill="#fff"/>`
+        : `<path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
       <circle cx="605" cy="-50" r="797" fill="none" stroke="#000" stroke-width="16"/>
-      <circle cx="605" cy="-60" r="171" fill="#000"/>
+      <circle cx="605" cy="-60" r="171" fill="#000"/>`}
     </mask></defs>
     <g mask="url(#hero-m)">
       <rect width="1210" height="${HERO_H}" fill="url(#hero-g)"/>
@@ -6291,7 +6318,7 @@ function heroSvg(photo){
 function hero(inner, opts){
   const o = opts || {};
   return `<div class="hero ${o.classe || ""}">
-    ${heroSvg(o.photo)}
+    ${heroSvg(o.photo, o.plat)}
     <div class="hero-in">
       <div class="hero-top">
         ${o.fermer ? `<span></span>
@@ -9745,12 +9772,24 @@ function renderActive(app){
   /* un nom long tient sur deux lignes plutôt que d'être coupé : on réduit un peu le corps */
   const nbCar = (a.name || "").length;
   const tailleTitre = nbCar <= 18 ? 29 : (nbCar <= 26 ? 25 : (nbCar <= 36 ? 22 : 19));
+  /* ce que la séance représente, en un coup d'œil. La durée suit la même règle que
+     l'aperçu d'une proposition : chaque série coûte son repos plus quarante secondes. */
+  const nbEx = a.entries.length;
+  const nbSeries = a.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
+  const minSeance = Math.max(1, Math.round(a.entries.reduce((n, e)=>
+    n + e.sets.length * (((e.target && e.target.rest) || db.settings.rest || 60) + 40), 0) / 60));
   app.innerHTML = `
-    ${hero(`<div class="hero-kicker">${TR("Séance en cours")}</div>
-      <h1 class="hero-seance" style="--t:${tailleTitre}px">${esc(a.name)}</h1>
-      <button class="chrono" id="chrono" aria-label="${TR("Mettre le chrono en pause")}"><span id="chrono-t"></span><span class="lab">${TR("Temps de séance")}</span></button>`,
-      {photo, icones:false, classe:"hero-en-cours"})}
-    <div style="height:10px;"></div>
+    ${hero(`<div class="grow">
+        <div class="hero-kicker">${TR("Séance en cours")}</div>
+        <h1 class="hero-seance" style="--t:${tailleTitre}px">${esc(a.name)}</h1>
+        <div class="hero-meta">${ICONS.seance}<span>${TR("{n} exercices · {s} séries · ~{m} min")
+          .replace("{n}", nbEx).replace("{s}", nbSeries).replace("{m}", minSeance)}</span></div>
+      </div>
+      <div class="chrono-bloc">
+        <button class="chrono" id="chrono" aria-label="${TR("Mettre le chrono en pause")}"><span id="chrono-t"></span></button>
+        <span class="lab">${TR("Temps de séance")}</span>
+      </div>`,
+      {photo, icones:false, classe:"hero-en-cours", plat:true})}
     <div class="stack" id="ex-list"></div>
     <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ ${TR("Ajouter un exercice")}</button>
     <div class="row" style="margin-top:20px;">
@@ -9846,7 +9885,7 @@ function renderActive(app){
           (enCours || enAttente)? IC_STOP : IC_LECTURE}<span>${
           enAttente? TR("Annuler") : (enCours? TR("Arrêter") : TR("Démarrer"))}</span></button>
       </div>`; })()
-      : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : "")}
+      : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\"><i>Éch.</i> = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte pas dans ton tonnage, ni dans tes records."), icoM("flamme", 30)) : "")}
       ${iso ? bandeRepos : ""}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
