@@ -1516,29 +1516,35 @@
      La photo à gauche, ce qu'on lit à droite. Les quatre tuiles descendent d'elles-mêmes
      sur leur propre ligne quand la largeur ne suffit plus — sur un téléphone, quatre
      tuiles à côté d'une photo tomberaient à quarante pixels chacune. */
-  .ps-tete{display:flex; flex-wrap:wrap; align-items:center; gap:12px 14px; margin-bottom:14px;}
-  .ps-photo{flex:0 0 auto; width:118px; height:132px; border-radius:16px;
+  .ps-tete{display:flex; align-items:center; gap:11px; margin-bottom:14px;}
+  .ps-photo{flex:0 0 auto; width:88px; height:118px; border-radius:14px;
     background:var(--surface); display:flex; align-items:center; justify-content:center;
-    overflow:hidden; padding:8px;}
+    overflow:hidden; padding:6px;}
   .ps-photo img{max-width:100%; max-height:100%; object-fit:contain; display:block;}
   .ps-photo .ic{display:flex; color:var(--accent);}
   .ps-photo .ic svg{width:46px; height:46px;}
   /* la marge de droite laisse passer la croix de fermeture, posée dans le coin */
-  .ps-titre{flex:1 1 150px; min-width:0; padding-right:26px;}
+  .ps-titre{flex:1 1 0; min-width:0;}
+  .ps-titre .ps-nom, .ps-titre .ps-marque{padding-right:26px;}
   /* « .sheet h3 » centre et rembourre tous les titres de fiche : il faut le même
      poids de sélecteur pour reprendre la main sur celui-ci. */
-  .sheet h3.ps-nom{text-align:left; text-transform:uppercase; font-size:20px;
+  .sheet h3.ps-nom{text-align:left; text-transform:uppercase; font-size:17px;
     line-height:1.15; padding:0; margin-bottom:0;}
   .ps-marque{text-align:left; font-size:12.5px; color:var(--ink-mute); margin:4px 0 0;}
-  .ps-tuiles{flex:1 1 100%; display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:0;}
-  @media (min-width:560px){ .ps-tuiles{flex:1 1 250px;} }
-  .ps-tuiles .tu{background:var(--surface); border-radius:14px; padding:11px 3px 10px; text-align:center;}
-  .ps-tuiles .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:6px;}
-  .ps-tuiles .ic svg{width:22px; height:22px;}
-  .ps-tuiles .v{font-size:20px; font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums;}
-  .ps-tuiles .v .u{font-size:12.5px; font-weight:700; margin-left:2.5px;}
-  .ps-tuiles .l{font-size:11px; color:var(--ink-soft); margin-top:2px; line-height:1.2;}
-  .ps-tuiles .r{font-size:9px; color:var(--ink-mute); margin-top:3px; line-height:1.2;}
+  /* Quatre tuiles à côté d'une photo, sur un téléphone : chacune tombe à cinquante
+     pixels. Tout y est calibré au plus juste — sans la ligne « pour 100 ml », qui est
+     désormais écrite une fois pour les quatre, elles ne tiendraient pas. */
+  .ps-tuiles{display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin:9px 0 0;}
+  .ps-tuiles .tu{background:var(--surface); border-radius:11px; padding:8px 2px 7px; text-align:center;
+    min-width:0; overflow:hidden;}
+  .ps-tuiles .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:4px;}
+  .ps-tuiles .ic svg{width:20px; height:20px;}
+  .ps-tuiles .v{font-size:16px; font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums;
+    white-space:nowrap;}
+  .ps-tuiles .v .u{font-size:10.5px; font-weight:700; margin-left:1.5px;}
+  .ps-tuiles .l{font-size:9.5px; color:var(--ink-soft); margin-top:2px; line-height:1.2;
+    white-space:nowrap;}
+  .ps-ref{font-size:10.5px; color:var(--ink-mute); margin-top:6px; text-align:center;}
   /* la ligne de la quantite : son intitule a gauche, le changement d unite a droite */
   .ps-qh{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;}
   .ps-bascule{display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
@@ -1565,12 +1571,18 @@
   .ps-live b{font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;}
   .ps-live i{display:block; font-style:normal; font-size:10.5px; color:var(--ink-mute); line-height:1.3;}
   /* garder l aliment : la case a gauche, l etoile a droite, un seul et meme geste */
-  .ps-opts{display:flex; align-items:center; gap:10px; cursor:pointer; padding:2px 1px;}
-  .ps-opts input{width:20px; height:20px; accent-color:var(--accent); flex:0 0 auto;}
+  .ps-opts{display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 2px;
+    width:100%; text-align:left; background:none; border:0;}
   .ps-opts .tx{flex:1; min-width:0; font-size:13.5px; font-weight:700; color:var(--ink-soft);}
+  /* creuse tant que le produit n'est pas gardé, pleine dès qu'il l'est */
   .ps-opts .et{display:flex; color:var(--ink-mute); flex:0 0 auto;}
+  .ps-opts .et svg{width:22px; height:22px; fill:none;
+    transition:fill .18s ease, transform .18s cubic-bezier(.22,.9,.35,1);}
+  .ps-opts:active .et svg{transform:scale(.86);}
   .ps-opts.on .et{color:var(--accent);}
+  .ps-opts.on .et svg{fill:currentColor;}
   .ps-opts.on .tx{color:var(--ink);}
+  @media (prefers-reduced-motion:reduce){ .ps-opts .et svg{transition:none;} }
 
   /* ---- les favoris ----
      Une case a cocher posee entre deux boutons ne se voyait pas. Encadree et nommee,
@@ -2466,6 +2478,7 @@ const TRAD = {en:{
   "pour {}":"per {}",
   "Moins":"Less",
   "Plus":"More",
+  "Gardé dans tes favoris":"Saved to your favourites",
   "Ajouter aux favoris":"Add to favourites",
   "Tous":"All",
   "Favoris":"Favourites",
@@ -2487,6 +2500,7 @@ const TRAD = {en:{
   "Salade verte (bol)":"Green salad (bowl)",
   "Petits pois (150 g)":"Peas (150 g)",
   "pour 100 ml":"per 100 ml",
+  "Informations {}":"Values {}",
   "Indique la quantité bue.":"Enter how much you drank.",
   "Scanner un autre produit":"Scan another product",
   "Indique la quantité mangée.":"Enter how much you ate.",
@@ -5664,7 +5678,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 19h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 19h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6303,6 +6317,9 @@ const IC_CIBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true
   + '<path d="M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2zm0 3a7.1 7.1 0 1 1 0 14.2 7.1 7.1 0 0 1 0-14.2z"/>'
   + '<path d="M12 7.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8zm0 2.6a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/>'
   + '<circle cx="12" cy="12" r="1.2"/></svg>';
+/* Dessinée en trait, elle se remplit d'un simple « fill » : c'est ce qui permet de
+   dire « ajouté » sans case à cocher à côté. */
+const IC_ETOILE = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.1l2.75 5.57 6.15.9-4.45 4.34 1.05 6.12L12 17.14l-5.5 2.89 1.05-6.12L3.1 9.57l6.15-.9L12 3.1Z"/></svg>';
 const IC_GOUTTE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
   + '<path d="M12 2.6c3.7 4.6 6 8 6 10.8a6 6 0 1 1-12 0c0-2.8 2.3-6.2 6-10.8z"/></svg>';
 const IC_VERRE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
@@ -7505,9 +7522,12 @@ function openProduitScanne(meal, p){
   const liquide = !!p.liquide;
   let uni = liquide ? "cl" : "g";
   const ref100 = liquide ? TR("pour 100 ml") : TR("pour 100 g");
+  /* « pour 100 ml » figurait sous chacune des quatre tuiles : quatre fois la même
+     phrase, et la place qu'elle prenait empêchait les tuiles de tenir à côté de la
+     photo. Elle est maintenant écrite une seule fois, sous la rangée. */
   const tuile = (ic, val, u, lab) => `<div class="tu"><span class="ic">${ic}</span>
     <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
-    <div class="l">${lab}</div><div class="r">${ref100}</div></div>`;
+    <div class="l">${lab}</div></div>`;
   const signe = liquide ? IC_VERRE : IC_ASSIETTE;
   openSheet(`<div class="ps-tete">
       <div class="ps-photo" id="ps-photo">${p.photo
@@ -7516,12 +7536,13 @@ function openProduitScanne(meal, p){
       <div class="ps-titre">
         <h3 class="ps-nom">${esc(p.nom)}</h3>
         ${p.marque? `<div class="ps-marque">${esc(p.marque)}</div>`:""}
-      </div>
-      <div class="ps-tuiles">
-        ${tuile(icoM("flamme", 22),  p.kcal100, "",  "kcal")}
-        ${tuile(icoM("muscle", 22),  p.prot100, "g", TR("protéines"))}
-        ${tuile(icoM("cereale", 22), p.gluc100 || 0, "g", TR("glucides"))}
-        ${tuile(IC_GOUTTE,           p.lip100 || 0,  "g", TR("lipides"))}
+        <div class="ps-tuiles">
+          ${tuile(icoM("flamme", 20),  p.kcal100, "",  "kcal")}
+          ${tuile(icoM("muscle", 20),  p.prot100, "g", TR("protéines"))}
+          ${tuile(icoM("cereale", 20), p.gluc100 || 0, "g", TR("glucides"))}
+          ${tuile(IC_GOUTTE,           p.lip100 || 0,  "g", TR("lipides"))}
+        </div>
+        <div class="ps-ref">${TR("Informations {}").replace("{}", ref100)}</div>
       </div>
     </div>
     <div class="stack">
@@ -7544,11 +7565,10 @@ function openProduitScanne(meal, p){
           </div>
         </div>
       </div>
-      <label class="ps-opts" id="ps-favbox">
-        <input type="checkbox" id="ps-save">
-        <span class="et">${icoM("etoile", 19)}</span>
+      <button type="button" class="ps-opts" id="ps-favbox" aria-pressed="false">
+        <span class="et">${IC_ETOILE}</span>
         <span class="tx">${TR("Ajouter aux favoris")}</span>
-      </label>
+      </button>
       <button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button>
       <button class="btn" id="ps-autre" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
         IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
@@ -7560,8 +7580,18 @@ function openProduitScanne(meal, p){
     const boite = document.getElementById("ps-photo");
     if(boite) boite.innerHTML = `<span class="ic">${signe}</span>`;
   };
-  const pbox = document.getElementById("ps-favbox"), pchk = document.getElementById("ps-save");
-  pchk.onchange = ()=>pbox.classList.toggle("on", pchk.checked);
+  /* Une case à cocher demandait de viser un carré de vingt pixels à côté de l'étoile.
+     L'étoile EST le bouton : elle se remplit quand le produit est gardé. */
+  const pbox = document.getElementById("ps-favbox");
+  let favori = false;
+  pbox.onclick = ()=>{
+    favori = !favori;
+    pbox.classList.toggle("on", favori);
+    pbox.setAttribute("aria-pressed", favori ? "true" : "false");
+    pbox.querySelector(".tx").textContent = favori ? TR("Gardé dans tes favoris")
+                                                   : TR("Ajouter aux favoris");
+    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+  };
   const gEl = document.getElementById("ps-g");
   /* Combien de fois la valeur de reference : tout le reste en decoule. Open Food Facts
      donne toujours ses valeurs pour 100 g — pour une boisson ce sont des valeurs pour
@@ -7611,7 +7641,7 @@ function openProduitScanne(meal, p){
     /* même écriture que partout ailleurs : la pastille, ses boutons et l'appui long
        fonctionneront sur ce produit comme sur n'importe quel aliment */
     const label = `${p.nom} ${q} ${uni} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
-    if(document.getElementById("ps-save").checked){
+    if(favori){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
       /* Glucides et lipides sont ranges derriere la famille. L app ne les compte pas

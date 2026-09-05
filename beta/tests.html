@@ -2238,6 +2238,59 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La fiche d'un produit scanné");
+  neuf();
+  /* La photo à gauche, tout le reste à droite — nom, marque, puis les quatre valeurs.
+     Et « pour 100 ml », qui figurait sous chacune des quatre tuiles, n'est plus écrit
+     qu'une fois : sans cette place gagnée, les tuiles ne tenaient pas à côté de la photo. */
+  (()=>{
+    const D2 = F.document;
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"9", nom:"Boisson test", marque:"M",
+      prot100:0.8, kcal100:40, gluc100:8.9, lip100:0, portion:25, liquide:true, photo:""});
+    vrai("Les valeurs sont sous le nom, à droite de la photo",
+      !!D2.querySelector(".ps-titre .ps-tuiles"));
+    eq("Quatre valeurs", D2.querySelectorAll(".ps-tuiles .tu").length, 4);
+    eq("Aucune tuile ne répète la référence", D2.querySelectorAll(".ps-tuiles .r").length, 0);
+    eq("Elle est écrite une seule fois, dessous",
+      D2.querySelector(".ps-ref").textContent, "Informations pour 100 ml");
+    /* un solide se mesure en grammes */
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
+      prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
+    eq("…et en grammes pour un aliment",
+      D2.querySelector(".ps-ref").textContent, "Informations pour 100 g");
+
+    /* ---- l'étoile des favoris ---- */
+    /* Il fallait viser une case à cocher de vingt pixels posée à côté de l'étoile.
+       L'étoile est devenue le bouton, et elle se remplit quand le produit est gardé. */
+    const et = D2.getElementById("ps-favbox");
+    vrai("Plus de case à cocher", !D2.getElementById("ps-save"));
+    vrai("L'étoile est le bouton", et.tagName === "BUTTON");
+    const remplie = () => F.getComputedStyle(et.querySelector("svg")).fill;
+    eq("Creuse au départ", remplie(), "none");
+    eq("…et elle le dit", et.getAttribute("aria-pressed"), "false");
+    et.click();
+    vrai("Pleine une fois appuyée", remplie() !== "none");
+    eq("…et elle le dit aussi", et.getAttribute("aria-pressed"), "true");
+    eq("Le texte suit", et.querySelector(".tx").textContent, "Gardé dans tes favoris");
+    et.click();
+    eq("Un second appui la vide", remplie(), "none");
+    eq("…et le texte revient", et.querySelector(".tx").textContent, "Ajouter aux favoris");
+
+    /* l'étoile pleine range vraiment le produit dans les propositions */
+    DB.hbPerso = {};
+    et.click();
+    D2.getElementById("ps-ok").click();
+    const range = Object.keys(DB.hbPerso).some(k =>
+      (DB.hbPerso[k] || []).some(x => String(x[0]).indexOf("Aliment test") === 0));
+    vrai("L'étoile pleine garde le produit", range,
+      JSON.stringify(DB.hbPerso).slice(0, 120));
+    DB.hbPerso = {}; DB.alim = {};
+    F.hideSheet();
+  })();
+  neuf();
+
   grp("Recherche d'aliments");
   neuf();
   /* Deux colonnes et une émoticône, comme la grille du repas : on reconnaît d'avance
