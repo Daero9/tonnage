@@ -1312,6 +1312,52 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Rien ne disparaît dans le fond");
+  neuf();
+  /* Trois fois de suite, un changement de palette a fait disparaitre des elements : les
+     onglets, puis les cases du calendrier, puis TOUS les boutons simples des fiches.
+     A chaque fois la cause etait la meme — une piece peinte de la couleur de ce qu il y
+     a derriere elle. Ce test la cherche partout : un element doit se distinguer de son
+     fond, soit par sa couleur, soit par un filet. */
+  (()=>{
+    const D2 = F.document;
+    const fondDerriere = el => { let p = el.parentElement;
+      while(p){ const c = F.getComputedStyle(p).backgroundColor;
+        if(c && c !== "rgba(0, 0, 0, 0)") return c; p = p.parentElement; }
+      return "rgb(255, 255, 255)"; };
+    const invisibles = racine => {
+      const out = [];
+      (racine || D2).querySelectorAll("*").forEach(el=>{
+        const cs = F.getComputedStyle(el), bg = cs.backgroundColor;
+        if(!bg || bg === "rgba(0, 0, 0, 0)") return;
+        /* une case a cocher est dessinee par le navigateur : son style calcule ne dit
+           rien de ce qui s affiche vraiment */
+        if(el.tagName === "INPUT" && /^(checkbox|radio)$/.test(el.type)) return;
+        if(bg !== fondDerriere(el)) return;
+        /* un filet ou une ombre suffit a le detacher */
+        if(parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor !== bg) return;
+        if(cs.boxShadow && cs.boxShadow !== "none") return;
+        if(cs.outlineStyle && cs.outlineStyle !== "none") return;
+        out.push(String(el.className || el.tagName).split(" ")[0]);
+      });
+      return [...new Set(out)];
+    };
+    DB.profile = Object.assign({}, DB.profile, {height:188, weight:74, goalWeight:80});
+    const fiches = [["calendrier", ()=>F.openCalendrier()], ["profil", ()=>F.openProfil()],
+      ["plan", ()=>F.showPlan(false)], ["réglages", ()=>F.openSettings()],
+      ["ajout d'aliment", ()=>F.openAjoutAliment("midi")],
+      ["produit scanné", ()=>F.openProduitScanne("midi", {code:"1", nom:"Test", marque:"M",
+        prot100:5, kcal100:50, gluc100:3, lip100:1, portion:25, liquide:true})]];
+    fiches.forEach(([nom, ouvrir])=>{
+      ouvrir();
+      const perdus = invisibles(D2.getElementById("sheet"));
+      vrai("Rien ne se fond dans la fiche « " + nom + " »" + (perdus.length? " ("+perdus.join(", ")+")" : ""),
+        perdus.length === 0);
+      F.hideSheet();
+    });
+  })();
+  neuf();
+
   grp("Page du plan");
   neuf();
   (()=>{
