@@ -5458,7 +5458,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 12h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 12h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6384,6 +6384,10 @@ function askConfirm(title, msg, okLabel, danger, cb){
 let rest = {end:0, total:0, int:null, paused:false, remaining:0, hideTo:null};
 let audioCtx = null;
 function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); }catch(e){} }
+/* Les trois notes du bip durent trois quarts de seconde. On garde la main dessus :
+   terminer une seance pendant qu elles sonnent doit les couper net, pas les laisser
+   finir dans le vide. */
+let bipsEnCours = [];
 function beep(){
   if(!audioCtx) return;
   try{
@@ -6395,8 +6399,16 @@ function beep(){
       g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime+t+.2);
       o.connect(g); g.connect(audioCtx.destination);
       o.start(audioCtx.currentTime+t); o.stop(audioCtx.currentTime+t+.22);
+      bipsEnCours.push(o);
+      o.onended = ()=>{ bipsEnCours = bipsEnCours.filter(x=>x !== o); };
     });
   }catch(e){}
+}
+/* coupe net ce qui est en train de sonner ou de vibrer */
+function couperSon(){
+  bipsEnCours.forEach(o=>{ try{ o.stop(); }catch(e){} });
+  bipsEnCours = [];
+  if(navigator.vibrate) try{ navigator.vibrate(0); }catch(e){}
 }
 /* ---- sonner quand l'écran est éteint ----------------------------------------
    Dès que l'application passe en arrière-plan, Android gèle son WebView : aucun
@@ -7756,14 +7768,21 @@ function openCardioList(){
 
 /* ================= SÉANCE (home) ================= */
 let chronoInt = null;
-/* Une seance qui se termine ou s'annule doit tout eteindre : le compte a rebours
-   de repos comme le chrono de seance. Sans ca, ils continuaient de tourner et la
-   barre de repos restait affichee par-dessus l'accueil. */
+/* Une seance qui se termine ou s'annule doit tout eteindre, et SANS UN BRUIT : le
+   compte a rebours de repos, le chrono de seance, l alarme confiee au systeme, et ce
+   qui serait en train de sonner ou de vibrer a cet instant precis. Sans ca, un repos
+   qui arrivait a zero pendant qu on validait la fin de seance sonnait dans le vide,
+   et la barre restait affichee par-dessus l accueil.
+   L heure de fin est remise a zero : plus rien ne peut se rallumer tout seul. */
 function arreterChronos(){
   try{ if(rest && rest.int){ clearInterval(rest.int); rest.int = null; } }catch(e){}
+  try{ if(rest && rest.hideTo){ clearTimeout(rest.hideTo); rest.hideTo = null; } }catch(e){}
+  try{ rest.paused = false; rest.end = 0; rest.remaining = 0; }catch(e){}
   try{ retirerAlarmeRepos(); }catch(e){}
+  try{ couperSon(); }catch(e){}
   try{ if(chronoInt){ clearInterval(chronoInt); chronoInt = null; } }catch(e){}
-  try{ const b = document.getElementById("restbar"); if(b) b.classList.remove("show"); }catch(e){}
+  try{ const b = document.getElementById("restbar");
+       if(b) b.classList.remove("show", "ending", "paused"); }catch(e){}
 }
 /* ===== Nutrition sans chiffres : checklist + verdict de la balance ===== */
 /* [libellé avec portion réelle, protéines (g), calories] — portions courantes, pas symboliques */
