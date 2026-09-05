@@ -1312,6 +1312,39 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Signes des analyses");
+  neuf();
+  /* Chaque section de la page Progression s ouvre par son signe : en defilant, on
+     retrouve « le poids » ou « les proteines » a la forme avant de lire le mot. */
+  (()=>{
+    const j = n => { const d = new Date(); d.setDate(d.getDate()-n); return d.toISOString(); };
+    DB.active = null;
+    DB.weights = [{date:j(40), kg:70}, {date:j(20), kg:71.5}, {date:j(1), kg:73}];
+    DB.habitSel = {}; DB.habitSel[F.jourAlim()] = {midi:["Poulet (1 filet, 130 g cuit)"]};
+    DB.history = [{id:"ha", date:j(3), tplId:"t", name:"S", start:Date.now()-3.6e6, end:Date.now(),
+      entries:[{exId:id("Développé couché"), sets:[{w:60,r:10,done:true},{w:60,r:10,done:true}]}]},
+      {id:"hb", date:j(10), tplId:"t", name:"S", start:Date.now()-3.6e6, end:Date.now(),
+      entries:[{exId:id("Développé couché"), sets:[{w:55,r:10,done:true},{w:55,r:10,done:true}]}]}];
+    DB.cardio = [{date:j(4), km:5, min:30}, {date:j(11), km:4, min:25}];
+    F.eval("curTab = 'prg';");
+    F.render();
+    const titres = [...F.document.querySelectorAll(".card-t")];
+    vrai("La page des analyses a ses sections", titres.length >= 4);
+    const sans = titres.filter(t=>!t.querySelector(".ic-t svg, .ic-t .icm")).map(t=>t.textContent.trim());
+    vrai("Chaque section porte son signe" + (sans.length? " (manque : "+sans.join(", ")+")" : ""),
+      sans.length === 0);
+    /* le signe vient AVANT le mot, pas apres */
+    vrai("Le signe ouvre le titre",
+      titres.every(t=>t.firstElementChild && t.firstElementChild.classList.contains("ic-t")));
+    /* et il prend l'orange de l'app */
+    eq("Il est orange",
+      F.getComputedStyle(titres[0].querySelector(".ic-t")).color, "rgb(245, 130, 32)");
+    DB.weights = []; DB.history = []; DB.cardio = []; DB.habitSel = {};
+    F.eval("curTab = 'seance';");
+    F.render();
+  })();
+  neuf();
+
   grp("Les réflexes");
   neuf();
   (()=>{

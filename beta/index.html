@@ -37,7 +37,7 @@
     --hero:#0e0e10; --hero-ink:#ffffff; --hero-soft:#b0aeaa;
     --good:#68c23a; --bad:#e06c5a;
     --barre:rgba(20,20,22,.96);
-    --sheet:#1f1f22; --field:#2a2a2e;
+    --sheet:#191a1d; --field:#2a2a2e;
     --figure:none;
     --radius:16px;
     --matin:#4aa8ea; --midi:#f58220; --collation:#6f6fe0; --soir:#f2607b; --extra:#5cba60;
@@ -1111,7 +1111,12 @@
   .sess-card{flex:0 0 76%; max-width:260px; scroll-snap-align:start; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px;}
   .sugg-badge{display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); background:var(--accent); border-radius:99px; padding:3px 9px; margin-bottom:8px;}
   /* ---- écran Progression ---- */
-  .card-t{font-size:21px; font-weight:800; letter-spacing:-.01em; line-height:1.15;}
+  /* Chaque section des analyses s ouvre par son signe : en defilant, on retrouve
+     « le poids » ou « les proteines » a la forme avant de lire le mot. */
+  .card-t{display:flex; align-items:center; gap:10px; font-size:21px; font-weight:800;
+    letter-spacing:-.01em; line-height:1.15;}
+  .card-t .ic-t{flex:0 0 auto; display:flex; color:var(--accent);}
+  .card-t .ic-t svg{width:23px; height:23px;}
   .card-sub{font-size:13px; color:var(--ink-soft); margin-top:1px;}
   .card-i{width:20px; height:20px; flex:0 0 auto; border-radius:50%; border:1.5px solid var(--accent);
     color:var(--accent); font-size:12px; font-weight:800; line-height:1;
@@ -5429,7 +5434,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 06h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 06h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5964,6 +5969,22 @@ const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" s
    des chiffres, pas du texte, et doivent peser autant qu eux. */
 /* Une cible pleine, dans la meme famille que les signes de Nico : trois anneaux et
    un centre. C est le seul des trois que je n avais pas. */
+/* une balance vue de dessus, et sa graduation */
+const IC_BALANCE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"'
+  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="4.4"/>'
+  + '<path d="M8.4 10.2a5 5 0 0 1 7.2 0"/><path d="M12 13.4v-2.6"/></svg>';
+/* une silhouette : le profil musculaire parle du corps, pas d un chiffre */
+const IC_SILHOUETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"'
+  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<circle cx="12" cy="5.1" r="2.9"/>'
+  + '<path d="M12 8.6c-3.2 0-4.8 1.9-4.8 4.4v2.2h1.6l.6 6.4h5.2l.6-6.4h1.6v-2.2c0-2.5-1.6-4.4-4.8-4.4z"/></svg>';
+const IC_COEUR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"'
+  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M12 20.4S3.8 15.6 3.8 10.3a4.6 4.6 0 0 1 8.2-2.85A4.6 4.6 0 0 1 20.2 10.3c0 5.3-8.2 10.1-8.2 10.1z"/>'
+  + '<path d="M3.9 12.4h3.4l1.5-2.4 1.9 4 1.5-2.6 1 1h6.9"/></svg>';
+/* le signe qui ouvre un titre de section : toujours a gauche, toujours orange */
+function icoTitre(ic){ return `<span class="ic-t">${ic}</span>`; }
 const IC_COCHE_RONDE = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">'
   + '<circle cx="12" cy="12" r="10" fill="currentColor"/>'
   + '<path d="M7.4 12.3 10.6 15.5 16.7 9" fill="none" stroke="#fff" stroke-width="2.2"'
@@ -10670,7 +10691,7 @@ function renderProgress(app){
   const body = document.getElementById("prg-body");
   if(!exIds.length){
     body.innerHTML = `<div class="card" style="margin-top:14px;">
-      <div class="card-t">${TR("Évolution des charges")}</div>
+      <div class="card-t">${icoTitre(IC_COURBE)}${TR("Évolution des charges")}</div>
       <div class="empty" style="padding:20px 10px;">${TR("Tes courbes par exercice apparaîtront ici après tes premières séances.")}</div>
     </div>`;
     return;
@@ -10704,7 +10725,8 @@ function renderProgress(app){
 
   body.innerHTML = `
     <div class="card" style="margin-top:14px;">
-      <div class="card-t" style="margin-bottom:10px;">${enReps? TR("Évolution des répétitions") : TR("Évolution des charges")}</div>
+      <div class="card-t" style="margin-bottom:10px;">${icoTitre(IC_COURBE)}${
+        enReps? TR("Évolution des répétitions") : TR("Évolution des charges")}</div>
       <select id="prg-sel" style="margin-bottom:12px;">${exIds.map(id=>`<option value="${id}" ${id===prgEx?"selected":""}>${esc(getEx(id).name)}</option>`).join("")}</select>
       ${deuxModes? `<div class="chips" style="margin-bottom:8px;">
         <button class="chip chip-sm ${mode==="avec"?"on":""}" data-lest="avec">${TR("Avec lest")}</button>
@@ -10775,7 +10797,7 @@ function renderWeightSection(sec){
   sec.innerHTML = `
     <div class="card">
       <div class="row" style="align-items:center; gap:11px;">
-        <div class="card-t grow">${TR("Poids")}</div>
+        <div class="card-t grow">${icoTitre(IC_BALANCE)}${TR("Poids")}</div>
         <div style="font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;">${
           cur!==null? fmtKg(cur)+` <span style="font-size:16px;">${uPoids()}</span>` : "—"}</div>
         <button class="btn btn-accent btn-sm" id="wt-add" style="flex:0 0 auto;">＋ ${TR("Noter")}</button>
@@ -11234,7 +11256,7 @@ function renderMuscleSection(sec){
   div.innerHTML = `
     <div class="card">
       <div class="row" style="align-items:center; gap:8px; margin-bottom:12px;">
-        <span class="card-t">${TR("Profil musculaire")}</span>
+        <span class="card-t">${icoTitre(IC_SILHOUETTE)}${TR("Profil musculaire")}</span>
         <button class="card-i" id="mp-info" aria-label="${TR("À quoi sert le profil musculaire ?")}">i</button>
       </div>
       <div class="mp-bodies">${mpBodyHtml(false, st)}${mpBodyHtml(true, st)}</div>
@@ -11288,7 +11310,7 @@ function renderProteinSection(sec){
   const div = document.createElement("div");
   if(!any){
     div.innerHTML = `<div class="card">
-      <div class="card-t">${TR("Protéines")}</div>
+      <div class="card-t">${icoTitre(icoM("muscle", 22))}${TR("Protéines")}</div>
       <div class="empty" style="padding:22px 16px;">${TR("Coche tes repas sur l'écran {} : ton historique de protéines s'affichera ici, jour par jour.").replace("{}", "<b>" + TR("Alimentation") + "</b>")}</div></div>`;
     sec.appendChild(div);
     return;
@@ -11298,7 +11320,7 @@ function renderProteinSection(sec){
     <div class="card">
       <div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
         <div>
-          <div class="card-t">${TR("Protéines")}</div>
+          <div class="card-t">${icoTitre(icoM("muscle", 22))}${TR("Protéines")}</div>
           <div class="card-sub">Objectif <b style="color:var(--ink);">${target} g</b> / jour</div>
         </div>
         <span style="font-size:12.5px; font-weight:700; white-space:nowrap; color:${hit>=5?'var(--good)':'var(--ink-soft)'};">${hit} jour${hit>1?"s":""} au quota</span>
@@ -11461,7 +11483,7 @@ function renderCardioSection(sec){
   const pts = keys.map(k=>({date:k, v:Math.round(weeks[k]*10)/10}));
   const div = document.createElement("div");
   div.innerHTML = `<div class="card">
-    <div class="card-t">Cardio</div>
+    <div class="card-t">${icoTitre(IC_COEUR)}Cardio</div>
     <div class="card-sub" style="margin-bottom:10px;">${TR("Kilomètres par semaine")}</div>
     <div class="chart-wrap" id="cd-chart"></div></div>`;
   sec.appendChild(div);
