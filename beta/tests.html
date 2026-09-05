@@ -1340,22 +1340,44 @@ async function lancer(){
       carte.querySelectorAll(".set-row input")[1].placeholder, "sec");
     /* un dégressif consiste à baisser la charge : sur un gainage à zéro kilo, rien à baisser */
     vrai("Pas de dégressif sur un gainage", !carte.querySelector(".dg"));
-    /* le chrono */
-    vrai("Le chrono est en tête de carte", !!carte.querySelector(".iso-chrono"));
-    eq("Il attend d'être lancé", carte.querySelector("[data-iso]").textContent, "Démarrer");
-    F.lancerIso(0);
-    vrai("Il tourne", !!F.eval("isoChrono").int);
-    eq("…et le bouton propose de l'arrêter",
-      F.document.querySelector("[data-iso]").textContent, "Arrêter");
-    /* on triche sur l'heure de départ pour ne pas attendre */
-    F.eval("isoChrono.debut = Date.now() - 42000;");
-    F.lancerIso(0);
-    vrai("Arrêté", !F.eval("isoChrono").int);
-    eq("Le temps tenu remplit la série", DB.active.entries[0].sets[0].r, 42);
-    /* terminer la séance éteint aussi ce chrono */
-    F.lancerIso(0);
+    /* l'enchaînement : une seule pression, l'app déroule tout */
+    vrai("Le bouton est en tête de carte", !!carte.querySelector(".iso-chrono"));
+    eq("Il propose de démarrer", carte.querySelector("[data-iso]").textContent, "Démarrer");
+    /* trois séries de 40 s avec 60 s de repos : tenue, repos, tenue, repos, tenue */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    DB.active.entries[0].target = {rest:60};
+    const et = F.etapesIso(0);
+    eq("Chaque tenue est suivie d'un repos",
+      et.map(x=>x.type).join(","), "tenue,repos,tenue,repos,tenue,repos,tenue");
+    eq("Pas de repos après la dernière", et[et.length-1].type, "tenue");
+    eq("Les tenues durent ce qui est écrit", et[0].sec, 40);
+    eq("Le repos vient de la séance", et[1].sec, 60);
+    /* on lance et on avance à la main, sans attendre */
+    F.lancerSeqIso(0);
+    vrai("L'enchaînement tourne", !!F.eval("seqIso"));
+    eq("On commence par tenir", F.document.getElementById("rest-lbl").textContent, "Gainage");
+    vrai("…et la barre le dit",
+      F.document.getElementById("restbar").classList.contains("tenue"));
+    F.avancerIso();
+    eq("Puis le repos", F.document.getElementById("rest-lbl").textContent, "Repos");
+    vrai("La tenue est validée toute seule", DB.active.entries[0].sets[0].done);
+    vrai("…et la barre reprend sa couleur",
+      !F.document.getElementById("restbar").classList.contains("tenue"));
+    F.avancerIso();
+    eq("Puis on tient de nouveau", F.document.getElementById("rest-lbl").textContent, "Gainage");
+    /* jusqu'au bout */
+    for(let k = 0; k < 10 && F.eval("seqIso"); k++) F.avancerIso();
+    vrai("L'enchaînement s'arrête au bout", !F.eval("seqIso"));
+    vrai("Toutes les tenues sont validées",
+      DB.active.entries[0].sets.every(st=>st.done));
+    /* sans durée, rien à enchaîner */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 0; st.done = false; });
+    eq("Sans durée, aucune étape", F.etapesIso(0).length, 0);
+    /* terminer la séance arrête l'enchaînement */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    F.lancerSeqIso(0);
     F.arreterChronos();
-    vrai("La fin de séance arrête le chrono du gainage", !F.eval("isoChrono").int);
+    vrai("La fin de séance arrête l'enchaînement", !F.eval("seqIso"));
     DB.active = null; DB.templates = [];
     F.render();
   })();

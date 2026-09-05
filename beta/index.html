@@ -768,6 +768,8 @@
   .restbar .bar i{display:block; height:100%; background:#fff; border-radius:2px;}
   @keyframes flashEnd{0%,100%{background:var(--accent);}50%{background:#fff;}}
   .restbar.ending{animation:flashEnd .5s 3;}
+  /* pendant la tenue, la barre passe au vert : on n'est pas en train de se reposer */
+  .restbar.tenue{background:var(--good);}
   .restbar.paused{background:var(--surface2); color:var(--ink);}
   .restbar.paused button{background:var(--surface); color:var(--ink);}
   .restbar.paused .rb-ic, .restbar.paused .rb-rond{color:var(--ink); border-color:var(--ink-soft);}
@@ -2251,6 +2253,15 @@ const TRAD = {en:{
   "Charge max":"Top load",
   "Avec lest":"Weighted",
   "durée":"time",
+  "Tenue et repos s'enchaînent tout seuls.":"Hold and rest chain on their own.",
+  "Indique une durée":"Set a duration",
+  "Indique d'abord une durée.":"Set a duration first.",
+  "Gainage":"Plank",
+  "Gainage terminé":"Hold over",
+  "Gainage terminé ✓":"Plank done ✓",
+  "En position, on repart.":"Get set, here we go.",
+  "Repose-toi.":"Take your rest.",
+  "Dernière tenue : c'est fini.":"Last hold — you're done.",
   "Le temps tenu remplit la série en cours.":"The time held fills the current set.",
   "Démarrer":"Start",
   "Arrêter":"Stop",
@@ -5489,7 +5500,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 13h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 13h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6471,6 +6482,7 @@ async function autoriserNotifs(){
 }
 async function poserAlarmeRepos(){
   if(db.settings.son === false) return;      /* son coupé : pas de sonnerie du tout */
+  if(seqIso) return;                         /* un gainage a déjà posé toute sa suite */
   const n = pluginNotifs();
   if(!n || !rest.int || rest.paused) return;
   const dans = rest.end - Date.now();
@@ -6518,40 +6530,110 @@ function majIconeSon(){
    vient justement de faire. Un seul chrono a la fois : en lancer un ailleurs arrete
    le precedent, sinon deux compteurs tourneraient sans qu on sache lequel remplira
    quelle ligne. */
-let isoChrono = {ei:null, debut:0, int:null};
-function isoAffiche(){
-  const el = document.querySelector('[data-isot="' + isoChrono.ei + '"]');
-  if(!el) return;
-  const sec = Math.floor((Date.now() - isoChrono.debut)/1000);
-  el.textContent = Math.floor(sec/60) + ":" + String(sec % 60).padStart(2, "0");
-}
-function arreterIso(ecrire){
-  if(isoChrono.int){ clearInterval(isoChrono.int); isoChrono.int = null; }
-  const ei = isoChrono.ei;
-  const sec = isoChrono.debut ? Math.round((Date.now() - isoChrono.debut)/1000) : 0;
-  isoChrono.ei = null; isoChrono.debut = 0;
-  if(!ecrire || sec < 1 || ei === null) return null;
+/* ---- l'enchaînement d'un gainage ----------------------------------------------
+   Tenir, se reposer, recommencer — sans toucher au téléphone. Un chronomètre qu'il
+   faut arrêter à la main oblige à le regarder ; ici on appuie une fois et l'app
+   déroule toute la série, en réutilisant le minuteur de repos pour le compte à
+   rebours.
+
+   TOUTES les sonneries sont programmées d'avance, dès le départ : pendant une planche
+   le téléphone est posé, écran éteint, et plus aucun minuteur JavaScript ne tourne. Si
+   on attendait la fin de chaque étape pour poser la suivante, il n'y en aurait qu'une
+   seule — celle du premier gainage — et la suite ne sonnerait jamais. */
+const NOTIF_ISO = 4300;
+let seqIso = null;   /* {ei, etapes:[{type,si,sec}], i} */
+
+/* tenir, se reposer, tenir… jusqu'à la dernière série. Pas de repos après la dernière :
+   il n'y a plus rien derrière. */
+function etapesIso(ei){
   const en = db.active && db.active.entries[ei];
-  if(!en) return null;
-  /* la serie qu on vient de tenir : la premiere non validee, la derniere sinon */
-  let si = en.sets.findIndex(st=>!st.done);
-  if(si < 0) si = en.sets.length - 1;
-  if(si < 0) return null;
-  en.sets[si].r = sec;
-  save();
-  return {ei, si, sec};
+  if(!en) return [];
+  const repos = (en.target && en.target.rest) || db.settings.rest || 60;
+  const et = [];
+  en.sets.forEach((st, si)=>{
+    if(st.done) return;
+    const d = parseInt(st.r, 10) || 0;
+    if(d <= 0) return;
+    et.push({type:"tenue", si, sec:d});
+    et.push({type:"repos", si, sec:repos});
+  });
+  while(et.length && et[et.length - 1].type === "repos") et.pop();
+  return et;
 }
-function lancerIso(ei){
-  if(isoChrono.int && isoChrono.ei === ei){ const r = arreterIso(true); renderActive(document.getElementById("app"));
-    if(r) toast(TR("{} enregistrées").replace("{}", fmtDuree(r.sec)));
-    return; }
-  arreterIso(true);
-  isoChrono = {ei, debut: Date.now(), int: null};
-  isoChrono.int = setInterval(isoAffiche, 200);
-  isoAffiche();
-  const b = document.querySelector('[data-iso="' + ei + '"]');
-  if(b) b.textContent = TR("Arrêter");
+function etapeIsoEnCours(){
+  return seqIso && seqIso.etapes[seqIso.i] || null;
+}
+function afficherEtapeIso(){
+  const e = etapeIsoEnCours();
+  if(!e) return;
+  startRest(e.sec);
+  document.getElementById("rest-lbl").textContent =
+    e.type === "tenue" ? TR("Gainage") : TR("Repos");
+  restbar.classList.toggle("tenue", e.type === "tenue");
+}
+function avancerIso(){
+  if(!seqIso) return;
+  const e = seqIso.etapes[seqIso.i];
+  /* la tenue qui vient de s'achever est validée : c'est exactement ce qu'on a fait */
+  if(e && e.type === "tenue"){
+    const en = db.active && db.active.entries[seqIso.ei];
+    if(en && en.sets[e.si]){ en.sets[e.si].done = true; save(); }
+  }
+  seqIso.i++;
+  if(seqIso.i >= seqIso.etapes.length){ arreterSeqIso(true); return; }
+  afficherEtapeIso();
+}
+function arreterSeqIso(fini){
+  const avait = !!seqIso;
+  seqIso = null;
+  retirerSonneriesIso();
+  restbar.classList.remove("tenue");
+  if(!avait) return;
+  if(fini){
+    if(rest.int){ clearInterval(rest.int); rest.int = null; }
+    restbar.classList.remove("show", "ending");
+    toast(TR("Gainage terminé ✓"));
+  }
+  try{ renderActive(document.getElementById("app")); }catch(e){}
+}
+function lancerSeqIso(ei){
+  if(seqIso){ arreterSeqIso(false); return; }
+  const etapes = etapesIso(ei);
+  if(!etapes.length){ toast(TR("Indique d'abord une durée.")); return; }
+  seqIso = {ei, etapes, i:0};
+  afficherEtapeIso();
+  programmerSonneriesIso();
   if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
+  try{ renderActive(document.getElementById("app")); }catch(e){}
+}
+/* toutes les sonneries a venir, posees d un coup */
+async function programmerSonneriesIso(){
+  const n = pluginNotifs();
+  if(!n || !seqIso || db.settings.son === false) return;
+  if(!(await autoriserNotifs())) return;
+  if(!seqIso) return;                       /* la demande a pu prendre du temps */
+  let t = rest.end || (Date.now() + seqIso.etapes[seqIso.i].sec * 1000);
+  const liste = [];
+  for(let k = seqIso.i; k < seqIso.etapes.length; k++){
+    if(k > seqIso.i) t += seqIso.etapes[k].sec * 1000;
+    const suite = seqIso.etapes[k + 1];
+    liste.push({
+      id: NOTIF_ISO + k,
+      title: seqIso.etapes[k].type === "tenue" ? TR("Gainage terminé") : TR("Repos terminé"),
+      body: suite
+        ? (suite.type === "tenue" ? TR("En position, on repart.") : TR("Repose-toi."))
+        : TR("Dernière tenue : c'est fini."),
+      schedule: {at: new Date(t), allowWhileIdle: true}
+    });
+  }
+  try{ await n.schedule({notifications: liste}); }catch(e){}
+}
+async function retirerSonneriesIso(){
+  const n = pluginNotifs();
+  if(!n) return;
+  const ids = [];
+  for(let k = 0; k < 40; k++) ids.push({id: NOTIF_ISO + k});
+  try{ await n.cancel({notifications: ids}); }catch(e){}
 }
 const restbar = document.getElementById("restbar");
 function startRest(sec){
@@ -6588,6 +6670,7 @@ function togglePauseRest(){
     if(rest.int) clearInterval(rest.int);
     rest.int = setInterval(tickRest, 250);
     tickRest();
+    if(seqIso) programmerSonneriesIso();   /* on repose la suite, décalée d'autant */
   } else {
     rest.remaining = Math.max(0, rest.end - Date.now());
     rest.paused = true;
@@ -6597,6 +6680,7 @@ function togglePauseRest(){
     if(rest.int) clearInterval(rest.int);
     rest.int = null;
     retirerAlarmeRepos();          /* en pause, l'heure de fin n'existe plus */
+    retirerSonneriesIso();         /* ni celles qui suivaient */
   }
 }
 function tickRest(){
@@ -6612,6 +6696,8 @@ function tickRest(){
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
     if(left > -2) bipRepos();
     if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    /* un gainage en cours enchaîne sur l'étape suivante au lieu de s'arrêter là */
+    if(seqIso){ avancerIso(); return; }
     if(rest.hideTo) clearTimeout(rest.hideTo);
     rest.hideTo = setTimeout(()=>{ restbar.classList.remove("show","ending"); rest.hideTo=null; }, 1600);
     return;
@@ -6632,7 +6718,12 @@ function tickRest(){
   }
   document.getElementById("rest-bar").style.width = (left/rest.total*100)+"%";
 }
-document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; restbar.classList.remove("show","paused"); retirerAlarmeRepos(); };
+document.getElementById("rest-skip").onclick=()=>{
+  /* pendant un gainage, « passer » saute l'étape en cours, pas tout l'enchaînement */
+  if(seqIso){ avancerIso(); if(seqIso) programmerSonneriesIso(); return; }
+  if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false;
+  restbar.classList.remove("show","paused"); retirerAlarmeRepos();
+};
 document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); } };
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); } };
 document.getElementById("rest-son").onclick=e=>{
@@ -7848,7 +7939,7 @@ let chronoInt = null;
    L heure de fin est remise a zero : plus rien ne peut se rallumer tout seul. */
 function arreterChronos(){
   try{ if(rest && rest.int){ clearInterval(rest.int); rest.int = null; } }catch(e){}
-  try{ arreterIso(false); }catch(e){}      /* le chrono de gainage aussi */
+  try{ if(seqIso){ seqIso = null; retirerSonneriesIso(); } }catch(e){}   /* l'enchaînement du gainage aussi */
   try{ if(rest && rest.hideTo){ clearTimeout(rest.hideTo); rest.hideTo = null; } }catch(e){}
   try{ rest.paused = false; rest.end = 0; rest.remaining = 0; }catch(e){}
   try{ retirerAlarmeRepos(); }catch(e){}
@@ -9554,12 +9645,21 @@ function renderActive(app){
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
-      ${iso ? `<div class="iso-chrono">
+      ${iso ? (()=>{ const et = etapesIso(ei), enCours = seqIso && seqIso.ei === ei;
+        /* le resume ne compte que les series de travail : l echauffement est juste
+           en dessous dans le tableau, l annoncer ici ferait « 4 x 20 s » pour une
+           seance qui est en realite un echauffement plus trois tenues de 40 */
+        const tenues = et.filter(x=>x.type === "tenue" && !(en.sets[x.si] || {}).warm);
+        const rep = (et.find(x=>x.type === "repos") || {}).sec;
+        return `<div class="iso-chrono">
         <span class="ic">${IC_CHRONO}</span>
-        <div class="grow"><div class="t" data-isot="${ei}">0:00</div>
-          <div class="s">${TR("Le temps tenu remplit la série en cours.")}</div></div>
-        <button class="btn btn-sm" data-iso="${ei}">${TR("Démarrer")}</button>
-      </div>`
+        <div class="grow"><div class="t">${tenues.length
+            ? tenues.length + " × " + fmtDuree(tenues[0].sec) + (rep? " · " + TR("repos") + " " + fmtDuree(rep) : "")
+            : TR("Indique une durée")}</div>
+          <div class="s">${TR("Tenue et repos s'enchaînent tout seuls.")}</div></div>
+        <button class="btn btn-sm ${enCours? "" : "btn-accent"}" data-iso="${ei}">${
+          enCours? TR("Arrêter") : TR("Démarrer")}</button>
+      </div>`; })()
       : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : "")}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
@@ -9576,10 +9676,7 @@ function renderActive(app){
       </div>
       <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
     const btnIso = card.querySelector("[data-iso]");
-    if(btnIso){
-      if(isoChrono.int && isoChrono.ei === ei){ btnIso.textContent = TR("Arrêter"); isoAffiche(); }
-      btnIso.onclick = ()=>lancerIso(ei);
-    }
+    if(btnIso) btnIso.onclick = ()=>lancerSeqIso(ei);
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
