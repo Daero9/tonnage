@@ -1412,6 +1412,51 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le minuteur de repos, en rond");
+  neuf();
+  /* La barre a pris la forme du croquis : un disque qui deborde de part et d autre,
+     un anneau qui se remplit, un bouton de pause pose sur son bord bas. Ce qui compte
+     ici n est pas le dessin mais qu il dise l heure : l anneau doit suivre le temps
+     ecoule, et le bouton doit changer de sens des qu on met en pause. */
+  (()=>{
+    const D2 = F.document;
+    const disque = D2.querySelector("#rest-pill .rb-disc");
+    vrai("Le disque existe", !!disque);
+    const arc = D2.getElementById("rest-arc");
+    vrai("L'anneau existe", !!arc);
+    const pause = D2.getElementById("rest-pause");
+    vrai("Le bouton de pause est posé sur le disque",
+      !!pause && pause.closest(".rb-disc") === disque);
+    const tour = F.eval("RB_TOUR");
+    const creux = () => parseFloat(arc.style.strokeDashoffset);
+
+    F.startRest(120);
+    vrai("Au départ l'anneau est vide", Math.abs(creux() - tour) < 1);
+    eq("Le libellé annonce le repos", D2.getElementById("rest-lbl").textContent, "Repos");
+    eq("Le bouton propose la pause", pause.getAttribute("aria-label"), "Mettre en pause");
+    eq("…avec les deux barres", pause.querySelectorAll("rect").length, 2);
+
+    /* la moitié du temps passée : la moitié de l'anneau */
+    const r = F.eval("rest");
+    r.end = Date.now() + 60000;
+    F.tickRest();
+    vrai("À mi-parcours l'anneau est à moitié", Math.abs(creux() - tour/2) < 6);
+
+    F.togglePauseRest();
+    eq("En pause il propose de reprendre", pause.getAttribute("aria-label"), "Reprendre");
+    eq("…avec un triangle", pause.querySelectorAll("path").length, 1);
+    F.togglePauseRest();
+    eq("Et on repart", pause.getAttribute("aria-label"), "Mettre en pause");
+
+    /* à zéro l'anneau est plein : un anneau à moitié effacé dirait qu'il reste du temps */
+    F.eval("rest").end = Date.now() - 100;
+    F.tickRest();
+    vrai("À zéro l'anneau est plein", creux() < 1);
+
+    F.arreterChronos();
+  })();
+  neuf();
+
   grp("Fin de séance : tout s'éteint");
   neuf();
   /* Terminer ou annuler doit tout couper, et SANS UN BRUIT. Un repos qui arrivait a
