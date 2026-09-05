@@ -113,6 +113,8 @@
   /* les boutons gris portent exactement le gris du fond ; --surface2 reste la surface  en creux  */
   .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--btn); border:1px solid var(--border);}
   .btn:active{transform:scale(.98);}
+  /* un SVG sans dimension s etire a toute la hauteur d un bouton en flex */
+  .btn > svg{flex:0 0 auto; width:20px; height:20px;}
   .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
   .btn-ghost{background:none; border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
   .btn-danger{color:var(--bad);}
@@ -1255,6 +1257,53 @@
   #ot-scan .fl{margin-left:auto; display:flex; opacity:.7;}
   #ot-scan .fl svg{width:19px; height:19px;}
 
+  /* ---- la fiche d un produit scanne ----
+     Quatre tuiles pour les quatre valeurs de l etiquette. Elles ne sont pas cliquables :
+     elles disent ce que contient le produit, la question « combien » vient apres. */
+  .ps-nom{text-align:center; text-transform:uppercase; font-size:20px; line-height:1.15;}
+  .ps-marque{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:4px 0 0;}
+  .ps-tuiles{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:14px 0 16px;}
+  .ps-tuiles .tu{background:var(--surface); border-radius:14px; padding:11px 3px 10px; text-align:center;}
+  .ps-tuiles .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:6px;}
+  .ps-tuiles .ic svg{width:22px; height:22px;}
+  .ps-tuiles .v{font-size:20px; font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums;}
+  .ps-tuiles .v .u{font-size:12.5px; font-weight:700; margin-left:2.5px;}
+  .ps-tuiles .l{font-size:11px; color:var(--ink-soft); margin-top:2px; line-height:1.2;}
+  .ps-tuiles .r{font-size:9px; color:var(--ink-mute); margin-top:3px; line-height:1.2;}
+  /* la ligne de la quantite : son intitule a gauche, le changement d unite a droite */
+  .ps-qh{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;}
+  .ps-bascule{display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
+    color:var(--accent); white-space:nowrap;}
+  .ps-bascule svg{width:15px; height:15px;}
+  /* Le compteur et l apercu tiennent cote a cote quand la place le permet, et passent
+     l un sous l autre sinon : deux blocs de 150 px ne rentrent pas sur tous les ecrans. */
+  .ps-qrow{display:flex; gap:8px; flex-wrap:wrap;}
+  .ps-step{flex:1 1 200px; display:flex; align-items:stretch; gap:7px;}
+  .ps-step > button{flex:0 0 48px; border-radius:13px; background:var(--surface2);
+    border:1px solid var(--border); font-size:19px; font-weight:700; line-height:1;
+    display:flex; align-items:center; justify-content:center;}
+  .ps-step > button:active{background:var(--btn);}
+  .ps-step .ch{flex:1; min-width:0; position:relative; display:flex; align-items:center;}
+  .ps-step .ch input{text-align:center; padding-right:34px; font-size:19px; font-weight:800;}
+  .ps-step .ch .u{position:absolute; right:15px; font-size:13px; font-weight:700;
+    color:var(--ink-soft); pointer-events:none;}
+  .ps-live{flex:1 1 172px; display:flex; align-items:center; gap:10px;
+    background:rgba(245,130,32,.13); border-radius:14px; padding:8px 12px;}
+  .ps-live .ic{display:flex; color:var(--accent); flex:0 0 auto;}
+  .ps-live .ic svg{width:23px; height:23px;}
+  .ps-live .n{flex:1; min-width:0; text-align:center;}
+  .ps-live .n + .n{border-left:1px solid rgba(245,130,32,.3);}
+  .ps-live b{font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .ps-live i{display:block; font-style:normal; font-size:10.5px; color:var(--ink-mute); line-height:1.3;}
+  /* garder l aliment : la case a gauche, l etoile a droite, un seul et meme geste */
+  .ps-opts{display:flex; align-items:center; gap:10px; cursor:pointer; padding:2px 1px;}
+  .ps-opts input{width:20px; height:20px; accent-color:var(--accent); flex:0 0 auto;}
+  .ps-opts .tx{flex:1; min-width:0; font-size:13px; color:var(--ink-soft);}
+  .ps-opts .fav{display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+    color:var(--ink-mute); white-space:nowrap;}
+  .ps-opts.on .fav{color:var(--accent);}
+  .ps-opts .et{display:flex;}
+
   /* ---- les favoris ----
      Une case a cocher posee entre deux boutons ne se voyait pas. Encadree et nommee,
      elle devient une action a part entiere, et le cadre s allume quand elle est prise. */
@@ -2079,6 +2128,15 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "protéines":"protein",
+  "glucides":"carbs",
+  "lipides":"fat",
+  "Quantité bue (ml)":"Amount drunk (ml)",
+  "Passer en ml":"Switch to ml",
+  "Passer en cl":"Switch to cl",
+  "pour {}":"per {}",
+  "Moins":"Less",
+  "Plus":"More",
   "Ajouter aux favoris":"Add to favourites",
   "Tous":"All",
   "Favoris":"Favourites",
@@ -5232,7 +5290,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 05h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 05h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5762,6 +5820,19 @@ const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" s
   + '<circle cx="12" cy="12" r="4.3" fill="currentColor" stroke="none"/>'
   + '<path d="M12 2.3v2.2M12 19.5v2.2M4.5 4.5l1.6 1.6M17.9 17.9l1.6 1.6'
   + 'M2.3 12h2.2M19.5 12h2.2M4.5 19.5l1.6-1.6M17.9 6.1l1.6-1.6"/></svg>';
+/* Deux signes pleins, dans la meme famille que les icones dessinees : ils accompagnent
+   des chiffres, pas du texte, et doivent peser autant qu eux. */
+const IC_GOUTTE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<path d="M12 2.6c3.7 4.6 6 8 6 10.8a6 6 0 1 1-12 0c0-2.8 2.3-6.2 6-10.8z"/></svg>';
+const IC_VERRE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<path d="M5.2 2.8h13.6l-1.5 17.6a1.8 1.8 0 0 1-1.8 1.6H8.5a1.8 1.8 0 0 1-1.8-1.6z"/></svg>';
+const IC_ASSIETTE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2zm0 5.3a4.3 4.3 0 1 1 0 8.6 4.3 4.3 0 0 1 0-8.6z"/></svg>';
+const IC_CHECK = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6"'
+  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.6 12.4 9.6 17.4 19.4 6.6"/></svg>';
+const IC_ECHANGE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M3.5 8h14l-3.2-3.2M20.5 16h-14l3.2 3.2"/></svg>';
 const IC_LOUPE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
   + ' stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="M15.6 15.6 20 20"/></svg>';
 const IC_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"'
@@ -6597,6 +6668,8 @@ function portionMl(txt){
 }
 async function chercherProduit(code){
   const champs = "product_name,product_name_fr,brands,nutriments,serving_size,quantity,categories_tags";
+  /* on demande aussi glucides et lipides : la fiche les montre, meme si l app ne
+     compte toujours que les proteines et les calories */
   const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${champs}`;
   const r = await fetch(url, {cache:"no-store"});
   if(!r.ok) throw new Error("reseau");
@@ -6604,6 +6677,7 @@ async function chercherProduit(code){
   if(d.status !== 1 || !d.product) return null;
   const p = d.product, n = p.nutriments || {};
   const prot = n["proteins_100g"], kcal = n["energy-kcal_100g"];
+  const gluc = n["carbohydrates_100g"], lip = n["fat_100g"];
   if(prot === undefined && kcal === undefined) return null;   /* fiche sans valeurs */
   const nom = (p.product_name_fr || p.product_name || "").trim();
   if(!nom) return null;
@@ -6621,6 +6695,8 @@ async function chercherProduit(code){
     marque: (p.brands || "").split(",")[0].trim(),
     prot100: Math.round((Number(prot) || 0) * 10) / 10,
     kcal100: Math.round(Number(kcal) || 0),
+    gluc100: Math.round((Number(gluc) || 0) * 10) / 10,
+    lip100: Math.round((Number(lip) || 0) * 10) / 10,
     /* en centilitres : c'est l'unite des canettes et des bouteilles, et celle que le
        reste de l'application emploie deja pour le lait et les soupes */
     portion: liquide ? (portionMl(p.serving_size) <= 500 ? Math.round(portionMl(p.serving_size)/10) : 0)
@@ -6634,33 +6710,49 @@ async function chercherProduit(code){
    le nom en capitales, les deux chiffres côte à côte — pour qu'on reconnaisse l'écran. */
 function openProduitScanne(meal, p){
   const k = jourAlim();
-  /* on boit une boisson, on mange un aliment : l'unité, le pas du champ et le libellé
-     enregistré suivent tous les trois */
-  const cl = !!p.liquide, uni = cl ? "cl" : "g";
-  openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(p.nom)}</h3>
-    ${p.marque? `<div style="text-align:center; font-size:12.5px; color:var(--ink-mute); margin:-6px 0 12px;">${esc(p.marque)}</div>`:""}
-    <div class="row" style="justify-content:center; gap:34px; margin-bottom:14px;">
-      <div style="text-align:center;">
-        <div id="ps-prot" style="font-size:29px; font-weight:800; line-height:1.05;">0<span style="font-size:16px;"> g</span></div>
-        <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Protéines")}</div></div>
-      <div style="text-align:center;">
-        <div id="ps-kcal" style="font-size:29px; font-weight:800; line-height:1.05;">0</div>
-        <div style="font-size:12.5px; color:var(--ink-soft);">${TR("Kilocalories")}</div></div>
+  /* On boit une boisson, on mange un aliment. L unite se change en cours de route :
+     les canettes s annoncent en centilitres, les briques et les bouteilles en
+     millilitres — autant laisser recopier ce qui est ecrit sur l etiquette. */
+  const liquide = !!p.liquide;
+  let uni = liquide ? "cl" : "g";
+  const ref100 = liquide ? TR("pour 100 ml") : TR("pour 100 g");
+  const tuile = (ic, val, u, lab) => `<div class="tu"><span class="ic">${ic}</span>
+    <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
+    <div class="l">${lab}</div><div class="r">${ref100}</div></div>`;
+  openSheet(`<h3 class="ps-nom">${esc(p.nom)}</h3>
+    ${p.marque? `<div class="ps-marque">${esc(p.marque)}</div>`:""}
+    <div class="ps-tuiles">
+      ${tuile(icoM("flamme", 22),  p.kcal100, "",  "kcal")}
+      ${tuile(icoM("muscle", 22),  p.prot100, "g", TR("protéines"))}
+      ${tuile(icoM("cereale", 22), p.gluc100 || 0, "g", TR("glucides"))}
+      ${tuile(IC_GOUTTE,           p.lip100 || 0,  "g", TR("lipides"))}
     </div>
     <div class="stack">
-      <div><span class="label" style="display:block; margin-bottom:5px;">${
-        TR(cl ? "Quantité bue (cl)" : "Quantité mangée (g)")}</span>
-        <input type="number" inputmode="decimal" step="${cl ? 5 : 10}" min="0" id="ps-g"
-          value="${p.portion || (cl ? 25 : 100)}"></div>
-      <div style="font-size:12px; color:var(--ink-mute); text-align:center;">${
-        p.prot100 + " " + TR("g de protéines") + " · " + p.kcal100 + " kcal "
-        + TR(cl ? "pour 100 ml" : "pour 100 g")}</div>
-      <label class="fav-box" id="ps-favbox">
-        <span class="et">${icoM("etoile", 21)}</span>
-        <span class="tx"><b>${TR("Ajouter aux favoris")}</b><i>${TR("Garder dans mes propositions")}</i></span>
+      <div>
+        <div class="ps-qh">
+          <span class="label" id="ps-lab"></span>
+          ${liquide? `<button class="ps-bascule" id="ps-unite">${IC_ECHANGE}<span></span></button>`:""}
+        </div>
+        <div class="ps-qrow">
+          <div class="ps-step">
+            <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
+            <div class="ch"><input type="number" inputmode="decimal" min="0" id="ps-g"
+              value="${p.portion || (liquide ? 25 : 100)}"><span class="u" id="ps-uni"></span></div>
+            <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
+          </div>
+          <div class="ps-live">
+            <span class="ic" id="ps-ic">${liquide? IC_VERRE : IC_ASSIETTE}</span>
+            <div class="n"><div><b id="ps-kcal">0</b> kcal</div><i id="ps-pour"></i></div>
+            <div class="n"><div><b id="ps-prot">0</b> g</div><i>${TR("protéines")}</i></div>
+          </div>
+        </div>
+      </div>
+      <label class="ps-opts" id="ps-favbox">
         <input type="checkbox" id="ps-save">
+        <span class="tx">${TR("Garder dans mes propositions")}</span>
+        <span class="fav"><span class="et">${icoM("etoile", 19)}</span>${TR("Ajouter aux favoris")}</span>
       </label>
-      <button class="btn btn-accent" id="ps-ok">${TR("Ajouter à ce repas")}</button>
+      <button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button>
       <button class="btn" id="ps-autre" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
         IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
       <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
@@ -6670,20 +6762,47 @@ function openProduitScanne(meal, p){
   const gEl = document.getElementById("ps-g");
   /* Combien de fois la valeur de reference : tout le reste en decoule. Open Food Facts
      donne toujours ses valeurs pour 100 g — pour une boisson ce sont des valeurs pour
-     100 ml, soit 10 cl : on divise donc par 10 et non par 100. */
-  const part = ()=>{ const q = parseFloat(gEl.value); return q > 0 ? q/(cl ? 10 : 100) : 0; };
+     100 ml, soit 10 cl : le diviseur suit donc l unite affichee. */
+  const diviseur = ()=> uni === "cl" ? 10 : 100;
+  const pas = ()=> uni === "cl" ? 5 : (uni === "ml" ? 50 : 10);
+  const part = ()=>{ const q = parseFloat(gEl.value); return q > 0 ? q/diviseur() : 0; };
+  const majUnite = ()=>{
+    document.getElementById("ps-lab").textContent = TR(uni === "g" ? "Quantité mangée (g)"
+      : (uni === "cl" ? "Quantité bue (cl)" : "Quantité bue (ml)"));
+    document.getElementById("ps-uni").textContent = uni;
+    gEl.step = pas();
+    const b = document.getElementById("ps-unite");
+    if(b) b.querySelector("span").textContent = TR(uni === "cl" ? "Passer en ml" : "Passer en cl");
+  };
   const maj = ()=>{
     const f = part();
-    document.getElementById("ps-prot").innerHTML =
-      `${Math.round(p.prot100*f)}<span style="font-size:16px;"> g</span>`;
+    document.getElementById("ps-prot").textContent = Math.round(p.prot100*f);
     document.getElementById("ps-kcal").textContent = Math.round(p.kcal100*f);
+    const q = parseFloat(gEl.value);
+    document.getElementById("ps-pour").textContent = q > 0
+      ? TR("pour {}").replace("{}", q + " " + uni) : "";
   };
-  gEl.oninput = maj; maj();
+  const bougerDe = d => {
+    const q = Math.max(0, (parseFloat(gEl.value) || 0) + d * pas());
+    gEl.value = Math.round(q * 10) / 10;
+    maj();
+  };
+  document.getElementById("ps-moins").onclick = ()=>bougerDe(-1);
+  document.getElementById("ps-plus").onclick  = ()=>bougerDe(1);
+  const bascule = document.getElementById("ps-unite");
+  if(bascule) bascule.onclick = ()=>{
+    const q = parseFloat(gEl.value) || 0;
+    /* on convertit la quantite plutot que de la remettre a zero : 25 cl font 250 ml */
+    if(uni === "cl"){ uni = "ml"; gEl.value = Math.round(q * 10); }
+    else { uni = "cl"; gEl.value = Math.round(q / 10 * 10) / 10; }
+    majUnite(); maj();
+  };
+  gEl.oninput = maj; majUnite(); maj();
   document.getElementById("ps-non").onclick = closeSheet;
   document.getElementById("ps-autre").onclick = ()=>lancerScan(meal);
   document.getElementById("ps-ok").onclick = ()=>{
     const f = part();
-    if(!f){ toast(TR(cl ? "Indique la quantité bue." : "Indique la quantité mangée.")); return; }
+    if(!f){ toast(TR(liquide ? "Indique la quantité bue." : "Indique la quantité mangée.")); return; }
     const q = Math.round(parseFloat(gEl.value));
     const prot = Math.round(p.prot100*f), kcal = Math.round(p.kcal100*f);
     /* même écriture que partout ailleurs : la pastille, ses boutons et l'appui long
@@ -6692,7 +6811,14 @@ function openProduitScanne(meal, p){
     if(document.getElementById("ps-save").checked){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
-      if(!liste.some(x=>x[0] === label)) liste.push([label, prot, kcal, familleAliment(p.nom, prot, kcal)]);
+      /* Glucides et lipides sont ranges derriere la famille. L app ne les compte pas
+         encore — elle ne suit que proteines et calories — mais un produit scanne les
+         connait, et une fiche relue dans six mois ne pourra plus les retrouver. On les
+         garde donc des maintenant : c est gratuit, et c est ce qui manquerait le jour
+         ou l on suivra les macros au complet. */
+      if(!liste.some(x=>x[0] === label)) liste.push([label, prot, kcal,
+        familleAliment(p.nom, prot, kcal),
+        Math.round((p.gluc100 || 0) * f), Math.round((p.lip100 || 0) * f)]);
     }
     if(!db.habitSel[k]) db.habitSel[k] = {};
     db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).concat(label);

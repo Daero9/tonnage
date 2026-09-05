@@ -1494,17 +1494,37 @@ async function lancer(){
   /* la fiche d'un produit scanné : l'unité tient tout le reste */
   (()=>{
     const lab = () => F.document.querySelector("#sheet .label").textContent;
+    const D2ps = () => F.document;
     const jour = F.jourAlim();
     DB.habitSel = {}; DB.hbPerso = {};
     /* une canette se lit en centilitres, comme ce qui est écrit dessus */
     F.openProduitScanne("matin", {code:"1", nom:"Cola", marque:"", prot100:0, kcal100:42,
-      portion:33, liquide:true});
+      gluc100:12, lip100:0, portion:33, liquide:true});
     eq("On boit une boisson", lab(), "Quantité bue (cl)");
     eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "33");
     eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "5");
     /* les valeurs d'Open Food Facts sont pour 100 ml, donc pour 10 cl : 33 cl = 3,3 fois */
     eq("Les calories comptent par 10 cl", F.document.getElementById("ps-kcal").textContent, "139");
     F.document.getElementById("ps-ok").click();
+    /* quatre tuiles : ce que dit l'étiquette, avant la question « combien » */
+    eq("Quatre valeurs affichées", D2ps().querySelectorAll(".ps-tuiles .tu").length, 4);
+    eq("Les quatre libellés",
+      [...D2ps().querySelectorAll(".ps-tuiles .l")].map(e=>e.textContent).join("|"),
+      "kcal|protéines|glucides|lipides");
+    eq("Les glucides sont repris de l'étiquette",
+      D2ps().querySelectorAll(".ps-tuiles .v")[2].textContent.replace(/\s/g,""), "12g");
+    /* le compteur pas à pas */
+    F.document.getElementById("ps-plus").click();
+    eq("Le + avance de 5 cl", F.document.getElementById("ps-g").value, "38");
+    F.document.getElementById("ps-moins").click();
+    eq("Le − revient", F.document.getElementById("ps-g").value, "33");
+    /* la bascule cl / ml convertit au lieu de remettre à zéro */
+    F.document.getElementById("ps-unite").click();
+    eq("33 cl font 330 ml", F.document.getElementById("ps-g").value, "330");
+    eq("L'intitulé suit", F.document.getElementById("ps-lab").textContent, "Quantité bue (ml)");
+    eq("Les calories ne bougent pas", F.document.getElementById("ps-kcal").textContent, "139");
+    F.document.getElementById("ps-unite").click();
+    eq("…et le retour aussi", F.document.getElementById("ps-g").value, "33");
     eq("Le libellé est en centilitres",
       (DB.habitSel[jour]||{}).matin[0], "Cola 33 cl (~0 g prot. · 139 kcal)");
     /* le reste de l'application doit savoir relire ce libellé */
