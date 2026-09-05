@@ -14,6 +14,9 @@
   :root{
     /* clair : fond crème, bandeau sombre, orange franc — d'après la maquette Figma */
     --bg:#EBE8E1; --surface:#ffffff; --surface2:#EBE8E1; --btn:#EBE8E1; --border:#e0dbd1;
+    /* un onglet au repos doit se detacher de la page sans devenir une carte : la creme,
+       tiree vers le blanc juste ce qu il faut pour qu on voie sa forme */
+    --tab:#F3F1ED;
     --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
     --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
     --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
@@ -28,6 +31,7 @@
   }
   :root[data-theme="dark"]{
     --bg:#141416; --surface:#1f1f22; --surface2:#2a2a2e; --btn:#2a2a2e; --border:#333338;
+    --tab:#2a2a2e;
     --ink:#f4f2ef; --ink-soft:#b3b1ad; --ink-mute:#85837f;
     --accent:#f58220; --accent-deep:#c96a12; --accent-ink:#ffffff;
     --hero:#0e0e10; --hero-ink:#ffffff; --hero-soft:#b0aeaa;
@@ -45,6 +49,9 @@
      ces écrans sont conçus clairs, et on veut la même lecture pour tout le monde. */
   :root[data-onb]{
     --bg:#EBE8E1; --surface:#ffffff; --surface2:#EBE8E1; --btn:#EBE8E1; --border:#e0dbd1;
+    /* un onglet au repos doit se detacher de la page sans devenir une carte : la creme,
+       tiree vers le blanc juste ce qu il faut pour qu on voie sa forme */
+    --tab:#F3F1ED;
     --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
     --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
     --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
@@ -513,7 +520,7 @@
   /* les onglets passent DERRIÈRE le panneau blanc : leur bas est masqué, aucun trou possible */
   .meal-tabs{display:flex; gap:5px; margin:18px 0 0; position:relative; z-index:1; align-items:flex-end;}
   /* chaque onglet porte un bloc blanc qui rejoint le panneau : la couleur encadre la page */
-  .meal-tab{position:relative; flex:1; border-radius:13px 13px 0 0; background:var(--surface2); color:var(--ink-mute);
+  .meal-tab{position:relative; flex:1; border-radius:13px 13px 0 0; background:var(--tab); color:var(--ink-mute);
     font-size:9.5px; font-weight:800; letter-spacing:.02em; text-transform:uppercase;
     padding:7px 2px 24px; text-align:center; transform:translateY(16px);
     /* les onglets au repos sont ombrés en bas : ils paraissent glissés sous la page */
@@ -1099,13 +1106,13 @@
   .scan .bas .b1{background:#fff; color:#17181a;}
   .scan .bas .b2{background:rgba(255,255,255,.16); color:#fff;}
   .al-liste{max-height:38dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    background:var(--surface); border-radius:12px; padding:2px 11px 11px;}
+    background:var(--bg); border-radius:12px; padding:2px 11px 11px;}
   .al-h{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
     color:var(--accent); margin:11px 0 4px;}
   /* Des cartes, pas des lignes : chacune se lit comme un bouton qu'on peut
      viser au pouce, et la selection se voit d'un coup d'oeil en defilant. */
   .al-row{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-    background:var(--surface2); border:1.5px solid var(--border); border-radius:12px;
+    background:var(--surface); border:1.5px solid var(--border); border-radius:12px;
     padding:11px 12px; margin-bottom:7px; color:var(--ink);}
   .al-row:last-child{margin-bottom:0;}
   .al-row .nm{flex:1; min-width:0; font-size:14px; font-weight:700; line-height:1.25;}
@@ -1122,7 +1129,7 @@
      il en tient deux fois plus à l'écran. Le fond doit être surface2 : sur le blanc de
      la liste, une pastille blanche ne se verrait pas. */
   .al-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:9px;}
-  .al-c{background:var(--surface2); align-items:flex-start;}
+  .al-c{background:var(--surface); align-items:flex-start;}
   .al-c .ic{margin-top:1px;}
   .al-c.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
   .al-c.on .q{color:rgba(255,255,255,.85);}
@@ -1925,6 +1932,15 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Légumes":"Vegetables",
+  "Tomates (150 g)":"Tomatoes (150 g)",
+  "Carottes (150 g)":"Carrots (150 g)",
+  "Haricots verts (200 g)":"Green beans (200 g)",
+  "Brocoli (200 g)":"Broccoli (200 g)",
+  "Courgette (200 g)":"Zucchini (200 g)",
+  "Épinards (200 g)":"Spinach (200 g)",
+  "Salade verte (bol)":"Green salad (bowl)",
+  "Petits pois (150 g)":"Peas (150 g)",
   "pour 100 ml":"per 100 ml",
   "Indique la quantité bue.":"Enter how much you drank.",
   "Scanner un autre produit":"Scan another product",
@@ -5058,7 +5074,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 02h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 02h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6459,7 +6475,7 @@ function openProduitScanne(meal, p){
     if(document.getElementById("ps-save").checked){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
-      if(!liste.some(x=>x[0] === label)) liste.push([label, prot, kcal]);
+      if(!liste.some(x=>x[0] === label)) liste.push([label, prot, kcal, familleAliment(p.nom, prot, kcal)]);
     }
     if(!db.habitSel[k]) db.habitSel[k] = {};
     db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).concat(label);
@@ -6621,7 +6637,7 @@ function openAjoutAliment(meal){
     if(document.getElementById("ot-save").checked){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
-      if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal]);
+      if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal, familleAliment(label, prot, kcal)]);
     }
     const k = jourAlim();
     if(!db.habitSel[k]) db.habitSel[k] = {};
@@ -7047,7 +7063,13 @@ const HB_OPTS = {
   carb: [["Riz (200 g cuit)",5,260],["Pâtes (200 g cuites)",10,315],["Patates (250 g)",5,220],["Pain (1 tranche)",3,90],["Semoule (200 g cuite)",8,225],["Légumineuses (150 g cuites)",13,175]],
   snack: [["Avoine (60 g)",8,230],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Amandes / noix (30 g)",6,180]],
   bkProt: [["Œuf",6,78],["Whey + eau (1 dose)",24,120],["Whey + lait (1 dose, 300 ml)",34,260],["Jambon (1 tranche)",8,45],["Fromage blanc 0 % (200 g)",16,100]],
-  bkCarb: [["Avoine (60 g)",8,230],["Pain (1 tranche)",3,90],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60]]
+  bkCarb: [["Avoine (60 g)",8,230],["Pain (1 tranche)",3,90],["Banane",1,105],["Biscuit",1,45],["Compote (1 gourde)",0,60]],
+  /* Les plus courants seulement. La base en compte vingt et un — de quoi saisir un plat
+     precis depuis « Ajouter un aliment » — mais la grille du midi et du soir doit rester
+     lisible au pouce : on n y met que ceux qu on retrouve dans toutes les assiettes. */
+  vege: [["Tomates (150 g)",1,27],["Carottes (150 g)",1,52],["Haricots verts (200 g)",4,60],
+    ["Brocoli (200 g)",6,70],["Courgette (200 g)",2,40],["Épinards (200 g)",6,50],
+    ["Salade verte (bol)",1,15],["Petits pois (150 g)",8,120]]
 };
 const HB_PROT_MAP = {
   /* anciens libellés, pour ne pas perdre les journées déjà enregistrées */
@@ -7359,23 +7381,45 @@ function habitudesDuRepas(meal){
     .slice(0, 6)
     .map(l => [l, protOf(l)]);
 }
+/* Ou ranger un aliment qu'on vient d'ajouter. Les legumes se reconnaissent au nom :
+   leur composition ressemble trop a celle d'un fruit ou d'une soupe pour les distinguer
+   autrement. Le reste se decide au rapport proteines / calories — au-dela de 5 g de
+   proteines pour 100 kcal, c'est une source de proteines. L'oeuf est a 8, le fromage
+   blanc a 16, le pain a 3,5, le riz a 2. */
+const RE_LEGUME = /brocoli|courgette|carotte|épinard|epinard|chou|poireau|aubergine|poivron|champignon|tomate|concombre|salade|laitue|oignon|betterave|courge|potiron|petits? pois|haricots? verts?|maïs|avocat|ratatouille|crudité|légume|legume|asperge|artichaut|radis|navet|céleri|fenouil|endive|blette|ratatouille/i;
+function familleAliment(nom, prot, kcal){
+  if(RE_LEGUME.test(nom || "")) return "vege";
+  if(!(kcal > 0)) return (prot || 0) > 0 ? "prot" : "carb";
+  return (prot || 0) / kcal * 100 >= 5 ? "prot" : "carb";
+}
 function habitOpts(h){
   const ty = (h==="matin") ? "petitdej"
     : (h==="collation" || h==="extra") ? "snack"
     : (h==="midi" || h==="soir") ? "repas" : habitType(h);
   const base = ty==="snack" ? [["Contenu","snack",HB_OPTS.snack]]
     : (ty==="petitdej" ? [["Protéines","bkProt",HB_OPTS.bkProt],["Féculents / énergie","bkCarb",HB_OPTS.bkCarb]]
-      : [["Protéines","prot",HB_OPTS.prot],["Féculents","carb",HB_OPTS.carb]]);
-  const gs = base.map(([titre,cle,list])=>[titre, cle, list.filter(x=>!((db.hbMasque[cle]||[]).includes(x[0])))])
-                 .filter(g=>g[2].length);
-  const perso = db.hbPerso[ty] || [];
-  if(perso.length) gs.push(["Mes aliments","perso:"+ty, perso]);
-  return gs;
+      : [["Protéines","prot",HB_OPTS.prot],["Féculents","carb",HB_OPTS.carb],["Légumes","vege",HB_OPTS.vege]]);
+  /* Un aliment que tu as garde rejoint le groupe qui lui ressemble : tu le retrouves la
+     ou tu irais le chercher, et non dans un « Mes aliments » de plus. Le petit-dejeuner
+     et la collation n'ont pas de groupe legumes : ils y prennent la case energie. */
+  const rangs = ty==="snack" ? {prot:"snack", carb:"snack", vege:"snack"}
+    : (ty==="petitdej" ? {prot:"bkProt", carb:"bkCarb", vege:"bkCarb"}
+      : {prot:"prot", carb:"carb", vege:"vege"});
+  const ajouts = {};
+  (db.hbPerso[ty] || []).forEach(x=>{
+    /* la famille est retenue a l'enregistrement ; les aliments d'avant se relisent */
+    const cle = rangs[x[3] || familleAliment(x[0], x[1], x[2])] || rangs.carb;
+    (ajouts[cle] || (ajouts[cle] = [])).push([x[0], x[1], x[2]]);
+  });
+  return base.map(([titre,cle,list])=>[titre, cle,
+      list.concat(ajouts[cle] || []).filter(x=>!((db.hbMasque[cle]||[]).includes(x[0])))])
+    .filter(g=>g[2].length);
 }
 function nbMasques(){ return Object.values(db.hbMasque||{}).reduce((a,l)=>a+(l?l.length:0),0); }
 /* appui long sur une proposition : on la retire de la liste (masquée, ou supprimée si c'est la tienne) */
 function demanderRetrait(label, grp){
-  const perso = grp.indexOf("perso:")===0;
+  const tyPerso = Object.keys(db.hbPerso || {}).find(t=>(db.hbPerso[t]||[]).some(x=>x[0]===label));
+  const perso = grp.indexOf("perso:")===0 || !!tyPerso;
   openSheet(`<h3>Retirer cet aliment ?</h3>
     <div style="font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px;">
       <b style="color:var(--ink);">${esc(label)}</b> ne sera plus proposé quand tu coches un repas.
@@ -7388,7 +7432,7 @@ function demanderRetrait(label, grp){
   document.getElementById("rt-non").onclick = closeSheet;
   document.getElementById("rt-oui").onclick = ()=>{
     if(perso){
-      const ty = grp.slice(6);
+      const ty = grp.indexOf("perso:")===0 ? grp.slice(6) : tyPerso;
       db.hbPerso[ty] = (db.hbPerso[ty]||[]).filter(x=>x[0]!==label);
     } else {
       db.hbMasque[grp] = (db.hbMasque[grp]||[]).concat(label);
