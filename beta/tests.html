@@ -660,7 +660,7 @@ async function lancer(){
   grp("Effort et tonnage");
   neuf();
   DB.weights = [{date:new Date().toISOString(), kg:80}];
-  const VE = F.eval("volumeEffort");
+  const VES = F.eval("volEffortSerie");
   const idTrac = id("Tractions"), idDC2 = id("Développé couché");
   const seanceTrac = seance(2, [{exId:idTrac, sets:[serie(0,8), serie(0,8)]}]);
   const seanceDC   = seance(2, [{exId:idDC2,  sets:[serie(80,8), serie(80,8)]}]);
@@ -672,37 +672,71 @@ async function lancer(){
      F.sessionVolume(seanceDC), 1280);
 
   /* mais l'effort, lui, compte le corps */
-  eq("Effort des tractions : 80 kg par répétition",
-     VE(seanceTrac), 80*8*2);
+  eq("Effort d'une traction : 80 kg par répétition",
+     VES(idTrac, serie(0,8), 1), 80*8);
   eq("Effort du développé couché : identique au tonnage",
-     VE(seanceDC), 1280);
+     VES(idDC2, serie(80,8), 1), 640);
+  eq("Une traction lestée ajoute le lest au corps",
+     VES(idTrac, serie(10,5), 1), (80+10)*5);
 
-  vrai("Deux tractions lestées ajoutent le lest au corps",
-       VE(seance(2, [{exId:idTrac, sets:[serie(10,5)]}])) === (80+10)*5);
-
-  /* et les calories suivent */
-  const KC2 = F.eval("liftKcal");
-  const kcalTonnage = KC2(F.sessionVolume(seanceTrac), 16);
-  const kcalEffort  = KC2(VE(seanceTrac), 16);
+  /* et les calories suivent : les tractions en valent plus que leur tonnage nul */
   vrai("Une séance de tractions gagne les calories qu'elle mérite",
-       kcalEffort > kcalTonnage, kcalTonnage + " -> " + kcalEffort);
+       F.liftKcal(seanceTrac) > 0 && F.sessionVolume(seanceTrac) === 0,
+       String(F.liftKcal(seanceTrac)));
 
   /* ------------------------------------- calories d'une séance de muscu */
   grp("Calories d'une séance");
   neuf();
   DB.weights = [{date:new Date().toISOString(), kg:80}];
   const KC = F.eval("liftKcal");
-  /* Le compteur ne mesure plus la présence, mais le travail. Une séance laissée
-     ouverte toute la nuit, ou une longue discussion entre deux séries, ne brûle
-     rien de plus : seules les séries validées et le tonnage comptent. */
-  const normale = KC(5000, 16);
+  const nFois = (w, r, n) => Array.from({length:n}, ()=>serie(w, r));
+  /* Le compteur ne mesure plus la présence, mais le travail : ni la durée de la
+     séance, ni le temps passé entre deux séries n'entrent dans le calcul. */
+  const normale = KC(seance(2, [
+    {exId:id("Squat"),             sets:nFois(80, 10, 4)},
+    {exId:id("Développé couché"),  sets:nFois(60, 10, 4)},
+    {exId:id("Rowing barre"),      sets:nFois(50, 10, 4)},
+    {exId:id("Curl barre"),        sets:nFois(15, 12, 3)}]));
   vrai("Une séance normale reste plausible", normale > 200 && normale < 500, String(normale));
-  eq("Une séance sans rien de fait ne brûle rien", KC(0, 0), 0);
-  vrai("Une série de plus brûle davantage", KC(5000, 17) > normale);
-  vrai("Un tonnage plus lourd aussi", KC(9000, 16) > normale);
+  eq("Une séance sans rien de fait ne brûle rien", KC(seance(2, [])), 0);
   /* la garantie que Nico voulait : trois heures sur une seule série ne font pas
-     500 kcal, parce que le temps n'entre plus dans le calcul */
-  vrai("Une seule série reste une seule série", KC(600, 1) < 40, String(KC(600, 1)));
+     500 kcal, parce que le temps n'entre nulle part */
+  const uneSeule = KC(seance(2, [{exId:id("Curl barre"), sets:nFois(15, 12, 1)}]));
+  vrai("Une seule série reste une seule série", uneSeule < 40, String(uneSeule));
+
+  /* ---- chaque exercice pèse ce qu'il mobilise ---- */
+  const MET = F.eval("metExercice");
+  vrai("Le soulevé de terre coûte plus qu'un curl",
+       MET(id("Soulevé de terre")) > MET(id("Curl barre")));
+  vrai("Le squat coûte plus qu'un développé couché",
+       MET(id("Squat")) > MET(id("Développé couché")));
+  /* le piège que la table brute tendait : trois petits muscles à fond ne valent
+     pas trois gros. Un curl marteau ne doit pas rejoindre un front squat. */
+  vrai("Un curl marteau ne vaut pas un front squat",
+       MET(id("Curl marteau")) < MET(id("Front squat")));
+  vrai("…ni un développé couché", MET(id("Curl marteau")) < MET(id("Développé couché")));
+  vrai("Aucun exercice ne sort de l'échelle",
+       F.eval("LIB").every(e => MET(e.id) >= 3.5 && MET(e.id) <= 8));
+  /* à séries égales, une séance de jambes brûle plus qu'une séance de bras */
+  const bras = KC(seance(2, [
+    {exId:id("Curl barre"),           sets:nFois(15, 12, 4)},
+    {exId:id("Curl marteau"),         sets:nFois(12, 12, 4)},
+    {exId:id("Extension poulie"),     sets:nFois(20, 12, 4)}]));
+  const jambes = KC(seance(2, [
+    {exId:id("Squat"),                sets:nFois(90, 8, 4)},
+    {exId:id("Presse à cuisses"),     sets:nFois(150, 10, 4)},
+    {exId:id("Soulevé de terre"),     sets:nFois(110, 6, 4)}]));
+  vrai("Douze séries de jambes brûlent plus que douze séries de bras",
+       jambes > bras * 1.3, bras + " vs " + jambes);
+
+  /* ---- l'échauffement compte dans les calories, jamais dans le tonnage ---- */
+  const ech = {w:30, r:12, done:true, warm:true};
+  const sans = seance(2, [{exId:id("Développé couché"), sets:nFois(60, 10, 3)}]);
+  const avec = seance(2, [{exId:id("Développé couché"), sets:[ech].concat(nFois(60, 10, 3))}]);
+  vrai("L'échauffement brûle des calories", KC(avec) > KC(sans),
+       KC(sans) + " -> " + KC(avec));
+  eq("…mais ne gonfle pas le tonnage",
+     F.sessionVolume(avec), F.sessionVolume(sans));
 
   /* ----------------------------------- repères chiffrés dans les conseils */
   grp("Repères des conseils");
