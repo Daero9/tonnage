@@ -215,7 +215,17 @@
   .hero-h .big{font-size:27px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;}
   /* le soleil annonce la journee : il tient au-dessus du titre, jamais a cote */
   .hero-h .ico{display:flex; justify-content:center; margin-bottom:7px; color:var(--accent);}
+  /* Le titre de la journee est ANCRE au bas du bandeau, et non pousse depuis le haut.
+     La marge du haut suit l encoche du telephone : sur un appareil qui en a une, les
+     trois lignes descendaient de 47 px et passaient sous les cartes — le sous-titre
+     disparaissait entierement. Ancre par le bas, le bloc ne bouge plus. */
+  .hero-jour .hero-h{position:absolute; left:0; right:0; bottom:26%; margin-top:0;}
+  .hero-jour .hero-h .ico{margin-bottom:5px;}
+  .hero-jour .hero-h .ico svg{width:25px; height:25px;}
+  .hero-jour .hero-h .big{font-size:23px;}
+  .hero-jour .hero-h .sub{font-size:12.5px; margin-top:4px;}
   .under-hero{margin-top:-19%; position:relative; z-index:3;}
+  .under-hero.sous-jour{margin-top:-15%;}
 
   /* ---- carte de la semaine ---- */
   .wk-card{background:var(--surface); border-radius:18px; padding:12px 14px 13px;
@@ -5139,7 +5149,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 03h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 03h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6142,8 +6152,8 @@ function renderEat(app){
     ${hero(`<div class="ico">${IC_SOLEIL}</div>
       <div class="big">${auj ? TR("Aujourd'hui")
       : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>
-      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`)}
-    <div class="under-hero" style="display:flex; gap:9px; align-items:stretch;">
+      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour"})}
+    <div class="under-hero sous-jour" style="display:flex; gap:9px; align-items:stretch;">
       <div class="eat-stats">
         <div class="eat-card eat-stat">
           <span class="ico">💪</span>
