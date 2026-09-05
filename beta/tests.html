@@ -1196,6 +1196,7 @@ async function lancer(){
     })();
     /* les deux nombres gardent leur signe */
     eq("Chaque nombre porte son signe", D2.querySelectorAll(".wk-nums .ic").length, 2);
+    vrai("Les calories brûlées ont la flamme", !!D2.querySelector(".wk-nums .icm-flamme"));
     vrai("Le tonnage de la semaine est là", /1\s?200|\d/.test(D2.querySelector(".wk-nums .v").textContent));
     vrai("Le bilan reste accessible", !!D2.getElementById("bilan-btn"));
     DB.history = []; DB.templates = [];
@@ -1227,8 +1228,10 @@ async function lancer(){
       !!D2.querySelector(".under-hero.sous-jour"));
     /* les deux compteurs, chacun sa carte */
     eq("Deux compteurs, deux cartes", D2.querySelectorAll(".eat-stat").length, 2);
-    vrai("Chacun porte son signe",
-      [...D2.querySelectorAll(".eat-stat .ico")].every(e=>e.textContent.trim().length > 0));
+    vrai("Chacun porte son signe dessiné",
+      [...D2.querySelectorAll(".eat-stat .ico")].every(e=>!!e.querySelector(".icm")));
+    vrai("Les protéines ont le biceps", !!D2.querySelector(".eat-stat .icm-muscle"));
+    vrai("Les calories ont la flamme", !!D2.querySelector(".eat-stat .icm-flamme"));
     vrai("Chacun affiche la part atteinte",
       [...D2.querySelectorAll(".eat-stat .pc")].every(e=>/%|—/.test(e.textContent)));
     eq("Les protéines du jour sont comptées",
@@ -1236,32 +1239,47 @@ async function lancer(){
     /* le recapitulatif des repas */
     eq("Cinq repas au récapitulatif", D2.querySelectorAll(".eat-repas .er").length, 5);
     vrai("Chaque repas porte son moment de la journée",
-      [...D2.querySelectorAll(".eat-repas .er .i")].every(e=>e.textContent.trim().length > 0));
+      [...D2.querySelectorAll(".eat-repas .er .i")].every(e=>!!e.querySelector(".icm")));
+    vrai("Le matin a son lever de soleil", !!D2.querySelector(".eat-repas .icm-matin"));
+    vrai("Le soir a sa lune", !!D2.querySelector(".eat-repas .icm-soir"));
     eq("Le repas ouvert est marqué", D2.querySelectorAll(".eat-repas .er.ici").length, 1);
     eq("…de sa couleur",
       D2.querySelector(".eat-repas .er.ici").style.borderColor, "var(--midi)");
     /* les titres de categorie */
     const hs = [...D2.querySelectorAll(".meal-h")];
-    vrai("Chaque catégorie porte un signe", hs.length > 0 && hs.every(h=>!!h.querySelector(".e")));
+    vrai("Chaque catégorie porte un signe", hs.length > 0 && hs.every(h=>!!h.querySelector(".icm")));
     vrai("…et la couleur du repas",
       hs.every(h=>h.style.color && h.style.color !== ""));
-    vrai("Les protéines ont le bras", hs.some(h=>h.querySelector(".e").textContent === "💪"));
-    vrai("Les féculents ont la flamme", hs.some(h=>h.querySelector(".e").textContent === "🔥"));
-    vrai("Les légumes ont le brocoli", hs.some(h=>h.querySelector(".e").textContent === "🥦"));
-    /* la part atteinte et l'objectif sont orange, comme le reste des chiffres cles */
+    vrai("Les protéines ont le biceps", hs.some(h=>!!h.querySelector(".icm-muscle")));
+    vrai("Les féculents ont l'épi", hs.some(h=>!!h.querySelector(".icm-cereale")));
+    vrai("Les légumes ont la plante", hs.some(h=>!!h.querySelector(".icm-plante")));
+    /* les signes sont des masques : c'est la couleur du texte qui les traverse */
+    eq("Le signe prend la couleur du titre",
+      F.getComputedStyle(hs[0].querySelector(".icm")).backgroundColor, "rgb(245, 130, 32)");
+    /* la part atteinte reste orange */
     eq("La part atteinte est orange",
       F.getComputedStyle(D2.querySelector(".eat-stat .pc")).color, "rgb(245, 130, 32)");
-    eq("L'objectif au bout de la jauge aussi",
-      F.getComputedStyle(D2.querySelector(".eat-bar b")).color, "rgb(245, 130, 32)");
-    /* sauf quand la jauge arrive dessous : orange sur orange ne se lirait plus */
+    /* l'objectif est SORTI de la jauge : la barre s'arrête à sa gauche */
+    vrai("L'objectif vit à côté de la jauge", !D2.querySelector(".eat-bar b"));
+    vrai("…dans la même ligne qu'elle", !!D2.querySelector(".eat-jauge > b"));
+    /* on compare au gris du theme, pas a une valeur en dur : le cadre des tests peut
+       tourner sous le theme d accueil, qui a le sien */
+    (()=>{
+      const gris = F.getComputedStyle(D2.documentElement).getPropertyValue("--ink-mute").trim();
+      const t = D2.createElement("span"); t.style.color = gris; D2.body.appendChild(t);
+      const attendu = F.getComputedStyle(t).color; t.remove();
+      eq("…et il est gris",
+        F.getComputedStyle(D2.querySelector(".eat-jauge b")).color, attendu);
+    })();
+    /* même remplie à ras bord, la jauge ne recouvre plus le chiffre */
     DB.habitSel[k] = {matin:["Whey + lait (1 dose, 300 ml)"], midi:["Poulet (1 filet, 130 g cuit)"],
       soir:["Saumon (1 pavé, 120 g cuit)"], collation:["Whey + eau (1 dose)"]};
     F.render();
     const pleine = D2.querySelector(".eat-bar");
-    vrai("Journée bien remplie : la jauge passe sous le chiffre",
+    vrai("Journée bien remplie : la jauge est presque pleine",
       parseFloat(pleine.querySelector("i").style.width) > 78);
-    eq("…et le chiffre passe en blanc par-dessus",
-      F.getComputedStyle(pleine.querySelector("b")).color, "rgb(255, 255, 255)");
+    vrai("…et le chiffre reste lisible à côté",
+      !pleine.querySelector("b") && !!D2.querySelector(".eat-jauge > b"));
     DB.habitSel = {}; DB.habitSel[k] = {midi:["Poulet (1 filet, 130 g cuit)"]};
     F.render();
     /* le bouton d'ajout ne defile pas */
