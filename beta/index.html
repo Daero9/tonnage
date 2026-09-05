@@ -527,12 +527,12 @@
   .eat-stat .v{font-size:27px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.05;}
   .eat-stat .u{font-size:13.5px; font-weight:700; color:var(--ink-soft);}
   .eat-stat .pc{margin-left:auto; font-size:11px; font-weight:800; border-radius:99px;
-    padding:3px 9px; background:var(--surface2); border:1px solid var(--border); color:var(--ink-mute);}
+    padding:3px 9px; background:rgba(245,130,32,.13); color:var(--accent);}
   .eat-stat .lb{font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
     color:var(--accent); margin-top:1px;}
   .eat-bar{height:16px; border-radius:9px; background:var(--surface2); overflow:hidden; margin:6px 0 12px; position:relative;}
   .eat-bar i{display:block; height:100%; border-radius:9px; background:var(--accent);}
-  .eat-bar b{position:absolute; right:9px; top:0; line-height:16px; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .eat-bar b{position:absolute; right:9px; top:0; line-height:16px; font-size:11px; font-weight:800; color:var(--accent);}
   .eat-side{display:flex; flex-direction:column; gap:9px; justify-content:center;}
   .eat-side button{width:38px; height:38px; border-radius:11px; background:var(--surface); color:var(--ink);
     display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.18);}
@@ -5113,7 +5113,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 03h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 03h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6097,6 +6097,10 @@ function renderEat(app){
   const enHausse = !plan || plan.delta >= 0;
   const kRef = enHausse? kMin : kMax;
   const coul = MEAL_C[mealCur];
+  /* la part atteinte sert deux fois : la largeur de la jauge, et la couleur du chiffre
+     qu elle finit par recouvrir */
+  const pctProt = Math.min(100, protTarget? protNow/protTarget*100 : 0);
+  const pctKcal = Math.min(100, kRef? kcalNow/kRef*100 : 0);
 
   app.innerHTML = `
     ${hero(`<div class="ico">${IC_SOLEIL}</div>
@@ -6111,7 +6115,7 @@ function renderEat(app){
             <div class="ln"><span class="v">${protNow}</span><span class="u">g</span>
               <span class="pc">${protTarget? Math.round(protNow/protTarget*100)+" %" : "—"}</span></div>
             <div class="lb">${TR("Protéines")}</div>
-            <div class="eat-bar" style="margin:7px 0 0;"><i style="width:${Math.min(100, protTarget? protNow/protTarget*100 : 0)}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i><b>${protTarget} g</b></div>
+            <div class="eat-bar" style="margin:7px 0 0;"><i style="width:${pctProt}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i><b style="${pctProt > 78? "color:#fff;":""}">${protTarget} g</b></div>
           </div>
         </div>
         <div class="eat-card eat-stat">
@@ -6121,8 +6125,8 @@ function renderEat(app){
               <button class="icon-btn info-btn" id="eat-kinfo" title="${TR("Comment sont calculées mes calories ?")}">ⓘ</button>
               <span class="pc">${kRef? Math.round(kcalNow/kRef*100)+" %" : "—"}</span></div>
             <div class="lb">${TR("Calories")}</div>
-            <div class="eat-bar" style="margin:7px 0 0;"><i style="width:${Math.min(100, kRef? kcalNow/kRef*100 : 0)}%; background:${
-              !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b>${kRef? kRef+" kcal" : "—"}</b></div>
+            <div class="eat-bar" style="margin:7px 0 0;"><i style="width:${pctKcal}%; background:${
+              !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b style="${pctKcal > 78? "color:#fff;":""}">${kRef? kRef+" kcal" : "—"}</b></div>
           </div>
         </div>
       </div>

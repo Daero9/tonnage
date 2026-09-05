@@ -1158,6 +1158,22 @@ async function lancer(){
     vrai("Les protéines ont le bras", hs.some(h=>h.querySelector(".e").textContent === "💪"));
     vrai("Les féculents ont la flamme", hs.some(h=>h.querySelector(".e").textContent === "🔥"));
     vrai("Les légumes ont le brocoli", hs.some(h=>h.querySelector(".e").textContent === "🥦"));
+    /* la part atteinte et l'objectif sont orange, comme le reste des chiffres cles */
+    eq("La part atteinte est orange",
+      F.getComputedStyle(D2.querySelector(".eat-stat .pc")).color, "rgb(245, 130, 32)");
+    eq("L'objectif au bout de la jauge aussi",
+      F.getComputedStyle(D2.querySelector(".eat-bar b")).color, "rgb(245, 130, 32)");
+    /* sauf quand la jauge arrive dessous : orange sur orange ne se lirait plus */
+    DB.habitSel[k] = {matin:["Whey + lait (1 dose, 300 ml)"], midi:["Poulet (1 filet, 130 g cuit)"],
+      soir:["Saumon (1 pavé, 120 g cuit)"], collation:["Whey + eau (1 dose)"]};
+    F.render();
+    const pleine = D2.querySelector(".eat-bar");
+    vrai("Journée bien remplie : la jauge passe sous le chiffre",
+      parseFloat(pleine.querySelector("i").style.width) > 78);
+    eq("…et le chiffre passe en blanc par-dessus",
+      F.getComputedStyle(pleine.querySelector("b")).color, "rgb(255, 255, 255)");
+    DB.habitSel = {}; DB.habitSel[k] = {midi:["Poulet (1 filet, 130 g cuit)"]};
+    F.render();
     /* le bouton d'ajout ne defile pas */
     const fab = D2.querySelector(".eat-fab");
     vrai("Le bouton d'ajout existe", !!fab);
