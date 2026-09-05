@@ -1312,6 +1312,45 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Page du plan");
+  neuf();
+  (()=>{
+    DB.profile = Object.assign({}, DB.profile,
+      {height:188, weight:74, goalWeight:80, aim:"masse", pace:"modere", protPerKg:1.9, days:4});
+    DB.templates = [];
+    F.showPlan(false);
+    const D2 = F.document;
+    vrai("Le plan s'annonce", /plan personnalisé/i.test(D2.querySelector(".pn-sous").textContent));
+    eq("Deux étiquettes en tête", D2.querySelectorAll(".pn-chips .ch").length, 2);
+    vrai("La première porte l'haltère", !!D2.querySelector(".pn-chips .ch.on svg"));
+    /* l'objectif en clair, avec le délai */
+    vrai("L'objectif a sa cible", !!D2.querySelector(".pn-obj .ic svg"));
+    eq("Le poids visé est affiché", D2.querySelector(".pn-obj .kg").textContent, "80 kg");
+    vrai("…avec le délai estimé", /semaines/.test(D2.querySelector(".pn-obj .qd").textContent));
+    vrai("…et le conseil à côté", D2.querySelector(".pn-obj .tx").textContent.length > 40);
+    /* trois tuiles, chacune avec son signe */
+    eq("Trois tuiles", D2.querySelectorAll(".pn-t").length, 3);
+    vrai("Chacune porte son signe",
+      [...D2.querySelectorAll(".pn-t .ic")].every(e=>!!e.querySelector(".icm, svg")));
+    vrai("Les calories ont la flamme", !!D2.querySelector(".pn-t .icm-flamme"));
+    vrai("Les protéines ont le biceps", !!D2.querySelector(".pn-t .icm-muscle"));
+    eq("Les trois intitulés",
+      [...D2.querySelectorAll(".pn-t .l")].map(e=>e.textContent).join("|"),
+      "Calories|Protéines|Fréquence");
+    /* les deux cartes et la note */
+    eq("Deux cartes détaillées", D2.querySelectorAll(".pn-carte").length, 2);
+    vrai("La dépense estimée est ajustable", !!D2.getElementById("pl-tdee"));
+    vrai("La note porte son ampoule", !!D2.querySelector(".pn-note .ic svg"));
+    vrai("…et renvoie vers l'explication", !!D2.getElementById("pl-sante"));
+    /* le bouton d'ajout compte les séances manquantes */
+    const add = D2.getElementById("pl-add");
+    vrai("On peut ajouter les séances", !!add && /3/.test(add.textContent));
+    vrai("…et la flèche dit que ça continue", !!add.querySelector(".fl svg"));
+    F.hideSheet();
+    DB.templates = [];
+  })();
+  neuf();
+
   grp("Fiche du profil");
   neuf();
   /* Le chemin vers l'objectif se mesure depuis le PREMIER poids noté : « 74 sur 80 kg »
