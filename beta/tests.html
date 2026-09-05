@@ -515,8 +515,17 @@ async function lancer(){
   vrai("« fruit » ne ramène pas le thon", !cherche("fruit").some(n=>/thon/i.test(n)));
   vrai("Une recherche en deux mots marche", cherche("fast food").some(n=>/burger/i.test(n)));
   vrai("Une recherche sans réponse ne rend rien", cherche("zzzzz").length === 0);
-  vrai("Les légumes ne sont pas dans la grille du quotidien",
-    !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) => /brocoli|courgette|salade verte/i.test(lab))));
+  /* Les plus connus seulement : la grille du midi doit tenir sous le pouce, la base
+     complete reste accessible depuis « Ajouter un aliment ». */
+  vrai("Les légumes courants sont proposés au repas",
+    ["Tomates","Carottes","Haricots verts","Brocoli"].every(n =>
+      F.eval("HB_OPTS").vege.some(([lab]) => lab.indexOf(n) === 0)));
+  eq("Huit légumes, pas vingt et un", F.eval("HB_OPTS").vege.length, 8);
+  vrai("Les légumes de niche restent hors de la grille",
+    !Object.values(F.eval("HB_OPTS")).some(l => l.some(([lab]) =>
+      /aubergine|betterave|poireau|chou-fleur|artichaut|navet/i.test(lab))));
+  vrai("Chaque légume proposé a son émoticône",
+    F.eval("HB_OPTS").vege.every(([lab]) => F.foodIcon(lab) !== "🍽️"));
 
   /* les liquides se comptent au volume */
   vrai("Le lait est compté en centilitres",
@@ -1110,6 +1119,60 @@ async function lancer(){
 
   /* ------------------------------------------------- ordre des exercices d'une séance */
   /* ------------------------------------------------- fiches empilées */
+  grp("Rangement des aliments ajoutés");
+  neuf();
+  /* Un aliment gardé dans les propositions rejoint le groupe qui lui ressemble, au lieu
+     d'un fourre-tout « Mes aliments » où l'on ne retrouvait plus rien. */
+  (()=>{
+    const fam = (n, p, k) => F.familleAliment(n, p, k);
+    eq("Le poulet est une protéine", fam("Poulet", 31, 165), "prot");
+    eq("L'œuf aussi", fam("Œuf", 6.3, 78), "prot");
+    eq("Le fromage blanc aussi", fam("Fromage blanc 0 %", 8, 50), "prot");
+    eq("Le lait aussi", fam("Lait demi-écrémé", 3.4, 47), "prot");
+    eq("Une barre protéinée aussi", fam("Barre protéinée", 20, 350), "prot");
+    eq("Le riz est un féculent", fam("Riz cuit", 2.7, 130), "carb");
+    eq("Le pain aussi", fam("Pain", 9, 260), "carb");
+    eq("La banane aussi", fam("Banane", 1.3, 105), "carb");
+    eq("Le Nutella aussi", fam("Nutella", 6.3, 539), "carb");
+    eq("Un soda aussi", fam("Coca-Cola", 0, 42), "carb");
+    /* les légumes se reconnaissent au nom : leurs chiffres ressemblent à ceux d'un fruit */
+    eq("La tomate est un légume", fam("Tomate", 0.8, 18), "vege");
+    eq("Le brocoli aussi", fam("Brocoli", 2.8, 35), "vege");
+    eq("La ratatouille aussi", fam("Ratatouille", 1.2, 60), "vege");
+    /* et le classement se retrouve dans la grille du repas */
+    DB.hbPerso = {}; DB.hbMasque = {};
+    DB.hbPerso.repas = [["Skyr 200 g (~22 g prot. · 114 kcal)", 22, 114, "prot"],
+      ["Chips 100 g (~6 g prot. · 540 kcal)", 6, 540, "carb"],
+      ["Poêlée de légumes 200 g (~4 g prot. · 90 kcal)", 4, 90, "vege"]];
+    const g = F.habitOpts("midi");
+    const dans = titre => (g.find(x => x[0] === titre) || [,,[]])[2].map(x => x[0]);
+    vrai("Le skyr rejoint les protéines", dans("Protéines").some(l => /Skyr/.test(l)));
+    vrai("Les chips rejoignent les féculents", dans("Féculents").some(l => /Chips/.test(l)));
+    vrai("La poêlée rejoint les légumes", dans("Légumes").some(l => /Poêlée/.test(l)));
+    vrai("Il n'y a plus de groupe « Mes aliments »", !g.some(x => x[0] === "Mes aliments"));
+    eq("Trois groupes au déjeuner", g.length, 3);
+    /* un aliment sans famille enregistrée (ajouté avant) se range quand même */
+    DB.hbPerso.repas = [["Thon 100 g (~26 g prot. · 116 kcal)", 26, 116]];
+    vrai("Un ancien aliment se range à la relecture",
+      (F.habitOpts("midi").find(x => x[0] === "Protéines")||[,,[]])[2].some(l => /Thon/.test(l[0])));
+    /* au petit-déjeuner il n'y a pas de groupe légumes : la case énergie l'accueille */
+    DB.hbPerso.petitdej = [["Compote maison 100 g (~0 g prot. · 60 kcal)", 0, 60, "vege"]];
+    vrai("Le petit-déjeuner n'invente pas un groupe légumes",
+      !F.habitOpts("matin").some(x => x[0] === "Légumes"));
+    vrai("…et range quand même l'aliment",
+      (F.habitOpts("matin").find(x => x[0] === "Féculents / énergie")||[,,[]])[2].some(l => /Compote maison/.test(l[0])));
+    /* l'appui long doit toujours SUPPRIMER un aliment à soi, pas le masquer */
+    DB.hbPerso.repas = [["Thon 100 g (~26 g prot. · 116 kcal)", 26, 116, "prot"]];
+    DB.hbMasque = {};
+    F.demanderRetrait("Thon 100 g (~26 g prot. · 116 kcal)", "prot");
+    F.document.getElementById("rt-oui").click();
+    eq("Il est supprimé de mes aliments", DB.hbPerso.repas.length, 0);
+    vrai("…et non masqué", !(DB.hbMasque.prot || []).length);
+    F.hideSheet();
+    DB.hbPerso = {}; DB.hbMasque = {};
+  })();
+  neuf();
+
   grp("Boisson ou aliment");
   neuf();
   /* Un produit scanné se compte en millilitres ou en grammes selon ce qu'il est. La
