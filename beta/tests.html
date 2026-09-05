@@ -1427,6 +1427,11 @@ async function lancer(){
     const pause = D2.getElementById("rest-pause");
     vrai("Le bouton de pause est posé sur le disque",
       !!pause && pause.closest(".rb-disc") === disque);
+    /* le cadran est une piece d horlogerie : sombre dans les deux themes, chiffres clairs */
+    const C = n => F.getComputedStyle(n);
+    eq("Le cadran est sombre", C(disque).backgroundColor, "rgb(46, 32, 21)");
+    eq("…et ses chiffres clairs",
+      C(D2.querySelector("#rest-pill .t")).color, "rgb(255, 255, 255)");
     const tour = F.eval("RB_TOUR");
     const creux = () => parseFloat(arc.style.strokeDashoffset);
 
@@ -1452,6 +1457,14 @@ async function lancer(){
     F.eval("rest").end = Date.now() - 100;
     F.tickRest();
     vrai("À zéro l'anneau est plein", creux() < 1);
+
+    /* le bouton ne deborde plus du cadran : il tient dedans, sous les chiffres.
+       On lit les regles et non la geometrie : le cadre de test est masque, tous les
+       rectangles y valent zero et une comparaison de positions passerait a vide. */
+    const cp = C(pause);
+    vrai("Le bouton tient dans le cadran", parseFloat(cp.bottom) >= 0);
+    vrai("…et il est plus petit que lui",
+      parseFloat(cp.width) < parseFloat(C(disque).width) / 2);
 
     F.arreterChronos();
   })();
