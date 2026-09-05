@@ -1573,7 +1573,17 @@ async function lancer(){
     vrai("L'encadré porte la flamme", !!enc.querySelector(".hi .icm-flamme"));
     eq("L'abréviation reste en orange", enc.querySelector(".ht i").textContent, "Éch.");
     eq("…et on peut dire qu'on a compris",
-      enc.querySelector("[data-hintx]").textContent, "Compris");
+      enc.querySelector(".hint-ok").textContent, "Compris");
+    eq("L'encadré porte son étiquette", enc.querySelector(".bdg").textContent, "Astuce");
+    /* la croix ferme sans lire : elle doit fermer aussi bien que « Compris » */
+    vrai("…et une croix dans le coin", !!enc.querySelector(".hint-x[data-hintx]"));
+    enc.querySelector(".hint-x").click();
+    vrai("La croix referme l'encadré", !D2.querySelector(".hint-box .icm-flamme"));
+    /* l'encadré suivant, celui du dégressif */
+    const deg = D2.querySelector(".hint-box");
+    eq("Le dégressif s'annonce", deg.querySelector(".ht").textContent, "Série dégressive");
+    vrai("…avec la flèche qui descend", !!deg.querySelector(".hi svg"));
+    eq("…et l'exemple en gras", deg.querySelector("b").textContent, "6 × 12 kg, puis 4 × 10 kg.");
     DB.active = null; DB.templates = [];
     F.render();
   })();

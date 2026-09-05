@@ -123,19 +123,31 @@
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2);
     border:1px solid var(--border); border-radius:99px; padding:3px 9px; white-space:nowrap;}
-  .hint-box{display:flex; gap:12px; align-items:center; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
-    border-radius:14px; padding:12px 13px; margin-bottom:11px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
+  .hint-box{position:relative; display:flex; gap:12px; align-items:center; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
+    border-radius:14px; padding:13px 40px 13px 13px; margin-bottom:11px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
   .hint-box b{color:var(--ink);}
-  /* le signe de l encadre, a gauche : on sait de quoi il parle avant de lire */
-  .hint-box .hi{flex:0 0 auto; display:flex; align-items:center; color:var(--accent);}
+  /* le signe de l encadre, dans sa pastille : on sait de quoi il parle avant de lire */
+  .hint-box .hi{flex:0 0 auto; width:44px; height:44px; border-radius:50%;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .hint-box .hi svg{width:24px; height:24px;}
+  /* l etiquette annonce le registre : ce n est pas un avertissement, juste un coup de main */
+  .hint-box .bdg{display:inline-block; font-size:10px; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent); background:rgba(245,130,32,.16);
+    border-radius:999px; padding:3px 9px; margin-bottom:5px;}
   /* la première ligne dit de quoi on parle : on la lit avant même de lire le reste */
   .hint-box .ht{display:block; font-size:15.5px; font-weight:800; color:var(--ink);
     line-height:1.25; margin-bottom:3px;}
   /* l abreviation reste en orange : c est elle qu on retrouve dans le tableau */
   .hint-box .ht i{font-style:normal; color:var(--accent);}
-  .hint-box button{flex:none; font-size:12px; font-weight:800; color:var(--accent);
+  .hint-box .hint-ok{flex:none; font-size:12px; font-weight:800; color:var(--accent);
     background:var(--surface); border:1px solid rgba(232,163,61,.55); border-radius:999px;
     padding:8px 14px; align-self:center;}
+  /* la croix ferme sans lire : elle vise le coin, la ou le pouce va la chercher */
+  .hint-box .hint-x{position:absolute; top:6px; right:6px; width:28px; height:28px;
+    padding:0; background:none; border:none; color:var(--ink-mute);
+    display:flex; align-items:center; justify-content:center;}
+  .hint-box .hint-x svg{width:15px; height:15px;}
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
   .ob-steps i.on{background:var(--accent);}
@@ -2357,6 +2369,7 @@ const TRAD = {en:{
   "durée":"time",
   "Quinze secondes de plus":"Fifteen seconds more",
   "Série en cours":"Current set",
+  "Astuce":"Tip",
   "Séries à tenir":"Sets to hold",
   "Départ":"Get set",
   "Repos entre les séries":"Rest between sets",
@@ -2467,7 +2480,7 @@ const TRAD = {en:{
   "Revenir au conseillé":"Back to recommended",
   "À toi de choisir la charge":"Your call on the load",
   "<span class=\"ht\"><i>Éch.</i> = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte pas dans ton tonnage, ni dans tes records.":"<span class=\"ht\"><i>W-up</i> = warm-up</span>A light set to prime the muscle, filled at half your working load. It counts toward neither your tonnage nor your records.",
-  "<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.":"<span class=\"ht\">↓ = drop set</span>You keep the same set going with less load: 6 × 25 lb, then 4 × 20 lb. It stays one set, and all of it counts toward your tonnage.",
+  "<span class=\"ht\">Série dégressive</span>Tu continues la même série avec moins de charge :<br><b>6 × 12 kg, puis 4 × 10 kg.</b><br>Ça reste une seule série, et tout compte dans ton tonnage.":"<span class=\"ht\">Drop set</span>You keep the same set going with less load:<br><b>6 × 25 lb, then 4 × 20 lb.</b><br>It stays one set, and all of it counts toward your tonnage.",
   "Impossible d'écrire dans ce fichier ici — garde plutôt une copie avec 💾.":"Can't write to this file here — keep a copy with 💾 instead.",
   "Ce fichier est vide.":"This file is empty.",
   "Fichier incomplet — la copie s'est arrêtée en route.":"Incomplete file — the copy stopped partway.",
@@ -5610,7 +5623,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 17h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 17h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5906,7 +5919,7 @@ function dejaVu(k){ return !!(db.seen && db.seen[k]); }
 function marquerVu(k){ if(!db.seen) db.seen={}; db.seen[k]=true; save(); }
 function hintBox(key, html, ico){
   if(dejaVu(key)) return "";
-  return `<div class="hint-box">${ico? `<span class="hi">${ico}</span>` : ""}<div class="grow">${html}</div><button data-hintx="${key}">${TR("Compris")}</button></div>`;
+  return `<div class="hint-box">${ico? `<span class="hi">${ico}</span>` : ""}<div class="grow"><span class="bdg">${TR("Astuce")}</span>${html}</div><button class="hint-ok" data-hintx="${key}">${TR("Compris")}</button><button class="hint-x" data-hintx="${key}" aria-label="${TR("Fermer")}">${IC_CROIX}</button></div>`;
 }
 function wireHints(root){
   (root||document).querySelectorAll("[data-hintx]").forEach(b=>b.onclick=()=>{
@@ -6168,6 +6181,7 @@ const ICONS = {
   prg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M7 15l3.5-4 2.5 2.5L17 9"/></svg>'
 };
 const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]];
+const IC_BAISSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></svg>';
 const IC_STOP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3"></rect></svg>';
 const IC_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
 /* Code-barres : quatre angles de visee, et des barres d'epaisseurs differentes —
@@ -9891,7 +9905,7 @@ function renderActive(app){
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
         iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
-      ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.")) : ""}
+      ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">Série dégressive</span>Tu continues la même série avec moins de charge :<br><b>6 × 12 kg, puis 4 × 10 kg.</b><br>Ça reste une seule série, et tout compte dans ton tonnage."), IC_BAISSE) : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
         ${en.sets.filter(x=>!x.warm).length > 1
