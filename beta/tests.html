@@ -1312,6 +1312,36 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Aperçu d'une séance");
+  neuf();
+  (()=>{
+    DB.active = null;
+    DB.templates = [{id:"tap", name:"Test deux", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+      {exId:id("Rowing barre"),     sets:3, reps:"8-12", rest:120}]}];
+    F.openPreview("tap");
+    const D2 = F.document;
+    eq("Trois tuiles", D2.querySelectorAll(".pn-t").length, 3);
+    vrai("Chacune porte son signe",
+      [...D2.querySelectorAll(".pn-t .ic")].every(e=>!!e.querySelector("svg")));
+    eq("Les trois chiffres",
+      [...D2.querySelectorAll(".pn-t .v")].map(e=>e.textContent).join("|"), "2|6|~15");
+    eq("Les trois intitulés",
+      [...D2.querySelectorAll(".pn-t .l")].map(e=>e.textContent).join("|"),
+      "exercices|séries au total|minutes");
+    /* le singulier quand il n'y a qu'un exercice */
+    F.hideSheet();
+    DB.templates = [{id:"tun", name:"Un seul", items:[
+      {exId:id("Développé couché"), sets:1, reps:"10", rest:90}]}];
+    F.openPreview("tun");
+    eq("Au singulier",
+      [...F.document.querySelectorAll(".pn-t .l")].map(e=>e.textContent).join("|"),
+      "exercice|série au total|minutes");
+    F.hideSheet();
+    DB.templates = [];
+  })();
+  neuf();
+
   grp("Rien ne disparaît dans le fond");
   neuf();
   /* Trois fois de suite, un changement de palette a fait disparaitre des elements : les
