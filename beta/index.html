@@ -1512,9 +1512,26 @@
   /* ---- la fiche d un produit scanne ----
      Quatre tuiles pour les quatre valeurs de l etiquette. Elles ne sont pas cliquables :
      elles disent ce que contient le produit, la question « combien » vient apres. */
-  .ps-nom{text-align:center; text-transform:uppercase; font-size:20px; line-height:1.15;}
-  .ps-marque{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:4px 0 0;}
-  .ps-tuiles{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:14px 0 16px;}
+  /* ---- la tête d'une fiche de produit ----
+     La photo à gauche, ce qu'on lit à droite. Les quatre tuiles descendent d'elles-mêmes
+     sur leur propre ligne quand la largeur ne suffit plus — sur un téléphone, quatre
+     tuiles à côté d'une photo tomberaient à quarante pixels chacune. */
+  .ps-tete{display:flex; flex-wrap:wrap; align-items:center; gap:12px 14px; margin-bottom:14px;}
+  .ps-photo{flex:0 0 auto; width:118px; height:132px; border-radius:16px;
+    background:var(--surface); display:flex; align-items:center; justify-content:center;
+    overflow:hidden; padding:8px;}
+  .ps-photo img{max-width:100%; max-height:100%; object-fit:contain; display:block;}
+  .ps-photo .ic{display:flex; color:var(--accent);}
+  .ps-photo .ic svg{width:46px; height:46px;}
+  /* la marge de droite laisse passer la croix de fermeture, posée dans le coin */
+  .ps-titre{flex:1 1 150px; min-width:0; padding-right:26px;}
+  /* « .sheet h3 » centre et rembourre tous les titres de fiche : il faut le même
+     poids de sélecteur pour reprendre la main sur celui-ci. */
+  .sheet h3.ps-nom{text-align:left; text-transform:uppercase; font-size:20px;
+    line-height:1.15; padding:0; margin-bottom:0;}
+  .ps-marque{text-align:left; font-size:12.5px; color:var(--ink-mute); margin:4px 0 0;}
+  .ps-tuiles{flex:1 1 100%; display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:0;}
+  @media (min-width:560px){ .ps-tuiles{flex:1 1 250px;} }
   .ps-tuiles .tu{background:var(--surface); border-radius:14px; padding:11px 3px 10px; text-align:center;}
   .ps-tuiles .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:6px;}
   .ps-tuiles .ic svg{width:22px; height:22px;}
@@ -5647,7 +5664,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 18h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 19h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7433,7 +7450,7 @@ function portionMl(txt){
   return v > 0 ? Math.round(v * f) : 0;
 }
 async function chercherProduit(code){
-  const champs = "product_name,product_name_fr,brands,nutriments,serving_size,quantity,categories_tags";
+  const champs = "product_name,product_name_fr,brands,nutriments,serving_size,quantity,categories_tags,image_front_small_url";
   /* on demande aussi glucides et lipides : la fiche les montre, meme si l app ne
      compte toujours que les proteines et les calories */
   const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${champs}`;
@@ -7467,9 +7484,15 @@ async function chercherProduit(code){
        reste de l'application emploie deja pour le lait et les soupes */
     portion: liquide ? (portionMl(p.serving_size) <= 500 ? Math.round(portionMl(p.serving_size)/10) : 0)
                      : (mp ? Math.round(parseFloat(mp[1].replace(",", "."))) : 0),
+    /* L'adresse vient d'une réponse distante : on n'accepte que le serveur d'images
+       d'Open Food Facts, en https. Une adresse quelconque ne doit jamais se retrouver
+       dans un attribut src de la page. La photo n'est ni enregistrée ni sauvegardée :
+       elle s'affiche, et c'est tout. */
+    photo: PHOTO_OFF.test(String(p.image_front_small_url || "")) ? p.image_front_small_url : "",
     liquide
   };
 }
+const PHOTO_OFF = /^https:\/\/images\.openfoodfacts\.org\/[\w./-]+\.(?:jpg|png)$/i;
 /* Fiche d'un produit scanné. Rien d'autre à l'écran : ni la liste des aliments, ni le
    bouton de scan. On vient de désigner un produit précis, la seule question qui reste
    est « combien ». La mise en page reprend celle du réglage d'un aliment déjà posé —
@@ -7485,13 +7508,21 @@ function openProduitScanne(meal, p){
   const tuile = (ic, val, u, lab) => `<div class="tu"><span class="ic">${ic}</span>
     <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
     <div class="l">${lab}</div><div class="r">${ref100}</div></div>`;
-  openSheet(`<h3 class="ps-nom">${esc(p.nom)}</h3>
-    ${p.marque? `<div class="ps-marque">${esc(p.marque)}</div>`:""}
-    <div class="ps-tuiles">
-      ${tuile(icoM("flamme", 22),  p.kcal100, "",  "kcal")}
-      ${tuile(icoM("muscle", 22),  p.prot100, "g", TR("protéines"))}
-      ${tuile(icoM("cereale", 22), p.gluc100 || 0, "g", TR("glucides"))}
-      ${tuile(IC_GOUTTE,           p.lip100 || 0,  "g", TR("lipides"))}
+  const signe = liquide ? IC_VERRE : IC_ASSIETTE;
+  openSheet(`<div class="ps-tete">
+      <div class="ps-photo" id="ps-photo">${p.photo
+        ? `<img id="ps-img" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`
+        : `<span class="ic">${signe}</span>`}</div>
+      <div class="ps-titre">
+        <h3 class="ps-nom">${esc(p.nom)}</h3>
+        ${p.marque? `<div class="ps-marque">${esc(p.marque)}</div>`:""}
+      </div>
+      <div class="ps-tuiles">
+        ${tuile(icoM("flamme", 22),  p.kcal100, "",  "kcal")}
+        ${tuile(icoM("muscle", 22),  p.prot100, "g", TR("protéines"))}
+        ${tuile(icoM("cereale", 22), p.gluc100 || 0, "g", TR("glucides"))}
+        ${tuile(IC_GOUTTE,           p.lip100 || 0,  "g", TR("lipides"))}
+      </div>
     </div>
     <div class="stack">
       <div>
@@ -7523,6 +7554,12 @@ function openProduitScanne(meal, p){
         IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
       <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
     </div>`);
+  /* Hors ligne, ou photo retirée depuis : le signe reprend la place, sans case vide. */
+  const pimg = document.getElementById("ps-img");
+  if(pimg) pimg.onerror = ()=>{
+    const boite = document.getElementById("ps-photo");
+    if(boite) boite.innerHTML = `<span class="ic">${signe}</span>`;
+  };
   const pbox = document.getElementById("ps-favbox"), pchk = document.getElementById("ps-save");
   pchk.onchange = ()=>pbox.classList.toggle("on", pchk.checked);
   const gEl = document.getElementById("ps-g");
