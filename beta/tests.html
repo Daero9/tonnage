@@ -2173,6 +2173,71 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La photo du produit scanné");
+  neuf();
+  /* Open Food Facts fournit une photo pour presque tous ses produits. Elle s'affiche
+     à gauche de la fiche, sans jamais être enregistrée. Aucun de ces tests ne touche
+     au réseau : l'image ne se chargera pas, ce qui est justement une des situations
+     à couvrir. */
+  (()=>{
+    const D2 = F.document;
+    /* L'adresse vient d'une réponse distante : seul le serveur d'images d'Open Food
+       Facts est accepté. Sans ce filtre, une base compromise pourrait faire pointer
+       un attribut src de la page où elle veut. */
+    const ok = F.eval("PHOTO_OFF");
+    vrai("Une image d'Open Food Facts est acceptée",
+      ok.test("https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.879.200.jpg"));
+    vrai("Un autre serveur est refusé",
+      !ok.test("https://exemple.test/images/produit.jpg"));
+    vrai("Le http simple est refusé",
+      !ok.test("http://images.openfoodfacts.org/images/produit.jpg"));
+    vrai("Une adresse exécutable est refusée",
+      !ok.test("javascript:alert(1)"));
+    vrai("Un sous-domaine imité est refusé",
+      !ok.test("https://images.openfoodfacts.org.exemple.test/x.jpg"));
+
+    const fiche = (extra) => {
+      F.hideSheet();
+      F.openProduitScanne("midi", Object.assign({code:"1", nom:"Test", marque:"M",
+        prot100:5, kcal100:50, gluc100:3, lip100:1, portion:25}, extra));
+      return D2.getElementById("ps-photo");
+    };
+    /* avec photo : l'image occupe la case, à gauche du nom */
+    const avecPhoto = fiche({liquide:true,
+      photo:"https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.879.200.jpg"});
+    vrai("La photo prend sa place", !!avecPhoto.querySelector("img"));
+    vrai("…et elle est bien celle du produit",
+      avecPhoto.querySelector("img").getAttribute("src")
+        .indexOf("https://images.openfoodfacts.org/images/") === 0);
+    vrai("Elle est à gauche du nom",
+      avecPhoto.nextElementSibling.classList.contains("ps-titre"));
+
+    /* sans photo : un signe, jamais une case vide */
+    const boisson = fiche({liquide:true, photo:""});
+    vrai("Une boisson sans photo montre un verre", !!boisson.querySelector(".ic svg"));
+    vrai("…et aucune image", !boisson.querySelector("img"));
+    const aliment = fiche({liquide:false, photo:""});
+    vrai("Un aliment sans photo montre une assiette", !!aliment.querySelector(".ic svg"));
+    /* le verre et l'assiette ne sont pas le même dessin */
+    vrai("Les deux signes diffèrent",
+      boisson.innerHTML !== aliment.innerHTML);
+
+    /* hors ligne : l'image échoue, le signe reprend la place */
+    const casse = fiche({liquide:false,
+      photo:"https://images.openfoodfacts.org/images/products/000/000/000/0000/front_en.1.200.jpg"});
+    const img = D2.getElementById("ps-img");
+    vrai("Une image cassée a bien son secours", typeof img.onerror === "function");
+    img.onerror();
+    vrai("…et le signe reprend la place",
+      !!D2.getElementById("ps-photo").querySelector(".ic svg"));
+
+    /* rien de tout cela ne doit finir dans les données */
+    F.hideSheet();
+    vrai("La photo n'entre pas dans tes données",
+      JSON.stringify(DB).indexOf("images.openfoodfacts.org") < 0);
+  })();
+  neuf();
+
   grp("Recherche d'aliments");
   neuf();
   /* Deux colonnes et une émoticône, comme la grille du repas : on reconnaît d'avance
