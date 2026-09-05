@@ -1315,19 +1315,20 @@ async function lancer(){
   grp("Le repos se règle sur la carte");
   neuf();
   /* Il vivait au fond de la fiche d'infos : trois gestes pour changer trente secondes,
-     entre deux séries, essoufflé. */
+     entre deux séries, essoufflé. Il n'apparaît que sur les gainages, où le repos
+     fait partie de l'enchaînement — ailleurs il n'apprend rien qu'on veuille relire
+     à chaque série, et il reste dans la fiche de l'exercice. */
   (()=>{
     DB.active = null;
-    DB.templates = [{id:"trep", name:"Push", items:[
-      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:90}]}];
+    DB.templates = [{id:"trep", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:3, reps:"30-45", rest:90},
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
     F.startWorkout("trep");
     const carte = F.document.querySelector(".ex-card");
     const val = () => carte.querySelector("[data-repv]").textContent;
-    vrai("Le repos est sur la carte", !!carte.querySelector(".ex-repos"));
-    /* sur un exercice ordinaire il se change ENTRE deux séries : sa place est sous
-       elles, là où le pouce vient de valider */
-    const rangs = [...carte.children].map(n=>n.className);
-    vrai("…sous les séries", rangs.indexOf("ex-repos") > rangs.indexOf("sets"));
+    vrai("Le repos est sur la carte du gainage", !!carte.querySelector(".ex-repos"));
+    vrai("…et sur elle seule",
+      !F.document.querySelectorAll(".ex-card")[1].querySelector(".ex-repos"));
     eq("Il part de ce que dit le plan", val(), "1 min 30");
     carte.querySelector('[data-rep="15"]').click();
     eq("Le + ajoute quinze secondes", val(), "1 min 45");
@@ -1664,6 +1665,19 @@ async function lancer(){
         perdus.length === 0);
       F.hideSheet();
     });
+    /* la séance en cours n'est pas une fiche : elle vit dans la page, et c'est là
+       qu'un bouton blanc posé sur une carte blanche vient de disparaître */
+    DB.active = null;
+    DB.templates = [{id:"tinv", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:3, reps:"30-45", rest:90},
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    F.startWorkout("tinv");
+    const perdusSeance = invisibles(D2.getElementById("app"));
+    vrai("Rien ne se fond dans la séance en cours"
+      + (perdusSeance.length? " (" + perdusSeance.join(", ") + ")" : ""),
+      perdusSeance.length === 0);
+    DB.active = null; DB.templates = [];
+    F.render();
   })();
   neuf();
 

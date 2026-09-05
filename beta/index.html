@@ -961,6 +961,12 @@
     .set-row .ck:active, .set-row .dg:active{transform:none;}
   }
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
+  /* plus grands et posés sur le blanc : ils forment une paire nette a droite du nom.
+     Le contour est indispensable : « .info-btn » l enleve, et un bouton blanc sans
+     contour sur une carte blanche n existe plus a l ecran. */
+  .ex-head .icon-btn{width:40px; height:40px; border-radius:12px; background:var(--surface);
+    border:1px solid var(--border); color:var(--ink-soft);}
+  .ex-head .icon-btn svg{width:19px; height:19px;}
   .ex-name{font-size:17px; font-weight:700;}
   /* l'accessoire, discretement a cote du nom : on le lit si on le cherche,
      il ne dispute rien au titre. Il passe a la ligne avec lui si le nom est long. */
@@ -1000,25 +1006,37 @@
   /* ---- le repos, reglable sur la carte ----
      Il etait au fond de la fiche d infos : trois gestes pour changer trente secondes,
      entre deux series, essouffle. Ici il est sous les yeux, a portee de pouce. */
-  .ex-card.iso .ex-repos{margin:0 0 10px;}
-  .ex-repos{display:flex; align-items:center; gap:9px; margin:10px 0 2px;
-    background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:7px 10px;}
-  .ex-repos .ic{display:flex; color:var(--accent); flex:0 0 auto;}
-  .ex-repos .ic svg{width:17px; height:17px;}
-  .ex-repos .l{flex:1; min-width:0; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
-  .ex-repos button{width:33px; height:33px; border-radius:9px; background:var(--surface);
-    border:1px solid var(--border); font-size:16px; font-weight:800; line-height:1;
+  .ex-repos{display:flex; align-items:center; gap:10px; margin:0 0 10px;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:8px 10px;}
+  .ex-repos .ic{flex:0 0 auto; width:30px; height:30px; border-radius:50%;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .ex-repos .ic svg{width:16px; height:16px;}
+  .ex-repos .l{font-size:12.5px; font-weight:800; line-height:1.25;}
+  .ex-repos .s{font-size:10.5px; color:var(--ink-mute); line-height:1.3; margin-top:1px;}
+  /* les trois commandes dans une meme gelule : on voit qu elles vont ensemble */
+  .ex-repos .rgl{flex:0 0 auto; display:flex; align-items:center;
+    background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:2px;}
+  .ex-repos .rgl button{width:29px; height:29px; border-radius:50%; background:none;
+    font-size:16px; font-weight:800; line-height:1; color:var(--ink-soft);
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
-  .ex-repos button:active{background:var(--btn);}
-  .ex-repos .v{min-width:66px; text-align:center; font-size:14.5px; font-weight:800;
+  .ex-repos .rgl button:active{background:var(--btn);}
+  .ex-repos .v{min-width:62px; text-align:center; font-size:13px; font-weight:800;
     font-variant-numeric:tabular-nums;}
-  .iso-chrono{display:flex; align-items:center; gap:12px; background:rgba(245,130,32,.10);
-    border-radius:13px; padding:10px 13px; margin-bottom:10px;}
-  .iso-chrono .ic{flex:0 0 auto; display:flex; color:var(--accent);}
-  .iso-chrono .ic svg{width:22px; height:22px;}
-  .iso-chrono .t{font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .iso-chrono{display:flex; align-items:center; gap:11px; background:rgba(245,130,32,.10);
+    border-radius:16px; padding:12px; margin-bottom:10px;}
+  /* le chrono dans sa pastille blanche : il se detache du fond orange pale */
+  .iso-chrono .ic{flex:0 0 auto; width:40px; height:40px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; color:var(--accent);
+    box-shadow:0 2px 6px rgba(0,0,0,.07);}
+  .iso-chrono .ic svg{width:21px; height:21px;}
+  .iso-chrono .k{font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-mute); line-height:1.2;}
+  .iso-chrono .t{font-size:23px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15;}
   .iso-chrono .s{font-size:11px; color:var(--ink-mute); line-height:1.35; margin-top:1px;}
-  .iso-chrono button{flex:0 0 auto; min-width:88px;}
+  .iso-chrono .iso-go{flex:0 0 auto; min-width:0; border-radius:999px;
+    padding:11px 15px; font-size:14px; gap:7px;}
+  .iso-chrono .iso-go svg{width:15px; height:15px;}
   .iso-chrono.court .t{color:var(--accent);}
   .set-row.warm .n{font-size:10px; letter-spacing:.02em; color:var(--accent); font-weight:800;}
   .set-row.warm input{border-style:dashed;}
@@ -2312,6 +2330,9 @@ const TRAD = {en:{
   "Avec lest":"Weighted",
   "durée":"time",
   "Quinze secondes de plus":"Fifteen seconds more",
+  "Série en cours":"Current set",
+  "Repos entre les séries":"Rest between sets",
+  "Tu peux le modifier à tout moment.":"You can change it any time.",
   "Mettre en pause":"Pause",
   "Reprendre":"Resume",
   "Quinze secondes de moins":"Fifteen seconds less",
@@ -5561,7 +5582,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 15h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 15h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6119,6 +6140,7 @@ const ICONS = {
   prg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M7 15l3.5-4 2.5 2.5L17 9"/></svg>'
 };
 const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]];
+const IC_STOP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3"></rect></svg>';
 const IC_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
 /* Code-barres : quatre angles de visee, et des barres d'epaisseurs differentes —
    c'est l'irregularite qui fait lire « code-barres » plutot que « rayures ». */
@@ -9717,15 +9739,19 @@ function renderActive(app){
 
     const note = injuryNote(nomCanon(ex));
     const iso = estIsometrique(ex);
-    /* Sur un gainage, le repos fait partie de l'enchaînement : on le règle AVANT de
-       lancer, donc au-dessus des séries, juste sous le bouton. Ailleurs il se change
-       entre deux séries, et il est mieux là où le pouce vient de valider. */
+    /* Le réglage du repos n'apparaît que sur un gainage : là, il fait partie de
+       l'enchaînement et se règle avant de lancer. Sur un développé couché il
+       n'apprend rien qu'on ait envie de lire à chaque série ; il reste dans la
+       fiche de l'exercice, avec le repos conseillé. */
     const bandeRepos = `<div class="ex-repos">
         <span class="ic">${IC_CHRONO}</span>
-        <span class="l">${TR("Repos")}</span>
-        <button data-rep="-15" aria-label="${TR("Quinze secondes de moins")}">−</button>
-        <span class="v" data-repv>${fmtRepos((en.target && en.target.rest) || db.settings.rest)}</span>
-        <button data-rep="15" aria-label="${TR("Quinze secondes de plus")}">＋</button>
+        <div class="grow"><div class="l">${TR("Repos entre les séries")}</div>
+          <div class="s">${TR("Tu peux le modifier à tout moment.")}</div></div>
+        <div class="rgl">
+          <button data-rep="-15" aria-label="${TR("Quinze secondes de moins")}">−</button>
+          <span class="v" data-repv>${fmtRepos((en.target && en.target.rest) || db.settings.rest)}</span>
+          <button data-rep="15" aria-label="${TR("Quinze secondes de plus")}">＋</button>
+        </div>
       </div>`;
     const card = document.createElement("div");
     card.className="ex-card"+(iso? " iso":"");
@@ -9743,15 +9769,15 @@ function renderActive(app){
            en dessous dans le tableau, l annoncer ici ferait « 4 x 20 s » pour une
            seance qui est en realite un echauffement plus trois tenues de 40 */
         const tenues = et.filter(x=>x.type === "tenue" && !(en.sets[x.si] || {}).warm);
-        const rep = (et.find(x=>x.type === "repos") || {}).sec;
         return `<div class="iso-chrono">
         <span class="ic">${IC_CHRONO}</span>
-        <div class="grow"><div class="t">${tenues.length
-            ? tenues.length + " × " + fmtDuree(tenues[0].sec) + (rep? " · " + TR("repos") + " " + fmtDuree(rep) : "")
+        <div class="grow"><div class="k">${TR("Série en cours")}</div>
+          <div class="t">${tenues.length
+            ? tenues.length + " × " + fmtDuree(tenues[0].sec)
             : TR("Indique une durée")}</div>
           <div class="s">${TR("Tenue et repos s'enchaînent tout seuls.")}</div></div>
-        <button class="btn btn-sm ${enCours? "" : "btn-accent"}" data-iso="${ei}">${
-          enCours? TR("Arrêter") : TR("Démarrer")}</button>
+        <button class="btn iso-go ${enCours? "" : "btn-accent"}" data-iso="${ei}">${
+          enCours? IC_STOP : IC_LECTURE}<span>${enCours? TR("Arrêter") : TR("Démarrer")}</span></button>
       </div>`; })()
       : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : "")}
       ${iso ? bandeRepos : ""}
@@ -9759,7 +9785,6 @@ function renderActive(app){
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
         iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
-      ${iso ? "" : bandeRepos}
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.")) : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
