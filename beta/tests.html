@@ -1312,6 +1312,55 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Gainages : le temps à la place des reps");
+  neuf();
+  /* On ne repete pas un gainage, on le tient : le champ « reps » porte des secondes,
+     et un chrono le remplit. */
+  (()=>{
+    const iso = F.eval("ISOMETRIQUES");
+    eq("Trois exercices se tiennent", iso.length, 3);
+    vrai("Le gainage en fait partie", F.estIsometrique(F.getEx(id("Gainage"))));
+    vrai("La planche latérale aussi", F.estIsometrique(F.getEx(id("Planche latérale"))));
+    vrai("Le développé couché non", !F.estIsometrique(F.getEx(id("Développé couché"))));
+    /* les secondes se lisent en minutes au-delà de soixante */
+    eq("45 secondes", F.fmtDuree(45), "45 s");
+    eq("95 secondes", F.fmtDuree(95), "1:35");
+    eq("120 secondes", F.fmtDuree(120), "2:00");
+
+    DB.active = null;
+    DB.templates = [{id:"tiso", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:3, reps:"30-45", rest:60}]}];
+    F.startWorkout("tiso");
+    const D2 = F.document;
+    const carte = D2.querySelector(".ex-card");
+    vrai("La carte se sait isométrique", carte.classList.contains("iso"));
+    eq("La colonne porte la durée",
+      [...carte.querySelectorAll(".set-cols span")][2].textContent, "durée");
+    eq("Le champ attend des secondes",
+      carte.querySelectorAll(".set-row input")[1].placeholder, "sec");
+    /* un dégressif consiste à baisser la charge : sur un gainage à zéro kilo, rien à baisser */
+    vrai("Pas de dégressif sur un gainage", !carte.querySelector(".dg"));
+    /* le chrono */
+    vrai("Le chrono est en tête de carte", !!carte.querySelector(".iso-chrono"));
+    eq("Il attend d'être lancé", carte.querySelector("[data-iso]").textContent, "Démarrer");
+    F.lancerIso(0);
+    vrai("Il tourne", !!F.eval("isoChrono").int);
+    eq("…et le bouton propose de l'arrêter",
+      F.document.querySelector("[data-iso]").textContent, "Arrêter");
+    /* on triche sur l'heure de départ pour ne pas attendre */
+    F.eval("isoChrono.debut = Date.now() - 42000;");
+    F.lancerIso(0);
+    vrai("Arrêté", !F.eval("isoChrono").int);
+    eq("Le temps tenu remplit la série", DB.active.entries[0].sets[0].r, 42);
+    /* terminer la séance éteint aussi ce chrono */
+    F.lancerIso(0);
+    F.arreterChronos();
+    vrai("La fin de séance arrête le chrono du gainage", !F.eval("isoChrono").int);
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
   grp("Fin de séance : tout s'éteint");
   neuf();
   /* Terminer ou annuler doit tout couper, et SANS UN BRUIT. Un repos qui arrivait a

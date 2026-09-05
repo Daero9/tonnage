@@ -955,6 +955,17 @@
   .set-row .rs:active{background:rgba(255,255,255,.32);}
   .set-row .ck{width:44px; height:42px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink-mute);}
   .set-row.done input{background:var(--surface); color:var(--ink-soft); border-color:transparent;}
+  /* ---- le chrono d un gainage ----
+     Il prend la place de l explication de l echauffement, en tete de carte : c est la
+     que le regard se pose avant de commencer la serie. */
+  .iso-chrono{display:flex; align-items:center; gap:12px; background:rgba(245,130,32,.10);
+    border-radius:13px; padding:10px 13px; margin-bottom:10px;}
+  .iso-chrono .ic{flex:0 0 auto; display:flex; color:var(--accent);}
+  .iso-chrono .ic svg{width:22px; height:22px;}
+  .iso-chrono .t{font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .iso-chrono .s{font-size:11px; color:var(--ink-mute); line-height:1.35; margin-top:1px;}
+  .iso-chrono button{flex:0 0 auto; min-width:88px;}
+  .iso-chrono.court .t{color:var(--accent);}
   .set-row.warm .n{font-size:10px; letter-spacing:.02em; color:var(--accent); font-weight:800;}
   .set-row.warm input{border-style:dashed;}
   .inj-note{background:rgba(224,108,90,.12); border:1px solid rgba(224,108,90,.35); border-radius:10px; padding:9px 11px; margin-bottom:10px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
@@ -2239,6 +2250,16 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "durée":"time",
+  "Le temps tenu remplit la série en cours.":"The time held fills the current set.",
+  "Démarrer":"Start",
+  "Arrêter":"Stop",
+  "{} enregistrées":"{} saved",
+  "Cinq secondes de plus":"Five seconds more",
+  "Cinq secondes de moins":"Five seconds less",
+  "Évolution de la durée":"Time progression",
+  "Durée max":"Longest hold",
+  "Temps total":"Total time",
   "Repos terminé":"Rest over",
   "C'est reparti pour la série suivante.":"Time for the next set.",
   "Une seule chose sort de l'appareil, et seulement si tu le demandes : le code-barres que tu scannes.":"Only one thing leaves the device, and only if you ask for it: the barcode you scan.",
@@ -3350,6 +3371,16 @@ const ALTS = {
 };
 /* exercices où la charge est ton propre corps : le champ kg sert au lest éventuel */
 function estPoidsDuCorps(ex){ const e = equipCanon(ex); return !!ex && (e==="Poids du corps" || e==="Barre fixe"); }
+/* Les exercices qu on TIENT au lieu de les repeter. Compter des repetitions n a
+   aucun sens pour un gainage : ce qui progresse, c est la duree. Le champ « reps »
+   porte alors des secondes — meme case, meme historique, autre lecture. */
+const ISOMETRIQUES = ["Gainage", "Planche latérale", "Chaise contre le mur"];
+function estIsometrique(ex){ return !!ex && ISOMETRIQUES.indexOf(nomCanon(ex)) >= 0; }
+/* « 95 » -> « 1:35 » : au-dela d une minute, les secondes seules ne se lisent plus */
+function fmtDuree(sec){
+  const n = Math.max(0, Math.round(sec || 0));
+  return n < 60 ? n + " s" : Math.floor(n/60) + ":" + String(n % 60).padStart(2, "0");
+}
 /* Mouvements où tu suspends ou soutiens TOUT ton corps : la charge réelle est ton
    poids plus le lest. Les pompes et les tractions australiennes n'en portent qu'une
    fraction, qui change avec l'inclinaison et les proportions — l'app ne peut pas la
@@ -5458,7 +5489,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 12h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 13h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6480,6 +6511,47 @@ function majIconeSon(){
   const coupe = db.settings.son === false;
   b.innerHTML = coupe ? IC_MUET : IC_SON;
   b.classList.toggle("muet", coupe);
+}
+/* ---- chrono de gainage --------------------------------------------------------
+   Il compte vers le haut : on tient le plus longtemps possible, on ne vise pas une
+   cible. A l arret, le temps tenu remplit la premiere serie non validee — celle qu on
+   vient justement de faire. Un seul chrono a la fois : en lancer un ailleurs arrete
+   le precedent, sinon deux compteurs tourneraient sans qu on sache lequel remplira
+   quelle ligne. */
+let isoChrono = {ei:null, debut:0, int:null};
+function isoAffiche(){
+  const el = document.querySelector('[data-isot="' + isoChrono.ei + '"]');
+  if(!el) return;
+  const sec = Math.floor((Date.now() - isoChrono.debut)/1000);
+  el.textContent = Math.floor(sec/60) + ":" + String(sec % 60).padStart(2, "0");
+}
+function arreterIso(ecrire){
+  if(isoChrono.int){ clearInterval(isoChrono.int); isoChrono.int = null; }
+  const ei = isoChrono.ei;
+  const sec = isoChrono.debut ? Math.round((Date.now() - isoChrono.debut)/1000) : 0;
+  isoChrono.ei = null; isoChrono.debut = 0;
+  if(!ecrire || sec < 1 || ei === null) return null;
+  const en = db.active && db.active.entries[ei];
+  if(!en) return null;
+  /* la serie qu on vient de tenir : la premiere non validee, la derniere sinon */
+  let si = en.sets.findIndex(st=>!st.done);
+  if(si < 0) si = en.sets.length - 1;
+  if(si < 0) return null;
+  en.sets[si].r = sec;
+  save();
+  return {ei, si, sec};
+}
+function lancerIso(ei){
+  if(isoChrono.int && isoChrono.ei === ei){ const r = arreterIso(true); renderActive(document.getElementById("app"));
+    if(r) toast(TR("{} enregistrées").replace("{}", fmtDuree(r.sec)));
+    return; }
+  arreterIso(true);
+  isoChrono = {ei, debut: Date.now(), int: null};
+  isoChrono.int = setInterval(isoAffiche, 200);
+  isoAffiche();
+  const b = document.querySelector('[data-iso="' + ei + '"]');
+  if(b) b.textContent = TR("Arrêter");
+  if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
 }
 const restbar = document.getElementById("restbar");
 function startRest(sec){
@@ -7776,6 +7848,7 @@ let chronoInt = null;
    L heure de fin est remise a zero : plus rien ne peut se rallumer tout seul. */
 function arreterChronos(){
   try{ if(rest && rest.int){ clearInterval(rest.int); rest.int = null; } }catch(e){}
+  try{ arreterIso(false); }catch(e){}      /* le chrono de gainage aussi */
   try{ if(rest && rest.hideTo){ clearTimeout(rest.hideTo); rest.hideTo = null; } }catch(e){}
   try{ rest.paused = false; rest.end = 0; rest.remaining = 0; }catch(e){}
   try{ retirerAlarmeRepos(); }catch(e){}
@@ -9469,8 +9542,9 @@ function renderActive(app){
     }
 
     const note = injuryNote(nomCanon(ex));
+    const iso = estIsometrique(ex);
     const card = document.createElement("div");
-    card.className="ex-card";
+    card.className="ex-card"+(iso? " iso":"");
     card.dataset.ei = ei;
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
@@ -9480,11 +9554,18 @@ function renderActive(app){
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
-      ${ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : ""}
+      ${iso ? `<div class="iso-chrono">
+        <span class="ic">${IC_CHRONO}</span>
+        <div class="grow"><div class="t" data-isot="${ei}">0:00</div>
+          <div class="s">${TR("Le temps tenu remplit la série en cours.")}</div></div>
+        <button class="btn btn-sm" data-iso="${ei}">${TR("Démarrer")}</button>
+      </div>`
+      : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\">Éch. = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte nulle part : ni tonnage, ni records.")) : "")}
       <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
-        : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>reps</span><span>${TR("dég.")}</span><span>✓</span></div>
+        : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
+        iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
-      ${ei === 0 ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.")) : ""}
+      ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.")) : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
         ${en.sets.filter(x=>!x.warm).length > 1
@@ -9494,6 +9575,11 @@ function renderActive(app){
         <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">${TR("Retirer")}</button>
       </div>
       <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
+    const btnIso = card.querySelector("[data-iso]");
+    if(btnIso){
+      if(isoChrono.int && isoChrono.ei === ei){ btnIso.textContent = TR("Arrêter"); isoAffiche(); }
+      btnIso.onclick = ()=>lancerIso(ei);
+    }
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
@@ -9503,10 +9589,10 @@ function renderActive(app){
       const num = st.warm ? TR("Éch.") : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
       row.innerHTML = `<div class="n">${num}</div>
         <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${estPoidsDuCorps(ex)? "0" : uPoids()}" value="${saisiePoids(st.w)}">
-        <div class="rc"><input type="number" inputmode="numeric" min="0" placeholder="reps" value="${st.r!==""?st.r:""}">
-          <span class="rf"><button class="rs" data-rs="1" aria-label="${TR("Une répétition de plus")}">▲</button>
-          <button class="rs" data-rs="-1" aria-label="${TR("Une répétition de moins")}">▼</button></span></div>
-        ${st.warm? "<span></span>" : `<button class="dg" title="${TR("Ajouter un dégressif")}">↓</button>`}
+        <div class="rc"><input type="number" inputmode="numeric" min="0" placeholder="${iso? "sec" : "reps"}" value="${st.r!==""?st.r:""}">
+          <span class="rf"><button class="rs" data-rs="1" aria-label="${iso? TR("Cinq secondes de plus") : TR("Une répétition de plus")}">▲</button>
+          <button class="rs" data-rs="-1" aria-label="${iso? TR("Cinq secondes de moins") : TR("Une répétition de moins")}">▼</button></span></div>
+        ${(st.warm || iso)? "<span></span>" : `<button class="dg" title="${TR("Ajouter un dégressif")}">↓</button>`}
         <button class="ck">${st.done? IC_COCHE : "○"}</button>`;
       const [wIn, rIn] = row.querySelectorAll("input");
       /* ce que tu saisis se reporte sur les séries suivantes non validées, jamais sur les précédentes */
@@ -9529,7 +9615,8 @@ function renderActive(app){
          la charge : en avoir fait 10 au lieu de 12 est un accident de parcours, pas
          une nouvelle consigne. Le bouton suit donc la même règle que la saisie. */
       row.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{
-        const pas = parseInt(b.dataset.rs, 10);
+        /* une seconde de plus ne change rien a un gainage : on avance par cinq */
+        const pas = parseInt(b.dataset.rs, 10) * (iso ? 5 : 1);
         const v = Math.max(0, (parseInt(rIn.value, 10) || 0) + pas);
         rIn.value = v;
         st.r = v; save();
@@ -10711,7 +10798,8 @@ function openHistEdit(id){
         <div class="grow" style="font-weight:700; font-size:14px;">${esc(ex.name)}</div>
         <button class="icon-btn" data-hex-del="${ei}" style="width:30px; height:30px; color:var(--bad);">✕</button>
       </div>
-      <div class="set-cols" style="margin-bottom:4px;"><span></span><span>${uPoids()}</span><span>${TR("reps")}</span><span></span><span></span></div>
+      <div class="set-cols" style="margin-bottom:4px;"><span></span><span>${uPoids()}</span><span>${
+        estIsometrique(ex)? TR("durée") : TR("reps")}</span><span></span><span></span></div>
       ${en.sets.map((st,si)=>`<div class="set-row" style="margin-bottom:6px;">
         <div class="n">${st.warm? TR("Éch.") : si+1}</div>
         <input type="number" inputmode="decimal" step="0.5" min="0" value="${st.w}" data-hw="${ei}.${si}">
@@ -10860,20 +10948,24 @@ function renderProgress(app){
   const rmUtile = mode !== "sans" || porteLeCorps(ex0);
   if(!rmUtile && prgMetric === "1rm") prgMetric = "max";
   const enReps = mode === "sans" && prgMetric !== "1rm";
+  /* un gainage n a ni charge ni repetitions : ce qui progresse est le temps tenu */
+  const isoPrg = estIsometrique(ex0);
 
   body.innerHTML = `
     <div class="card" style="margin-top:14px;">
       <div class="card-t" style="margin-bottom:10px;">${icoTitre(IC_COURBE)}${
-        enReps? TR("Évolution des répétitions") : TR("Évolution des charges")}</div>
+        isoPrg? TR("Évolution de la durée") : (enReps? TR("Évolution des répétitions") : TR("Évolution des charges"))}</div>
       <select id="prg-sel" style="margin-bottom:12px;">${exIds.map(id=>`<option value="${id}" ${id===prgEx?"selected":""}>${esc(getEx(id).name)}</option>`).join("")}</select>
       ${deuxModes? `<div class="chips" style="margin-bottom:8px;">
         <button class="chip chip-sm ${mode==="avec"?"on":""}" data-lest="avec">${TR("Avec lest")}</button>
         <button class="chip chip-sm ${mode==="sans"?"on":""}" data-lest="sans">${TR("Poids du corps")}</button>
       </div>`:""}
       <div class="chips" style="margin-bottom:14px;">
-        <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">${mode==="sans"? TR("Reps max") : TR("Charge max")}</button>
+        <button class="chip ${prgMetric==="max"?"on":""}" data-m="max">${
+          isoPrg? TR("Durée max") : (mode==="sans"? TR("Reps max") : TR("Charge max"))}</button>
         ${rmUtile? `<button class="chip ${prgMetric==="1rm"?"on":""}" data-m="1rm">${TR("1RM estimé")}</button>`:""}
-        <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">${mode==="sans"? TR("Reps totales") : "Volume"}</button>
+        <button class="chip ${prgMetric==="vol"?"on":""}" data-m="vol">${
+          isoPrg? TR("Temps total") : (mode==="sans"? TR("Reps totales") : "Volume")}</button>
       </div>
       <div class="tiles" id="prg-tiles"></div>
       <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;"><div class="chart-tip" id="chart-tip"></div></div>
@@ -10907,7 +10999,8 @@ function renderProgress(app){
     return;
   }
 
-  const unit = enReps ? TR("reps") : uPoids();
+  /* un gainage se mesure en secondes : ni kilos ni repetitions */
+  const unit = isoPrg ? "s" : (enReps ? TR("reps") : uPoids());
   const nb = v => enReps ? Math.round(v) : fmtKg(v);
   const record = Math.max(...pts.map(p=>p.v));
   const lastV = pts[pts.length-1].v;
