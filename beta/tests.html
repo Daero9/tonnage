@@ -682,8 +682,8 @@ async function lancer(){
 
   /* et les calories suivent */
   const KC2 = F.eval("liftKcal");
-  const kcalTonnage = KC2(45*60000, F.sessionVolume(seanceTrac), 16);
-  const kcalEffort  = KC2(45*60000, VE(seanceTrac), 16);
+  const kcalTonnage = KC2(F.sessionVolume(seanceTrac), 16);
+  const kcalEffort  = KC2(VE(seanceTrac), 16);
   vrai("Une séance de tractions gagne les calories qu'elle mérite",
        kcalEffort > kcalTonnage, kcalTonnage + " -> " + kcalEffort);
 
@@ -692,24 +692,17 @@ async function lancer(){
   neuf();
   DB.weights = [{date:new Date().toISOString(), kg:80}];
   const KC = F.eval("liftKcal");
-  const MN = m => m*60000;
-  /* 16 séries -> 40 min attendues */
-  const normale = KC(MN(45), 5000, 16);
+  /* Le compteur ne mesure plus la présence, mais le travail. Une séance laissée
+     ouverte toute la nuit, ou une longue discussion entre deux séries, ne brûle
+     rien de plus : seules les séries validées et le tonnage comptent. */
+  const normale = KC(5000, 16);
   vrai("Une séance normale reste plausible", normale > 200 && normale < 500, String(normale));
-
-  /* séance oubliée ouverte toute la nuit : la durée mesurée ne veut plus rien dire */
-  const oubliee = KC(MN(9*60), 5000, 16);
-  eq("Neuf heures sont ramenées au plafond", oubliee, KC(MN(80), 5000, 16));
-  vrai("Une séance oubliée ne dépasse pas le double d'une normale",
-       oubliee < normale*2.2, "oubliée " + oubliee + " vs normale " + normale);
-
-  /* saisie après coup : durée ridicule, on retombe sur l'estimation par séries */
-  const apresCoup = KC(MN(1), 5000, 16);
-  eq("Une minute chronométrée retombe sur l'estimation", apresCoup, KC(MN(40), 5000, 16));
-
-  /* aucune série pour estimer : le plafond absolu de 3 h s'applique */
-  vrai("Sans série, le plafond absolu tient",
-       KC(MN(48*60), 0, 0) === KC(MN(180), 0, 0), String(KC(MN(48*60), 0, 0)));
+  eq("Une séance sans rien de fait ne brûle rien", KC(0, 0), 0);
+  vrai("Une série de plus brûle davantage", KC(5000, 17) > normale);
+  vrai("Un tonnage plus lourd aussi", KC(9000, 16) > normale);
+  /* la garantie que Nico voulait : trois heures sur une seule série ne font pas
+     500 kcal, parce que le temps n'entre plus dans le calcul */
+  vrai("Une seule série reste une seule série", KC(600, 1) < 40, String(KC(600, 1)));
 
   /* ----------------------------------- repères chiffrés dans les conseils */
   grp("Repères des conseils");
@@ -1598,6 +1591,14 @@ async function lancer(){
     eq("Le dégressif s'annonce", deg.querySelector(".ht").textContent, "Série dégressive");
     vrai("…avec la flèche qui descend", !!deg.querySelector(".hi svg"));
     eq("…et l'exemple en gras", deg.querySelector("b").textContent, "6 × 12 kg, puis 4 × 10 kg.");
+    /* le bas de carte : un seul geste encadré, les autres sont des mots */
+    const bas = D2.querySelector(".ex-bas");
+    vrai("« + série » garde son cadre",
+      bas.querySelector('[data-act="addset"]').classList.contains("btn-ghost"));
+    vrai("« Remplacer » est un mot, pas un bouton",
+      bas.querySelector('[data-act="swap"]').classList.contains("ex-lien"));
+    vrai("« Retirer » aussi, en rouge",
+      bas.querySelector('[data-act="delex"]').classList.contains("danger"));
     DB.active = null; DB.templates = [];
     F.render();
   })();
