@@ -82,7 +82,11 @@
   .car, .hist-strip{overscroll-behavior-x:contain;}
   h1,h2,h3{margin:0; text-wrap:balance;}
   button{font-family:inherit; font-size:16px; border:none; cursor:pointer; color:inherit; background:none; padding:0;}
-  input,select,textarea{font-family:inherit; font-size:16px; color:var(--ink); background:var(--field); border:1px solid var(--border); border-radius:10px; padding:11px 12px; outline:none; width:100%;}
+  /* Les champs sont des pastilles : la meme forme que les boutons et les jauges, pour
+     que la page n ait qu un seul langage de coins. Le textarea garde des coins doux,
+     une pastille sur trois lignes de texte ne veut rien dire. */
+  input,select,textarea{font-family:inherit; font-size:16px; color:var(--ink); background:var(--field); border:1px solid var(--border); border-radius:99px; padding:11px 16px; outline:none; width:100%;}
+  textarea{border-radius:16px;}
   input:focus,select:focus,textarea:focus{border-color:var(--accent-deep);}
   input[type=number]{font-variant-numeric:tabular-nums;}
   ::placeholder{color:var(--ink-mute);}
@@ -209,6 +213,8 @@
   .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
   .hero-h .sub{font-size:14px; font-weight:600; color:var(--hero-soft); margin-top:8px;}
   .hero-h .big{font-size:27px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;}
+  /* le soleil annonce la journee : il tient au-dessus du titre, jamais a cote */
+  .hero-h .ico{display:flex; justify-content:center; margin-bottom:7px; color:var(--accent);}
   .under-hero{margin-top:-19%; position:relative; z-index:3;}
 
   /* ---- carte de la semaine ---- */
@@ -509,6 +515,21 @@
   .eat-line{display:flex; align-items:baseline; gap:8px; justify-content:center;}
   .eat-line .v{font-size:29px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.05;}
   .eat-line .l{font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft);}
+  /* Un compteur par carte : le signe a gauche, le chiffre en grand, la part atteinte en
+     pastille a droite, la jauge dessous. Deux cartes valent mieux qu une : chaque
+     objectif se lit seul, sans qu on cherche a quelle barre appartient quel chiffre. */
+  .eat-stats{flex:1; min-width:0; display:flex; flex-direction:column; gap:9px;}
+  .eat-stat{display:flex; align-items:flex-start; gap:11px;}
+  .eat-stat .ico{flex:0 0 auto; width:38px; height:38px; border-radius:50%; font-size:19px;
+    display:flex; align-items:center; justify-content:center; background:rgba(245,130,32,.14);}
+  .eat-stat .co{flex:1; min-width:0;}
+  .eat-stat .ln{display:flex; align-items:center; gap:5px;}
+  .eat-stat .v{font-size:27px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.05;}
+  .eat-stat .u{font-size:13.5px; font-weight:700; color:var(--ink-soft);}
+  .eat-stat .pc{margin-left:auto; font-size:11px; font-weight:800; border-radius:99px;
+    padding:3px 9px; background:var(--surface2); border:1px solid var(--border); color:var(--ink-mute);}
+  .eat-stat .lb{font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--accent); margin-top:1px;}
   .eat-bar{height:16px; border-radius:9px; background:var(--surface2); overflow:hidden; margin:6px 0 12px; position:relative;}
   .eat-bar i{display:block; height:100%; border-radius:9px; background:var(--accent);}
   .eat-bar b{position:absolute; right:9px; top:0; line-height:16px; font-size:11px; font-weight:700; color:var(--ink-mute);}
@@ -545,8 +566,11 @@
     /* décalage et retrait choisis pour que le flou ne déborde jamais au-dessus du panneau :
        il grisait le bas du bloc blanc de l onglet, qui ne paraissait plus du même blanc que la page */
     box-shadow:0 14px 22px -6px rgba(0,0,0,.12); min-height:52vh;}
-  .meal-h{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
-    color:var(--ink-mute); text-align:center; margin:2px 0 9px;}
+  /* Chaque famille porte son signe et la couleur du repas : on repere « proteines » au
+     coup d oeil en defilant, sans lire. Aligne a gauche, comme la lecture. */
+  .meal-h{display:flex; align-items:center; gap:7px; font-size:11px; font-weight:800;
+    letter-spacing:.09em; text-transform:uppercase; margin:6px 0 9px;}
+  .meal-h .e{font-size:15px; line-height:1;}
   .fgrid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:16px;}
   /* enfoncement au doigt : rapide à la descente, plus doux au retour */
   .fchip{display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border);
@@ -570,6 +594,15 @@
   .fchip .st::before{content:""; position:absolute; inset:-9px -2px;}
   .fchip .st:active{background:rgba(255,255,255,.4);}
   .fab-center{display:flex; justify-content:center; margin-top:14px;}
+  /* Le bouton d ajout ne defile pas : quelle que soit la longueur de la liste, il reste
+     sous le pouce, juste au-dessus de la barre du bas. L anneau couleur page le detache
+     de ce qui passe derriere. */
+  /* selecteur avec l id : #app > * pose position:relative sur tous ses enfants,
+     et l emporterait sur une simple classe */
+  #app > .eat-fab{position:fixed; left:0; right:0; bottom:calc(76px + env(safe-area-inset-bottom));
+    z-index:35; display:flex; flex-direction:column; align-items:center; gap:7px; pointer-events:none;}
+  .eat-fab .fab{pointer-events:auto; box-shadow:0 0 0 7px var(--bg), 0 8px 20px rgba(0,0,0,.22);}
+  .eat-fab .lb{font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;}
 
   /* ---- records de fin de séance ----
      Un record mérite mieux qu'une carte de plus : le bloc s'inverse par rapport à la
@@ -1135,12 +1168,16 @@
   .al-c.on .q{color:rgba(255,255,255,.85);}
 
   /* ---- récapitulatif des repas : ce qui a été mangé, d'un coup d'œil ---- */
-  .eat-repas{display:flex; gap:5px; margin-top:9px;}
-  .eat-repas .er{flex:1; min-width:0; background:var(--surface2); border-radius:9px; padding:5px 2px 6px;
+  .eat-repas{display:flex; gap:4px;}
+  .eat-repas .er{flex:1; min-width:0; background:transparent; border:1.5px solid transparent; border-radius:11px; padding:7px 1px 7px;
     font-size:10px; font-weight:700; color:var(--ink-mute); line-height:1.25; text-align:center;}
-  .eat-repas .er b{display:block; font-size:12px; font-weight:800; color:var(--ink-mute);}
+  .eat-repas .er .i{display:block; font-size:15px; line-height:1; margin-bottom:4px;}
+  .eat-repas .er .n{display:block; text-transform:uppercase; letter-spacing:.03em;}
+  .eat-repas .er b{display:block; font-size:11.5px; font-weight:800; color:var(--ink-mute); margin-top:2px;}
   .eat-repas .er.on b{color:var(--ink);}
-  .eat-repas .er.ici{background:var(--btn); box-shadow:inset 0 0 0 1.5px var(--ink);}
+  /* le repas ouvert est cerne de sa couleur : le trait dit ou l on est, la teinte laquelle */
+  .eat-repas .er.ici{background:var(--surface2);}
+  .eat-repas .er.ici .n{color:var(--ink);}
 
   /* ---- réglages : des sections, pas une pile de boutons ---- */
   .rg-c{background:var(--surface); border-radius:16px; padding:6px 14px 8px; margin-bottom:12px;}
@@ -1932,6 +1969,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Vue d'ensemble de ta journée":"Your day at a glance",
+  "Calories":"Calories",
   "Légumes":"Vegetables",
   "Tomates (150 g)":"Tomatoes (150 g)",
   "Carottes (150 g)":"Carrots (150 g)",
@@ -5074,7 +5113,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 02h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 03h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5599,6 +5638,11 @@ const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]]
 const IC_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
 /* Code-barres : quatre angles de visee, et des barres d'epaisseurs differentes —
    c'est l'irregularite qui fait lire « code-barres » plutot que « rayures ». */
+const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"'
+  + ' stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+  + '<circle cx="12" cy="12" r="4.3" fill="currentColor" stroke="none"/>'
+  + '<path d="M12 2.3v2.2M12 19.5v2.2M4.5 4.5l1.6 1.6M17.9 17.9l1.6 1.6'
+  + 'M2.3 12h2.2M19.5 12h2.2M4.5 19.5l1.6-1.6M17.9 6.1l1.6-1.6"/></svg>';
 const IC_CODEBARRE = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"'
   + ' stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;">'
   + '<path d="M3 8.5V5.5A1.5 1.5 0 0 1 4.5 4H7.5"/><path d="M16.5 4h3A1.5 1.5 0 0 1 21 5.5v3"/>'
@@ -6055,27 +6099,47 @@ function renderEat(app){
   const coul = MEAL_C[mealCur];
 
   app.innerHTML = `
-    ${hero(`<div class="big">${auj ? TR("Aujourd'hui")
-      : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>`)}
+    ${hero(`<div class="ico">${IC_SOLEIL}</div>
+      <div class="big">${auj ? TR("Aujourd'hui")
+      : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>
+      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`)}
     <div class="under-hero" style="display:flex; gap:9px; align-items:stretch;">
-      <div class="eat-card" style="flex:1; min-width:0;">
-        <div class="eat-line"><span class="v">${protNow} <span style="font-size:14px;">g</span></span><span class="l">${TR("Protéines")}</span></div>
-        <div class="eat-bar"><i style="width:${Math.min(100, protTarget? protNow/protTarget*100 : 0)}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i><b>${protTarget} g</b></div>
-        <div class="eat-line"><span class="v">${kcalNow}</span><span class="l">${TR("Kcal")}</span>
-          <button class="icon-btn info-btn" id="eat-kinfo" style="margin-left:2px;" title="${TR("Comment sont calculées mes calories ?")}">ⓘ</button></div>
-        <div class="eat-bar"><i style="width:${Math.min(100, kRef? kcalNow/kRef*100 : 0)}%; background:${
-          !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b>${kRef? kRef+" kcal" : "—"}</b></div>
-        <div class="eat-repas">${MEALS.map(([id,lab])=>{
-          const g = mealProt(k, id);
-          return `<button class="er ${g? "on":""}${mealCur===id? " ici":""}" data-goto="${id}">
-            ${esc(TR(lab))} <b>${g? g+" g" : "—"}</b></button>`;
-        }).join("")}</div>
+      <div class="eat-stats">
+        <div class="eat-card eat-stat">
+          <span class="ico">💪</span>
+          <div class="co">
+            <div class="ln"><span class="v">${protNow}</span><span class="u">g</span>
+              <span class="pc">${protTarget? Math.round(protNow/protTarget*100)+" %" : "—"}</span></div>
+            <div class="lb">${TR("Protéines")}</div>
+            <div class="eat-bar" style="margin:7px 0 0;"><i style="width:${Math.min(100, protTarget? protNow/protTarget*100 : 0)}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i><b>${protTarget} g</b></div>
+          </div>
+        </div>
+        <div class="eat-card eat-stat">
+          <span class="ico">🔥</span>
+          <div class="co">
+            <div class="ln"><span class="v">${kcalNow}</span><span class="u">kcal</span>
+              <button class="icon-btn info-btn" id="eat-kinfo" title="${TR("Comment sont calculées mes calories ?")}">ⓘ</button>
+              <span class="pc">${kRef? Math.round(kcalNow/kRef*100)+" %" : "—"}</span></div>
+            <div class="lb">${TR("Calories")}</div>
+            <div class="eat-bar" style="margin:7px 0 0;"><i style="width:${Math.min(100, kRef? kcalNow/kRef*100 : 0)}%; background:${
+              !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i><b>${kRef? kRef+" kcal" : "—"}</b></div>
+          </div>
+        </div>
       </div>
       <div class="eat-side">
         <button id="eat-plan" title="${TR("Mon plan")}" aria-label="${TR("Mon plan")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
         <button id="eat-cal" title="${TR("Calendrier")}" aria-label="${TR("Calendrier")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
         <button id="eat-tips" title="${TR("Idées d'aliments")}" aria-label="${TR("Idées d'aliments")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/></svg></button>
       </div>
+    </div>
+    <div class="eat-card" style="margin-top:9px; padding:9px 8px;">
+      <div class="eat-repas">${MEALS.map(([id,lab])=>{
+        const g = mealProt(k, id);
+        return `<button class="er ${g? "on":""}${mealCur===id? " ici":""}" data-goto="${id}"
+            style="${mealCur===id? `border-color:${MEAL_C[id]};`:""}">
+          <span class="i">${MEAL_IC[id]}</span><span class="n">${esc(TR(lab))}</span>
+          <b style="${mealCur===id? `color:${MEAL_C[id]};`:""}">${g? g+" g" : "—"}</b></button>`;
+      }).join("")}</div>
     </div>
     ${auj? "" : `<div class="jour-passe">
       <span>${TR("Tu modifies une journée passée.")}</span>
@@ -6084,8 +6148,14 @@ function renderEat(app){
     <div class="meal-tabs">${MEALS.map(([id,lab])=>`
       <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
         style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${TR(lab)}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span><i></i></button>`).join("")}</div>
-    <div class="meal-panel" id="meal-panel"></div>`;
+    <div class="meal-panel" id="meal-panel"></div>
+    <div style="height:34px;"></div>
+    <div class="eat-fab">
+      <button class="fab" id="eat-add" style="background:${coul};" aria-label="${TR("Ajouter un aliment")}">＋</button>
+      <span class="lb" style="color:${coul};">${TR("Ajouter un aliment")}</span>
+    </div>`;
   wireTopbar();
+  document.getElementById("eat-add").onclick = ()=>openAjoutAliment(mealCur);
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
   document.getElementById("eat-plan").onclick  = ()=>showPlan(false);
   document.getElementById("eat-tips").onclick  = ()=>openKcalTips(enHausse? "up":"down", plan);
@@ -6166,13 +6236,17 @@ function dessineRepas(panel){
     </button>`;
   };
   panel.innerHTML = groups.map(([titre,cle,items])=>`
-    <div class="meal-h">${esc(TR(titre))}</div>
+    <div class="meal-h" style="color:${coul};"><span class="e">${H_ICO[cle] || "🍽️"}</span>${esc(TR(titre))}</div>
     <div class="fgrid">${items.map(([l,pr])=>pastille(l, pr, apparie[l])).join("")}</div>`).join("")
-    + (libres.length? `<div class="meal-h">${TR("Ajoutés aujourd'hui")}</div>
-      <div class="fgrid">${libres.map(l=>pastille(socleAliment(l), 0, l)).join("")}</div>`:"")
-    + `<div class="fab-center"><button class="fab" id="eat-add" style="background:${coul}; box-shadow:0 6px 18px rgba(0,0,0,.2);" aria-label="Ajouter un aliment">＋</button></div>`;
-
-  document.getElementById("eat-add").onclick = ()=>openAjoutAliment(mealCur);
+    + (libres.length? `<div class="meal-h" style="color:${coul};"><span class="e">📌</span>${TR("Ajoutés aujourd'hui")}</div>
+      <div class="fgrid">${libres.map(l=>pastille(socleAliment(l), 0, l)).join("")}</div>`:"");
+  /* le bouton fixe vit hors du panneau : il prend seulement la couleur du repas courant */
+  const fab = document.getElementById("eat-add");
+  if(fab){
+    fab.style.background = coul;
+    const lb = fab.parentElement.querySelector(".lb");
+    if(lb) lb.style.color = coul;
+  }
 
   let lpT = null, lpFired = false;
   panel.querySelectorAll("[data-opt]").forEach(b=>{
@@ -7203,6 +7277,10 @@ function mealProt(key, meal){
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
 const MEALS = [["matin","Matin"],["midi","Midi"],["collation","Collation"],["soir","Soir"],["extra","Extra"]];
 const MEAL_C = {matin:"var(--matin)", midi:"var(--midi)", collation:"var(--collation)", soir:"var(--soir)", extra:"var(--extra)"};
+/* le moment de la journee se reconnait a son signe avant meme qu on lise le mot */
+const MEAL_IC = {matin:"🌅", midi:"☀️", collation:"☕", soir:"🌙", extra:"⭐"};
+/* et chaque famille d aliments au sien */
+const H_ICO = {prot:"💪", bkProt:"💪", carb:"🔥", bkCarb:"🔥", vege:"🥦", snack:"⚡"};
 let mealCur = null;   /* repas affiché ; par défaut celui qui correspond à l'heure */
 function mealParHeure(){
   const h = new Date().getHours();
