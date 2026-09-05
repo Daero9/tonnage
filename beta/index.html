@@ -718,15 +718,18 @@
   .tab.on{color:var(--accent);}
 
   /* rest timer */
-  .restbar{position:fixed; left:12px; right:12px; bottom:calc(84px + env(safe-area-inset-bottom)); z-index:45; max-width:536px; margin:0 auto;
-    background:var(--accent); color:var(--accent-ink); border-radius:16px; padding:10px 14px;
+  /* La pastille deborde la barre en haut et en bas : elle doit rester lisible sans
+     recouvrir les onglets, d ou les 108 px au lieu de 84. */
+  .restbar{position:fixed; left:12px; right:12px; bottom:calc(108px + env(safe-area-inset-bottom)); z-index:45; max-width:536px; margin:0 auto;
+    background:var(--accent); color:var(--accent-ink); border-radius:999px; padding:8px 16px;
     display:none; align-items:center; gap:10px; box-shadow:0 8px 30px rgba(0,0,0,.5);
     touch-action:none; transition:top .22s ease, bottom .22s ease;}
-  /* posé en haut de l'écran */
-  .restbar.haut{bottom:auto; top:calc(10px + env(safe-area-inset-top));}
+  /* posé en haut de l'écran — 24 px et non 10 : le disque déborde de douze au-dessus
+     de la barre, et passerait sinon sous l'encoche */
+  .restbar.haut{bottom:auto; top:calc(24px + env(safe-area-inset-top));}
   .restbar.drag{transition:none; box-shadow:0 14px 40px rgba(0,0,0,.55); cursor:grabbing;}
-  .restbar .grip{width:13px; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; opacity:.5; margin-right:2px;}
-  .restbar .grip i{display:block; height:2px; border-radius:2px; background:#fff;}
+  .restbar .grip{width:17px; flex:0 0 auto; display:flex; flex-direction:column; gap:3.5px; opacity:.65; margin-right:2px;}
+  .restbar .grip i{display:block; height:2.5px; border-radius:2px; background:#fff;}
   .restbar.show{display:flex;}
   .restbar .t{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; min-width:86px;}
   .restbar .lbl{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.75;}
@@ -748,32 +751,61 @@
   .rb-cote{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:7px;}
   .rb-grp{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:7px;}
   .rb-grp.fin{justify-content:flex-end;}
-  .rb-pill{background:#fff; border-radius:15px; padding:4px 14px 5px; text-align:center; cursor:pointer;
-    flex:0 1 auto; min-width:96px;}
+  /* ---- le disque du minuteur ----
+     Il ne fait que 34 px de haut dans la mise en page : c est lui qui donnerait
+     sinon sa hauteur a toute la barre. Le disque, lui, est centre dessus et deborde
+     librement en haut comme en bas. */
+  .rb-pill{position:relative; width:74px; height:34px; flex:0 0 auto; cursor:pointer;}
+  .rb-disc{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:74px; height:74px; border-radius:50%; background:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);}
+  /* l anneau part du haut : d ou la rotation d un quart de tour */
+  .rb-anneau{position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); overflow:visible;}
+  .rb-arc{fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round;
+    stroke-dasharray:213.6; stroke-dashoffset:213.6; transition:stroke-dashoffset .25s linear;}
+  .rb-in{position:relative; text-align:center; padding-bottom:7px;}
+  /* le bouton de pause chevauche le bord bas du disque, comme sur le croquis */
+  .restbar .rb-pause{position:absolute; left:50%; bottom:-15px; transform:translateX(-50%);
+    width:30px; height:30px; border-radius:50% !important; background:var(--accent) !important;
+    color:#fff; padding:0 !important; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 3px #fff, 0 4px 10px rgba(0,0,0,.25);}
+  .restbar .rb-pause svg{width:14px; height:14px; display:block;}
   /* Couleurs fixes, jamais celles du thème : la barre reste orange et la pastille
      blanche en thème sombre aussi. Avec var(--ink), les chiffres devenaient presque
      blancs sur fond blanc, donc gris pâles. */
-  .rb-pill .lbl{font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:#8e8e90; opacity:1;}
-  .rb-pill .t{font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; color:#17181a; min-width:0; line-height:1.1;}
+  .rb-pill .lbl{font-size:9.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#8e8e90; opacity:1;}
+  .rb-pill .t{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; color:#17181a; min-width:0; line-height:1.1;}
   /* les trois dernières secondes : plus gros, même noir, même place */
-  .rb-pill .t #rest-t.compte-a-rebours{display:inline-block; font-size:40px; line-height:1;
+  .rb-pill .t #rest-t.compte-a-rebours{display:inline-block; font-size:32px; line-height:1;
     animation:battement .5s ease-out;}
   @keyframes battement{0%{transform:scale(1.28);} 60%{transform:scale(.97);} 100%{transform:scale(1);}}
   @media (prefers-reduced-motion:reduce){ .rb-pill .t #rest-t.compte-a-rebours{animation:none;} }
   /* préfixé par .restbar, sinon « .restbar button » (plus spécifique) impose sa couleur
      de thème et le mot devient noir sur orange en thème sombre */
-  .restbar .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:13px !important;
-    padding:8px 12px !important; font-size:13px; white-space:nowrap; color:#fff;}
-  .restbar .bar{position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(255,255,255,.32); overflow:hidden;}
+  .restbar .rb-skip{background:rgba(60,28,0,.42) !important; border-radius:999px !important;
+    padding:8px 13px !important; font-size:13px; white-space:nowrap; color:#fff;
+    display:flex; align-items:center; gap:6px;}
+  .restbar .rb-skip svg{width:15px; height:15px; flex:0 0 auto; display:block;}
+  /* l anneau dit desormais le temps qui reste : la reglette du bas ferait double emploi */
+  .restbar .bar{display:none; position:absolute; left:14px; right:14px; bottom:5px; height:3px; border-radius:2px; background:rgba(255,255,255,.32); overflow:hidden;}
   .restbar .bar i{display:block; height:100%; background:#fff; border-radius:2px;}
   @keyframes flashEnd{0%,100%{background:var(--accent);}50%{background:#fff;}}
   .restbar.ending{animation:flashEnd .5s 3;}
   /* pendant la tenue, la barre passe au vert : on n'est pas en train de se reposer */
   .restbar.tenue{background:var(--good);}
+  .restbar.tenue .rb-arc{stroke:var(--good);}
+  .restbar.tenue .rb-pause{background:var(--good) !important;}
+  /* sur la barre verte, un plus orange ne serait plus de la meme famille */
+  .restbar.tenue .rb-rond{color:var(--good);}
   .restbar.paused{background:var(--surface2); color:var(--ink);}
   .restbar.paused button{background:var(--surface); color:var(--ink);}
   .restbar.paused .rb-ic, .restbar.paused .rb-rond{color:var(--ink); border-color:var(--ink-soft);}
-  .restbar.paused .rb-pill{background:var(--surface);}
+  /* en pause la barre passe au clair : sans ce liser, le disque blanc s y fondrait */
+  .restbar.paused .rb-disc{box-shadow:0 0 0 1px var(--border), 0 6px 18px rgba(0,0,0,.14);}
+  .restbar.paused .rb-arc{stroke:var(--ink-mute);}
+  .restbar.paused .rb-pause{background:var(--ink) !important;}
   .restbar.paused .rb-skip{background:var(--ink) !important; color:#fff;}
   .restbar.paused .bar{display:none;}
 
@@ -1540,17 +1572,23 @@
   <div class="rb-cote">
     <div class="rb-grp">
       <div class="grip" aria-hidden="true"><i></i><i></i><i></i></div>
-      <button class="rb-ic" id="rest-son" title="Son de fin de repos" aria-label="Son de fin de repos" id="rb-a-son"></button>
+      <button class="rb-ic" id="rest-son" title="Son de fin de repos" aria-label="Son de fin de repos"></button>
     </div>
     <button class="rb-rond" id="rest-minus" aria-label="Moins 15 secondes">−</button>
   </div>
   <div class="rb-pill" id="rest-pill">
-    <div class="lbl" id="rest-lbl">Repos</div>
-    <div class="t"><span id="rest-t">1:30</span><span id="rest-picon"></span></div>
+    <div class="rb-disc">
+      <svg class="rb-anneau" viewBox="0 0 74 74" aria-hidden="true"><circle class="rb-arc" id="rest-arc" cx="37" cy="37" r="34"></circle></svg>
+      <div class="rb-in">
+        <div class="lbl" id="rest-lbl">Repos</div>
+        <div class="t"><span id="rest-t">1:30</span></div>
+      </div>
+      <button class="rb-pause" id="rest-pause" aria-label="Mettre en pause"></button>
+    </div>
   </div>
   <div class="rb-cote fin">
-    <button class="rb-rond" id="rest-plus" aria-label="Plus 15 secondes" id="rb-a-plus">+</button>
-    <div class="rb-grp fin"><button class="rb-skip" id="rest-skip"><span id="rb-lab-passer">Passer</span></button></div>
+    <button class="rb-rond" id="rest-plus" aria-label="Plus 15 secondes">+</button>
+    <div class="rb-grp fin"><button class="rb-skip" id="rest-skip"><span id="rb-lab-passer">Passer</span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.5 6.6c0-.9 1-1.4 1.7-.8l6 5.4c.5.4.5 1.2 0 1.6l-6 5.4c-.7.6-1.7.1-1.7-.8V6.6Z"></path><path d="M12.6 6.6c0-.9 1-1.4 1.7-.8l6 5.4c.5.4.5 1.2 0 1.6l-6 5.4c-.7.6-1.7.1-1.7-.8V6.6Z"></path></svg></button></div>
   </div>
   <div class="bar"><i id="rest-bar" style="width:100%"></i></div>
 </div>
@@ -2268,11 +2306,12 @@ const TRAD = {en:{
   "Avec lest":"Weighted",
   "durée":"time",
   "Quinze secondes de plus":"Fifteen seconds more",
+  "Mettre en pause":"Pause",
+  "Reprendre":"Resume",
   "Quinze secondes de moins":"Fifteen seconds less",
   "Tenue et repos s'enchaînent tout seuls.":"Hold and rest chain on their own.",
   "Indique une durée":"Set a duration",
   "Indique d'abord une durée.":"Set a duration first.",
-  "Gainage":"Plank",
   "Gainage terminé":"Hold over",
   "Gainage terminé ✓":"Plank done ✓",
   "En position, on repart.":"Get set, here we go.",
@@ -5516,7 +5555,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 13h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 15h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5583,7 +5622,7 @@ function majTextesFixes(){
   if(r) r.textContent = TR("Repos");
   /* les infobulles de la barre de repos sont dans le HTML statique de la page :
      aucun gabarit ne s'y applique, on les traduit ici. */
-  [["rb-a-son", "Son de fin de repos"], ["rb-a-plus", "Plus 15 secondes"],
+  [["rest-son", "Son de fin de repos"], ["rest-plus", "Plus 15 secondes"],
    ["rest-minus", "Moins 15 secondes"]].forEach(([id, txt])=>{
     const e = document.getElementById(id);
     if(e){ e.setAttribute("title", TR(txt)); e.setAttribute("aria-label", TR(txt)); }
@@ -6652,6 +6691,24 @@ async function retirerSonneriesIso(){
   try{ await n.cancel({notifications: ids}); }catch(e){}
 }
 const restbar = document.getElementById("restbar");
+const IC_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="5" width="3.6" height="14" rx="1.4"></rect><rect x="13.4" y="5" width="3.6" height="14" rx="1.4"></rect></svg>';
+const IC_LECTURE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.7c0-.9 1-1.4 1.7-.9l8.1 5.4c.6.4.6 1.3 0 1.7l-8.1 5.4c-.7.5-1.7 0-1.7-.9V5.7Z"></path></svg>';
+/* 2 x pi x 34 : le tour du cercle, en unites du viewBox */
+const RB_TOUR = 213.6;
+/* part = ce qui est deja passe, de 0 a 1 : l arc se remplit au fil du repos */
+function majAnneau(part){
+  const a = document.getElementById("rest-arc");
+  if(!a) return;
+  const p = Math.max(0, Math.min(1, part || 0));
+  a.style.strokeDashoffset = (RB_TOUR * (1 - p)).toFixed(1);
+}
+function majIconePause(){
+  const b = document.getElementById("rest-pause");
+  if(!b) return;
+  b.innerHTML = rest.paused ? IC_LECTURE : IC_PAUSE;
+  const t = rest.paused ? TR("Reprendre") : TR("Mettre en pause");
+  b.setAttribute("aria-label", t); b.setAttribute("title", t);
+}
 function startRest(sec){
   if(!sec || sec<=0) return;
   /* remise à zéro complète : rien de la minuterie précédente ne doit survivre */
@@ -6666,7 +6723,7 @@ function startRest(sec){
   restbar.classList.remove("ending", "paused");
   placerRest();
   document.getElementById("rest-lbl").textContent = TR("Repos");
-  document.getElementById("rest-picon").textContent = "";
+  majAnneau(0); majIconePause();
   rest.int = setInterval(tickRest, 250);
   tickRest();
   majIconeSon();
@@ -6682,7 +6739,7 @@ function togglePauseRest(){
     rest.paused = false;
     restbar.classList.remove("paused");
     document.getElementById("rest-lbl").textContent = TR("Repos");
-    document.getElementById("rest-picon").textContent = "";
+    majIconePause();
     if(rest.int) clearInterval(rest.int);
     rest.int = setInterval(tickRest, 250);
     tickRest();
@@ -6692,7 +6749,7 @@ function togglePauseRest(){
     rest.paused = true;
     restbar.classList.add("paused");
     document.getElementById("rest-lbl").textContent = TR("En pause");
-    document.getElementById("rest-picon").textContent = " ▶";
+    majIconePause();
     if(rest.int) clearInterval(rest.int);
     rest.int = null;
     retirerAlarmeRepos();          /* en pause, l'heure de fin n'existe plus */
@@ -6707,6 +6764,7 @@ function tickRest(){
     document.getElementById("rest-t").classList.remove("compte-a-rebours");
     document.getElementById("rest-t").textContent="0:00";
     document.getElementById("rest-bar").style.width="0%";
+    majAnneau(1);
     restbar.classList.add("ending");
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
@@ -6733,6 +6791,7 @@ function tickRest(){
     t.textContent = mmss(left);
   }
   document.getElementById("rest-bar").style.width = (left/rest.total*100)+"%";
+  majAnneau(1 - left/rest.total);
 }
 document.getElementById("rest-skip").onclick=()=>{
   /* pendant un gainage, « passer » saute l'étape en cours, pas tout l'enchaînement */
