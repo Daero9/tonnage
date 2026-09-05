@@ -1178,6 +1178,22 @@ async function lancer(){
     eq("Le jour d'entraînement est plein", jours.filter(j=>j.classList.contains("on")).length, 1);
     vrai("Lundi est le jour plein", jours[0].classList.contains("on"));
     eq("Aujourd'hui est cerclé", jours.filter(j=>j.classList.contains("today")).length, 1);
+    vrai("Plus de titre « cette semaine »", !D2.querySelector(".wk-top"));
+    /* la barre du bas : une carte arrondie, pleine, qui flotte */
+    (()=>{
+      const bar = D2.querySelector(".tabbar-in"), cs = F.getComputedStyle(bar);
+      vrai("La barre est arrondie", parseFloat(cs.borderRadius) >= 18);
+      vrai("…portee par une ombre", cs.boxShadow !== "none");
+      eq("…et pleine, pas translucide",
+        F.getComputedStyle(D2.querySelector(".tabbar")).backdropFilter, "none");
+      vrai("…opaque", !/rgba\([^)]*,\s*0?\.\d+\)/.test(cs.backgroundColor));
+      /* le point orange marque l'onglet ouvert */
+      const on = D2.querySelector(".tab.on");
+      const pt = F.getComputedStyle(on, "::before");
+      eq("Un point marque l'onglet ouvert", pt.backgroundColor, "rgb(245, 130, 32)");
+      vrai("…pose au-dessus de la barre", parseFloat(pt.top) < 0);
+      eq("Un seul onglet allume", D2.querySelectorAll(".tab.on").length, 1);
+    })();
     /* les deux nombres gardent leur signe */
     eq("Chaque nombre porte son signe", D2.querySelectorAll(".wk-nums .ic").length, 2);
     vrai("Le tonnage de la semaine est là", /1\s?200|\d/.test(D2.querySelector(".wk-nums .v").textContent));
