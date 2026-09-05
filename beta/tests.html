@@ -1312,6 +1312,35 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le repos se règle sur la carte");
+  neuf();
+  /* Il vivait au fond de la fiche d'infos : trois gestes pour changer trente secondes,
+     entre deux séries, essoufflé. */
+  (()=>{
+    DB.active = null;
+    DB.templates = [{id:"trep", name:"Push", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:90}]}];
+    F.startWorkout("trep");
+    const carte = F.document.querySelector(".ex-card");
+    const val = () => carte.querySelector("[data-repv]").textContent;
+    vrai("Le repos est sur la carte", !!carte.querySelector(".ex-repos"));
+    eq("Il part de ce que dit le plan", val(), "1 min 30");
+    carte.querySelector('[data-rep="15"]').click();
+    eq("Le + ajoute quinze secondes", val(), "1 min 45");
+    eq("…et l'écrit sur la séance", DB.active.entries[0].target.rest, 105);
+    eq("…et sur le plan, pour la prochaine fois", DB.templates[0].items[0].rest, 105);
+    carte.querySelector('[data-rep="-15"]').click();
+    eq("Le − les retire", val(), "1 min 30");
+    /* on ne descend pas sous quinze secondes ni au-dessus de cinq minutes */
+    for(let k = 0; k < 20; k++) carte.querySelector('[data-rep="-15"]').click();
+    eq("Plancher à quinze secondes", DB.active.entries[0].target.rest, 15);
+    for(let k = 0; k < 30; k++) carte.querySelector('[data-rep="15"]').click();
+    eq("Plafond à cinq minutes", DB.active.entries[0].target.rest, 300);
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
   grp("Gainages : le temps à la place des reps");
   neuf();
   /* On ne repete pas un gainage, on le tient : le champ « reps » porte des secondes,

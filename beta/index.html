@@ -960,6 +960,20 @@
   /* ---- le chrono d un gainage ----
      Il prend la place de l explication de l echauffement, en tete de carte : c est la
      que le regard se pose avant de commencer la serie. */
+  /* ---- le repos, reglable sur la carte ----
+     Il etait au fond de la fiche d infos : trois gestes pour changer trente secondes,
+     entre deux series, essouffle. Ici il est sous les yeux, a portee de pouce. */
+  .ex-repos{display:flex; align-items:center; gap:9px; margin:10px 0 2px;
+    background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:7px 10px;}
+  .ex-repos .ic{display:flex; color:var(--accent); flex:0 0 auto;}
+  .ex-repos .ic svg{width:17px; height:17px;}
+  .ex-repos .l{flex:1; min-width:0; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  .ex-repos button{width:33px; height:33px; border-radius:9px; background:var(--surface);
+    border:1px solid var(--border); font-size:16px; font-weight:800; line-height:1;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .ex-repos button:active{background:var(--btn);}
+  .ex-repos .v{min-width:66px; text-align:center; font-size:14.5px; font-weight:800;
+    font-variant-numeric:tabular-nums;}
   .iso-chrono{display:flex; align-items:center; gap:12px; background:rgba(245,130,32,.10);
     border-radius:13px; padding:10px 13px; margin-bottom:10px;}
   .iso-chrono .ic{flex:0 0 auto; display:flex; color:var(--accent);}
@@ -2253,6 +2267,8 @@ const TRAD = {en:{
   "Charge max":"Top load",
   "Avec lest":"Weighted",
   "durée":"time",
+  "Quinze secondes de plus":"Fifteen seconds more",
+  "Quinze secondes de moins":"Fifteen seconds less",
   "Tenue et repos s'enchaînent tout seuls.":"Hold and rest chain on their own.",
   "Indique une durée":"Set a duration",
   "Indique d'abord une durée.":"Set a duration first.",
@@ -5500,7 +5516,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 13h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 13h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9665,6 +9681,13 @@ function renderActive(app){
         : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
         iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
+      <div class="ex-repos">
+        <span class="ic">${IC_CHRONO}</span>
+        <span class="l">${TR("Repos")}</span>
+        <button data-rep="-15" aria-label="${TR("Quinze secondes de moins")}">−</button>
+        <span class="v" data-repv>${fmtRepos((en.target && en.target.rest) || db.settings.rest)}</span>
+        <button data-rep="15" aria-label="${TR("Quinze secondes de plus")}">＋</button>
+      </div>
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">↓ = dégressif</span>Tu continues la même série avec moins de charge : 6 × 12 kg, puis 4 × 10 kg. Ça reste une seule série, et tout compte dans ton tonnage.")) : ""}
       <div class="row" style="flex-wrap:wrap;">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
@@ -9677,6 +9700,27 @@ function renderActive(app){
       <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
     const btnIso = card.querySelector("[data-iso]");
     if(btnIso) btnIso.onclick = ()=>lancerSeqIso(ei);
+    /* Le temps choisi vaut pour CET exercice : on l'écrit sur la séance en cours et,
+       si le plan existe encore, sur le plan — sinon il faudrait le refaire à chaque
+       séance. C'est la même règle que dans la fiche détaillée. */
+    card.querySelectorAll("[data-rep]").forEach(b=>b.onclick=()=>{
+      const cur = (en.target && en.target.rest) || db.settings.rest;
+      const v = Math.max(15, Math.min(300, cur + parseInt(b.dataset.rep, 10)));
+      if(v === cur) return;
+      if(en.target) en.target.rest = v; else en.target = {rest:v};
+      const tpl = a.templateId ? db.templates.find(t=>t.id === a.templateId) : null;
+      const it = tpl && tpl.items.find(x=>x.exId === en.exId);
+      if(it) it.rest = v;
+      save();
+      const vue = card.querySelector("[data-repv]");
+      if(vue) vue.textContent = fmtRepos(v);
+      /* un gainage en cours a déjà posé ses sonneries : on repose celles qui restent */
+      if(seqIso && seqIso.ei === ei){
+        seqIso.etapes.forEach((e2, k)=>{ if(k > seqIso.i && e2.type === "repos") e2.sec = v; });
+        programmerSonneriesIso();
+      }
+      if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+    });
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
     en.sets.forEach((st,si)=>{
