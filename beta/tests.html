@@ -1312,6 +1312,90 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Familles d'aliments");
+  neuf();
+  /* La base est rangee par mode de pesee — a la piece, aux 100 g — ce qui ne dit rien
+     de ce qu on cherche a table. Les familles la retraversent. */
+  (()=>{
+    DB.hbPerso = {}; DB.habitSel = {};
+    F.openAjoutAliment("midi");
+    const D2 = F.document;
+    const cats = [...D2.querySelectorAll("#ot-cats [data-cat]")];
+    const noms = () => [...D2.querySelectorAll("#ot-liste .al-c .nm")].map(e=>e.textContent);
+    const choisir = c => { D2.querySelector(`#ot-cats [data-cat="${c}"]`).click(); return noms(); };
+
+    eq("Neuf familles", cats.length, 9);
+    eq("On part de « Tous »", cats.filter(c=>c.classList.contains("on")).map(c=>c.dataset.cat).join(), "tous");
+    eq("« Tous » montre toute la base", noms().length,
+      F.eval("FOOD_100G").reduce((a,g)=>a+g[1].length, 0));
+    /* la rangee doit pouvoir defiler : neuf familles ne tiennent pas sur un telephone */
+    eq("La rangée défile de gauche à droite",
+      F.getComputedStyle(D2.getElementById("ot-cats")).overflowX, "auto");
+
+    const viandes = choisir("viande");
+    vrai("Les viandes sortent le poulet", viandes.includes("Poulet"));
+    vrai("…et le steak à la pièce", viandes.some(n=>/Steak/.test(n)));
+    vrai("…sans ramener le riz", !viandes.some(n=>/Riz/.test(n)));
+    const poissons = choisir("poisson");
+    vrai("Les poissons sortent le cabillaud", poissons.includes("Cabillaud"));
+    vrai("…et les sushis", poissons.some(n=>/Sushi/.test(n)));
+    vrai("…sans ramener le poulet", !poissons.some(n=>/[Pp]oulet/.test(n)));
+    const laitiers = choisir("laitier");
+    vrai("Les laitages sortent le skyr", laitiers.includes("Skyr"));
+    vrai("…et le lait", laitiers.some(n=>/Lait/.test(n)));
+    const legumes = choisir("legume");
+    vrai("Les légumes sortent la tomate", legumes.includes("Tomate"));
+    vrai("…sans ramener la banane", !legumes.includes("Banane"));
+    const fruits = choisir("fruit");
+    vrai("Les fruits sortent la banane", fruits.includes("Banane"));
+    vrai("…et la pomme, pas la patate", fruits.includes("Pomme") && !fruits.includes("Patate"));
+    const plats = choisir("plat");
+    vrai("Les plats sortent la pizza", plats.some(n=>/pizza/i.test(n)));
+    /* un aliment peut appartenir a deux familles : c est voulu */
+    vrai("Le kebab est une viande ET un plat",
+      choisir("viande").includes("Kebab") && choisir("plat").includes("Kebab"));
+
+    /* la famille se combine avec la recherche */
+    choisir("viande");
+    const q = D2.getElementById("ot-q");
+    q.value = "poulet"; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+    const combine = noms();
+    vrai("Famille et recherche se cumulent",
+      combine.length > 0 && combine.every(n=>/poulet/i.test(n)));
+    q.value = ""; q.dispatchEvent(new F.Event("input", {bubbles:true}));
+
+    /* les favoris : ce qu'on a garde dans ses propositions */
+    vrai("Sans favori, la liste l'explique",
+      choisir("favoris").length === 0 && /favori/i.test(D2.querySelector("#ot-liste .al-vide").textContent));
+    F.hideSheet();
+    DB.hbPerso = {repas:[["Skyr 200 g (~22 g prot. · 114 kcal)", 22, 114, "prot"]]};
+    F.openAjoutAliment("midi");
+    eq("Un aliment gardé devient un favori",
+      [...F.document.querySelectorAll("#ot-cats [data-cat]")].length && (()=>{
+        F.document.querySelector('#ot-cats [data-cat="favoris"]').click();
+        return [...F.document.querySelectorAll("#ot-liste .al-c .nm")].map(e=>e.textContent).join();
+      })(), "Skyr");
+
+    /* le raccourci du scan */
+    const scan = F.document.getElementById("ot-scan");
+    vrai("Le bouton de scan porte un chevron", !!scan.querySelector(".fl svg"));
+    vrai("…et un code-barres plus grand",
+      parseFloat(F.getComputedStyle(scan.querySelector("svg")).width) >= 24);
+
+    /* les favoris ont leur encadré */
+    const fb = F.document.getElementById("ot-favbox"), ck = F.document.getElementById("ot-save");
+    vrai("Les favoris sont dans un encadré", !!fb && fb.contains(ck));
+    vrai("…avec leur intitulé", /Ajouter aux favoris/.test(fb.textContent));
+    const nu = F.getComputedStyle(fb).borderTopColor;
+    ck.checked = true; ck.dispatchEvent(new F.Event("change", {bubbles:true}));
+    eq("Le cadre s'allume quand on coche",
+      F.getComputedStyle(fb).borderTopColor, "rgb(245, 130, 32)");
+    vrai("…et il était éteint avant", nu !== "rgb(245, 130, 32)");
+    F.hideSheet();
+    DB.hbPerso = {};
+  })();
+  neuf();
+
   grp("Rangement des aliments ajoutés");
   neuf();
   /* Un aliment gardé dans les propositions rejoint le groupe qui lui ressemble, au lieu
