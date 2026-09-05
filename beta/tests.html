@@ -1422,13 +1422,16 @@ async function lancer(){
     /* le décompte s'entend autant qu'il se voit : une note seule à trois, deux, un,
        puis le triple bip qui dit que ça commence */
     F.arreterSeqIso(false);
-    const sons = [], noteOrig = F.bipCourt, tripleOrig = F.beep;
-    F.bipCourt = ()=>sons.push("note");
-    F.beep = ()=>sons.push("triple");
+    /* on écoute les deux sonneries elles-mêmes, pas les oscillateurs : elles se
+       taisent quand l onglet n est pas au premier plan, et le cadre de test l est
+       rarement — le test dependait alors de la fenetre active. */
+    const sons = [], noteOrig = F.bipDecompte, tripleOrig = F.bipRepos;
+    F.bipDecompte = ()=>sons.push("note");
+    F.bipRepos = ()=>sons.push("triple");
     F.lancerSeqIso(0);
     [2800, 1800, 800].forEach(ms=>{ F.eval("rest").end = Date.now() + ms; F.tickRest(); });
     F.eval("rest").end = Date.now() - 1; F.tickRest();
-    F.bipCourt = noteOrig; F.beep = tripleOrig;
+    F.bipDecompte = noteOrig; F.bipRepos = tripleOrig;
     eq("Trois notes puis le triple bip", sons.join(","), "note,note,note,triple");
     /* on repart d ici : le triple bip vient de lancer la tenue, comme plus haut */
     eq("On commence par tenir", F.document.getElementById("rest-lbl").textContent, "Gainage");
@@ -1562,6 +1565,17 @@ async function lancer(){
     eq("Le bandeau dit ce que pèse la séance",
       meta.replace(/~\d+ min/, "~m"), "2 exercices · 6 séries · ~m");
     vrai("…et estime une durée", /~\d+ min/.test(meta));
+    /* ce que la séance a déjà produit, dans les mêmes pastilles que le chrono */
+    eq("Deux pastilles de plus", D2.querySelectorAll(".hero-stats .hs").length, 2);
+    eq("Rien de soulevé au départ", D2.getElementById("hs-vol").textContent, "0 kg");
+    DB.active.entries[0].sets.forEach(st=>{ if(!st.warm){ st.w = 60; st.r = 10; st.done = true; } });
+    F.renderActive(D2.getElementById("app"));
+    /* le séparateur des milliers est une espace insécable : on la ramène à une espace
+       ordinaire, sinon la comparaison échoue sur deux textes identiques à l oeil */
+    eq("Le tonnage suit les séries validées",
+      D2.getElementById("hs-vol").textContent.replace(/\s/g, " "), "1 800 kg");
+    vrai("…et les calories avec",
+      parseInt(D2.getElementById("hs-kcal").textContent, 10) > 0);
     /* l'étiquette du chrono était posée en absolu et plus large que lui : elle
        sortait de l'écran par la droite. Elle est maintenant à côté, dans un bloc. */
     const bloc = D2.querySelector(".chrono-bloc");

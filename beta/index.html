@@ -876,6 +876,15 @@
   /* L etiquette est plus large que la pastille : posee en absolu elle sortait de
      l ecran par la droite. Les deux forment donc un bloc, et c est le bloc que la
      mise en page mesure. */
+  /* Ce que la séance a déjà produit, dans les mêmes pastilles que le chrono : trois
+     chiffres de même nature, donc trois objets identiques, alignés par le bas. */
+  .hero-stats{display:flex; gap:9px; margin-top:12px;}
+  .hero-stats .hs{display:flex; flex-direction:column; align-items:center; gap:5px;}
+  .hero-stats .hs b{font-size:14px; font-weight:800; font-variant-numeric:tabular-nums;
+    color:#fff; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.18);
+    border-radius:99px; padding:6px 14px; white-space:nowrap;}
+  .hero-stats .hs i{font-style:normal; font-size:9px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap;}
   .chrono-bloc{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px;}
   .chrono-bloc .lab{font-size:10px; font-weight:700; letter-spacing:.08em;
     text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap;}
@@ -5623,7 +5632,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 17h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 17h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9798,6 +9807,10 @@ function renderActive(app){
         <h1 class="hero-seance" style="--t:${tailleTitre}px">${esc(a.name)}</h1>
         <div class="hero-meta">${ICONS.seance}<span>${TR("{n} exercices · {s} séries · ~{m} min")
           .replace("{n}", nbEx).replace("{s}", nbSeries).replace("{m}", minSeance)}</span></div>
+        <div class="hero-stats">
+          <span class="hs"><b id="hs-vol">—</b><i>${TR("Soulevés")}</i></span>
+          <span class="hs"><b id="hs-kcal">—</b><i>${TR("Brûlées")}</i></span>
+        </div>
       </div>
       <div class="chrono-bloc">
         <button class="chrono" id="chrono" aria-label="${TR("Mettre le chrono en pause")}"><span id="chrono-t"></span></button>
@@ -9817,6 +9830,15 @@ function renderActive(app){
     /* on n'ecrit que dans le chiffre : l'etiquette en dessous doit survivre a chaque seconde */
     const t=document.getElementById("chrono-t"); if(t) t.textContent = mmss(dureeSeance2(a)/1000);
     el.classList.toggle("pause", !!a.pauseAt);
+    /* le tonnage et les calories suivent les séries validées, seconde par seconde :
+       une seule fonction à appeler, et rien à recâbler à chaque validation */
+    const bv = document.getElementById("hs-vol");
+    if(bv) bv.textContent = volPds(Math.round(sessionVolume(a)));
+    const bk = document.getElementById("hs-kcal");
+    if(bk){
+      const faites = a.entries.reduce((n, en)=>n + en.sets.filter(x=>x.done && !x.warm).length, 0);
+      bk.textContent = liftKcal(dureeSeance2(a), volumeEffort(a), faites) + " kcal";
+    }
   };
   tick(); chronoInt = setInterval(tick, 1000);
   const chr = document.getElementById("chrono");
