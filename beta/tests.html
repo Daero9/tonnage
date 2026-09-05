@@ -1119,6 +1119,78 @@ async function lancer(){
 
   /* ------------------------------------------------- ordre des exercices d'une séance */
   /* ------------------------------------------------- fiches empilées */
+  grp("Page alimentation");
+  neuf();
+  /* L'iframe des tests n'a pas de hauteur : on verifie ce qui se lit dans le DOM et
+     dans les styles calcules, pas ce qui se voit. */
+  (()=>{
+    const k = F.jourAlim();
+    DB.habitSel = {}; DB.habitSel[k] = {midi:["Poulet (1 filet, 130 g cuit)"]};
+    DB.hbPerso = {};
+    F.eval("curTab = 'eat'; mealCur = 'midi';");
+    F.render();
+    const D2 = F.document;
+    /* l'en-tete annonce la journee */
+    vrai("Le soleil est en tête de page", !!D2.querySelector(".hero-h .ico svg"));
+    eq("…au-dessus du titre, pas à côté",
+      D2.querySelector(".hero-h .ico").nextElementSibling.className, "big");
+    vrai("Le sous-titre est là", /Vue d'ensemble/.test(D2.querySelector(".hero-h .sub").textContent));
+    /* les deux compteurs, chacun sa carte */
+    eq("Deux compteurs, deux cartes", D2.querySelectorAll(".eat-stat").length, 2);
+    vrai("Chacun porte son signe",
+      [...D2.querySelectorAll(".eat-stat .ico")].every(e=>e.textContent.trim().length > 0));
+    vrai("Chacun affiche la part atteinte",
+      [...D2.querySelectorAll(".eat-stat .pc")].every(e=>/%|—/.test(e.textContent)));
+    eq("Les protéines du jour sont comptées",
+      D2.querySelector(".eat-stat .v").textContent, String(F.dayProt(k)));
+    /* le recapitulatif des repas */
+    eq("Cinq repas au récapitulatif", D2.querySelectorAll(".eat-repas .er").length, 5);
+    vrai("Chaque repas porte son moment de la journée",
+      [...D2.querySelectorAll(".eat-repas .er .i")].every(e=>e.textContent.trim().length > 0));
+    eq("Le repas ouvert est marqué", D2.querySelectorAll(".eat-repas .er.ici").length, 1);
+    eq("…de sa couleur",
+      D2.querySelector(".eat-repas .er.ici").style.borderColor, "var(--midi)");
+    /* les titres de categorie */
+    const hs = [...D2.querySelectorAll(".meal-h")];
+    vrai("Chaque catégorie porte un signe", hs.length > 0 && hs.every(h=>!!h.querySelector(".e")));
+    vrai("…et la couleur du repas",
+      hs.every(h=>h.style.color && h.style.color !== ""));
+    vrai("Les protéines ont le bras", hs.some(h=>h.querySelector(".e").textContent === "💪"));
+    vrai("Les féculents ont la flamme", hs.some(h=>h.querySelector(".e").textContent === "🔥"));
+    vrai("Les légumes ont le brocoli", hs.some(h=>h.querySelector(".e").textContent === "🥦"));
+    /* le bouton d'ajout ne defile pas */
+    const fab = D2.querySelector(".eat-fab");
+    vrai("Le bouton d'ajout existe", !!fab);
+    eq("…et reste fixé à l'écran", F.getComputedStyle(fab).position, "fixed");
+    vrai("…hors du panneau qui s'anime", !fab.closest(".meal-panel"));
+    vrai("…avec son intitulé", /Ajouter un aliment/i.test(fab.textContent));
+    /* changer de repas repeint tout ce qui porte la couleur */
+    D2.querySelector('[data-meal="soir"]').click();
+    const rose = F.getComputedStyle(D2.documentElement).getPropertyValue("--soir").trim();
+    vrai("Le bouton prend la couleur du soir",
+      D2.getElementById("eat-add").style.background.indexOf("soir") >= 0 || !!rose);
+    vrai("…et les titres aussi",
+      [...D2.querySelectorAll(".meal-h")].every(h=>h.style.color.indexOf("soir") >= 0));
+    /* un seul bouton d'ajout dans la page */
+    eq("Un seul bouton d'ajout", D2.querySelectorAll("#eat-add").length, 1);
+    DB.habitSel = {}; DB.hbPerso = {};
+    /* on rend l'onglet séance aux groupes suivants : startWorkout ne change pas d'onglet
+       tout seul, et la page alimentation n'a aucune série à leur montrer */
+    F.eval("curTab = 'seance';");
+    F.render();
+  })();
+  neuf();
+  /* les saisies sont des pastilles */
+  (()=>{
+    F.openAjoutAliment("midi");
+    const st = F.getComputedStyle(F.document.getElementById("ot-g"));
+    eq("Un champ de saisie est arrondi", st.borderRadius, "99px");
+    F.hideSheet();
+    F.eval("curTab = 'seance';");
+    F.render();
+  })();
+  neuf();
+
   grp("Rangement des aliments ajoutés");
   neuf();
   /* Un aliment gardé dans les propositions rejoint le groupe qui lui ressemble, au lieu
