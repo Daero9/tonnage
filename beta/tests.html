@@ -1119,6 +1119,54 @@ async function lancer(){
 
   /* ------------------------------------------------- ordre des exercices d'une séance */
   /* ------------------------------------------------- fiches empilées */
+  grp("Page d'accueil");
+  neuf();
+  (()=>{
+    DB.settings.name = "Nico";
+    DB.templates = [{id:"tacc", name:"Pull-up", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    const lun = new Date(); lun.setDate(lun.getDate() - ((lun.getDay()+6)%7));
+    DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",
+      start:Date.now()-3.6e6, end:Date.now(),
+      entries:[{exId:id("Développé couché"), sets:[{w:60,r:10,done:true},{w:60,r:10,done:true}]}]}];
+    F.eval("curTab = 'seance';");
+    F.render();
+    const D2 = F.document;
+    /* le bandeau */
+    vrai("Le salut porte la main", /👋/.test(D2.querySelector(".hero-accueil h1").textContent));
+    vrai("…et le prénom", /Nico/.test(D2.querySelector(".hero-accueil h1").textContent));
+    eq("Le titre se lit à gauche",
+      F.getComputedStyle(D2.querySelector(".hero-accueil .hero-h")).textAlign, "left");
+    vrai("Le nom de la séance ressort", !!D2.querySelector(".hero-accueil .sub .hl"));
+    eq("…en orange",
+      F.getComputedStyle(D2.querySelector(".hero-accueil .sub .hl")).color, "rgb(245, 130, 32)");
+    eq("…et c'est bien la séance conseillée",
+      D2.querySelector(".hero-accueil .sub .hl").textContent, "Pull-up");
+    /* la courbe orange passe derrière, dans le fond du bandeau */
+    const traits = [...D2.querySelectorAll(".hero-accueil .hero-bg path")]
+      .filter(p => (p.getAttribute("stroke")||"").indexOf("accent") >= 0);
+    eq("Une courbe orange traverse le fond", traits.length, 1);
+    vrai("…derrière le titre, pas devant",
+      D2.querySelector(".hero-bg").compareDocumentPosition(D2.querySelector(".hero-h"))
+        & Node.DOCUMENT_POSITION_FOLLOWING);
+    /* les jours : des pastilles, plus des barres */
+    const jours = [...D2.querySelectorAll(".wk-day")];
+    eq("Sept jours", jours.length, 7);
+    eq("Les initiales sont dans les pastilles",
+      jours.map(j=>j.textContent.trim()).join(""), "LMMJVSD");
+    vrai("Plus aucune barre de tonnage", !D2.querySelector(".wk-day i, .wk-day b"));
+    eq("Le jour d'entraînement est plein", jours.filter(j=>j.classList.contains("on")).length, 1);
+    vrai("Lundi est le jour plein", jours[0].classList.contains("on"));
+    eq("Aujourd'hui est cerclé", jours.filter(j=>j.classList.contains("today")).length, 1);
+    /* les deux nombres gardent leur signe */
+    eq("Chaque nombre porte son signe", D2.querySelectorAll(".wk-nums .ic").length, 2);
+    vrai("Le tonnage de la semaine est là", /1\s?200|\d/.test(D2.querySelector(".wk-nums .v").textContent));
+    vrai("Le bilan reste accessible", !!D2.getElementById("bilan-btn"));
+    DB.history = []; DB.templates = [];
+  })();
+  neuf();
+
   grp("Page alimentation");
   neuf();
   /* L'iframe des tests n'a pas de hauteur : on verifie ce qui se lit dans le DOM et

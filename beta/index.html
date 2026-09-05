@@ -226,23 +226,29 @@
   .wk-nums .ev{font-weight:800; white-space:nowrap;}
   .wk-nums .ev.up{color:var(--good);}
   .wk-nums .ev.down{color:var(--ink-mute);}
-  .wk-days{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:9px;}
-  /* la hauteur de chaque barre porte le volume soulevé ce jour-là */
-  .wk-day i{display:flex; align-items:flex-end; height:32px; border-radius:8px;
-    background:var(--surface2); border:1.5px solid transparent; overflow:hidden;}
-  .wk-day i b{display:block; width:100%; background:var(--accent); border-radius:8px;}
-  /* le jour en cours est cerclé de noir : visible même quand la barre est pleine */
-  .wk-day.today i{outline:1.8px solid var(--ink); outline-offset:1.5px;}
-  .wk-day span{display:block; text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-mute); margin-top:3px;}
-  .wk-day.today span{color:var(--ink);}
+  .wk-days{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:11px;}
+  /* Une pastille par jour, l initiale dedans. La hauteur ne dit plus le tonnage : une
+     barre qui monte se compare mal d une semaine a l autre, et la seule question du
+     matin est « ai-je bouge hier ». Plein = jour d entrainement, cercle = aujourd hui. */
+  .wk-day{height:27px; border-radius:99px; display:flex; align-items:center; justify-content:center;
+    font-size:11.5px; font-weight:800; background:var(--surface2); border:1.5px solid var(--border);
+    color:var(--ink-mute);}
+  .wk-day.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .wk-day.today{border-color:var(--accent); color:var(--accent);}
+  .wk-day.on.today{color:var(--accent-ink);}
   .wk-sep{height:1px; background:var(--border); margin:0 -4px 9px;}
   .wk-nums{display:flex; align-items:center; justify-content:space-between; position:relative;}
   /* Le bouton Bilan est centre EN ABSOLU au-dessus de la ligne : sans reserve,
      un tonnage a cinq chiffres glisse dessous. Chaque moitie s'ecarte donc du
      centre de la largeur du bouton — les deux nombres restent symetriques. */
-  .wk-nums .n{flex:1; text-align:center; min-width:0;}
+  .wk-nums .n{flex:1; min-width:0; display:flex; align-items:center; gap:9px;}
   .wk-nums .n:first-child{padding-right:46px;}
   .wk-nums .n:last-child{padding-left:46px;}
+  .wk-nums .ic{flex:0 0 auto; width:34px; height:34px; border-radius:50%; font-size:17px;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .wk-nums .ic svg{width:19px; height:19px;}
+  .wk-nums .tx{min-width:0; text-align:left;}
   .wk-nums .v{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
   .wk-nums .u{font-size:11px; color:var(--ink-mute);}
   /* Texte agrandi = moins de points CSS : a 125 %, un ecran de 412 tombe a 330,
@@ -735,8 +741,14 @@
      la longueur du sous-titre, il grandit vers le haut et ne déborde jamais sur le clair. */
   /* Le liseré est un arc : il remonte sur les côtés. Le texte est donc borné en largeur
      et calé plus haut, pour que même ses extrémités restent dans le noir. */
+  /* L accueil s adresse a quelqu un : le salut se lit a gauche, comme une phrase, et
+     non centre comme un titre de rubrique. Le nom de la seance ressort en orange. */
   .hero-accueil .hero-h{position:absolute; left:0; right:0; bottom:42%; margin-top:0;
-    max-width:66%; margin-inline:auto;}
+    text-align:left; padding:0 20px;}
+  /* le salut et la question tiennent chacun sur leur ligne : une seance au nom long
+     passe a la ligne sans aller cogner la carte de la semaine */
+  .hero-accueil .sub{margin-top:5px; line-height:1.35;}
+  .hero-h .hl{color:var(--accent);}
   .hero-en-cours .chrono{display:block; width:max-content; margin:14px auto 0; transform:translateY(50%);}
   /* le chrono devient une pastille claire posée sur la photo */
   /* Volontairement discret : ce chrono ne demande rien, il informe. Le minuteur de
@@ -1458,7 +1470,7 @@ const TRAD = {en:{
   "3 séances organisées autour du squat, du développé couché et du soulevé de terre : peu de répétitions (3 à 6), charges lourdes et repos très longs (3 à 4 min) pour récupérer entre les séries. Progresse en ajoutant du poids, pas des répétitions.":"3 sessions built around the squat, bench press and deadlift: few reps (3 to 6), heavy loads and very long rests (3 to 4 min) to recover between sets. Progress by adding weight, not reps.",
   "2 séances full body par semaine suffisent largement à conserver muscle et force. Séries de 8 à 12 répétitions, intensité modérée, sans chercher la performance — l'objectif est la régularité sur le long terme.":"2 full-body sessions a week are plenty to hold on to muscle and strength. Sets of 8 to 12 reps, moderate intensity, no chasing performance — the goal is consistency over the long run.",
   "3 séances (haut / bas / full body) à intensité moyenne-haute pour construire du muscle tout en perdant du gras. Côté assiette : mange à ta maintenance avec beaucoup de protéines (2 g/kg), et le corps fait l'échange gras → muscle.":"3 sessions (upper / lower / full body) at medium-high intensity to build muscle while losing fat. On the plate: eat at maintenance with plenty of protein (2 g/kg), and your body makes the fat-to-muscle trade.",
-  "Prêt pour ta séance <b style=\"color:#fff;\">{}</b> ?":"Ready for your <b style=\"color:#fff;\">{}</b> workout?",
+  "Prêt pour ta séance <b class=\"hl\">{}</b> ?":"Ready for your <b class=\"hl\">{}</b> workout?",
   "Corps entier":"Whole body",
   "Presque remis":"Almost recovered",
   "Épargne tes {m} : encore {p} %":"Go easy on your {m}: still {p}%",
@@ -5113,7 +5125,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 03h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 03h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5685,7 +5697,7 @@ const PHOTO_L = 640, PHOTO_H = 929;    /* format d'origine des photos de séance
    Le liseré reste à 74,7 % de la hauteur : rien de ce qui s'y aligne n'a bougé.
    Le rond clair du haut garde sa position et sa taille exactes. */
 const HERO_H = 1000;
-function heroSvg(photo){
+function heroSvg(photo, arc){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
   const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
@@ -5701,6 +5713,8 @@ function heroSvg(photo){
       ${photo ? `<image href="img/${photo}.jpg" x="0" y="${decal}" width="${larg}" height="${haut}"
         preserveAspectRatio="none" opacity=".62"/>
       <rect width="1210" height="${HERO_H}" fill="#0e0e10" opacity=".42"/>` : ""}
+      ${arc ? `<path d="M800 -60 C980 40, 1130 200, 1240 480" fill="none" stroke="var(--accent)"
+        stroke-width="13" stroke-linecap="round"/>` : ""}
     </g>
   </svg>`;
 }
@@ -5708,7 +5722,7 @@ function heroSvg(photo){
 function hero(inner, opts){
   const o = opts || {};
   return `<div class="hero ${o.classe || ""}">
-    ${heroSvg(o.photo)}
+    ${heroSvg(o.photo, o.arc)}
     <div class="hero-in">
       <div class="hero-top">
         ${o.fermer ? `<span></span>
@@ -7766,10 +7780,6 @@ function renderSeance(app){
   const trained = new Set();
   db.history.concat(db.cardio).forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
   const todayIdx = (now.getDay()+6)%7;
-  /* hauteur des barres : le volume de chaque jour, rapporté au plus gros de la semaine */
-  const volJour = [0,0,0,0,0,0,0];
-  db.history.forEach(x=>{ const d = new Date(x.date); if(d>=w0) volJour[(d.getDay()+6)%7] += sessionVolume(x); });
-  const volMax = Math.max.apply(null, volJour.concat(1));
   /* comparaison avec la semaine précédente : un repère, pas un jugement */
   const w1 = new Date(w0.getTime() - 7*864e5);
   const volPrec = db.history.reduce((a,x)=>{ const d = new Date(x.date); return (d>=w1 && d<w0)? a+sessionVolume(x) : a; }, 0);
@@ -7778,29 +7788,29 @@ function renderSeance(app){
   const bilanNeuf = (db.history.length||db.weights.length) && (!db.lastBilan || Date.now()-new Date(db.lastBilan).getTime()>6.5*864e5);
   const sub = !db.templates.length
     ? TR("Crée ta première séance avec le bouton ＋")
-    : TR("Prêt pour ta séance <b style=\"color:#fff;\">{}</b> ?").replace("{}", esc(TR(sug.name)));
+    : TR("Prêt pour ta séance <b class=\"hl\">{}</b> ?").replace("{}", esc(TR(sug.name)));
 
   app.innerHTML = `
-    ${hero(`<h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}</h1>
-      <div class="sub">${sub}</div>`, {classe:"hero-accueil"})}
+    ${hero(`<h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}
+        <span class="wv">👋</span></h1>
+      <div class="sub">${sub}</div>`, {classe:"hero-accueil", arc:true})}
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">${TR("⚠️ Tes données ne peuvent pas être enregistrées")}</div>
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
     <div class="under-hero">
       <div class="wk-card">
         <div class="wk-top"><span class="t">${TR("Cette semaine")}</span></div>
-        <div class="wk-days">${days.map((d,i)=>{
-          /* un jour d'entraînement sans tonnage (cardio seul) garde une barre visible */
-          const h = volJour[i] ? Math.max(18, Math.round(volJour[i]/volMax*100)) : (trained.has(i)? 18 : 0);
-          return `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">
-            <i>${h? `<b style="height:${h}%"></b>`:""}</i><span>${d}</span></div>`;
-        }).join("")}</div>
+        <div class="wk-days">${days.map((d,i)=>
+          `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
         <div class="wk-sep"></div>
         <div class="wk-nums">
-          <div class="n"><div class="v">${weekVol? volNb(weekVol) : "0"} <span style="font-size:13px;">${uPoids()==="lb"?"Lb":"Kg"}</span></div>
+          <div class="n"><span class="ic">${ICONS.seance}</span>
+            <span class="tx"><div class="v">${weekVol? volNb(weekVol) : "0"} <span style="font-size:13px;">${uPoids()==="lb"?"Lb":"Kg"}</span></div>
             <div class="u">${TR("Soulevés")}${evol!==null
-              ? ` <span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} %</span>`:""}</div></div>
-          <div class="n"><div class="v">${Math.round(weekKcal)} <span style="font-size:13px;">Kcal</span></div><div class="u">${TR("Brûlées")}</div></div>
+              ? ` <span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} %</span>`:""}</div></span></div>
+          <div class="n"><span class="ic">🔥</span>
+            <span class="tx"><div class="v">${Math.round(weekKcal)} <span style="font-size:13px;">Kcal</span></div>
+            <div class="u">${TR("Brûlées")}</div></span></div>
           <button class="wk-bilan" id="bilan-btn">${TR("Bilan")}${bilanNeuf? ' <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#fff; vertical-align:2px;"></span>':""}</button>
         </div>
       </div>
