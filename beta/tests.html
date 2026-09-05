@@ -1383,6 +1383,8 @@ async function lancer(){
       rgs.indexOf("ex-repos") > rgs.indexOf("iso-chrono") &&
       rgs.indexOf("ex-repos") < rgs.indexOf("set-cols"));
     eq("Il propose de démarrer", carte.querySelector("[data-iso]").textContent, "Démarrer");
+    eq("Le bandeau annonce ce qu'il reste à tenir",
+      carte.querySelector(".iso-chrono .k").textContent, "Séries à tenir");
     /* trois séries de 40 s avec 60 s de repos : tenue, repos, tenue, repos, tenue */
     DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
     DB.active.entries[0].target = {rest:60};
@@ -1392,9 +1394,43 @@ async function lancer(){
     eq("Pas de repos après la dernière", et[et.length-1].type, "tenue");
     eq("Les tenues durent ce qui est écrit", et[0].sec, 40);
     eq("Le repos vient de la séance", et[1].sec, 60);
-    /* on lance et on avance à la main, sans attendre */
+    /* appuyer sur « Démarrer » ne lance pas la tenue : il reste cinq secondes pour
+       poser le téléphone et se mettre en position */
     F.lancerSeqIso(0);
+    vrai("Le décompte part", !!F.eval("preIso"));
+    vrai("…et la tenue attend", !F.eval("seqIso"));
+    eq("La barre annonce le départ",
+      F.document.getElementById("rest-lbl").textContent, "Départ");
+    eq("Le bouton propose d'annuler",
+      F.document.querySelector("[data-iso]").textContent, "Annuler");
+    eq("Le bandeau parle toujours des séries à tenir",
+      F.document.querySelector(".iso-chrono .k").textContent, "Séries à tenir");
+    /* une deuxième pression annule tout : ni décompte, ni barre, ni minuterie */
+    F.lancerSeqIso(0);
+    vrai("On peut annuler le décompte", !F.eval("preIso"));
+    vrai("…la barre disparaît",
+      !/\bshow\b/.test(F.document.getElementById("restbar").className));
+    vrai("…et rien ne tourne plus", !F.eval("rest").int);
+    /* on relance, et on amène le décompte à zéro sans attendre */
+    F.lancerSeqIso(0);
+    F.eval("rest").end = Date.now() - 1;
+    F.tickRest();
+    vrai("À zéro le décompte passe la main", !F.eval("preIso"));
     vrai("L'enchaînement tourne", !!F.eval("seqIso"));
+    eq("Le bandeau passe à la série en cours",
+      F.document.querySelector(".iso-chrono .k").textContent, "Série en cours");
+    /* le décompte s'entend autant qu'il se voit : une note seule à trois, deux, un,
+       puis le triple bip qui dit que ça commence */
+    F.arreterSeqIso(false);
+    const sons = [], noteOrig = F.bipCourt, tripleOrig = F.beep;
+    F.bipCourt = ()=>sons.push("note");
+    F.beep = ()=>sons.push("triple");
+    F.lancerSeqIso(0);
+    [2800, 1800, 800].forEach(ms=>{ F.eval("rest").end = Date.now() + ms; F.tickRest(); });
+    F.eval("rest").end = Date.now() - 1; F.tickRest();
+    F.bipCourt = noteOrig; F.beep = tripleOrig;
+    eq("Trois notes puis le triple bip", sons.join(","), "note,note,note,triple");
+    /* on repart d ici : le triple bip vient de lancer la tenue, comme plus haut */
     eq("On commence par tenir", F.document.getElementById("rest-lbl").textContent, "Gainage");
     vrai("…et la barre le dit",
       F.document.getElementById("restbar").classList.contains("tenue"));
@@ -1410,14 +1446,31 @@ async function lancer(){
     vrai("L'enchaînement s'arrête au bout", !F.eval("seqIso"));
     vrai("Toutes les tenues sont validées",
       DB.active.entries[0].sets.every(st=>st.done));
+    /* « Arrêter » coupe aussi la minuterie : elle finissait son compte toute seule,
+       comme un repos que personne n'avait demandé */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    F.lancerSeqIso(0);
+    F.eval("rest").end = Date.now() - 1;
+    F.tickRest();
+    vrai("Une tenue est en cours", !!F.eval("seqIso"));
+    F.arreterSeqIso(false);
+    vrai("L'arrêt coupe la minuterie", !F.eval("rest").int);
+    vrai("…et retire la barre",
+      !/\bshow\b/.test(F.document.getElementById("restbar").className));
     /* sans durée, rien à enchaîner */
     DB.active.entries[0].sets.forEach(st=>{ st.r = 0; st.done = false; });
     eq("Sans durée, aucune étape", F.etapesIso(0).length, 0);
     /* terminer la séance arrête l'enchaînement */
     DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
     F.lancerSeqIso(0);
+    F.eval("rest").end = Date.now() - 1;
+    F.tickRest();
     F.arreterChronos();
     vrai("La fin de séance arrête l'enchaînement", !F.eval("seqIso"));
+    /* et un décompte qui n'avait pas encore commencé ne doit pas se réveiller */
+    F.lancerSeqIso(0);
+    F.arreterChronos();
+    vrai("…et le décompte de départ avec", !F.eval("preIso"));
     DB.active = null; DB.templates = [];
     F.render();
   })();
