@@ -1312,6 +1312,44 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Fiche du profil");
+  neuf();
+  /* Le chemin vers l'objectif se mesure depuis le PREMIER poids noté : « 74 sur 80 kg »
+     ne veut rien dire en soi, ce qui compte est la part du trajet déjà faite. */
+  (()=>{
+    const j = n => { const d = new Date(); d.setDate(d.getDate()-n); return d.toISOString(); };
+    DB.profile = Object.assign({}, DB.profile, {height:188, weight:74, goalWeight:80});
+    DB.settings.name = "Test";
+    DB.weights = [{date:j(60), kg:68}, {date:j(30), kg:71}, {date:j(2), kg:74}];
+    F.openProfil();
+    const D2 = F.document;
+    eq("Trois tuiles", D2.querySelectorAll(".pr-t").length, 3);
+    /* deux signes sont des masques (les PNG de Nico), le troisieme un trace : on
+       accepte les deux formes, seule compte la presence d un signe */
+    vrai("Chacune porte son signe",
+      [...D2.querySelectorAll(".pr-t .ic")].every(e=>!!e.querySelector(".icm, svg")));
+    vrai("L'objectif a sa cible", !!D2.querySelectorAll(".pr-t")[2].querySelector("svg"));
+    vrai("Les calories ont la flamme", !!D2.querySelector(".pr-t .icm-flamme"));
+    vrai("Les protéines ont le biceps", !!D2.querySelector(".pr-t .icm-muscle"));
+    /* parti de 68, objectif 80, on est à 74 : la moitié du chemin */
+    eq("La jauge dit la moitié du chemin", D2.querySelector(".pr-jauge i").style.width, "50%");
+    vrai("…et ce qu'il reste", /Encore/.test(D2.querySelector(".pr-etat").textContent));
+    /* sans historique, la barre ne raconte pas d'histoire */
+    F.hideSheet(); DB.weights = []; F.openProfil();
+    eq("Sans historique la jauge reste vide",
+      F.document.querySelector(".pr-jauge i").style.width, "0%");
+    /* objectif atteint */
+    F.hideSheet(); DB.profile.goalWeight = 74;
+    DB.weights = [{date:j(60), kg:68}, {date:j(2), kg:74}];
+    F.openProfil();
+    eq("Objectif atteint : la jauge est pleine",
+      F.document.querySelector(".pr-jauge i").style.width, "100%");
+    vrai("…et l'app le dit", /atteint/i.test(F.document.querySelector(".pr-etat").textContent));
+    F.hideSheet();
+    DB.weights = [];
+  })();
+  neuf();
+
   grp("Familles d'aliments");
   neuf();
   /* La base est rangee par mode de pesee — a la piece, aux 100 g — ce qui ne dit rien
@@ -1527,6 +1565,13 @@ async function lancer(){
     eq("…et le retour aussi", F.document.getElementById("ps-g").value, "33");
     eq("Le libellé est en centilitres",
       (DB.habitSel[jour]||{}).matin[0], "Cola 33 cl (~0 g prot. · 139 kcal)");
+    /* Le libellé ne peut pas porter les macros : c'est lui qu'on relit partout. Elles
+       sont rangées à côté, pour le jour où l'app les comptera. */
+    eq("Glucides et lipides sont gardés à part",
+      (DB.macros||{})["Cola 33 cl (~0 g prot. · 139 kcal)"].join(), "40,0");
+    /* un seul intitulé pour les favoris : les deux formules disaient la même chose */
+    vrai("Un seul nom pour les favoris",
+      !/Garder dans mes propositions/.test(F.document.body.innerHTML));
     /* le reste de l'application doit savoir relire ce libellé */
     eq("La pastille affiche le volume", F.partsAliment("Cola 33 cl (~0 g prot. · 139 kcal)", 0).qCourt, "33 cl");
     eq("Doubler le volume double les calories",

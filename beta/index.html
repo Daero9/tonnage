@@ -13,16 +13,16 @@
 <style>
   :root{
     /* clair : fond crème, bandeau sombre, orange franc — d'après la maquette Figma */
-    --bg:#EBE8E1; --bg0:rgba(235,232,225,0); --surface:#ffffff; --surface2:#EBE8E1; --btn:#EBE8E1; --border:#e0dbd1;
+    --bg:#F3F0ED; --bg0:rgba(243,240,237,0); --surface:#ffffff; --surface2:#F3F0ED; --btn:#F3F0ED; --border:#e0dbd1;
     /* un onglet au repos doit se detacher de la page sans devenir une carte : la creme,
        tiree vers le blanc juste ce qu il faut pour qu on voie sa forme */
-    --tab:#F3F1ED;
+    --tab:#FAF8F6;
     --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
     --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
     --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
     --good:#5cb22e; --bad:#e0554a;
     --barre:rgba(255,255,255,.96);
-    --sheet:#EBE8E1; --field:#ffffff;
+    --sheet:#F3F0ED; --field:#ffffff;
     --figure:invert(1);
     --radius:16px;
     --matin:#3ca0e8; --midi:#f58220; --collation:#5b5bd6; --soir:#f2506e; --extra:#4caf50;
@@ -48,16 +48,16 @@
   /* Le parcours de profil se lit toujours sur fond clair, même si l'app est en thème sombre :
      ces écrans sont conçus clairs, et on veut la même lecture pour tout le monde. */
   :root[data-onb]{
-    --bg:#EBE8E1; --bg0:rgba(235,232,225,0); --surface:#ffffff; --surface2:#EBE8E1; --btn:#EBE8E1; --border:#e0dbd1;
+    --bg:#F3F0ED; --bg0:rgba(243,240,237,0); --surface:#ffffff; --surface2:#F3F0ED; --btn:#F3F0ED; --border:#e0dbd1;
     /* un onglet au repos doit se detacher de la page sans devenir une carte : la creme,
        tiree vers le blanc juste ce qu il faut pour qu on voie sa forme */
-    --tab:#F3F1ED;
+    --tab:#FAF8F6;
     --ink:#17181a; --ink-soft:#5c5c5e; --ink-mute:#8e8e90;
     --accent:#f58220; --accent-deep:#d96f10; --accent-ink:#ffffff;
     --hero:#1b1b1d; --hero-ink:#ffffff; --hero-soft:#c9c7c3;
     --good:#5cb22e; --bad:#e0554a;
     --barre:rgba(255,255,255,.96);
-    --sheet:#EBE8E1; --field:#ffffff;
+    --sheet:#F3F0ED; --field:#ffffff;
     --figure:invert(1);
     --inv-bg:#17181a; --inv-ink:#ffffff; --inv-soft:rgba(255,255,255,.72); --inv-good:#7fd44e;
   }
@@ -1257,6 +1257,33 @@
   #ot-scan .fl{margin-left:auto; display:flex; opacity:.7;}
   #ot-scan .fl svg{width:19px; height:19px;}
 
+  /* ---- la fiche du profil ----
+     Trois tuiles, chacune avec son signe : ce qu on mange, ce qu on vise. La troisieme
+     porte en plus le chemin deja fait, parce qu un poids objectif seul ne dit pas ou
+     l on en est. */
+  .pr-sous{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:5px 0 0;}
+  .pr-nom{text-align:center; font-size:21px; font-weight:800; margin-top:16px;}
+  .pr-ligne{text-align:center; font-size:13px; color:var(--ink-mute); margin-top:3px;
+    padding-bottom:14px; border-bottom:1px solid var(--border);}
+  .pr-tuiles{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin:14px 0;}
+  .pr-t{background:var(--surface); border-radius:15px; padding:12px 8px 11px; text-align:center;}
+  .pr-t .ic{display:flex; justify-content:center; align-items:center; width:34px; height:34px;
+    margin:0 auto 8px; border-radius:50%; background:rgba(245,130,32,.13); color:var(--accent);}
+  .pr-t .ic svg{width:21px; height:21px;}
+  .pr-t .v{font-size:20px; font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums;}
+  .pr-t .v .u{font-size:12.5px; font-weight:700; margin-left:2.5px;}
+  .pr-t .l{font-size:11.5px; color:var(--ink-soft); margin-top:2px; line-height:1.2;}
+  .pr-t .b{font-size:9.5px; color:var(--ink-mute); margin-top:7px; line-height:1.35;}
+  .pr-jauge{display:block; height:6px; border-radius:99px; background:var(--surface2);
+    border:1px solid var(--border); overflow:hidden; margin-bottom:4px;}
+  .pr-jauge i{display:block; height:100%; border-radius:99px; background:var(--accent);}
+  .pr-etat{display:flex; justify-content:space-between; gap:5px;}
+  .pr-etat b{font-weight:700; white-space:nowrap;}
+  /* le chevron des boutons du profil : pousse a droite, il dit que ca continue ailleurs */
+  #pr-plan, #pr-edit{justify-content:flex-start;}
+  #pr-plan .fl, #pr-edit .fl{margin-left:auto; display:flex; opacity:.7;}
+  #pr-plan .fl svg, #pr-edit .fl svg{width:18px; height:18px;}
+
   /* ---- la fiche d un produit scanne ----
      Quatre tuiles pour les quatre valeurs de l etiquette. Elles ne sont pas cliquables :
      elles disent ce que contient le produit, la question « combien » vient apres. */
@@ -1298,11 +1325,10 @@
   /* garder l aliment : la case a gauche, l etoile a droite, un seul et meme geste */
   .ps-opts{display:flex; align-items:center; gap:10px; cursor:pointer; padding:2px 1px;}
   .ps-opts input{width:20px; height:20px; accent-color:var(--accent); flex:0 0 auto;}
-  .ps-opts .tx{flex:1; min-width:0; font-size:13px; color:var(--ink-soft);}
-  .ps-opts .fav{display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
-    color:var(--ink-mute); white-space:nowrap;}
-  .ps-opts.on .fav{color:var(--accent);}
-  .ps-opts .et{display:flex;}
+  .ps-opts .tx{flex:1; min-width:0; font-size:13.5px; font-weight:700; color:var(--ink-soft);}
+  .ps-opts .et{display:flex; color:var(--ink-mute); flex:0 0 auto;}
+  .ps-opts.on .et{color:var(--accent);}
+  .ps-opts.on .tx{color:var(--ink);}
 
   /* ---- les favoris ----
      Une case a cocher posee entre deux boutons ne se voyait pas. Encadree et nommee,
@@ -2128,6 +2154,13 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Tes infos de base et tes objectifs.":"Your basics and your goals.",
+  "Apport journalier estimé":"Estimated daily intake",
+  "Soit {} g / kg":"That's {} g / kg",
+  "Encore {}":"{} to go",
+  "Objectif atteint":"Goal reached",
+  "Modifier mon profil":"Edit my profile",
+  "Pour le retrouver d'un geste au prochain repas":"To find it in one tap next meal",
   "protéines":"protein",
   "glucides":"carbs",
   "lipides":"fat",
@@ -2350,7 +2383,6 @@ const TRAD = {en:{
   "Poids de la portion (g, facultatif)":"Portion weight (g, optional)",
   "Protéines (g)":"Protein (g)",
   "Le poids est facultatif, mais si tu le donnes tu pourras ensuite ajuster la portion au gramme près.":"The weight is optional, but if you give it you'll be able to adjust the portion to the gram.",
-  "Garder dans mes propositions":"Keep in my suggestions",
   "Astuce : appui long sur une proposition pour la modifier.":"Tip: long-press a suggestion to edit it.",
   "Aucun aliment ne correspond. Passe par « je saisis les valeurs ».":"No food matches. Use \u201cI'll enter the values\u201d instead.",
   "Je saisis les valeurs moi-même":"I'll enter the values myself",
@@ -4543,7 +4575,7 @@ function openOnboarding(first, brouillon, depart){
   document.body.appendChild(onbEl);
   document.documentElement.setAttribute("data-onb", "1");
   const meta = document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.setAttribute("content", "#EBE8E1");
+  if(meta) meta.setAttribute("content", "#F3F0ED");
 
   const quitter = ()=>{
     if(!dejaRempli) return;
@@ -5290,7 +5322,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 05h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 05h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5337,6 +5369,7 @@ function applyDefaults(){
   if(!db.plafond) db.plafond = {};     /* exercices où la charge ne peut plus monter */
   if(!db.unilat) db.unilat = {};       /* exercices faits un bras / une jambe à la fois */
   if(!db.hbPerso) db.hbPerso = {};     /* aliments ajoutés aux propositions, par type de repas */
+  if(!db.macros) db.macros = {};       /* glucides et lipides des produits scannés, par libellé */
   if(!db.hbMasque) db.hbMasque = {};   /* propositions d'origine retirées par appui long */
   if(!db.settings.theme) db.settings.theme = "clair";
   if(db.settings.son === undefined) db.settings.son = true;
@@ -5822,6 +5855,12 @@ const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" s
   + 'M2.3 12h2.2M19.5 12h2.2M4.5 19.5l1.6-1.6M17.9 6.1l1.6-1.6"/></svg>';
 /* Deux signes pleins, dans la meme famille que les icones dessinees : ils accompagnent
    des chiffres, pas du texte, et doivent peser autant qu eux. */
+/* Une cible pleine, dans la meme famille que les signes de Nico : trois anneaux et
+   un centre. C est le seul des trois que je n avais pas. */
+const IC_CIBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<path d="M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2zm0 3a7.1 7.1 0 1 1 0 14.2 7.1 7.1 0 0 1 0-14.2z"/>'
+  + '<path d="M12 7.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8zm0 2.6a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/>'
+  + '<circle cx="12" cy="12" r="1.2"/></svg>';
 const IC_GOUTTE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
   + '<path d="M12 2.6c3.7 4.6 6 8 6 10.8a6 6 0 1 1-12 0c0-2.8 2.3-6.2 6-10.8z"/></svg>';
 const IC_VERRE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
@@ -5929,18 +5968,40 @@ function openProfil(){
   const p = db.profile || {};
   const kg = currentWeight() || p.weight || 0;
   const i = imc(kg, p.height);
+  /* Le chemin parcouru vers l objectif se mesure depuis le PREMIER poids note, pas
+     depuis zero : « 74 sur 80 kg » ne veut rien dire en soi, ce qui compte est la part
+     du trajet deja faite. Sans historique, la barre reste vide plutot que de mentir. */
+  const obj = p.goalWeight || 0;
+  const ws = (db.weights || []).slice().sort((a,b)=>new Date(a.date) - new Date(b.date));
+  const depart = ws.length? ws[0].kg : kg;
+  const trajet = Math.abs(obj - depart), fait = Math.abs(kg - depart);
+  const atteint = obj > 0 && Math.abs(obj - kg) < 0.5;
+  const pct = !obj ? 0 : (atteint ? 100 : (trajet > 0 ? Math.max(0, Math.min(100, Math.round(fait/trajet*100))) : 0));
+  const reste = obj? Math.abs(obj - kg) : 0;
+  const tuile = (ic, val, u, lab, bas) => `<div class="pr-t">
+    <span class="ic">${ic}</span>
+    <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
+    <div class="l">${lab}</div>${bas? `<div class="b">${bas}</div>`:""}</div>`;
   openSheet(`<h3>${TR("Mon profil")}</h3>
-    ${p.name? `<div style="text-align:center; font-size:20px; font-weight:800; margin-bottom:2px;">${esc(p.name)}</div>`:""}
-    <div style="text-align:center; font-size:13px; color:var(--ink-mute); margin-bottom:14px;">
+    <div class="pr-sous">${TR("Tes infos de base et tes objectifs.")}</div>
+    ${p.name? `<div class="pr-nom">${esc(p.name)}</div>`:""}
+    <div class="pr-ligne">
       ${p.height? affTaille(p.height)+" · ":""}${kg? pds(kg):""}${i? ` · ${TR("IMC")} ${i.toFixed(1)}`:""}</div>
-    ${pl? `<div class="tiles" style="margin-bottom:14px;">
-      <div class="tile"><div class="v" style="color:var(--accent);">${pl.kcal}</div><div class="u">${TR("kcal / jour")}</div></div>
-      <div class="tile"><div class="v">${pl.prot} g</div><div class="u">${TR("protéines")}</div></div>
-      <div class="tile"><div class="v">${p.goalWeight? pds(p.goalWeight) : "—"}</div><div class="u">${TR("objectif")}</div></div>
+    ${pl? `<div class="pr-tuiles">
+      ${tuile(icoM("flamme", 21), `<span style="color:var(--accent);">${pl.kcal}</span>`, "",
+        TR("kcal / jour"), TR("Apport journalier estimé"))}
+      ${tuile(icoM("muscle", 21), pl.prot, "g", TR("protéines"),
+        (kg? TR("Soit {} g / kg").replace("{}", (Math.round(pl.prot/kg*10)/10).toLocaleString(loc())) : ""))}
+      ${tuile(IC_CIBLE, obj? pds(obj) : "—", "", TR("objectif"),
+        obj? `<span class="pr-jauge"><i style="width:${pct}%;"></i></span>
+          <span class="pr-etat">${atteint? TR("Objectif atteint")
+            : TR("Encore {}").replace("{}", pds(Math.round(reste*10)/10))}<b>${pds(kg)} / ${pds(obj)}</b></span>` : "")}
     </div>`:""}
     <div class="stack">
-      <button class="btn btn-accent" id="pr-plan">${pl? TR("Voir mon plan") : TR("Créer mon plan")}</button>
-      <button class="btn" id="pr-edit" style="background:var(--surface);">${TR("Modifier mon profil et mon objectif")}</button>
+      <button class="btn btn-accent" id="pr-plan">${pl? TR("Voir mon plan") : TR("Créer mon plan")}
+        <span class="fl">${IC_CHEVRON}</span></button>
+      <button class="btn" id="pr-edit" style="background:var(--surface);">${TR("Modifier mon profil")}
+        <span class="fl">${IC_CHEVRON}</span></button>
       <button class="btn btn-ghost" id="pr-ok">${TR("Fermer")}</button>
     </div>`);
   /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
@@ -6749,8 +6810,8 @@ function openProduitScanne(meal, p){
       </div>
       <label class="ps-opts" id="ps-favbox">
         <input type="checkbox" id="ps-save">
-        <span class="tx">${TR("Garder dans mes propositions")}</span>
-        <span class="fav"><span class="et">${icoM("etoile", 19)}</span>${TR("Ajouter aux favoris")}</span>
+        <span class="et">${icoM("etoile", 19)}</span>
+        <span class="tx">${TR("Ajouter aux favoris")}</span>
       </label>
       <button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button>
       <button class="btn" id="ps-autre" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
@@ -6820,6 +6881,14 @@ function openProduitScanne(meal, p){
         familleAliment(p.nom, prot, kcal),
         Math.round((p.gluc100 || 0) * f), Math.round((p.lip100 || 0) * f)]);
     }
+    /* Glucides et lipides ne tiennent pas dans le libellé : c'est lui qu'on relit
+       partout, il ne peut pas s'alourdir. Ils sont donc rangés à côté, par libellé —
+       le jour où l'on comptera les macros au complet, les journées déjà enregistrées
+       les auront. Quelques dizaines d'octets par produit scanné. */
+    if(p.gluc100 || p.lip100){
+      if(!db.macros) db.macros = {};
+      db.macros[label] = [Math.round((p.gluc100 || 0)*f), Math.round((p.lip100 || 0)*f)];
+    }
     if(!db.habitSel[k]) db.habitSel[k] = {};
     db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).concat(label);
     if(db.dayFix[k]) delete db.dayFix[k];
@@ -6876,7 +6945,7 @@ function openAjoutAliment(meal){
       <div id="ot-live" style="font-size:14.5px; font-weight:700; color:var(--accent); min-height:20px;"></div>
       <label class="fav-box" id="ot-favbox">
         <span class="et">${icoM("etoile", 21)}</span>
-        <span class="tx"><b>${TR("Ajouter aux favoris")}</b><i>${TR("Garder dans mes propositions")}</i></span>
+        <span class="tx"><b>${TR("Ajouter aux favoris")}</b><i>${TR("Pour le retrouver d'un geste au prochain repas")}</i></span>
         <input type="checkbox" id="ot-save">
       </label>
       <button class="btn btn-accent" id="ot-ok">${TR("Enregistrer")}</button>
