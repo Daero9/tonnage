@@ -1143,6 +1143,25 @@ async function lancer(){
       F.getComputedStyle(D2.querySelector(".hero-accueil .sub .hl")).color, "rgb(245, 130, 32)");
     eq("…et c'est bien la séance conseillée",
       D2.querySelector(".hero-accueil .sub .hl").textContent, "Pull-up");
+    /* le bloc est centre dans le bandeau, son texte reste aligne a gauche */
+    (()=>{
+      const hb = D2.querySelector(".hero-accueil").getBoundingClientRect();
+      const tb = D2.querySelector(".hero-accueil .hero-h").getBoundingClientRect();
+      if(hb.width < 10) return;   /* l'iframe des tests peut n'avoir aucune largeur */
+      vrai("Le titre est centré dans le bandeau",
+        Math.abs((tb.left + tb.right)/2 - (hb.left + hb.right)/2) < 6);
+      vrai("…sans coller au bord", tb.left - hb.left > 8);
+    })();
+    /* le disque n'est plus d'un noir plat */
+    (()=>{
+      const g = D2.getElementById("hero-g");
+      vrai("Le disque porte un dégradé radial", !!g && g.tagName.toLowerCase() === "radialgradient");
+      const st = [...g.querySelectorAll("stop")].map(x=>x.getAttribute("stop-color"));
+      eq("Le centre est plus clair", st[0], "#0C1116");
+      eq("…et l'extérieur plus sombre", st[1], "#0D0E11");
+      eq("Le fond du bandeau s'en sert",
+        D2.querySelector(".hero-bg g rect").getAttribute("fill"), "url(#hero-g)");
+    })();
     /* la courbe orange passe derrière, dans le fond du bandeau */
     const traits = [...D2.querySelectorAll(".hero-accueil .hero-bg path")]
       .filter(p => (p.getAttribute("stroke")||"").indexOf("accent") >= 0);

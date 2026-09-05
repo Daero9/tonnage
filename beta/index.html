@@ -241,7 +241,7 @@
   /* Le bouton Bilan est centre EN ABSOLU au-dessus de la ligne : sans reserve,
      un tonnage a cinq chiffres glisse dessous. Chaque moitie s'ecarte donc du
      centre de la largeur du bouton — les deux nombres restent symetriques. */
-  .wk-nums .n{flex:1; min-width:0; display:flex; align-items:center; gap:9px;}
+  .wk-nums .n{flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:9px;}
   .wk-nums .n:first-child{padding-right:46px;}
   .wk-nums .n:last-child{padding-left:46px;}
   .wk-nums .ic{flex:0 0 auto; width:34px; height:34px; border-radius:50%; font-size:17px;
@@ -743,8 +743,11 @@
      et calé plus haut, pour que même ses extrémités restent dans le noir. */
   /* L accueil s adresse a quelqu un : le salut se lit a gauche, comme une phrase, et
      non centre comme un titre de rubrique. Le nom de la seance ressort en orange. */
+  /* Le bloc est centre, son texte reste aligne a gauche : les deux lignes partagent
+     un meme bord, et l ensemble tombe au milieu du bandeau. Centrer le TEXTE au lieu
+     du bloc casserait cet alignement des que la seance porte un nom long. */
   .hero-accueil .hero-h{position:absolute; left:0; right:0; bottom:42%; margin-top:0;
-    text-align:left; padding:0 20px;}
+    text-align:left; width:max-content; max-width:calc(100% - 40px); margin-inline:auto;}
   /* le salut et la question tiennent chacun sur leur ligne : une seance au nom long
      passe a la ligne sans aller cogner la carte de la semaine */
   .hero-accueil .sub{margin-top:5px; line-height:1.35;}
@@ -5125,7 +5128,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 03h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 03h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5702,14 +5705,22 @@ function heroSvg(photo, arc){
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
   const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
   return `<svg class="hero-bg" viewBox="0 0 1210 ${HERO_H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-    <defs><mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="${HERO_H}">
+    <defs>
+    <!-- Le disque n est plus d un noir plat : un degrade radial l eclaire tres
+         legerement en son centre. L ecart entre les deux tons est minime a dessein —
+         il donne du volume sans jamais se lire comme deux couleurs. -->
+    <radialGradient id="hero-g" cx="50%" cy="50%" r="70%">
+      <stop offset="0" stop-color="#0C1116"/>
+      <stop offset="1" stop-color="#0D0E11"/>
+    </radialGradient>
+    <mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="${HERO_H}">
       <rect width="1210" height="${HERO_H}" fill="#000"/>
       <path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
       <circle cx="605" cy="-50" r="797" fill="none" stroke="#000" stroke-width="16"/>
       <circle cx="605" cy="-60" r="171" fill="#000"/>
     </mask></defs>
     <g mask="url(#hero-m)">
-      <rect width="1210" height="${HERO_H}" fill="var(--hero)"/>
+      <rect width="1210" height="${HERO_H}" fill="url(#hero-g)"/>
       ${photo ? `<image href="img/${photo}.jpg" x="0" y="${decal}" width="${larg}" height="${haut}"
         preserveAspectRatio="none" opacity=".62"/>
       <rect width="1210" height="${HERO_H}" fill="#0e0e10" opacity=".42"/>` : ""}
