@@ -5178,7 +5178,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 04h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 04h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5750,7 +5750,7 @@ const PHOTO_L = 640, PHOTO_H = 929;    /* format d'origine des photos de séance
    Le liseré reste à 74,7 % de la hauteur : rien de ce qui s'y aligne n'a bougé.
    Le rond clair du haut garde sa position et sa taille exactes. */
 const HERO_H = 1000;
-function heroSvg(photo, arc){
+function heroSvg(photo){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
   const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
@@ -5774,8 +5774,6 @@ function heroSvg(photo, arc){
       ${photo ? `<image href="img/${photo}.jpg" x="0" y="${decal}" width="${larg}" height="${haut}"
         preserveAspectRatio="none" opacity=".62"/>
       <rect width="1210" height="${HERO_H}" fill="#0e0e10" opacity=".42"/>` : ""}
-      ${arc ? `<path d="M800 -60 C980 40, 1130 200, 1240 480" fill="none" stroke="var(--accent)"
-        stroke-width="13" stroke-linecap="round"/>` : ""}
     </g>
   </svg>`;
 }
@@ -5783,7 +5781,7 @@ function heroSvg(photo, arc){
 function hero(inner, opts){
   const o = opts || {};
   return `<div class="hero ${o.classe || ""}">
-    ${heroSvg(o.photo, o.arc)}
+    ${heroSvg(o.photo)}
     <div class="hero-in">
       <div class="hero-top">
         ${o.fermer ? `<span></span>
@@ -7864,7 +7862,7 @@ function renderSeance(app){
   app.innerHTML = `
     ${hero(`<h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}
         <span class="wv">👋</span></h1>
-      <div class="sub">${sub}</div>`, {classe:"hero-accueil", arc:true})}
+      <div class="sub">${sub}</div>`, {classe:"hero-accueil"})}
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">${TR("⚠️ Tes données ne peuvent pas être enregistrées")}</div>
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}

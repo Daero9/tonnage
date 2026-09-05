@@ -1162,13 +1162,10 @@ async function lancer(){
       eq("Le fond du bandeau s'en sert",
         D2.querySelector(".hero-bg g rect").getAttribute("fill"), "url(#hero-g)");
     })();
-    /* la courbe orange passe derrière, dans le fond du bandeau */
-    const traits = [...D2.querySelectorAll(".hero-accueil .hero-bg path")]
-      .filter(p => (p.getAttribute("stroke")||"").indexOf("accent") >= 0);
-    eq("Une courbe orange traverse le fond", traits.length, 1);
-    vrai("…derrière le titre, pas devant",
-      D2.querySelector(".hero-bg").compareDocumentPosition(D2.querySelector(".hero-h"))
-        & Node.DOCUMENT_POSITION_FOLLOWING);
+    /* le fond du bandeau ne porte aucun trait de couleur : il est nu */
+    vrai("Aucun trait coloré dans le fond",
+      ![...D2.querySelectorAll(".hero-accueil .hero-bg path")]
+        .some(p => (p.getAttribute("stroke")||"").indexOf("accent") >= 0));
     /* les jours : des pastilles, plus des barres */
     const jours = [...D2.querySelectorAll(".wk-day")];
     eq("Sept jours", jours.length, 7);
