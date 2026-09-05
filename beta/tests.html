@@ -1331,6 +1331,14 @@ async function lancer(){
     /* la rangee doit pouvoir defiler : neuf familles ne tiennent pas sur un telephone */
     eq("La rangée défile de gauche à droite",
       F.getComputedStyle(D2.getElementById("ot-cats")).overflowX, "auto");
+    /* des traces au fil, pas des emoticones : ils prennent la couleur de la pastille */
+    vrai("Chaque famille porte un signe au trait",
+      cats.every(c => { const g = c.querySelector("svg"); return g && g.getAttribute("stroke") === "currentColor"; }));
+    eq("Neuf traces distincts", new Set(cats.map(c=>c.querySelector("svg").innerHTML)).size, 9);
+    /* la loupe annonce le champ de recherche */
+    vrai("La recherche porte sa loupe", !!D2.querySelector(".ch-champ .lp svg"));
+    vrai("…sans voler le clic au champ",
+      F.getComputedStyle(D2.querySelector(".ch-champ .lp")).pointerEvents === "none");
 
     const viandes = choisir("viande");
     vrai("Les viandes sortent le poulet", viandes.includes("Poulet"));
