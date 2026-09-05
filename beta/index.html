@@ -798,6 +798,9 @@
   .restbar.ending{animation:flashEnd .5s 3;}
   /* pendant la tenue, la barre passe au vert : on n'est pas en train de se reposer */
   .restbar.tenue{background:var(--good);}
+  /* le cadran se met au ton de la barre : brun sur l orange du repos, vert sombre
+     sur le vert de la tenue */
+  .restbar.tenue .rb-disc{background:#272719;}
   .restbar.tenue .rb-arc{stroke:var(--good);}
   .restbar.tenue .rb-pause{background:var(--good) !important;}
   /* sur la barre verte, un plus orange ne serait plus de la meme famille */
@@ -5557,7 +5560,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 15h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 15h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6722,7 +6725,9 @@ function startRest(sec){
   rest.total = sec;
   rest.end = Date.now() + sec*1000;
   restbar.classList.add("show");
-  restbar.classList.remove("ending", "paused");
+  /* « tenue » aussi : une seance de gainage terminee laissait la marque, et le repos
+     suivant repartait en vert sans qu on tienne quoi que ce soit */
+  restbar.classList.remove("ending", "paused", "tenue");
   placerRest();
   document.getElementById("rest-lbl").textContent = TR("Repos");
   majAnneau(0); majIconePause();
