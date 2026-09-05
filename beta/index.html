@@ -1531,6 +1531,11 @@
   .sheet h3.ps-nom{text-align:left; text-transform:uppercase; font-size:17px;
     line-height:1.15; padding:0; margin-bottom:0;}
   .ps-marque{text-align:left; font-size:12.5px; color:var(--ink-mute); margin:4px 0 0;}
+  /* boisson ou aliment : ce qui explique pourquoi la quantité se compte en cl ou en g */
+  .ps-type{display:inline-flex; align-items:center; gap:5px; vertical-align:middle;
+    background:var(--surface2); border-radius:99px; padding:3px 9px 3px 7px;
+    font-size:11px; font-weight:700; color:var(--ink-soft);}
+  .ps-type svg{width:14px; height:14px; color:var(--accent);}
   /* Quatre tuiles à côté d'une photo, sur un téléphone : chacune tombe à cinquante
      pixels. Tout y est calibré au plus juste — sans la ligne « pour 100 ml », qui est
      désormais écrite une fois pour les quatre, elles ne tiendraient pas. */
@@ -1552,8 +1557,16 @@
   .ps-bascule svg{width:15px; height:15px;}
   /* Le compteur et l apercu tiennent cote a cote quand la place le permet, et passent
      l un sous l autre sinon : deux blocs de 150 px ne rentrent pas sur tous les ecrans. */
-  .ps-qrow{display:flex; gap:8px; flex-wrap:wrap;}
-  .ps-step{flex:1 1 200px; display:flex; align-items:stretch; gap:7px;}
+  .ps-qrow{display:flex; gap:9px; flex-wrap:wrap;}
+  .ps-qg{flex:1 1 200px; min-width:0;}
+  .ps-step{display:flex; align-items:stretch; gap:7px;}
+  /* les quantités courantes, sous le compteur : une canette, un verre, une bouteille */
+  .ps-rapide{display:flex; gap:5px; margin-top:7px; flex-wrap:wrap;}
+  .ps-rapide button{flex:1 1 auto; min-width:44px; padding:6px 4px; border-radius:99px;
+    background:var(--surface); border:1px solid var(--border); font-size:11.5px;
+    font-weight:700; color:var(--ink-soft); white-space:nowrap;}
+  .ps-rapide button.on{border-color:var(--accent); color:var(--accent);
+    box-shadow:inset 0 0 0 1px var(--accent);}
   .ps-step > button{flex:0 0 48px; border-radius:13px; background:var(--surface2);
     border:1px solid var(--border); font-size:19px; font-weight:700; line-height:1;
     display:flex; align-items:center; justify-content:center;}
@@ -1562,18 +1575,33 @@
   .ps-step .ch input{text-align:center; padding-right:34px; font-size:19px; font-weight:800;}
   .ps-step .ch .u{position:absolute; right:15px; font-size:13px; font-weight:700;
     color:var(--ink-soft); pointer-events:none;}
-  .ps-live{flex:1 1 172px; display:flex; align-items:center; gap:10px;
-    background:rgba(245,130,32,.13); border-radius:14px; padding:8px 12px;}
-  .ps-live .ic{display:flex; color:var(--accent); flex:0 0 auto;}
-  .ps-live .ic svg{width:23px; height:23px;}
-  .ps-live .n{flex:1; min-width:0; text-align:center;}
-  .ps-live .n + .n{border-left:1px solid rgba(245,130,32,.3);}
-  .ps-live b{font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;}
-  .ps-live i{display:block; font-style:normal; font-size:10.5px; color:var(--ink-mute); line-height:1.3;}
+  .ps-live{flex:1 1 172px; min-width:0; background:rgba(245,130,32,.13);
+    border-radius:14px; padding:9px 11px;}
+  .ps-live .tete{display:flex; align-items:center; gap:9px;}
+  .ps-live .ic{flex:0 0 auto; width:32px; height:32px; border-radius:10px;
+    background:rgba(245,130,32,.22); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .ps-live .ic svg{width:19px; height:19px;}
+  .ps-live .kc{font-size:13px; font-weight:700; color:var(--ink-soft); line-height:1.1;}
+  .ps-live .kc b{font-size:21px; font-weight:800; color:var(--accent);
+    font-variant-numeric:tabular-nums; margin-right:2px;}
+  .ps-live i{display:block; font-style:normal; font-size:10.5px; color:var(--ink-mute); line-height:1.35;}
+  /* les trois macros en dessous, séparées par un filet : même lecture que les tuiles */
+  .ps-live .mac{display:flex; margin-top:8px; padding-top:7px;
+    border-top:1px solid rgba(245,130,32,.28);}
+  .ps-live .mac > div{flex:1; min-width:0; text-align:center; font-size:11px;
+    font-weight:700; color:var(--ink-soft);}
+  .ps-live .mac > div + div{border-left:1px solid rgba(245,130,32,.28);}
+  .ps-live .mac b{font-size:14px; font-weight:800; color:var(--ink);
+    font-variant-numeric:tabular-nums; margin-right:1px;}
   /* garder l aliment : la case a gauche, l etoile a droite, un seul et meme geste */
-  .ps-opts{display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 2px;
-    width:100%; text-align:left; background:none; border:0;}
-  .ps-opts .tx{flex:1; min-width:0; font-size:13.5px; font-weight:700; color:var(--ink-soft);}
+  /* les deux gestes secondaires, côte à côte et de même poids : garder le produit,
+     ou en scanner un autre. Le geste principal reste seul, en dessous et en orange. */
+  .ps-actions{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .ps-opts{display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+    padding:11px 8px; width:100%; text-align:left; background:var(--surface);
+    border:1px solid var(--border); border-radius:14px;}
+  .ps-opts .tx{min-width:0; font-size:12px; font-weight:700; color:var(--ink-soft); line-height:1.25;}
   /* creuse tant que le produit n'est pas gardé, pleine dès qu'il l'est */
   .ps-opts .et{display:flex; color:var(--ink-mute); flex:0 0 auto;}
   .ps-opts .et svg{width:22px; height:22px; fill:none;
@@ -2501,6 +2529,9 @@ const TRAD = {en:{
   "Petits pois (150 g)":"Peas (150 g)",
   "pour 100 ml":"per 100 ml",
   "Informations {}":"Values {}",
+  "Quantité consommée":"Amount taken",
+  "Boisson":"Drink", "Aliment":"Food",
+  "prot.":"prot.", "gluc.":"carbs", "lip.":"fat",
   "Indique la quantité bue.":"Enter how much you drank.",
   "Scanner un autre produit":"Scan another product",
   "Indique la quantité mangée.":"Enter how much you ate.",
@@ -5678,7 +5709,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 19h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 19h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7535,7 +7566,8 @@ function openProduitScanne(meal, p){
         : `<span class="ic">${signe}</span>`}</div>
       <div class="ps-titre">
         <h3 class="ps-nom">${esc(p.nom)}</h3>
-        ${p.marque? `<div class="ps-marque">${esc(p.marque)}</div>`:""}
+        <div class="ps-marque">${p.marque? esc(p.marque) + " " : ""}<span class="ps-type">${
+          signe}${TR(liquide? "Boisson" : "Aliment")}</span></div>
         <div class="ps-tuiles">
           ${tuile(icoM("flamme", 20),  p.kcal100, "",  "kcal")}
           ${tuile(icoM("muscle", 20),  p.prot100, "g", TR("protéines"))}
@@ -7552,26 +7584,40 @@ function openProduitScanne(meal, p){
           ${liquide? `<button class="ps-bascule" id="ps-unite">${IC_ECHANGE}<span></span></button>`:""}
         </div>
         <div class="ps-qrow">
-          <div class="ps-step">
-            <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
-            <div class="ch"><input type="number" inputmode="decimal" min="0" id="ps-g"
-              value="${p.portion || (liquide ? 25 : 100)}"><span class="u" id="ps-uni"></span></div>
-            <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
+          <div class="ps-qg">
+            <div class="ps-step">
+              <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
+              <div class="ch"><input type="number" inputmode="decimal" min="0" id="ps-g"
+                value="${p.portion || (liquide ? 25 : 100)}"><span class="u" id="ps-uni"></span></div>
+              <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
+            </div>
+            <div class="ps-rapide" id="ps-rapide"></div>
           </div>
           <div class="ps-live">
-            <span class="ic" id="ps-ic">${liquide? IC_VERRE : IC_ASSIETTE}</span>
-            <div class="n"><div><b id="ps-kcal">0</b> kcal</div><i id="ps-pour"></i></div>
-            <div class="n"><div><b id="ps-prot">0</b> g</div><i>${TR("protéines")}</i></div>
+            <div class="tete">
+              <span class="ic" id="ps-ic">${signe}</span>
+              <div class="grow"><div class="kc"><b id="ps-kcal">0</b> kcal</div>
+                <i id="ps-pour"></i></div>
+            </div>
+            <div class="mac">
+              <div><b id="ps-prot">0</b> g<i>${TR("prot.")}</i></div>
+              <div><b id="ps-gluc">0</b> g<i>${TR("gluc.")}</i></div>
+              <div><b id="ps-lip">0</b> g<i>${TR("lip.")}</i></div>
+            </div>
           </div>
         </div>
       </div>
-      <button type="button" class="ps-opts" id="ps-favbox" aria-pressed="false">
-        <span class="et">${IC_ETOILE}</span>
-        <span class="tx">${TR("Ajouter aux favoris")}</span>
-      </button>
+      <div class="ps-actions">
+        <button type="button" class="ps-opts" id="ps-favbox" aria-pressed="false">
+          <span class="et">${IC_ETOILE}</span>
+          <span class="tx">${TR("Ajouter aux favoris")}</span>
+        </button>
+        <button type="button" class="ps-opts" id="ps-autre">
+          <span class="et">${IC_CODEBARRE}</span>
+          <span class="tx">${TR("Scanner un autre produit")}</span>
+        </button>
+      </div>
       <button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button>
-      <button class="btn" id="ps-autre" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
-        IC_CODEBARRE}${TR("Scanner un autre produit")}</button>
       <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
     </div>`);
   /* Hors ligne, ou photo retirée depuis : le signe reprend la place, sans case vide. */
@@ -7598,22 +7644,50 @@ function openProduitScanne(meal, p){
      100 ml, soit 10 cl : le diviseur suit donc l unite affichee. */
   const diviseur = ()=> uni === "cl" ? 10 : 100;
   const pas = ()=> uni === "cl" ? 5 : (uni === "ml" ? 50 : 10);
+  /* Les quantités qu'on saisit vraiment : une canette, une petite bouteille, un verre.
+     Les atteindre au bouton « + » demandait jusqu'à dix appuis. */
+  const RAPIDES = {cl:[10, 25, 33, 50, 100], ml:[100, 250, 330, 500, 1000], g:[30, 50, 100, 150, 200]};
+  const fmtRapide = v => ((uni === "cl" && v === 100) || (uni === "ml" && v === 1000))
+    ? "1 L" : v + " " + uni;
   const part = ()=>{ const q = parseFloat(gEl.value); return q > 0 ? q/diviseur() : 0; };
+  /* le raccourci choisi se marque, pour qu'on voie où l'on en est */
+  const majRapide = ()=>{
+    const q = parseFloat(gEl.value);
+    document.querySelectorAll("#ps-rapide [data-q]").forEach(b=>
+      b.classList.toggle("on", parseFloat(b.dataset.q) === q));
+  };
+  const construireRapide = ()=>{
+    const box = document.getElementById("ps-rapide");
+    box.innerHTML = (RAPIDES[uni] || []).map(v=>
+      `<button type="button" data-q="${v}">${fmtRapide(v)}</button>`).join("");
+    box.querySelectorAll("[data-q]").forEach(b=>b.onclick = ()=>{
+      gEl.value = b.dataset.q;
+      maj();
+      if(navigator.vibrate) try{ navigator.vibrate(6); }catch(e){}
+    });
+    majRapide();
+  };
   const majUnite = ()=>{
-    document.getElementById("ps-lab").textContent = TR(uni === "g" ? "Quantité mangée (g)"
-      : (uni === "cl" ? "Quantité bue (cl)" : "Quantité bue (ml)"));
+    /* l'unité est écrite dans le champ : la répéter dans l'intitulé ferait doublon */
+    document.getElementById("ps-lab").textContent = TR("Quantité consommée");
     document.getElementById("ps-uni").textContent = uni;
     gEl.step = pas();
     const b = document.getElementById("ps-unite");
     if(b) b.querySelector("span").textContent = TR(uni === "cl" ? "Passer en ml" : "Passer en cl");
+    construireRapide();
   };
   const maj = ()=>{
     const f = part();
     document.getElementById("ps-prot").textContent = Math.round(p.prot100*f);
+    /* arrondis comme ils seront enregistres : l apercu ne doit pas annoncer 0,8 g
+       pour une ligne qui portera 1 g */
+    document.getElementById("ps-gluc").textContent = Math.round((p.gluc100 || 0)*f);
+    document.getElementById("ps-lip").textContent  = Math.round((p.lip100 || 0)*f);
     document.getElementById("ps-kcal").textContent = Math.round(p.kcal100*f);
     const q = parseFloat(gEl.value);
     document.getElementById("ps-pour").textContent = q > 0
       ? TR("pour {}").replace("{}", q + " " + uni) : "";
+    majRapide();
   };
   const bougerDe = d => {
     const q = Math.max(0, (parseFloat(gEl.value) || 0) + d * pas());
