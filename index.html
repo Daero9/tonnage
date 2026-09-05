@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <title>Tonnup</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1b1b1d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1040,6 +1040,15 @@
   .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center;}
   .overlay.show{display:flex;}
   .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
+  /* ---- clavier ouvert ----
+     Le clavier ne rogne pas la page : sur iOS jamais, sur Android seulement si
+     l activite le demande. La fiche restait donc a sa taille, ancree au bas d un ecran
+     qui n existait plus, et la liste des resultats passait derriere les touches.
+     On recale l ensemble sur la zone reellement visible, mesuree par visualViewport. */
+  :root.clavier .overlay{top:var(--v-haut, 0px); height:var(--v-haut-h, 100dvh); bottom:auto;}
+  :root.clavier .sheet{max-height:100%;}
+  /* rien ne flotte par-dessus le clavier : ni la barre du bas, ni le minuteur */
+  :root.clavier .tabbar, :root.clavier #app > .eat-fab{display:none;}
   .sheet h3{font-size:18px; margin-bottom:14px; text-align:center; padding:0 34px;}
   /* croix de fermeture, présente sur toutes les fiches */
   .sheet-x{position:absolute; top:10px; right:12px; z-index:5; width:32px; height:32px; border-radius:50%;
@@ -2230,6 +2239,8 @@ const TRAD = {en:{
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
   "Avec lest":"Weighted",
+  "Repos terminé":"Rest over",
+  "C'est reparti pour la série suivante.":"Time for the next set.",
   "Une seule chose sort de l'appareil, et seulement si tu le demandes : le code-barres que tu scannes.":"Only one thing leaves the device, and only if you ask for it: the barcode you scan.",
   "Le scan de code-barres":"Barcode scanning",
   "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.":"This is the only feature that leaves your phone, and only when you tap the button. It sends <b>the barcode digits and nothing else</b> to Open Food Facts, an open food database, which returns the product name and its values. Not your name, not your weight, not what you eat, no identifier.",
@@ -2903,7 +2914,7 @@ const TRAD = {en:{
   "Développé militaire":"Overhead press",
   "Développé militaire haltères":"Dumbbell shoulder press",
   "Élévations latérales":"Lateral raises",
-  "Oiseau":"Rear delt fly",
+  "Oiseau":"Rear delt fly", "Butterfly arrière":"Reverse pec deck",
   "Face pull":"Face pull",
   "Curl barre":"Barbell curl",
   "Curl haltères":"Dumbbell curl",
@@ -3115,7 +3126,7 @@ function affTaille(cm){
 const LIB = [
   ["Pectoraux","Développé couché","Barre","bench"],["Pectoraux","Développé incliné haltères","Haltères","bench"],["Pectoraux","Développé couché haltères","Haltères","bench"],["Pectoraux","Écartés poulie","Poulie","cablefly"],["Pectoraux","Dips","Poids du corps","dips"],["Pectoraux","Pompes","Poids du corps","pushup"],
   ["Dos","Tractions","Barre fixe","pullup"],["Dos","Rowing barre","Barre","row"],["Dos","Tirage vertical","Poulie","latpulldown"],["Dos","Rowing haltère","Haltères","row"],["Dos","Tirage horizontal","Poulie","seatedrow"],["Dos","Soulevé de terre","Barre","deadlift"],
-  ["Épaules","Développé militaire","Barre","ohp"],["Épaules","Développé militaire haltères","Haltères","ohp"],["Épaules","Élévations latérales","Haltères","latraise"],["Épaules","Oiseau","Haltères","reardelt"],["Épaules","Face pull","Poulie","facepull"],
+  ["Épaules","Développé militaire","Barre","ohp"],["Épaules","Développé militaire haltères","Haltères","ohp"],["Épaules","Élévations latérales","Haltères","latraise"],["Épaules","Oiseau","Haltères","reardelt"],["Épaules","Butterfly arrière","Machine","reardelt"],["Épaules","Face pull","Poulie","facepull"],
   ["Biceps","Curl barre","Barre","curl"],["Biceps","Curl haltères","Haltères","curl"],["Biceps","Curl marteau","Haltères","curl"],["Biceps","Curl pupitre","Barre","preacher"],
   ["Triceps","Extension poulie","Poulie","pushdown"],["Triceps","Barre au front","Barre","skullcrusher"],["Triceps","Extension nuque haltère","Haltères","overheadext"],
   ["Jambes","Squat","Barre","squat"],["Jambes","Presse à cuisses","Machine","legpress"],["Jambes","Fentes","Haltères","lunge"],["Jambes","Leg curl","Machine","legcurl"],["Jambes","Leg extension","Machine","legext"],["Jambes","Soulevé de terre roumain","Barre","deadlift"],["Jambes","Hip thrust","Barre","hipthrust"],["Jambes","Mollets debout","Machine","calf"],
@@ -3291,8 +3302,9 @@ const ALTS = {
   "Développé militaire":["Développé militaire haltères","Élévations latérales"],
   "Développé militaire haltères":["Développé militaire","Élévations latérales"],
   "Élévations latérales":["Oiseau","Face pull","Développé militaire haltères"],
-  "Oiseau":["Face pull","Élévations latérales"],
-  "Face pull":["Oiseau","Tirage horizontal"],
+  "Oiseau":["Butterfly arrière","Face pull","Élévations latérales"],
+  "Butterfly arrière":["Oiseau","Face pull","Élévations latérales"],
+  "Face pull":["Oiseau","Butterfly arrière","Tirage horizontal"],
   "Curl barre":["Curl haltères","Curl marteau","Curl pupitre"],
   "Curl haltères":["Curl barre","Curl marteau"],
   "Curl marteau":["Curl haltères","Curl barre"],
@@ -3464,6 +3476,7 @@ const MUSCLE_WORK = {
   "Développé militaire haltères":[["Deltoïdes",3],["Triceps",2]],
   "Élévations latérales":[["Deltoïdes",3]],
   "Oiseau":[["Deltoïdes",3],["Grand dorsal",2]],
+  "Butterfly arrière":[["Deltoïdes",3],["Trapèzes",2],["Grand dorsal",1]],
   "Face pull":[["Deltoïdes",3],["Grand dorsal",2],["Trapèzes",1]],
   "Élévations latérales poulie":[["Deltoïdes",3]],
   "Développé machine épaules":[["Deltoïdes",3],["Triceps",2]],
@@ -3656,6 +3669,8 @@ Object.assign(EXO_INFO_EN, {
     steps:["Standing, a dumbbell in each hand by your sides.","Torso leaning slightly forward, elbows very slightly bent.","Raise your arms out to the sides to shoulder height.","Imagine pouring from a jug, little finger slightly higher.","Lower slowly instead of dropping your arms."]},
   "Oiseau":{tip:"Aim for the rear delts, not the shoulder blades: your arms go out to the sides, not toward your navel.",
     steps:["Torso hinged forward at 45°, or chest supported on an incline bench.","Dumbbells under your chest, elbows slightly bent.","Open your arms out to the sides to shoulder height.","Squeeze for a second at the top without shrugging.","Lower under control."]},
+  "Butterfly arrière":{tip:"The chest pad does the holding, so nothing else can cheat: no swinging, no lower back. It's the cleanest way to reach the rear delts.",
+    steps:["Turn the seat to face the machine, chest against the pad.","Set the height so the handles are at shoulder level.","Grab the handles, elbows barely bent.","Open your arms wide and back, leading with the elbows.","Squeeze a second at the back, then return slowly without letting the weights touch down."]},
   "Face pull":{tip:"Finish with your hands level with your ears and your elbows high: that's what targets the rear shoulder.",
     steps:["Set the pulley at face height, rope in hand.","Step back, arms straight, palms facing in.","Pull the rope toward your face, spreading your hands apart.","Elbows high, shoulder blades squeezed, hands by your ears.","Return slowly to straight arms."]},
   "Élévations latérales poulie":{tip:"A cable keeps constant tension even at the bottom, unlike dumbbells: ideal at the end of a session.",
@@ -3885,6 +3900,8 @@ Object.assign(EXO_INFO, {
  steps:["Debout, un haltère dans chaque main le long du corps.","Buste légèrement penché en avant, coudes très légèrement fléchis.","Monte les bras sur les côtés jusqu'à hauteur d'épaules.","Imagine que tu verses de l'eau avec un pichet, petit doigt légèrement plus haut.","Redescends lentement sans laisser tomber les bras."]},
 "Oiseau":{tip:"Vise les épaules arrière, pas les omoplates : les bras partent sur les côtés, pas vers le nombril.",
  steps:["Buste penché en avant à 45° ou poitrine appuyée sur un banc incliné.","Haltères sous la poitrine, coudes légèrement fléchis.","Écarte les bras sur les côtés jusqu'à hauteur d'épaules.","Serre une seconde en haut sans hausser les épaules.","Redescends en contrôlant."]},
+"Butterfly arrière":{tip:"C'est l'appui pectoral qui te tient : rien ne peut tricher, ni élan ni bas du dos. C'est la façon la plus propre d'atteindre l'arrière de l'épaule.",
+ steps:["Retourne l'assise face à la machine, poitrine contre le dossier.","Règle la hauteur pour que les poignées soient au niveau des épaules.","Saisis les poignées, coudes à peine fléchis.","Ouvre les bras loin en arrière, en menant avec les coudes.","Serre une seconde en arrière, puis reviens lentement sans reposer les plaques."]},
 "Face pull":{tip:"Termine le mouvement avec les mains au niveau des oreilles et les coudes hauts : c'est ce qui cible l'arrière de l'épaule.",
  steps:["Règle la poulie à hauteur de visage, corde en main.","Recule d'un pas, bras tendus, paumes vers l'intérieur.","Tire la corde vers le visage en écartant les mains.","Coudes hauts, omoplates serrées, mains au niveau des oreilles.","Reviens lentement bras tendus."]},
 "Élévations latérales poulie":{tip:"La poulie garde une tension constante même en bas du mouvement, contrairement aux haltères : idéal en fin de séance.",
@@ -5441,7 +5458,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 12h20";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 12h30";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -5657,6 +5674,41 @@ function save(){
   idbSet(json);
   autoFileSchedule();
 }
+/* ---- la zone que le clavier laisse voir -------------------------------------
+   visualViewport donne la portion d ecran reellement visible, clavier deduit. C est
+   la seule mesure fiable : innerHeight ne bouge pas sur iOS, et sur Android il ne
+   bouge que si l activite est en adjustResize. On la recopie dans le CSS, et les
+   fiches s y ajustent. Le seuil de 120 px distingue l ouverture d un clavier du
+   simple retrait de la barre d adresse. */
+(function(){
+  const vv = window.visualViewport;
+  if(!vv) return;
+  const racine = document.documentElement;
+  let t = null;
+  const maj = ()=>{
+    const h = Math.round(vv.height);
+    const cache = Math.round(window.innerHeight - h - vv.offsetTop);
+    const clavier = cache > 120;
+    racine.style.setProperty("--v-haut", Math.round(vv.offsetTop) + "px");
+    racine.style.setProperty("--v-haut-h", h + "px");
+    racine.classList.toggle("clavier", clavier);
+  };
+  /* on attend que le clavier ait fini de glisser : pendant l animation, les mesures
+     changent a chaque image et la fiche sauterait */
+  const differe = ()=>{ clearTimeout(t); t = setTimeout(maj, 60); };
+  vv.addEventListener("resize", differe);
+  vv.addEventListener("scroll", differe);
+  maj();
+})();
+/* Le champ qu on vient de toucher doit rester visible : une fiche qui se replie peut
+   le laisser hors cadre, surtout quand il est au milieu d une longue liste. */
+document.addEventListener("focusin", e=>{
+  const champ = e.target;
+  if(!champ || !/^(INPUT|TEXTAREA|SELECT)$/.test(champ.tagName)) return;
+  if(champ.type === "checkbox" || champ.type === "radio") return;
+  if(!champ.closest("#sheet")) return;
+  setTimeout(()=>{ try{ champ.scrollIntoView({block:"nearest", behavior:"smooth"}); }catch(err){} }, 320);
+});
 /* Zoom : le méta viewport suffit sur Android, pas sur iOS où Safari l'ignore.
    On refuse donc explicitement le geste de pincement. */
 ["gesturestart","gesturechange","gestureend"].forEach(ev=>
@@ -6346,9 +6398,64 @@ function beep(){
     });
   }catch(e){}
 }
+/* ---- sonner quand l'écran est éteint ----------------------------------------
+   Dès que l'application passe en arrière-plan, Android gèle son WebView : aucun
+   minuteur JavaScript ne survit à un écran verrouillé, et l'horloge audio se fige avec
+   l'appareil. La seule façon de sonner à l'heure est donc de confier l'alarme au
+   système, sous forme de notification programmée : c'est lui qui la déclenche, même
+   application fermée.
+
+   Elle n'est posée QUE lorsque l'app quitte l'écran, et retirée dès qu'elle revient —
+   sinon la notification et le bip interne sonneraient tous les deux. Hors de
+   l'application empaquetée (navigateur, iPhone), rien de tout cela n'existe : on
+   retombe sur le bip, qui ne marche qu'à l'écran. */
+const NOTIF_REPOS = 4271;
+function pluginNotifs(){
+  const p = window.Capacitor && window.Capacitor.Plugins;
+  return (p && p.LocalNotifications) || null;
+}
+let notifsOk = null;   /* null : on n'a pas encore demandé */
+async function autoriserNotifs(){
+  const n = pluginNotifs();
+  if(!n) return false;
+  if(notifsOk !== null) return notifsOk;
+  try{
+    let r = await n.checkPermissions();
+    if(r.display !== "granted") r = await n.requestPermissions();
+    notifsOk = r.display === "granted";
+  }catch(e){ notifsOk = false; }
+  return notifsOk;
+}
+async function poserAlarmeRepos(){
+  if(db.settings.son === false) return;      /* son coupé : pas de sonnerie du tout */
+  const n = pluginNotifs();
+  if(!n || !rest.int || rest.paused) return;
+  const dans = rest.end - Date.now();
+  if(dans < 700) return;                     /* trop tard pour que ça ait un sens */
+  if(!(await autoriserNotifs())) return;
+  try{
+    await n.schedule({notifications:[{
+      id: NOTIF_REPOS,
+      title: TR("Repos terminé"),
+      body: TR("C'est reparti pour la série suivante."),
+      /* allowWhileIdle : sans lui, Android repousse l'alarme quand le téléphone dort */
+      schedule: {at: new Date(rest.end), allowWhileIdle: true}
+    }]});
+  }catch(e){}
+}
+async function retirerAlarmeRepos(){
+  const n = pluginNotifs();
+  if(!n) return;
+  try{ await n.cancel({notifications:[{id: NOTIF_REPOS}]}); }catch(e){}
+}
+/* l'app quitte l'écran pendant un repos : on passe le relais au système */
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "hidden") poserAlarmeRepos();
+  else retirerAlarmeRepos();
+});
 /* Le son sonne à l'arrivée à zéro, quand l'app est à l'écran. Rien n'est programmé
    d'avance : l'horloge audio se fige avec l'appareil, ce qui décalait la sonnerie au
-   réveil. Le bip en arrière-plan reviendra avec les notifications de l'app empaquetée. */
+   réveil. Hors écran, c'est l'alarme système ci-dessus qui prend le relais. */
 function bipRepos(){
   if(db.settings.son === false) return;
   if(document.visibilityState !== "visible") return;   /* écran éteint : on ne sonne pas dans le vide */
@@ -6405,12 +6512,14 @@ function togglePauseRest(){
     document.getElementById("rest-picon").textContent = " ▶";
     if(rest.int) clearInterval(rest.int);
     rest.int = null;
+    retirerAlarmeRepos();          /* en pause, l'heure de fin n'existe plus */
   }
 }
 function tickRest(){
   const left = (rest.end - Date.now())/1000;
   if(left<=0){
     clearInterval(rest.int); rest.int=null;
+    retirerAlarmeRepos();
     document.getElementById("rest-t").classList.remove("compte-a-rebours");
     document.getElementById("rest-t").textContent="0:00";
     document.getElementById("rest-bar").style.width="0%";
@@ -6439,7 +6548,7 @@ function tickRest(){
   }
   document.getElementById("rest-bar").style.width = (left/rest.total*100)+"%";
 }
-document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; restbar.classList.remove("show","paused"); };
+document.getElementById("rest-skip").onclick=()=>{ if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false; restbar.classList.remove("show","paused"); retirerAlarmeRepos(); };
 document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); } };
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); } };
 document.getElementById("rest-son").onclick=e=>{
@@ -7652,6 +7761,7 @@ let chronoInt = null;
    barre de repos restait affichee par-dessus l'accueil. */
 function arreterChronos(){
   try{ if(rest && rest.int){ clearInterval(rest.int); rest.int = null; } }catch(e){}
+  try{ retirerAlarmeRepos(); }catch(e){}
   try{ if(chronoInt){ clearInterval(chronoInt); chronoInt = null; } }catch(e){}
   try{ const b = document.getElementById("restbar"); if(b) b.classList.remove("show"); }catch(e){}
 }
@@ -10864,7 +10974,7 @@ const STRENGTH_REF = {
   "Goblet squat":0.5, "Front squat":1.0, "Soulevé de terre sumo":1.5,
   "Good morning":0.6, "Montées sur banc":0.35, "Kickback fessier poulie":0.25,
   "Développé couché":1.0, "Développé couché haltères":0.32, "Développé incliné haltères":0.28,
-  "Développé militaire":0.66, "Développé militaire haltères":0.24, "Élévations latérales":0.12, "Oiseau":0.1,
+  "Développé militaire":0.66, "Développé militaire haltères":0.24, "Élévations latérales":0.12, "Oiseau":0.1, "Butterfly arrière":0.22,
   "Rowing barre":0.9, "Rowing haltère":0.32, "Tirage vertical":0.75, "Tirage horizontal":0.78, "Soulevé de terre":1.5, "Face pull":0.35,
   "Curl barre":0.45, "Curl haltères":0.16, "Curl marteau":0.16, "Curl pupitre":0.35,
   "Extension poulie":0.4, "Barre au front":0.35, "Extension nuque haltère":0.15,
