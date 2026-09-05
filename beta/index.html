@@ -880,17 +880,17 @@
      chiffres de même nature, donc trois objets identiques, alignés par le bas. */
   .hero-stats{display:flex; gap:9px; margin-top:12px;}
   .hero-stats .hs{display:flex; flex-direction:column; align-items:center; gap:5px;}
-  .hero-stats .hs b{font-size:14px; font-weight:800; font-variant-numeric:tabular-nums;
+  /* Le chrono partage exactement la forme des deux autres : trois chiffres de meme
+     nature n ont aucune raison d avoir trois tailles. */
+  .hero-stats .hs b, .hero-en-cours .chrono{font-size:14px; font-weight:800;
+    font-variant-numeric:tabular-nums;
     color:#fff; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.18);
     border-radius:99px; padding:6px 14px; white-space:nowrap;}
-  .hero-stats .hs i{font-style:normal; font-size:9px; font-weight:700; letter-spacing:.08em;
-    text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap;}
-  .chrono-bloc{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px;}
-  .chrono-bloc .lab{font-size:10px; font-weight:700; letter-spacing:.08em;
-    text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap;}
+  .hero-stats .hs i, .chrono-bloc .lab{font-style:normal; font-size:9px; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.62); white-space:nowrap;}
+  .chrono-bloc{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:5px;}
   .hero-en-cours .chrono{display:block; width:max-content; margin:0; transform:none;
-    background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.18);
-    color:#fff; box-shadow:none; padding:9px 17px; font-size:18px;}
+    box-shadow:none;}
   /* le chrono devient une pastille claire posée sur la photo */
   /* Volontairement discret : ce chrono ne demande rien, il informe. Le minuteur de
      repos, lui, compte à rebours et doit se voir. Deux chiffres de même force à
@@ -970,6 +970,16 @@
   .rir-intro{font-size:12px; color:var(--ink-mute); line-height:1.5; margin-bottom:8px;}
   @media (prefers-reduced-motion:reduce){ .rir-ask.rappel{animation:none;} }
   /* refermer un exercice ouvert : chevron discret sous les boutons */
+  /* ---- le bas d une carte ----
+     « + serie » garde son cadre : c est le geste courant. « Remplacer » et « Retirer »
+     sont des mots, pas des boutons — les encadrer leur donnait le meme poids. */
+  .ex-bas{display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .ex-bas .ex-x{width:38px; height:38px; flex:0 0 auto; border-radius:10px;
+    background:var(--surface); border:1px solid var(--border); color:var(--accent);
+    font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+  .ex-bas .ex-lien{flex:0 0 auto; font-size:13px; font-weight:700; color:var(--ink-soft);
+    background:none; border:none; padding:6px 2px; white-space:nowrap;}
+  .ex-bas .ex-lien.danger{color:var(--bad);}
   .ex-plier{width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
     padding:10px 0 0; margin-top:6px; color:var(--ink-mute); font-size:12px; font-weight:700;}
   .ex-plier svg{width:18px; height:12px; transform:rotate(180deg);}
@@ -5632,7 +5642,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 17h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "5 septembre 2026 17h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6031,23 +6041,15 @@ function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
 }
 function e1rm(w,r){ return r>1 ? w*(1+r/30) : w; }
-/* kcal d'une séance de muscu : ~6 MET pendant la durée, ajusté par le volume soulevé */
-function liftKcal(durMs, volume, nSeries){
+/* kcal d'une séance de muscu : ce qui a été FAIT, jamais le temps passé.
+   L'horloge ne comptait pas l'effort, elle comptait la présence : une séance laissée
+   ouverte, une longue discussion entre deux séries, et le compteur montait tout seul.
+   Une série vaut ~2,5 min d'effort à 6 MET, plus le travail mécanique du tonnage.
+   Le chiffre ne bouge donc qu'au moment où l'on valide une série. */
+function liftKcal(volume, nSeries){
   const kg = currentWeight() || (db.profile && db.profile.weight) || 75;
-  const mesuree = Math.max(0, durMs/60000);
-  /* si les séries ont été saisies après coup, la durée mesurée est ridicule :
-     on retombe alors sur une estimation à partir du nombre de séries (~2,5 min chacune) */
-  const estimee = (nSeries||0) * 2.5;
-  /* Et le piege inverse : une seance qu'on a oublie de fermer reste ouverte toute
-     la nuit. Neuf heures a 80 kg donneraient 5 000 kcal, qui partiraient dans le
-     total de la semaine. Au-dela du double du temps attendu, la duree mesuree ne
-     veut plus rien dire. Plafond absolu de 3 h, au cas ou il n'y aurait aucune
-     serie pour estimer. */
-  let min = mesuree;
-  if(estimee > 0 && mesuree < estimee*0.5)      min = estimee;
-  else if(estimee > 0 && mesuree > estimee*2)   min = estimee*2;
-  min = Math.min(min, 180);
-  const base = 6 * 3.5 * kg / 200 * min;       /* dépense liée à la durée d'effort */
+  const min = (nSeries || 0) * 2.5;
+  const base = 6 * 3.5 * kg / 200 * min;       /* dépense de l'effort lui-même */
   const travail = volume * 0.005;              /* travail mécanique du tonnage soulevé */
   return Math.round(base + travail);
 }
@@ -8861,7 +8863,7 @@ function renderSeance(app){
   const week = db.history.filter(s=>new Date(s.date)>=w0);
   const weekVol = week.reduce((a,s)=>a+sessionVolume(s),0);
   const cs = cardioWeekStats();
-  const weekKcal = week.reduce((a,s)=>a+liftKcal(s.end-s.start, volumeEffort(s), nbSeries(s)),0) + cs.kcal;
+  const weekKcal = week.reduce((a,s)=>a+liftKcal(volumeEffort(s), nbSeries(s)),0) + cs.kcal;
   /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
   const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
@@ -9013,7 +9015,7 @@ function renderSeance(app){
       }
       const h = it.o;
       const vol = Math.round(sessionVolume(h));
-      const kc = liftKcal(h.end-h.start, volumeEffort(h), nbSeries(h));
+      const kc = liftKcal(volumeEffort(h), nbSeries(h));
       const mn = Math.round(((h.end||0)-(h.start||0))/60000);
       const t = db.templates.find(x=>x.id===h.templateId);
       return `<button class="hist-c" data-hist="${h.id}">
@@ -9837,7 +9839,7 @@ function renderActive(app){
     const bk = document.getElementById("hs-kcal");
     if(bk){
       const faites = a.entries.reduce((n, en)=>n + en.sets.filter(x=>x.done && !x.warm).length, 0);
-      bk.textContent = liftKcal(dureeSeance2(a), volumeEffort(a), faites) + " kcal";
+      bk.textContent = liftKcal(volumeEffort(a), faites) + " kcal";
     }
   };
   tick(); chronoInt = setInterval(tick, 1000);
@@ -9928,13 +9930,13 @@ function renderActive(app){
         iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
       <div class="sets"></div>
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">Série dégressive</span>Tu continues la même série avec moins de charge :<br><b>6 × 12 kg, puis 4 × 10 kg.</b><br>Ça reste une seule série, et tout compte dans ton tonnage."), IC_BAISSE) : ""}
-      <div class="row" style="flex-wrap:wrap;">
+      <div class="ex-bas">
         <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
         ${en.sets.filter(x=>!x.warm).length > 1
-          ? `<button class="btn btn-sm btn-ghost" data-act="delset" title="${TR("Supprimer la dernière série")}" aria-label="Supprimer la dernière série" style="color:var(--bad); flex:0 0 auto; padding-inline:14px;">✕</button>`
+          ? `<button class="ex-x" data-act="delset" title="${TR("Supprimer la dernière série")}" aria-label="${TR("Supprimer la dernière série")}">✕</button>`
           : ""}
-        <button class="btn btn-sm btn-ghost" data-act="swap" style="white-space:nowrap;">⇄ ${TR("Remplacer")}</button>
-        <button class="btn btn-sm btn-ghost" data-act="delex" style="color:var(--bad); border-color:var(--border); white-space:nowrap;">${TR("Retirer")}</button>
+        <button class="ex-lien" data-act="swap">⇄ ${TR("Remplacer")}</button>
+        <button class="ex-lien danger" data-act="delex">${TR("Retirer")}</button>
       </div>
       <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
     const btnIso = card.querySelector("[data-iso]");
@@ -10374,7 +10376,7 @@ function renderActive(app){
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     if(!doneSets){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
-    const kcal = liftKcal(dureeSeance2(a), volumeEffort(a), doneSets);
+    const kcal = liftKcal(volumeEffort(a), doneSets);
     askConfirm(TR("Terminer la séance ?"), `${doneSets} ${TR(doneSets > 1 ? "séries validées" : "série validée")} · ${volPds(vol)} ${TR("soulevés")} · ${TR("environ")} ${kcal} ${TR("kcal brûlées. On enregistre ?")}`, TR("Enregistrer"), false, ()=>{
       /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
       const recap = {
@@ -11138,7 +11140,7 @@ function renderHist(app){
         <span class="pill">${fmtDur(s.end-s.start)}</span>
         <span class="pill">${nSets} ${TR(nSets>1?"séries":"série")}</span>
         <span class="pill" style="color:var(--accent);">${volPds(vol)}</span>
-        <span class="pill">≈ ${liftKcal(s.end-s.start, volumeEffort(s), nSets)} kcal</span>
+        <span class="pill">≈ ${liftKcal(volumeEffort(s), nSets)} kcal</span>
       </div>
       <div class="hist-detail">${s.entries.map(en=>`
         <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
