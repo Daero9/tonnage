@@ -2593,22 +2593,23 @@ async function lancer(){
       titre.querySelector(".hl").textContent, "prêtes à démarrer");
     vrai("Une phrase explique la vue",
       D2.getElementById("onb-sous").textContent.length > 60);
-    /* la barre du haut compte les vues une par une */
-    eq("Quatre segments en tête", D2.querySelectorAll("#onb-seg i").length, 4);
-    eq("Un seul allumé au départ", D2.querySelectorAll("#onb-seg i.on").length, 1);
-    eq("Un seul point allumé aussi", D2.querySelectorAll(".onb-dots i.on").length, 1);
+    /* Le carrousel n a pas de barre en tete : les points disent deja ou l on en est,
+       et les 44 px qu elle prenait manquaient au texte sur les ecrans courts. */
+    vrai("Pas de barre en tête sur le carrousel", !D2.querySelector(".onb-top"));
+    eq("Quatre points", D2.querySelectorAll(".onb-dots i").length, 4);
+    eq("Un seul point allumé au départ", D2.querySelectorAll(".onb-dots i.on").length, 1);
     /* on passe à la vue suivante par le point : titre, phrase et segments suivent */
     D2.querySelectorAll(".onb-dots i")[2].click();
-    eq("Trois segments allumés à la troisième vue",
-      D2.querySelectorAll("#onb-seg i.on").length, 3);
+    eq("Le point suit",
+      [...D2.querySelectorAll(".onb-dots i")].findIndex(p=>p.classList.contains("on")), 2);
     eq("Le titre a suivi",
       D2.getElementById("onb-titre").querySelector(".hl").textContent, "à tes capacités");
     vrai("La phrase aussi",
       /bon poids/.test(D2.getElementById("onb-sous").textContent));
-    /* la croix du haut sort du carrousel, comme le lien du bas */
-    vrai("Une croix permet de sortir", !!D2.getElementById("onb-quitte"));
-    D2.getElementById("onb-quitte").click();
-    vrai("Elle referme le parcours", !D2.querySelector(".onb"));
+    /* le lien du bas est la seule sortie du carrousel */
+    vrai("Un lien permet de sortir", !!D2.getElementById("onb-tard"));
+    D2.getElementById("onb-tard").click();
+    vrai("Il referme le parcours", !D2.querySelector(".onb"));
     DB.profile = profilAvant;
     F.render();
   })();

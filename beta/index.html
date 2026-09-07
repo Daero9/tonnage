@@ -345,12 +345,6 @@
      remplissage presque noir sur une piste sombre — illisible. */
   .onb-prog{flex:1; height:7px; border-radius:5px; background:#d9d4c9; overflow:hidden;}
   .onb-prog i{display:block; height:100%; border-radius:5px; background:var(--ink); transition:width .3s ease;}
-  /* Le carrousel compte ses vues une par une : une barre continue ne dirait pas
-     combien il en reste. Un segment par vue, orange pour celles qu'on a vues. */
-  .onb-seg{flex:1; display:flex; gap:6px;}
-  .onb-seg i{flex:1; height:6px; border-radius:4px; background:#d9d4c9;
-    transition:background .25s ease;}
-  .onb-seg i.on{background:var(--accent);}
   .onb-x{width:30px; height:30px; flex:0 0 auto; font-size:19px; color:var(--ink-mute);
     display:flex; align-items:center; justify-content:center;}
   .onb-body{flex:1; min-height:0; overflow-y:auto; padding:22px 20px 10px; -webkit-overflow-scrolling:touch;
@@ -465,11 +459,10 @@
     background:var(--accent); transform:translateX(-50%); pointer-events:none;}
 
   /* carrousel d'introduction */
-  /* Le carrousel defilait autrefois en largeur seulement, et ce qui depassait etait
-     PERDU : sur un ecran plus court que prevu, le titre et la phrase disparaissaient
-     sans laisser de trace. On autorise le defilement vertical — au pire on descend
-     d un centimetre, au lieu de ne rien voir du tout. */
-  .onb-body.intro{overflow-x:hidden; overflow-y:auto; padding-inline:0;}
+  /* Le carrousel tient sur l ecran, sans defilement : c est une page qu on regarde,
+     pas qu on parcourt. Ce qui garantit qu il tient n est plus une hauteur devinee mais
+     la mise en page elle-meme — voir « .onb-tel » juste dessous. */
+  .onb-body.intro{overflow:hidden; padding-inline:0;}
   /* tout est calé en haut, comme sur la maquette : le visuel, puis le titre, puis les points */
   /* Le bloc descend d'environ deux centimètres. La marge est plafonnée et suit la hauteur
      de l'écran ; sur les téléphones courts elle se réduit franchement, sinon le bouton
@@ -498,12 +491,14 @@
   /* Aucun plafond en « vh » : sur mobile cette unite se calcule barre d adresse
      masquee, donc l image pouvait reclamer plus de place qu il n y en avait vraiment
      et rogner les points et le bouton. Elle prend simplement ce que le flux lui laisse. */
-  /* L image ne prend JAMAIS plus de la moitie du bloc : le titre et la phrase ont
-     ainsi toujours leur place, quel que soit l ecran, la taille de police du systeme
-     ou la hauteur reelle laissee par le navigateur. Le pourcentage se calcule sur la
-     hauteur du conteneur, pas sur celle de la fenetre — aucune unite « vh » ici. */
+  /* C est l image, et elle seule, qui absorbe les differences d ecran : elle prend ce
+     qui reste une fois le titre, la phrase, les points et le bouton servis — et elle se
+     laisse reduire jusqu a presque rien s il le faut. Tout le reste est en « flex:0 0 auto »,
+     donc rien ne peut plus etre pousse hors de l ecran, quelle que soit la taille de
+     police du systeme ou la hauteur reelle laissee par le navigateur. Le plafond se
+     calcule sur la hauteur du conteneur — aucune unite « vh » ici, c etait le piege. */
   .onb-tel{position:relative; flex:1 1 auto; width:100%; max-width:none;
-    min-height:110px; max-height:68%; margin-bottom:14px;
+    min-height:0; max-height:68%; margin-bottom:14px;
     overflow:hidden; touch-action:pan-y;}   /* le geste horizontal nous revient, pas au navigateur */
   .onb-piste{position:absolute; inset:0; display:flex;
     transition:transform .38s cubic-bezier(.22,.61,.36,1); will-change:transform;}
@@ -544,6 +539,9 @@
   /* le geste principal du carrousel est en orange, comme sur la maquette ; les pages
      de questions gardent leur bouton sombre, elles ne proposent pas de decouvrir */
   .onb-body.intro ~ .onb-foot .onb-btn{background:var(--accent); border-radius:99px;}
+  /* sans barre en tete, le carrousel commence tout en haut : un peu d air au-dessus
+     de l image, sans revenir aux marges qui poussaient le texte hors de l ecran */
+  .onb-body.intro .onb-hero{padding-top:calc(16px + env(safe-area-inset-top));}
 
   /* projection */
   .proj{background:var(--surface); border-radius:16px; padding:16px 14px;}
@@ -5037,12 +5035,7 @@ function openOnboarding(first, brouillon, depart){
     /* la barre ne compte que les questions : le carrousel est à zéro */
     const avancement = Math.round(i / (ETAPES.length - 1) * 100);
     onbEl.innerHTML = `
-      ${intro ? `<div class="onb-top">
-        <span style="width:30px; flex:0 0 auto;"></span>
-        <div class="onb-seg" id="onb-seg">${[0,1,2,3].map(n=>
-          `<i class="${n===0?"on":""}"></i>`).join("")}</div>
-        <button class="onb-x" id="onb-quitte" aria-label="${TR("Quitter")}">✕</button>
-      </div>` : `<div class="onb-top">
+      ${intro ? "" : `<div class="onb-top">
         ${i > 0 ? `<button class="onb-back" id="onb-back" aria-label="${TR("Retour")}">‹</button>`
                 : `<span style="width:30px; flex:0 0 auto;"></span>`}
         <div class="onb-prog"><i style="width:${avancement}%"></i></div>
@@ -5109,8 +5102,6 @@ function openOnboarding(first, brouillon, depart){
         n = k;
         poser(0);
         maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
-        /* les segments du haut disent où l'on en est : toutes les vues déjà atteintes */
-        maPage.querySelectorAll("#onb-seg i").forEach((sg,j)=>sg.classList.toggle("on", j<=k));
         const t = maPage.querySelector("#onb-titre");
         if(t) t.innerHTML = vues[k].titre;     /* un seul titre à l'écran, à tout instant */
         const sb = maPage.querySelector("#onb-sous");
@@ -5191,8 +5182,6 @@ function openOnboarding(first, brouillon, depart){
       };
       const tard = onbEl.querySelector("#onb-tard");
       if(tard) tard.onclick = partir;
-      const quitteX = onbEl.querySelector("#onb-quitte");
-      if(quitteX) quitteX.onclick = partir;
       return;
     }
 
@@ -5771,7 +5760,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 01h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 01h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
