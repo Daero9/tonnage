@@ -2568,6 +2568,52 @@ async function lancer(){
   neuf();
 
   /* ---------------------------------------------------------- parcours d'accueil */
+  grp("Le carrousel d'accueil");
+  neuf();
+  /* Quatre vues, une image pleine largeur par vue, un titre dont la seconde ligne
+     passe en orange, et une phrase qui explique. Les videos qui tenaient ce role
+     pesaient 600 Ko et ne demarraient pas toujours sur iPhone. */
+  (()=>{
+    const profilAvant = DB.profile;
+    DB.profile = {};
+    F.openOnboarding(true);
+    const D2 = F.document;
+    const vues = [...D2.querySelectorAll(".onb-tel img")];
+    eq("Quatre vues", vues.length, 4);
+    vrai("…et plus aucune vidéo", !D2.querySelector(".onb-tel video"));
+    eq("La première est celle des séances",
+      vues[0].getAttribute("src"), "img/onb-seances.jpg");
+    vrai("Chacune a son image",
+      vues.every(v => /^img\/onb-[a-z]+\.jpg$/.test(v.getAttribute("src"))));
+    /* la seconde ligne du titre porte la promesse : elle est en orange */
+    const titre = D2.getElementById("onb-titre");
+    vrai("Le titre tient en deux lignes", !!titre.querySelector("br"));
+    vrai("…dont la seconde est mise en avant", !!titre.querySelector(".hl"));
+    eq("La seconde ligne de la première vue",
+      titre.querySelector(".hl").textContent, "prêtes à démarrer");
+    vrai("Une phrase explique la vue",
+      D2.getElementById("onb-sous").textContent.length > 60);
+    /* la barre du haut compte les vues une par une */
+    eq("Quatre segments en tête", D2.querySelectorAll("#onb-seg i").length, 4);
+    eq("Un seul allumé au départ", D2.querySelectorAll("#onb-seg i.on").length, 1);
+    eq("Un seul point allumé aussi", D2.querySelectorAll(".onb-dots i.on").length, 1);
+    /* on passe à la vue suivante par le point : titre, phrase et segments suivent */
+    D2.querySelectorAll(".onb-dots i")[2].click();
+    eq("Trois segments allumés à la troisième vue",
+      D2.querySelectorAll("#onb-seg i.on").length, 3);
+    eq("Le titre a suivi",
+      D2.getElementById("onb-titre").querySelector(".hl").textContent, "à tes capacités");
+    vrai("La phrase aussi",
+      /bon poids/.test(D2.getElementById("onb-sous").textContent));
+    /* la croix du haut sort du carrousel, comme le lien du bas */
+    vrai("Une croix permet de sortir", !!D2.getElementById("onb-quitte"));
+    D2.getElementById("onb-quitte").click();
+    vrai("Elle referme le parcours", !D2.querySelector(".onb"));
+    DB.profile = profilAvant;
+    F.render();
+  })();
+  neuf();
+
   grp("Parcours d'accueil");
   neuf();
   const sansSexe = F.planFor({...profilType, sex:"n"});
