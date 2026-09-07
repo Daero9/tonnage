@@ -345,6 +345,12 @@
      remplissage presque noir sur une piste sombre — illisible. */
   .onb-prog{flex:1; height:7px; border-radius:5px; background:#d9d4c9; overflow:hidden;}
   .onb-prog i{display:block; height:100%; border-radius:5px; background:var(--ink); transition:width .3s ease;}
+  /* Le carrousel compte ses vues une par une : une barre continue ne dirait pas
+     combien il en reste. Un segment par vue, orange pour celles qu'on a vues. */
+  .onb-seg{flex:1; display:flex; gap:6px;}
+  .onb-seg i{flex:1; height:6px; border-radius:4px; background:#d9d4c9;
+    transition:background .25s ease;}
+  .onb-seg i.on{background:var(--accent);}
   .onb-x{width:30px; height:30px; flex:0 0 auto; font-size:19px; color:var(--ink-mute);
     display:flex; align-items:center; justify-content:center;}
   .onb-body{flex:1; min-height:0; overflow-y:auto; padding:22px 20px 10px; -webkit-overflow-scrolling:touch;
@@ -352,6 +358,7 @@
   .onb-foot{padding:10px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; margin-inline:auto;}
   .onb h2{font-size:29px; font-weight:800; letter-spacing:-.02em; line-height:1.15; margin:0 0 6px;}
   .onb .sous{font-size:13.5px; color:var(--ink-mute); line-height:1.45; margin-bottom:22px;}
+  .onb-btn .fl{margin-left:9px; font-weight:700;}
   .onb-btn{width:100%; background:var(--hero); color:#fff; border-radius:14px; padding:16px;
     font-size:16.5px; font-weight:800; transition:transform .12s ease;}
   .onb-btn:active{transform:scale(.975);}
@@ -458,7 +465,7 @@
     background:var(--accent); transform:translateX(-50%); pointer-events:none;}
 
   /* carrousel d'introduction */
-  .onb-body.intro{overflow:hidden;}      /* le carrousel tient sur l'écran, toujours */
+  .onb-body.intro{overflow:hidden; padding-inline:0;}   /* pleine largeur, et rien ne défile */
   /* tout est calé en haut, comme sur la maquette : le visuel, puis le titre, puis les points */
   /* Le bloc descend d'environ deux centimètres. La marge est plafonnée et suit la hauteur
      de l'écran ; sur les téléphones courts elle se réduit franchement, sinon le bouton
@@ -482,14 +489,17 @@
      le conteneur est en overflow:hidden, ce qui depasse est perdu, pas defilable. */
   /* Les vues ne se fondent plus l'une dans l'autre : elles sont posées côte à côte sur
      une piste qu'on fait glisser. C'est ce qui permet au doigt de les emmener. */
-  .onb-tel{position:relative; flex:1 1 auto; width:62vw; max-width:300px;
-    min-height:110px; max-height:42vh; margin-bottom:16px;
+  /* Les visuels vont d'un bord a l'autre : ils sont dessines sur le meme creme que
+     la page, la jointure ne se voit pas. Ils prennent la place qui reste sous la marge
+     haute, le titre et le bouton se servant d'abord. */
+  .onb-tel{position:relative; flex:1 1 auto; width:100%; max-width:none;
+    min-height:110px; max-height:46vh; margin-bottom:14px;
     overflow:hidden; touch-action:pan-y;}   /* le geste horizontal nous revient, pas au navigateur */
   .onb-piste{position:absolute; inset:0; display:flex;
     transition:transform .38s cubic-bezier(.22,.61,.36,1); will-change:transform;}
   .onb-piste.retour{transition-duration:.62s;}  /* le retour à la première vue traverse tout l'écran */
   .onb-piste.tire{transition:none;}             /* pendant le glissé, la piste colle au doigt */
-  .onb-tel video, .onb-tel img{flex:0 0 100%; width:100%; height:100%; object-fit:contain;
+  .onb-tel img{flex:0 0 100%; width:100%; height:100%; object-fit:contain;
     pointer-events:none;                        /* le geste est capté par la boîte, jamais par la vidéo */
     /* calque dédié : évite le clignotement sur iOS */
     transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
@@ -499,16 +509,31 @@
      réécrit laissait sur iPhone les anciens titres peints à l'écran, jusqu'à trois
      superposés. Le titre change maintenant d'un coup, en même temps que la vidéo —
      et la vidéo, elle, garde son fondu. */
-  .onb-titre{flex:0 0 auto; width:100%; display:flex; align-items:center; justify-content:center;
-    font-size:clamp(21px, 6.6vw, 27px); font-weight:800; text-align:center;
-    line-height:1.2; min-height:3.6em;}  /* trois lignes réservées : un titre long ne décale rien */
-  .onb-dots{flex:0 0 auto; display:flex; gap:7px; justify-content:center; margin-top:16px;}
+  /* En bloc, surtout pas en flex : le « <br> » du titre y serait ignoré et la seconde
+     ligne, qui est un span, deviendrait une colonne posée A COTE de la premiere. */
+  .onb-titre{flex:0 0 auto; width:100%; display:block;
+    font-size:clamp(19px, 6.2vw, 26px); font-weight:800; text-align:center;
+    line-height:1.22; padding-inline:16px;
+    min-height:2.5em;}   /* deux lignes réservées : un titre plus court ne décale rien */
+  /* la seconde ligne en orange : c'est elle qui porte la promesse */
+  .onb-titre .hl{color:var(--accent);}
+  /* la phrase qui explique, sous le titre : deux lignes, jamais davantage */
+  /* trois lignes réservées : les phrases n'ont pas toutes la même longueur, et sans
+     cette réserve le bouton remonterait d'une ligne d'une vue à l'autre */
+  .onb-sous{flex:0 0 auto; width:100%; padding:8px 24px 0; text-align:center;
+    font-size:14.5px; line-height:1.5; color:var(--ink-soft); min-height:4.5em;}
+  .onb-dots{flex:0 0 auto; display:flex; gap:7px; justify-content:center; margin-top:14px;}
   .onb-dots i{position:relative; width:7px; height:7px; border-radius:50%; background:var(--ink-mute);
     opacity:.35; cursor:pointer; transition:opacity .2s ease, background .2s ease;}
   /* zone tactile élargie sans toucher à la mise en page : les points restent minuscules,
      mais on peut les viser. Les zones se touchent sans se chevaucher. */
   .onb-dots i::before{content:""; position:absolute; inset:-11px -3px;}
   .onb-dots i.on{opacity:1; background:var(--ink);}
+  /* sur le carrousel, le point courant reprend l orange du titre et du bouton */
+  .onb-body.intro .onb-dots i.on{background:var(--accent);}
+  /* le geste principal du carrousel est en orange, comme sur la maquette ; les pages
+     de questions gardent leur bouton sombre, elles ne proposent pas de decouvrir */
+  .onb-body.intro ~ .onb-foot .onb-btn{background:var(--accent); border-radius:99px;}
 
   /* projection */
   .proj{background:var(--surface); border-radius:16px; padding:16px 14px;}
@@ -2852,6 +2877,14 @@ const TRAD = {en:{
   "C'est un mode de croisière, pas une fin en soi : quand la vie se calme, repasse sur un objectif de progression.":"This is cruising, not a destination: when life settles down, switch back to a goal that moves you forward.",
   /* --- parcours d'accueil --- */
   "Plus tard, <b>retourner à l'app</b>":"Later, <b>back to the app</b>",
+  "Des séances sur mesure,<br><span class=\"hl\">prêtes à démarrer</span>":"Sessions made for you,<br><span class=\"hl\">ready to start</span>",
+  "Suis ton alimentation<br><span class=\"hl\">en quelques clics</span>":"Track what you eat<br><span class=\"hl\">in a few taps</span>",
+  "Adapte la charge<br><span class=\"hl\">à tes capacités</span>":"Match the load<br><span class=\"hl\">to what you can do</span>",
+  "Suis ta progression<br><span class=\"hl\">et tes points faibles</span>":"Follow your progress<br><span class=\"hl\">and your weak spots</span>",
+  "Des entraînements adaptés à ton niveau et à tes objectifs, avec des exercices clairs et un suivi de tes performances.":"Workouts matched to your level and your goals, with clear exercises and a record of what you lift.",
+  "Scanne tes aliments, ajoute tes repas et garde un œil sur tes apports en calories et en macronutriments.":"Scan your food, log your meals and keep an eye on your calories and macros.",
+  "L'app t'aide à trouver le bon poids à chaque série, pour progresser efficacement sans te prendre la tête.":"The app helps you find the right weight for every set, so you progress without thinking about it.",
+  "Chaque séance nourrit tes courbes : tu vois ce qui monte, ce qui stagne et ce qu'il reste à travailler.":"Every session feeds your charts: you see what climbs, what stalls and what is left to work on.",
   "Plus tard, <b>je veux d'abord regarder</b>":"Later, <b>I want to look around first</b>",
   "Quitter sans enregistrer ?":"Leave without saving?",
   "Les réponses de ce parcours seront perdues. Ton profil actuel, lui, est conservé.":"Your answers here will be lost. Your current profile stays as it is.",
@@ -2861,9 +2894,7 @@ const TRAD = {en:{
   "Commencer":"Get started",
   "Continuer":"Continue",
   "Des séances sur mesure,<br>prêtes à démarrer":"Workouts built for you,<br>ready to go",
-  "Suis ton alimentation<br>en quelques clics":"Track what you eat<br>in a few taps",
   "Adapte la charge<br>à tes capacités":"Loads that match<br>what you can do",
-  "Suis ta progression<br>et tes points faibles":"Follow your progress<br>and your weak spots",
   "Ton prénom":"Your first name",
   "Un homme":"A man",
   "Une femme":"A woman",
@@ -4996,7 +5027,12 @@ function openOnboarding(first, brouillon, depart){
     /* la barre ne compte que les questions : le carrousel est à zéro */
     const avancement = Math.round(i / (ETAPES.length - 1) * 100);
     onbEl.innerHTML = `
-      ${(intro && !dejaRempli) ? "" : `<div class="onb-top">
+      ${intro ? `<div class="onb-top">
+        <span style="width:30px; flex:0 0 auto;"></span>
+        <div class="onb-seg" id="onb-seg">${[0,1,2,3].map(n=>
+          `<i class="${n===0?"on":""}"></i>`).join("")}</div>
+        <button class="onb-x" id="onb-quitte" aria-label="${TR("Quitter")}">✕</button>
+      </div>` : `<div class="onb-top">
         ${i > 0 ? `<button class="onb-back" id="onb-back" aria-label="${TR("Retour")}">‹</button>`
                 : `<span style="width:30px; flex:0 0 auto;"></span>`}
         <div class="onb-prog"><i style="width:${avancement}%"></i></div>
@@ -5024,35 +5060,29 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 1. carrousel */
     if(etape === "intro"){
+      /* Le titre tient en deux lignes : la seconde passe en orange, c'est elle qui
+         porte la promesse. La phrase du dessous dit ce que la vue montre. */
       const vues = [
-        {v:"img/demo-seances.mp4",    titre:TR("Des séances sur mesure,<br>prêtes à démarrer")},
-        {v:"img/demo-nutrition.mp4",  titre:TR("Suis ton alimentation<br>en quelques clics")},
-        {v:"img/demo-charge.mp4",     titre:TR("Adapte la charge<br>à tes capacités")},
-        {v:"img/demo-progression.mp4",titre:TR("Suis ta progression<br>et tes points faibles")}
+        {v:"img/onb-seances.jpg",
+         titre:TR("Des séances sur mesure,<br><span class=\"hl\">prêtes à démarrer</span>"),
+         sous:TR("Des entraînements adaptés à ton niveau et à tes objectifs, avec des exercices clairs et un suivi de tes performances.")},
+        {v:"img/onb-aliments.jpg",
+         titre:TR("Suis ton alimentation<br><span class=\"hl\">en quelques clics</span>"),
+         sous:TR("Scanne tes aliments, ajoute tes repas et garde un œil sur tes apports en calories et en macronutriments.")},
+        {v:"img/onb-charge.jpg",
+         titre:TR("Adapte la charge<br><span class=\"hl\">à tes capacités</span>"),
+         sous:TR("L'app t'aide à trouver le bon poids à chaque série, pour progresser efficacement sans te prendre la tête.")},
+        {v:"img/onb-progression.jpg",
+         titre:TR("Suis ta progression<br><span class=\"hl\">et tes points faibles</span>"),
+         sous:TR("Chaque séance nourrit tes courbes : tu vois ce qui monte, ce qui stagne et ce qu'il reste à travailler.")}
       ];
       corps.innerHTML = `<div class="onb-hero">
         <div class="onb-tel" id="onb-tel"><div class="onb-piste" id="onb-piste">${vues.map((x,n)=>
-          `<video src="${x.v}" muted playsinline webkit-playsinline autoplay loop
-            preload="auto" poster="img/tel1.png" aria-hidden="true"></video>`).join("")}</div></div>
+          `<img src="${x.v}" alt="" ${n ? 'loading="lazy"' : ""} draggable="false">`).join("")}</div></div>
         <div class="onb-titre" id="onb-titre">${vues[0].titre}</div>
+        <div class="onb-sous" id="onb-sous">${vues[0].sous}</div>
         <div class="onb-dots">${vues.map((x,n)=>`<i class="${n===0?"on":""}"></i>`).join("")}</div>
       </div>`;
-      /* Seule la vue affichée tourne. iOS n'accepte la lecture automatique que si
-         « muet » est posé en propriété, pas seulement en attribut ; et si la lecture
-         est refusée, on force au moins l'affichage de la première image. */
-      const films = [...corps.querySelectorAll(".onb-tel video")];
-      films.forEach(f=>{
-        f.muted = true; f.defaultMuted = true; f.playsInline = true;
-        f.addEventListener("loadeddata", ()=>{ if(f.paused) try{ f.currentTime = 0.05; }catch(e){} });
-      });
-      const jouer = k => films.forEach((f,j)=>{
-        if(j !== k){ f.pause(); return; }
-        f.muted = true;
-        try{ f.currentTime = 0; }catch(e){}
-        const pr = f.play();
-        if(pr && pr.catch) pr.catch(()=>{ try{ f.currentTime = 0.05; }catch(e){} });
-      });
-      jouer(0);
       /* Une seule fonction décide de tout ce qui change ensemble : la vidéo, le point
          et le titre. Ils ne peuvent plus se désaccorder. */
       let n = 0;
@@ -5068,10 +5098,13 @@ function openOnboarding(first, brouillon, depart){
         piste.classList.remove("tire");
         n = k;
         poser(0);
-        jouer(k);
         maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.classList.toggle("on", j===k));
+        /* les segments du haut disent où l'on en est : toutes les vues déjà atteintes */
+        maPage.querySelectorAll("#onb-seg i").forEach((sg,j)=>sg.classList.toggle("on", j<=k));
         const t = maPage.querySelector("#onb-titre");
         if(t) t.innerHTML = vues[k].titre;     /* un seul titre à l'écran, à tout instant */
+        const sb = maPage.querySelector("#onb-sous");
+        if(sb) sb.innerHTML = vues[k].sous;
       };
       poser(0);
       /* Chaîne de délais plutôt qu'un intervalle : quand le téléphone met la page en
@@ -5133,18 +5166,23 @@ function openOnboarding(first, brouillon, depart){
       maPage.querySelectorAll(".onb-dots i").forEach((pt,j)=>pt.onclick = ()=>{
         if(j !== n){ montrer(j); relancer(); }
       });
-      pied.innerHTML = `<button class="onb-btn" id="onb-next">${dejaRempli ? TR("Continuer") : TR("Commencer")}</button>
+      pied.innerHTML = `<button class="onb-btn" id="onb-next">${
+          TR("Continuer")}<span class="fl" aria-hidden="true">→</span></button>
         <button class="onb-lien" id="onb-tard">${dejaRempli
           ? TR("Plus tard, <b>retourner à l'app</b>")
           : TR("Plus tard, <b>je veux d'abord regarder</b>")}</button>`;
       onbEl.querySelector("#onb-next").onclick = ()=>{ stop(); i++; dessiner(); };
-      const tard = onbEl.querySelector("#onb-tard");
-      if(tard) tard.onclick = ()=>{
+      /* la croix du haut et le lien du bas font la même chose : sortir du carrousel */
+      const partir = ()=>{
         stop();
         /* premier lancement : on note le refus. Profil déjà rempli : on ne touche à rien. */
         if(!dejaRempli){ db.profile = {skipped:true}; save(); }
         fermerOnb(); render();
       };
+      const tard = onbEl.querySelector("#onb-tard");
+      if(tard) tard.onclick = partir;
+      const quitteX = onbEl.querySelector("#onb-quitte");
+      if(quitteX) quitteX.onclick = partir;
       return;
     }
 
@@ -5723,7 +5761,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "5 septembre 2026 21h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 01h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
