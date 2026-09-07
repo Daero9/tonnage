@@ -470,7 +470,9 @@
      la mise en page elle-meme — voir « .onb-tel » juste dessous. */
   /* padding a zero, sans exception : le corps en ajoutait 22 en haut, qui venaient
      s ajouter au centimetre du carrousel et le portaient a un centimetre et demi */
-  .onb-body.intro{overflow:hidden; padding:0;}
+  /* conteneur en colonne : le bloc du carrousel y devient un element souple, sans
+     avoir a exprimer sa hauteur en pourcentage */
+  .onb-body.intro{overflow:hidden; padding:0; display:flex; flex-direction:column;}
   /* tout est calé en haut, comme sur la maquette : le visuel, puis le titre, puis les points */
   /* Le bloc descend d'environ deux centimètres. La marge est plafonnée et suit la hauteur
      de l'écran ; sur les téléphones courts elle se réduit franchement, sinon le bouton
@@ -478,8 +480,13 @@
   /* Plus de grande marge en tete : la barre a segments occupe desormais le haut de
      l ecran, et les 76 px qu on ajoutait par-dessus poussaient les points et le bouton
      hors du cadre. Le bloc remonte, et toute la place gagnee revient a l image. */
+  /* Plus AUCUNE hauteur en pourcentage ici. « height:100% » se calculait contre un
+     parent dont la hauteur vient d un « flex:1 » : Chrome la resout, Safari la rend
+     indefinie et retombe sur « auto ». Le bloc prenait alors la hauteur de son contenu,
+     depassait le corps, et le bas — la phrase et les points — etait coupe net. C est
+     tout ce que Nico voyait sur son iPhone. Ici, c est le flux qui donne la hauteur. */
   .onb-hero{display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
-    height:100%; min-height:0; padding-top:6px;}
+    flex:1 1 auto; min-height:0; padding-top:6px;}
   /* Le visuel prend LA PLACE QUI RESTE, ni plus ni moins : le titre, les points et le
      bouton se servent d'abord, lui se contente du reste. Aucune proportion imposée à la
      boîte, donc rien qui puisse déborder sous le bouton, quel que soit l'écran ; c'est la
@@ -506,7 +513,7 @@
      police du systeme ou la hauteur reelle laissee par le navigateur. Le plafond se
      calcule sur la hauteur du conteneur — aucune unite « vh » ici, c etait le piege. */
   .onb-tel{position:relative; flex:1 1 auto; width:100%; max-width:none;
-    min-height:0; max-height:62%; margin-bottom:14px;
+    min-height:0; margin-bottom:14px;
     overflow:hidden; touch-action:pan-y;}   /* le geste horizontal nous revient, pas au navigateur */
   .onb-piste{position:absolute; inset:0; display:flex;
     transition:transform .38s cubic-bezier(.22,.61,.36,1); will-change:transform;}
@@ -5774,7 +5781,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 01h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 01h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
