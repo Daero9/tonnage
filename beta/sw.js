@@ -1,5 +1,5 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-beta-v10";
+const CACHE = "tonnup-beta-v10-20260908-0116";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentialite.html", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
   "./img/push.jpg", "./img/pull.jpg", "./img/jambes.jpg", "./img/abdos.jpg", "./img/cardio.jpg", "./img/modif.png", 
   "./img/muscles/back-avant-bras.png", "./img/muscles/back-base.png", "./img/muscles/back-deltoides.png", "./img/muscles/back-fessiers.png", "./img/muscles/back-grand-dorsal.png", "./img/muscles/back-ischio-jambiers.png", "./img/muscles/back-ligne.png", "./img/muscles/back-lombaires.png", "./img/muscles/back-mollets.png", "./img/muscles/back-trapezes.png", "./img/muscles/back-triceps.png", "./img/muscles/front-abdos.png", "./img/muscles/front-avant-bras.png", "./img/muscles/front-base.png", "./img/muscles/front-biceps.png", "./img/muscles/front-deltoides.png", "./img/muscles/front-ligne.png", "./img/muscles/front-mollets.png", "./img/muscles/front-pectoraux.png", "./img/muscles/front-quadriceps.png", "./img/muscles/front-trapezes.png"];
@@ -26,8 +26,17 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  /* « réseau d'abord » ne suffisait pas : GitHub Pages sert la page avec un
+     Cache-Control de dix minutes, et fetch() la reprenait telle quelle dans le cache
+     HTTP du navigateur — puis la rangeait dans le nôtre. On demandait donc une
+     nouveauté qu'on ne recevait pas. Pour la PAGE seulement, on court-circuite ce
+     cache ; les images et le reste gardent le leur, elles ne changent pas de contenu. */
+  const page = req.mode === "navigate" || /\.html($|\?)/.test(req.url);
+  /* on reconstruit la demande a partir de l URL : on ne peut pas recopier une requete
+     de navigation en changeant sa politique de cache, le navigateur la refuse */
+  const demande = page ? new Request(req.url, {cache: "reload", credentials: "same-origin"}) : req;
   e.respondWith(
-    fetch(req)
+    fetch(demande)
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
