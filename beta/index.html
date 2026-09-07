@@ -465,7 +465,11 @@
     background:var(--accent); transform:translateX(-50%); pointer-events:none;}
 
   /* carrousel d'introduction */
-  .onb-body.intro{overflow:hidden; padding-inline:0;}   /* pleine largeur, et rien ne défile */
+  /* Le carrousel defilait autrefois en largeur seulement, et ce qui depassait etait
+     PERDU : sur un ecran plus court que prevu, le titre et la phrase disparaissaient
+     sans laisser de trace. On autorise le defilement vertical — au pire on descend
+     d un centimetre, au lieu de ne rien voir du tout. */
+  .onb-body.intro{overflow-x:hidden; overflow-y:auto; padding-inline:0;}
   /* tout est calé en haut, comme sur la maquette : le visuel, puis le titre, puis les points */
   /* Le bloc descend d'environ deux centimètres. La marge est plafonnée et suit la hauteur
      de l'écran ; sur les téléphones courts elle se réduit franchement, sinon le bouton
@@ -494,8 +498,12 @@
   /* Aucun plafond en « vh » : sur mobile cette unite se calcule barre d adresse
      masquee, donc l image pouvait reclamer plus de place qu il n y en avait vraiment
      et rogner les points et le bouton. Elle prend simplement ce que le flux lui laisse. */
+  /* L image ne prend JAMAIS plus de la moitie du bloc : le titre et la phrase ont
+     ainsi toujours leur place, quel que soit l ecran, la taille de police du systeme
+     ou la hauteur reelle laissee par le navigateur. Le pourcentage se calcule sur la
+     hauteur du conteneur, pas sur celle de la fenetre — aucune unite « vh » ici. */
   .onb-tel{position:relative; flex:1 1 auto; width:100%; max-width:none;
-    min-height:110px; margin-bottom:14px;
+    min-height:110px; max-height:52%; margin-bottom:14px;
     overflow:hidden; touch-action:pan-y;}   /* le geste horizontal nous revient, pas au navigateur */
   .onb-piste{position:absolute; inset:0; display:flex;
     transition:transform .38s cubic-bezier(.22,.61,.36,1); will-change:transform;}
@@ -5763,7 +5771,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 01h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 01h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
