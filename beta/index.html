@@ -440,6 +440,20 @@
   .ad-pq .l b{flex:0 0 auto; font-weight:800;}
   .ad-pq .l span{color:var(--ink-mute);}
 
+  /* la demande d'autorisation de l'alarme : ce qu'elle change, et à quoi elle ne sert pas */
+  .alm-tete{text-align:center; padding:2px 6px 12px;}
+  .alm-tete .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:10px;}
+  .alm-tete .ic svg{width:34px; height:34px;}
+  .sheet .alm-tete h3{font-size:22px; text-align:center; padding:0; margin:0; line-height:1.2;}
+  .alm-p{margin:0 2px 14px; font-size:14px; line-height:1.5; color:var(--ink-soft);}
+  .alm-note{display:flex; align-items:flex-start; gap:12px; background:var(--surface2);
+    border-radius:16px; padding:13px; margin-bottom:16px;}
+  .alm-note .ic{flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--surface);
+    color:var(--ink-mute); display:flex; align-items:center; justify-content:center;}
+  .alm-note .ic svg{width:19px; height:19px;}
+  .alm-note .t{font-size:14px; font-weight:800;}
+  .alm-note .s{font-size:12.5px; line-height:1.5; color:var(--ink-mute); margin-top:3px;}
+
   /* le rappel, dans le ton de l'app : un seul geste à retenir */
   .ad-note{display:flex; align-items:center; gap:13px; background:rgba(245,130,32,.12);
     border-radius:16px; padding:14px; margin-bottom:14px;}
@@ -2014,6 +2028,18 @@ const TRAD = {en:{
   "Pendant la séance":"During your workout",
   "Garder l'écran allumé":"Keep the screen on",
   "L'écran ne s'éteint pas entre deux séries.":"The screen stays on between sets.",
+  "Sonner à l'heure, écran éteint":"Ring on time, screen off",
+  "Android bloque par défaut les alarmes à la seconde près. Sans son accord, ton repos de trois minutes peut sonner plusieurs minutes plus tard quand le téléphone dort dans ta poche.":"Android blocks to-the-second alarms by default. Without its permission, your three-minute rest can ring several minutes late while the phone sleeps in your pocket.",
+  "Uniquement pour ça":"Nothing else",
+  "Cette autorisation ne sert qu'à la fin d'un temps de repos, pendant une séance. Tonnup ne t'enverra jamais de notification en dehors d'un entraînement, et rien n'est envoyé nulle part.":"This permission is used only for the end of a rest period, during a workout. Tonnup will never send you a notification outside training, and nothing is sent anywhere.",
+  "Autoriser":"Allow",
+  "Plus tard":"Later",
+  "Tu pourras l'activer plus tard dans Réglages.":"You can turn it on later in Settings.",
+  "Alarme du minuteur":"Timer alarm",
+  "Sonner à l'heure exacte quand l'écran est éteint.":"Ring at the exact time when the screen is off.",
+  "Activée":"On",
+  "À autoriser":"Needs permission",
+  "Sans objet":"Not applicable",
   "Repos par défaut":"Default rest",
   "Utilisé quand un exercice n'a pas son propre temps.":"Used when an exercise has no rest time of its own.",
   "Langue et unités":"Language and units",
@@ -6105,7 +6131,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 13h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 13h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6814,6 +6840,7 @@ const IC_LANGUE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const IC_ECRAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/></svg>';
 /* le bouclier : ce qui protège tes données */
 const IC_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 4.8 5.6v5.9c0 4.4 3 8.2 7.2 9.7 4.2-1.5 7.2-5.3 7.2-9.7V5.6L12 2.8Z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg>';
+const IC_CLOCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8.4a6 6 0 1 0-12 0c0 5.2-2.1 6.6-2.1 6.6h16.2S18 13.6 18 8.4Z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg>';
 const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" stroke="currentColor" stroke-width=".9" stroke-linejoin="round"><path d="M9.8 2.2 L14.2 2.2 L14.4 4.5 L15.6 5.0 L17.4 3.6 L20.4 6.6 L19.0 8.4 L19.5 9.6 L21.8 9.8 L21.8 14.2 L19.5 14.4 L19.0 15.6 L20.4 17.4 L17.4 20.4 L15.6 19.0 L14.4 19.5 L14.2 21.8 L9.8 21.8 L9.6 19.5 L8.4 19.0 L6.6 20.4 L3.6 17.4 L5.0 15.6 L4.5 14.4 L2.2 14.2 L2.2 9.8 L4.5 9.6 L5.0 8.4 L3.6 6.6 L6.6 3.6 L8.4 5.0 L9.6 4.5 Z M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 1 0 0-7.2Z"/></svg>';
 /* bandeau sombre : l'image fournie en fond, avatar à gauche, réglages à droite */
 /* Le disque sombre est dessiné, plus chargé : une image réinsérée à chaque rendu
@@ -7169,6 +7196,62 @@ async function poserAlarmeRepos(){
     }]});
   }catch(e){}
 }
+/* ---- l'autorisation qui manquait ----------------------------------------------
+   Depuis Android 13, « Alarmes et rappels » est REFUSÉE par défaut. Sans elle, le
+   greffon ne le dit pas à l'application : il se rabat silencieusement sur une alarme
+   approximative, et un repos de trois minutes peut sonner cinq minutes plus tard sur
+   un téléphone en veille. C'est exactement le cas que l'alarme devait couvrir.
+
+   On la demande donc une seule fois, au premier repos, en disant à quoi elle sert et
+   à rien d'autre. Refusée, on n'y revient jamais : la ligne reste dans les réglages. */
+let alarmeExacte = null;      /* "granted" | "denied" | null = téléphone non concerné */
+async function lireAlarmeExacte(){
+  const n = pluginNotifs();
+  if(!n || typeof n.checkExactNotificationSetting !== "function"){ alarmeExacte = null; return null; }
+  try{
+    const r = await n.checkExactNotificationSetting();
+    alarmeExacte = (r && r.exact_alarm) || null;
+  }catch(e){ alarmeExacte = null; }
+  return alarmeExacte;
+}
+/* ouvre la page système ; au retour, on relit l'état plutôt que de le supposer */
+async function ouvrirReglageAlarme(){
+  const n = pluginNotifs();
+  if(!n || typeof n.changeExactNotificationSetting !== "function") return null;
+  try{ await n.changeExactNotificationSetting(); }catch(e){}
+  return lireAlarmeExacte();
+}
+function ficheAlarmeExacte(){
+  openSheet(`<div class="alm-tete"><span class="ic">${IC_CLOCHE}</span>
+      <h3>${TR("Sonner à l'heure, écran éteint")}</h3></div>
+    <p class="alm-p">${TR("Android bloque par défaut les alarmes à la seconde près. Sans son accord, ton repos de trois minutes peut sonner plusieurs minutes plus tard quand le téléphone dort dans ta poche.")}</p>
+    <div class="alm-note"><span class="ic">${IC_BOUCLIER}</span>
+      <div><div class="t">${TR("Uniquement pour ça")}</div>
+        <div class="s">${TR("Cette autorisation ne sert qu'à la fin d'un temps de repos, pendant une séance. Tonnup ne t'enverra jamais de notification en dehors d'un entraînement, et rien n'est envoyé nulle part.")}</div></div>
+    </div>
+    <button class="btn btn-accent" id="alm-ok" style="width:100%; margin-bottom:8px;">${TR("Autoriser")}</button>
+    <button class="btn" id="alm-non" style="width:100%;">${TR("Plus tard")}</button>
+    <p class="alm-p" style="text-align:center; font-size:12px; margin:12px 0 0;">${
+      TR("Tu pourras l'activer plus tard dans Réglages.")}</p>`);
+  document.getElementById("alm-ok").onclick = ()=>{ closeSheet(); ouvrirReglageAlarme(); };
+  document.getElementById("alm-non").onclick = closeSheet;
+}
+/* Appelé au démarrage d'un repos, pendant que l'app est ENCORE à l'écran. C'est le
+   seul moment où quoi que ce soit peut être demandé : la permission des notifications
+   était réclamée depuis poserAlarmeRepos(), c'est-à-dire une fois l'app passée en
+   arrière-plan — la boîte système ne pouvait pas s'y afficher, et la toute première
+   alarme n'était donc jamais posée. */
+async function verifierAlarmeExacte(){
+  const n = pluginNotifs();
+  if(!n) return;                                       /* navigateur, iPhone : rien à demander */
+  if(db.settings.son === false) return;                /* pas de sonnerie : rien à autoriser */
+  if(document.visibilityState !== "visible") return;   /* une fiche invisible ne se lit pas */
+  await autoriserNotifs();                             /* la boîte système, tant qu'on la voit */
+  if(db.seen.alarmeExacte) return;                     /* on ne demande qu'une fois */
+  if(await lireAlarmeExacte() !== "denied") return;    /* accordée, ou téléphone non concerné */
+  db.seen.alarmeExacte = 1; save();
+  setTimeout(()=>{ if(document.visibilityState === "visible") ficheAlarmeExacte(); }, 700);
+}
 async function retirerAlarmeRepos(){
   const n = pluginNotifs();
   if(!n) return;
@@ -7369,6 +7452,7 @@ function startRest(sec){
   rest.total = sec;
   rest.end = Date.now() + sec*1000;
   restbar.classList.add("show");
+  verifierAlarmeExacte();          /* une seule fois dans la vie de l'application */
   /* « tenue » aussi : une seance de gainage terminee laissait la marque, et le repos
      suivant repartait en vert sans qu on tienne quoi que ce soit */
   restbar.classList.remove("ending", "paused", "tenue");
@@ -12123,6 +12207,12 @@ function openSettings(){
           <em>${TR("L'écran ne s'éteint pas entre deux séries.")}</em></span>
         <span class="val">${TR(db.settings.ecranAllume===false? "Non" : "Oui")}</span>
       </button>
+      ${pluginNotifs()? `<button class="rg-l" id="st-alarme">
+        <span class="rgi">${IC_CLOCHE}</span>
+        <span class="grow">${TR("Alarme du minuteur")}
+          <em>${TR("Sonner à l'heure exacte quand l'écran est éteint.")}</em></span>
+        <span class="val" id="st-alarme-val">…</span>
+      </button>`:""}
       <div class="rg-l">
         <span class="rgi">${IC_CHRONO}</span>
         <span class="grow">${TR("Repos par défaut")}
@@ -12194,6 +12284,18 @@ function openSettings(){
       </button>
     </div>
     <button class="btn btn-accent" id="st-ok" style="width:100%;">${TR("Fermer")}</button>`);
+  /* l'état réel se lit auprès du système : on remplit la ligne quand la réponse arrive */
+  const majLigneAlarme = ()=>{
+    const v = document.getElementById("st-alarme-val");
+    if(!v) return;
+    v.textContent = alarmeExacte === "granted" ? TR("Activée")
+                  : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
+  };
+  const ligneAlarme = document.getElementById("st-alarme");
+  if(ligneAlarme){
+    lireAlarmeExacte().then(majLigneAlarme);
+    ligneAlarme.onclick = ()=>{ ouvrirReglageAlarme().then(majLigneAlarme); };
+  }
   document.getElementById("st-bk-toggle").onclick = ()=>{
     const z = document.getElementById("st-backup");
     const ouvert = z.style.display !== "none";

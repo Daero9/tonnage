@@ -2591,6 +2591,71 @@ async function lancer(){
   })();
   neuf();
 
+  grp("L'alarme du minuteur");
+  neuf();
+  /* Depuis Android 13, « Alarmes et rappels » est refusée par défaut, et le greffon se
+     rabat SILENCIEUSEMENT sur une alarme approximative. On la demande donc une fois, au
+     premier repos, pendant que l'application est encore à l'écran. */
+  await (async ()=>{
+    const gardeSeen = DB.seen.alarmeExacte, gardeSon = DB.settings.son;
+    const appels = {check:0, change:0, perm:0};
+    let etat = "denied";
+    /* faux greffon : les tests tournent dans un navigateur, où Capacitor n'existe pas */
+    F.window.Capacitor = {isNativePlatform:()=>true, Plugins:{LocalNotifications:{
+      checkPermissions: async ()=>({display:"prompt"}),
+      requestPermissions: async ()=>{ appels.perm++; return {display:"granted"}; },
+      checkExactNotificationSetting: async ()=>{ appels.check++; return {exact_alarm:etat}; },
+      changeExactNotificationSetting: async ()=>{ appels.change++; etat = "granted";
+        return {exact_alarm:etat}; },
+      schedule: async ()=>({}), cancel: async ()=>({})
+    }}};
+
+    delete DB.seen.alarmeExacte;
+    DB.settings.son = true;
+    await F.verifierAlarmeExacte();
+    vrai("L'état est lu auprès du système", appels.check === 1, appels.check);
+    vrai("Le refus est retenu pour ne plus jamais redemander", !!DB.seen.alarmeExacte);
+    await new Promise(r=>setTimeout(r, 800));
+    vrai("La fiche explique à quoi sert l'autorisation",
+      !!F.document.getElementById("alm-ok"));
+    vrai("…et dit qu'elle ne sert qu'à la séance",
+      /repos|séance/i.test(F.document.querySelector("#sheet .alm-note .s").textContent));
+
+    /* « Autoriser » ouvre la page système ; au retour l'état est relu, pas supposé */
+    F.document.getElementById("alm-ok").click();
+    await new Promise(r=>setTimeout(r, 60));
+    vrai("« Autoriser » ouvre le réglage système", appels.change === 1, appels.change);
+    eq("…et l'état est relu", F.eval("alarmeExacte"), "granted");
+    F.hideSheet();
+
+    /* on ne repose jamais la question */
+    const avant = appels.check;
+    await F.verifierAlarmeExacte();
+    vrai("On ne redemande pas une deuxième fois", appels.check === avant + 0 || !!DB.seen.alarmeExacte);
+
+    /* son coupé : il n'y a rien à autoriser */
+    delete DB.seen.alarmeExacte;
+    DB.settings.son = false;
+    const avant2 = appels.check;
+    await F.verifierAlarmeExacte();
+    eq("Son coupé, on ne demande rien", appels.check, avant2);
+    vrai("…et rien n'est retenu", !DB.seen.alarmeExacte);
+
+    /* la permission des notifications se demande À L'ÉCRAN, pas une fois l'app cachée */
+    DB.settings.son = true;
+    delete DB.seen.alarmeExacte;
+    F.eval("notifsOk = null");
+    await F.verifierAlarmeExacte();
+    vrai("La permission des notifications est demandée pendant qu'on la voit",
+      appels.perm >= 1, appels.perm);
+
+    delete F.window.Capacitor;
+    F.eval("alarmeExacte = null; notifsOk = null");
+    DB.seen.alarmeExacte = gardeSeen; DB.settings.son = gardeSon;
+    if(gardeSeen === undefined) delete DB.seen.alarmeExacte;
+  })();
+  neuf();
+
   grp("Pourquoi cette séance");
   neuf();
   /* La fiche explique le mécanisme ; l'encadré dit ce que l'app a lu DANS TON
