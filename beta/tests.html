@@ -1154,12 +1154,31 @@ async function lancer(){
         for(const it of F.genererSeance(t).items){
           const ex = F.getEx(id(it.nom)), r = F.parseReps(it.reps);
           if(!ex || !r) continue;
+          /* un gainage porte des secondes dans ce champ : 30-45 n'est pas une fourchette
+             de répétitions impossible, c'est une durée */
+          if(F.estIsometrique(ex)) continue;
           if(F.estPoidsDuCorps(ex) && r.lo > 8) return false;
           if(ex.equip === "Barre fixe" && r.hi > 12) return false;
         }
       }
     }
     return true;
+  })());
+  /* … et ce qu'on tient doit bien porter une durée, jamais douze répétitions */
+  vrai("Un gainage proposé se compte en secondes", (()=>{
+    let vu = false;
+    for(let k=0;k<60;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom));
+          if(!ex || !F.estIsometrique(ex)) continue;
+          vu = true;
+          const r = F.parseReps(it.reps);
+          if(!r || r.lo < 20) return false;
+        }
+      }
+    }
+    return vu;
   })());
   DB.materiel = null;
   vrai("En perte de poids, plus aucune série au-delà de 15 répétitions",
@@ -2534,6 +2553,72 @@ async function lancer(){
       lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
     vrai("Le signe vient avant le texte",
       lignes.every(l => l.firstElementChild.classList.contains("rgi")));
+    F.hideSheet();
+  })();
+  neuf();
+
+  grp("Les types de séance proposés");
+  neuf();
+  /* « Jambes » et « Bas du corps » étaient la même séance sous deux noms, et ils se
+     suivaient dans la grille. Un seul reste proposé ; la place gagnée va aux abdos,
+     qui n'existaient pas comme séance. */
+  (()=>{
+    const jours = [1,2,3,4,5,6];
+    const listes = jours.map(j=>{
+      DB.profile = Object.assign({}, DB.profile, {days:j});
+      return F.typesProposables();
+    });
+    vrai("Jamais « Jambes » et « Bas du corps » ensemble",
+      listes.every(l => !(l.includes("jambes") && l.includes("bas"))));
+    vrai("« Jambes » ne se propose plus du tout",
+      listes.every(l => !l.includes("jambes")));
+    vrai("Les abdos se proposent quel que soit le nombre de jours",
+      listes.every(l => l.includes("abdos")));
+    vrai("Le bas du corps reste proposé", listes.every(l => l.includes("bas")));
+    /* le moule survit pour le programme de prise de masse, qui s'y réfère encore */
+    vrai("Le moule « Jambes » existe toujours", !!F.eval("MOULES").jambes);
+    vrai("…et le programme de masse s'en sert",
+      F.eval("COACH_PROGRAMS").masse.templates.some(t=>t.type === "jambes"));
+    /* vingt minutes d'abdos ne remplacent pas un jour d'entraînement */
+    DB.profile = Object.assign({}, DB.profile, {days:4});
+    DB.history = [];
+    vrai("Les abdos ne sont jamais LA séance recommandée",
+      F.typeQuiManque().type !== "abdos");
+    DB.profile = Object.assign({}, DB.profile, {days:3});
+  })();
+  neuf();
+
+  /* Une séance d'abdos doit être une vraie séance : plusieurs façons de travailler le
+     tronc, pas trois fois le même crunch. */
+  (()=>{
+    DB.materiel = [];
+    const noms = new Set();
+    let mini = 99, sansDoublon = true;
+    for(let k=0;k<40;k++){
+      const items = F.genererSeance("abdos").items;
+      mini = Math.min(mini, items.length);
+      items.forEach(it=>noms.add(it.nom));
+      if(new Set(items.map(i=>i.nom)).size !== items.length) sansDoublon = false;
+    }
+    vrai("Aucun exercice en double dans la séance", sansDoublon);
+    vrai("Au moins quatre exercices", mini >= 4, "obtenu " + mini);
+    vrai("Le tronc se travaille de plusieurs façons", noms.size >= 5, noms.size + " exercices");
+    DB.materiel = null;
+  })();
+  neuf();
+
+  /* Chaque tuile porte le dessin de son type ; « Haut du corps » attend encore le sien. */
+  (()=>{
+    F.openPropose();
+    const D2 = F.document;
+    const tuiles = [...D2.querySelectorAll("#pp-types [data-pptype]")];
+    vrai("Chaque type a sa tuile", tuiles.length >= 4);
+    const dessines = ["push","pull","bas","abdos","full"];
+    vrai("Les types dessinés portent leur masque",
+      tuiles.filter(b=>dessines.includes(b.dataset.pptype))
+            .every(b=>!!b.querySelector(".icm-" + b.dataset.pptype)));
+    vrai("Le dé du hasard aussi",
+      !!D2.querySelector("#pp-hasard .icm-hasard"));
     F.hideSheet();
   })();
   neuf();
