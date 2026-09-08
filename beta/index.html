@@ -2631,6 +2631,9 @@ const TRAD = {en:{
   "<b>Ce que tu as déjà fait cette semaine.</b> Un muscle beaucoup travaillé ces derniers jours attend son tour.":"<b>What you already did this week.</b> A muscle worked hard in recent days waits its turn.",
   "<b>Les exercices récents.</b> Un mouvement fait dernièrement passe derrière — mais reste choisi s'il est ce qu'il y a de mieux pour toi.":"<b>Recent exercises.</b> A movement done lately goes to the back — but is still picked if it is the best thing for you.",
   "Ce qu'elle décide":"What it decides",
+  "<b>Ton volume de la semaine.</b> Chaque muscle a une cible hebdomadaire — 16 séries pour le dos, 12 pour les biceps. Ce qui manque est placé en priorité.":"<b>Your weekly volume.</b> Each muscle has a weekly target — 16 sets for the back, 12 for the biceps. What is missing is placed first.",
+  "<b>Les exercices qui te font progresser.</b> Un mouvement sur lequel ta charge monte remonte dans les choix ; un mouvement où tu stagnes depuis quatre séances descend.":"<b>The exercises that move you forward.</b> A movement where your load is climbing rises in the list; one you have stalled on for four sessions drops.",
+  "Un seul mouvement de chaque type par séance : pas deux charnières de hanche, pas deux rowings. Un Pull tire toujours dans les deux directions, un Push pousse dans les deux.":"One movement of each kind per session: never two hip hinges, never two rows. A Pull always pulls in both directions, a Push presses in both.",
   "Les exercices, leur ordre — les gros mouvements tant que tu es frais —, le nombre de séries, les répétitions et le repos. Un muscle prioritaire peut recevoir deux exercices au lieu d'un ; un muscle à plat peut n'en recevoir aucun.":"The exercises, their order — the big movements while you are fresh — the number of sets, the reps and the rest. A priority muscle can get two exercises instead of one; a flat muscle can get none.",
   "Les épaules sont suivies faisceau par faisceau : l'avant travaille à chaque développé, l'arrière presque jamais. Les traiter séparément évite de croire l'épaule reposée alors qu'une seule de ses parties l'est.":"Shoulders are tracked head by head: the front works on every press, the rear almost never. Treating them apart avoids thinking the shoulder is rested when only one part of it is.",
   "Les séances que tu crées ou que tu modifies toi-même ne sont jamais touchées : elles restent exactement comme tu les as écrites.":"Sessions you create or edit yourself are never touched: they stay exactly as you wrote them.",
@@ -5824,7 +5827,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 02h35 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 02h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9501,6 +9504,73 @@ const MUSCLES_SEANCE = {
   bas:    ["Quadriceps", "Fessiers", "Ischio-jambiers", "Mollets", "Abdos"],
   full:   ["Quadriceps", "Pectoraux", "Grand dorsal", "Deltoïdes (latéral)", "Abdos"]
 };
+/* ---- le geste, pas seulement le muscle ----
+   Deux exercices peuvent travailler les mêmes muscles et rester le même mouvement :
+   soulevé de terre, soulevé de terre sumo et good morning sont trois charnières de
+   hanche. Le générateur n'en voyait pas la parenté et les enchaînait dans la même
+   séance. Un seul mouvement de chaque schéma par séance — les isolations, elles, ne
+   se marchent pas dessus et restent libres. */
+const SCHEMA = {
+  "Développé couché":"pousseeH",
+  "Développé incliné haltères":"pousseeH",
+  "Développé couché haltères":"pousseeH",
+  "Dips":"pousseeH",
+  "Pompes":"pousseeH",
+  "Développé machine":"pousseeH",
+  "Développé couché à la Smith":"pousseeH",
+  "Développé incliné barre":"pousseeH",
+  "Pompes diamant":"pousseeH",
+  "Pompes inclinées":"pousseeH",
+  "Pompes déclinées":"pousseeH",
+  "Développé couché élastique":"pousseeH",
+  "Dips sur banc":"pousseeH",
+  "Développé militaire":"pousseeV",
+  "Développé militaire haltères":"pousseeV",
+  "Développé machine épaules":"pousseeV",
+  "Arnold press":"pousseeV",
+  "Pompes piquées":"pousseeV",
+  "Pompes piquées surélevées":"pousseeV",
+  "Développé militaire élastique":"pousseeV",
+  "Tractions":"tirageV",
+  "Tirage vertical":"tirageV",
+  "Tirage vertical prise neutre":"tirageV",
+  "Tractions supination":"tirageV",
+  "Tirage élastique vertical":"tirageV",
+  "Pull-over poulie":"tirageV",
+  "Rowing barre":"tirageH",
+  "Rowing haltère":"tirageH",
+  "Tirage horizontal":"tirageH",
+  "Rowing machine":"tirageH",
+  "Rowing T-bar":"tirageH",
+  "Tractions australiennes":"tirageH",
+  "Tirage élastique horizontal":"tirageH",
+  "Rowing sous la table":"tirageH",
+  "Squat":"squat",
+  "Presse à cuisses":"squat",
+  "Hack squat":"squat",
+  "Goblet squat":"squat",
+  "Front squat":"squat",
+  "Squat au poids du corps":"squat",
+  "Squat élastique":"squat",
+  "Chaise contre le mur":"squat",
+  "Soulevé de terre":"charniere",
+  "Soulevé de terre roumain":"charniere",
+  "Hip thrust":"charniere",
+  "Soulevé de terre sumo":"charniere",
+  "Good morning":"charniere",
+  "Soulevé de terre élastique":"charniere",
+  "Pont fessier":"charniere",
+  "Pont fessier une jambe":"charniere",
+  "Superman":"charniere",
+  "Fentes":"fente",
+  "Fentes bulgares":"fente",
+  "Montées sur banc":"fente",
+  "Fentes avant":"fente",
+  "Fentes latérales":"fente",
+  "Squat bulgare au poids du corps":"fente",
+  "Montées sur step":"fente",
+};
+function schemaDe(nom){ return SCHEMA[nom] || "isolation"; }
 /* Combien un exercice met de muscle en jeu : Σ(intensité × masse). Un soulevé de terre
    pèse 79, une élévation latérale 12. C'est ce qui distingue « gros mouvement » et
    « isolation » sans avoir à ranger les exercices à la main. */
@@ -9508,6 +9578,22 @@ function chargeExo(nom){
   const w = MUSCLE_WORK[nom];
   if(!w) return 0;
   return w.reduce((a, m)=>a + (m[1] || 0) * (MASSE_MUSCLE[m[0]] || 3), 0);
+}
+/* Ce qu'un muscle devrait recevoir en une semaine, en séries de travail. La littérature
+   situe l'hypertrophie entre 10 et 20 séries dures par muscle et par semaine ; on vise
+   le milieu, un peu plus haut sur les gros groupes qui encaissent davantage.
+   C'est ce chiffre qui transforme l'ajustement en programme : la séance ne demande plus
+   seulement « qui est frais ? » mais « à qui manque-t-il des séries ? ». */
+const CIBLE_HEBDO = {
+  "Pectoraux":14, "Grand dorsal":16, "Quadriceps":14, "Fessiers":12, "Ischio-jambiers":12,
+  "Deltoïdes":16, "Trapèzes":10, "Biceps":12, "Triceps":12, "Mollets":10, "Abdos":10,
+  "Lombaires":8, "Avant-bras":8
+};
+function cibleHebdo(muscle){
+  const g = groupeDe(muscle) || muscle;
+  const c = CIBLE_HEBDO[g] || 12;
+  /* les trois faisceaux de l'épaule se partagent la cible du groupe */
+  return muscle.indexOf("(") > 0 && g === "Deltoïdes" ? Math.round(c / 3) : c;
 }
 /* Ce qu'un muscle a encaissé récemment, en séries de travail pondérées par l'implication :
    une série de curl compte 1 pour le biceps, une série de rowing 0,67. */
@@ -9544,10 +9630,11 @@ function besoinsMuscles(type){
     /* écart en % de sa propre moyenne : négatif = en retard */
     const retard = (st && typeof st.ecart === "number") ? st.ecart : 0;
     const vol = volumeRecent(m, 7);
+    const cible = cibleHebdo(m);
     const besoin = (recup - 55) * 0.8      /* frais = on peut charger ; à plat = on passe */
                  + Math.max(-40, -retard) * 1.2   /* en retard = prioritaire */
-                 - vol * 2.5;              /* déjà servi cette semaine = on attend */
-    return {muscle:m, recup, retard, vol, besoin};
+                 + (cible - vol) * 2.2;    /* en dessous de sa semaine = on lui doit des séries */
+    return {muscle:m, recup, retard, vol, cible, besoin};
   }).sort((a, b)=>b.besoin - a.besoin);
 }
 /* Le muscle sur lequel un exercice est CENTRÉ : celui qui y pèse le plus, intensité
@@ -9614,6 +9701,29 @@ function exosPourMuscle(muscle, gros){
                         || (rangReservoir(a.nom) - rangReservoir(b.nom))
                         || (gros ? b.charge - a.charge : a.charge - b.charge));
 }
+/* Sur quels exercices la charge monte VRAIMENT. On compare la meilleure série des deux
+   dernières fois à celle des deux précédentes : au-dessus de 3 %, l'exercice te réussit
+   et remonte dans les choix ; en dessous de −3 %, tu stagnes dessus et il descend.
+   Calculé une fois par séance, pas une fois par exercice candidat. */
+function progressionParExo(){
+  const vals = {};
+  (db.history || []).forEach(sess=>sess.entries.forEach(en=>{
+    const sets = (en.sets || []).filter(x=>x.done && !x.warm && (x.w || x.r));
+    if(!sets.length) return;
+    const f = (db.unilat && db.unilat[en.exId] && !dejaParCote(en.exId)) ? 2 : 1;
+    const best = Math.max(...sets.map(st=>e1rm(chargeReelle(en.exId, st) * f, st.r || 0)));
+    if(best > 0) (vals[en.exId] = vals[en.exId] || []).push(best);
+  }));
+  const out = {};
+  Object.keys(vals).forEach(id=>{
+    const v = vals[id];
+    if(v.length < 4) return;                       /* trop tôt pour dire quoi que ce soit */
+    const moy = a => a.reduce((x, y)=>x + y, 0) / a.length;
+    const recent = moy(v.slice(-2)), avant = moy(v.slice(-4, -2));
+    if(avant > 0) out[getEx(id) && nomCanon(getEx(id))] = (recent - avant) / avant;
+  });
+  return out;
+}
 /* La séance complète. `evites` : ce qu'on ne veut pas revoir (bouton « une autre »). */
 function genererAdaptative(type, evites){
   const moule = MOULES[type] || MOULES.full;
@@ -9626,6 +9736,7 @@ function genererAdaptative(type, evites){
   /* Répartition des cinq exercices : chacun des trois muscles les plus demandeurs en
      reçoit un, puis les deux qui restent vont aux plus demandeurs — c'est ainsi qu'un
      biceps en retard et bien reposé obtient deux exercices au lieu d'un. */
+  const perf = progressionParExo();
   const parts = besoins.map(b=>({...b, n:0}));
   /* Un exercice chacun, du plus demandeur au moins demandeur, tant qu il reste de la
      place : quand il y a plus de muscles que de places, le moins demandeur passe son
@@ -9635,7 +9746,10 @@ function genererAdaptative(type, evites){
   /* Les places qui restent vont aux plus demandeurs, DEUX exercices au maximum : au-dela
      on obtenait trois exercices d arriere d epaule dans la meme seance. */
   for(let tour = 0; reste > 0 && tour < 12; tour++){
-    const p = parts.filter(x=>x.n === 1)[0];
+    /* Un deuxième exercice ne se justifie que sur un muscle qui a de quoi l absorber :
+       l arrière d épaule ne demande que cinq séries par semaine, deux exercices dans la
+       même séance les dépenseraient d un coup. */
+    const p = parts.filter(x=>x.n === 1 && x.cible >= 10)[0] || parts.filter(x=>x.n === 1)[0];
     if(!p) break;
     p.n = 2; reste--;
   }
@@ -9646,6 +9760,7 @@ function genererAdaptative(type, evites){
      soulevé de terre POUR LES FESSIERS puis un soulevé de terre sumo POUR LES QUADRICEPS
      — deux fois le même mouvement, et pas de squat. */
   const servis = {};
+  const schemasPris = new Set();
   const recouvre = c => ((MUSCLE_WORK[c.nom] || [])
     .reduce((a, m)=>a + (m[1] === 3 ? (servis[m[0]] || 0) : 0), 0));
   parts.forEach(p=>{
@@ -9669,15 +9784,38 @@ function genererAdaptative(type, evites){
          trois fois la même chaîne postérieure, aucune presse, aucun squat. */
       const lourdsDejaPris = items.filter(it=>it.charge >= 60).length;
       const raisonnables = lourdsDejaPris >= 2 ? cands.filter(c=>c.charge < 60) : cands;
-      const liste = raisonnables.length ? raisonnables : cands;
-      const choisi = liste.find(c=>!recents.has(c.nom) && !recouvre(c))
-                  || liste.find(c=>!recouvre(c))
-                  || liste.find(c=>!recents.has(c.nom))
-                  || liste[0];
+      let liste = raisonnables.length ? raisonnables : cands;
+      /* Un seul mouvement par schéma : c'est ce qui empêche une séance Jambes de sortir
+         squat sumo PUIS good morning, et un Pull deux rowings au lieu d'un tirage
+         vertical et d'un horizontal. Les isolations ne sont pas concernées. */
+      const libres = liste.filter(c=>{
+        const sc = schemaDe(c.nom);
+        return sc === "isolation" || !schemasPris.has(sc);
+      });
+      if(libres.length) liste = libres;
+      else {
+        /* Aucun mouvement libre pour ce muscle, et il est déjà servi par un exercice
+           retenu : on passe. C est ce qui évitait un « Superman » derrière un soulevé
+           de terre — deux charnières de hanche pour le même bas du dos. */
+        const dejaCouvert = items.some(it=>(MUSCLE_WORK[it.nom] || [])
+          .some(m=>m[1] >= 2 && (m[0] === p.muscle || groupeDe(m[0]) === p.muscle)));
+        if(dejaCouvert) continue;
+      }
+      /* À qualité égale, l'exercice sur lequel tu progresses passe devant, et celui où
+         tu stagnes depuis quatre séances passe derrière. Ni l'un ni l'autre n'est imposé
+         ou exclu : c'est un départage, pas une règle. */
+      const rangPerf = c => { const p = perf[c.nom];
+        return p === undefined ? 1 : (p > 0.03 ? 0 : (p < -0.03 ? 2 : 1)); };
+      const triee = liste.slice().sort((a, b)=>rangPerf(a) - rangPerf(b));
+      const choisi = triee.find(c=>!recents.has(c.nom) && !recouvre(c))
+                  || triee.find(c=>!recouvre(c))
+                  || triee.find(c=>!recents.has(c.nom))
+                  || triee[0];
       pris.add(choisi.nom);
       (MUSCLE_WORK[choisi.nom] || []).forEach(m=>{
         if(m[1] === 3) servis[m[0]] = (servis[m[0]] || 0) + 1;
       });
+      schemasPris.add(schemaDe(choisi.nom));
       /* La dose suit la récupération : à 85 % et plus on tape lourd, entre 60 et 85 on
          reste moyen, en dessous on se contente d'entretenir. Le deuxième exercice d'un
          même muscle descend d'un cran : c'est une finition, pas un second gros. */
@@ -9702,6 +9840,23 @@ function genererAdaptative(type, evites){
                   role:p.muscle, charge:choisi.charge, niveau});
     }
   });
+  /* Une place perdue faute de mouvement disponible se rattrape en isolation, sur le
+     muscle qui en demande le plus : mieux vaut cinq exercices que quatre. */
+  for(let tour = 0; items.length < TOTAL && tour < 8; tour++){
+    let ajoute = false;
+    for(const p of parts){
+      const c2 = exosPourMuscle(p.muscle, false)
+        .filter(c=>!pris.has(c.nom) && !bannis.has(c.nom) && schemaDe(c.nom) === "isolation")[0];
+      if(!c2) continue;
+      pris.add(c2.nom);
+      const d2 = dose[p.recup >= 60 ? "moyen" : "leger"];
+      items.push({nom:c2.nom, sets:d2.s, reps:"10-15", rest:Math.min(d2.p, 90),
+                  role:p.muscle, charge:c2.charge, niveau:"leger"});
+      ajoute = true;
+      break;
+    }
+    if(!ajoute) break;
+  }
   /* Les gros mouvements d'abord : c'est quand on est frais qu'ils rapportent. */
   items.sort((a, b)=>b.charge - a.charge);
   return {type, nom:moule.nom, sous:moule.sous, adaptatif:true,
@@ -9774,12 +9929,15 @@ function openAdaptatifInfo(){
         <p style="margin:0 0 7px;">${TR("<b>La récupération de chaque muscle.</b> Un muscle encore fatigué d'avant-hier passe son tour ; un muscle frais reçoit les gros mouvements et les séries lourdes.")}</p>
         <p style="margin:0 0 7px;">${TR("<b>Tes points faibles.</b> Un groupe en retard sur ta propre moyenne passe devant les autres, et reçoit plus de volume.")}</p>
         <p style="margin:0 0 7px;">${TR("<b>Ce que tu as déjà fait cette semaine.</b> Un muscle beaucoup travaillé ces derniers jours attend son tour.")}</p>
+        <p style="margin:0 0 7px;">${TR("<b>Ton volume de la semaine.</b> Chaque muscle a une cible hebdomadaire — 16 séries pour le dos, 12 pour les biceps. Ce qui manque est placé en priorité.")}</p>
+        <p style="margin:0 0 7px;">${TR("<b>Les exercices qui te font progresser.</b> Un mouvement sur lequel ta charge monte remonte dans les choix ; un mouvement où tu stagnes depuis quatre séances descend.")}</p>
         <p style="margin:0;">${TR("<b>Les exercices récents.</b> Un mouvement fait dernièrement passe derrière — mais reste choisi s'il est ce qu'il y a de mieux pour toi.")}</p>
       </div>
       <div class="card" style="padding:13px;">
         <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">${TR("Ce qu'elle décide")}</div>
         <p style="margin:0;">${TR("Les exercices, leur ordre — les gros mouvements tant que tu es frais —, le nombre de séries, les répétitions et le repos. Un muscle prioritaire peut recevoir deux exercices au lieu d'un ; un muscle à plat peut n'en recevoir aucun.")}</p>
       </div>
+      <p style="margin:0;">${TR("Un seul mouvement de chaque type par séance : pas deux charnières de hanche, pas deux rowings. Un Pull tire toujours dans les deux directions, un Push pousse dans les deux.")}</p>
       <p style="margin:0;">${TR("Les épaules sont suivies faisceau par faisceau : l'avant travaille à chaque développé, l'arrière presque jamais. Les traiter séparément évite de croire l'épaule reposée alors qu'une seule de ses parties l'est.")}</p>
       <p style="margin:0;">${TR("Les séances que tu crées ou que tu modifies toi-même ne sont jamais touchées : elles restent exactement comme tu les as écrites.")}</p>
       <button class="btn btn-accent" id="ad-ok">${TR("Compris")}</button>

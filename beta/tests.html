@@ -2681,6 +2681,29 @@ async function lancer(){
       dos.besoin < bic.besoin, "dos " + Math.round(dos.besoin) + " vs biceps " + Math.round(bic.besoin));
     vrai("…sa récupération a baissé", dos.recup < 75, dos.recup + " %");
     vrai("…et son volume de la semaine est compté", dos.vol >= 9, String(dos.vol));
+    /* ---- la semaine, pas seulement la séance ---- */
+    eq("Le dos a une cible hebdomadaire", dos.cible, 16);
+    vrai("L arrière d épaule en a une plus petite",
+      besoins.find(b=>b.muscle === "Deltoïdes (postérieur)").cible < dos.cible);
+    /* ---- un seul mouvement par schéma ---- */
+    const sch = n2 => F.schemaDe(n2);
+    eq("Un soulevé de terre est une charnière de hanche", sch("Soulevé de terre"), "charniere");
+    eq("Un good morning aussi", sch("Good morning"), "charniere");
+    eq("Un squat est un squat", sch("Squat"), "squat");
+    eq("Un curl est une isolation", sch("Curl barre"), "isolation");
+    ["pull","push","jambes"].forEach(t2=>{
+      const se = F.genererAdaptative(t2);
+      const gros = se.items.map(i=>sch(i.nom)).filter(x=>x !== "isolation");
+      eq("Aucun schéma en double dans un " + t2, gros.length, new Set(gros).size,
+        gros.join(","));
+    });
+    /* une séance de tirage a un tirage vertical ET un horizontal */
+    const pl = F.genererAdaptative("pull").items.map(i=>sch(i.nom));
+    vrai("Un Pull tire dans les deux directions",
+      pl.includes("tirageV") && pl.includes("tirageH"), pl.join(","));
+    const ps = F.genererAdaptative("push").items.map(i=>sch(i.nom));
+    vrai("Un Push pousse dans les deux directions",
+      ps.includes("pousseeV") && ps.includes("pousseeH"), ps.join(","));
     const apres = F.genererAdaptative("pull");
     const nDos = apres.items.filter(i=>i.role === "Grand dorsal").length;
     vrai("Le dos reçoit moins d'exercices qu'à froid",
