@@ -2618,8 +2618,12 @@ async function lancer(){
     await new Promise(r=>setTimeout(r, 800));
     vrai("La fiche explique à quoi sert l'autorisation",
       !!F.document.getElementById("alm-ok"));
-    vrai("…et dit qu'elle ne sert qu'à la séance",
-      /repos|séance/i.test(F.document.querySelector("#sheet .alm-note .s").textContent));
+    vrai("…et dit qu'elle ne sert qu'aux séances",
+      /entraînement|séance/i.test(F.document.querySelector("#sheet .alm-note .s").textContent));
+    /* les gens ne lisent pas : la fiche doit tenir en quelques lignes */
+    vrai("La fiche reste courte",
+      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length < 220,
+      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length + " caractères");
 
     /* « Autoriser » ouvre la page système ; au retour l'état est relu, pas supposé */
     F.document.getElementById("alm-ok").click();
