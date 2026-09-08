@@ -2662,6 +2662,72 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le ressenti de fin de séance");
+  neuf();
+  /* Le RIR dit si LA SÉRIE était lourde ; le ressenti dit si LA JOURNÉE a coûté. On peut
+     tenir tous ses RIR et sortir vidé d'une nuit de quatre heures. */
+  (()=>{
+    const seance = (j, feel) => { const o = {id:"r"+j, date:new Date(Date.now()-j*36e5).toISOString(),
+      name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(20,10,1), serie(20,10,1), serie(20,10,1)]}]};
+      if(feel) o.feel = feel; return o; };
+    const recup = feel => { DB.history = [seance(20, feel)];
+      return F.recuperation().muscles["Biceps"].pct; };
+
+    const dur = recup("dur"), neutre = recup(null), facile = recup("facile");
+    vrai("Une séance dite dure coûte plus cher", dur < neutre, dur + " contre " + neutre);
+    vrai("Une séance dite facile coûte moins cher", facile > neutre, facile + " contre " + neutre);
+    /* les coefficients restent petits : les RIR ont déjà remonté le coût */
+    vrai("…sans écraser la récupération", neutre - dur < 12, "écart de " + (neutre - dur));
+    eq("Ne rien répondre vaut « correct »", recup(undefined), neutre);
+
+    /* une seule séance ne décide de rien */
+    DB.history = [seance(20, "dur")];
+    eq("Une seule séance ne fait pas une tendance", F.tendanceRessenti(), null);
+    DB.history = [seance(20, "dur"), seance(60, "dur")];
+    eq("Deux dures d'affilée, oui", F.tendanceRessenti(), "dur");
+    DB.history = [seance(20, "facile"), seance(60, "facile")];
+    eq("Deux faciles aussi", F.tendanceRessenti(), "facile");
+    DB.history = [seance(20, "dur"), seance(60, "facile")];
+    eq("Deux avis contraires ne disent rien", F.tendanceRessenti(), null);
+
+    /* et la fiche l'annonce, en tête */
+    DB.history = [seance(20, "dur"), seance(60, "dur")];
+    const r = F.raisonsSeance("pull");
+    vrai("La fiche annonce qu'on allège", /allège/i.test(r[0][1]), JSON.stringify(r[0]));
+    DB.history = [seance(20, "facile"), seance(60, "facile")];
+    vrai("…ou qu'on en remet une couche", /couche/i.test(F.raisonsSeance("pull")[0][1]));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Le niveau se déduit des charges, sans poser la question. */
+  (()=>{
+    DB.history = [];
+    eq("Sans données, on ne suppose rien", F.niveauPratiquant(), "inconnu");
+    const avant = F.cibleHebdo("Pectoraux");
+    /* des charges très au-dessus des standards : pratiquant avancé */
+    const fort = [["Développé couché", 140], ["Squat", 180], ["Soulevé de terre", 220],
+                  ["Rowing barre", 130], ["Développé militaire", 95]];
+    /* deux passages par exercice : le profil musculaire exige deux valeurs par groupe
+       avant de se prononcer — un seul essai ne dit rien d'un niveau */
+    const hist = (liste, f, p) => liste.reduce((a, [n, w], i)=>a.concat([0, 1].map(k=>({
+      id:(p||"n")+i+k, date:new Date(Date.now()-(i*2+k+2)*864e5).toISOString(),
+      name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id(n), sets:[serie(Math.round(w*f), 5, 1)]}]}))), []);
+    DB.history = hist(fort, 1, "haut");
+    eq("Des charges très hautes donnent « avancé »", F.niveauPratiquant(), "avance");
+    vrai("…et un pratiquant avancé encaisse plus de volume",
+      F.cibleHebdo("Pectoraux") > avant, F.cibleHebdo("Pectoraux") + " contre " + avant);
+    /* des charges très basses : débutant */
+    DB.history = hist(fort, 0.25, "bas");
+    eq("Des charges basses donnent « débutant »", F.niveauPratiquant(), "debutant");
+    vrai("…et un débutant se construit sur moins de volume",
+      F.cibleHebdo("Pectoraux") < avant, F.cibleHebdo("Pectoraux") + " contre " + avant);
+    DB.history = [];
+  })();
+  neuf();
+
   grp("Lever le pied, sur preuve");
   neuf();
   /* Pas de semaine de décharge au calendrier : rien ne dit qu'arrêter tous les quatre

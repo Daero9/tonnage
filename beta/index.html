@@ -429,6 +429,15 @@
   .ad-ic svg{width:19px; height:19px;}
   .ad-l .t{font-size:15px; font-weight:800; line-height:1.25;}
   .ad-l .s{font-size:13px; line-height:1.45; color:var(--ink-mute); margin-top:3px;}
+  /* le ressenti de fin de séance : trois cases, aucune obligation */
+  .fin-feel{background:var(--surface2); border-radius:16px; padding:13px; margin-bottom:12px;}
+  .fin-feel .t{font-size:13.5px; font-weight:800; text-align:center; margin-bottom:9px;}
+  .fin-feel .ch{display:grid; grid-template-columns:repeat(3,1fr); gap:7px;}
+  .fin-feel button{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:10px 4px; font-size:13px; font-weight:700; color:var(--ink);}
+  .fin-feel button:active{background:var(--btn);}
+  .fin-feel button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+
   /* « Pourquoi cette séance » : ce que l'app a lu dans l'historique. Un muscle par
      ligne, son nom en gras, la raison derrière — on la parcourt en trois secondes. */
   .ad-pq{background:var(--surface); border-radius:16px; padding:14px; margin-bottom:12px;}
@@ -2840,6 +2849,13 @@ const TRAD = {en:{
   "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
   "Pourquoi cette séance":"Why this session",
+  "Comment tu l'as sentie ?":"How did it feel?",
+  "Facile":"Easy",
+  "Correct":"Just right",
+  "Dur":"Hard",
+  "Ta forme":"Your shape",
+  "Tes deux dernières séances t'ont paru dures. On allège un peu.":"Your last two sessions felt hard. We ease off a little.",
+  "Tes deux dernières séances t'ont paru faciles. On en remet une couche.":"Your last two sessions felt easy. We add a bit more.",
   "Tu forces dessus sans que ça monte. On lève le pied cette semaine.":"You are grinding on it with nothing to show. We ease off this week.",
   "Pas encore récupéré. On l'épargne aujourd'hui.":"Not recovered yet. We go easy on it today.",
   "Jamais travaillé pour l'instant. On commence par lui.":"Never trained so far. We start with it.",
@@ -6140,7 +6156,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 14h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 15h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10011,6 +10027,24 @@ const CIBLE_HEBDO = {
    sont des séries lourdes et peu nombreuses. L'entretien tourne autour de la moitié —
    c'est le niveau documenté pour conserver muscle et force sans progresser. */
 const VOL_OBJECTIF = {masse:1, recomp:1, seche:0.85, force:0.75, entretien:0.6};
+/* Ton NIVEAU, déduit sans rien te demander. muscleProfile() compare déjà tes 1RM
+   estimés à des standards relatifs à ton poids de corps : 100 vaut le niveau
+   intermédiaire. Un débutant progresse sur bien moins de volume et récupère plus vite ;
+   un pratiquant avancé a besoin de plus et récupère moins. Tant qu'il n'y a pas de quoi
+   trancher, on reste neutre — mieux vaut ne rien supposer que supposer mal. */
+const VOL_NIVEAU = {debutant:0.85, intermediaire:1, avance:1.15, inconnu:1};
+const RECUP_NIVEAU = {debutant:0.9, intermediaire:1, avance:1.1, inconnu:1};
+let nivMemo = null;
+function niveauPratiquant(){
+  const h = db.history || [];
+  const der = h[h.length - 1] || {};
+  const cle = h.length + ":" + (der.id || "") + ":" + (der.date || "");
+  if(nivMemo && nivMemo.cle === cle) return nivMemo.v;   /* relire tout l'historique par muscle coûtait cher */
+  const moy = mpMoyenne(muscleProfile());
+  const v = moy === null ? "inconnu" : (moy < 80 ? "debutant" : (moy > 115 ? "avance" : "intermediaire"));
+  nivMemo = {cle, v};
+  return v;
+}
 /* Une cible doit être ATTEIGNABLE. La table de référence vaut pour quatre séances par
    semaine : à deux séances, quatorze séries de pectoraux sont hors d'atteinte, tous les
    muscles sont alors « en retard » en permanence, et le classement par besoin ne
@@ -10019,7 +10053,7 @@ function facteurVolume(){
   const j = (db.profile && db.profile.days) || 3;
   const parJours = Math.max(0.5, Math.min(1.3, j / 4));
   const aim = (db.profile && db.profile.aim) || "masse";
-  return parJours * (VOL_OBJECTIF[aim] || 1);
+  return parJours * (VOL_OBJECTIF[aim] || 1) * (VOL_NIVEAU[niveauPratiquant()] || 1);
 }
 function cibleHebdo(muscle){
   const g = groupeDe(muscle) || muscle;
@@ -10187,11 +10221,18 @@ function raisonsSeance(type){
       return [n, TR("Complètement récupéré. C'est le moment de charger.")];
     return [n, TR("Il a de la marge cette semaine. On lui en donne.")];
   };
-  const out = [phrase(b[0])];
+  const out = [];
+  /* ce que TU as dit passe en premier : c'est la seule ligne qui ne vient pas d'un calcul */
+  const humeur = tendanceRessenti();
+  if(humeur === "dur")
+    out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru dures. On allège un peu.")]);
+  if(humeur === "facile")
+    out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru faciles. On en remet une couche.")]);
+  out.push(phrase(b[0]));
   if(b.length > 1) out.push(phrase(b[1]));
   /* le dernier de la liste n'est intéressant que s'il est vraiment écarté */
   const dernier = b[b.length - 1];
-  if(b.length > 2 && (dernier.recup < 60 || dernier.vol >= dernier.cible))
+  if(b.length > 2 && !humeur && (dernier.recup < 60 || dernier.vol >= dernier.cible))
     out.push(phrase(dernier));
   return out;
 }
@@ -10295,6 +10336,7 @@ function genererAdaptative(type, evites){
      reçoit un, puis les deux qui restent vont aux plus demandeurs — c'est ainsi qu'un
      biceps en retard et bien reposé obtient deux exercices au lieu d'un. */
   const perf = progressionParExo();
+  const humeur = tendanceRessenti();
   const parts = besoins.map(b=>({...b, n:0}));
   /* Un exercice chacun, du plus demandeur au moins demandeur, tant qu il reste de la
      place : quand il y a plus de muscles que de places, le moins demandeur passe son
@@ -10405,6 +10447,12 @@ function genererAdaptative(type, evites){
       if(k === 0 && rang >= parts.length - 1 && parts.length > 2) series = Math.max(2, series - 1);
       /* un muscle à bout garde sa place — on ne l'abandonne pas — mais on allège */
       if(p.pompe) series = Math.max(2, series - 1);
+      /* et ce que TU as ressenti sur les deux dernières séances : une série de plus sur
+         l'exercice de tête si elles t'ont paru faciles, une de moins sur le dernier si
+         elles t'ont paru dures. Jamais les deux, jamais plus d'une. */
+      if(k === 0 && humeur === "facile" && rang === 0) series = Math.min(5, series + 1);
+      if(k === 0 && humeur === "dur" && rang >= parts.length - 1 && parts.length > 2)
+        series = Math.max(2, series - 1);
       items.push({nom:choisi.nom, sets:series, reps:repsTenue(choisi.nom, reps),
                   rest:reposTenue(choisi.nom, repos),
                   role:p.muscle, charge:choisi.charge, niveau});
@@ -11827,8 +11875,9 @@ function renderActive(app){
         duree: dureeSeance2(a), exos: a.entries.length,
         records: nouveauxRecords(a)
       };
+      recap.id = uid();
       db.history.push({
-        id:uid(), date:new Date().toISOString(), name:a.name, templateId:a.templateId,
+        id:recap.id, date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         start:a.start, end:a.start + dureeSeance2(a),
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length)
       });
@@ -11931,7 +11980,26 @@ function openFinSeance(r){
         ? TR("{} reps").replace("{}", x.gain)
         : pds(x.gain)}</b> ${x.unite==="reps" ? TR("sur ton meilleur") : TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
   </div>`:""}
+  <div class="fin-feel">
+    <div class="t">${TR("Comment tu l'as sentie ?")}</div>
+    <div class="ch">
+      <button data-feel="facile">${TR("Facile")}</button>
+      <button data-feel="correct">${TR("Correct")}</button>
+      <button data-feel="dur">${TR("Dur")}</button>
+    </div>
+  </div>
   <button class="btn btn-accent" id="fin-ok" style="width:100%;">${TR("Terminé")}</button>`);
+  /* Facultatif : ne rien répondre vaut « correct ». Un bouton qu'on peut ignorer sans
+     conséquence finit par servir ; une question obligatoire reçoit n'importe quoi. */
+  document.querySelectorAll("[data-feel]").forEach(b=>b.onclick=()=>{
+    const h = (db.history || []).find(x=>x.id === r.id);
+    if(!h) return;
+    const v = b.dataset.feel;
+    if(v === "correct") delete h.feel; else h.feel = v;
+    document.querySelectorAll("[data-feel]").forEach(x=>x.classList.toggle("on", x === b));
+    save();
+    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+  });
   document.getElementById("fin-ok").onclick = closeSheet;
   const cv = document.getElementById("fin-conf");
   if(cv) setTimeout(()=>confettis(cv, 2600), 60);
@@ -13042,7 +13110,30 @@ function poidsFatigue(st){
    vaut une correction prudente qu'une correction inventée. */
 function facteurAge(){
   const a = (db.profile && db.profile.age) || 30;
-  return Math.min(1.33, 1 + Math.max(0, a - 30) * 0.006);
+  return Math.min(1.33, 1 + Math.max(0, a - 30) * 0.006)
+       * (RECUP_NIVEAU[niveauPratiquant()] || 1);
+}
+/* ---- le ressenti de fin de séance ---------------------------------------------
+   Le RIR répond à « cette SÉRIE était-elle lourde ? ». Le ressenti répond à « cette
+   JOURNÉE t'a-t-elle coûté ? ». Ce n'est pas la même chose : on peut tenir tous ses
+   RIR comme prévu et sortir vidé parce qu'on a dormi quatre heures.
+
+   Les coefficients restent petits, et c'est délibéré : une séance dure a déjà des RIR
+   bas, donc poidsFatigue() a déjà remonté son coût. Un facteur ambitieux compterait
+   deux fois la même chose et mettrait les muscles à plat pour rien. */
+const RESSENTI = {facile:0.85, correct:1, dur:1.2};
+function facteurRessenti(sess){
+  return RESSENTI[sess && sess.feel] || 1;
+}
+/* Deux séances de suite dans le même sens : ce n'est plus un mauvais jour, c'est une
+   tendance. Une seule ne décide de rien. */
+function tendanceRessenti(){
+  const avis = (db.history || []).slice().sort((a, b)=>new Date(b.date) - new Date(a.date))
+    .slice(0, 2).map(h=>h.feel || "correct");
+  if(avis.length < 2) return null;
+  if(avis[0] === "dur" && avis[1] === "dur") return "dur";
+  if(avis[0] === "facile" && avis[1] === "facile") return "facile";
+  return null;
 }
 /* état de chaque groupe : 100 % = frais, 0 % = à plat */
 function recuperation(){
@@ -13058,7 +13149,7 @@ function recuperation(){
       const series = (en.sets||[]).filter(x=>x.done && !x.warm);
       if(!series.length) return;
       /* une série menée à l'échec fatigue bien plus qu'une série gardée en réserve */
-      const cout = series.reduce((a,st)=>a + poidsFatigue(st), 0);
+      const cout = series.reduce((a,st)=>a + poidsFatigue(st), 0) * facteurRessenti(sess);
       (MUSCLE_WORK[nomCanon(ex)]||[]).forEach(([mus, niveau])=>{
         const g = groupeDe(mus);
         if(!g) return;
