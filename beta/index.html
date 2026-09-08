@@ -308,6 +308,32 @@
   .prog-slot{position:relative; flex:0 0 var(--cardw); scroll-snap-align:center; padding-top:13px;
     transform:scale(.86); transform-origin:center 62%; opacity:.72; transition:transform .08s linear, opacity .08s linear;}
   .prog-slot.mid{transform:scale(1); opacity:1;}
+  /* ---- la fiche « séance adaptative » ----
+     Cinq lignes numérotées, chacune avec son signe : on la parcourt, on ne la lit pas. */
+  .ad-tete{text-align:center; padding:2px 6px 16px;}
+  .ad-tete .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:10px;}
+  .ad-tete .ic svg{width:34px; height:34px;}
+  .sheet .ad-tete h3{font-size:24px; text-align:center; padding:0; margin-bottom:8px;}
+  .ad-tete p{margin:0; font-size:14px; line-height:1.45; color:var(--ink-soft);}
+  .ad-tete p b{color:var(--accent);}
+  .ad-liste{background:var(--surface); border-radius:16px; padding:2px 14px; margin-bottom:12px;}
+  .ad-l{display:flex; align-items:flex-start; gap:13px; padding:14px 0;
+    border-top:1px solid var(--border);}
+  .ad-liste .ad-l:first-child{border-top:0;}
+  .ad-ic{flex:0 0 auto; width:38px; height:38px; border-radius:50%;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .ad-ic svg{width:19px; height:19px;}
+  .ad-l .t{font-size:15px; font-weight:800; line-height:1.25;}
+  .ad-l .s{font-size:13px; line-height:1.45; color:var(--ink-mute); margin-top:3px;}
+  /* le rappel, dans le ton de l'app : un seul geste à retenir */
+  .ad-note{display:flex; align-items:center; gap:13px; background:rgba(245,130,32,.12);
+    border-radius:16px; padding:14px; margin-bottom:14px;}
+  .ad-note .ic{flex:0 0 auto; width:38px; height:38px; border-radius:50%;
+    background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .ad-note .ic svg{width:19px; height:19px;}
+  .ad-note .t{font-size:14.5px; font-weight:800;}
+  .ad-note .s{font-size:13px; line-height:1.45; color:var(--ink-soft); margin-top:2px;}
   /* ---- une séance adaptative ----
      Le halo dit qu'elle est vivante : elle se reconstruit à chaque démarrage. Il respire
      lentement — assez pour se remarquer, pas assez pour gêner la lecture de la carte. */
@@ -2623,6 +2649,20 @@ const TRAD = {en:{
   "Informations {}":"Values {}",
   "Quantité consommée":"Amount taken",
   "Séance adaptative":"Adaptive session",
+  "Cette séance s'adapte à toi, à chaque fois que tu appuies sur <b>Démarrer</b>.":"This session adapts to you, every time you press <b>Start</b>.",
+  "Analyse ton état":"Reads where you are",
+  "L'app regarde la récupération de tes muscles, tes derniers entraînements et tes points faibles.":"The app looks at how recovered your muscles are, your recent training and your weak points.",
+  "Ajuste la séance":"Adjusts the session",
+  "Elle choisit les exercices, l'ordre, le nombre de séries et le poids selon ta forme du jour.":"It picks the exercises, the order, the number of sets and the load for the shape you are in today.",
+  "Cible tes points faibles":"Aims at your weak points",
+  "Les muscles en retard reçoivent plus de volume.":"Muscles that lag behind get more volume.",
+  "Assure ta progression":"Keeps you moving forward",
+  "Un exercice sur lequel tu progresses revient ; un exercice où tu stagnes laisse sa place.":"An exercise you are progressing on comes back; one you have stalled on makes way.",
+  "Des séances toujours variées":"Never the same session twice",
+  "Jamais deux fois le même mouvement dans une séance, et jamais deux fois la même séance.":"Never the same movement twice in a session, and never the same session twice.",
+  "À retenir":"Worth remembering",
+  "Tu appuies sur Démarrer, l'app s'occupe du reste.":"You press Start, the app does the rest.",
+  "Compris !":"Got it!",
   "Qu'est-ce qu'une séance adaptative ?":"What is an adaptive session?",
   "Cette séance n'est pas une liste figée : elle se reconstruit <b>à chaque fois que tu appuies sur Démarrer</b>, à partir de ce que tu as réellement fait.":"This session isn't a fixed list: it is rebuilt <b>every time you press Start</b>, from what you actually did.",
   "Ce qu'elle regarde":"What it looks at",
@@ -5827,7 +5867,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 02h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 03h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9921,27 +9961,34 @@ function regenererAdaptative(tpl){
 /* Ce qu'est une séance adaptative, en toutes lettres. On explique le mécanisme plutôt
    que de promettre de la magie : l'utilisateur doit pouvoir prévoir ce qui va sortir. */
 function openAdaptatifInfo(){
-  openSheet(`<h3>${TR("Séance adaptative")}</h3>
-    <div class="stack" style="font-size:14px; line-height:1.6; color:var(--ink-soft);">
-      <p style="margin:0;">${TR("Cette séance n'est pas une liste figée : elle se reconstruit <b>à chaque fois que tu appuies sur Démarrer</b>, à partir de ce que tu as réellement fait.")}</p>
-      <div class="card" style="padding:13px;">
-        <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">${TR("Ce qu'elle regarde")}</div>
-        <p style="margin:0 0 7px;">${TR("<b>La récupération de chaque muscle.</b> Un muscle encore fatigué d'avant-hier passe son tour ; un muscle frais reçoit les gros mouvements et les séries lourdes.")}</p>
-        <p style="margin:0 0 7px;">${TR("<b>Tes points faibles.</b> Un groupe en retard sur ta propre moyenne passe devant les autres, et reçoit plus de volume.")}</p>
-        <p style="margin:0 0 7px;">${TR("<b>Ce que tu as déjà fait cette semaine.</b> Un muscle beaucoup travaillé ces derniers jours attend son tour.")}</p>
-        <p style="margin:0 0 7px;">${TR("<b>Ton volume de la semaine.</b> Chaque muscle a une cible hebdomadaire — 16 séries pour le dos, 12 pour les biceps. Ce qui manque est placé en priorité.")}</p>
-        <p style="margin:0 0 7px;">${TR("<b>Les exercices qui te font progresser.</b> Un mouvement sur lequel ta charge monte remonte dans les choix ; un mouvement où tu stagnes depuis quatre séances descend.")}</p>
-        <p style="margin:0;">${TR("<b>Les exercices récents.</b> Un mouvement fait dernièrement passe derrière — mais reste choisi s'il est ce qu'il y a de mieux pour toi.")}</p>
-      </div>
-      <div class="card" style="padding:13px;">
-        <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">${TR("Ce qu'elle décide")}</div>
-        <p style="margin:0;">${TR("Les exercices, leur ordre — les gros mouvements tant que tu es frais —, le nombre de séries, les répétitions et le repos. Un muscle prioritaire peut recevoir deux exercices au lieu d'un ; un muscle à plat peut n'en recevoir aucun.")}</p>
-      </div>
-      <p style="margin:0;">${TR("Un seul mouvement de chaque type par séance : pas deux charnières de hanche, pas deux rowings. Un Pull tire toujours dans les deux directions, un Push pousse dans les deux.")}</p>
-      <p style="margin:0;">${TR("Les épaules sont suivies faisceau par faisceau : l'avant travaille à chaque développé, l'arrière presque jamais. Les traiter séparément évite de croire l'épaule reposée alors qu'une seule de ses parties l'est.")}</p>
-      <p style="margin:0;">${TR("Les séances que tu crées ou que tu modifies toi-même ne sont jamais touchées : elles restent exactement comme tu les as écrites.")}</p>
-      <button class="btn btn-accent" id="ad-ok">${TR("Compris")}</button>
-    </div>`);
+  /* Cinq lignes, une idée chacune. La version précédente expliquait le mécanisme en
+     détail — juste, mais personne ne lit huit paragraphes sur une fiche d'aide. */
+  const lignes = [
+    [icoM("muscle", 19), TR("Analyse ton état"),
+     TR("L'app regarde la récupération de tes muscles, tes derniers entraînements et tes points faibles.")],
+    [IC_CURSEURS, TR("Ajuste la séance"),
+     TR("Elle choisit les exercices, l'ordre, le nombre de séries et le poids selon ta forme du jour.")],
+    [IC_COURBE, TR("Cible tes points faibles"),
+     TR("Les muscles en retard reçoivent plus de volume.")],
+    [IC_ECHANGE, TR("Assure ta progression"),
+     TR("Un exercice sur lequel tu progresses revient ; un exercice où tu stagnes laisse sa place.")],
+    [IC_CALENDRIER, TR("Des séances toujours variées"),
+     TR("Jamais deux fois le même mouvement dans une séance, et jamais deux fois la même séance.")]
+  ];
+  openSheet(`<div class="ad-tete">
+      <span class="ic">${ICONS.seance}</span>
+      <h3>${TR("Séance adaptative")}</h3>
+      <p>${TR("Cette séance s'adapte à toi, à chaque fois que tu appuies sur <b>Démarrer</b>.")}</p>
+    </div>
+    <div class="ad-liste">${lignes.map(([ic, titre, texte], n)=>
+      `<div class="ad-l"><span class="ad-ic">${ic}</span>
+        <div><div class="t">${n + 1}. ${titre}</div><div class="s">${texte}</div></div>
+      </div>`).join("")}</div>
+    <div class="ad-note"><span class="ic">${IC_AMPOULE}</span>
+      <div><div class="t">${TR("À retenir")}</div>
+        <div class="s">${TR("Tu appuies sur Démarrer, l'app s'occupe du reste.")}</div></div>
+    </div>
+    <button class="btn btn-accent" id="ad-ok" style="width:100%;">${TR("Compris !")}</button>`);
   const b = document.getElementById("ad-ok");
   if(b) b.onclick = closeSheet;
 }
