@@ -2584,7 +2584,9 @@ async function lancer(){
      exercice au démarrage : un face pull sans poulie devenait des pompes piquées,
      c'est-à-dire une poussée à la place d'un tirage. Elle se construit maintenant
      directement dans ce qu'on peut faire sur place. */
-  (()=>{
+  /* la question du lieu s'ouvre après un tour de boucle : la feuille précédente doit
+     être partie avant. Ce bloc attend donc, contrairement aux autres. */
+  await (async ()=>{
     const garde = DB.templates, gardeMaison = DB.maison, gardeActif = DB.active;
     DB.active = null;
     DB.profile.lieu = "mixte";
@@ -2595,9 +2597,25 @@ async function lancer(){
     const faisables = () => t().items.every(it=>F.exoDispo(F.getEx(it.exId), DB.maison));
     const noms = () => t().items.map(it=>F.getEx(it.exId).name);
 
+    /* ouvrir une séance pose d'abord la question du lieu : on choisit où l'on va,
+       PUIS on voit la séance faite pour cet endroit. */
+    F.openPreview("tadapt");
+    await new Promise(r=>setTimeout(r, 350));
+    vrai("Ouvrir une séance demande d'abord où tu vas",
+      !!F.document.getElementById("lx-maison"));
+    F.document.getElementById("lx-maison").click();
+    eq("…et la réponse devient le lieu du jour", F.eval("lieuProp"), "maison");
+    /* la fiche du lieu est REMPLACÉE par l'aperçu : la fermer d'abord aurait déclenché
+       un history.back() qui, au tour suivant, emportait l'aperçu à peine ouvert */
+    await new Promise(r=>setTimeout(r, 350));
+    eq("L'aperçu prend la place de la question",
+      (F.document.querySelector("#sheet h3")||{}).textContent, "Pull adaptatif");
+    vrai("…sans que tout se referme", F.eval("sheetOpen"));
+    F.hideSheet();
+
     /* chez moi : tout doit être faisable avec l'élastique et la barre */
     F.eval("lieuProp = 'maison'");
-    F.openPreview("tadapt");
+    F.openPreview("tadapt", true);
     eq("La séance est marquée du lieu pour lequel elle est faite", t().lieuAdapt, "maison");
     vrai("Chez moi, chaque exercice est faisable sur place", faisables(), noms().join(", "));
     vrai("…et aucune poussée ne remplace un tirage",
@@ -2611,7 +2629,7 @@ async function lancer(){
 
     /* en salle : le filtre maison ne s'applique plus */
     F.eval("lieuProp = 'salle'");
-    F.openPreview("tadapt");
+    F.openPreview("tadapt", true);
     eq("En salle, la séance est marquée salle", t().lieuAdapt, "salle");
     F.hideSheet();
 
