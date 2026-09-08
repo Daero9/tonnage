@@ -2662,6 +2662,121 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La justesse du moteur adaptatif");
+  neuf();
+  /* Le volume comptait des LIGNES COCHÉES : trois séries arrêtées loin de l'échec
+     pesaient autant que trois séries menées à bout. Le RIR est demandé après chaque
+     série, il sert enfin à quelque chose. */
+  (()=>{
+    const seances = rirs => [{id:"v"+Math.random(), date:new Date(Date.now()-2*864e5).toISOString(),
+      name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:rirs.map(r=>serie(20, 10, r))}]}];
+    DB.history = seances([0,0,0]);
+    const dur = F.volumeRecent("Biceps", 7);
+    DB.history = seances([4,4,4]);
+    const facile = F.volumeRecent("Biceps", 7);
+    vrai("Trois séries dures pèsent plus que trois séries faciles", dur > facile,
+      dur.toFixed(2) + " contre " + facile.toFixed(2));
+    vrai("…sans changer d'ordre de grandeur", dur < facile * 2.5);
+    /* un dégressif prolonge la série au-delà de l'échec : il ajoute sa part */
+    DB.history = [{id:"vd", date:new Date(Date.now()-2*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(20,10,0,[{w:12,r:6}])]}]}];
+    const avecDeg = F.volumeRecent("Biceps", 7);
+    DB.history = seances([0]);
+    vrai("Un dégressif compte davantage qu'une série simple", avecDeg > F.volumeRecent("Biceps", 7));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Une cible inatteignable met TOUS les muscles « en retard » en permanence : le
+     classement par besoin ne distingue alors plus rien. Elle suit donc le rythme réel
+     et l'objectif. */
+  (()=>{
+    const cible = (jours, aim) => {
+      DB.profile = Object.assign({}, DB.profile, {days:jours, aim:aim});
+      return F.cibleHebdo("Pectoraux");
+    };
+    const deux = cible(2, "masse"), cinq = cible(5, "masse");
+    vrai("Moins de séances, cible plus basse", deux < cinq, deux + " contre " + cinq);
+    const masse = cible(4, "masse"), entretien = cible(4, "entretien"), force = cible(4, "force");
+    vrai("L'entretien demande moins que la prise de masse", entretien < masse,
+      entretien + " contre " + masse);
+    vrai("La force aussi", force < masse, force + " contre " + masse);
+    vrai("Jamais en dessous de trois séries", cible(1, "entretien") >= 3);
+    /* les trois faisceaux de l'épaule se partagent toujours la cible du groupe */
+    DB.profile = Object.assign({}, DB.profile, {days:4, aim:"masse"});
+    vrai("Un faisceau d'épaule demande moins que le groupe entier",
+      F.cibleHebdo("Deltoïdes (latéral)") < F.cibleHebdo("Pectoraux"));
+  })();
+  neuf();
+
+  /* Le volume seul ne dit rien du RYTHME : un dos martelé lundi gardait un volume élevé
+     jusqu'à dimanche, donc il restait en bas de la pile toute la semaine. */
+  (()=>{
+    const avecDelai = j => {
+      DB.history = [{id:"f"+j, date:new Date(Date.now()-j*864e5).toISOString(), name:"x",
+        templateId:"x", start:0, end:0,
+        entries:[{exId:id("Curl barre"), sets:[serie(20,10,1), serie(20,10,1), serie(20,10,1)]}]}];
+      return F.besoinsMuscles("pull").find(b=>b.muscle === "Biceps");
+    };
+    const hier = avecDelai(1), vieux = avecDelai(6);
+    vrai("Le besoin porte la date du dernier travail", typeof hier.jours === "number");
+    vrai("Un muscle qui attend depuis six jours passe devant celui d'hier",
+      vieux.besoin > hier.besoin, vieux.besoin.toFixed(1) + " contre " + hier.besoin.toFixed(1));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Chaque objectif ne cherche pas la même chose : en force on ne touche pas un muscle
+     qui n'est pas frais, en entretien il s'agit surtout de tout revoir régulièrement. */
+  (()=>{
+    const P = F.eval("POIDS_BESOIN");
+    const aims = ["masse", "seche", "force", "recomp", "entretien"];
+    vrai("Chaque objectif a ses poids", aims.every(a=>!!P[a]), aims.filter(a=>!P[a]).join(", "));
+    vrai("En force, la fraîcheur pèse le plus lourd",
+      aims.every(a=>a === "force" || P.force.recup > P[a].recup));
+    vrai("…et le volume, le moins",
+      aims.every(a=>a === "force" || P.force.volume < P[a].volume));
+    vrai("En entretien, c'est la régularité qui prime",
+      aims.every(a=>a === "entretien" || P.entretien.freq >= P[a].freq));
+    DB.profile = Object.assign({}, DB.profile, {aim:"force"});
+    eq("Les poids suivent l'objectif du profil", F.poidsBesoin(), P.force);
+    DB.profile = Object.assign({}, DB.profile, {aim:"masse"});
+  })();
+  neuf();
+
+  /* Le commentaire promettait que le nombre de séries venait du besoin ; le code prenait
+     la dose de l'objectif et rien d'autre. Un biceps en retard et un pectoral à jour,
+     tous deux frais, recevaient exactement le même nombre de séries. */
+  (()=>{
+    DB.history = [];
+    DB.materiel = null;
+    let vuPlus = false, vuMoins = false, borne = true;
+    for(let k=0;k<25;k++){
+      for(const t of ["push", "pull", "bas"]){
+        const b = F.besoinsMuscles(t);
+        const gen = F.genererAdaptative(t);
+        const dose = F.eval("DOSES").masse;
+        /* le niveau se déduit de la récupération, exactement comme dans le moteur */
+        const niv = r => r >= 85 ? "lourd" : (r >= 60 ? "moyen" : "leger");
+        const premier = gen.items.filter(it=>it.role === b[0].muscle);
+        const dernier = gen.items.filter(it=>it.role === b[b.length-1].muscle);
+        gen.items.forEach(it=>{ if(it.sets < 2 || it.sets > 5) borne = false; });
+        /* le muscle de tête reçoit souvent DEUX exercices : seul le premier est majoré,
+           le second est une finition */
+        if(premier.length && b[0].recup >= 60
+           && premier.some(it=>it.sets === Math.min(5, dose[niv(b[0].recup)].s + 1))) vuPlus = true;
+        if(dernier.length === 1 && b.length > 2
+           && dernier[0].sets === Math.max(2, dose[niv(b[b.length-1].recup)].s - 1)) vuMoins = true;
+      }
+    }
+    vrai("Le muscle le plus demandeur reçoit une série de plus", vuPlus);
+    vrai("Celui qui ferme la marche en reçoit une de moins", vuMoins);
+    vrai("Le nombre de séries reste borné entre 2 et 5", borne);
+  })();
+  neuf();
+
   grp("Pourquoi cette séance");
   neuf();
   /* La fiche explique le mécanisme ; l'encadré dit ce que l'app a lu DANS TON

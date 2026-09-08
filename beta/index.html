@@ -6139,7 +6139,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 13h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 14h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10005,34 +10005,79 @@ const CIBLE_HEBDO = {
   "Deltoïdes":16, "Trapèzes":10, "Biceps":12, "Triceps":12, "Mollets":10, "Abdos":10,
   "Lombaires":8, "Avant-bras":8
 };
+/* Combien de volume l'objectif demande, par rapport à la prise de masse. La sèche
+   descend un peu : en déficit, la récupération suit moins. La force descend plus : ce
+   sont des séries lourdes et peu nombreuses. L'entretien tourne autour de la moitié —
+   c'est le niveau documenté pour conserver muscle et force sans progresser. */
+const VOL_OBJECTIF = {masse:1, recomp:1, seche:0.85, force:0.75, entretien:0.6};
+/* Une cible doit être ATTEIGNABLE. La table de référence vaut pour quatre séances par
+   semaine : à deux séances, quatorze séries de pectoraux sont hors d'atteinte, tous les
+   muscles sont alors « en retard » en permanence, et le classement par besoin ne
+   distingue plus rien. Elle se cale donc sur le rythme réel et sur l'objectif. */
+function facteurVolume(){
+  const j = (db.profile && db.profile.days) || 3;
+  const parJours = Math.max(0.5, Math.min(1.3, j / 4));
+  const aim = (db.profile && db.profile.aim) || "masse";
+  return parJours * (VOL_OBJECTIF[aim] || 1);
+}
 function cibleHebdo(muscle){
   const g = groupeDe(muscle) || muscle;
   const c = CIBLE_HEBDO[g] || 12;
   /* les trois faisceaux de l'épaule se partagent la cible du groupe */
-  return muscle.indexOf("(") > 0 && g === "Deltoïdes" ? Math.round(c / 3) : c;
+  const base = muscle.indexOf("(") > 0 && g === "Deltoïdes" ? c / 3 : c;
+  /* jamais moins de trois séries : en dessous, la cible ne veut plus rien dire */
+  return Math.max(3, Math.round(base * facteurVolume()));
 }
 /* Ce qu'un muscle a encaissé récemment, en séries de travail pondérées par l'implication :
    une série de curl compte 1 pour le biceps, une série de rowing 0,67. */
+/* Ce qu'une série a VRAIMENT coûté. Trois séries arrêtées à quatre répétitions de la
+   fin ne construisent pas ce que construisent trois séries menées près de l'échec :
+   compter des lignes cochées revenait à croire le contraire. Le RIR est déjà demandé
+   après chaque série, il ne restait qu'à s'en servir. Un dégressif prolonge la série
+   au-delà de l'échec : il ajoute sa part. */
+function effortSerie(st){
+  const r = (st.rir === undefined || st.rir === null) ? 1.5 : st.rir;
+  const f = r <= 0 ? 1.15 : (r <= 1 ? 1.1 : (r <= 2 ? 1 : (r <= 3 ? 0.8 : 0.55)));
+  return f + ((st.drops || []).length * 0.25);
+}
 function volumeRecent(muscle, jours){
   const limite = Date.now() - (jours || 7) * 864e5;
   let v = 0;
   (db.history || []).forEach(sess=>{
     if(new Date(sess.date).getTime() < limite) return;
     sess.entries.forEach(en=>{
-      const n = (en.sets || []).filter(x=>x.done && !x.warm).length;
-      if(!n) return;
+      const faites = (en.sets || []).filter(x=>x.done && !x.warm);
+      if(!faites.length) return;
       const w = MUSCLE_WORK[nomCanon(getEx(en.exId))] || [];
       const part = w.find(m=>m[0] === muscle);
-      if(part) v += n * (part[1] / 3);
+      if(!part) return;
+      const dur = faites.reduce((a, st)=>a + effortSerie(st), 0);
+      v += dur * (part[1] / 3);
     });
   });
   return v;
 }
+/* Le poids de chaque force, selon l'objectif. Ce n'est pas un détail : en force, on ne
+   touche pas un muscle qui n'est pas frais, et le volume compte moins que la qualité.
+   En entretien, c'est l'inverse — il s'agit surtout de tout revoir régulièrement. */
+const POIDS_BESOIN = {
+  masse:     {recup:0.8, retard:1.2, volume:2.2, freq:1.5},
+  recomp:    {recup:0.8, retard:1.2, volume:2.2, freq:1.5},
+  seche:     {recup:1.0, retard:1.0, volume:2.0, freq:1.6},
+  force:     {recup:1.6, retard:0.8, volume:1.4, freq:1.0},
+  entretien: {recup:1.0, retard:0.6, volume:1.6, freq:2.0}
+};
+function poidsBesoin(){
+  return POIDS_BESOIN[(db.profile && db.profile.aim) || "masse"] || POIDS_BESOIN.masse;
+}
 /* Le besoin de chaque muscle visé, de « à éviter » (négatif) à « à marteler » (élevé).
-   Trois forces, dans cet ordre d'importance :
+   Quatre forces, pondérées selon l'objectif :
      — la RÉCUPÉRATION : un muscle à plat ne se travaille pas, un muscle frais se charge ;
      — le RETARD : un point faible passe devant, c'est lui qu'on veut rattraper ;
-     — le VOLUME de la semaine : ce qui a déjà été beaucoup travaillé attend son tour. */
+     — le VOLUME de la semaine : ce qui a déjà été beaucoup travaillé attend son tour ;
+     — la FRÉQUENCE : le volume seul ne dit rien du rythme. Un dos martelé lundi garde un
+       volume élevé jusqu'à dimanche et restait donc en bas de la pile toute la semaine —
+       une seule séance de dos, alors que deux passages font mieux à volume égal. */
 function besoinsMuscles(type){
   const cibles = MUSCLES_SEANCE[type] || MUSCLES_SEANCE.full;
   const rec = recuperation();
@@ -10047,10 +10092,15 @@ function besoinsMuscles(type){
     const retard = (st && typeof st.ecart === "number") ? st.ecart : 0;
     const vol = volumeRecent(m, 7);
     const cible = cibleHebdo(m);
-    const besoin = (recup - 55) * 0.8      /* frais = on peut charger ; à plat = on passe */
-                 + Math.max(-40, -retard) * 1.2   /* en retard = prioritaire */
-                 + (cible - vol) * 2.2;    /* en dessous de sa semaine = on lui doit des séries */
-    return {muscle:m, recup, retard, vol, cible, besoin};
+    const jours = joursDepuisMuscle(m);
+    /* jamais travaillé : on plafonne à une semaine, l'urgence est déjà dite par le volume */
+    const attente = Math.min(jours === null ? 7 : jours, 7);
+    const P = poidsBesoin();
+    const besoin = (recup - 55) * P.recup            /* frais = on peut charger ; à plat = on passe */
+                 + Math.max(-40, -retard) * P.retard  /* en retard = prioritaire */
+                 + (cible - vol) * P.volume           /* en dessous de sa semaine = on lui doit des séries */
+                 + attente * P.freq;                  /* et ça fait longtemps qu'il attend */
+    return {muscle:m, recup, retard, vol, cible, jours, besoin};
   }).sort((a, b)=>b.besoin - a.besoin);
 }
 /* Depuis combien de jours ce muscle n'a rien encaissé de sérieux ? null = jamais.
@@ -10229,7 +10279,7 @@ function genererAdaptative(type, evites){
   const schemasPris = new Set();
   const recouvre = c => ((MUSCLE_WORK[c.nom] || [])
     .reduce((a, m)=>a + (m[1] === 3 ? (servis[m[0]] || 0) : 0), 0));
-  parts.forEach(p=>{
+  parts.forEach((p, rang)=>{
     for(let k = 0; k < p.n; k++){
       const tous = exosPourMuscle(p.muscle, k === 0)
         .filter(c=>!pris.has(c.nom) && !bannis.has(c.nom));
@@ -10303,7 +10353,15 @@ function genererAdaptative(type, evites){
          poids du corps se font en séries longues, pas en 8 répétitions. */
       if(exChoisi && estPoidsDuCorps(exChoisi) && choisi.charge >= 15 && bas && bas.lo > 8)
         reps = equipCanon(exChoisi) === "Barre fixe" ? "6-12" : "8-12";
-      items.push({nom:choisi.nom, sets:d.s, reps:repsTenue(choisi.nom, reps),
+      /* Le NOMBRE DE SÉRIES suit enfin le besoin, et pas seulement la récupération : le
+         muscle en tête de liste en gagne une, celui qui ferme la marche en perd une. On
+         ajuste la dose de l'objectif, on ne la remplace pas — c'est elle qui sait ce que
+         demande une prise de masse ou un cycle de force. Le deuxième exercice d'un même
+         muscle n'y a pas droit : c'est une finition, elle ne se gonfle pas. */
+      let series = d.s;
+      if(k === 0 && rang === 0 && p.recup >= 60) series = Math.min(5, series + 1);
+      if(k === 0 && rang >= parts.length - 1 && parts.length > 2) series = Math.max(2, series - 1);
+      items.push({nom:choisi.nom, sets:series, reps:repsTenue(choisi.nom, reps),
                   rest:reposTenue(choisi.nom, repos),
                   role:p.muscle, charge:choisi.charge, niveau});
     }
