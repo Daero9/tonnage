@@ -919,7 +919,10 @@ async function lancer(){
   const pushB = F.genererSeance("push", pushA.items.map(i=>i.nom));
   vrai("Une nouvelle proposition change tous les exercices",
     pushB.items.every(i=>!pushA.items.some(j=>j.nom===i.nom)));
+  /* « Je ne peux pas » : le niveau le plus strict ne laisse rien passer. Aux niveaux
+     plus doux, un exercice à risque reste possible quand il n'y a rien d'autre. */
   DB.profile.injuries = ["epaule","genou"];
+  DB.profile.douleurs = {epaule:"stop", genou:"stop"};
   let risques = 0, roles = 0;
   ["push","pull","jambes","haut","bas","full"].forEach(t=>{
     for(let i=0;i<4;i++){ const g = F.genererSeance(t);
@@ -3595,6 +3598,7 @@ async function lancer(){
     DB.history = [];
     DB.materiel = null;
     DB.profile = Object.assign({}, DB.profile, {injuries:["epaule"]});
+    DB.profile = Object.assign({}, DB.profile, {douleurs:{epaule:"stop"}});
     const g = F.genererAdaptative("push");
     vrai("Une séance Push évite les exercices à risque pour l'épaule",
       g.items.every(i=>!F.injuryNote(i.nom)),
@@ -3628,6 +3632,32 @@ async function lancer(){
     vrai("Aucune alternative proposée n'est elle-même déconseillée",
       coherent.length === 0, coherent.slice(0, 4).join(" ; "));
     DB.profile = Object.assign({}, DB.profile, {injuries:garde});
+
+    /* Trois niveaux, trois comportements réellement différents. Un quatrième ferait
+       la même chose qu'un autre : c'est pour ça qu'il n'y en a que trois. */
+    const DL = F.eval("DOULEURS");
+    eq("Trois niveaux, pas cinq", DL.length, 3);
+    DB.profile = Object.assign({}, DB.profile, {douleurs:{}});   /* aucune réponse donnée */
+    eq("Sans réponse, on retient le choix prudent", F.niveauDouleur("epaule"), "mal");
+    const seance = niv => { DB.profile = Object.assign({}, DB.profile,
+      {injuries:["epaule"], douleurs:{epaule:niv}});
+      return F.genererAdaptative("push").items; };
+    const risques = it => it.filter(i=>F.injuryNote(i.nom));
+    vrai("« Je ne peux pas » : plus aucun exercice à risque",
+      risques(seance("stop")).length === 0,
+      risques(seance("stop")).map(i=>i.nom).join(", "));
+    vrai("« Ça fait mal » : gardé seulement faute de mieux",
+      risques(seance("mal")).length > 0);
+    vrai("…et allégé d'une série", seance("mal").filter(i=>F.injuryNote(i.nom))
+      .every(i=>i.sets <= 3), seance("mal").map(i=>i.nom + ":" + i.sets).join(" "));
+    vrai("Un exercice qui gêne ne prend jamais la place lourde",
+      (()=>{ const it = seance("gene");
+        const lourd = it.reduce((a2, b2)=>b2.sets > a2.sets ? b2 : a2, it[0]);
+        return !F.injuryNote(lourd.nom); })());
+    /* et la séance reste entière dans les trois cas */
+    ["gene","mal","stop"].forEach(n=>vrai("Séance entière avec « " + n + " »",
+      seance(n).length === 5, seance(n).length + " exercices"));
+    DB.profile = Object.assign({}, DB.profile, {injuries:["epaule"], douleurs:{}});
 
     vrai("La fiche dit que la zone sensible est prise en compte",
       r.some(([m, t])=>/écart/i.test(t)), JSON.stringify(r));
