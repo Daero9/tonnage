@@ -3554,6 +3554,16 @@ async function lancer(){
       trios.every(o=>o.querySelectorAll(".af-o.on").length === 1));
     eq("Cinq zones sensibles", D2.querySelectorAll(".af-z").length, 5);
 
+    /* la dernière page : deux cartes, pas deux boutons empilés */
+    F.openOnboarding(false, null, 10);
+    eq("Deux gestes proposés à la fin", D2.querySelectorAll("#onb-body .fin-c").length, 2);
+    vrai("Chacun porte son signe et sa raison",
+      [...D2.querySelectorAll(".fin-c")].every(c=>c.querySelector(".ic svg")
+        && c.querySelector(".t") && c.querySelector(".s")));
+    vrai("Le geste principal est en orange", !!D2.querySelector(".fin-c.go"));
+    eq("Les quatre réglages sont annoncés", D2.querySelectorAll(".fin-c .tags i").length, 4);
+    vrai("Le titre a son mot en orange", !!D2.querySelector("#onb-body h2 .hl"));
+
     /* le carrousel n'a pas bougé : c'est une autre page */
     F.openOnboarding(false, null, 0);
     vrai("Le carrousel garde sa mise en page",

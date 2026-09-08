@@ -642,6 +642,38 @@
     border-radius:13px; padding:11px 12px; font-size:13px; font-weight:700;
     transition:background .16s ease, border-color .16s ease;}
   .af-z.on{background:rgba(245,130,32,.11); border-color:var(--accent); color:var(--accent);}
+  /* ---- la dernière page ----
+     Deux gestes, deux cartes : continuer, ou affiner. Deux boutons empilés avec leur
+     légende en dessous se lisaient comme une liste de courses. */
+  .fin-tete{text-align:center; padding:6px 4px 18px;}
+  .fin-tete .ic{width:78px; height:78px; margin:0 auto 16px; border-radius:50%;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .fin-tete .ic svg{width:38px; height:38px;}
+  .onb .fin-tete h2{font-size:30px; margin:0 0 8px;}
+  .fin-tete p{margin:0; font-size:14.5px; line-height:1.45; color:var(--ink-mute);}
+  .fin-tete p b{color:var(--ink); font-weight:700;}
+  .fin-c{display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+    background:var(--surface); border-radius:18px; padding:15px 14px; margin-bottom:11px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06); transition:transform .12s ease;}
+  .fin-c:active{transform:scale(.985);}
+  .fin-c .ic{flex:0 0 auto; width:52px; height:52px; border-radius:15px;
+    background:var(--surface2); color:var(--ink);
+    display:flex; align-items:center; justify-content:center;}
+  .fin-c .ic svg{width:26px; height:26px;}
+  .fin-c .tx{flex:1; min-width:0;}
+  .fin-c .t{display:block; font-size:17.5px; font-weight:800; line-height:1.2;}
+  .fin-c .s{display:block; font-size:13px; color:var(--ink-mute); line-height:1.4; margin-top:3px;}
+  .fin-c .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .fin-c .tags i{font-style:normal; font-size:11.5px; font-weight:600; color:var(--ink-soft);
+    background:var(--surface2); border-radius:99px; padding:5px 10px;}
+  .fin-c .fl{flex:0 0 auto; display:flex; color:var(--ink-mute);}
+  .fin-c .fl svg{width:22px; height:22px;}
+  .fin-c.go{background:var(--accent); color:var(--accent-ink);}
+  .fin-c.go .ic{background:rgba(255,255,255,.22); color:var(--accent-ink);}
+  .fin-c.go .s{color:rgba(255,255,255,.88);}
+  .fin-c.go .fl{color:rgba(255,255,255,.9);}
+
   .af-dl{margin-top:12px;}
   .af-dl .q{font-size:13px; font-weight:800; margin-bottom:8px;}
   .af-dl .af-o .s{font-size:10.5px;}
@@ -2344,6 +2376,11 @@ const TRAD = {en:{
   "Rien de coché : {} exercices au poids du corps restent utilisables.":"Nothing ticked: {} bodyweight exercises are still available.",
   "kcal au minimum":"kcal minimum",
   "de protéines":"of protein",
+  "C'est prêt, <span class=\"hl\">{} !</span>":"You're all set, <span class=\"hl\">{}!</span>",
+  "C'est <span class=\"hl\">prêt !</span>":"You're <span class=\"hl\">all set!</span>",
+  "Tu peux <b>démarrer</b> tout de suite, ou affiner quelques réglages qui rendront le plan plus juste.":"You can <b>start</b> right away, or fine-tune a few settings to make the plan more accurate.",
+  "Renseigne quelques informations pour des recommandations plus précises.":"Add a few details for more accurate recommendations.",
+  "Métabolisme":"Metabolism","Rythme":"Pace","Protéines par kilo":"Protein per kilo",
   "C'est prêt, {} !":"You're all set, {}!",
   "C'est prêt !":"You're all set!",
   "Noter":"Log",
@@ -3005,7 +3042,7 @@ const TRAD = {en:{
   "Écarté dès qu'une alternative existe.":"Set aside whenever there is an alternative.",
   "Jamais proposé.":"Never proposed.",
   "{} : où en es-tu ?":"{}: where are you at?",
-  "Une douleur qui dure ou qui revient n'est pas un réglage d'application : va voir un professionnel de santé.":"Pain that lasts or keeps coming back is not an app setting: go and see a health professional.",
+  "Si une douleur dure ou revient, on te recommande d'aller voir un professionnel de santé.":"If pain lasts or keeps coming back, we recommend seeing a health professional.",
   "Tes zones sensibles":"Your sensitive areas",
   "Les exercices à risque pour {} sont écartés dès qu'une alternative existe.":"Exercises that are risky for your {} are set aside whenever there is an alternative.",
   "Tes deux dernières séances t'ont paru dures. On allège un peu.":"Your last two sessions felt hard. We ease off a little.",
@@ -3422,6 +3459,7 @@ const TRAD = {en:{
   "Ton métabolisme":"Your metabolism",
   "Zones sensibles":"Sensitive areas",
   "Comment ton corps réagit quand tu manges plus. Ajuste ta dépense estimée de ±7 %.":"How your body reacts when you eat more. Adjusts your estimated burn by ±7%.",
+  "Plus le rythme est rapide, plus les résultats arrivent tôt, mais seront moins propres.":"The faster the pace, the sooner results come — but the less clean they are.",
   "Plus le rythme est rapide, plus les résultats arrivent tôt — et moins ils sont propres.":"The faster the pace, the sooner the results come — and the less clean they are.",
   "Coche tout ce que tu as sous la main. Sans rien, on te construira quand même des séances au poids du corps.":"Tick everything you have on hand. With nothing at all, we'll still build you bodyweight workouts.",
   "Il détermine tes calories, tes protéines et la forme de tes séances.":"It sets your calories, your protein and the shape of your workouts.",
@@ -6192,14 +6230,25 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 10. les deux portes */
     if(etape === "fin"){
-      corps.innerHTML = `<h2>${d.name? TR("C'est prêt, {} !").replace("{}", esc(d.name)) : TR("C'est prêt !")}</h2>
-        <div class="sous">${TR("Tu peux démarrer tout de suite, ou affiner quelques réglages qui rendront le plan plus juste.")}</div>
-        <div class="onb-choix">
-          <button class="ch" id="onb-plus" style="animation-delay:0ms">${TR("Affiner mon profil")}</button>
-          <div class="onb-desc">${TR("Métabolisme, rythme, protéines par kilo et zones sensibles.")}</div>
-          <button class="ch on" id="onb-go" style="animation-delay:70ms">${TR("Créer mon programme")}</button>
-          <div class="onb-desc">${TR("On enregistre ton profil et on te propose des séances adaptées.")}</div>
-        </div>`;
+      const bout = (id2, cl, ic, titre, sous, extra) =>
+        `<button class="fin-c${cl}" id="${id2}">
+          <span class="ic">${ic}</span>
+          <span class="tx"><span class="t">${titre}</span><span class="s">${sous}</span>${extra || ""}</span>
+          <span class="fl">${IC_CHEVRON}</span>
+        </button>`;
+      corps.innerHTML = `<div class="fin-tete">
+          <span class="ic">${IC_COTILLON}</span>
+          <h2>${d.name
+            ? TR("C'est prêt, <span class=\"hl\">{} !</span>").replace("{}", esc(d.name))
+            : TR("C'est <span class=\"hl\">prêt !</span>")}</h2>
+          <p>${TR("Tu peux <b>démarrer</b> tout de suite, ou affiner quelques réglages qui rendront le plan plus juste.")}</p>
+        </div>
+        ${bout("onb-plus", "", IC_CURSEURS, TR("Affiner mon profil"),
+               TR("Renseigne quelques informations pour des recommandations plus précises."),
+               `<span class="tags">${[TR("Métabolisme"), TR("Rythme"), TR("Protéines par kilo"),
+                 TR("Zones sensibles")].map(t=>`<i>${t}</i>`).join("")}</span>`)}
+        ${bout("onb-go", " go", ICONS.seance, TR("Créer mon programme"),
+               TR("On enregistre ton profil et on te propose des séances adaptées."))}`;
       corps.querySelector("#onb-go").onclick = enregistrer;
       corps.querySelector("#onb-plus").onclick = ()=>{
         if(ETAPES[ETAPES.length-1] !== "affiner") ETAPES.push("affiner");
@@ -6236,7 +6285,7 @@ function openOnboarding(first, brouillon, depart){
                  v=>d.metab === v), 0)}
 
           ${PACE_RATE[d.aim] ? bloc(IC_COURBE, TR("Rythme de progression"),
-            TR("Plus le rythme est rapide, plus les résultats arrivent tôt — et moins ils sont propres."),
+            TR("Plus le rythme est rapide, plus les résultats arrivent tôt, mais seront moins propres."),
             opts("pc", [["progressif", TR("Progressif"), TR("Des résultats durables")],
                         ["modere",     TR("Modéré"),     TR("Un bon équilibre")],
                         ["rapide",     TR("Rapide"),     TR("Des résultats plus rapides")]],
@@ -6265,7 +6314,7 @@ function openOnboarding(first, brouillon, depart){
                     <span class="t">${TR(t)}</span><span class="s">${TR(sous)}</span></button>`).join("")}</div>
               </div>`).join("") +
             (d.injuries.length ? `<div class="af-med">${
-              TR("Une douleur qui dure ou qui revient n'est pas un réglage d'application : va voir un professionnel de santé.")}</div>` : ""), 3)}`;
+              TR("Si une douleur dure ou revient, on te recommande d'aller voir un professionnel de santé.")}</div>` : ""), 3)}`;
         corps.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{ d.metab = b.dataset.mt; clicRoue(); dess(false); });
         corps.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{ d.pace = b.dataset.pc; clicRoue(); dess(false); });
         corps.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{ d.protPerKg = parseFloat(b.dataset.pk); clicRoue(); dess(false); });
@@ -6568,7 +6617,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 17h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 17h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7277,6 +7326,7 @@ const IC_LANGUE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const IC_ECRAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/></svg>';
 /* le bouclier : ce qui protège tes données */
 const IC_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 4.8 5.6v5.9c0 4.4 3 8.2 7.2 9.7 4.2-1.5 7.2-5.3 7.2-9.7V5.6L12 2.8Z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg>';
+const IC_COTILLON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.1 20.9 8.6 8.4l7 7-12.5 5.5Z"/><path d="M8.6 8.4 15.6 15.4"/><path d="M15.2 3.4v2.2M19.4 4.9l-1.5 1.6M20.8 9.2h-2.2M19.8 13.6l-1.9-1.1"/></svg>';
 const IC_ALERTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6 1.8 20.4h20.4L12 3.6Z"/><path d="M12 9.8v4.6"/><circle cx="12" cy="17.6" r="1.05" fill="currentColor" stroke="none"/></svg>';
 const IC_ECLAIR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.4 2 4.9 13.1c-.3.4 0 1 .5 1h5.1l-1.9 7.6c-.1.6.6.9 1 .4l8.5-11.1c.3-.4 0-1-.5-1h-5.1l1.9-7.6c.1-.6-.6-.9-1-.4Z"/></svg>';
 const IC_MAISON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 10.4 12 3.6l8.4 6.8"/><path d="M5.6 12v8.4h12.8V12"/><path d="M9.8 20.4v-5.2h4.4v5.2"/></svg>';
