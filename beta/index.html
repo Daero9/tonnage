@@ -1549,6 +1549,19 @@
   .pick-row{display:flex; align-items:center; gap:11px; padding:8px 4px; border-bottom:1px solid var(--border); font-weight:600;}
   .pick-row:active{background:var(--surface2);}
   /* exercice hors de ton matériel : proposé en dernier, en retrait, mais choisissable */
+  /* la bibliothèque : une rangée de familles qui défile, puis le matériel et le
+     détail des muscles sur une seule ligne — trois filtres sans manger l'écran */
+  .pk-fams{display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain; margin:0 -16px 9px; padding:1px 16px 3px;
+    scrollbar-width:none;}
+  .pk-fams::-webkit-scrollbar{display:none;}
+  .pk-fams .chip{flex:0 0 auto; white-space:nowrap;}
+  .pk-barre{display:flex; align-items:center; gap:10px; margin-bottom:9px;}
+  .pk-barre select{flex:1; min-width:0; padding-block:9px; font-size:13px;}
+  .pk-tog{display:flex; align-items:center; gap:7px; flex:0 0 auto; font-size:12.5px;
+    font-weight:600; color:var(--ink-soft); cursor:pointer; line-height:1.2;}
+  .pk-tog input{width:18px; height:18px; accent-color:var(--accent); flex:0 0 auto;}
+  .pk-nb{font-size:11.5px; color:var(--ink-mute); margin:0 2px 7px;}
   .pk-row.absent{opacity:.45;}
   .pk-row.absent .eq{color:var(--bad);}
   .pick-row .eq{font-size:12px; color:var(--ink-mute); font-weight:500;}
@@ -3437,6 +3450,9 @@ const TRAD = {en:{
   "Barre":"Barbell", "Barre fixe":"Pull-up bar", "Haltères":"Dumbbells",
   "Machine":"Machine", "Poids du corps":"Bodyweight", "Poulie":"Cable",
   "Élastique":"Resistance band",
+  "Bras":"Arms",
+  "Tous les matériels":"All equipment",
+  "Muscles ciblés":"Target muscles",
 
   /* --- les 107 exercices de la bibliothèque --- */
   "Développé couché":"Bench press",
@@ -3899,6 +3915,11 @@ function estIsometrique(ex){ return !!ex && ISOMETRIQUES.indexOf(nomCanon(ex)) >
    Le champ porte des secondes sur ces exercices-là, il faut donc y écrire une durée. */
 function repsTenue(nom, reps){
   return estIsometrique(getEx(libId(nom))) ? "30-45" : reps;
+}
+/* Et un gainage ne se repose pas comme une serie lourde : l effort est court et leger,
+   deux minutes de pause entre deux planches n ont aucun sens. Une minute suffit. */
+function reposTenue(nom, repos){
+  return estIsometrique(getEx(libId(nom))) ? Math.min(repos, 60) : repos;
 }
 /* « 95 » -> « 1:35 » : au-dela d une minute, les secondes seules ne se lisent plus */
 function fmtDuree(sec){
@@ -6063,7 +6084,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 12h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 13h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10114,7 +10135,8 @@ function genererAdaptative(type, evites){
          poids du corps se font en séries longues, pas en 8 répétitions. */
       if(exChoisi && estPoidsDuCorps(exChoisi) && choisi.charge >= 15 && bas && bas.lo > 8)
         reps = equipCanon(exChoisi) === "Barre fixe" ? "6-12" : "8-12";
-      items.push({nom:choisi.nom, sets:d.s, reps:repsTenue(choisi.nom, reps), rest:repos,
+      items.push({nom:choisi.nom, sets:d.s, reps:repsTenue(choisi.nom, reps),
+                  rest:reposTenue(choisi.nom, repos),
                   role:p.muscle, charge:choisi.charge, niveau});
     }
   });
@@ -10128,7 +10150,8 @@ function genererAdaptative(type, evites){
       if(!c2) continue;
       pris.add(c2.nom);
       const d2 = dose[p.recup >= 60 ? "moyen" : "leger"];
-      items.push({nom:c2.nom, sets:d2.s, reps:repsTenue(c2.nom, "10-15"), rest:Math.min(d2.p, 90),
+      items.push({nom:c2.nom, sets:d2.s, reps:repsTenue(c2.nom, "10-15"),
+                  rest:reposTenue(c2.nom, Math.min(d2.p, 90)),
                   role:p.muscle, charge:c2.charge, niveau:"leger"});
       ajoute = true;
       break;
@@ -10179,7 +10202,8 @@ function genererSeance(type, evites){
     const barreFixe = equipCanon(exChoisi) === "Barre fixe";
     if(exChoisi && (porteLeCorps(exChoisi) || barreFixe) && bas && bas.lo > 8)
       reps = barreFixe ? "6-12" : "8-12";
-    items.push({nom:choisi, sets:d.s, reps:repsTenue(choisi, reps), rest:d.p, role});
+    items.push({nom:choisi, sets:d.s, reps:repsTenue(choisi, reps),
+                rest:reposTenue(choisi, d.p), role});
   });
   return {type, nom:moule.nom, sous:moule.sous, items};
 }
@@ -11679,11 +11703,42 @@ function openSwap(ei, fromInjury){
 }
 
 /* ================= EXERCISE PICKER ================= */
+/* Les familles de la maquette. « Bras » et « Fessiers » n'existent pas comme groupe
+   dans la bibliothèque : le premier réunit biceps et triceps, le second se lit dans les
+   muscles travaillés — c'est là que se trouvent le hip thrust et les fentes, rangés
+   sous « Jambes ». */
+const PK_FAMILLES = [["tous","Tous"], ["Pectoraux","Pectoraux"], ["Dos","Dos"],
+  ["Épaules","Épaules"], ["bras","Bras"], ["Jambes","Jambes"], ["fessiers","Fessiers"],
+  ["Abdos","Abdos"]];
+function pkDansFamille(e, f){
+  if(f === "tous") return true;
+  const w = MUSCLE_WORK[nomCanon(e)] || [];
+  if(f === "bras") return e.muscle === "Biceps" || e.muscle === "Triceps"
+    || w.some(m=>m[0] === "Avant-bras" && m[1] >= 3);
+  if(f === "fessiers") return w.some(m=>m[0] === "Fessiers" && m[1] >= 2);
+  return e.muscle === f;
+}
+/* Les filtres survivent à un aller-retour dans la fiche d'un exercice : rouvrir la
+   bibliothèque au même endroit vaut mieux que tout retaper. */
+let pkFam = "tous", pkMat = "";
 function openPicker(cb){
   const browse = !cb;
+  const mats = [...new Set(allEx().map(e=>equipCanon(e)).filter(Boolean))].sort();
+  if(pkMat && mats.indexOf(pkMat) < 0) pkMat = "";
+  const voirMuscles = db.settings.pkMuscles !== false;
   openSheet(`<h3>${TR(browse? "Bibliothèque d'exercices" : "Choisir un exercice")}</h3>
-    <input id="pk-search" placeholder="${TR("Rechercher un exercice ou un matériel…")}" style="margin-bottom:2px;">
-    <div id="pk-list" style="max-height:52dvh; overflow-y:auto;"></div>
+    <div class="ch-champ"><span class="lp">${IC_LOUPE}</span>
+      <input id="pk-search" placeholder="${TR("Rechercher un exercice ou un matériel…")}"></div>
+    <div class="pk-fams" id="pk-fams">${PK_FAMILLES.map(([id2, lab])=>
+      `<button class="chip chip-sm ${pkFam===id2?"on":""}" data-pkfam="${esc(id2)}">${TR(lab)}</button>`).join("")}</div>
+    <div class="pk-barre">
+      <select id="pk-mat"><option value="">${TR("Tous les matériels")}</option>${
+        mats.map(m=>`<option value="${esc(m)}" ${pkMat===m?"selected":""}>${esc(TR(m))}</option>`).join("")}</select>
+      <label class="pk-tog"><input type="checkbox" id="pk-vm" ${voirMuscles?"checked":""}>
+        ${TR("Muscles ciblés")}</label>
+    </div>
+    <div class="pk-nb" id="pk-nb"></div>
+    <div id="pk-list" style="max-height:44dvh; overflow-y:auto;"></div>
     <button class="btn-dash" id="pk-new" style="margin-top:14px;">${TR("＋ Créer un exercice perso")}</button>
     <button class="btn btn-ghost" id="pk-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
   document.getElementById("pk-close").onclick = closeSheet;
@@ -11702,7 +11757,11 @@ function openPicker(cb){
       if(sansAccent(e.equip||"").includes(qn)) return 2;
       return (MUSCLE_WORK[nomCanon(e)]||[]).some(x=>sansAccent(x[0]).includes(qn)) ? 1 : 0;
     };
-    const filtered = allEx().filter(e=>!qn || score(e) > 0);
+    const filtered = allEx().filter(e=>(!qn || score(e) > 0)
+      && pkDansFamille(e, pkFam)
+      && (!pkMat || equipCanon(e) === pkMat));
+    const nb = document.getElementById("pk-nb");
+    if(nb) nb.textContent = filtered.length + " " + TR(filtered.length > 1 ? "exercices" : "exercice");
     const groups = {};
     filtered.forEach(e=>{ (groups[e.muscle||"Autres"] = groups[e.muscle||"Autres"]||[]).push(e); });
     /* ce que tu n'as pas passe à la fin de son groupe, sans disparaître :
@@ -11714,7 +11773,8 @@ function openPicker(cb){
       `<div class="pk-h">${esc(TR(m))}</div>`+groups[m].map(e=>
         `<div class="pk-row${exoDispo(e)?"":" absent"}" data-pk="${e.id}"><div class="th">${exIcon(e, true)}</div>
           <div class="grow" style="min-width:0;"><div class="nm">${esc(e.name)}</div>
-            <div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}${exoDispo(e)?"":" · "+esc(manqueTexte(e))}</div>${musclesHtml(nomCanon(e),3)}</div>
+            <div class="eq">${esc(e.equip||"—")}${e.custom?" · perso":""}${exoDispo(e)?"":" · "+esc(manqueTexte(e))}</div>${
+              db.settings.pkMuscles !== false ? musclesHtml(nomCanon(e),3) : ""}</div>
           <button class="icon-btn info-btn" data-exinfo="${e.id}" title="${TR("Fiche de l'exercice")}">ⓘ</button>
           ${browse? "" : `<span class="pk-add">＋</span>`}</div>`).join("")
     ).join("") || `<div class="empty">${TR("Aucun résultat.")}</div>`;
@@ -11726,7 +11786,26 @@ function openPicker(cb){
     });
   };
   draw("");
-  document.getElementById("pk-search").oninput=e=>draw(e.target.value);
+  const champ = document.getElementById("pk-search");
+  champ.oninput = e=>draw(e.target.value);
+  /* la rangée défile : la famille choisie doit rester visible, sinon on ne sait plus
+     sur quoi on filtre */
+  const centrer = el => { try{ el.scrollIntoView({inline:"center", block:"nearest"}); }catch(e){} };
+  document.querySelectorAll("[data-pkfam]").forEach(b=>b.onclick=()=>{
+    pkFam = b.dataset.pkfam;
+    document.querySelectorAll("[data-pkfam]").forEach(x=>x.classList.toggle("on", x === b));
+    centrer(b);
+    draw(champ.value);
+  });
+  const actif = document.querySelector("[data-pkfam].on");
+  if(actif && pkFam !== "tous") centrer(actif);
+  document.getElementById("pk-mat").onchange = e=>{ pkMat = e.target.value; draw(champ.value); };
+  /* Le détail des muscles est un réglage, pas une humeur : il vaut pour les prochaines
+     fois. Sans lui la liste tient deux fois plus d'exercices à l'écran. */
+  document.getElementById("pk-vm").onchange = e=>{
+    db.settings.pkMuscles = e.target.checked;
+    save(); draw(champ.value);
+  };
   document.getElementById("pk-new").onclick=()=>{
     openSheet(`<h3>${TR("Nouvel exercice")}</h3>
       <div class="stack">
