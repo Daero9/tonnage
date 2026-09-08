@@ -2905,23 +2905,30 @@ async function lancer(){
         {exId:ga, sets:[serie(0,45), serie(0,40)]}]}];
     const cible = {reps:"8-12", rest:120};
     const o = F.objectifDuJour(dc, cible);
-    vrai("La ligne du passé annonce la meilleure série, pas la moyenne",
+    vrai("La dernière séance annonce la meilleure série, pas la moyenne",
       /62,5|62\.5/.test(o.passe), o.passe);
     vrai("…avec le nombre de séries", /3 ×/.test(o.passe), o.passe);
-    vrai("Et l'app annonce d'abord ce qu'on vise aujourd'hui",
-      /^Aujourd/.test(o.vise) && /kg/.test(o.vise), o.vise);
+    vrai("L'objectif du jour porte une charge", /kg/.test(o.poids), o.poids);
+    vrai("…et une cible en répétitions", !!o.reps, o.reps);
     const g = F.objectifDuJour(ga, {reps:"30-45", rest:60});
     vrai("Un gainage se dit en secondes", /s$/.test(g.passe), g.passe);
-    vrai("…sans charge collée derrière", !/kg/.test(g.passe));
-    eq("Sans historique, rien ne s'affiche", F.objectifDuJour(id("Squat"), cible), "");
-    /* et la ligne est bien sous le nom, pendant la séance */
+    vrai("…sans charge à viser", !g.poids, g.poids);
+    eq("Sans historique, rien ne s'affiche", F.objectifDuJour(id("Squat"), cible), null);
+    /* et le bandeau est bien dans la carte, pendant la séance. Trois séries au sommet
+       de la fourchette avec de la réserve : l'app doit proposer de charger, donc
+       afficher l'écart avec la dernière fois. */
+    DB.history = [{id:"o2", date:new Date(Date.now()-4*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:dc, sets:[serie(60,12,3), serie(60,12,3), serie(60,12,3)]}]}];
     DB.templates = [{id:"to", name:"Essai", items:[{exId:dc, sets:3, reps:"8-12", rest:120}]}];
     DB.active = null;
     F.startWorkout("to");
-    const el = F.document.querySelector(".ex-card .ex-obj");
-    vrai("Elle s'affiche sous le nom de l'exercice", !!el);
-    vrai("…en petit", parseFloat(F.getComputedStyle(el).fontSize) <= 12.5,
-      el ? F.getComputedStyle(el).fontSize : "");
+    const el = F.document.querySelector(".ex-card .obj-b");
+    vrai("Le bandeau s'affiche dans la carte de l'exercice", !!el);
+    vrai("…avec ses deux moitiés",
+      !!(el && el.querySelector(".g") && el.querySelector(".d")));
+    vrai("…et l'écart avec la dernière fois", !!(el && el.querySelector(".e")),
+      el ? el.textContent.trim().slice(0, 60) : "");
     DB.active = null; DB.templates = []; DB.history = [];
   })();
   neuf();

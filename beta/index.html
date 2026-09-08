@@ -1515,10 +1515,36 @@
     .set-row .ck:active, .set-row .dg:active{transform:none;}
   }
   /* ce qu'il y a à battre : discret, sous le nom, jamais au-dessus */
-  .ex-obj{font-size:11.5px; color:var(--ink-mute); margin-top:3px; line-height:1.35;}
-  .ex-obj b{display:inline-flex; align-items:center; gap:5px; font-size:12.5px;
-    font-weight:800; color:var(--ink);}
-  .ex-obj svg{width:13px; height:13px; flex:0 0 auto; color:var(--accent);}
+  /* Le bandeau de l'objectif : ce qu'on vise à gauche, d'où l'on part à droite. Deux
+     lignes de texte gris disaient la même chose et personne ne les lisait. */
+  .obj-b{display:flex; align-items:stretch; border-radius:15px; overflow:hidden;
+    margin-bottom:11px;}
+  .obj-b .g, .obj-b .d{display:flex; align-items:center; gap:10px; padding:11px 12px;}
+  .obj-b .g{flex:1 1 58%; min-width:0; background:rgba(245,130,32,.12);}
+  .obj-b .d{flex:1 1 42%; min-width:0; background:var(--surface2);}
+  .obj-b .ic{flex:0 0 auto; width:36px; height:36px; border-radius:11px;
+    display:flex; align-items:center; justify-content:center;}
+  .obj-b .ic svg{width:19px; height:19px;}
+  .obj-b .g .ic{background:rgba(245,130,32,.18); color:var(--accent);}
+  .obj-b .d .ic{background:var(--surface); color:var(--ink-soft);}
+  .obj-b .k{font-size:10.5px; font-weight:800; line-height:1.2; margin-bottom:2px;}
+  .obj-b .g .k{color:var(--accent);}
+  .obj-b .d .k{color:var(--ink-mute);}
+  .obj-b .v{font-size:13.5px; font-weight:800; line-height:1.25;}
+  .obj-b .g .v b{font-size:19px; color:var(--accent);}
+  .obj-b .g .v i{font-style:normal; font-size:13.5px;}
+  .obj-b .g .v .x{color:var(--ink-mute); font-weight:700;}
+  .obj-b .e{display:flex; align-items:center; gap:3px; font-size:12px; font-weight:800;
+    margin-top:2px;}
+  .obj-b .e.up{color:var(--good);}
+  .obj-b .e.down{color:var(--accent);}
+  /* Côte à côte, la maquette suppose un écran large. Sur un téléphone de 390 px il
+     reste 150 px par moitié : « 62,5 kg × 10–12 reps » y tient sur trois lignes et
+     devient illisible. Les deux moitiés s'empilent donc, même contenu, même hiérarchie. */
+  @media (max-width:520px){
+    .obj-b{flex-direction:column;}
+    .obj-b .g, .obj-b .d{flex:0 0 auto;}
+  }
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
   /* plus grands et posés sur le blanc : ils forment une paire nette a droite du nom.
      Le contour est indispensable : « .info-btn » l enleve, et un bouton blanc sans
@@ -3432,11 +3458,9 @@ const TRAD = {en:{
   "dég.":"drop", "Dégressif ?":"Drop set?", "Éch.":"W-up",
   "série":"set", "Ajouter un exercice":"Add an exercise",
   "Terminer la séance":"Finish workout",
-  "Dernière séance : {}":"Last session: {}",
-  "Dernière séance : {n} à {p}":"Last session: {n} at {p}",
-  "Aujourd'hui : {p}":"Today: {p}",
-  "Aujourd'hui : {p} × {r} reps":"Today: {p} × {r} reps",
-  "Aujourd'hui : {r} reps":"Today: {r} reps",
+  "Objectif du jour":"Today's target",
+  "Dernière séance":"Last session",
+  "{n} à {p}":"{n} at {p}",
   "Dernière fois et charge du jour":"Last time and today's load",
   "Fiche de l'exercice":"Exercise details",
   "Ajouter un dégressif":"Add a drop set",
@@ -6749,7 +6773,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 18h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 19h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7168,27 +7192,27 @@ function workSets(en){ return en.sets.filter(s=>!s.warm); }
    La ligne du dessous rappelle d'où on part, sinon l'objectif ne veut rien dire. */
 function objectifDuJour(exId, cible){
   const last = lastPerf(exId);
-  if(!last || !last.sets.length) return "";
+  if(!last || !last.sets.length) return null;
   const ex = getEx(exId), iso = estIsometrique(ex);
-  /* la meilleure série, pas la moyenne : c'est elle qu'on cherche à dépasser */
+  /* la meilleure série de la dernière fois, pas la moyenne : c'est elle qu'on dépasse */
   const best = last.sets.slice().sort((a, b)=>(b.w || 0) - (a.w || 0) || (b.r || 0) - (a.r || 0))[0];
+  const chargePassee = chargeReelle(exId, best);
   const combien = last.sets.length + " × " + (iso ? fmtDuree(best.r || 0) : (best.r || 0));
   const passe = (best.w > 0 && !iso)
-    ? TR("Dernière séance : {n} à {p}").replace("{n}", combien).replace("{p}", pds(chargeReelle(exId, best)))
-    : TR("Dernière séance : {}").replace("{}", combien);
-  /* Ce qu'on vise. Sans charge à annoncer — poids du corps, gainage — on garde la
-     consigne en répétitions plutôt que d'inventer un poids. */
+    ? TR("{n} à {p}").replace("{n}", combien).replace("{p}", pds(chargePassee))
+    : combien;
   const sug = suggestFor(exId, cible);
-  let vise = "";
-  if(sug && sug.w > 0 && !iso)
-    vise = sug.reps
-      ? TR("Aujourd'hui : {p} × {r} reps").replace("{p}", pds(sug.w)).replace("{r}", sug.reps)
-      : TR("Aujourd'hui : {p}").replace("{p}", pds(sug.w));
-  else if(sug && sug.reps)
-    vise = TR("Aujourd'hui : {r} reps").replace("{r}", sug.reps);
-  return {vise, passe};
+  /* La cible en répétitions : celle de la suggestion si elle en donne une, sinon la
+     fourchette du plan. Un tiret demi-cadratin, pas un trait d'union : « 10–12 ». */
+  const rng = parseReps(cible && cible.reps);
+  const reps = (sug && sug.reps) ? String(sug.reps)
+    : (rng ? (rng.lo === rng.hi ? String(rng.lo) : rng.lo + "–" + rng.hi) : "");
+  const poids = (sug && sug.w > 0 && !iso) ? pds(sug.w) : "";
+  /* L'écart avec la dernière fois : c'est lui qui dit si on monte ou si on tient. */
+  let ecart = 0;
+  if(poids && chargePassee > 0) ecart = Math.round((sug.w - chargePassee) * 100) / 100;
+  return {poids, reps, passe, ecart, iso};
 }
-/* tonnage d'une série, dégressifs compris : 6 x 12 kg puis 4 x 10 kg = 112 kg soulevés */
 function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
 }
@@ -12285,15 +12309,28 @@ function renderActive(app){
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}${
-          ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>` : ""}</div>${
-          (()=>{ const o = objectifDuJour(en.exId, en.target);
-            if(!o) return "";
-            return `<div class="ex-obj">${o.vise ? `<b>${IC_CIBLE}${esc(o.vise)}</b>` : ""}${
-              o.vise ? "<br>" : ""}<span>${esc(o.passe)}</span></div>`; })()}</div>
+          ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>` : ""}</div></div>
         <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Dernière fois et charge du jour")}">${IC_LISTE}</button>
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
+      ${(()=>{ const o = objectifDuJour(en.exId, en.target);
+        if(!o || (!o.poids && !o.reps)) return "";
+        const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
+        return `<div class="obj-b">
+          <div class="g"><span class="ic">${IC_CIBLE}</span>
+            <div><div class="k">${TR("Objectif du jour")}</div>
+              <div class="v">${o.poids ? `<b>${esc(o.poids)}</b>` : ""}${
+                o.poids && o.reps ? ` <span class="x">×</span> ` : ""}${
+                o.reps ? `<i>${esc(o.reps)} ${o.iso ? "s" : TR("reps")}</i>` : ""}</div></div>
+          </div>
+          <div class="d"><span class="ic">${IC_COURBE}</span>
+            <div><div class="k">${TR("Dernière séance")}</div>
+              <div class="v">${esc(o.passe)}</div>
+              ${o.ecart ? `<div class="e ${o.ecart > 0 ? "up" : "down"}">${fleche} ${
+                (o.ecart > 0 ? "+" : "−") + pds(Math.abs(o.ecart))}</div>` : ""}</div>
+          </div>
+        </div>`; })()}
       ${iso ? (()=>{ const et = etapesIso(ei), enCours = seqIso && seqIso.ei === ei,
           enAttente = !!preIso && preIso.ei === ei;
         /* le resume ne compte que les series de travail : l echauffement est juste
