@@ -1157,12 +1157,33 @@ async function lancer(){
           /* un gainage porte des secondes dans ce champ : 30-45 n'est pas une fourchette
              de répétitions impossible, c'est une durée */
           if(F.estIsometrique(ex)) continue;
-          if(F.estPoidsDuCorps(ex) && r.lo > 8) return false;
+          /* seuls les mouvements portés sont concernés : suspendre tout son corps
+             douze fois est un mur, faire douze crunchs n'en est pas un */
+          if((F.porteLeCorps(ex) || ex.equip === "Barre fixe") && r.lo > 8) return false;
           if(ex.equip === "Barre fixe" && r.hi > 12) return false;
         }
       }
     }
     return true;
+  })());
+  /* le revers de la règle : une isolation au poids du corps ne doit PAS être rabaissée,
+     sinon les mollets et les abdos sortent en 8-12 au lieu de leurs séries longues */
+  const LEGERS = F.eval("ROLES_LEGERS");
+  vrai("Une isolation au poids du corps garde ses séries longues", (()=>{
+    let vu = false;
+    for(let k=0;k<60;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom));
+          if(!ex || F.estIsometrique(ex) || !F.estPoidsDuCorps(ex)) continue;
+          if(F.porteLeCorps(ex) || ex.equip === "Barre fixe") continue;
+          if(!LEGERS.includes(it.role)) continue;
+          vu = true;
+          if(it.reps !== DOSES.masse.leger.r) return false;
+        }
+      }
+    }
+    return vu;
   })());
   /* … et ce qu'on tient doit bien porter une durée, jamais douze répétitions */
   vrai("Un gainage proposé se compte en secondes", (()=>{
@@ -2554,6 +2575,91 @@ async function lancer(){
     vrai("Le signe vient avant le texte",
       lignes.every(l => l.firstElementChild.classList.contains("rgi")));
     F.hideSheet();
+  })();
+  neuf();
+
+  grp("Changer de programme");
+  neuf();
+  /* Deux programmes sur cinq — entretien et recomposition — n'étaient pas étiquetés :
+     leurs séances ne se reconstruisaient jamais, alors que la fiche promet à tout le
+     monde qu'elles se refont à chaque démarrage. */
+  (()=>{
+    const PROGS = F.eval("COACH_PROGRAMS");
+    const MOULES = F.eval("MOULES");
+    const toutes = Object.keys(PROGS).reduce((a,g)=>a.concat(PROGS[g].templates), []);
+    vrai("Chaque séance d'un programme est adaptative",
+      toutes.every(t=>!!t.type),
+      toutes.filter(t=>!t.type).map(t=>t.name).join(", "));
+    vrai("…et chaque type existe vraiment",
+      toutes.every(t=>!!MOULES[t.type]),
+      toutes.filter(t=>!MOULES[t.type]).map(t=>t.type).join(", "));
+  })();
+  neuf();
+
+  /* Les plans déjà posés avant cette correction se réparent au chargement. */
+  (()=>{
+    const garde = DB.templates;
+    DB.templates = [{id:"vieux", name:"Full body A · Entretien", items:[], adaptatif:null},
+                    {id:"amoi",  name:"Ma séance à moi",         items:[], adaptatif:null}];
+    delete DB.adaptV2;
+    F.applyDefaults();
+    eq("Une vieille séance d'entretien devient adaptative",
+      DB.templates[0].adaptatif, "full");
+    eq("…mais pas une séance que tu as créée",
+      DB.templates[1].adaptatif, null);
+    DB.templates = garde;
+  })();
+  neuf();
+
+  /* Changer d'objectif empilait les deux programmes sans rien dire : cinq séances au
+     plan, dont trois qui ne correspondaient plus à rien. */
+  (()=>{
+    const garde = DB.templates, gardeActif = DB.active;
+    const noms = () => DB.templates.map(t=>t.name);
+    DB.active = null;
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    const apresMasse = noms().length;
+    vrai("Le premier programme pose ses séances", apresMasse === 3, apresMasse + " séances");
+
+    const restes = F.seancesDunAutreProgramme("seche");
+    eq("Les trois séances de masse sont repérées", restes.length, 3);
+    eq("…et aucune n'est rangée dans le nouveau programme",
+      F.seancesDunAutreProgramme("masse").length, 0);
+
+    /* on garde : les deux programmes cohabitent, c'est le choix de l'utilisateur */
+    F.ajouterProgramme("seche", "");
+    F.document.getElementById("rp-keep").click();
+    eq("« Les garder » laisse les deux programmes", noms().length, 5);
+
+    /* on remplace : le plan ne contient plus que le nouveau */
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    F.ajouterProgramme("seche", "");
+    F.document.getElementById("rp-swap").click();
+    eq("« Remplacer » ne laisse que le nouveau", noms().length, 2);
+    vrai("…et ce sont bien les séances de perte de poids",
+      noms().every(n=>/Perte de poids/.test(n)), noms().join(", "));
+
+    /* une séance en cours ne se fait jamais retirer sous les pieds */
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    DB.active = {templateId: DB.templates[0].id, entries:[]};
+    vrai("La séance en cours est épargnée",
+      F.seancesDunAutreProgramme("seche").every(v=>v.tpl.id !== DB.templates[0].id));
+    F.ajouterProgramme("seche", "");
+    F.document.getElementById("rp-swap").click();
+    vrai("…et elle survit au remplacement",
+      noms().some(n=>/Prise de masse/.test(n)), noms().join(", "));
+
+    /* sans rien à remplacer, on ajoute sans poser de question */
+    DB.active = null;
+    DB.templates = [];
+    F.ajouterProgramme("masse", "");
+    vrai("Un plan vide n'a rien à remplacer", DB.templates.length === 3);
+    vrai("…et aucune question n'est posée", !F.document.getElementById("rp-swap"));
+
+    DB.templates = garde; DB.active = gardeActif;
   })();
   neuf();
 

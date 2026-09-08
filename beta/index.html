@@ -2288,6 +2288,12 @@ const TRAD = {en:{
   "Séance modifiée ✓":"Workout updated ✓",
   "Séance ajoutée ✓":"Workout added ✓",
   "Programme ajouté ✓":"Program added ✓",
+  "Ancien programme remplacé ✓":"Old program replaced ✓",
+  "Remplacer ton ancien programme ?":"Replace your old program?",
+  "Ton plan contient encore {n} séances de « {p} ». Elles ne correspondent plus à ton objectif.":"Your plan still holds {n} sessions from “{p}”. They no longer match your goal.",
+  "Ton plan contient encore une séance de « {p} ». Elle ne correspond plus à ton objectif.":"Your plan still holds one session from “{p}”. It no longer matches your goal.",
+  "Les séances déjà faites restent dans ton historique.":"Sessions you have already done stay in your history.",
+  "Les garder":"Keep them",
   "Séance libre":"Free workout",
   "Chrono relancé":"Timer restarted",
   "Chrono en pause":"Timer paused",
@@ -4765,17 +4771,17 @@ const COACH_PROGRAMS = {
     label:"Entretien",
     title:"Entretien · 2 séances full body",
     templates:[
-      {name:"Full body A · Entretien", items:[["Squat",3,"8-12",150],["Développé couché haltères",3,"8-12",120],["Tirage vertical",3,"8-12",120],["Élévations latérales",2,"12-15",75],["Gainage",2,"30-45",60]]},
-      {name:"Full body B · Entretien", items:[["Soulevé de terre roumain",3,"8-12",150],["Développé militaire haltères",3,"8-12",120],["Rowing haltère",3,"8-12",120],["Curl haltères",2,"10-12",75],["Crunch",2,"15-20",60]]}
+      {name:"Full body A · Entretien", type:"full", items:[["Squat",3,"8-12",150],["Développé couché haltères",3,"8-12",120],["Tirage vertical",3,"8-12",120],["Élévations latérales",2,"12-15",75],["Gainage",2,"30-45",60]]},
+      {name:"Full body B · Entretien", type:"full", items:[["Soulevé de terre roumain",3,"8-12",150],["Développé militaire haltères",3,"8-12",120],["Rowing haltère",3,"8-12",120],["Curl haltères",2,"10-12",75],["Crunch",2,"15-20",60]]}
     ]
   },
   recomp: {
     label:"Perte de gras + muscle",
     title:"Recomposition · Haut / Bas / Full",
     templates:[
-      {name:"Haut du corps · Recomp", items:[["Développé couché",4,"8-12",150],["Rowing barre",4,"8-12",150],["Développé militaire haltères",3,"8-12",120],["Curl barre",3,"10-12",90],["Extension poulie",3,"10-12",90]]},
-      {name:"Bas du corps · Recomp", items:[["Squat",4,"8-12",150],["Soulevé de terre roumain",3,"8-12",150],["Fentes",3,"10-12",120],["Mollets debout",3,"12-15",75],["Crunch",3,"12-15",60]]},
-      {name:"Full body · Recomp", items:[["Soulevé de terre",3,"5-8",180],["Tirage vertical",3,"8-12",120],["Développé incliné haltères",3,"8-12",120],["Élévations latérales",3,"12-15",75],["Crunch câble",3,"12-15",60]]}
+      {name:"Haut du corps · Recomp", type:"haut", items:[["Développé couché",4,"8-12",150],["Rowing barre",4,"8-12",150],["Développé militaire haltères",3,"8-12",120],["Curl barre",3,"10-12",90],["Extension poulie",3,"10-12",90]]},
+      {name:"Bas du corps · Recomp", type:"bas", items:[["Squat",4,"8-12",150],["Soulevé de terre roumain",3,"8-12",150],["Fentes",3,"10-12",120],["Mollets debout",3,"12-15",75],["Crunch",3,"12-15",60]]},
+      {name:"Full body · Recomp", type:"full", items:[["Soulevé de terre",3,"5-8",180],["Tirage vertical",3,"8-12",120],["Développé incliné haltères",3,"8-12",120],["Élévations latérales",3,"12-15",75],["Crunch câble",3,"12-15",60]]}
     ]
   }
 };
@@ -5911,7 +5917,7 @@ function showPlan(justCreated){
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
   document.getElementById("pl-sante").onclick = openSante;
   const add = document.getElementById("pl-add");
-  if(add) add.onclick=()=>{ addCoachProgram(pl.program); closeSheet(); render(); toast(TR("Séances ajoutées ✓")); };
+  if(add) add.onclick=()=>ajouterProgramme(pl.program, TR("Séances ajoutées ✓"));
   document.getElementById("pl-ok").onclick=()=>{ closeSheet(); render(); };
 }
 /* « la formule dit 3 200 kcal mais je mange 2 200 et je ne bouge pas » : on croit la balance */
@@ -5975,6 +5981,54 @@ function addCoachProgram(goal){
   });
   save();
 }
+/* Les séances d'un AUTRE programme du coach encore présentes dans le plan. Le repère
+   est le nom : c'est déjà lui qui empêche d'ajouter deux fois la même séance, et il a
+   l'avantage d'épargner une séance renommée — la renommer, c'est se l'approprier. */
+function seancesDunAutreProgramme(goal){
+  const actif = (db.active && db.active.templateId) || null;
+  const noms = {};
+  Object.keys(COACH_PROGRAMS).forEach(g=>{
+    if(g === goal) return;
+    COACH_PROGRAMS[g].templates.forEach(t=>{ noms[t.name] = g; });
+  });
+  return (db.templates || []).filter(t=>noms[t.name] && t.id !== actif)
+                             .map(t=>({tpl:t, prog:noms[t.name]}));
+}
+/* Ajoute un programme en proposant d'abord de faire de la place. Sans ça, changer
+   d'objectif empilait les deux : cinq séances au plan, dont trois qui ne
+   correspondaient plus à rien, et aucun écran pour le dire. */
+function ajouterProgramme(goal, msg){
+  const vieilles = seancesDunAutreProgramme(goal);
+  const fini = (remplace)=>{
+    addCoachProgram(goal); closeSheet(); render();
+    toast(remplace ? TR("Ancien programme remplacé ✓") : msg);
+  };
+  if(!vieilles.length) return fini(false);
+  const labels = [];
+  vieilles.forEach(v=>{ const l = TR(COACH_PROGRAMS[v.prog].label);
+    if(labels.indexOf(l) < 0) labels.push(l); });
+  const n = vieilles.length;
+  openSheet(`<h3>${TR("Remplacer ton ancien programme ?")}</h3>
+    <p style="color:var(--ink-soft); margin:0 0 14px; font-size:14.5px;">${
+      (n > 1 ? TR("Ton plan contient encore {n} séances de « {p} ». Elles ne correspondent plus à ton objectif.")
+             : TR("Ton plan contient encore une séance de « {p} ». Elle ne correspond plus à ton objectif."))
+        .replace("{n}", n).replace("{p}", esc(labels.join(", ")))}</p>
+    <div class="stack" style="gap:6px; margin-bottom:14px;">${vieilles.map(v=>
+      `<div class="card" style="padding:10px 13px; font-size:14px; font-weight:700;">${
+        esc(TR(v.tpl.name))}</div>`).join("")}</div>
+    <p style="color:var(--ink-mute); margin:0 0 16px; font-size:12.5px;">${
+      TR("Les séances déjà faites restent dans ton historique.")}</p>
+    <button class="btn btn-accent" id="rp-swap" style="width:100%; margin-bottom:8px;">${
+      TR("Remplacer")}</button>
+    <button class="btn" id="rp-keep" style="width:100%;">${TR("Les garder")}</button>`);
+  document.getElementById("rp-swap").onclick = ()=>{
+    const morts = {};
+    vieilles.forEach(v=>{ morts[v.tpl.id] = 1; });
+    db.templates = db.templates.filter(t=>!morts[t.id]);
+    fini(true);
+  };
+  document.getElementById("rp-keep").onclick = ()=>fini(false);
+}
 function currentWeight(){
   const ws = db.weights.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
   return ws.length? ws[ws.length-1].kg : null;
@@ -6006,7 +6060,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 12h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 12h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6049,6 +6103,17 @@ function applyDefaults(){
       db.habitSel[k] = n;
     });
     db.mealsV2 = 1;
+  }
+  /* Entretien et recomposition n'étaient pas étiquetés : leurs séances ne se
+     reconstruisaient jamais, alors que la fiche promet le contraire à tout le monde.
+     Les plans déjà posés sur ces deux objectifs se réparent ici, une seule fois. */
+  if(!db.adaptV2){
+    const types = {};
+    Object.keys(COACH_PROGRAMS).forEach(g=>COACH_PROGRAMS[g].templates.forEach(t=>{
+      if(t.type) types[t.name] = t.type;
+    }));
+    db.templates.forEach(t=>{ if(!t.adaptatif && types[t.name]) t.adaptatif = types[t.name]; });
+    db.adaptV2 = 1;
   }
   if(!db.plafond) db.plafond = {};     /* exercices où la charge ne peut plus monter */
   if(!db.unilat) db.unilat = {};       /* exercices faits un bras / une jambe à la fois */
@@ -10101,12 +10166,16 @@ function genererSeance(type, evites){
     const d = dose[niveau];
     /* Au poids du corps, on ne peut pas alléger la barre : demander 12 a 15 tractions
        n est pas un objectif, c est un mur. On rabaisse la fourchette pour ces exercices,
-       et plus encore a la barre fixe, ou meme 8 repetitions propres sont deja beaucoup. */
+       et plus encore a la barre fixe, ou meme 8 repetitions propres sont deja beaucoup.
+       Réservé aux vrais mouvements portés — tractions, dips, barre fixe : eux seuls
+       suspendent le corps entier. Un crunch ou des mollets debout au poids du corps
+       se font en séries longues, pas en 8 répétitions : ils gardent leur fourchette. */
     let reps = d.r;
     const exChoisi = getEx(libId(choisi));
     const bas = parseReps(reps);
-    if(exChoisi && estPoidsDuCorps(exChoisi) && bas && bas.lo > 8)
-      reps = equipCanon(exChoisi) === "Barre fixe" ? "6-12" : "8-12";
+    const barreFixe = equipCanon(exChoisi) === "Barre fixe";
+    if(exChoisi && (porteLeCorps(exChoisi) || barreFixe) && bas && bas.lo > 8)
+      reps = barreFixe ? "6-12" : "8-12";
     items.push({nom:choisi, sets:d.s, reps:repsTenue(choisi, reps), rest:d.p, role});
   });
   return {type, nom:moule.nom, sous:moule.sous, items};
@@ -10248,7 +10317,7 @@ function openPropose(){
     apercuProposition(pool[Math.floor(Math.random()*pool.length)]);
   };
   document.getElementById("pp-prog").onclick = ()=>{
-    addCoachProgram(aim.prog); closeSheet(); render(); toast(TR("Programme ajouté ✓"));
+    ajouterProgramme(aim.prog, TR("Programme ajouté ✓"));
   };
 }
 
