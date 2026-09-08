@@ -196,7 +196,7 @@ async function lancer(){
      milieu décale tous les suivants et rattache l'historique de chacun à son voisin —
      c'est arrivé le 8 septembre 2026, sur 49 exercices. Ces repères le rendraient
      visible immédiatement : un ajout ne doit jamais bouger un identifiant existant. */
-  const REPERES = {"Développé couché":"lib0", "Extension poulie":"lib22", "Crunch":"lib33",
+  const REPERES = {"Développé couché":"lib0", "Extension poulie (barre)":"lib22", "Crunch":"lib33",
     "Roulette abdominale":"lib59", "Planche latérale":"lib60", "Superman":"lib101",
     "Rowing sous la table":"lib108"};
   const bouges = Object.keys(REPERES).filter(n=>id(n) !== REPERES[n]);
@@ -342,8 +342,8 @@ async function lancer(){
   eq("Tonnup avec dégressif", F.volSerie({w:12, r:6, drops:[{w:10, r:4}]}), 112);
   eq("Barre : facteur 1", F.facteurCharge(id("Développé couché")), 1);
   eq("Haltères : facteur 2", F.facteurCharge(id("Développé incliné haltères")), 2);
-  DB.unilat[id("Extension poulie")] = true;
-  eq("Unilatéral coché : facteur 2", F.facteurCharge(id("Extension poulie")), 2);
+  DB.unilat[id("Extension poulie (barre)")] = true;
+  eq("Unilatéral coché : facteur 2", F.facteurCharge(id("Extension poulie (barre)")), 2);
   DB.unilat[id("Développé incliné haltères")] = true;
   eq("Haltères + unilatéral : reste 2, jamais 4", F.facteurCharge(id("Développé incliné haltères")), 2);
   neuf();
@@ -757,7 +757,7 @@ async function lancer(){
   const bras = KC(seance(2, [
     {exId:id("Curl barre"),           sets:nFois(15, 12, 4)},
     {exId:id("Curl marteau"),         sets:nFois(12, 12, 4)},
-    {exId:id("Extension poulie"),     sets:nFois(20, 12, 4)}]));
+    {exId:id("Extension poulie (barre)"),     sets:nFois(20, 12, 4)}]));
   const jambes = KC(seance(2, [
     {exId:id("Squat"),                sets:nFois(90, 8, 4)},
     {exId:id("Presse à cuisses"),     sets:nFois(150, 10, 4)},
@@ -891,7 +891,7 @@ async function lancer(){
   neuf();
   DB.history = [1,2].map(n => seance(n*24, [
     {exId:id("Développé couché"), sets:[serie(60,9),serie(60,8)]},
-    {exId:id("Extension poulie"), sets:[serie(14,10),serie(14,10)]},
+    {exId:id("Extension poulie (barre)"), sets:[serie(14,10),serie(14,10)]},
     {exId:id("Squat"), sets:[serie(80,9),serie(80,8)]},
     {exId:id("Développé militaire"), sets:[serie(35,9),serie(35,8)]}
   ]));
@@ -903,7 +903,7 @@ async function lancer(){
   eq("Étiquette : point fort à +20 %", F.mpStatus(moy*1.2, moy).tag, "Point fort");
   eq("Sans moyenne, on retombe sur le barème", F.mpStatus(100, null).tag, "Équilibré");
   const avant = F.muscleProfile()["Triceps"];
-  DB.unilat[id("Extension poulie")] = true;
+  DB.unilat[id("Extension poulie (barre)")] = true;
   vrai("Unilatéral : le score double", F.muscleProfile()["Triceps"] > avant*1.9);
   neuf();
 
@@ -914,9 +914,9 @@ async function lancer(){
   eq("Au plafond : on change de variante", F.progressionSansCharge(id("Pompes"), 26, 3).mode, "variante");
   eq("Variante plus dure des pompes", F.varianteDure(id("Pompes")), "Dips");
   vrai("Poids du corps : charge plafonnée d'office", F.chargeBloquee(id("Pompes")));
-  vrai("Poulie : charge libre par défaut", !F.chargeBloquee(id("Extension poulie")));
+  vrai("Poulie : charge libre par défaut", !F.chargeBloquee(id("Extension poulie (barre)")));
   vrai("Pompes sans lest : rien à retirer", F.sansChargeDuTout(id("Pompes"), 0));
-  vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie"), 20));
+  vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie (barre)"), 20));
 
   /* ---------------------------------------------------------- propositions de seances */
   grp("Propose-moi une séance");
@@ -1022,14 +1022,14 @@ async function lancer(){
   eq("Faisable sur place : on n'y touche pas",
     nomDuLieu("Pompes", ["halteres"]), "Pompes");
   vrai("Une poulie devient faisable avec ce qu'on a",
-    F.exoDispo(ex(nomDuLieu("Extension poulie", ["halteres"])), ["halteres"]));
+    F.exoDispo(ex(nomDuLieu("Extension poulie (barre)", ["halteres"])), ["halteres"]));
   vrai("Le remplaçant travaille le même groupe",
-    ex(nomDuLieu("Extension poulie", ["halteres"])).muscle === ex("Extension poulie").muscle);
+    ex(nomDuLieu("Extension poulie (barre)", ["halteres"])).muscle === ex("Extension poulie (barre)").muscle);
   vrai("Sans rien, on retombe sur du poids du corps",
     F.exoDispo(ex(nomDuLieu("Développé couché", [])), []));
   vrai("Un exercice déjà pris n'est pas repris",
-    nomDuLieu("Extension poulie", ["halteres"], [id(nomDuLieu("Extension poulie", ["halteres"]))])
-      !== nomDuLieu("Extension poulie", ["halteres"]));
+    nomDuLieu("Extension poulie (barre)", ["halteres"], [id(nomDuLieu("Extension poulie (barre)", ["halteres"]))])
+      !== nomDuLieu("Extension poulie (barre)", ["halteres"]));
   DB.profile = JSON.parse(JSON.stringify(profilType));
   DB.materiel = [];
   vrai("Sans matériel, aucune séance impossible n'est proposée",
@@ -2863,9 +2863,9 @@ async function lancer(){
     delete DB.libV3;
     F.applyDefaults();
     const ids = DB.history[0].entries.map(e=>e.exId);
-    eq("L'extension poulie retrouve son identifiant", ids[3], id("Extension poulie"));
+    eq("L'extension poulie retrouve son identifiant", ids[3], id("Extension poulie (barre)"));
     eq("…et redevient une extension poulie",
-      F.getEx(ids[3]).name, F.getEx(id("Extension poulie")).name);
+      F.getEx(ids[3]).name, F.getEx(id("Extension poulie (barre)")).name);
     vrai("Les exercices d'avant le décalage ne bougent pas",
       ids[0] === "lib0" && ids[1] === "lib1" && ids[2] === "lib12", ids.join(", "));
 
@@ -2903,12 +2903,17 @@ async function lancer(){
       templateId:"x", start:0, end:0, entries:[
         {exId:dc, sets:[serie(60,10), serie(60,8), serie(62.5,6)]},
         {exId:ga, sets:[serie(0,45), serie(0,40)]}]}];
-    const o = F.objectifDuJour(dc);
-    vrai("La ligne annonce la meilleure série, pas la moyenne", /62,5|62\.5/.test(o), o);
-    vrai("…avec le nombre de séries", /^.*3 ×/.test(o), o);
-    vrai("Un gainage se dit en secondes", /s$/.test(F.objectifDuJour(ga)), F.objectifDuJour(ga));
-    vrai("…sans charge collée derrière", !/kg/.test(F.objectifDuJour(ga)));
-    eq("Sans historique, rien ne s'affiche", F.objectifDuJour(id("Squat")), "");
+    const cible = {reps:"8-12", rest:120};
+    const o = F.objectifDuJour(dc, cible);
+    vrai("La ligne du passé annonce la meilleure série, pas la moyenne",
+      /62,5|62\.5/.test(o.passe), o.passe);
+    vrai("…avec le nombre de séries", /3 ×/.test(o.passe), o.passe);
+    vrai("Et l'app annonce d'abord ce qu'on vise aujourd'hui",
+      /^Aujourd/.test(o.vise) && /kg/.test(o.vise), o.vise);
+    const g = F.objectifDuJour(ga, {reps:"30-45", rest:60});
+    vrai("Un gainage se dit en secondes", /s$/.test(g.passe), g.passe);
+    vrai("…sans charge collée derrière", !/kg/.test(g.passe));
+    eq("Sans historique, rien ne s'affiche", F.objectifDuJour(id("Squat"), cible), "");
     /* et la ligne est bien sous le nom, pendant la séance */
     DB.templates = [{id:"to", name:"Essai", items:[{exId:dc, sets:3, reps:"8-12", rest:120}]}];
     DB.active = null;
@@ -3465,7 +3470,7 @@ async function lancer(){
     F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "pull");
   eq("La poussée est reconnue sans l'aide du nom",
     F.photoSeance({name:"Séance A",
-      items:exos(["Développé couché","Développé militaire","Extension poulie"])}), "push");
+      items:exos(["Développé couché","Développé militaire","Extension poulie (barre)"])}), "push");
   neuf();
 
   /* ---------------------------------------------------------- fiches d'exercice */
@@ -3751,7 +3756,7 @@ async function lancer(){
       flag("Écartés poulie haute") && flag("Écartés poulie basse") && flag("Écartés haltères"));
     vrai("Mais pas l'arrière d'épaule, qui est justement le repli",
       !flag("Face pull") && !flag("Oiseau"));
-    vrai("…ni le triceps à la poulie", !flag("Extension poulie"));
+    vrai("…ni le triceps à la poulie", !flag("Extension poulie (barre)"));
 
     /* une alternative proposée ne doit jamais être elle-même déconseillée */
     const FAM = F.eval("INJURY_FAMILLES"), RULES = F.eval("INJURY_RULES");
@@ -3831,7 +3836,7 @@ async function lancer(){
     vrai("Une poulie simple ne donne pas les écartés",
       !dispo("Écartés poulie", ["poulie"]));
     vrai("…mais bien le tirage vertical", dispo("Tirage vertical", ["poulie"]));
-    vrai("…et l'extension triceps", dispo("Extension poulie", ["poulie"]));
+    vrai("…et l'extension triceps", dispo("Extension poulie (barre)", ["poulie"]));
     vrai("Une poulie double donne les écartés", dispo("Écartés poulie", ["poulie2"]));
     vrai("…et tout ce que fait la simple", dispo("Tirage vertical", ["poulie2"]));
     vrai("Sans poulie, ni l'un ni l'autre",
