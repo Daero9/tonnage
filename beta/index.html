@@ -2296,6 +2296,11 @@
   .mw-item i{width:7px; height:7px; border-radius:50%; flex:none;}
   .ex-ico{width:46px; height:46px; flex:none; border-radius:11px; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink-soft);}
   .ex-ico svg{width:36px; height:36px; display:block;}
+  .ex-ico.photo{background:#FAF8F7; border-color:#e4e0da;}
+  /* 92 % de la vignette : le dessin porte déjà sa propre marge de 12 %, en dessous
+     de ça la silhouette devient un gribouillis à 38 px */
+  .ex-ico.photo i{display:block; width:92%; height:92%;
+    background-size:contain; background-position:center; background-repeat:no-repeat;}
   .ex-ico.sm{width:38px; height:38px; border-radius:9px;}
   .ex-ico.sm svg{width:30px; height:30px;}
 
@@ -6792,13 +6797,25 @@ function coachDesc(goal){
   }
   return TR("3 séances (haut / bas / full body) à intensité moyenne-haute pour construire du muscle tout en perdant du gras. Côté assiette : mange à ta maintenance avec beaucoup de protéines (2 g/kg), et le corps fait l'échange gras → muscle.");
 }
+/* Les dessins de Nico, par FAMILLE de mouvement : un développé couché sert aux cinq
+   variantes, l'équipement étant déjà écrit à côté du nom. Fichiers séparés dans
+   img/exos/ plutôt qu'encodés dans la page : cent trente images en base64 feraient
+   grossir le fichier d'un mégaoctet, retéléchargé à chaque mise à jour. Là, le service
+   worker les garde en cache et ne les reprend que si elles changent.
+   La clé est le nom de l'icône déjà porté par chaque exercice — la famille existe
+   depuis toujours dans la bibliothèque, elle n'avait juste pas d'image. */
+const EXO_IMG = {squat:"squat"};
 function exIcon(ex, sm){
+  const img = EXO_IMG[ex.icon];
+  /* Une plaque claire dans les deux thèmes : le trait est noir, il lui faut son fond.
+     C'est un choix assumé — la vignette d'un exercice ne se recolore jamais. */
+  if(img) return `<span class="ex-ico photo${sm?' sm':''}"><i style="background-image:url(img/exos/${img}.png);"></i></span>`;
   const body = EX_ICONS[ex.icon] || EX_ICONS[EQUIP_ICON[equipCanon(ex)]] || EX_ICONS.dumbbell;
   return `<span class="ex-ico${sm?' sm':''}"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg></span>`;
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 19h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 22h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
