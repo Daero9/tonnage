@@ -2797,6 +2797,34 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Ce qu'il y a à battre");
+  neuf();
+  /* L'app connaissait ta dernière performance mais ne te la posait jamais comme
+     objectif : elle vivait dans une fiche qu'il fallait ouvrir. */
+  (()=>{
+    const dc = id("Développé couché"), ga = id("Gainage");
+    DB.history = [{id:"o1", date:new Date(Date.now()-4*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0, entries:[
+        {exId:dc, sets:[serie(60,10), serie(60,8), serie(62.5,6)]},
+        {exId:ga, sets:[serie(0,45), serie(0,40)]}]}];
+    const o = F.objectifDuJour(dc);
+    vrai("La ligne annonce la meilleure série, pas la moyenne", /62,5|62\.5/.test(o), o);
+    vrai("…avec le nombre de séries", /^.*3 ×/.test(o), o);
+    vrai("Un gainage se dit en secondes", /s$/.test(F.objectifDuJour(ga)), F.objectifDuJour(ga));
+    vrai("…sans charge collée derrière", !/kg/.test(F.objectifDuJour(ga)));
+    eq("Sans historique, rien ne s'affiche", F.objectifDuJour(id("Squat")), "");
+    /* et la ligne est bien sous le nom, pendant la séance */
+    DB.templates = [{id:"to", name:"Essai", items:[{exId:dc, sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.startWorkout("to");
+    const el = F.document.querySelector(".ex-card .ex-obj");
+    vrai("Elle s'affiche sous le nom de l'exercice", !!el);
+    vrai("…en petit", parseFloat(F.getComputedStyle(el).fontSize) <= 12.5,
+      el ? F.getComputedStyle(el).fontSize : "");
+    DB.active = null; DB.templates = []; DB.history = [];
+  })();
+  neuf();
+
   grp("La justesse du moteur adaptatif");
   neuf();
   /* Le volume comptait des LIGNES COCHÉES : trois séries arrêtées loin de l'échec
