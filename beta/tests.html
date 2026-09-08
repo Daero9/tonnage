@@ -3527,12 +3527,59 @@ async function lancer(){
       [...D2.querySelectorAll(".onb-rou .rou-t")].every(t=>!!t.querySelector("svg")));
     vrai("L'encadré explique pourquoi on demande ça", !!D2.querySelector(".onb-note"));
 
+    /* affiner : un bloc par réglage, les réponses côte à côte. On ne peut pas y sauter
+       par son rang — cette page n'est pas dans la liste des étapes, elle s'ouvre depuis
+       la dernière — donc on passe par le bouton, comme un utilisateur. */
+    const aff = () => [...D2.querySelectorAll(".af-c")];
+    F.openOnboarding(false, null, 10);
+    const lien = [...D2.querySelectorAll("#onb-body button, #onb-foot button")]
+      .find(b2=>/Affiner/.test(b2.textContent));
+    vrai("La dernière page mène à « Affiner mon profil »", !!lien);
+    if(lien) lien.click();
+    vrai("Quatre réglages, quatre blocs", aff().length === 4, aff().length + " blocs");
+    vrai("Chaque bloc porte son signe et son intitulé",
+      aff().every(c=>c.querySelector(".af-h .ic svg, .af-h .ic .icm") && c.querySelector(".af-h .t")));
+    const trios = [...D2.querySelectorAll(".af-opts")];
+    eq("Trois réglages à trois réponses", trios.length, 3);
+    vrai("Chaque réponse porte sa pastille", trios.every(o=>
+      [...o.querySelectorAll(".af-o")].every(b2=>!!b2.querySelector(".rd"))));
+    vrai("Une seule réponse choisie par réglage",
+      trios.every(o=>o.querySelectorAll(".af-o.on").length === 1));
+    eq("Cinq zones sensibles", D2.querySelectorAll(".af-z").length, 5);
+
     /* le carrousel n'a pas bougé : c'est une autre page */
     F.openOnboarding(false, null, 0);
     vrai("Le carrousel garde sa mise en page",
       !!D2.querySelector(".onb-body.intro") && !D2.querySelector(".onb-cartes"));
     vrai("…et son titre à lui", !!D2.querySelector(".onb-titre .hl"));
     F.fermerOnb();
+  })();
+  neuf();
+
+  grp("Tout savoir sur cet objectif");
+  neuf();
+  /* La fiche était un mur de paragraphes : on la lisait en entier ou on la fermait.
+     Cinq points, un signe chacun, et la mise en garde à part. */
+  (()=>{
+    F.openAimInfo("masse", null);
+    const D2 = F.document;
+    eq("Cinq points", D2.querySelectorAll("#sheet .ai-l").length, 5);
+    vrai("Chacun porte son signe", [...D2.querySelectorAll(".ai-l .ic")].every(e=>!!e.firstElementChild));
+    vrai("L'objectif porte le sien en tête", !!D2.querySelector(".ai-tete .ic svg"));
+    /* la mise en garde se coupe en deux : la condition, puis ce qui arrive */
+    const att = D2.querySelector(".ai-att");
+    vrai("La mise en garde est à part", !!att);
+    vrai("…avec sa condition en tête", /Au-delà/.test(att.querySelector(".t").textContent));
+    vrai("…et la suite en majuscule",
+      /^[A-ZÉÀ]/.test(att.querySelector(".s").textContent.trim()),
+      att.querySelector(".s").textContent.slice(0, 20));
+    /* les cinq objectifs passent tous, sans exception */
+    F.eval("AIMS").forEach(a=>{
+      F.openAimInfo(a.id, null);
+      vrai("« " + a.label + " » a ses cinq points",
+        D2.querySelectorAll("#sheet .ai-l").length === 5);
+    });
+    F.hideSheet();
   })();
   neuf();
 
