@@ -2653,13 +2653,14 @@ const TRAD = {en:{
   "Analyse ton état":"Reads where you are",
   "L'app regarde la récupération de tes muscles, tes derniers entraînements et tes points faibles.":"The app looks at how recovered your muscles are, your recent training and your weak points.",
   "Ajuste la séance":"Adjusts the session",
-  "Elle choisit les exercices, l'ordre, le nombre de séries et le poids selon ta forme du jour.":"It picks the exercises, the order, the number of sets and the load for the shape you are in today.",
+  "Garde ce qui marche":"Keeps what works",
+  "Elle choisit les exercices, leur ordre et le nombre de séries. Les charges, elles, restent les tiennes.":"It picks the exercises, their order and the number of sets. The loads stay yours.",
   "Cible tes points faibles":"Aims at your weak points",
   "Les muscles en retard reçoivent plus de volume.":"Muscles that lag behind get more volume.",
   "Assure ta progression":"Keeps you moving forward",
-  "Un exercice sur lequel tu progresses revient ; un exercice où tu stagnes laisse sa place.":"An exercise you are progressing on comes back; one you have stalled on makes way.",
+  "Un exercice sur lequel ta charge monte revient plus souvent. Aucun n'est écarté parce que tu stagnes dessus.":"An exercise where your load is climbing comes back more often. None is dropped because you stalled on it.",
   "Des séances toujours variées":"Never the same session twice",
-  "Jamais deux fois le même mouvement dans une séance, et jamais deux fois la même séance.":"Never the same movement twice in a session, and never the same session twice.",
+  "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
   "Tu appuies sur Démarrer, l'app s'occupe du reste.":"You press Start, the app does the rest.",
   "Compris !":"Got it!",
@@ -5867,7 +5868,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 03h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 03h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9841,11 +9842,12 @@ function genererAdaptative(type, evites){
           .some(m=>m[1] >= 2 && (m[0] === p.muscle || groupeDe(m[0]) === p.muscle)));
         if(dejaCouvert) continue;
       }
-      /* À qualité égale, l'exercice sur lequel tu progresses passe devant, et celui où
-         tu stagnes depuis quatre séances passe derrière. Ni l'un ni l'autre n'est imposé
-         ou exclu : c'est un départage, pas une règle. */
-      const rangPerf = c => { const p = perf[c.nom];
-        return p === undefined ? 1 : (p > 0.03 ? 0 : (p < -0.03 ? 2 : 1)); };
+      /* À qualité égale, l'exercice sur lequel ta charge monte passe devant. Rien de
+         plus : stagner n'est PAS une raison d'écarter un exercice. Sur un curl, la
+         stagnation veut dire « insiste, ajoute une répétition » — pas « change de
+         mouvement ». Sanctionner l'exercice aurait retiré à Nico celui dont il a
+         justement besoin pour débloquer. */
+      const rangPerf = c => (perf[c.nom] > 0.03 ? 0 : 1);
       const triee = liste.slice().sort((a, b)=>rangPerf(a) - rangPerf(b));
       const choisi = triee.find(c=>!recents.has(c.nom) && !recouvre(c))
                   || triee.find(c=>!recouvre(c))
@@ -9967,13 +9969,13 @@ function openAdaptatifInfo(){
     [icoM("muscle", 19), TR("Analyse ton état"),
      TR("L'app regarde la récupération de tes muscles, tes derniers entraînements et tes points faibles.")],
     [IC_CURSEURS, TR("Ajuste la séance"),
-     TR("Elle choisit les exercices, l'ordre, le nombre de séries et le poids selon ta forme du jour.")],
+     TR("Elle choisit les exercices, leur ordre et le nombre de séries. Les charges, elles, restent les tiennes.")],
     [IC_COURBE, TR("Cible tes points faibles"),
      TR("Les muscles en retard reçoivent plus de volume.")],
-    [IC_ECHANGE, TR("Assure ta progression"),
-     TR("Un exercice sur lequel tu progresses revient ; un exercice où tu stagnes laisse sa place.")],
+    [IC_ECHANGE, TR("Garde ce qui marche"),
+     TR("Un exercice sur lequel ta charge monte revient plus souvent. Aucun n'est écarté parce que tu stagnes dessus.")],
     [IC_CALENDRIER, TR("Des séances toujours variées"),
-     TR("Jamais deux fois le même mouvement dans une séance, et jamais deux fois la même séance.")]
+     TR("Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.")]
   ];
   openSheet(`<div class="ad-tete">
       <span class="ic">${ICONS.seance}</span>
