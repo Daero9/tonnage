@@ -642,6 +642,11 @@
     border-radius:13px; padding:11px 12px; font-size:13px; font-weight:700;
     transition:background .16s ease, border-color .16s ease;}
   .af-z.on{background:rgba(245,130,32,.11); border-color:var(--accent); color:var(--accent);}
+  .af-dl{margin-top:12px;}
+  .af-dl .q{font-size:13px; font-weight:800; margin-bottom:8px;}
+  .af-dl .af-o .s{font-size:10.5px;}
+  .af-med{margin-top:12px; font-size:12px; line-height:1.45; color:var(--ink-mute);
+    border-left:3px solid var(--accent); padding-left:11px;}
 
   /* ---- la grille du matériel ----
      Trois par ligne, le dessin au-dessus du nom : « Plyo box ou caisse » ne dit rien
@@ -2995,6 +3000,12 @@ const TRAD = {en:{
   "Dur":"Hard",
   "Ta forme":"Your shape",
   "Ta zone sensible":"Your sensitive area",
+  "Une gêne":"A niggle","Ça fait mal":"It hurts","Je ne peux pas":"I can't",
+  "On garde l'exercice, en le signalant.":"We keep it, and flag it.",
+  "Écarté dès qu'une alternative existe.":"Set aside whenever there is an alternative.",
+  "Jamais proposé.":"Never proposed.",
+  "{} : où en es-tu ?":"{}: where are you at?",
+  "Une douleur qui dure ou qui revient n'est pas un réglage d'application : va voir un professionnel de santé.":"Pain that lasts or keeps coming back is not an app setting: go and see a health professional.",
   "Tes zones sensibles":"Your sensitive areas",
   "Les exercices à risque pour {} sont écartés dès qu'une alternative existe.":"Exercises that are risky for your {} are set aside whenever there is an alternative.",
   "Tes deux dernières séances t'ont paru dures. On allège un peu.":"Your last two sessions felt hard. We ease off a little.",
@@ -5052,15 +5063,30 @@ function dansFamille(exName, f){
       && f.muscles.indexOf(groupeDe(m[0]) || m[0]) >= 0)) return false;
   return !!(f.schemas || f.centres || f.muscles);
 }
+/* Trois niveaux, pas cinq : personne ne distingue un 2 d'un 3, et l'app n'a que trois
+   comportements à offrir. Un quatrième niveau ferait la même chose qu'un autre — ce qui
+   est pire qu'inutile, ça laisse croire à une finesse qui n'existe pas. */
+const DOULEURS = [
+  ["gene", "Une gêne",       "On garde l'exercice, en le signalant."],
+  ["mal",  "Ça fait mal",    "Écarté dès qu'une alternative existe."],
+  ["stop", "Je ne peux pas", "Jamais proposé."]
+];
+/* Sans réponse, on retient « ça fait mal » : c'est ce que faisait l'app avant qu'on
+   pose la question, et c'est le choix prudent. */
+function niveauDouleur(id){
+  const d = (db.profile && db.profile.douleurs) || {};
+  return DOULEURS.some(x=>x[0] === d[id]) ? d[id] : "mal";
+}
 function injuryNote(exName){
   const list = (db.profile && db.profile.injuries) || [];
   for(const id of list){
     const lab = (INJURIES.find(x=>x.id===id)||{}).label || id;
     /* la règle nommée d'abord : son conseil est écrit pour CET exercice */
+    const niveau = niveauDouleur(id);
     const rule = INJURY_RULES[id] && INJURY_RULES[id][exName];
-    if(rule) return {injury:lab, tip:rule.tip, alts:rule.alts};
+    if(rule) return {injury:lab, tip:rule.tip, alts:rule.alts, niveau};
     const fam = (INJURY_FAMILLES[id] || []).find(f=>dansFamille(exName, f));
-    if(fam) return {injury:lab, tip:fam.tip, alts:fam.alts};
+    if(fam) return {injury:lab, tip:fam.tip, alts:fam.alts, niveau};
   }
   return null;
 }
@@ -5636,6 +5662,7 @@ function openOnboarding(first, brouillon, depart){
     metab: base.metab || "normal",
     days: base.days || 4,
     injuries: (base.injuries || []).slice(),
+    douleurs: Object.assign({}, base.douleurs || {}),
     tdeeManuel: base.tdeeManuel || 0,
     lieu: base.lieu || (db.materiel === null ? "salle" : "maison"),
     materiel: (db.maison || db.materiel || []).slice()
@@ -5672,7 +5699,8 @@ function openOnboarding(first, brouillon, depart){
       name: d.name || TR("Champion"), sex: d.sex, age: d.age, height: d.height,
       weight: d.weight, goalWeight: d.goalWeight || d.weight, aim: d.aim, pace: d.pace,
       protPerKg: d.protPerKg || aimOf(d.aim).prot, metab: d.metab, days: d.days,
-      injuries: d.injuries, tdeeManuel: d.tdeeManuel, lieu: d.lieu, avance: true
+      injuries: d.injuries, douleurs: d.douleurs,
+      tdeeManuel: d.tdeeManuel, lieu: d.lieu, avance: true
     };
     /* En salle : aucun filtre. Chez soi : on ne propose que ce qu'il possède.
        Les deux : rien n'est filtré (il a accès à tout en salle), mais on retient
@@ -6227,10 +6255,24 @@ function openOnboarding(first, brouillon, depart){
             TR("Les exercices à risque seront signalés, avec une variante plus sûre. Ces conseils sont généraux : en cas de douleur, arrête et consulte un professionnel de santé."),
             `<div class="af-zones">${INJURIES.map(z=>
               `<button class="af-z ${d.injuries.includes(z.id) ? "on" : ""}" data-inj="${z.id}">${
-                esc(TR(z.label))}</button>`).join("")}</div>`, 3)}`;
+                esc(TR(z.label))}</button>`).join("")}</div>` +
+            INJURIES.filter(z=>d.injuries.includes(z.id)).map(z=>
+              `<div class="af-dl"><div class="q">${
+                TR("{} : où en es-tu ?").replace("{}", esc(TR(z.label)))}</div>
+                <div class="af-opts">${DOULEURS.map(([v, t, sous])=>
+                  `<button class="af-o ${(d.douleurs[z.id] || "mal") === v ? "on" : ""}"
+                    data-dl="${z.id}:${v}"><span class="rd"><i></i></span>
+                    <span class="t">${TR(t)}</span><span class="s">${TR(sous)}</span></button>`).join("")}</div>
+              </div>`).join("") +
+            (d.injuries.length ? `<div class="af-med">${
+              TR("Une douleur qui dure ou qui revient n'est pas un réglage d'application : va voir un professionnel de santé.")}</div>` : ""), 3)}`;
         corps.querySelectorAll("[data-mt]").forEach(b=>b.onclick=()=>{ d.metab = b.dataset.mt; clicRoue(); dess(false); });
         corps.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{ d.pace = b.dataset.pc; clicRoue(); dess(false); });
         corps.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{ d.protPerKg = parseFloat(b.dataset.pk); clicRoue(); dess(false); });
+        corps.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>{
+          const [z, v] = b.dataset.dl.split(":");
+          d.douleurs[z] = v; clicRoue(); dess(false);
+        });
         corps.querySelectorAll("[data-inj]").forEach(b=>b.onclick=()=>{
           const z = b.dataset.inj;
           d.injuries = d.injuries.includes(z) ? d.injuries.filter(x=>x!==z) : d.injuries.concat(z);
@@ -6526,7 +6568,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 16h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 17h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10667,12 +10709,13 @@ function exosPourMuscle(muscle, gros){
     const part = w.filter(m=>vise(m[0])).sort((x, y)=>y[1] - x[1])[0];
     if(!part || part[1] < 2) return;
     if(!exoDispo(ex)) return;
-    /* Une zone déclarée sensible ferme la porte, elle ne se contente pas d'un
-       avertissement : l'app ne te propose jamais d'elle-même un exercice qu'elle te
-       déconseille. Si un muscle n'a plus aucun exercice sûr, c'est sa PLACE qui saute
-       — la séance travaille autre chose plutôt que de te tendre un risque. */
-    if(injuryNote(ex.name)) return;
+    /* Le niveau de douleur décide : « je ne peux pas » ferme la porte pour de bon,
+       « ça fait mal » recule derrière tout ce qui est sûr, « une gêne » recule d'un
+       cran seulement. On ne perd la place d'un muscle que s'il ne reste vraiment rien. */
+    const bobo = injuryNote(ex.name);
+    if(bobo && bobo.niveau === "stop") return;
     out.push({nom:ex.name, cible:part[1], charge:chargeExo(ex.name),
+              risque: bobo ? (bobo.niveau === "gene" ? 1 : 2) : 0,
               centre:vise(centreSur(ex.name))});
   });
   /* D'abord les exercices centrés sur ce muscle, puis ceux qui l'impliquent à fond,
@@ -10762,8 +10805,14 @@ function genererAdaptative(type, evites){
          du grand dorsal partait à un oiseau et celle des triceps à un développé incliné :
          des exercices qui touchent le muscle, mais qui ne sont pas faits pour lui.
          On ne retombe sur les autres que si le matériel ne laisse pas le choix. */
-      const centres = tous.filter(c=>c.centre);
-      const cands = centres.length ? centres : tous;
+      /* Une simple GÊNE ne sort pas l'exercice de la course : il reste candidat, il
+         passe seulement derrière ce qui ne gêne pas. « Ça fait mal » est d'un autre
+         ordre : on n'y touche que si l'étage du dessus est vide. */
+      const etage = c => (c.risque >= 2 ? 1 : 0);
+      const pire = tous.length ? Math.min(...tous.map(etage)) : 0;
+      const dispo = tous.filter(c=>etage(c) === pire).sort((a2, b2)=>a2.risque - b2.risque);
+      const centres = dispo.filter(c=>c.centre);
+      const cands = centres.length ? centres : dispo;
       if(!cands.length) continue;
       /* Un exercice fait récemment passe derrière, mais reste choisissable : s'il est
          le meilleur pour ce muscle, on ne s'en prive pas. */
@@ -10838,10 +10887,12 @@ function genererAdaptative(type, evites){
          demande une prise de masse ou un cycle de force. Le deuxième exercice d'un même
          muscle n'y a pas droit : c'est une finition, elle ne se gonfle pas. */
       let series = d.s;
-      if(k === 0 && rang === 0 && p.recup >= 60) series = Math.min(5, series + 1);
+      if(k === 0 && rang === 0 && p.recup >= 60 && !choisi.risque) series = Math.min(5, series + 1);
       if(k === 0 && rang >= parts.length - 1 && parts.length > 2) series = Math.max(2, series - 1);
       /* un muscle à bout garde sa place — on ne l'abandonne pas — mais on allège */
       if(p.pompe) series = Math.max(2, series - 1);
+      /* et un exercice qu'on ne garde que faute de mieux ne se travaille pas à fond */
+      if(choisi.risque) series = Math.max(2, series - 1);
       /* et ce que TU as ressenti sur les deux dernières séances : une série de plus sur
          l'exercice de tête si elles t'ont paru faciles, une de moins sur le dernier si
          elles t'ont paru dures. Jamais les deux, jamais plus d'une. */
@@ -10896,12 +10947,17 @@ function genererSeance(type, evites){
     const pool = melanger(dispo.slice(0, Math.max(3, Math.ceil(dispo.length * 0.5))));
     if(!pool.length) return;
     /* 1er choix : ni banni, ni récent, ni déconseillé par une blessure. Puis on relâche. */
-    /* Une zone déclarée sensible ferme la porte. La dernière ligne du repli rendait
-       pool[0] quoi qu'il arrive : une proposition pouvait donc servir précisément
-       l'exercice que l'app déconseille. On préfère un rôle en moins. */
-    const sain = nom => !injuryNote(nom);
-    const surs = pool.filter(sain);
-    if(!surs.length) return;
+    /* Même règle que pour les séances adaptatives : « je ne peux pas » est écarté pour
+       de bon, le reste passe derrière ce qui est sûr. La dernière ligne du repli rendait
+       pool[0] quoi qu'il arrive — une proposition pouvait donc servir précisément
+       l'exercice que l'app déconseille. */
+    const niveauDe = nom => { const b = injuryNote(nom); return b ? b.niveau : null; };
+    const ouverts = pool.filter(n2=>niveauDe(n2) !== "stop");
+    if(!ouverts.length) return;
+    const surs = ouverts.filter(n2=>!niveauDe(n2)).length
+      ? ouverts.filter(n2=>!niveauDe(n2))
+      : (ouverts.filter(n2=>niveauDe(n2) === "gene").length
+          ? ouverts.filter(n2=>niveauDe(n2) === "gene") : ouverts);
     const choisi = surs.find(n2=>!bannis.has(n2) && !recents.has(n2))
                 || surs.find(n2=>!bannis.has(n2))
                 || surs.find(n2=>!recents.has(n2))
