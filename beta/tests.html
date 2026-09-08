@@ -2612,10 +2612,11 @@ async function lancer(){
       r.every(([m, t])=>m && t && t.length > 10));
     vrai("Le dos, jamais travaillé, est cité en premier",
       /dorsal|Dos/i.test(r[0][0]), JSON.stringify(r[0]));
-    vrai("Le biceps est cité avec son compte de la semaine",
-      r.some(([m, t])=>/[Bb]iceps/.test(m) && /série/.test(t)), JSON.stringify(r));
-    vrai("…au singulier quand il n'y en a qu'une",
-      !r.some(([m, t])=>/\b1 séries/.test(t)), JSON.stringify(r));
+    /* pas de chiffres bruts : « une série sur douze » ne parle à personne */
+    vrai("Aucune raison ne récite des chiffres de séries",
+      !r.some(([m, t])=>/[0-9]+ séries?|sur [0-9]+/.test(t)), JSON.stringify(r));
+    vrai("Chaque raison se termine par un point",
+      r.every(([m, t])=>/\.$/.test(t.trim())), JSON.stringify(r));
 
     /* la fiche porte bien l'encadré quand on lui donne le type */
     F.openAdaptatifInfo("pull");
