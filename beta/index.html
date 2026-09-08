@@ -429,6 +429,17 @@
   .ad-ic svg{width:19px; height:19px;}
   .ad-l .t{font-size:15px; font-weight:800; line-height:1.25;}
   .ad-l .s{font-size:13px; line-height:1.45; color:var(--ink-mute); margin-top:3px;}
+  /* « Pourquoi cette séance » : ce que l'app a lu dans l'historique. Un muscle par
+     ligne, son nom en gras, la raison derrière — on la parcourt en trois secondes. */
+  .ad-pq{background:var(--surface); border-radius:16px; padding:14px; margin-bottom:12px;}
+  .ad-pq .ti{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:10px;}
+  .ad-pq .ti svg{width:15px; height:15px;}
+  .ad-pq .l{display:flex; gap:8px; align-items:baseline; font-size:13px; line-height:1.45;
+    padding:5px 0;}
+  .ad-pq .l b{flex:0 0 auto; font-weight:800;}
+  .ad-pq .l span{color:var(--ink-mute);}
+
   /* le rappel, dans le ton de l'app : un seul geste à retenir */
   .ad-note{display:flex; align-items:center; gap:13px; background:rgba(245,130,32,.12);
     border-radius:16px; padding:14px; margin-bottom:14px;}
@@ -2794,6 +2805,17 @@ const TRAD = {en:{
   "Des séances toujours variées":"Never the same session twice",
   "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
+  "Pourquoi cette séance":"Why this session",
+  "Encore à {p} % de récupération. On l'épargne aujourd'hui.":"Still only {p}% recovered. We go easy on it today.",
+  "Jamais travaillé pour l'instant. On commence par lui.":"Never trained so far. We start with it.",
+  "Rien depuis {n} jours. On rattrape.":"Nothing for {n} days. Time to catch up.",
+  "Rien depuis hier. On enchaîne.":"Nothing since yesterday. Straight back to it.",
+  "Ton point faible du moment. Il passe en tête.":"Your weak point right now. It goes first.",
+  "{v} séries sur {c} cette semaine. Il en reste à prendre.":"{v} sets out of {c} this week. There are more to take.",
+  "Une seule série cette semaine, sur {c} visées. Il en reste à prendre.":"A single set this week, out of {c}. There are more to take.",
+  "Sa semaine est faite ({v} séries sur {c}). Il passe son tour.":"Its week is done ({v} sets out of {c}). It sits this one out.",
+  "Complètement récupéré. C'est le moment de charger.":"Fully recovered. Time to load it up.",
+  "Il a de la marge cette semaine. On lui en donne.":"It has room left this week. We give it some.",
   "Tu appuies sur Démarrer, l'app s'occupe du reste.":"You press Start, the app does the rest.",
   "Compris !":"Got it!",
   "Qu'est-ce qu'une séance adaptative ?":"What is an adaptive session?",
@@ -6084,7 +6106,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 13h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 13h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9555,7 +9577,7 @@ function renderSeance(app){
         <div class="prog-card${t.adaptatif? " adapt" : ""}" data-open="${t.id}">
           <div class="ph" style="background-image:url('${photoUrl(photoSeance(t))}');"></div>
           <div class="dur">◷ ${dureeSeance(t)} min</div>
-          ${t.adaptatif? `<button class="adapt-tag" data-adapt aria-label="${
+          ${t.adaptatif? `<button class="adapt-tag" data-adapt="${esc(t.adaptatif)}" aria-label="${
             TR("Qu'est-ce qu'une séance adaptative ?")}">${IC_ETINCELLE}<span>${
             TR("Séance adaptative")}</span><i>i</i></button>` : ""}
           <div class="in">
@@ -9586,7 +9608,7 @@ function renderSeance(app){
       openPreview(c.dataset.open);
     });
     car.querySelectorAll("[data-adapt]").forEach(b=>b.onclick=e=>{
-      e.stopPropagation(); openAdaptatifInfo();
+      e.stopPropagation(); openAdaptatifInfo(b.dataset.adapt);
     });
     car.querySelectorAll("[data-edit]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openTplEditor(b.dataset.edit); });
   }
@@ -9935,6 +9957,61 @@ function besoinsMuscles(type){
     return {muscle:m, recup, retard, vol, cible, besoin};
   }).sort((a, b)=>b.besoin - a.besoin);
 }
+/* Depuis combien de jours ce muscle n'a rien encaissé de sérieux ? null = jamais.
+   Sert à dire « rien depuis six jours » plutôt que « volume hebdomadaire : 0 ». */
+function joursDepuisMuscle(muscle){
+  let recent = null;
+  (db.history || []).forEach(sess=>{
+    const touche = (sess.entries || []).some(en=>{
+      if(!(en.sets || []).some(x=>x.done && !x.warm)) return false;
+      return (MUSCLE_WORK[nomCanon(getEx(en.exId))] || []).some(m=>m[0] === muscle && m[1] >= 2);
+    });
+    if(!touche) return;
+    const t = new Date(sess.date).getTime();
+    if(recent === null || t > recent) recent = t;
+  });
+  return recent === null ? null : Math.floor((Date.now() - recent) / 864e5);
+}
+/* Ce que l'app a lu dans ton historique, dit en clair. Deux raisons pour lesquelles un
+   muscle passe devant, une pour celui qui passe son tour : assez pour comprendre la
+   séance, pas assez pour la subir en tableau. */
+function raisonsSeance(type){
+  const b = besoinsMuscles(type);
+  if(!b.length) return [];
+  const nom = m => TR(m);
+  const j = m => joursDepuisMuscle(m);
+  const phrase = p => {
+    const n = nom(p.muscle), jours = j(p.muscle);
+    if(p.recup < 60)
+      return [n, TR("Encore à {p} % de récupération. On l'épargne aujourd'hui.").replace("{p}", Math.round(p.recup))];
+    if(jours === null)
+      return [n, TR("Jamais travaillé pour l'instant. On commence par lui.")];
+    if(p.vol <= 0)
+      return [n, (jours > 1 ? TR("Rien depuis {n} jours. On rattrape.") : TR("Rien depuis hier. On enchaîne."))
+        .replace("{n}", jours)];
+    if(p.retard <= -10)
+      return [n, TR("Ton point faible du moment. Il passe en tête.")];
+    if(p.cible - p.vol >= 3){
+      const v = Math.round(p.vol);
+      return [n, (v === 1 ? TR("Une seule série cette semaine, sur {c} visées. Il en reste à prendre.")
+                          : TR("{v} séries sur {c} cette semaine. Il en reste à prendre."))
+        .replace("{v}", v).replace("{c}", p.cible)];
+    }
+    if(p.vol >= p.cible)
+      return [n, TR("Sa semaine est faite ({v} séries sur {c}). Il passe son tour.")
+        .replace("{v}", Math.round(p.vol)).replace("{c}", p.cible)];
+    if(p.recup >= 90)
+      return [n, TR("Complètement récupéré. C'est le moment de charger.")];
+    return [n, TR("Il a de la marge cette semaine. On lui en donne.")];
+  };
+  const out = [phrase(b[0])];
+  if(b.length > 1) out.push(phrase(b[1]));
+  /* le dernier de la liste n'est intéressant que s'il est vraiment écarté */
+  const dernier = b[b.length - 1];
+  if(b.length > 2 && (dernier.recup < 60 || dernier.vol >= dernier.cible))
+    out.push(phrase(dernier));
+  return out;
+}
 /* Le muscle sur lequel un exercice est CENTRÉ : celui qui y pèse le plus, intensité
    multipliée par sa masse. Des tractions supination sollicitent fortement le biceps,
    mais elles restent un exercice de dos — les choisir comme « exercice de biceps »
@@ -10226,7 +10303,7 @@ function regenererAdaptative(tpl){
 }
 /* Ce qu'est une séance adaptative, en toutes lettres. On explique le mécanisme plutôt
    que de promettre de la magie : l'utilisateur doit pouvoir prévoir ce qui va sortir. */
-function openAdaptatifInfo(){
+function openAdaptatifInfo(type){
   /* Cinq lignes, une idée chacune. La version précédente expliquait le mécanisme en
      détail — juste, mais personne ne lit huit paragraphes sur une fiche d'aide. */
   const lignes = [
@@ -10250,6 +10327,14 @@ function openAdaptatifInfo(){
       `<div class="ad-l"><span class="ad-ic">${ic}</span>
         <div><div class="t">${n + 1}. ${titre}</div><div class="s">${texte}</div></div>
       </div>`).join("")}</div>
+    ${(()=>{
+      const r = type ? raisonsSeance(type) : [];
+      if(!r.length) return "";
+      return `<div class="ad-pq">
+        <div class="ti">${IC_CIBLE}<span>${TR("Pourquoi cette séance")}</span></div>
+        ${r.map(([m, txt])=>`<div class="l"><b>${esc(m)}</b><span>${esc(txt)}</span></div>`).join("")}
+      </div>`;
+    })()}
     <div class="ad-note"><span class="ic">${IC_AMPOULE}</span>
       <div><div class="t">${TR("À retenir")}</div>
         <div class="s">${TR("Tu appuies sur Démarrer, l'app s'occupe du reste.")}</div></div>
