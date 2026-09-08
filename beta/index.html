@@ -1725,7 +1725,26 @@
   .depli-c .analyse{margin-top:0; background:none; border:none; padding:0;}
   .analyse{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 13px; margin-top:14px; font-size:13px; line-height:1.6; color:var(--ink-soft);}
   .analyse b{color:var(--ink);}
-  .mp-row{margin-bottom:13px;}
+  .mp-row{display:block; width:100%; text-align:left; background:none; border:0; padding:0;
+    margin-bottom:13px;}
+  .mp-row:active{opacity:.6;}
+  .mp-name .chev{width:13px; height:13px; margin-left:5px; color:var(--ink-mute);
+    vertical-align:-1px;}
+  /* la jauge de la semaine : ce qui est fait, sur ce qui est visé */
+  .ms-jauge{background:var(--surface2); border-radius:16px; padding:14px; margin-bottom:10px;}
+  .ms-jauge .h{display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    font-size:13px; font-weight:700; margin-bottom:9px;}
+  .ms-jauge .h b{font-size:14px; white-space:nowrap;}
+  .ms-jauge .b{height:12px; border-radius:7px; background:var(--surface); overflow:hidden;}
+  .ms-jauge .b i{display:block; height:100%; border-radius:7px; background:var(--accent);}
+  .ms-jauge .s{font-size:11.5px; color:var(--ink-mute); line-height:1.45; margin-top:9px;}
+  .ms-exos{background:var(--surface2); border-radius:16px; padding:14px; margin:10px 0 14px;}
+  .ms-exos .t{font-size:12.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    margin-bottom:8px;}
+  .ms-exos .l{display:flex; justify-content:space-between; gap:12px; font-size:13.5px;
+    padding:5px 0; border-top:1px solid var(--border);}
+  .ms-exos .l:nth-child(2){border-top:0;}
+  .ms-exos .l b{color:var(--ink-mute); font-weight:700; white-space:nowrap;}
   .mp-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; gap:8px;}
   .mp-name{font-weight:700; font-size:15px;}
   .mp-tag{font-size:12.5px; font-weight:600; white-space:nowrap;}
@@ -3563,6 +3582,14 @@ const TRAD = {en:{
 
   /* --- progression et récupération --- */
   "Récupération":"Recovery", "Évolution des charges":"Load progression",
+  "séries dures":"hard sets",
+  "Une série menée près de l'échec compte pour une ; une série gardée en réserve compte moins.":"A set taken close to failure counts as one; a set left well short counts for less.",
+  "Dernier travail":"Last worked",
+  "Il y a {} jours":"{} days ago",
+  "Récupération":"Recovery",
+  "Prêt à charger":"Ready to load","En récupération":"Still recovering","À plat":"Flat out",
+  "Par rapport à ta moyenne":"Against your own average",
+  "Ce qui l'a travaillé":"What worked it",
   "1RM estimé":"Estimated 1RM", "Pas encore assez de données":"Not enough data yet",
   "séances / sem.":"workouts / wk", "séance":"workout", "s":"s",
   "Séance vide.":"Empty workout.", "Aucun résultat.":"No results.",
@@ -3998,9 +4025,7 @@ const LIB = [
   ["Triceps","Extension poulie corde","Poulie","pushdown"],["Triceps","Extension triceps machine","Machine","tricepsmachine"],["Triceps","Kickback poulie","Poulie","kickback"],
   ["Jambes","Hack squat","Machine","hacksquat"],["Jambes","Fentes bulgares","Haltères","bulgarian"],["Jambes","Abducteurs machine","Machine","abductor"],["Jambes","Adducteurs machine","Machine","abductor"],["Jambes","Mollets assis","Machine","calfseated"],
   ["Abdos","Roulette abdominale","Roue","abwheel"],
-  ["Jambes","Swing kettlebell","Kettlebell","deadlift"],["Épaules","Développé kettlebell","Kettlebell","ohp"],
-  ["Dos","Rowing TRX","Sangles","row"],["Pectoraux","Pompes TRX","Sangles","pushup"],
-  ["Abdos","Crunch sur ballon","Ballon","crunch"],["Jambes","Leg curl sur ballon","Ballon","legcurl"],["Abdos","Planche latérale","Poids du corps","sideplank"],
+  ["Abdos","Planche latérale","Poids du corps","sideplank"],
   /* ajoutés après coup : les identifiants sont positionnels, on n'insère jamais au milieu */
   ["Pectoraux","Développé incliné barre","Barre","bench"],["Pectoraux","Écartés haltères","Haltères","cablefly"],
   ["Dos","Rowing T-bar","Machine","row"],["Dos","Tractions australiennes","Poids du corps","seatedrow"],
@@ -4029,7 +4054,14 @@ const LIB = [
   ["Biceps","Curl élastique","Élastique","curl"],["Biceps","Curl marteau élastique","Élastique","curl"],
   ["Triceps","Dips sur banc","Poids du corps","dips"],["Triceps","Extension triceps élastique","Élastique","pushdown"],
   /* les deux seuls moyens de travailler dos et biceps avec vraiment rien */
-  ["Biceps","Curl auto-résisté","Poids du corps","bande"],["Dos","Rowing sous la table","Poids du corps","seatedrow"]
+  ["Biceps","Curl auto-résisté","Poids du corps","bande"],["Dos","Rowing sous la table","Poids du corps","seatedrow"],
+  /* ---- accessoires : kettlebell, sangles, ballon ----
+     TOUJOURS À LA FIN. L identifiant d un exercice est sa POSITION dans cette liste
+     (« lib » + rang) : inserer une ligne au milieu decale tous les suivants et
+     rattache l historique de chacun au voisin. C est arrive une fois, ca suffit. */
+  ["Jambes","Swing kettlebell","Kettlebell","deadlift"],["Épaules","Développé kettlebell","Kettlebell","ohp"],
+  ["Dos","Rowing TRX","Sangles","row"],["Pectoraux","Pompes TRX","Sangles","pushup"],
+  ["Abdos","Crunch sur ballon","Ballon","crunch"],["Jambes","Leg curl sur ballon","Ballon","legcurl"]
 ].map((e,i)=>({
   id:"lib"+i, icon:e[3],
   /* les champs "Fr" sont les clés : elles ne changent jamais de langue.
@@ -6623,7 +6655,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 17h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 18h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7349,6 +7381,7 @@ const IC_LANGUE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const IC_ECRAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/></svg>';
 /* le bouclier : ce qui protège tes données */
 const IC_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 4.8 5.6v5.9c0 4.4 3 8.2 7.2 9.7 4.2-1.5 7.2-5.3 7.2-9.7V5.6L12 2.8Z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg>';
+const CHEV_MP = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 const IC_COTILLON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.1 20.9 8.6 8.4l7 7-12.5 5.5Z"/><path d="M8.6 8.4 15.6 15.4"/><path d="M15.2 3.4v2.2M19.4 4.9l-1.5 1.6M20.8 9.2h-2.2M19.8 13.6l-1.9-1.1"/></svg>';
 const IC_ALERTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6 1.8 20.4h20.4L12 3.6Z"/><path d="M12 9.8v4.6"/><circle cx="12" cy="17.6" r="1.05" fill="currentColor" stroke="none"/></svg>';
 const IC_ECLAIR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.4 2 4.9 13.1c-.3.4 0 1 .5 1h5.1l-1.9 7.6c-.1.6.6.9 1 .4l8.5-11.1c.3-.4 0-1-.5-1h-5.1l1.9-7.6c.1-.6-.6-.9-1-.4Z"/></svg>';
@@ -10634,6 +10667,62 @@ const POIDS_BESOIN = {
 };
 function poidsBesoin(){
   return POIDS_BESOIN[(db.profile && db.profile.aim) || "masse"] || POIDS_BESOIN.masse;
+}
+/* Le volume d'un GROUPE, pas d'un faisceau. Un développé militaire touche l'avant et
+   le côté de l'épaule : le compter deux fois gonflerait le total. On retient donc, pour
+   chaque exercice, la plus forte implication du groupe — une série reste une série. */
+function volumeGroupe(groupe, jours){
+  const limite = Date.now() - (jours || 7) * 864e5;
+  let v = 0;
+  (db.history || []).forEach(sess=>{
+    if(new Date(sess.date).getTime() < limite) return;
+    (sess.entries || []).forEach(en=>{
+      const faites = (en.sets || []).filter(x=>x.done && !x.warm);
+      if(!faites.length) return;
+      let fort = 0;
+      (MUSCLE_WORK[nomCanon(getEx(en.exId))] || []).forEach(m=>{
+        if((groupeDe(m[0]) || m[0]) === groupe) fort = Math.max(fort, m[1]);
+      });
+      if(!fort) return;
+      v += faites.reduce((a, st)=>a + effortSerie(st), 0) * (fort / 3);
+    });
+  });
+  return v;
+}
+/* Le détail : qui a fait ce volume, et combien de séries chacun. */
+function exosDuGroupe(groupe, jours){
+  const limite = Date.now() - (jours || 7) * 864e5;
+  const out = {};
+  (db.history || []).forEach(sess=>{
+    if(new Date(sess.date).getTime() < limite) return;
+    (sess.entries || []).forEach(en=>{
+      const faites = (en.sets || []).filter(x=>x.done && !x.warm);
+      if(!faites.length) return;
+      const nom = nomCanon(getEx(en.exId));
+      let fort = 0;
+      (MUSCLE_WORK[nom] || []).forEach(m=>{
+        if((groupeDe(m[0]) || m[0]) === groupe) fort = Math.max(fort, m[1]);
+      });
+      if(!fort) return;
+      out[nom] = (out[nom] || 0) + faites.length;
+    });
+  });
+  return Object.keys(out).sort((a, b)=>out[b] - out[a]).map(n=>[n, out[n]]);
+}
+/* Depuis quand ce groupe n'a rien pris de sérieux ? */
+function joursDepuisGroupe(groupe){
+  let recent = null;
+  (db.history || []).forEach(sess=>{
+    const touche = (sess.entries || []).some(en=>{
+      if(!(en.sets || []).some(x=>x.done && !x.warm)) return false;
+      return (MUSCLE_WORK[nomCanon(getEx(en.exId))] || [])
+        .some(m=>m[1] >= 2 && (groupeDe(m[0]) || m[0]) === groupe);
+    });
+    if(!touche) return;
+    const t = new Date(sess.date).getTime();
+    if(recent === null || t > recent) recent = t;
+  });
+  return recent === null ? null : Math.floor((Date.now() - recent) / 864e5);
 }
 /* Le besoin de chaque muscle visé, de « à éviter » (négatif) à « à marteler » (élevé).
    Quatre forces, pondérées selon l'objectif :
@@ -13997,6 +14086,41 @@ function analyseProfil(prof){
     <p style="margin:0; font-size:11px; color:var(--ink-mute);">${TR("Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.").replace("{}", connus.length)}</p>
   </div>`;
 }
+/* Tout ce que le moteur calcule sur un muscle, en une fiche. C'était le grand absent :
+   l'app pesait le volume, la récupération, le retard — et n'en montrait rien. */
+function openMuscleStats(groupe){
+  const fait = volumeGroupe(groupe, 7), cible = cibleHebdo(groupe);
+  const pct = cible > 0 ? Math.min(100, Math.round(fait / cible * 100)) : 0;
+  const rec = recuperation().muscles[groupe];
+  const jours = joursDepuisGroupe(groupe);
+  const prof = muscleProfile(), moy = mpMoyenne(prof);
+  const st = mpStatus(prof[groupe], moy);
+  const exos = exosDuGroupe(groupe, 7);
+  const ligne = (ic, titre, val, sous) => `<div class="ai-l"><span class="ic">${ic}</span>
+    <div><div class="t">${titre}</div><div class="s"><b>${val}</b>${sous ? " · " + sous : ""}</div></div></div>`;
+  openSheet(`<div class="ai-tete"><span class="ic">${IC_SILHOUETTE}</span>
+      <h3>${esc(TR(groupe))}</h3></div>
+    <div class="ms-jauge">
+      <div class="h"><span>${TR("Cette semaine")}</span>
+        <b>${Math.round(fait)} / ${cible} ${TR("séries dures")}</b></div>
+      <div class="b"><i style="width:${Math.max(3, pct)}%;"></i></div>
+      <div class="s">${TR("Une série menée près de l'échec compte pour une ; une série gardée en réserve compte moins.")}</div>
+    </div>
+    ${ligne(IC_CHRONO, TR("Dernier travail"),
+      jours === null ? TR("Jamais") : (jours === 0 ? TR("Aujourd'hui")
+        : (jours === 1 ? TR("Hier") : TR("Il y a {} jours").replace("{}", jours))))}
+    ${ligne(icoM("flamme", 22), TR("Récupération"),
+      (rec ? rec.pct : 100) + " %",
+      rec ? TR(rec.etat === "frais" ? "Prêt à charger"
+        : (rec.etat === "recup" ? "En récupération" : "À plat")) : "")}
+    ${st.nodata ? "" : ligne(IC_COURBE, TR("Par rapport à ta moyenne"), st.tag)}
+    ${exos.length ? `<div class="ms-exos"><div class="t">${TR("Ce qui l'a travaillé")}</div>${
+      exos.map(([n, k])=>`<div class="l"><span>${esc(TR(n))}</span><b>${
+        k} ${TR(k > 1 ? "séries" : "série")}</b></div>`).join("")}</div>` : ""}
+    <button class="btn btn-accent" id="ms-ok" style="width:100%;">${TR("Compris !")}</button>`);
+  const b = document.getElementById("ms-ok");
+  if(b) b.onclick = closeSheet;
+}
 function renderMuscleSection(sec){
   if(!db.history.length) return;
   const prof = muscleProfile();
@@ -14004,8 +14128,8 @@ function renderMuscleSection(sec){
   const st = {}; MP_MUSCLES.forEach(m=>st[m]=mpStatus(prof[m], moy));
   const rows = MP_MUSCLES.map(m=>{
     const s = st[m], score = prof[m];
-    return `<div class="mp-row">
-      <div class="mp-head"><span class="mp-name">${TR(m)}</span><span class="mp-tag" style="color:${s.nodata?'var(--ink-mute)':s.color};">${s.nodata?"":s.tag}</span></div>
+    return `<button class="mp-row" data-mstat="${esc(m)}">
+      <div class="mp-head"><span class="mp-name">${TR(m)}${CHEV_MP}</span><span class="mp-tag" style="color:${s.nodata?'var(--ink-mute)':s.color};">${s.nodata?"":s.tag}</span></div>
       <div class="mp-bar">${s.nodata
         ? `<div class="mp-nodata">${TR("Pas encore assez de données")}</div>`
         : (()=>{
@@ -14015,9 +14139,11 @@ function renderMuscleSection(sec){
             return `<div class="mp-fill" style="width:${pct}%; background:${s.color}; opacity:${s.op};"></div>
               <span class="mp-val ${dedans?"dedans":"dehors"}" style="left:${pct}%;">${txt}</span>`;
           })()}</div>
-    </div>`;
+    </button>`;
   }).join("");
   const div = document.createElement("div");
+  setTimeout(()=>div.querySelectorAll("[data-mstat]")
+    .forEach(b=>b.onclick = ()=>openMuscleStats(b.dataset.mstat)), 0);
   const analyse = analyseProfil(prof) || "";
   const ouvert = prgPlis.analyse;
   div.innerHTML = `
