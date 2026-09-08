@@ -2538,6 +2538,30 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La fiche d'une sortie cardio");
+  neuf();
+  /* Huit activités : sur trois colonnes elles tombaient sur trois rangs, dont un à
+     moitié vide. Deux rangées de quatre tiennent dans la hauteur d'un téléphone.
+     L'iframe des tests n'a aucune largeur, donc les colonnes valent toutes 0px :
+     ce qu'on compte ici, c'est leur nombre. */
+  (()=>{
+    F.openCardioAdd();
+    const D2 = F.document;
+    const act = D2.querySelector("#sheet .cd-grille:not(.large)");
+    /* la feuille n'est pas rendue dans l'iframe : le navigateur rend alors la valeur
+       telle qu'elle est écrite, « repeat(4, 1fr) », au lieu des largeurs calculées */
+    const cols = n => { const v = F.getComputedStyle(n).gridTemplateColumns.trim();
+      const r = v.match(/^repeat\((\d+),/); return r ? +r[1] : v.split(/\s+/).length; };
+    eq("Huit activités", act.querySelectorAll("[data-cmach]").length, 8);
+    eq("Deux rangées de quatre", cols(act), 4);
+    vrai("Chacune porte son signe",
+      [...act.querySelectorAll("[data-cmach]")].every(b=>!!b.querySelector(".ic")));
+    const inten = D2.querySelector("#sheet .cd-grille.large");
+    eq("L'intensité garde ses trois cases", cols(inten), 3);
+    F.hideSheet();
+  })();
+  neuf();
+
   grp("Ordre des exercices");
   neuf();
   /* Le glissé lui-même se vérifie à la main : l'iframe des tests n'a aucune hauteur,
