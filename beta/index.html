@@ -1519,31 +1519,36 @@
      lignes de texte gris disaient la même chose et personne ne les lisait. */
   .obj-b{display:flex; align-items:stretch; border-radius:15px; overflow:hidden;
     margin-bottom:11px;}
-  .obj-b .g, .obj-b .d{display:flex; align-items:center; gap:9px; padding:10px 10px;}
-  .obj-b .g{flex:1 1 56%; min-width:0; background:rgba(245,130,32,.12);}
+  .obj-b .g{display:flex; align-items:center; gap:9px; padding:10px;
+    flex:1 1 58%; min-width:0; background:rgba(245,130,32,.12);}
   /* un gris très clair, presque blanc : la moitié droite doit s'effacer derrière
      l'objectif, pas lui faire concurrence */
-  .obj-b .d{flex:1 1 44%; min-width:0; background:#F6F4F2;}
+  .obj-b .d{display:flex; flex-direction:column; justify-content:center; gap:6px;
+    padding:8px 9px; flex:1 1 42%; min-width:0; background:#F6F4F2;}
+  .obj-b .d .r{display:flex; align-items:center; gap:8px;}
+  .obj-b .d .r.ecart{border-top:1px solid rgba(0,0,0,.07); padding-top:6px;}
   .obj-b .ic{flex:0 0 auto; width:32px; height:32px; border-radius:10px;
     display:flex; align-items:center; justify-content:center;}
   .obj-b .ic svg{width:17px; height:17px;}
   .obj-b .g .ic{background:rgba(245,130,32,.18); color:var(--accent);}
   .obj-b .d .ic{background:var(--surface); color:var(--ink-soft);}
   .obj-b .co{min-width:0;}
-  .obj-b .k{font-size:9.5px; font-weight:800; line-height:1.2; margin-bottom:1px;
-    letter-spacing:.01em;}
-  .obj-b .g .k{color:var(--accent);}
-  .obj-b .d .k{color:var(--ink-mute);}
+  /* l'intitulé de gauche est une étiquette, pas un titre : il se pose sur son fond */
+  .obj-b .g .k{display:inline-block; background:var(--surface); color:var(--accent);
+    font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    border-radius:99px; padding:2px 7px; margin-bottom:3px;}
+  .obj-b .d .k{font-size:9.5px; font-weight:800; color:var(--ink-mute); line-height:1.2;}
   .obj-b .v{font-size:11.5px; font-weight:800; line-height:1.25;}
+  .obj-b .s{font-size:9px; color:var(--ink-mute); line-height:1.3; margin-top:2px;}
   /* seul le poids reste gros : c'est le seul chiffre qu'on doit lire de loin */
   .obj-b .g .v b{font-size:19px; color:var(--accent);}
   /* « 10–12 reps » ne se coupe pas en deux : soit la ligne tient, soit elle passe entière */
   .obj-b .g .v i{font-style:normal; font-size:11px; white-space:nowrap;}
   .obj-b .g .v .x{color:var(--ink-mute); font-weight:700; font-size:10px;}
-  .obj-b .e{display:flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800;
-    margin-top:1px;}
-  .obj-b .e.up{color:var(--good);}
-  .obj-b .e.down{color:var(--accent);}
+  .obj-b .fl{flex:0 0 auto; width:32px; text-align:center; font-size:19px; font-weight:800;
+    line-height:1;}
+  .obj-b .ecart.up .fl, .obj-b .ecart.up .v{color:var(--good);}
+  .obj-b .ecart.down .fl, .obj-b .ecart.down .v{color:var(--accent);}
   /* en thème sombre, le gris très clair deviendrait un trou blanc */
   :root[data-theme="dark"] .obj-b .d{background:var(--surface2);}
   @media (prefers-color-scheme: dark){
@@ -3464,6 +3469,8 @@ const TRAD = {en:{
   "Terminer la séance":"Finish workout",
   "Objectif du jour":"Today's target",
   "Dernière séance":"Last session",
+  "Recommandé par l'app.":"Recommended by the app.",
+  "Progression suggérée":"Suggested step up","Allègement suggéré":"Suggested step down",
   "{n} à {p}":"{n} at {p}",
   "Dernière fois et charge du jour":"Last time and today's load",
   "Fiche de l'exercice":"Exercise details",
@@ -6777,7 +6784,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 19h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 19h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12323,16 +12330,22 @@ function renderActive(app){
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
         return `<div class="obj-b">
           <div class="g"><span class="ic">${IC_CIBLE}</span>
-            <div class="co"><div class="k">${TR("Objectif du jour")}</div>
+            <div class="co"><span class="k">${TR("Objectif du jour")}</span>
               <div class="v">${o.poids ? `<b>${esc(o.poids)}</b>` : ""}${
                 o.poids && o.reps ? ` <span class="x">×</span> ` : ""}${
-                o.reps ? `<i>${esc(o.reps)} ${o.iso ? "s" : TR("reps")}</i>` : ""}</div></div>
+                o.reps ? `<i>${esc(o.reps)} ${o.iso ? "s" : TR("reps")}</i>` : ""}</div>
+              <div class="s">${TR("Recommandé par l'app.")}</div></div>
           </div>
-          <div class="d"><span class="ic">${IC_COURBE}</span>
-            <div class="co"><div class="k">${TR("Dernière séance")}</div>
-              <div class="v">${esc(o.passe)}</div>
-              ${o.ecart ? `<div class="e ${o.ecart > 0 ? "up" : "down"}">${fleche} ${
-                (o.ecart > 0 ? "+" : "−") + pds(Math.abs(o.ecart))}</div>` : ""}</div>
+          <div class="d">
+            <div class="r"><span class="ic">${IC_COURBE}</span>
+              <div class="co"><div class="k">${TR("Dernière séance")}</div>
+                <div class="v">${esc(o.passe)}</div></div>
+            </div>
+            ${o.ecart ? `<div class="r ecart ${o.ecart > 0 ? "up" : "down"}">
+              <span class="fl">${fleche}</span>
+              <div class="co"><div class="v">${(o.ecart > 0 ? "+" : "−") + pds(Math.abs(o.ecart))}</div>
+                <div class="s">${o.ecart > 0 ? TR("Progression suggérée") : TR("Allègement suggéré")}</div></div>
+            </div>` : ""}
           </div>
         </div>`; })()}
       ${iso ? (()=>{ const et = etapesIso(ei), enCours = seqIso && seqIso.ei === ei,
