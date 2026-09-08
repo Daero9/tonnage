@@ -1584,6 +1584,11 @@
      poids de sélecteur pour reprendre la main sur celui-ci. */
   .sheet h3.ps-nom{text-align:left; text-transform:uppercase; font-size:17px;
     line-height:1.15; padding:0; margin-bottom:0;}
+  /* même allure que le titre, mais on peut écrire dedans : le produit existe, il n'a
+     simplement pas de nom chez Open Food Facts */
+  .ps-nom-saisie{text-transform:uppercase; font-size:17px; font-weight:800;
+    line-height:1.15; padding:7px 10px; border-radius:11px; width:100%;
+    border:1px dashed var(--accent); background:var(--surface);}
   .ps-marque{text-align:left; font-size:12.5px; color:var(--ink-mute); margin:4px 0 0;}
   /* boisson ou aliment : ce qui explique pourquoi la quantité se compte en cl ou en g */
   .ps-type{display:inline-flex; align-items:center; gap:5px; vertical-align:middle;
@@ -2598,6 +2603,9 @@ const TRAD = {en:{
   "pour 100 ml":"per 100 ml",
   "Informations {}":"Values {}",
   "Quantité consommée":"Amount taken",
+  "Nomme ce produit":"Name this product",
+  "Nom du produit":"Product name",
+  "Produit scanné":"Scanned product",
   "Boisson":"Drink", "Aliment":"Food",
   "prot.":"prot.", "gluc.":"carbs", "lip.":"fat",
   "Indique la quantité bue.":"Enter how much you drank.",
@@ -5781,7 +5789,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 02h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 02h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7592,8 +7600,12 @@ async function chercherProduit(code){
   const prot = n["proteins_100g"], kcal = n["energy-kcal_100g"];
   const gluc = n["carbohydrates_100g"], lip = n["fat_100g"];
   if(prot === undefined && kcal === undefined) return null;   /* fiche sans valeurs */
+  /* Une fiche SANS NOM mais avec ses valeurs est parfaitement utilisable : la jeter
+     revenait à dire « produit inconnu » d'un produit qu'Open Food Facts connaît très
+     bien. Vrai cas rencontré : des nuggets Lidl, 10,9 g de protéines et 230 kcal
+     renseignés, photo comprise, mais le champ « nom » laissé vide par le contributeur.
+     On garde la fiche et on demande son nom à l'utilisateur. */
   const nom = (p.product_name_fr || p.product_name || "").trim();
-  if(!nom) return null;
   /* « 60g », « 30 g », « 1 portion (25 g) » : on ne garde que le nombre s'il y en a un */
   const mp = String(p.serving_size || "").match(/([\d.,]+)\s*g/i);
   const liquide = estBoisson(p);
@@ -7647,7 +7659,10 @@ function openProduitScanne(meal, p){
         ? `<img id="ps-img" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`
         : `<span class="ic">${signe}</span>`}</div>
       <div class="ps-titre">
-        <h3 class="ps-nom">${esc(p.nom)}</h3>
+        ${p.nom ? `<h3 class="ps-nom">${esc(p.nom)}</h3>`
+          : `<input class="ps-nom-saisie" id="ps-nom" maxlength="44" autocomplete="off"
+              value="${esc(p.marque)}" placeholder="${TR("Nomme ce produit")}"
+              aria-label="${TR("Nom du produit")}">`}
         <div class="ps-marque">${p.marque? esc(p.marque) + " " : ""}<span class="ps-type">${
           signe}${TR(liquide? "Boisson" : "Aliment")}</span></div>
         <div class="ps-tuiles">
@@ -7796,7 +7811,11 @@ function openProduitScanne(meal, p){
     const prot = Math.round(p.prot100*f), kcal = Math.round(p.kcal100*f);
     /* même écriture que partout ailleurs : la pastille, ses boutons et l'appui long
        fonctionneront sur ce produit comme sur n'importe quel aliment */
-    const label = `${p.nom} ${q} ${uni} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
+    /* nom saisi à la main quand Open Food Facts n'en donne pas */
+    const champNom = document.getElementById("ps-nom");
+    const nomProduit = ((champNom ? champNom.value : p.nom) || "").trim().slice(0, 44)
+      || TR("Produit scanné");
+    const label = `${nomProduit} ${q} ${uni} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
     if(favori){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
