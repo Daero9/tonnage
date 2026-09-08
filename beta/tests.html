@@ -191,7 +191,7 @@ async function lancer(){
   const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
-  eq("Les 109 exercices sont là", LIBEN.length, 109);
+  eq("Les 115 exercices sont là", LIBEN.length, 115);
   eq("Un nom s'affiche en anglais", LIBEN[0].name, "Bench press");
   eq("…mais sa clé reste le français", LIBEN[0].nameFr, "Développé couché");
   eq("Les 108 noms sont traduits",
@@ -3553,6 +3553,59 @@ async function lancer(){
       !!D2.querySelector(".onb-body.intro") && !D2.querySelector(".onb-cartes"));
     vrai("…et son titre à lui", !!D2.querySelector(".onb-titre .hl"));
     F.fermerOnb();
+  })();
+  neuf();
+
+  grp("Le matériel de la maison");
+  neuf();
+  /* Une poulie simple n'a qu'une colonne : on ne peut pas y faire d'écartés, qui
+     demandent deux câbles opposés. L'app en proposait quand même. */
+  (()=>{
+    const dispo = (nom, mat) => F.exoDispo(F.getEx(id(nom)), mat);
+    vrai("Une poulie simple ne donne pas les écartés",
+      !dispo("Écartés poulie", ["poulie"]));
+    vrai("…mais bien le tirage vertical", dispo("Tirage vertical", ["poulie"]));
+    vrai("…et l'extension triceps", dispo("Extension poulie", ["poulie"]));
+    vrai("Une poulie double donne les écartés", dispo("Écartés poulie", ["poulie2"]));
+    vrai("…et tout ce que fait la simple", dispo("Tirage vertical", ["poulie2"]));
+    vrai("Sans poulie, ni l'un ni l'autre",
+      !dispo("Écartés poulie", ["halteres"]) && !dispo("Tirage vertical", ["halteres"]));
+    /* la roulette était rangée « poids du corps » alors qu'elle demande une roue */
+    vrai("La roulette abdominale demande sa roue", !dispo("Roulette abdominale", ["tapis"]));
+    vrai("…et l'a bien avec", dispo("Roulette abdominale", ["roue"]));
+    /* banc, step et caisse servent aux mêmes exercices */
+    vrai("Une caisse remplace le banc pour les fentes bulgares",
+      dispo("Fentes bulgares", ["halteres", "box"]));
+    vrai("…et pour les dips sur banc", dispo("Dips sur banc", ["box"]));
+  })();
+  neuf();
+
+  /* Les nouveaux accessoires apportent de vrais exercices, pas des doublons. */
+  (()=>{
+    const MAT = F.eval("MATERIELS");
+    eq("Seize accessoires proposés", MAT.filter(m=>m.id !== "machine").length, 16);
+    vrai("Chacun a son dessin", MAT.filter(m=>m.id !== "machine").every(m=>{
+      const el = F.document.createElement("span");
+      el.className = "icm-mt-" + m.id;
+      F.document.body.appendChild(el);
+      const img = F.getComputedStyle(el).maskImage || F.getComputedStyle(el).webkitMaskImage;
+      el.remove();
+      return img && img !== "none";
+    }));
+    const neufs = ["Swing kettlebell","Développé kettlebell","Rowing TRX","Pompes TRX",
+                   "Crunch sur ballon","Leg curl sur ballon"];
+    vrai("Les six nouveaux exercices existent", neufs.every(n=>!!id(n)),
+      neufs.filter(n=>!id(n)).join(", "));
+    vrai("…chacun sait quels muscles il travaille",
+      neufs.every(n=>(F.eval("MUSCLE_WORK")[n] || []).length > 0));
+    vrai("…et demande bien son accessoire",
+      !F.exoDispo(F.getEx(id("Swing kettlebell")), ["halteres"])
+      && F.exoDispo(F.getEx(id("Swing kettlebell")), ["kettlebell"]));
+    /* et le générateur peut les tirer : sinon ils n'existent que dans la bibliothèque */
+    const RES = F.eval("RESERVOIRS");
+    vrai("Le générateur peut les proposer",
+      neufs.every(n=>Object.values(RES).some(l=>l.includes(n))),
+      neufs.filter(n=>!Object.values(RES).some(l=>l.includes(n))).join(", "));
   })();
   neuf();
 
