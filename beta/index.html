@@ -5781,7 +5781,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 01h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 02h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7552,12 +7552,22 @@ function scannerCodeBarres(){
    mot. On teste le suffixe et non le mot n'importe où, sans quoi « en:milk-chocolates »
    ferait boire le chocolat au lait. */
 const FIN_BOISSON = /(^|[-:])(beverages|drinks|waters|sodas|juices|milks|smoothies|coffees|teas|beers|wines|nectars|syrups|lemonades|cocktails|kefirs|milkshakes)$/;
+/* ⚠️ « en:plant-based-foods-and-beverages » et « en:vegetable-based-foods-and-beverages »
+   se terminent par « beverages », et Open Food Facts les colle à TOUT ce qui vient d'une
+   plante : le riz, les pâtes, le pain, le ketchup. Ces étiquettes parapluie couvrent les
+   deux à la fois, donc elles ne tranchent rien — c'est elles qui faisaient boire la
+   moitié des courses. On les écarte avant de regarder les autres. */
+const CAT_PARAPLUIE = /foods?-and-beverages$/;
 /* un volume écrit sur l'étiquette : « 33 cl », « 1 L », « 250 ml » */
 const VOLUME = /([\d.,]+)\s*(ml|cl|dl|l|litres?)\b/i;
 function estBoisson(p){
-  if((p.categories_tags || []).some(t => FIN_BOISSON.test(String(t)))) return true;
-  /* catégories absentes — c'est fréquent sur les fiches peu remplies : le contenant
-     tranche presque toujours, on ne vend pas du riz en litres */
+  const cats = (p.categories_tags || []).map(String).filter(t => !CAT_PARAPLUIE.test(t));
+  /* Dès qu'une catégorie utile existe, elle décide — dans un sens comme dans l'autre.
+     Le volume ne sert plus d'appoint : une soupe en brique d'un litre et un yaourt à
+     boire en pot de 200 ml sont écrits en millilitres sans être des boissons. */
+  if(cats.length) return cats.some(t => FIN_BOISSON.test(t));
+  /* aucune catégorie du tout — fréquent sur les fiches peu remplies : le contenant
+     tranche alors, on ne vend pas du riz en litres */
   return VOLUME.test(String(p.serving_size || "")) || VOLUME.test(String(p.quantity || ""));
 }
 /* une portion écrite en volume, ramenée en millilitres */

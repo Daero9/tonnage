@@ -2094,6 +2094,35 @@ async function lancer(){
     vrai("Un fromage au lait de vache non plus", !boisson(cat("en:cheeses-made-from-cow-milk")));
     vrai("Le lait en poudre non plus", !boisson(cat("en:milk-powders")));
     vrai("Un yaourt non plus", !boisson(cat("en:yogurts")));
+    /* ---- les étiquettes parapluie ----
+       Open Food Facts colle « en:plant-based-foods-and-beverages » à TOUT ce qui vient
+       d'une plante : le riz, les pâtes, le pain, le ketchup. Elle finit par « beverages »
+       sans rien dire de la nature du produit — c'est elle qui faisait boire la moitié
+       des courses de Nico. */
+    vrai("« aliments et boissons d'origine végétale » ne fait pas une boisson",
+      !boisson(cat("en:plant-based-foods-and-beverages")));
+    vrai("« aliments et boissons à base de légumes » non plus",
+      !boisson(cat("en:vegetable-based-foods-and-beverages")));
+    /* le vrai ketchup Heinz, tel qu'Open Food Facts le décrit */
+    vrai("Le ketchup n'est pas une boisson",
+      !boisson({categories_tags:["en:plant-based-foods-and-beverages","en:plant-based-foods",
+        "en:vegetable-based-foods-and-beverages","en:condiments","en:sauces",
+        "en:tomato-sauces","en:ketchup"], quantity:"250g", serving_size:"10 gram"}));
+    /* une étiquette parapluie n'empêche pas de reconnaître une vraie boisson */
+    vrai("Un jus reste un jus malgré le parapluie",
+      boisson(cat("en:plant-based-foods-and-beverages","en:beverages","en:orange-juices")));
+
+    /* ---- la catégorie tranche, dans les deux sens ----
+       Le volume ne sert plus d'appoint quand une catégorie utile existe : une soupe en
+       brique d'un litre et un yaourt à boire en pot de 200 ml sont écrits en millilitres
+       sans être des boissons. */
+    vrai("Un yaourt vendu en millilitres reste un aliment",
+      !boisson({categories_tags:["en:yogurts"], serving_size:"200 ml", quantity:"1 L"}));
+    vrai("Une soupe en brique d'un litre aussi",
+      !boisson({categories_tags:["en:soups"], quantity:"1 L"}));
+    vrai("Mais un soda en canette est bien une boisson",
+      boisson({categories_tags:["en:sodas"], quantity:"33 cl"}));
+
     /* fiche sans catégorie : c'est le contenant qui parle */
     vrai("Sans catégorie, « 33 cl » trahit la boisson", boisson({quantity:"33 cl"}));
     vrai("…et « 200 ml » de portion aussi", boisson({serving_size:"200 ml"}));
