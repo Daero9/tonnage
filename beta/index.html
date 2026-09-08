@@ -2806,14 +2806,13 @@ const TRAD = {en:{
   "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
   "Pourquoi cette séance":"Why this session",
-  "Encore à {p} % de récupération. On l'épargne aujourd'hui.":"Still only {p}% recovered. We go easy on it today.",
+  "Pas encore récupéré. On l'épargne aujourd'hui.":"Not recovered yet. We go easy on it today.",
   "Jamais travaillé pour l'instant. On commence par lui.":"Never trained so far. We start with it.",
   "Rien depuis {n} jours. On rattrape.":"Nothing for {n} days. Time to catch up.",
   "Rien depuis hier. On enchaîne.":"Nothing since yesterday. Straight back to it.",
   "Ton point faible du moment. Il passe en tête.":"Your weak point right now. It goes first.",
-  "{v} séries sur {c} cette semaine. Il en reste à prendre.":"{v} sets out of {c} this week. There are more to take.",
-  "Une seule série cette semaine, sur {c} visées. Il en reste à prendre.":"A single set this week, out of {c}. There are more to take.",
-  "Sa semaine est faite ({v} séries sur {c}). Il passe son tour.":"Its week is done ({v} sets out of {c}). It sits this one out.",
+  "Faiblement sollicité cette semaine. Il en redemande.":"Barely worked this week. It is asking for more.",
+  "Bien servi cette semaine. Il passe son tour.":"Well served this week. It sits this one out.",
   "Complètement récupéré. C'est le moment de charger.":"Fully recovered. Time to load it up.",
   "Il a de la marge cette semaine. On lui en donne.":"It has room left this week. We give it some.",
   "Tu appuies sur Démarrer, l'app s'occupe du reste.":"You press Start, the app does the rest.",
@@ -6106,7 +6105,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 13h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 13h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9983,7 +9982,7 @@ function raisonsSeance(type){
   const phrase = p => {
     const n = nom(p.muscle), jours = j(p.muscle);
     if(p.recup < 60)
-      return [n, TR("Encore à {p} % de récupération. On l'épargne aujourd'hui.").replace("{p}", Math.round(p.recup))];
+      return [n, TR("Pas encore récupéré. On l'épargne aujourd'hui.")];
     if(jours === null)
       return [n, TR("Jamais travaillé pour l'instant. On commence par lui.")];
     if(p.vol <= 0)
@@ -9991,15 +9990,10 @@ function raisonsSeance(type){
         .replace("{n}", jours)];
     if(p.retard <= -10)
       return [n, TR("Ton point faible du moment. Il passe en tête.")];
-    if(p.cible - p.vol >= 3){
-      const v = Math.round(p.vol);
-      return [n, (v === 1 ? TR("Une seule série cette semaine, sur {c} visées. Il en reste à prendre.")
-                          : TR("{v} séries sur {c} cette semaine. Il en reste à prendre."))
-        .replace("{v}", v).replace("{c}", p.cible)];
-    }
+    if(p.cible - p.vol >= 3)
+      return [n, TR("Faiblement sollicité cette semaine. Il en redemande.")];
     if(p.vol >= p.cible)
-      return [n, TR("Sa semaine est faite ({v} séries sur {c}). Il passe son tour.")
-        .replace("{v}", Math.round(p.vol)).replace("{c}", p.cible)];
+      return [n, TR("Bien servi cette semaine. Il passe son tour.")];
     if(p.recup >= 90)
       return [n, TR("Complètement récupéré. C'est le moment de charger.")];
     return [n, TR("Il a de la marge cette semaine. On lui en donne.")];
