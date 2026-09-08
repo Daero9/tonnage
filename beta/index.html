@@ -1519,31 +1519,35 @@
      lignes de texte gris disaient la même chose et personne ne les lisait. */
   .obj-b{display:flex; align-items:stretch; border-radius:15px; overflow:hidden;
     margin-bottom:11px;}
-  .obj-b .g, .obj-b .d{display:flex; align-items:center; gap:10px; padding:11px 12px;}
-  .obj-b .g{flex:1 1 58%; min-width:0; background:rgba(245,130,32,.12);}
-  .obj-b .d{flex:1 1 42%; min-width:0; background:var(--surface2);}
-  .obj-b .ic{flex:0 0 auto; width:36px; height:36px; border-radius:11px;
+  .obj-b .g, .obj-b .d{display:flex; align-items:center; gap:9px; padding:10px 10px;}
+  .obj-b .g{flex:1 1 56%; min-width:0; background:rgba(245,130,32,.12);}
+  /* un gris très clair, presque blanc : la moitié droite doit s'effacer derrière
+     l'objectif, pas lui faire concurrence */
+  .obj-b .d{flex:1 1 44%; min-width:0; background:#F6F4F2;}
+  .obj-b .ic{flex:0 0 auto; width:32px; height:32px; border-radius:10px;
     display:flex; align-items:center; justify-content:center;}
-  .obj-b .ic svg{width:19px; height:19px;}
+  .obj-b .ic svg{width:17px; height:17px;}
   .obj-b .g .ic{background:rgba(245,130,32,.18); color:var(--accent);}
   .obj-b .d .ic{background:var(--surface); color:var(--ink-soft);}
-  .obj-b .k{font-size:10.5px; font-weight:800; line-height:1.2; margin-bottom:2px;}
+  .obj-b .co{min-width:0;}
+  .obj-b .k{font-size:9.5px; font-weight:800; line-height:1.2; margin-bottom:1px;
+    letter-spacing:.01em;}
   .obj-b .g .k{color:var(--accent);}
   .obj-b .d .k{color:var(--ink-mute);}
-  .obj-b .v{font-size:13.5px; font-weight:800; line-height:1.25;}
+  .obj-b .v{font-size:11.5px; font-weight:800; line-height:1.25;}
+  /* seul le poids reste gros : c'est le seul chiffre qu'on doit lire de loin */
   .obj-b .g .v b{font-size:19px; color:var(--accent);}
-  .obj-b .g .v i{font-style:normal; font-size:13.5px;}
-  .obj-b .g .v .x{color:var(--ink-mute); font-weight:700;}
-  .obj-b .e{display:flex; align-items:center; gap:3px; font-size:12px; font-weight:800;
-    margin-top:2px;}
+  /* « 10–12 reps » ne se coupe pas en deux : soit la ligne tient, soit elle passe entière */
+  .obj-b .g .v i{font-style:normal; font-size:11px; white-space:nowrap;}
+  .obj-b .g .v .x{color:var(--ink-mute); font-weight:700; font-size:10px;}
+  .obj-b .e{display:flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800;
+    margin-top:1px;}
   .obj-b .e.up{color:var(--good);}
   .obj-b .e.down{color:var(--accent);}
-  /* Côte à côte, la maquette suppose un écran large. Sur un téléphone de 390 px il
-     reste 150 px par moitié : « 62,5 kg × 10–12 reps » y tient sur trois lignes et
-     devient illisible. Les deux moitiés s'empilent donc, même contenu, même hiérarchie. */
-  @media (max-width:520px){
-    .obj-b{flex-direction:column;}
-    .obj-b .g, .obj-b .d{flex:0 0 auto;}
+  /* en thème sombre, le gris très clair deviendrait un trou blanc */
+  :root[data-theme="dark"] .obj-b .d{background:var(--surface2);}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .obj-b .d{background:var(--surface2);}
   }
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
   /* plus grands et posés sur le blanc : ils forment une paire nette a droite du nom.
@@ -6773,7 +6777,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 19h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 19h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12319,13 +12323,13 @@ function renderActive(app){
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
         return `<div class="obj-b">
           <div class="g"><span class="ic">${IC_CIBLE}</span>
-            <div><div class="k">${TR("Objectif du jour")}</div>
+            <div class="co"><div class="k">${TR("Objectif du jour")}</div>
               <div class="v">${o.poids ? `<b>${esc(o.poids)}</b>` : ""}${
                 o.poids && o.reps ? ` <span class="x">×</span> ` : ""}${
                 o.reps ? `<i>${esc(o.reps)} ${o.iso ? "s" : TR("reps")}</i>` : ""}</div></div>
           </div>
           <div class="d"><span class="ic">${IC_COURBE}</span>
-            <div><div class="k">${TR("Dernière séance")}</div>
+            <div class="co"><div class="k">${TR("Dernière séance")}</div>
               <div class="v">${esc(o.passe)}</div>
               ${o.ecart ? `<div class="e ${o.ecart > 0 ? "up" : "down"}">${fleche} ${
                 (o.ecart > 0 ? "+" : "−") + pds(Math.abs(o.ecart))}</div>` : ""}</div>
