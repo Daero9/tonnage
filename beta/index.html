@@ -308,6 +308,26 @@
   .prog-slot{position:relative; flex:0 0 var(--cardw); scroll-snap-align:center; padding-top:13px;
     transform:scale(.86); transform-origin:center 62%; opacity:.72; transition:transform .08s linear, opacity .08s linear;}
   .prog-slot.mid{transform:scale(1); opacity:1;}
+  /* ---- la fiche « Ajouter une sortie » ----
+     Un intitulé, un bloc : la fiche se remplit de haut en bas sans jamais se demander
+     à quoi se rapporte un champ. */
+  .cd-bloc{margin-bottom:15px;}
+  .cd-bloc > input{width:100%;}
+  .cd-grille{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .cd-grille.large{grid-template-columns:repeat(3,1fr);}
+  .cd-grille button{display:flex; flex-direction:column; align-items:center; gap:5px;
+    background:var(--surface); border:1px solid var(--border); border-radius:13px;
+    padding:11px 5px; font-size:12px; font-weight:700; line-height:1.2; text-align:center;
+    color:var(--ink);}
+  .cd-grille .ic{font-size:19px; line-height:1;}
+  .cd-grille button:active{background:var(--btn);}
+  .cd-grille button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .cd-nb{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
+  .cd-nb label{display:block; min-width:0;}
+  .cd-nb input{width:100%; text-align:center; padding-inline:6px;}
+  .cd-aide{font-size:11.5px; color:var(--ink-mute); margin-top:7px; line-height:1.5;}
+  .cd-ok{width:100%; margin-top:4px;}
+
   /* ---- la fiche « Ajouter » ----
      Une ligne par geste, la même forme pour toutes : on compare d'un regard au lieu de
      lire cinq boutons de couleurs différentes. Le geste principal est en orange, le
@@ -2905,6 +2925,9 @@ const TRAD = {en:{
   "Surprends-moi":"Surprise me",
   "Bon à savoir":"Worth knowing",
   "Choisis ce que tu veux faire.":"Choose what you want to do.",
+  "Un peu des deux":"A bit of both",
+  "Dont couru (min)":"Of which running (min)",
+  "FC moyenne (bpm)":"Average HR (bpm)",
   "Laisse l'app choisir pour toi":"Let the app choose for you",
   "Je choisis les exercices":"I pick the exercises",
   "Course, marche, vélo…":"Running, walking, cycling…",
@@ -5959,7 +5982,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 03h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 03h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6539,6 +6562,7 @@ const ICONS = {
 const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]];
 const IC_BAISSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></svg>';
 const IC_STOP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3"></rect></svg>';
+const IC_MONTRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5.6"/><path d="M12 9.6V12l1.7 1.1"/><path d="M9 6.6 9.4 3h5.2l.4 3.6M9 17.4 9.4 21h5.2l.4-3.6"/></svg>';
 const IC_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 const IC_COUREUR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="15.5" cy="4.2" r="1.8"/><path d="M13.2 21l1.6-5.2-3-2.6-1 4.2"/><path d="M8.4 10.6l3.7-2.4 2.6 1.4 2.6 1"/><path d="M14.8 15.8l3 5.2"/><path d="M4.6 13.4h3"/></svg>';
 const IC_LIVRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.6C10.4 5.2 8.2 4.6 4.5 4.6v13c3.7 0 5.9.6 7.5 2 1.6-1.4 3.8-2 7.5-2v-13c-3.7 0-5.9.6-7.5 2Z"/><path d="M12 6.6v14"/></svg>';
@@ -8415,57 +8439,61 @@ function kcalEquiv(kcal){
 }
 function openCardioAdd(idExistant){
   const c = idExistant ? db.cardio.find(x=>x.id===idExistant) : null;
-  openSheet(`<h3>${TR(c? "Modifier la sortie" : "Ajouter une sortie")}</h3>
-    <div class="row" style="gap:10px; align-items:center; margin-bottom:12px;">
-      <span class="label" style="flex:0 0 auto;">${TR("Date")}</span>
-      <input type="date" id="cd-date" value="${dayKey(c? c.date : undefined)}" style="flex:1;">
+  openSheet(`<div class="pr-tete"><h3>${TR(c? "Modifier la sortie" : "Ajouter une sortie")}</h3></div>
+    <div class="cd-bloc">
+      <span class="f-lab">${TR("Date")}</span>
+      <input type="date" id="cd-date" value="${dayKey(c? c.date : undefined)}">
     </div>
-    <div class="stack">
-      <div>
-        <span class="label" style="display:block; margin-bottom:5px;">${TR("Activité")}</span>
-        <div class="chips" style="gap:6px;">${MACHINES.map(([id,lab,ic])=>
-          `<button class="chip chip-sm" data-cmach="${id}">${ic} ${TR(lab)}</button>`).join("")}</div>
+    <div class="cd-bloc">
+      <span class="f-lab">${TR("Activité")}</span>
+      <div class="cd-grille">${MACHINES.map(([id,lab,ic])=>
+        `<button data-cmach="${id}"><span class="ic">${ic}</span>${TR(lab)}</button>`).join("")}</div>
+    </div>
+    <div class="cd-bloc" id="cd-intwrap" style="display:none;">
+      <span class="f-lab">${TR("Intensité")}</span>
+      <div class="cd-grille large">${INTENSITES.map(([id,lab])=>
+        `<button data-cint="${id}">${lab}</button>`).join("")}</div>
+      <div class="cd-aide" id="cd-inthint"></div>
+    </div>
+    <div class="cd-bloc">
+      <div class="cd-nb">
+        <label id="cd-kmwrap"><span class="f-lab">${TR("Distance")} (${uDist()})</span>
+          <input type="number" inputmode="decimal" step="0.1" min="0" id="cd-km" placeholder="5" value="${c? affDist(c.km).replace(",", ".") : ""}"></label>
+        <label><span class="f-lab">${TR("Durée (min)")}</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-min" placeholder="30" value="${c? Math.round(c.min) : ""}"></label>
+        <label id="cd-pentewrap"><span class="f-lab">${TR("Pente (%)")}</span>
+          <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="${(c && c.pente)? c.pente : ""}"></label>
       </div>
-      <div id="cd-intwrap" style="display:none;">
-        <span class="label" style="display:block; margin-bottom:5px;">${TR("Intensité")}</span>
-        <div class="chips" style="gap:6px;">${INTENSITES.map(([id,lab])=>
-          `<button class="chip chip-sm" data-cint="${id}">${lab}</button>`).join("")}</div>
-        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px;" id="cd-inthint"></div>
+    </div>
+    <div class="cd-bloc" id="cd-typewrap">
+      <span class="f-lab">${TR("C'était quoi ?")}</span>
+      <div class="cd-grille large">
+        <button data-ctype="marche"><span class="ic">🚶</span>${TR("Marche")}</button>
+        <button data-ctype="course"><span class="ic">🏃</span>${TR("Course")}</button>
+        <button data-ctype="mixte"><span class="ic">🚶🏃</span>${TR("Un peu des deux")}</button>
       </div>
-      <div class="row">
-        <div class="grow" id="cd-kmwrap"><span class="label" style="display:block; margin-bottom:5px;">${TR("Distance")} (${uDist()})</span>
-        <input type="number" inputmode="decimal" step="0.1" min="0" id="cd-km" placeholder="5" value="${c? affDist(c.km).replace(",", ".") : ""}"></div>
-        <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">${TR("Durée (min)")}</span>
-        <input type="number" inputmode="numeric" min="0" id="cd-min" placeholder="30" value="${c? Math.round(c.min) : ""}"></div>
-        <div class="grow" id="cd-pentewrap"><span class="label" style="display:block; margin-bottom:5px;">${TR("Pente (%)")}</span>
-        <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="${(c && c.pente)? c.pente : ""}"></div>
+      <div class="cd-aide" id="cd-thint"></div>
+    </div>
+    <div class="cd-bloc" id="cd-mixwrap" style="display:none;">
+      <span class="f-lab">${TR("Dont couru (min)")}</span>
+      <input type="number" inputmode="numeric" min="0" id="cd-runmin" placeholder="10" value="${(c && c.runMin)? c.runMin : ""}">
+    </div>
+    <button class="aj-l" id="cd-more">
+      <span class="ic">${IC_MONTRE}</span>
+      <span class="tx"><span class="t">${TR("J'ai les données de ma montre")}</span></span>
+      <span class="fl">${IC_CHEVRON}</span>
+    </button>
+    <div class="cd-bloc" id="cd-watch" style="display:none;">
+      <div class="cd-nb">
+        <label><span class="f-lab">${TR("FC moyenne (bpm)")}</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-hr" placeholder="135" value="${(c && c.hr)? c.hr : ""}"></label>
+        <label><span class="f-lab">${TR("kcal de la montre")}</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-kcalm" placeholder="320" value="${(c && c.kcalM)? c.kcalM : ""}"></label>
       </div>
-      <div id="cd-typewrap">
-        <span class="label" style="display:block; margin-bottom:5px;">${TR("C'était quoi ?")}</span>
-        <div class="chips" style="gap:6px;">
-          <button class="chip chip-sm" data-ctype="marche">🚶 ${TR("Marche")}</button>
-          <button class="chip chip-sm" data-ctype="course">🏃 ${TR("Course")}</button>
-          <button class="chip chip-sm" data-ctype="mixte">${TR("🚶🏃 Un peu des deux")}</button>
-        </div>
-        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px;" id="cd-thint"></div>
-      </div>
-      <div id="cd-mixwrap" style="display:none;">
-        <span class="label" style="display:block; margin-bottom:5px;">Dont couru (min)</span>
-        <input type="number" inputmode="numeric" min="0" id="cd-runmin" placeholder="10" value="${(c && c.runMin)? c.runMin : ""}">
-      </div>
-      <button class="btn btn-ghost btn-sm" id="cd-more" style="align-self:flex-start;">${TR("⌚ J'ai les données de ma montre")}</button>
-      <div id="cd-watch" style="display:none;">
-        <div class="row">
-          <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">FC moyenne (bpm)</span>
-          <input type="number" inputmode="numeric" min="0" id="cd-hr" placeholder="135" value="${(c && c.hr)? c.hr : ""}"></div>
-          <div class="grow"><span class="label" style="display:block; margin-bottom:5px;">${TR("kcal de la montre")}</span>
-          <input type="number" inputmode="numeric" min="0" id="cd-kcalm" placeholder="320" value="${(c && c.kcalM)? c.kcalM : ""}"></div>
-        </div>
-        <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px; line-height:1.5;">${TR("Facultatif, mais plus fiable que l'estimation : les kcal de ta montre sont reprises telles quelles, sinon la FC moyenne sert au calcul.")}</div>
-      </div>
-      <button class="btn btn-accent" id="cd-ok">${TR(c? "Enregistrer les modifications" : "Enregistrer")}</button>
-      ${c? `<button class="btn btn-ghost" id="cd-cancel">${TR("Annuler")}</button>`:""}
-    </div>`);
+      <div class="cd-aide">${TR("Facultatif, mais plus fiable que l'estimation : les kcal de ta montre sont reprises telles quelles, sinon la FC moyenne sert au calcul.")}</div>
+    </div>
+    <button class="btn btn-accent cd-ok" id="cd-ok">${TR(c? "Enregistrer les modifications" : "Enregistrer")}</button>
+    ${c? `<button class="btn btn-ghost" id="cd-cancel">${TR("Annuler")}</button>`:""}`);
   const annul = document.getElementById("cd-cancel");
   if(annul) annul.onclick = openCardioList;
   let cMach = (c && c.machine) || "course";
