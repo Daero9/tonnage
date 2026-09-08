@@ -2357,6 +2357,31 @@ async function lancer(){
     F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
       prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
 
+    /* ---- une fiche sans nom, mais complete ----
+       Vrai cas : des nuggets Lidl, 10,9 g de proteines et 230 kcal renseignes, photo
+       comprise, mais le champ « nom » laisse vide chez Open Food Facts. L app les
+       jetait et annoncait « produit inconnu » d un produit qu elle connaissait. */
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"4056489318408", nom:"", marque:"lavassi",
+      prot100:10.9, kcal100:230, gluc100:16.5, lip100:13, portion:100, liquide:false, photo:""});
+    const saisie = D2.getElementById("ps-nom");
+    vrai("Sans nom, la fiche s ouvre quand meme", !!saisie);
+    eq("…et propose la marque comme point de depart", saisie.value, "lavassi");
+    eq("…dans un champ qu on peut corriger", saisie.tagName, "INPUT");
+    /* le nom tape a la main est bien celui qu on enregistre */
+    DB.hbPerso = {};
+    saisie.value = "Nuggets de poulet";
+    D2.getElementById("ps-favbox").click();
+    D2.getElementById("ps-ok").click();
+    vrai("Le nom saisi est celui qui est retenu",
+      JSON.stringify(DB.hbPerso).indexOf("Nuggets de poulet 100 g") > 0,
+      JSON.stringify(DB.hbPerso).slice(0, 90));
+    DB.hbPerso = {};
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
+      prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
+    vrai("Un produit qui a un nom garde son titre", !D2.getElementById("ps-nom"));
+
     /* ---- l'étoile des favoris ---- */
     /* Il fallait viser une case à cocher de vingt pixels posée à côté de l'étoile.
        L'étoile est devenue le bouton, et elle se remplit quand le produit est gardé. */
