@@ -5868,7 +5868,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 03h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 03h26 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10220,6 +10220,11 @@ function trierParGlisse(liste, onFin){
 function openPreview(tplId){
   const t = db.templates.find(x=>x.id===tplId);
   if(!t) return;
+  /* Une séance adaptative se recalcule ICI, à l ouverture de l aperçu — c est-à-dire
+     juste avant « Démarrer ». Elle se recalculait auparavant AU démarrage : l aperçu
+     montrait donc la séance précédente, et surtout l ordre qu on venait d y régler à la
+     main était effacé une seconde plus tard. On voit maintenant ce qu on va faire. */
+  if(t.adaptatif){ regenererAdaptative(t); t.majAdapt = Date.now(); }
   const mins = Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5);
   const nSeries = t.items.reduce((a,i)=>a+i.sets, 0);
   const tuile = (ic, val, lab) => `<div class="pn-t">
@@ -10317,7 +10322,10 @@ function startWorkout(tplId, lieu){
   /* Une séance adaptative se reconstruit ICI, au moment où l'on appuie sur « Démarrer » :
      c'est le seul instant où l'on connaît vraiment l'état du jour. Le résultat est écrit
      dans la séance, pour que la carte du plan montre ensuite ce qui a été fait. */
-  if(tpl && tpl.adaptatif) regenererAdaptative(tpl);
+  /* L aperçu vient peut-être de la recalculer : dans ce cas on garde ce qui est affiché,
+     y compris l ordre que l utilisateur a pu changer. Sinon (démarrage direct), on la
+     recalcule ici. */
+  if(tpl && tpl.adaptatif && Date.now() - (tpl.majAdapt || 0) > 6e5) regenererAdaptative(tpl);
   let remplaces = 0;
   const pris = tpl ? tpl.items.map(it=>it.exId) : [];
   const plan = tpl ? tpl.items.map((it, k)=>{
