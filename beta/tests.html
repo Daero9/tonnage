@@ -2732,6 +2732,20 @@ async function lancer(){
     vrai("…et son marqueur", tpl.adaptatif === "pull");
     const revenu = tpl.items.find(i=>i.exId === gardeId);
     if(revenu) eq("Un repos réglé à la main est conservé", revenu.rest, 222);
+    /* ---- l aperçu montre la séance qu on va vraiment faire ----
+       Elle se recalculait AU démarrage : l aperçu montrait donc la précédente, et
+       l ordre qu on venait d y régler à la main était effacé une seconde plus tard. */
+    const t2 = DB.templates.find(x=>x.adaptatif === "pull");
+    F.openPreview(t2.id);
+    const affichee = t2.items.map(i=>i.exId).join(",");
+    /* on change l ordre comme le ferait un doigt sur la poignée */
+    t2.items.reverse();
+    const voulu = t2.items.map(i=>i.exId).join(",");
+    vrai("L aperçu a bien recalculé la séance", !!affichee.length);
+    F.startWorkout(t2.id);
+    eq("L ordre réglé à la main est respecté",
+      DB.active.entries.map(e=>e.exId).join(","), voulu);
+    DB.active = null;
     DB.templates = []; DB.history = []; DB.materiel = null;
     F.render();
   })();
