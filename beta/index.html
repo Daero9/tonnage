@@ -1446,6 +1446,10 @@
     .ex-done, .ex-fini, .ex-fini .rond{animation:none;}
     .set-row .ck:active, .set-row .dg:active{transform:none;}
   }
+  /* ce qu'il y a à battre : discret, sous le nom, jamais au-dessus */
+  .ex-obj{display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ink-mute);
+    margin-top:2px; line-height:1.2;}
+  .ex-obj svg{width:12px; height:12px; flex:0 0 auto; color:var(--accent);}
   .ex-head{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
   /* plus grands et posés sur le blanc : ils forment une paire nette a droite du nom.
      Le contour est indispensable : « .info-btn » l enleve, et un bouton blanc sans
@@ -3339,6 +3343,8 @@ const TRAD = {en:{
   "dég.":"drop", "Dégressif ?":"Drop set?", "Éch.":"W-up",
   "série":"set", "Ajouter un exercice":"Add an exercise",
   "Terminer la séance":"Finish workout",
+  "Dernière fois : {}":"Last time: {}",
+  "Dernière fois : {n} à {p}":"Last time: {n} at {p}",
   "Dernière fois et charge du jour":"Last time and today's load",
   "Fiche de l'exercice":"Exercise details",
   "Ajouter un dégressif":"Add a drop set",
@@ -6617,7 +6623,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 17h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 17h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7005,6 +7011,23 @@ function lastPerf(exId){
   return null;
 }
 function workSets(en){ return en.sets.filter(s=>!s.warm); }
+/* Ce qu'il y a à battre, en une ligne. L'app connaissait ta dernière performance sur
+   chaque exercice mais ne te la posait jamais comme objectif : elle vivait dans une
+   fiche qu'il fallait ouvrir. Sous le nom, elle ne coûte rien à lire.
+   On annonce la MEILLEURE série, pas la moyenne : c'est elle qu'on cherche à dépasser. */
+function objectifDuJour(exId){
+  const last = lastPerf(exId);
+  if(!last || !last.sets.length) return "";
+  const ex = getEx(exId), iso = estIsometrique(ex);
+  /* la meilleure : la plus lourde, et à charge égale celle qui a le plus de répétitions */
+  const best = last.sets.slice().sort((a, b)=>(b.w || 0) - (a.w || 0) || (b.r || 0) - (a.r || 0))[0];
+  const combien = last.sets.length + " × " + (iso ? fmtDuree(best.r || 0) : (best.r || 0));
+  /* deux tournures plutôt qu'un « à » traduit tout seul : le mot de liaison ne se
+     recolle pas de la même façon d'une langue à l'autre */
+  return (best.w > 0 && !iso)
+    ? TR("Dernière fois : {n} à {p}").replace("{n}", combien).replace("{p}", pds(chargeReelle(exId, best)))
+    : TR("Dernière fois : {}").replace("{}", combien);
+}
 /* tonnage d'une série, dégressifs compris : 6 x 12 kg puis 4 x 10 kg = 112 kg soulevés */
 function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
@@ -11897,7 +11920,9 @@ function renderActive(app){
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(ex.name)}${
-          ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>` : ""}</div></div>
+          ex.equip? ` <span class="eqp">· ${esc(ex.equip)}</span>` : ""}</div>${
+          (()=>{ const o = objectifDuJour(en.exId);
+            return o ? `<div class="ex-obj">${IC_CIBLE}${esc(o)}</div>` : ""; })()}</div>
         <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Dernière fois et charge du jour")}">${IC_LISTE}</button>
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
