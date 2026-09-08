@@ -1201,6 +1201,19 @@ async function lancer(){
     }
     return vu;
   })());
+  /* …et ne se repose pas comme une serie lourde : deux minutes entre deux planches
+     n'ont aucun sens, l'effort est court et leger */
+  vrai("Un gainage ne se repose pas plus d'une minute", (()=>{
+    for(let k=0;k<40;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom));
+          if(ex && F.estIsometrique(ex) && it.rest > 60) return false;
+        }
+      }
+    }
+    return true;
+  })());
   DB.materiel = null;
   vrai("En perte de poids, plus aucune série au-delà de 15 répétitions",
     PROGS.seche.templates.every(t => t.items.every(([nom, sets, reps]) => !/1[6-9]|2[0-9]/.test(String(reps)))));
@@ -2575,6 +2588,64 @@ async function lancer(){
     vrai("Le signe vient avant le texte",
       lignes.every(l => l.firstElementChild.classList.contains("rgi")));
     F.hideSheet();
+  })();
+  neuf();
+
+  grp("La bibliothèque d'exercices");
+  neuf();
+  /* Trois filtres qui se cumulent : la famille, le matériel, la recherche. Et le détail
+     des muscles qu'on peut replier pour tenir deux fois plus d'exercices à l'écran. */
+  (()=>{
+    const gardeVM = DB.settings.pkMuscles;
+    const EQ = F.eval("equipCanon");    /* const : absente de window */
+    F.eval("pkFam = 'tous'; pkMat = ''");
+    DB.settings.pkMuscles = true;
+    F.openPicker(null);
+    const D2 = F.document;
+    const noms = () => [...D2.querySelectorAll("#pk-list .nm")].map(e=>e.textContent);
+    const fam = f => { D2.querySelector(`[data-pkfam="${f}"]`).click(); return noms(); };
+    const mat = m => { const sel = D2.getElementById("pk-mat");
+      sel.value = m; sel.dispatchEvent(new F.Event("change")); return noms(); };
+
+    eq("Huit familles", D2.querySelectorAll("[data-pkfam]").length, 8);
+    eq("On part de « Tous »", D2.querySelector("[data-pkfam].on").dataset.pkfam, "tous");
+    eq("« Tous » montre toute la bibliothèque", noms().length, F.allEx().length);
+
+    /* « Bras » n'existe pas comme groupe : il réunit biceps et triceps */
+    const bras = fam("bras");
+    vrai("« Bras » sort les curls", bras.some(n=>/Curl/.test(n)), bras.join(", "));
+    vrai("…et les extensions triceps", bras.some(n=>/Extension|Barre au front|Dips/.test(n)));
+    vrai("…sans ramener le squat", !bras.some(n=>/Squat/.test(n)));
+
+    /* « Fessiers » non plus : il se lit dans les muscles travaillés */
+    const fess = fam("fessiers");
+    vrai("« Fessiers » sort le hip thrust ou le pont",
+      fess.some(n=>/Hip thrust|Pont fessier/.test(n)), fess.join(", "));
+    vrai("…et le squat", fess.some(n=>/Squat/.test(n)));
+    vrai("…sans ramener le développé couché", !fess.some(n=>/Développé couché/.test(n)));
+
+    /* le matériel se cumule avec la famille */
+    const avant = fess.length;
+    const fessHalteres = mat("Haltères");
+    vrai("Le matériel réduit la liste", fessHalteres.length < avant,
+      fessHalteres.length + " sur " + avant);
+    vrai("…et tout y est bien aux haltères",
+      fessHalteres.every(n=>EQ(F.getEx(id(n))) === "Haltères"));
+    eq("Le compte suit", D2.getElementById("pk-nb").textContent.split(" ")[0],
+      String(fessHalteres.length));
+    mat("");
+    fam("tous");
+
+    /* le détail des muscles est un réglage, il survit à la fermeture */
+    vrai("Les muscles ciblés s'affichent", !!D2.querySelector("#pk-list .mw"));
+    const bascule = D2.getElementById("pk-vm");
+    bascule.checked = false; bascule.dispatchEvent(new F.Event("change"));
+    vrai("On peut les replier", !D2.querySelector("#pk-list .mw"));
+    eq("…et le choix est retenu", DB.settings.pkMuscles, false);
+
+    F.hideSheet();
+    DB.settings.pkMuscles = gardeVM;
+    F.eval("pkFam = 'tous'; pkMat = ''");
   })();
   neuf();
 
