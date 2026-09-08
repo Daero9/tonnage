@@ -2811,6 +2811,44 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le repos réellement pris");
+  neuf();
+  /* Une série écourtée passait pour une charge trop lourde : les répétitions tombaient,
+     l'app baissait le poids, et la force n'y était pour rien. */
+  (()=>{
+    const dc = id("Développé couché");
+    const seance = (repos) => { let t = Date.now() - 3*864e5;
+      const sets = [];
+      [10, 6, 5].forEach((r, i)=>{ if(i) t += repos*1000; sets.push(Object.assign(serie(60, r, 0), {t:t})); });
+      return [{id:"rp", date:new Date(t).toISOString(), name:"x", templateId:"x",
+        start:0, end:0, entries:[{exId:dc, sets:sets}]}]; };
+    const cible = {reps:"8-12", rest:180};
+    DB.history = seance(45);                       /* 45 s au lieu de 3 min */
+    const court = F.suggestFor(dc, cible);
+    vrai("Un repos écourté n'est pas une charge trop lourde", court.mode === "hold",
+      court.mode + " · " + court.text);
+    vrai("…et l'app dit pourquoi", /repos/i.test(court.text), court.text);
+    eq("…en gardant la charge", court.w, 60);
+
+    DB.history = seance(200);                      /* repos respecté */
+    const normal = F.suggestFor(dc, cible);
+    vrai("Avec le repos pris, la baisse compte vraiment", normal.mode !== "hold",
+      normal.mode + " · " + normal.text);
+
+    /* un repos PLUS LONG que prévu ne prouve rien : on n'en fait rien */
+    DB.history = seance(400);
+    vrai("Un repos trop long ne change rien", F.suggestFor(dc, cible).mode !== "hold");
+
+    /* sans horaire, on ne devine pas */
+    DB.history = [{id:"rp2", date:new Date(Date.now()-3*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:dc, sets:[serie(60,10,0), serie(60,8,0), serie(60,7,0)]}]}];
+    vrai("Sans heure enregistrée, la règle ne s'applique pas",
+      F.suggestFor(dc, cible).mode !== "hold");
+    DB.history = [];
+  })();
+  neuf();
+
   grp("Les identifiants recalés");
   neuf();
   /* Deux exercices insérés au milieu de la bibliothèque les 4 et 5 septembre ont fait
