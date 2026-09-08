@@ -3485,6 +3485,57 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le parcours de création de profil");
+  neuf();
+  /* Chaque réponse est une carte : signe, intitulé, raison, pastille. La raison vivait
+     sous le bouton sélectionné — on ne pouvait comparer deux réponses qu'en les
+     essayant l'une après l'autre. */
+  (()=>{
+    const etapes = {objectif:3, corps:4, lieu:7, frequence:8};
+    F.openOnboarding(false, null, etapes.objectif);
+    const D2 = F.document;
+    const cts = () => [...D2.querySelectorAll(".onb-cartes .ct")];
+    eq("Cinq objectifs, cinq cartes", cts().length, 5);
+    vrai("Chacune porte son signe", cts().every(c=>!!c.querySelector(".ic")));
+    vrai("…son intitulé et sa raison",
+      cts().every(c=>c.querySelector(".t") && c.querySelector(".s")));
+    vrai("…et sa pastille", cts().every(c=>!!c.querySelector(".rd")));
+    eq("Une seule est choisie", cts().filter(c=>c.classList.contains("on")).length, 1);
+    /* le mot qui porte la question est en orange */
+    vrai("Le titre a son mot en orange", !!D2.querySelector("#onb-body h2 .hl"));
+    eq("…et il est bien orange",
+      F.getComputedStyle(D2.querySelector("#onb-body h2 .hl")).color, "rgb(245, 130, 32)");
+
+    F.openOnboarding(false, null, etapes.lieu);
+    eq("Trois lieux, trois cartes", cts().length, 3);
+    F.openOnboarding(false, null, etapes.frequence);
+    eq("Cinq rythmes, cinq cartes", cts().length, 5);
+    vrai("Le nombre de séances se lit en chiffre",
+      cts().map(c=>c.querySelector(".ic").textContent.trim()).join() === "2,3,4,5,6");
+
+    /* la barre du haut : la même qu'avant, en orange et plus épaisse */
+    const barre = D2.querySelector(".onb-prog i");
+    eq("La barre d'avancement est orange",
+      F.getComputedStyle(barre).backgroundColor, "rgb(245, 130, 32)");
+    vrai("…et plus épaisse qu'avant",
+      parseFloat(F.getComputedStyle(D2.querySelector(".onb-prog")).height) >= 9);
+
+    /* taille et poids : deux roulettes en carte, et l'encadré qui explique */
+    F.openOnboarding(false, null, etapes.corps);
+    eq("Deux roulettes", D2.querySelectorAll(".onb-rou .rou").length, 2);
+    vrai("Chacune porte son intitulé et son signe",
+      [...D2.querySelectorAll(".onb-rou .rou-t")].every(t=>!!t.querySelector("svg")));
+    vrai("L'encadré explique pourquoi on demande ça", !!D2.querySelector(".onb-note"));
+
+    /* le carrousel n'a pas bougé : c'est une autre page */
+    F.openOnboarding(false, null, 0);
+    vrai("Le carrousel garde sa mise en page",
+      !!D2.querySelector(".onb-body.intro") && !D2.querySelector(".onb-cartes"));
+    vrai("…et son titre à lui", !!D2.querySelector(".onb-titre .hl"));
+    F.fermerOnb();
+  })();
+  neuf();
+
   grp("Le carrousel d'accueil");
   neuf();
   /* Quatre vues, une image pleine largeur par vue, un titre dont la seconde ligne
