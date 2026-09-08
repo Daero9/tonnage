@@ -538,8 +538,8 @@
   /* Piste toujours claire : .onb-prog n'existe que pendant le parcours, et le
      parcours force la palette claire. La repeindre en sombre donnait un
      remplissage presque noir sur une piste sombre — illisible. */
-  .onb-prog{flex:1; height:7px; border-radius:5px; background:#d9d4c9; overflow:hidden;}
-  .onb-prog i{display:block; height:100%; border-radius:5px; background:var(--ink); transition:width .3s ease;}
+  .onb-prog{flex:1; height:10px; border-radius:6px; background:#ded9cf; overflow:hidden;}
+  .onb-prog i{display:block; height:100%; border-radius:6px; background:var(--accent); transition:width .3s ease;}
   .onb-x{width:30px; height:30px; flex:0 0 auto; font-size:19px; color:var(--ink-mute);
     display:flex; align-items:center; justify-content:center;}
   .onb-body{flex:1; min-height:0; overflow-y:auto; padding:22px 20px 10px; -webkit-overflow-scrolling:touch;
@@ -560,6 +560,43 @@
   .onb-lien b{color:var(--ink); text-decoration:underline;}
 
   /* choix multiples : apparition bouton par bouton */
+  /* le mot qui porte la question passe en orange, comme sur le carrousel */
+  .onb h2 .hl{color:var(--accent);}
+  /* ---- les cartes de choix ----
+     Une par ligne : le signe dans son rond, l'intitulé en gras, la raison juste en
+     dessous, la pastille à droite. La description vivait sous le bouton sélectionné :
+     on ne pouvait comparer deux réponses qu'en les essayant l'une après l'autre. */
+  .onb-cartes{display:flex; flex-direction:column; gap:9px;}
+  .onb-cartes .ct{display:flex; align-items:center; gap:13px; width:100%; text-align:left;
+    background:var(--surface); border:1.5px solid transparent; border-radius:16px; padding:13px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06); opacity:0; transform:translateY(8px);
+    animation:chIn .28s ease forwards;
+    transition:transform .12s ease, background .16s ease, border-color .16s ease;}
+  .onb-cartes .ct.fixe{animation:none; opacity:1; transform:none;}
+  .onb-cartes .ct:active{transform:scale(.985);}
+  .onb-cartes .ct .ic{flex:0 0 auto; width:46px; height:46px; border-radius:14px;
+    background:var(--surface2); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800;}
+  .onb-cartes .ct .ic svg{width:23px; height:23px;}
+  .onb-cartes .ct .tx{flex:1; min-width:0;}
+  .onb-cartes .ct .t{display:block; font-size:15.5px; font-weight:800; line-height:1.25;}
+  .onb-cartes .ct .s{display:block; font-size:12.5px; color:var(--ink-mute); line-height:1.4; margin-top:2px;}
+  .onb-cartes .ct .rd{flex:0 0 auto; width:22px; height:22px; border-radius:50%;
+    border:2px solid var(--border); display:flex; align-items:center; justify-content:center;}
+  .onb-cartes .ct .rd i{width:9px; height:9px; border-radius:50%; background:#fff; display:none;}
+  .onb-cartes .ct.on{background:rgba(245,130,32,.11); border-color:var(--accent);}
+  .onb-cartes .ct.on .ic{background:rgba(245,130,32,.18); color:var(--accent);}
+  .onb-cartes .ct.on .rd{background:var(--accent); border-color:var(--accent);}
+  .onb-cartes .ct.on .rd i{display:block;}
+  /* ---- l'encadré « pourquoi c'est important » ---- */
+  .onb-note{display:flex; align-items:flex-start; gap:12px; background:var(--surface2);
+    border-radius:16px; padding:13px; margin-top:16px;}
+  .onb-note .ic{flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--accent);
+    color:#fff; font-size:15px; font-weight:800; font-style:italic;
+    display:flex; align-items:center; justify-content:center;}
+  .onb-note .t{font-size:13.5px; font-weight:800;}
+  .onb-note .s{font-size:12.5px; color:var(--ink-mute); line-height:1.45; margin-top:2px;}
+
   .onb-choix{display:flex; flex-direction:column; gap:9px;}
   .onb-choix .ch{background:var(--surface); border-radius:12px; padding:14px; font-size:14.5px; font-weight:700;
     text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06); opacity:0; transform:translateY(8px);
@@ -582,9 +619,16 @@
   .onb-nom::placeholder{color:var(--ink-mute); opacity:.55;}
 
   /* roulettes de sélection */
-  .onb-rou{display:flex; gap:18px; justify-content:center;}
-  .rou{flex:1; max-width:190px; text-align:center;}
-  .rou-t{font-size:13px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin-bottom:6px;}
+  .onb-rou{display:flex; gap:12px; justify-content:center; align-items:flex-start;}
+  /* chaque roulette dans sa carte, avec son intitulé : deux colonnes nues se
+     ressemblaient trop pour qu'on sache laquelle on faisait tourner */
+  .rou{flex:1; max-width:190px; text-align:center; background:var(--surface);
+    border-radius:18px; padding:12px 8px 10px; box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .rou-t{display:flex; align-items:center; justify-content:center; gap:7px;
+    font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink); margin-bottom:1px;}
+  .rou-t svg{width:16px; height:16px; color:var(--accent);}
+  .rou-s{font-size:11.5px; color:var(--ink-mute); margin-bottom:6px;}
   .rou-box{position:relative; height:238px; overflow:hidden;
     -webkit-mask-image:linear-gradient(#0000, #000 22%, #000 78%, #0000);
     mask-image:linear-gradient(#0000, #000 22%, #000 78%, #0000);}
@@ -3277,6 +3321,23 @@ const TRAD = {en:{
   "Comment veux-tu<br>qu'on t'appelle ?":"What should we<br>call you?",
   "De quoi disposes-tu<br>chez toi ?":"What do you have<br>at home?",
   "Où t'entraînes-tu ?":"Where do you train?",
+  "Comment veux-tu<br>qu'on <span class=\"hl\">t'appelle</span> ?":"What should we<br><span class=\"hl\">call you</span>?",
+  "Tu <span class=\"hl\">es</span>…":"You <span class=\"hl\">are</span>…",
+  "Quel est ton <span class=\"hl\">objectif</span> ?":"What is your <span class=\"hl\">goal</span>?",
+  "Ta taille <span class=\"hl\">et</span> ton poids":"Your height <span class=\"hl\">and</span> weight",
+  "Quel <span class=\"hl\">âge</span> as-tu ?":"How <span class=\"hl\">old</span> are you?",
+  "Quel <span class=\"hl\">poids</span> vises-tu ?":"What <span class=\"hl\">weight</span> are you aiming for?",
+  "Où <span class=\"hl\">t'entraînes-tu</span> ?":"Where do you <span class=\"hl\">train</span>?",
+  "De quoi disposes-tu<br><span class=\"hl\">chez toi</span> ?":"What do you have<br><span class=\"hl\">at home</span>?",
+  "Combien de séances<br><span class=\"hl\">par semaine</span> ?":"How many sessions<br><span class=\"hl\">per week</span>?",
+  "Tu vas y <span class=\"hl\">arriver</span> !":"You are going to <span class=\"hl\">get there</span>!",
+  "Accès à tout le matériel habituel.":"Access to all the usual kit.",
+  "Avec le matériel que tu as.":"With the kit you have.",
+  "Salle et maison : on te demandera où tu es à chaque séance.":"Gym and home: we will ask where you are before each session.",
+  "Ta taille actuelle":"Your current height",
+  "Ton poids actuel":"Your current weight",
+  "Pourquoi c'est important ?":"Why does it matter?",
+  "Ces deux chiffres servent à estimer tes besoins énergétiques et à calibrer tes charges de départ.":"These two numbers estimate your energy needs and set your starting loads.",
   "Quel est ton objectif ?":"What's your goal?",
   "Quel poids vises-tu ?":"What weight are you aiming for?",
   "Quel âge as-tu ?":"How old are you?",
@@ -5395,9 +5456,21 @@ function openOnboarding(first, brouillon, depart){
     if(croix) croix.onclick = quitter;
 
     const suivant = (label, action)=>{
-      pied.innerHTML = `<button class="onb-btn" id="onb-next">${label || TR("Suivant")}</button>`;
+      pied.innerHTML = `<button class="onb-btn" id="onb-next">${label || TR("Suivant")
+        }<span class="fl" aria-hidden="true">›</span></button>`;
       onbEl.querySelector("#onb-next").onclick = action || (()=>{ i++; dessiner(); });
     };
+    /* Une carte par réponse : signe, intitulé, raison, pastille. `ic` accepte un dessin
+       ou un simple texte — le nombre de séances se lit mieux en chiffre qu'en icône. */
+    const cartes = (items, actif, anime)=>
+      `<div class="onb-cartes">${items.map(([v, t, sous, ic], n)=>
+        `<button class="ct ${actif === v ? "on" : ""} ${anime ? "" : "fixe"}" data-ch="${esc(v)}"
+          ${anime ? `style="animation-delay:${n*55}ms"` : ""}>
+          ${ic ? `<span class="ic">${ic}</span>` : ""}
+          <span class="tx"><span class="t">${t}</span>${
+            sous ? `<span class="s">${sous}</span>` : ""}</span>
+          <span class="rd"><i></i></span>
+        </button>`).join("")}</div>`;
     /* liste de choix : apparition bouton par bouton */
     const choix = (items, actif, desc, anime)=>
       `<div class="onb-choix">${items.map(([v,l],n)=>
@@ -5531,7 +5604,7 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 2. prénom */
     if(etape === "nom"){
-      corps.innerHTML = `<h2>${TR("Comment veux-tu<br>qu'on t'appelle ?")}</h2>
+      corps.innerHTML = `<h2>${TR("Comment veux-tu<br>qu'on <span class=\"hl\">t'appelle</span> ?")}</h2>
         <div class="sous">${TR("Ton prénom sert seulement à personnaliser l'app. Il ne quitte jamais ton téléphone.")}</div>
         <input class="onb-nom" id="onb-nom" placeholder="${TR("Ton prénom")}" maxlength="20"
           value="${esc(d.name)}" autocomplete="given-name" enterkeyhint="next">`;
@@ -5546,10 +5619,14 @@ function openOnboarding(first, brouillon, depart){
     /* -------------------------------------------------------- 3. sexe */
     if(etape === "sexe"){
       const dess = anime=>{
-        corps.innerHTML = `<h2>${TR("Tu es…")}</h2>
+        corps.innerHTML = `<h2>${TR("Tu <span class=\"hl\">es</span>…")}</h2>
           <div class="sous">${TR("La dépense au repos n'est pas la même. Sans cette information, l'estimation calorique se trompe d'environ 150 kcal par jour.")}</div>
-          ${choix([["h",TR("Un homme")],["f",TR("Une femme")],["n",TR("Je préfère ne pas répondre")]], d.sex,
-            v => v==="n" ? TR("On prendra une valeur intermédiaire entre les deux.") : "", anime)}`;
+          ${cartes([
+            ["h", TR("Un homme"), "", IC_SILHOUETTE],
+            ["f", TR("Une femme"), "", IC_SILHOUETTE],
+            ["n", TR("Je préfère ne pas répondre"),
+                  TR("On prendra une valeur intermédiaire entre les deux."), IC_USER]
+          ], d.sex, anime)}`;
         brancher(v=>{ d.sex = v; dess(false); });
       };
       dess(true); suivant();
@@ -5559,9 +5636,11 @@ function openOnboarding(first, brouillon, depart){
     /* -------------------------------------------------------- 4. objectif */
     if(etape === "objectif"){
       const dess = anime=>{
-        corps.innerHTML = `<h2>${TR("Quel est ton objectif ?")}</h2>
+        const ICO_AIM = {masse:ICONS.seance, seche:IC_BALANCE, recomp:IC_ECHANGE,
+                         force:IC_ECLAIR, entretien:IC_ASSIETTE};
+        corps.innerHTML = `<h2>${TR("Quel est ton <span class=\"hl\">objectif</span> ?")}</h2>
           <div class="sous">${TR("Il détermine tes calories, tes protéines et la forme de tes séances.")}</div>
-          ${choix(AIMS.map(a=>[a.id, esc(TR(a.label))]), d.aim, v=>esc(TR(aimOf(v).desc)), anime)}
+          ${cartes(AIMS.map(a=>[a.id, esc(TR(a.label)), esc(TR(a.desc)), ICO_AIM[a.id]]), d.aim, anime)}
           <button class="onb-lien" id="onb-info" style="margin-top:14px;">ⓘ <b>${TR("Tout savoir sur cet objectif")}</b></button>`;
         brancher(v=>{
           const ancienne = aimOf(d.aim).prot;
@@ -5577,11 +5656,12 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 5. taille et poids */
     if(etape === "corps"){
-      corps.innerHTML = `<h2>${TR("Ta taille et ton poids")}</h2>
+      corps.innerHTML = `<h2>${TR("Ta taille <span class=\"hl\">et</span> ton poids")}</h2>
         <div class="sous">${TR("Pour calculer ta dépense réelle et calibrer tes charges de départ.")}</div>
         <div class="onb-rou">
           <div class="rou">
-            <div class="rou-t">${TR("Taille")}</div>
+            <div class="rou-t">${IC_SILHOUETTE}${TR("Taille")}</div>
+            <div class="rou-s">${TR("Ta taille actuelle")}</div>
             <div class="rou-box"><div class="rou-band"></div><div class="rou-scroll" id="rou-h"></div></div>
             <div class="rou-unite">
               <button data-uh="cm" class="${!estImperial()?"on":""}">cm</button>
@@ -5589,13 +5669,18 @@ function openOnboarding(first, brouillon, depart){
             </div>
           </div>
           <div class="rou">
-            <div class="rou-t">${TR("Poids")}</div>
+            <div class="rou-t">${IC_BALANCE}${TR("Poids")}</div>
+            <div class="rou-s">${TR("Ton poids actuel")}</div>
             <div class="rou-box"><div class="rou-band"></div><div class="rou-scroll" id="rou-w"></div></div>
             <div class="rou-unite">
               <button data-uw="kg" class="${!estImperial()?"on":""}">kg</button>
               <button data-uw="lbs" class="${estImperial()?"on":""}">lb</button>
             </div>
           </div>
+        </div>
+        <div class="onb-note"><span class="ic">i</span>
+          <div><div class="t">${TR("Pourquoi c'est important ?")}</div>
+            <div class="s">${TR("Ces deux chiffres servent à estimer tes besoins énergétiques et à calibrer tes charges de départ.")}</div></div>
         </div>`;
       const cm = !estImperial(), kg = !estImperial();
       roulette(corps.querySelector("#rou-h"),
@@ -5619,7 +5704,7 @@ function openOnboarding(first, brouillon, depart){
 
     /* -------------------------------------------------------- 6. âge */
     if(etape === "age"){
-      corps.innerHTML = `<h2>${TR("Quel âge as-tu ?")}</h2>
+      corps.innerHTML = `<h2>${TR("Quel <span class=\"hl\">âge</span> as-tu ?")}</h2>
         <div class="sous">${TR("Le métabolisme baisse d'environ 2 % par décennie : c'est ce qui garde l'estimation juste dans la durée.")}</div>
         <div class="onb-rou"><div class="rou" style="max-width:210px;">
           <div class="rou-t">${TR("Années")}</div>
@@ -5637,7 +5722,7 @@ function openOnboarding(first, brouillon, depart){
     /* -------------------------------------------------------- 7. poids cible */
     if(etape === "cible"){
       d.goalWeight = demiTour(d.goalWeight > 0 ? d.goalWeight : d.weight);
-      corps.innerHTML = `<h2>${TR("Quel poids vises-tu ?")}</h2>
+      corps.innerHTML = `<h2>${TR("Quel <span class=\"hl\">poids</span> vises-tu ?")}</h2>
         <div class="sous">${TR("Rien n'est figé : tu pourras le changer quand tu veux.")}</div>
         <div class="regle">
           <div class="regle-lab" id="reg-lab"></div>
@@ -5711,12 +5796,14 @@ function openOnboarding(first, brouillon, depart){
     /* -------------------------------------------------------- 7 bis. où t'entraînes-tu */
     if(etape === "lieu"){
       const dess = anime=>{
-        corps.innerHTML = `<h2>${TR("Où t'entraînes-tu ?")}</h2>
+        corps.innerHTML = `<h2>${TR("Où <span class=\"hl\">t'entraînes-tu</span> ?")}</h2>
           <div class="sous">${TR("Tes séances ne seront construites qu'avec des exercices que tu peux réellement faire.")}</div>
-          ${choix([["salle",TR("En salle de sport")],["maison",TR("Chez moi")],["mixte",TR("Les deux")]], d.lieu,
-            v => v === "salle"  ? TR("On considère que tu as accès à tout le matériel habituel.")
-               : v === "maison" ? TR("On te demandera juste après ce dont tu disposes.")
-               : TR("On te demandera où tu es au lancement de chaque séance, et on adaptera les exercices."), anime)}`;
+          ${cartes([
+            ["salle",  TR("En salle de sport"), TR("Accès à tout le matériel habituel."), ICONS.seance],
+            ["maison", TR("Chez moi"), TR("Avec le matériel que tu as."), IC_MAISON],
+            ["mixte",  TR("Les deux"), TR("Salle et maison : on te demandera où tu es à chaque séance."),
+                       ICONS.seance + IC_MAISON]
+          ], d.lieu, anime)}`;
         brancher(v=>{ d.lieu = v; dess(false); });
       };
       dess(true);
@@ -5736,7 +5823,7 @@ function openOnboarding(first, brouillon, depart){
     if(etape === "materiel"){
       const dess = anime=>{
         const n = d.materiel.length;
-        corps.innerHTML = `<h2>${TR("De quoi disposes-tu<br>chez toi ?")}</h2>
+        corps.innerHTML = `<h2>${TR("De quoi disposes-tu<br><span class=\"hl\">chez toi</span> ?")}</h2>
           <div class="sous">${TR("Coche tout ce que tu as sous la main. Sans rien, on te construira quand même des séances au poids du corps.")}</div>
           <div class="onb-choix">${MATERIELS.filter(m=>m.id !== "machine").map((m,k)=>`
             <button class="ch ${d.materiel.includes(m.id)?"on":""}${anime?"":" fixe"}" data-mt2="${m.id}"
@@ -5763,9 +5850,10 @@ function openOnboarding(first, brouillon, depart){
                     5:TR("Il faut déjà bien récupérer et manger en conséquence."),
                     6:TR("Réservé aux pratiquants confirmés, avec un sommeil solide.")};
       const dess = anime=>{
-        corps.innerHTML = `<h2>${TR("Combien de séances<br>par semaine ?")}</h2>
+        corps.innerHTML = `<h2>${TR("Combien de séances<br><span class=\"hl\">par semaine</span> ?")}</h2>
           <div class="sous">${TR("Sois réaliste : mieux vaut 3 séances tenues que 5 abandonnées.")}</div>
-          ${choix([2,3,4,5,6].map(n=>[String(n), `${TR("{} fois par semaine").replace("{}", n)}`]), String(d.days), v=>AIDE[parseInt(v)], anime)}`;
+          ${cartes([2,3,4,5,6].map(n=>[String(n),
+            TR("{} fois par semaine").replace("{}", n), AIDE[n], String(n)]), String(d.days), anime)}`;
         brancher(v=>{ d.days = parseInt(v); dess(false); });
       };
       dess(true); suivant();
@@ -5782,7 +5870,7 @@ function openOnboarding(first, brouillon, depart){
       const monte = diff >= 0;
       const yA = monte ? y1 : y0, yB = monte ? y0 : y1;
       const courbe = `M ${x0} ${yA} C ${x0+(x1-x0)*0.5} ${yA}, ${x0+(x1-x0)*0.6} ${yB}, ${x1} ${yB}`;
-      corps.innerHTML = `<h2>${TR("Tu vas y arriver !")}</h2>
+      corps.innerHTML = `<h2>${TR("Tu vas y <span class=\"hl\">arriver</span> !")}</h2>
         <div class="sous">${TR("Une projection, pas une promesse : elle suppose une alimentation régulière et un sommeil correct.")}</div>
         <div class="proj">
           <h3>${TR("Évolution de ton poids")}</h3>
@@ -6156,7 +6244,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 15h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 15h22 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6865,6 +6953,8 @@ const IC_LANGUE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const IC_ECRAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/></svg>';
 /* le bouclier : ce qui protège tes données */
 const IC_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 4.8 5.6v5.9c0 4.4 3 8.2 7.2 9.7 4.2-1.5 7.2-5.3 7.2-9.7V5.6L12 2.8Z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg>';
+const IC_ECLAIR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.4 2 4.9 13.1c-.3.4 0 1 .5 1h5.1l-1.9 7.6c-.1.6.6.9 1 .4l8.5-11.1c.3-.4 0-1-.5-1h-5.1l1.9-7.6c.1-.6-.6-.9-1-.4Z"/></svg>';
+const IC_MAISON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 10.4 12 3.6l8.4 6.8"/><path d="M5.6 12v8.4h12.8V12"/><path d="M9.8 20.4v-5.2h4.4v5.2"/></svg>';
 const IC_CLOCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8.4a6 6 0 1 0-12 0c0 5.2-2.1 6.6-2.1 6.6h16.2S18 13.6 18 8.4Z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg>';
 /* Une horloge simple : le chronometre, avec sa couronne, disait « je mesure » alors
    qu il s agit d une heure a laquelle ca doit sonner. */
