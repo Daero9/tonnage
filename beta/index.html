@@ -6655,7 +6655,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 18h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 18h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6709,6 +6709,31 @@ function applyDefaults(){
     }));
     db.templates.forEach(t=>{ if(!t.adaptatif && types[t.name]) t.adaptatif = types[t.name]; });
     db.adaptV2 = 1;
+  }
+  /* Deux exercices ont été insérés AU MILIEU de la bibliothèque, le 4 et le 5 septembre
+     2026 — « Écartés poulie basse » au rang 39, « Butterfly arrière » au rang 16.
+     L'identifiant d'un exercice étant son RANG dans la liste, tout ce qui suivait a
+     glissé d'un cran : une séance enregistrée avant ces dates désigne aujourd'hui son
+     voisin. Nico a ainsi vu son extension poulie devenir un curl pupitre.
+     On recale une fois pour toutes, en datant chaque séance. Les deux décalages
+     s'appliquent dans l'ordre : le plus ancien d'abord, sur le rang de son époque. */
+  if(!db.libV3){
+    const DECALAGES = [
+      {avant: Date.parse("2026-09-04T03:45:00+02:00"), rang: 39},
+      {avant: Date.parse("2026-09-05T12:30:00+02:00"), rang: 16}
+    ];
+    const recale = (id, t) => {
+      if(!/^lib[0-9]+$/.test(id || "")) return id;      /* un exercice perso ne bouge pas */
+      let n = parseInt(id.slice(3), 10);
+      DECALAGES.forEach(d=>{ if(t < d.avant && n >= d.rang) n++; });
+      return "lib" + n;
+    };
+    (db.history || []).forEach(h=>{
+      const t = new Date(h.date).getTime();
+      if(!(t > 0)) return;                              /* sans date, on ne devine pas */
+      (h.entries || []).forEach(en=>{ en.exId = recale(en.exId, t); });
+    });
+    db.libV3 = 1;
   }
   if(!db.plafond) db.plafond = {};     /* exercices où la charge ne peut plus monter */
   if(!db.unilat) db.unilat = {};       /* exercices faits un bras / une jambe à la fois */

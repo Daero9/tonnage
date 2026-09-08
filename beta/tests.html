@@ -2811,6 +2811,50 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Les identifiants recalés");
+  neuf();
+  /* Deux exercices insérés au milieu de la bibliothèque les 4 et 5 septembre ont fait
+     glisser tous les suivants : une séance d'avant désigne aujourd'hui son voisin.
+     Nico a vu son extension poulie devenir un curl pupitre. */
+  (()=>{
+    const garde = DB.libV3;
+    const seance = (iso, ids) => ({id:"r"+iso, date:iso, name:"x", templateId:"x",
+      start:0, end:0, entries:ids.map(i=>({exId:i, sets:[serie(20,10)]}))});
+    /* le cas réel : séance du 4 septembre 17h44, « lib21 » voulait dire Extension poulie */
+    DB.history = [seance("2026-09-04T17:44:04.186Z", ["lib0","lib1","lib12","lib21"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    const ids = DB.history[0].entries.map(e=>e.exId);
+    eq("L'extension poulie retrouve son identifiant", ids[3], id("Extension poulie"));
+    eq("…et redevient une extension poulie",
+      F.getEx(ids[3]).name, F.getEx(id("Extension poulie")).name);
+    vrai("Les exercices d'avant le décalage ne bougent pas",
+      ids[0] === "lib0" && ids[1] === "lib1" && ids[2] === "lib12", ids.join(", "));
+
+    /* une séance d'avant le 4 septembre subit LES DEUX décalages */
+    DB.history = [seance("2026-09-01T10:00:00.000Z", ["lib10","lib20","lib45"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    eq("Rang inférieur aux deux seuils : inchangé", DB.history[0].entries[0].exId, "lib10");
+    eq("Rang au-dessus du seuil du 5 septembre : +1", DB.history[0].entries[1].exId, "lib21");
+    eq("Rang au-dessus des deux seuils : +2", DB.history[0].entries[2].exId, "lib47");
+
+    /* une séance récente ne bouge pas, et la réparation ne se rejoue jamais */
+    DB.history = [seance(new Date().toISOString(), ["lib21","lib90"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    eq("Une séance d'aujourd'hui est déjà juste", DB.history[0].entries[0].exId, "lib21");
+    F.applyDefaults();
+    eq("…et rien ne se rejoue au chargement suivant", DB.history[0].entries[1].exId, "lib90");
+    /* un exercice perso n'a pas d'identifiant positionnel : on n'y touche pas */
+    DB.history = [seance("2026-09-01T10:00:00.000Z", ["x9_perso"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    eq("Un exercice perso reste intact", DB.history[0].entries[0].exId, "x9_perso");
+    DB.history = []; DB.libV3 = garde;
+  })();
+  neuf();
+
   grp("Ce qu'il y a à battre");
   neuf();
   /* L'app connaissait ta dernière performance mais ne te la posait jamais comme
