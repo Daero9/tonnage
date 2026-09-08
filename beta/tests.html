@@ -192,6 +192,20 @@ async function lancer(){
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
   eq("Les 115 exercices sont là", LIBEN.length, 115);
+  /* L'identifiant d'un exercice est sa POSITION dans la liste. Insérer une ligne au
+     milieu décale tous les suivants et rattache l'historique de chacun à son voisin —
+     c'est arrivé le 8 septembre 2026, sur 49 exercices. Ces repères le rendraient
+     visible immédiatement : un ajout ne doit jamais bouger un identifiant existant. */
+  const REPERES = {"Développé couché":"lib0", "Extension poulie":"lib22", "Crunch":"lib33",
+    "Roulette abdominale":"lib59", "Planche latérale":"lib60", "Superman":"lib101",
+    "Rowing sous la table":"lib108"};
+  const bouges = Object.keys(REPERES).filter(n=>id(n) !== REPERES[n]);
+  vrai("Aucun identifiant d'exercice n'a bougé", bouges.length === 0,
+    bouges.map(n=>n + " : " + REPERES[n] + " → " + id(n)).join(", "));
+  vrai("Les nouveaux exercices sont ajoutés à la fin",
+    ["Swing kettlebell","Développé kettlebell","Rowing TRX","Pompes TRX",
+     "Crunch sur ballon","Leg curl sur ballon"]
+      .every(n=>parseInt(String(id(n)).replace("lib",""), 10) >= 109));
   eq("Un nom s'affiche en anglais", LIBEN[0].name, "Bench press");
   eq("…mais sa clé reste le français", LIBEN[0].nameFr, "Développé couché");
   eq("Les 108 noms sont traduits",
