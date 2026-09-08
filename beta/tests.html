@@ -2662,6 +2662,68 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Lever le pied, sur preuve");
+  neuf();
+  /* Pas de semaine de décharge au calendrier : rien ne dit qu'arrêter tous les quatre
+     lundis fasse mieux que continuer. On lève le pied sur LE muscle qui le demande,
+     et seulement quand trois signaux concordent. */
+  (()=>{
+    const jours = j => new Date(Date.now() - j*864e5).toISOString();
+    /* deux exercices de biceps, charge figée, tout à l'échec, séances rapprochées */
+    const seance = (j, w, rir) => ({id:"p"+j+w, date:jours(j), name:"x", templateId:"x",
+      start:0, end:0, entries:[
+        {exId:id("Curl barre"),    sets:[serie(w,8,rir), serie(w,8,rir), serie(w,8,rir)]},
+        {exId:id("Curl haltères"), sets:[serie(w/2,8,rir), serie(w/2,8,rir), serie(w/2,8,rir)]}]});
+
+    /* cas franc : charge plate, tout à zéro de réserve, et une séance d'hier */
+    DB.history = [seance(12, 30, 0), seance(8, 30, 0), seance(4, 30, 0), seance(0.3, 30, 0)];
+    const perf = F.progressionParExo(), rec = F.recuperation();
+    vrai("Un muscle qu'on pilonne sans progresser est repéré",
+      F.musclePompe("Biceps", perf, rec) === true);
+
+    /* la charge monte : on continue, il n'y a rien à alléger */
+    DB.history = [seance(12, 24, 0), seance(8, 26, 0), seance(4, 28, 0), seance(0.3, 32, 0)];
+    vrai("Tant que la charge monte, on ne lève pas le pied",
+      F.musclePompe("Biceps", F.progressionParExo(), F.recuperation()) === false);
+
+    /* il reste de la réserve : la charge est plate mais l'effort ne l'explique pas */
+    DB.history = [seance(12, 30, 3), seance(8, 30, 3), seance(4, 30, 3), seance(0.3, 30, 3)];
+    vrai("Des séries gardées en réserve ne comptent pas comme un excès",
+      F.musclePompe("Biceps", F.progressionParExo(), F.recuperation()) === false);
+
+    /* et un muscle dont on n'a presque rien : on ne tranche pas sur du vide */
+    DB.history = [seance(4, 30, 0)];
+    vrai("Sans assez de suivi, on ne conclut rien",
+      F.musclePompe("Biceps", F.progressionParExo(), F.recuperation()) === false);
+
+    /* le besoin en tient compte, et la fiche le dit */
+    DB.history = [seance(12, 30, 0), seance(8, 30, 0), seance(4, 30, 0), seance(0.3, 30, 0)];
+    const b = F.besoinsMuscles("pull").find(x=>x.muscle === "Biceps");
+    vrai("Le besoin porte la marque", b.pompe === true);
+    const r = F.raisonsSeance("pull");
+    vrai("…et la fiche dit qu'on lève le pied",
+      r.some(([m, t])=>/lève le pied/i.test(t)), JSON.stringify(r));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* La récupération ralentit avec l'âge — modérément. */
+  (()=>{
+    const garde = DB.profile.age;
+    const pct = a => { DB.profile = Object.assign({}, DB.profile, {age:a});
+      return F.recuperation().muscles["Biceps"].pct; };
+    DB.history = [{id:"a1", date:new Date(Date.now()-20*36e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(30,8,0), serie(30,8,0), serie(30,8,0)]}]}];
+    const jeune = pct(25), vieux = pct(55);
+    vrai("À 55 ans, on récupère moins vite qu'à 25", vieux < jeune, vieux + " contre " + jeune);
+    vrai("…mais l'écart reste mesuré", jeune - vieux < 20, "écart de " + (jeune - vieux));
+    eq("Le facteur est plafonné", Math.round(F.facteurAge()*100)/100 <= 1.33, true);
+    DB.profile = Object.assign({}, DB.profile, {age:garde});
+    DB.history = [];
+  })();
+  neuf();
+
   grp("La justesse du moteur adaptatif");
   neuf();
   /* Le volume comptait des LIGNES COCHÉES : trois séries arrêtées loin de l'échec
