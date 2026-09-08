@@ -5175,7 +5175,10 @@ function coupeAttention(txt){
   const suite = txt.slice(k + 2);
   return [txt.slice(0, k), suite.charAt(0).toUpperCase() + suite.slice(1)];
 }
-function openAimInfo(id, retour){
+/* `depuisProfil` ne dit QUE d'où l'on vient, pour intituler le bouton. Il portait
+   avant une fonction de retour, et le seul appelant lui passait une fonction vide :
+   « Revenir à mon profil » ne refermait donc rien du tout. */
+function openAimInfo(id, depuisProfil){
   const a = aimOf(id), t = a.detail;
   const bloc = (ic, titre, txt) => `<div class="ai-l"><span class="ic">${ic}</span>
     <div><div class="t">${titre}</div>
@@ -5191,8 +5194,9 @@ function openAimInfo(id, retour){
     <div class="ai-att"><span class="ic">${IC_ALERTE}</span>
       <div>${chapeau ? `<div class="t">${esc(chapeau)}</div>` : ""}
         <div class="s">${esc(suite)}</div></div></div>
-    <button class="btn btn-accent" id="ai-ok" style="width:100%;">${TR(retour? "Revenir à mon profil" : "Compris")}</button>`);
-  document.getElementById("ai-ok").onclick = ()=>{ if(retour) retour(); else closeSheet(); };
+    <button class="btn btn-accent" id="ai-ok" style="width:100%;">${
+      TR(depuisProfil ? "Revenir à mon profil" : "Compris")}</button>`);
+  document.getElementById("ai-ok").onclick = closeSheet;
 }
 /* Ajouts caloriques denses : peu de volume dans l'estomac, beaucoup de kcal.
    Pensés pour ceux qui n'arrivent pas à manger assez (métabolisme rapide, petit appétit). */
@@ -5729,7 +5733,7 @@ function openOnboarding(first, brouillon, depart){
           if(d.protPerKg && Math.abs(d.protPerKg - ancienne) < 0.05) d.protPerKg = null;
           dess(false);
         });
-        corps.querySelector("#onb-info").onclick = ()=>openAimInfo(d.aim, ()=>{});
+        corps.querySelector("#onb-info").onclick = ()=>openAimInfo(d.aim, true);
       };
       dess(true); suivant();
       return;
@@ -6345,7 +6349,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 15h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 15h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */

@@ -3573,6 +3573,18 @@ async function lancer(){
     vrai("…et la suite en majuscule",
       /^[A-ZÉÀ]/.test(att.querySelector(".s").textContent.trim()),
       att.querySelector(".s").textContent.slice(0, 20));
+    /* Le bouton du bas ferme la fiche. Il portait une « fonction de retour » à laquelle
+       le parcours passait une fonction vide : « Revenir à mon profil » ne refermait rien. */
+    F.openAimInfo("masse", true);
+    eq("Depuis le profil, le bouton le dit",
+      D2.getElementById("ai-ok").textContent.trim(), "Revenir à mon profil");
+    D2.getElementById("ai-ok").click();
+    vrai("…et il referme bien la fiche", !F.eval("sheetOpen"));
+    F.openAimInfo("masse", false);
+    eq("Ailleurs, il dit « Compris »", D2.getElementById("ai-ok").textContent.trim(), "Compris");
+    D2.getElementById("ai-ok").click();
+    vrai("…et ferme aussi", !F.eval("sheetOpen"));
+
     /* les cinq objectifs passent tous, sans exception */
     F.eval("AIMS").forEach(a=>{
       F.openAimInfo(a.id, null);
