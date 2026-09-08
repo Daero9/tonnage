@@ -2994,6 +2994,9 @@ const TRAD = {en:{
   "Correct":"Just right",
   "Dur":"Hard",
   "Ta forme":"Your shape",
+  "Ta zone sensible":"Your sensitive area",
+  "Tes zones sensibles":"Your sensitive areas",
+  "Les exercices à risque pour {} sont écartés de tes séances.":"Exercises that are risky for your {} are kept out of your sessions.",
   "Tes deux dernières séances t'ont paru dures. On allège un peu.":"Your last two sessions felt hard. We ease off a little.",
   "Tes deux dernières séances t'ont paru faciles. On en remet une couche.":"Your last two sessions felt easy. We add a bit more.",
   "Tu forces dessus sans que ça monte. On lève le pied cette semaine.":"You are grinding on it with nothing to show. We ease off this week.",
@@ -6456,7 +6459,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 16h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 16h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10250,7 +10253,11 @@ const SCHEMA = {
   "Développé couché":"pousseeH",
   "Développé incliné haltères":"pousseeH",
   "Développé couché haltères":"pousseeH",
-  "Dips":"pousseeH",
+  /* Le dip n'est pas une poussée horizontale : le buste est vertical et l'épaule part
+     derrière le corps. Rangé avec les pompes et le développé couché, il était bloqué
+     dès qu'un de ces deux-là passait — et quelqu'un qui possède des barres de dips ne
+     voyait jamais de dips. Il a donc son propre schéma. */
+  "Dips":"dip",
   "Pompes":"pousseeH",
   "Développé machine":"pousseeH",
   "Développé couché à la Smith":"pousseeH",
@@ -10526,6 +10533,14 @@ function raisonsSeance(type){
   };
   const out = [];
   /* ce que TU as dit passe en premier : c'est la seule ligne qui ne vient pas d'un calcul */
+  /* Les blessures cochées écartent des exercices SANS RIEN DIRE : on coche « épaule »,
+     la séance suivante n'a plus de triangle d'alerte et rien n'explique pourquoi. */
+  const bobos = ((db.profile && db.profile.injuries) || [])
+    .map(k=>(INJURIES.find(x=>x.id === k) || {}).label).filter(Boolean);
+  if(bobos.length)
+    out.push([TR(bobos.length > 1 ? "Tes zones sensibles" : "Ta zone sensible"),
+      TR("Les exercices à risque pour {} sont écartés de tes séances.")
+        .replace("{}", bobos.map(l=>TR(l).toLowerCase()).join(", "))]);
   const humeur = tendanceRessenti();
   if(humeur === "dur")
     out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru dures. On allège un peu.")]);
@@ -10700,8 +10715,12 @@ function genererAdaptative(type, evites){
         /* Aucun mouvement libre pour ce muscle, et il est déjà servi par un exercice
            retenu : on passe. C est ce qui évitait un « Superman » derrière un soulevé
            de terre — deux charnières de hanche pour le même bas du dos. */
+        /* « Déjà servi » veut dire TRAVAILLÉ À FOND, pas simplement sollicité. Avec le
+           seuil à 2, des pompes suffisaient à déclarer les triceps couverts : la place
+           des triceps sautait, et quelqu'un qui possède des barres de dips ne voyait
+           jamais de dips — les pompes avaient pris la poussée horizontale avant lui. */
         const dejaCouvert = items.some(it=>(MUSCLE_WORK[it.nom] || [])
-          .some(m=>m[1] >= 2 && (m[0] === p.muscle || groupeDe(m[0]) === p.muscle)));
+          .some(m=>m[1] === 3 && (m[0] === p.muscle || groupeDe(m[0]) === p.muscle)));
         if(dejaCouvert) continue;
       }
       /* À qualité égale, l'exercice sur lequel ta charge monte passe devant. Rien de

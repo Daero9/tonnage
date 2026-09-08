@@ -3556,6 +3556,65 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Ce qu'on a chez soi sert vraiment");
+  neuf();
+  /* « J'ai des barres de dips, on ne m'a jamais proposé de dips. » Le dip était rangé
+     avec les pompes et le développé couché : dès qu'un des deux passait, il était
+     bloqué par la règle « un seul mouvement par schéma ». */
+  (()=>{
+    DB.history = [];
+    DB.profile = Object.assign({}, DB.profile, {injuries:[], lieu:"maison"});
+    const tire = (mat, types) => { DB.materiel = mat;
+      const vus = {};
+      for(let k=0;k<25;k++) types.forEach(t=>F.genererAdaptative(t).items
+        .forEach(i=>{ vus[i.nom] = 1; }));
+      return vus; };
+    vrai("Avec des barres de dips, les dips sont proposés",
+      !!tire(["dips"], ["push","haut"])["Dips"]);
+    vrai("Avec une barre de traction, les tractions le sont",
+      !!tire(["traction"], ["pull","haut"])["Tractions"]);
+    vrai("Sans rien, ni l'un ni l'autre", (()=>{
+      const v = tire([], ["push","pull","haut"]);
+      return !v["Dips"] && !v["Tractions"];
+    })());
+    /* le dip garde son propre schéma : il ne bloque plus, et n'est plus bloqué */
+    eq("Le dip n'est plus une poussée horizontale", F.schemaDe("Dips"), "dip");
+    vrai("…contrairement aux pompes et au développé couché",
+      F.schemaDe("Pompes") === "pousseeH" && F.schemaDe("Développé couché") === "pousseeH");
+    DB.materiel = null;
+  })();
+  neuf();
+
+  /* Cocher « épaule » écartait des exercices SANS RIEN DIRE : plus aucun triangle
+     d'alerte dans la séance, et rien pour expliquer pourquoi. */
+  (()=>{
+    DB.history = [];
+    DB.materiel = null;
+    DB.profile = Object.assign({}, DB.profile, {injuries:["epaule"]});
+    const g = F.genererAdaptative("push");
+    vrai("Une séance Push évite les exercices à risque pour l'épaule",
+      g.items.every(i=>!F.injuryNote(i.nom)),
+      g.items.filter(i=>F.injuryNote(i.nom)).map(i=>i.nom).join(", "));
+    vrai("…et la séance reste complète", g.items.length === 5, g.items.length + " exercices");
+    const r = F.raisonsSeance("push");
+    vrai("La fiche dit que la zone sensible est prise en compte",
+      r.some(([m, t])=>/écart/i.test(t)), JSON.stringify(r));
+    vrai("…et nomme la zone", r.some(([m, t])=>/épaule/i.test(t)));
+    /* plusieurs zones : le pluriel suit */
+    DB.profile = Object.assign({}, DB.profile, {injuries:["epaule","genou"]});
+    vrai("Deux zones, deux noms cités", (()=>{
+      const t = (F.raisonsSeance("full").find(x=>/écart/i.test(x[1])) || ["",""])[1];
+      return /épaule/i.test(t) && /genou/i.test(t);
+    })());
+    /* même avec tout coché, la séance tient debout */
+    DB.profile = Object.assign({}, DB.profile,
+      {injuries:["epaule","dos","genou","coude","poignet"]});
+    vrai("Toutes les zones cochées, les séances restent pleines",
+      ["push","pull","bas","full"].every(t=>F.genererAdaptative(t).items.length === 5));
+    DB.profile = Object.assign({}, DB.profile, {injuries:[]});
+  })();
+  neuf();
+
   grp("Le matériel de la maison");
   neuf();
   /* Une poulie simple n'a qu'une colonne : on ne peut pas y faire d'écartés, qui
