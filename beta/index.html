@@ -2875,6 +2875,8 @@ const TRAD = {en:{
   "Les deux":"Both",
   "On te demandera où tu es au lancement de chaque séance, et on adaptera les exercices.":"We'll ask where you are when you start a session, and adapt the exercises.",
   "Tu t'entraînes où aujourd'hui ?":"Where are you training today?",
+  "Chez toi, {n} exercices seront remplacés par leur équivalent.":"At home, {n} exercises will be swapped for an equivalent.",
+  "Chez toi, 1 exercice sera remplacé par son équivalent.":"At home, 1 exercise will be swapped for an equivalent.",
   "Chez toi, les exercices que tu ne peux pas faire seront remplacés par leur équivalent.":"At home, anything you can't do will be swapped for its equivalent.",
   "En salle":"At the gym",
   "{n} exercices adaptés à ce que tu as chez toi":"{n} exercises adapted to your home setup",
@@ -6060,7 +6062,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 12h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 12h43 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10494,14 +10496,35 @@ function openPreview(tplId){
   /* Une séance adaptative se recalcule ICI, à l ouverture de l aperçu — c est-à-dire
      juste avant « Démarrer ». Elle se recalculait auparavant AU démarrage : l aperçu
      montrait donc la séance précédente, et surtout l ordre qu on venait d y régler à la
-     main était effacé une seconde plus tard. On voit maintenant ce qu on va faire. */
-  if(t.adaptatif){ regenererAdaptative(t); t.majAdapt = Date.now(); }
+     main était effacé une seconde plus tard. On voit maintenant ce qu on va faire.
+
+     Et elle se construit avec le matériel du LIEU choisi, pas avec celui de la salle.
+     Avant, la séance était tirée pour la salle puis rafistolée exercice par exercice au
+     démarrage : un face pull sans poulie devenait des pompes piquées, c'est-à-dire une
+     poussée à la place d'un tirage. Le tirage se fait maintenant directement dans ce
+     qu'on peut vraiment faire sur place. */
+  if(t.adaptatif){
+    avecMateriel(matProp(), ()=>regenererAdaptative(t));
+    t.majAdapt = Date.now();
+    t.lieuAdapt = deuxLieux() ? lieuProp : null;
+  }
+  /* Une séance écrite à la main garde ses exercices : on annonce seulement ce qui sera
+     remplacé, plutôt que d'afficher un mouvement et d'en lancer un autre. */
+  const aRemplacer = (deuxLieux() && lieuProp === "maison" && !t.adaptatif)
+    ? t.items.filter(it=>!exoDispo(getEx(it.exId), materielMaison())).length : 0;
   const mins = Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5);
   const nSeries = t.items.reduce((a,i)=>a+i.sets, 0);
   const tuile = (ic, val, lab) => `<div class="pn-t">
     <span class="ic">${ic}</span>
     <div class="co"><div class="v">${val}</div><div class="l">${lab}</div></div></div>`;
   openSheet(`<h3 style="text-align:center;">${esc(TR(t.name))}</h3>
+    ${deuxLieux()? `<div class="chips" style="justify-content:center; margin:12px 0 0;">
+      <button class="chip chip-sm ${lieuProp==="salle"?"on":""}" data-pvlieu="salle">${TR("En salle")}</button>
+      <button class="chip chip-sm ${lieuProp==="maison"?"on":""}" data-pvlieu="maison">${TR("Chez moi")}</button>
+    </div>`:""}
+    ${aRemplacer? `<p style="margin:10px 0 0; font-size:12px; color:var(--ink-mute); text-align:center;">${
+      (aRemplacer > 1 ? TR("Chez toi, {n} exercices seront remplacés par leur équivalent.")
+                      : TR("Chez toi, 1 exercice sera remplacé par son équivalent.")).replace("{n}", aRemplacer)}</p>`:""}
     <div class="pn-tuiles" style="margin-top:14px;">
       ${tuile(ICONS.seance, t.items.length, TR(t.items.length>1? "exercices":"exercice"))}
       ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries au total":"série au total"))}
@@ -10530,6 +10553,11 @@ function openPreview(tplId){
     }).join("")}</div>
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR("Lancer cette séance")}</button>
     <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
+  document.querySelectorAll("[data-pvlieu]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.pvlieu === lieuProp) return;
+    lieuProp = b.dataset.pvlieu;
+    openPreview(tplId);              /* une adaptative se refait pour ce lieu */
+  });
   document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{
     e.stopPropagation();
     ouvrirParDessus(()=>openPreview(tplId), ()=>openExoInfo(b.dataset.exinfo));
@@ -10562,7 +10590,10 @@ function openPreview(tplId){
         if(t.items.length) setTimeout(()=>openPreview(tplId), 60);
       });
   });
-  document.getElementById("pv-start").onclick=()=>{ closeSheet(); startWorkout(tplId); };
+  /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
+  document.getElementById("pv-start").onclick=()=>{
+    closeSheet(); startWorkout(tplId, deuxLieux() ? lieuProp : undefined);
+  };
   document.getElementById("pv-close").onclick=closeSheet;
 }
 /* « Tu t'entraînes où aujourd'hui ? » — posée seulement quand les deux lieux existent */
@@ -10596,11 +10627,18 @@ function startWorkout(tplId, lieu){
   /* L aperçu vient peut-être de la recalculer : dans ce cas on garde ce qui est affiché,
      y compris l ordre que l utilisateur a pu changer. Sinon (démarrage direct), on la
      recalcule ici. */
-  if(tpl && tpl.adaptatif && Date.now() - (tpl.majAdapt || 0) > 6e5) regenererAdaptative(tpl);
+  if(tpl && tpl.adaptatif && Date.now() - (tpl.majAdapt || 0) > 6e5){
+    avecMateriel(lieu === "maison" ? materielMaison() : db.materiel,
+                 ()=>regenererAdaptative(tpl));
+    tpl.majAdapt = Date.now();
+    tpl.lieuAdapt = lieu || null;
+  }
+  /* Déjà tirée pour ce lieu : chaque exercice y est faisable, rien à remplacer. */
+  const dejaDuLieu = !!(tpl && tpl.adaptatif && tpl.lieuAdapt === lieu);
   let remplaces = 0;
   const pris = tpl ? tpl.items.map(it=>it.exId) : [];
   const plan = tpl ? tpl.items.map((it, k)=>{
-    if(lieu !== "maison") return it;
+    if(lieu !== "maison" || dejaDuLieu) return it;
     const nid = exoDuLieu(it.exId, materielMaison(), pris);
     if(nid === it.exId) return it;
     remplaces++;

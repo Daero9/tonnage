@@ -2578,6 +2578,55 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le lieu d'entraînement");
+  neuf();
+  /* Une séance adaptative se tirait pour la SALLE, puis on rafistolait exercice par
+     exercice au démarrage : un face pull sans poulie devenait des pompes piquées,
+     c'est-à-dire une poussée à la place d'un tirage. Elle se construit maintenant
+     directement dans ce qu'on peut faire sur place. */
+  (()=>{
+    const garde = DB.templates, gardeMaison = DB.maison, gardeActif = DB.active;
+    DB.active = null;
+    DB.profile.lieu = "mixte";
+    DB.maison = ["elastique", "traction"];      /* un élastique et une barre de traction */
+    DB.templates = [{id:"tadapt", name:"Pull adaptatif", adaptatif:"pull",
+                     items:[{exId:id("Face pull"), sets:3, reps:"12-15", rest:90}]}];
+    const t = () => DB.templates[0];
+    const faisables = () => t().items.every(it=>F.exoDispo(F.getEx(it.exId), DB.maison));
+    const noms = () => t().items.map(it=>F.getEx(it.exId).name);
+
+    /* chez moi : tout doit être faisable avec l'élastique et la barre */
+    F.eval("lieuProp = 'maison'");
+    F.openPreview("tadapt");
+    eq("La séance est marquée du lieu pour lequel elle est faite", t().lieuAdapt, "maison");
+    vrai("Chez moi, chaque exercice est faisable sur place", faisables(), noms().join(", "));
+    vrai("…et aucune poussée ne remplace un tirage",
+      !noms().some(n=>/Pompes piquées/.test(n)), noms().join(", "));
+    /* la bascule salle / maison est bien dans l'aperçu, avant de lancer quoi que ce soit */
+    const chips = [...F.document.querySelectorAll("#sheet [data-pvlieu]")];
+    eq("Le lieu se choisit dans l'aperçu", chips.length, 2);
+    eq("…et celui du jour est marqué",
+      chips.filter(c=>c.classList.contains("on")).map(c=>c.dataset.pvlieu).join(), "maison");
+    F.hideSheet();
+
+    /* en salle : le filtre maison ne s'applique plus */
+    F.eval("lieuProp = 'salle'");
+    F.openPreview("tadapt");
+    eq("En salle, la séance est marquée salle", t().lieuAdapt, "salle");
+    F.hideSheet();
+
+    /* démarrage direct, sans passer par l'aperçu : le lieu arrive en argument */
+    t().majAdapt = 0;
+    F.startWorkout("tadapt", "maison");
+    eq("Un démarrage direct construit aussi pour le lieu", t().lieuAdapt, "maison");
+    vrai("…et tout y est faisable", faisables(), noms().join(", "));
+    vrai("Aucun exercice n'a eu besoin d'être remplacé",
+      DB.active.entries.every(e=>t().items.some(it=>it.exId === e.exId)));
+    DB.active = gardeActif; DB.templates = garde; DB.maison = gardeMaison;
+    delete DB.profile.lieu;
+  })();
+  neuf();
+
   grp("Changer de programme");
   neuf();
   /* Deux programmes sur cinq — entretien et recomposition — n'étaient pas étiquetés :
