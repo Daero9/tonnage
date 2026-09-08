@@ -308,6 +308,25 @@
   .prog-slot{position:relative; flex:0 0 var(--cardw); scroll-snap-align:center; padding-top:13px;
     transform:scale(.86); transform-origin:center 62%; opacity:.72; transition:transform .08s linear, opacity .08s linear;}
   .prog-slot.mid{transform:scale(1); opacity:1;}
+  /* ---- une séance adaptative ----
+     Le halo dit qu'elle est vivante : elle se reconstruit à chaque démarrage. Il respire
+     lentement — assez pour se remarquer, pas assez pour gêner la lecture de la carte. */
+  .prog-card.adapt{box-shadow:0 0 0 2px var(--accent), 0 0 22px rgba(245,130,32,.55);
+    animation:halo 3.4s ease-in-out infinite;}
+  @keyframes halo{
+    0%,100%{box-shadow:0 0 0 2px var(--accent), 0 0 16px rgba(245,130,32,.40);}
+    50%    {box-shadow:0 0 0 2px var(--accent), 0 0 30px rgba(245,130,32,.75);}
+  }
+  @media (prefers-reduced-motion:reduce){ .prog-card.adapt{animation:none;} }
+  .adapt-tag{position:absolute; top:10px; left:10px; z-index:3;
+    display:flex; align-items:center; gap:6px; padding:5px 9px 5px 7px;
+    border-radius:99px; background:rgba(20,16,12,.62); color:#fff;
+    font-size:10.5px; font-weight:800; letter-spacing:.02em;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);}
+  .adapt-tag svg{width:13px; height:13px; color:var(--accent); flex:0 0 auto;}
+  .adapt-tag i{font-style:normal; width:14px; height:14px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.6); font-size:9px; line-height:12px;
+    text-align:center; flex:0 0 auto;}
   .prog-card{position:relative; width:100%; aspect-ratio:192/279; border-radius:16px;
     overflow:hidden; background:var(--hero); color:#fff; display:block;
     box-shadow:0 7px 12px rgba(0,0,0,.34), 0 16px 30px rgba(0,0,0,.22);}
@@ -2603,6 +2622,18 @@ const TRAD = {en:{
   "pour 100 ml":"per 100 ml",
   "Informations {}":"Values {}",
   "Quantité consommée":"Amount taken",
+  "Séance adaptative":"Adaptive session",
+  "Qu'est-ce qu'une séance adaptative ?":"What is an adaptive session?",
+  "Cette séance n'est pas une liste figée : elle se reconstruit <b>à chaque fois que tu appuies sur Démarrer</b>, à partir de ce que tu as réellement fait.":"This session isn't a fixed list: it is rebuilt <b>every time you press Start</b>, from what you actually did.",
+  "Ce qu'elle regarde":"What it looks at",
+  "<b>La récupération de chaque muscle.</b> Un muscle encore fatigué d'avant-hier passe son tour ; un muscle frais reçoit les gros mouvements et les séries lourdes.":"<b>How recovered each muscle is.</b> A muscle still tired from two days ago sits this one out; a fresh muscle gets the big movements and the heavy sets.",
+  "<b>Tes points faibles.</b> Un groupe en retard sur ta propre moyenne passe devant les autres, et reçoit plus de volume.":"<b>Your weak points.</b> A group lagging behind your own average goes first, and gets more volume.",
+  "<b>Ce que tu as déjà fait cette semaine.</b> Un muscle beaucoup travaillé ces derniers jours attend son tour.":"<b>What you already did this week.</b> A muscle worked hard in recent days waits its turn.",
+  "<b>Les exercices récents.</b> Un mouvement fait dernièrement passe derrière — mais reste choisi s'il est ce qu'il y a de mieux pour toi.":"<b>Recent exercises.</b> A movement done lately goes to the back — but is still picked if it is the best thing for you.",
+  "Ce qu'elle décide":"What it decides",
+  "Les exercices, leur ordre — les gros mouvements tant que tu es frais —, le nombre de séries, les répétitions et le repos. Un muscle prioritaire peut recevoir deux exercices au lieu d'un ; un muscle à plat peut n'en recevoir aucun.":"The exercises, their order — the big movements while you are fresh — the number of sets, the reps and the rest. A priority muscle can get two exercises instead of one; a flat muscle can get none.",
+  "Les épaules sont suivies faisceau par faisceau : l'avant travaille à chaque développé, l'arrière presque jamais. Les traiter séparément évite de croire l'épaule reposée alors qu'une seule de ses parties l'est.":"Shoulders are tracked head by head: the front works on every press, the rear almost never. Treating them apart avoids thinking the shoulder is rested when only one part of it is.",
+  "Les séances que tu crées ou que tu modifies toi-même ne sont jamais touchées : elles restent exactement comme tu les as écrites.":"Sessions you create or edit yourself are never touched: they stay exactly as you wrote them.",
   "Nomme ce produit":"Name this product",
   "Nom du produit":"Product name",
   "Produit scanné":"Scanned product",
@@ -3749,33 +3780,33 @@ const MUSCLE_WORK = {
   "Squat élastique":[["Quadriceps",3],["Fessiers",2],["Abdos",1]],
   "Soulevé de terre élastique":[["Ischio-jambiers",3],["Fessiers",3],["Lombaires",2]],
   "Abduction hanche élastique":[["Fessiers",3]],
-  "Pompes inclinées":[["Pectoraux",3],["Triceps",2],["Deltoïdes",1]],
-  "Pompes déclinées":[["Pectoraux (haut)",3],["Deltoïdes",2],["Triceps",2]],
-  "Développé couché élastique":[["Pectoraux",3],["Triceps",2],["Deltoïdes",1]],
-  "Écartés élastique":[["Pectoraux",3],["Deltoïdes",1]],
-  "Pompes piquées":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
-  "Pompes piquées surélevées":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
-  "Développé militaire élastique":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
-  "Élévations latérales élastique":[["Deltoïdes",3]],
-  "Oiseau élastique":[["Deltoïdes",3],["Trapèzes",2]],
+  "Pompes inclinées":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",1]],
+  "Pompes déclinées":[["Pectoraux (haut)",3],["Deltoïdes (antérieur)",2],["Triceps",2]],
+  "Développé couché élastique":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",1]],
+  "Écartés élastique":[["Pectoraux",3],["Deltoïdes (antérieur)",1]],
+  "Pompes piquées":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Trapèzes",1]],
+  "Pompes piquées surélevées":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Trapèzes",1]],
+  "Développé militaire élastique":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Trapèzes",1]],
+  "Élévations latérales élastique":[["Deltoïdes (latéral)",3]],
+  "Oiseau élastique":[["Deltoïdes (postérieur)",3],["Trapèzes",2]],
   "Tirage élastique horizontal":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2]],
   "Tirage élastique vertical":[["Grand dorsal",3],["Biceps",2],["Trapèzes",1]],
   "Superman":[["Lombaires",3],["Fessiers",2]],
   "Tractions supination":[["Grand dorsal",3],["Biceps",3],["Trapèzes",1]],
   "Curl élastique":[["Biceps",3],["Avant-bras",1]],
   "Curl marteau élastique":[["Biceps",3],["Avant-bras",2]],
-  "Dips sur banc":[["Triceps",3],["Deltoïdes",1],["Pectoraux",1]],
+  "Dips sur banc":[["Triceps",3],["Deltoïdes (antérieur)",1],["Pectoraux",1]],
   "Extension triceps élastique":[["Triceps",3]],
   "Curl auto-résisté":[["Biceps",3],["Avant-bras",1]],
   "Rowing sous la table":[["Grand dorsal",3],["Biceps",2],["Trapèzes",2]],
-  "Développé incliné barre":[["Pectoraux (haut)",3],["Deltoïdes",2],["Triceps",2]],
-  "Écartés haltères":[["Pectoraux",3],["Deltoïdes",1]],
+  "Développé incliné barre":[["Pectoraux (haut)",3],["Deltoïdes (antérieur)",2],["Triceps",2]],
+  "Écartés haltères":[["Pectoraux",3],["Deltoïdes (antérieur)",1]],
   "Rowing T-bar":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2],["Lombaires",1]],
   "Tractions australiennes":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2],["Abdos",1]],
-  "Arnold press":[["Deltoïdes",3],["Triceps",2],["Trapèzes",1]],
-  "Rowing menton":[["Deltoïdes",3],["Trapèzes",3],["Biceps",1]],
+  "Arnold press":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Trapèzes",1]],
+  "Rowing menton":[["Deltoïdes (latéral)",3],["Trapèzes",3],["Biceps",1]],
   "Curl concentration":[["Biceps",3],["Avant-bras",1]],
-  "Pompes diamant":[["Triceps",3],["Pectoraux",2],["Deltoïdes",1]],
+  "Pompes diamant":[["Triceps",3],["Pectoraux",2],["Deltoïdes (antérieur)",1]],
   "Goblet squat":[["Quadriceps",3],["Fessiers",2],["Abdos",2]],
   "Front squat":[["Quadriceps",3],["Fessiers",2],["Abdos",2],["Lombaires",2]],
   "Soulevé de terre sumo":[["Fessiers",3],["Quadriceps",3],["Lombaires",2],["Trapèzes",2],["Avant-bras",2]],
@@ -3783,18 +3814,18 @@ const MUSCLE_WORK = {
   "Montées sur banc":[["Quadriceps",3],["Fessiers",3],["Mollets",1]],
   "Kickback fessier poulie":[["Fessiers",3],["Ischio-jambiers",1]],
   "Russian twist":[["Obliques",3],["Abdos",2]],
-  "Mountain climber":[["Abdos",3],["Deltoïdes",1],["Quadriceps",1]],
-  "Développé couché":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2]],
-  "Développé incliné haltères":[["Pectoraux (haut)",3],["Deltoïdes",2],["Triceps",2]],
-  "Développé couché haltères":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2]],
-  "Écartés poulie":[["Pectoraux",3],["Deltoïdes",1]],
-  "Dips":[["Triceps",3],["Pectoraux",3],["Deltoïdes",2]],
-  "Pompes":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2],["Abdos",1]],
-  "Butterfly (pec deck)":[["Pectoraux",3],["Deltoïdes",1]],
-  "Développé machine":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2]],
-  "Écartés poulie haute":[["Pectoraux (bas)",3],["Deltoïdes",1]],
-  "Écartés poulie basse":[["Pectoraux (haut)",3],["Deltoïdes",1]],
-  "Développé couché à la Smith":[["Pectoraux",3],["Triceps",2],["Deltoïdes",2]],
+  "Mountain climber":[["Abdos",3],["Deltoïdes (antérieur)",1],["Quadriceps",1]],
+  "Développé couché":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",2]],
+  "Développé incliné haltères":[["Pectoraux (haut)",3],["Deltoïdes (antérieur)",2],["Triceps",2]],
+  "Développé couché haltères":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",2]],
+  "Écartés poulie":[["Pectoraux",3],["Deltoïdes (antérieur)",1]],
+  "Dips":[["Triceps",3],["Pectoraux",3],["Deltoïdes (antérieur)",2]],
+  "Pompes":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",2],["Abdos",1]],
+  "Butterfly (pec deck)":[["Pectoraux",3],["Deltoïdes (antérieur)",1]],
+  "Développé machine":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",2]],
+  "Écartés poulie haute":[["Pectoraux (bas)",3],["Deltoïdes (antérieur)",1]],
+  "Écartés poulie basse":[["Pectoraux (haut)",3],["Deltoïdes (antérieur)",1]],
+  "Développé couché à la Smith":[["Pectoraux",3],["Triceps",2],["Deltoïdes (antérieur)",2]],
   "Tractions":[["Grand dorsal",3],["Biceps",2],["Avant-bras",2]],
   "Rowing barre":[["Grand dorsal",3],["Trapèzes",2],["Biceps",2],["Lombaires",2]],
   "Tirage vertical":[["Grand dorsal",3],["Biceps",2]],
@@ -3805,15 +3836,15 @@ const MUSCLE_WORK = {
   "Rowing machine":[["Grand dorsal",3],["Biceps",2]],
   "Pull-over poulie":[["Grand dorsal",3],["Triceps",1]],
   "Haussements d'épaules":[["Trapèzes",3],["Avant-bras",2]],
-  "Développé militaire":[["Deltoïdes",3],["Triceps",2],["Abdos",1]],
-  "Développé militaire haltères":[["Deltoïdes",3],["Triceps",2]],
-  "Élévations latérales":[["Deltoïdes",3]],
-  "Oiseau":[["Deltoïdes",3],["Grand dorsal",2]],
-  "Butterfly arrière":[["Deltoïdes",3],["Trapèzes",2],["Grand dorsal",1]],
-  "Face pull":[["Deltoïdes",3],["Grand dorsal",2],["Trapèzes",1]],
-  "Élévations latérales poulie":[["Deltoïdes",3]],
-  "Développé machine épaules":[["Deltoïdes",3],["Triceps",2]],
-  "Élévations frontales":[["Deltoïdes",3],["Pectoraux",1]],
+  "Développé militaire":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Abdos",1]],
+  "Développé militaire haltères":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2]],
+  "Élévations latérales":[["Deltoïdes (latéral)",3]],
+  "Oiseau":[["Deltoïdes (postérieur)",3],["Grand dorsal",2]],
+  "Butterfly arrière":[["Deltoïdes (postérieur)",3],["Trapèzes",2],["Grand dorsal",1]],
+  "Face pull":[["Deltoïdes (postérieur)",3],["Grand dorsal",2],["Trapèzes",1]],
+  "Élévations latérales poulie":[["Deltoïdes (latéral)",3]],
+  "Développé machine épaules":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2]],
+  "Élévations frontales":[["Deltoïdes (antérieur)",3],["Pectoraux",1]],
   "Curl barre":[["Biceps",3],["Avant-bras",2]],
   "Curl haltères":[["Biceps",3],["Avant-bras",1]],
   "Curl marteau":[["Biceps",3],["Brachial",3],["Avant-bras",3]],
@@ -3840,11 +3871,11 @@ const MUSCLE_WORK = {
   "Adducteurs machine":[["Adducteurs",3]],
   "Mollets assis":[["Mollets (soléaire)",3]],
   "Crunch":[["Abdos",3]],
-  "Gainage":[["Abdos",3],["Lombaires",2],["Deltoïdes",1]],
+  "Gainage":[["Abdos",3],["Lombaires",2],["Deltoïdes (antérieur)",1]],
   "Relevés de jambes":[["Abdos (bas)",3],["Quadriceps",1]],
   "Crunch câble":[["Abdos",3],["Obliques",1]],
   "Roulette abdominale":[["Abdos",3],["Lombaires",2],["Grand dorsal",1]],
-  "Planche latérale":[["Obliques",3],["Abdos",2],["Deltoïdes",1]]
+  "Planche latérale":[["Obliques",3],["Abdos",2],["Deltoïdes (antérieur)",1]]
 };
 /* fiches d'exécution : conseil de pro + étapes, par exercice */
 /* Fiches traduites. Même clé que EXO_INFO (le nom français), pour que les
@@ -4526,26 +4557,26 @@ const COACH_PROGRAMS = {
     label:"Prise de masse",
     title:"Prise de masse · Push / Pull / Legs",
     templates:[
-      {name:"Push · Prise de masse", items:[["Développé couché",4,"8-12",150],["Développé incliné haltères",3,"8-12",120],["Développé militaire",3,"8-12",150],["Élévations latérales",3,"12-15",90],["Extension poulie",3,"10-15",90]]},
-      {name:"Pull · Prise de masse", items:[["Tractions",4,"6-12",150],["Rowing barre",4,"8-12",150],["Tirage horizontal",3,"8-12",120],["Face pull",3,"12-15",90],["Curl barre",3,"8-12",90]]},
-      {name:"Legs · Prise de masse", items:[["Squat",4,"8-12",180],["Soulevé de terre roumain",3,"8-12",150],["Presse à cuisses",3,"10-15",120],["Mollets debout",4,"10-15",90],["Crunch",3,"12-15",60]]}
+      {name:"Push · Prise de masse", type:"push", items:[["Développé couché",4,"8-12",150],["Développé incliné haltères",3,"8-12",120],["Développé militaire",3,"8-12",150],["Élévations latérales",3,"12-15",90],["Extension poulie",3,"10-15",90]]},
+      {name:"Pull · Prise de masse", type:"pull", items:[["Tractions",4,"6-12",150],["Rowing barre",4,"8-12",150],["Tirage horizontal",3,"8-12",120],["Face pull",3,"12-15",90],["Curl barre",3,"8-12",90]]},
+      {name:"Legs · Prise de masse", type:"jambes", items:[["Squat",4,"8-12",180],["Soulevé de terre roumain",3,"8-12",150],["Presse à cuisses",3,"10-15",120],["Mollets debout",4,"10-15",90],["Crunch",3,"12-15",60]]}
     ]
   },
   seche: {
     label:"Perte de poids",
     title:"Perte de poids · Full body + cardio",
     templates:[
-      {name:"Full body A · Perte de poids", items:[["Squat",3,"8-12",150],["Développé couché haltères",3,"8-12",120],["Tirage horizontal",3,"8-12",120],["Élévations latérales",3,"12-15",75],["Crunch",3,"12-15",60]]},
-      {name:"Full body B · Perte de poids", items:[["Presse à cuisses",3,"8-12",150],["Tirage vertical",3,"8-12",120],["Développé militaire haltères",3,"8-12",120],["Curl haltères",3,"12-15",75],["Relevés de jambes",3,"12-15",60]]}
+      {name:"Full body A · Perte de poids", type:"full", items:[["Squat",3,"8-12",150],["Développé couché haltères",3,"8-12",120],["Tirage horizontal",3,"8-12",120],["Élévations latérales",3,"12-15",75],["Crunch",3,"12-15",60]]},
+      {name:"Full body B · Perte de poids", type:"full", items:[["Presse à cuisses",3,"8-12",150],["Tirage vertical",3,"8-12",120],["Développé militaire haltères",3,"8-12",120],["Curl haltères",3,"12-15",75],["Relevés de jambes",3,"12-15",60]]}
     ]
   },
   force: {
     label:"Force",
     title:"Force · Squat / Bench / Deadlift",
     templates:[
-      {name:"Force A · Bas du corps", items:[["Squat",5,"3-5",210],["Soulevé de terre roumain",3,"5-6",180],["Presse à cuisses",3,"6-8",150],["Gainage",3,"30-45",90]]},
-      {name:"Force B · Poussée", items:[["Développé couché",5,"3-5",210],["Développé militaire",4,"4-6",180],["Dips",3,"6-8",150],["Extension poulie",3,"8-10",90]]},
-      {name:"Force C · Tirage", items:[["Soulevé de terre",5,"3-5",240],["Rowing barre",4,"5-6",180],["Tractions",4,"5-8",150],["Curl barre",3,"8-10",90]]}
+      {name:"Force A · Bas du corps", type:"bas", items:[["Squat",5,"3-5",210],["Soulevé de terre roumain",3,"5-6",180],["Presse à cuisses",3,"6-8",150],["Gainage",3,"30-45",90]]},
+      {name:"Force B · Poussée", type:"push", items:[["Développé couché",5,"3-5",210],["Développé militaire",4,"4-6",180],["Dips",3,"6-8",150],["Extension poulie",3,"8-10",90]]},
+      {name:"Force C · Tirage", type:"pull", items:[["Soulevé de terre",5,"3-5",240],["Rowing barre",4,"5-6",180],["Tractions",4,"5-8",150],["Curl barre",3,"8-10",90]]}
     ]
   },
   entretien: {
@@ -5754,7 +5785,11 @@ function addCoachProgram(goal){
       const exId = libId(nom);
       return exId ? {exId, sets:it[1], reps:it[2], rest:it[3]} : null;
     }).filter(Boolean);
-    if(items.length) db.templates.push({id:uid(), name:t.name, items});
+    /* « adaptatif » retient le type de la séance : c'est lui qui permet de la
+       reconstruire au démarrage, sur l'état réel des muscles. Les séances que tu crées
+       toi-même n'ont pas ce marqueur, et ne sont donc jamais touchées. */
+    if(items.length) db.templates.push({id:uid(), name:t.name, items,
+      adaptatif: t.type || null});
   });
   save();
 }
@@ -5789,7 +5824,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 02h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 02h35 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6181,6 +6216,7 @@ const MASSE_MUSCLE = {
   "Quadriceps":10, "Fessiers":9, "Ischio-jambiers":7, "Grand dorsal":7,
   "Adducteurs":5, "Pectoraux":5, "Trapèzes":4, "Deltoïdes":4, "Mollets":4,
   "Pectoraux (haut)":3, "Abdos":3, "Lombaires":3, "Mollets (jumeaux)":3, "Triceps":3,
+  "Deltoïdes (antérieur)":3, "Deltoïdes (latéral)":3, "Deltoïdes (postérieur)":2,
   "Pectoraux (bas)":2, "Abdos (bas)":2, "Obliques":2, "Mollets (soléaire)":2, "Biceps":2,
   "Brachial":1, "Avant-bras":1
 };
@@ -6430,6 +6466,8 @@ const IC_CIBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true
   + '<circle cx="12" cy="12" r="1.2"/></svg>';
 /* Dessinée en trait, elle se remplit d'un simple « fill » : c'est ce qui permet de
    dire « ajouté » sans case à cocher à côté. */
+/* l etincelle : ce qui se recalcule tout seul */
+const IC_ETINCELLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.6l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1L5 9.6l5.1-1.9L12 2.6Z"/><path d="M18.4 14.6l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9.9-2.3Z"/></svg>';
 const IC_ETOILE = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.1l2.75 5.57 6.15.9-4.45 4.34 1.05 6.12L12 17.14l-5.5 2.89 1.05-6.12L3.1 9.57l6.15-.9L12 3.1Z"/></svg>';
 const IC_GOUTTE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
   + '<path d="M12 2.6c3.7 4.6 6 8 6 10.8a6 6 0 1 1-12 0c0-2.8 2.3-6.2 6-10.8z"/></svg>';
@@ -9235,9 +9273,12 @@ function renderSeance(app){
       const liste = noms.slice(0,4).map(n=>`· ${esc(n)}`).join("<br>") + (noms.length>4? `<br>+ ${noms.length-4} autre${noms.length-4>1?"s":""}`:"");
       return `<div class="prog-slot">
         ${sug && sug.id===t.id? `<div class="sug">${TR("Conseillé aujourd'hui")}</div>`:""}
-        <div class="prog-card" data-open="${t.id}">
+        <div class="prog-card${t.adaptatif? " adapt" : ""}" data-open="${t.id}">
           <div class="ph" style="background-image:url('${photoUrl(photoSeance(t))}');"></div>
           <div class="dur">◷ ${dureeSeance(t)} min</div>
+          ${t.adaptatif? `<button class="adapt-tag" data-adapt aria-label="${
+            TR("Qu'est-ce qu'une séance adaptative ?")}">${IC_ETINCELLE}<span>${
+            TR("Séance adaptative")}</span><i>i</i></button>` : ""}
           <div class="in">
             <div class="nm">${esc(TR(t.name))}</div>
             <div class="ex">${liste || "Aucun exercice"}</div>
@@ -9262,7 +9303,11 @@ function renderSeance(app){
     requestAnimationFrame(majCentre);
     car.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{
       if(e.target.closest("[data-edit]")) return;
+      if(e.target.closest("[data-adapt]")) return;   /* l'étiquette a sa propre fiche */
       openPreview(c.dataset.open);
+    });
+    car.querySelectorAll("[data-adapt]").forEach(b=>b.onclick=e=>{
+      e.stopPropagation(); openAdaptatifInfo();
     });
     car.querySelectorAll("[data-edit]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openTplEditor(b.dataset.edit); });
   }
@@ -9433,6 +9478,235 @@ function melanger(arr){
   return a;
 }
 /* génère une séance : un exercice par rôle, sans doublon, en évitant le récent et le risqué */
+/* ===================== SÉANCES ADAPTATIVES =====================
+   Le moule fixe donnait toujours la même chose : pour un Pull, trois exercices de dos
+   et trois séries de curl en 12-15, quel que soit l'état de celui qui s'entraîne. Ici,
+   ce sont les MUSCLES qui décident — leur récupération, leur retard, ce qu'ils ont déjà
+   encaissé cette semaine — et les exercices ne sont que la conséquence.
+
+   Tout ce que ça demande existait déjà : recuperation() pour l'état, muscleProfile()
+   pour les points faibles, MUSCLE_WORK pour savoir ce que travaille chaque mouvement,
+   MASSE_MUSCLE pour distinguer un gros mouvement d'un exercice d'isolation. */
+
+/* Les muscles qu'une séance vise, au détail du faisceau. C'est la seule liste écrite
+   à la main : tout le reste se déduit de l'historique. */
+const MUSCLES_SEANCE = {
+  push:   ["Pectoraux", "Deltoïdes (antérieur)", "Deltoïdes (latéral)", "Triceps"],
+  pull:   ["Grand dorsal", "Trapèzes", "Deltoïdes (postérieur)", "Biceps"],
+  /* Lombaires figure ici parce que le soulevé de terre est écrit « Lombaires » en tête :
+     sans cette cible, le meilleur mouvement du bas du corps ne serait jamais proposé.
+     Six cibles pour cinq places : la moins demandeuse passe son tour, c est voulu. */
+  jambes: ["Quadriceps", "Fessiers", "Ischio-jambiers", "Lombaires", "Mollets", "Abdos"],
+  haut:   ["Pectoraux", "Grand dorsal", "Deltoïdes (antérieur)", "Biceps", "Triceps"],
+  bas:    ["Quadriceps", "Fessiers", "Ischio-jambiers", "Mollets", "Abdos"],
+  full:   ["Quadriceps", "Pectoraux", "Grand dorsal", "Deltoïdes (latéral)", "Abdos"]
+};
+/* Combien un exercice met de muscle en jeu : Σ(intensité × masse). Un soulevé de terre
+   pèse 79, une élévation latérale 12. C'est ce qui distingue « gros mouvement » et
+   « isolation » sans avoir à ranger les exercices à la main. */
+function chargeExo(nom){
+  const w = MUSCLE_WORK[nom];
+  if(!w) return 0;
+  return w.reduce((a, m)=>a + (m[1] || 0) * (MASSE_MUSCLE[m[0]] || 3), 0);
+}
+/* Ce qu'un muscle a encaissé récemment, en séries de travail pondérées par l'implication :
+   une série de curl compte 1 pour le biceps, une série de rowing 0,67. */
+function volumeRecent(muscle, jours){
+  const limite = Date.now() - (jours || 7) * 864e5;
+  let v = 0;
+  (db.history || []).forEach(sess=>{
+    if(new Date(sess.date).getTime() < limite) return;
+    sess.entries.forEach(en=>{
+      const n = (en.sets || []).filter(x=>x.done && !x.warm).length;
+      if(!n) return;
+      const w = MUSCLE_WORK[nomCanon(getEx(en.exId))] || [];
+      const part = w.find(m=>m[0] === muscle);
+      if(part) v += n * (part[1] / 3);
+    });
+  });
+  return v;
+}
+/* Le besoin de chaque muscle visé, de « à éviter » (négatif) à « à marteler » (élevé).
+   Trois forces, dans cet ordre d'importance :
+     — la RÉCUPÉRATION : un muscle à plat ne se travaille pas, un muscle frais se charge ;
+     — le RETARD : un point faible passe devant, c'est lui qu'on veut rattraper ;
+     — le VOLUME de la semaine : ce qui a déjà été beaucoup travaillé attend son tour. */
+function besoinsMuscles(type){
+  const cibles = MUSCLES_SEANCE[type] || MUSCLES_SEANCE.full;
+  const rec = recuperation();
+  const prof = muscleProfile();
+  const moy = mpMoyenne(prof);
+  return cibles.map(m=>{
+    const g = groupeDe(m);
+    const recup = (g && rec.muscles[g]) ? rec.muscles[g].pct : 100;
+    const score = g ? prof[g] : null;
+    const st = mpStatus(score, moy);
+    /* écart en % de sa propre moyenne : négatif = en retard */
+    const retard = (st && typeof st.ecart === "number") ? st.ecart : 0;
+    const vol = volumeRecent(m, 7);
+    const besoin = (recup - 55) * 0.8      /* frais = on peut charger ; à plat = on passe */
+                 + Math.max(-40, -retard) * 1.2   /* en retard = prioritaire */
+                 - vol * 2.5;              /* déjà servi cette semaine = on attend */
+    return {muscle:m, recup, retard, vol, besoin};
+  }).sort((a, b)=>b.besoin - a.besoin);
+}
+/* Le muscle sur lequel un exercice est CENTRÉ : celui qui y pèse le plus, intensité
+   multipliée par sa masse. Des tractions supination sollicitent fortement le biceps,
+   mais elles restent un exercice de dos — les choisir comme « exercice de biceps »
+   revenait à ne jamais faire de curl. */
+function centreSur(nom){
+  const w = MUSCLE_WORK[nom] || [];
+  /* Le PREMIER muscle a l intensite maximale. Deux regles ecartees en chemin :
+     — peser par la masse faisait d un oiseau un exercice de grand dorsal, parce que le
+       dorsal est gros et l arriere d epaule minuscule ;
+     — departager a la masse mettait le souleve de terre sumo devant le squat pour les
+       quadriceps, alors qu il est ecrit fessiers en premier.
+     L ordre d ecriture porte l intention : on la respecte. */
+  let best = null, bi = -1;
+  w.forEach(m=>{ const i = m[1] || 0; if(i > bi){ bi = i; best = m[0]; } });
+  return best;
+}
+/* La place d un exercice dans les réservoirs : c est la hiérarchie de qualité déjà
+   écrite à la main, du mouvement de référence au dernier recours. Absent : très loin. */
+let RANG_RES = null;
+function rangReservoir(nom){
+  if(!RANG_RES){
+    RANG_RES = {};
+    Object.values(RESERVOIRS).forEach(liste=>liste.forEach((n, i)=>{
+      if(RANG_RES[n] === undefined || i < RANG_RES[n]) RANG_RES[n] = i;
+    }));
+  }
+  const r = RANG_RES[nom];
+  return r === undefined ? 99 : r;
+}
+/* Les exercices qui visent VRAIMENT ce muscle : intensité 3 d'abord, 2 en secours. */
+function exosPourMuscle(muscle, gros){
+  const out = [];
+  LIB.forEach(ex=>{
+    const w = MUSCLE_WORK[ex.name];
+    if(!w) return;
+    /* « Pectoraux » couvre aussi « Pectoraux (haut) » et « (bas) » : sans cette
+       équivalence, tous les développés inclinés disparaissaient d une séance Push,
+       leur muscle étant écrit au détail. Les épaules, elles, sont visées au faisceau
+       près — « Deltoïdes (latéral) » ne doit pas attraper un développé militaire. */
+    const partie = muscle.indexOf("(") > 0;
+    const vise = n2 => partie ? n2 === muscle : groupeDe(n2) === muscle;
+    const part = w.filter(m=>vise(m[0])).sort((x, y)=>y[1] - x[1])[0];
+    if(!part || part[1] < 2) return;
+    if(!exoDispo(ex)) return;
+    if(injuryNote(ex.name)) return;
+    out.push({nom:ex.name, cible:part[1], charge:chargeExo(ex.name),
+              centre:vise(centreSur(ex.name))});
+  });
+  /* D'abord les exercices centrés sur ce muscle, puis ceux qui l'impliquent à fond,
+     et entre eux : un gros mouvement d'abord, une finition ensuite. La charge musculaire
+     tranche, pas une liste écrite d'avance. */
+  /* « Le plus gros » n est pas « le meilleur » : au-dela d une certaine charge on tombe
+     sur les variantes extremes — le souleve de terre sumo passait devant le squat pour
+     les quadriceps. On vise donc le gros mouvement franc, pas le record. */
+  const valeur = c => c.charge > 75 ? 150 - c.charge : c.charge;
+  /* À charge comparable, on suit la hiérarchie déjà écrite dans les réservoirs : le
+     développé couché avant les pompes, la barre avant l élastique. Sans elle, les
+     pompes passaient devant le développé couché pour trois points de charge. */
+  const bande = c => Math.round(valeur(c) / 15);
+  return out.sort((a, b)=> (b.centre - a.centre) || (b.cible - a.cible)
+                        || (gros ? bande(b) - bande(a) : bande(a) - bande(b))
+                        || (rangReservoir(a.nom) - rangReservoir(b.nom))
+                        || (gros ? b.charge - a.charge : a.charge - b.charge));
+}
+/* La séance complète. `evites` : ce qu'on ne veut pas revoir (bouton « une autre »). */
+function genererAdaptative(type, evites){
+  const moule = MOULES[type] || MOULES.full;
+  const besoins = besoinsMuscles(type);
+  const bannis = new Set(evites || []);
+  const recents = exercicesRecents(6);
+  const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
+  const TOTAL = 5;
+
+  /* Répartition des cinq exercices : chacun des trois muscles les plus demandeurs en
+     reçoit un, puis les deux qui restent vont aux plus demandeurs — c'est ainsi qu'un
+     biceps en retard et bien reposé obtient deux exercices au lieu d'un. */
+  const parts = besoins.map(b=>({...b, n:0}));
+  /* Un exercice chacun, du plus demandeur au moins demandeur, tant qu il reste de la
+     place : quand il y a plus de muscles que de places, le moins demandeur passe son
+     tour — c est ainsi qu un dos a 59 % de recuperation cede sa place. */
+  let reste = TOTAL;
+  parts.forEach(p=>{ if(reste > 0){ p.n = 1; reste--; } });
+  /* Les places qui restent vont aux plus demandeurs, DEUX exercices au maximum : au-dela
+     on obtenait trois exercices d arriere d epaule dans la meme seance. */
+  for(let tour = 0; reste > 0 && tour < 12; tour++){
+    const p = parts.filter(x=>x.n === 1)[0];
+    if(!p) break;
+    p.n = 2; reste--;
+  }
+
+  const items = [];
+  const pris = new Set();
+  /* Ce qui a déjà été servi à fond : sans ce garde-fou, une séance Jambes sortait un
+     soulevé de terre POUR LES FESSIERS puis un soulevé de terre sumo POUR LES QUADRICEPS
+     — deux fois le même mouvement, et pas de squat. */
+  const servis = {};
+  const recouvre = c => ((MUSCLE_WORK[c.nom] || [])
+    .reduce((a, m)=>a + (m[1] === 3 ? (servis[m[0]] || 0) : 0), 0));
+  parts.forEach(p=>{
+    for(let k = 0; k < p.n; k++){
+      const tous = exosPourMuscle(p.muscle, k === 0)
+        .filter(c=>!pris.has(c.nom) && !bannis.has(c.nom));
+      /* On exige un exercice CENTRÉ sur le muscle visé. Sans cette exigence, la place
+         du grand dorsal partait à un oiseau et celle des triceps à un développé incliné :
+         des exercices qui touchent le muscle, mais qui ne sont pas faits pour lui.
+         On ne retombe sur les autres que si le matériel ne laisse pas le choix. */
+      const centres = tous.filter(c=>c.centre);
+      const cands = centres.length ? centres : tous;
+      if(!cands.length) continue;
+      /* Un exercice fait récemment passe derrière, mais reste choisissable : s'il est
+         le meilleur pour ce muscle, on ne s'en prive pas. */
+      /* Un exercice fait récemment passe derrière, et un mouvement qui refait le travail
+         déjà couvert aussi — mais ni l un ni l autre n est exclu : s ils sont ce qu il y
+         a de mieux pour ce muscle, on ne s en prive pas. */
+      /* Deux très gros mouvements par séance, pas plus. Sans ce plafond, une séance
+         Jambes enchaînait soulevé de terre, soulevé de terre sumo et good morning :
+         trois fois la même chaîne postérieure, aucune presse, aucun squat. */
+      const lourdsDejaPris = items.filter(it=>it.charge >= 60).length;
+      const raisonnables = lourdsDejaPris >= 2 ? cands.filter(c=>c.charge < 60) : cands;
+      const liste = raisonnables.length ? raisonnables : cands;
+      const choisi = liste.find(c=>!recents.has(c.nom) && !recouvre(c))
+                  || liste.find(c=>!recouvre(c))
+                  || liste.find(c=>!recents.has(c.nom))
+                  || liste[0];
+      pris.add(choisi.nom);
+      (MUSCLE_WORK[choisi.nom] || []).forEach(m=>{
+        if(m[1] === 3) servis[m[0]] = (servis[m[0]] || 0) + 1;
+      });
+      /* La dose suit la récupération : à 85 % et plus on tape lourd, entre 60 et 85 on
+         reste moyen, en dessous on se contente d'entretenir. Le deuxième exercice d'un
+         même muscle descend d'un cran : c'est une finition, pas un second gros. */
+      let niveau = p.recup >= 85 ? "lourd" : (p.recup >= 60 ? "moyen" : "leger");
+      if(k > 0) niveau = niveau === "lourd" ? "moyen" : "leger";
+      const d = dose[niveau];
+      /* Le NOMBRE DE SÉRIES vient du besoin — c'est le levier qui donne enfin du volume
+         à un biceps en retard. Les répétitions et le repos, eux, viennent du mouvement :
+         une élévation latérale en 8 reps avec 2 min 30 de repos n'a aucun sens, même
+         sur une épaule fraîche. */
+      const iso = choisi.charge < 15, moyenne = choisi.charge < 30;
+      let reps = iso ? "10-15" : d.r;
+      const repos = iso ? Math.min(d.p, 90) : (moyenne ? Math.min(d.p, 120) : d.p);
+      const exChoisi = getEx(libId(choisi.nom));
+      const bas = parseReps(reps);
+      /* Au poids du corps on ne peut pas alléger la barre : la fourchette descend.
+         Réservé aux vrais mouvements portés — tractions, dips. Des mollets debout au
+         poids du corps se font en séries longues, pas en 8 répétitions. */
+      if(exChoisi && estPoidsDuCorps(exChoisi) && choisi.charge >= 15 && bas && bas.lo > 8)
+        reps = equipCanon(exChoisi) === "Barre fixe" ? "6-12" : "8-12";
+      items.push({nom:choisi.nom, sets:d.s, reps, rest:repos,
+                  role:p.muscle, charge:choisi.charge, niveau});
+    }
+  });
+  /* Les gros mouvements d'abord : c'est quand on est frais qu'ils rapportent. */
+  items.sort((a, b)=>b.charge - a.charge);
+  return {type, nom:moule.nom, sous:moule.sous, adaptatif:true,
+          items:items.map(({charge, niveau, ...it})=>it)};
+}
 function genererSeance(type, evites){
   const moule = MOULES[type] || MOULES.full;
   const recents = exercicesRecents(6);
@@ -9471,6 +9745,47 @@ function genererSeance(type, evites){
     items.push({nom:choisi, sets:d.s, reps, rest:d.p, role});
   });
   return {type, nom:moule.nom, sous:moule.sous, items};
+}
+/* Reconstruit une séance adaptative sur place. On garde les réglages de repos que
+   l'utilisateur aurait posés sur un exercice qui revient : c'est son choix, pas le nôtre. */
+function regenererAdaptative(tpl){
+  const anciens = {};
+  (tpl.items || []).forEach(it=>{ if(it.exId) anciens[it.exId] = it.rest; });
+  const gen = genererAdaptative(tpl.adaptatif);
+  const items = gen.items.map(it=>{
+    const exId = libId(it.nom);
+    if(!exId) return null;
+    return {exId, sets:it.sets, reps:it.reps,
+            rest: anciens[exId] !== undefined ? anciens[exId] : it.rest};
+  }).filter(Boolean);
+  if(!items.length) return false;      /* rien de disponible : on ne casse pas la séance */
+  tpl.items = items;
+  save();
+  return true;
+}
+/* Ce qu'est une séance adaptative, en toutes lettres. On explique le mécanisme plutôt
+   que de promettre de la magie : l'utilisateur doit pouvoir prévoir ce qui va sortir. */
+function openAdaptatifInfo(){
+  openSheet(`<h3>${TR("Séance adaptative")}</h3>
+    <div class="stack" style="font-size:14px; line-height:1.6; color:var(--ink-soft);">
+      <p style="margin:0;">${TR("Cette séance n'est pas une liste figée : elle se reconstruit <b>à chaque fois que tu appuies sur Démarrer</b>, à partir de ce que tu as réellement fait.")}</p>
+      <div class="card" style="padding:13px;">
+        <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">${TR("Ce qu'elle regarde")}</div>
+        <p style="margin:0 0 7px;">${TR("<b>La récupération de chaque muscle.</b> Un muscle encore fatigué d'avant-hier passe son tour ; un muscle frais reçoit les gros mouvements et les séries lourdes.")}</p>
+        <p style="margin:0 0 7px;">${TR("<b>Tes points faibles.</b> Un groupe en retard sur ta propre moyenne passe devant les autres, et reçoit plus de volume.")}</p>
+        <p style="margin:0 0 7px;">${TR("<b>Ce que tu as déjà fait cette semaine.</b> Un muscle beaucoup travaillé ces derniers jours attend son tour.")}</p>
+        <p style="margin:0;">${TR("<b>Les exercices récents.</b> Un mouvement fait dernièrement passe derrière — mais reste choisi s'il est ce qu'il y a de mieux pour toi.")}</p>
+      </div>
+      <div class="card" style="padding:13px;">
+        <div style="font-weight:800; color:var(--ink); margin-bottom:8px;">${TR("Ce qu'elle décide")}</div>
+        <p style="margin:0;">${TR("Les exercices, leur ordre — les gros mouvements tant que tu es frais —, le nombre de séries, les répétitions et le repos. Un muscle prioritaire peut recevoir deux exercices au lieu d'un ; un muscle à plat peut n'en recevoir aucun.")}</p>
+      </div>
+      <p style="margin:0;">${TR("Les épaules sont suivies faisceau par faisceau : l'avant travaille à chaque développé, l'arrière presque jamais. Les traiter séparément évite de croire l'épaule reposée alors qu'une seule de ses parties l'est.")}</p>
+      <p style="margin:0;">${TR("Les séances que tu crées ou que tu modifies toi-même ne sont jamais touchées : elles restent exactement comme tu les as écrites.")}</p>
+      <button class="btn btn-accent" id="ad-ok">${TR("Compris")}</button>
+    </div>`);
+  const b = document.getElementById("ad-ok");
+  if(b) b.onclick = closeSheet;
 }
 /* nom unique, pour ne pas écraser une séance existante */
 function nomLibre(base){
@@ -9792,6 +10107,10 @@ function startWorkout(tplId, lieu){
     return;
   }
   const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
+  /* Une séance adaptative se reconstruit ICI, au moment où l'on appuie sur « Démarrer » :
+     c'est le seul instant où l'on connaît vraiment l'état du jour. Le résultat est écrit
+     dans la séance, pour que la carte du plan montre ensuite ce qui a été fait. */
+  if(tpl && tpl.adaptatif) regenererAdaptative(tpl);
   let remplaces = 0;
   const pris = tpl ? tpl.items.map(it=>it.exId) : [];
   const plan = tpl ? tpl.items.map((it, k)=>{

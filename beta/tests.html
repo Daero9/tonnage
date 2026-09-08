@@ -2622,6 +2622,98 @@ async function lancer(){
   neuf();
 
   /* ---------------------------------------------------------- parcours d'accueil */
+  grp("Séances adaptatives");
+  neuf();
+  /* La séance ne se contente plus d un moule fixe : elle se construit sur l état réel
+     des muscles. Avant, un Pull donnait toujours trois exercices de dos et trois séries
+     de curl en 12-15, que les biceps soient frais, en retard ou déjà rincés. */
+  (()=>{
+    /* ---- les trois faisceaux de l épaule ---- */
+    const mw = F.eval("MUSCLE_WORK");
+    vrai("Un développé militaire travaille l'avant d'épaule",
+      mw["Développé militaire"].some(m=>m[0] === "Deltoïdes (antérieur)" && m[1] === 3));
+    vrai("…et pas l'arrière",
+      !mw["Développé militaire"].some(m=>m[0] === "Deltoïdes (postérieur)"));
+    vrai("Un face pull travaille l'arrière",
+      mw["Face pull"].some(m=>m[0] === "Deltoïdes (postérieur)" && m[1] === 3));
+    vrai("Une élévation latérale travaille le latéral",
+      mw["Élévations latérales"].some(m=>m[0] === "Deltoïdes (latéral)" && m[1] === 3));
+    /* le détail ne casse rien : la récupération raisonne toujours par groupe */
+    eq("Le détail retombe sur le groupe suivi",
+      F.groupeDe("Deltoïdes (postérieur)"), "Deltoïdes");
+    vrai("La récupération connaît toujours les épaules",
+      !!F.recuperation().muscles["Deltoïdes"]);
+
+    /* ---- le muscle sur lequel un exercice est centré ---- */
+    /* Un oiseau touche le grand dorsal, mais il est FAIT pour l arrière d épaule. */
+    eq("L'oiseau est un exercice d'arrière d'épaule",
+      F.centreSur("Oiseau"), "Deltoïdes (postérieur)");
+    eq("Le squat est un exercice de quadriceps", F.centreSur("Squat"), "Quadriceps");
+    eq("Le curl marteau est un exercice de biceps", F.centreSur("Curl marteau"), "Biceps");
+
+    /* ---- la séance elle-même ---- */
+    DB.materiel = null; DB.history = []; DB.templates = [];
+    const pull = F.genererAdaptative("pull");
+    eq("Cinq exercices", pull.items.length, 5);
+    eq("…tous différents", new Set(pull.items.map(i=>i.nom)).size, 5);
+    vrai("Les biceps ont enfin leur exercice",
+      pull.items.some(i=>i.role === "Biceps"));
+    vrai("Le premier exercice est un gros mouvement",
+      F.chargeExo(pull.items[0].nom) >= 30, pull.items[0].nom);
+    /* une isolation ne se fait pas en 8 reps avec deux minutes trente de repos */
+    pull.items.forEach(it=>{
+      if(F.chargeExo(it.nom) < 15)
+        vrai("Une isolation garde des séries longues (" + it.nom + ")",
+          it.rest <= 90, it.reps + " / " + it.rest + "s");
+    });
+
+    /* ---- elle s adapte vraiment ---- */
+    const idOf = n => F.libId(n);
+    const series = (w, r, n) => Array.from({length:n}, ()=>({w, r, done:true, rir:1}));
+    DB.history = [{id:"ha", date:new Date(Date.now() - 30*36e5).toISOString(), start:0, end:0,
+      name:"Pull", entries:[
+        {exId:idOf("Rowing barre"), sets:series(70, 10, 5)},
+        {exId:idOf("Tirage vertical"), sets:series(60, 10, 5)}]}];
+    const besoins = F.besoinsMuscles("pull");
+    const dos = besoins.find(b=>b.muscle === "Grand dorsal");
+    const bic = besoins.find(b=>b.muscle === "Biceps");
+    vrai("Dix séries de dos hier : le dos n'est plus prioritaire",
+      dos.besoin < bic.besoin, "dos " + Math.round(dos.besoin) + " vs biceps " + Math.round(bic.besoin));
+    vrai("…sa récupération a baissé", dos.recup < 75, dos.recup + " %");
+    vrai("…et son volume de la semaine est compté", dos.vol >= 9, String(dos.vol));
+    const apres = F.genererAdaptative("pull");
+    const nDos = apres.items.filter(i=>i.role === "Grand dorsal").length;
+    vrai("Le dos reçoit moins d'exercices qu'à froid",
+      nDos < pull.items.filter(i=>i.role === "Grand dorsal").length, "reste " + nDos);
+    DB.history = [];
+
+    /* ---- seules les séances du départ sont adaptatives ---- */
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    eq("Les trois séances du coach sont adaptatives",
+      DB.templates.filter(t=>t.adaptatif).length, 3);
+    eq("…chacune avec son type",
+      DB.templates.map(t=>t.adaptatif).join(","), "push,pull,jambes");
+    DB.templates.push({id:"perso", name:"Ma séance", items:[
+      {exId:idOf("Curl barre"), sets:3, reps:"8-12", rest:90}]});
+    vrai("Une séance créée à la main ne l'est pas",
+      !DB.templates.find(t=>t.id === "perso").adaptatif);
+
+    /* ---- le recalcul ---- */
+    const tpl = DB.templates.find(t=>t.adaptatif === "pull");
+    const avantNoms = tpl.items.map(i=>i.exId).join(",");
+    tpl.items[0].rest = 222;                    /* un repos réglé à la main */
+    const gardeId = tpl.items[0].exId;
+    F.regenererAdaptative(tpl);
+    eq("La séance garde cinq exercices", tpl.items.length, 5);
+    vrai("…et son marqueur", tpl.adaptatif === "pull");
+    const revenu = tpl.items.find(i=>i.exId === gardeId);
+    if(revenu) eq("Un repos réglé à la main est conservé", revenu.rest, 222);
+    DB.templates = []; DB.history = []; DB.materiel = null;
+    F.render();
+  })();
+  neuf();
+
   grp("Le carrousel d'accueil");
   neuf();
   /* Quatre vues, une image pleine largeur par vue, un titre dont la seconde ligne
