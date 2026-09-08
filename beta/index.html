@@ -2874,6 +2874,7 @@ const TRAD = {en:{
   "✎ Corriger les totaux à la main":"✎ Correct the totals by hand",
   "Les deux":"Both",
   "On te demandera où tu es au lancement de chaque séance, et on adaptera les exercices.":"We'll ask where you are when you start a session, and adapt the exercises.",
+  "La séance sera construite avec le matériel disponible sur place.":"The session will be built from the kit you have there.",
   "Tu t'entraînes où aujourd'hui ?":"Where are you training today?",
   "Chez toi, {n} exercices seront remplacés par leur équivalent.":"At home, {n} exercises will be swapped for an equivalent.",
   "Chez toi, 1 exercice sera remplacé par son équivalent.":"At home, 1 exercise will be swapped for an equivalent.",
@@ -6062,7 +6063,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 12h43 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 12h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10490,9 +10491,21 @@ function trierParGlisse(liste, onFin){
     p.addEventListener("pointercancel", lacher);
   });
 }
-function openPreview(tplId){
+/* `lieuFait` : l'aperçu se redessine (on a changé de lieu, refermé une fiche
+   d'exercice, retiré une ligne…) et la question a déjà été posée. */
+function openPreview(tplId, lieuFait){
   const t = db.templates.find(x=>x.id===tplId);
   if(!t) return;
+  /* La question du lieu vient AVANT la séance, pas après. On montrait les exercices,
+     puis on demandait où l'on allait, puis on remplaçait la moitié d'entre eux : ce
+     qu'on avait lu n'était pas ce qu'on allait faire. */
+  if(deuxLieux() && !lieuFait){
+    /* closeSheet() passe par history.back() : la fermeture n'a lieu qu'au tour suivant.
+       Ouvrir tout de suite ferait emporter notre fiche par celle qui part. */
+    setTimeout(()=>demanderLieu(l=>{ lieuProp = l; openPreview(tplId, true); }, t),
+      overlay.classList.contains("show") ? 260 : 0);
+    return;
+  }
   /* Une séance adaptative se recalcule ICI, à l ouverture de l aperçu — c est-à-dire
      juste avant « Démarrer ». Elle se recalculait auparavant AU démarrage : l aperçu
      montrait donc la séance précédente, et surtout l ordre qu on venait d y régler à la
@@ -10556,11 +10569,11 @@ function openPreview(tplId){
   document.querySelectorAll("[data-pvlieu]").forEach(b=>b.onclick=()=>{
     if(b.dataset.pvlieu === lieuProp) return;
     lieuProp = b.dataset.pvlieu;
-    openPreview(tplId);              /* une adaptative se refait pour ce lieu */
+    openPreview(tplId, true);        /* une adaptative se refait pour ce lieu */
   });
   document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{
     e.stopPropagation();
-    ouvrirParDessus(()=>openPreview(tplId), ()=>openExoInfo(b.dataset.exinfo));
+    ouvrirParDessus(()=>openPreview(tplId, true), ()=>openExoInfo(b.dataset.exinfo));
   });
   trierParGlisse(document.querySelector(".pv-liste"), ordre=>{
     appliquerOrdre(t, ordre);
@@ -10571,7 +10584,7 @@ function openPreview(tplId){
      le mouvement, pas la consigne. */
   document.querySelectorAll("[data-pvswap]").forEach(b=>b.onclick=()=>{
     const i = Number(b.dataset.pvswap);
-    ouvrirParDessus(()=>openPreview(tplId), ()=>openPicker(exId=>{
+    ouvrirParDessus(()=>openPreview(tplId, true), ()=>openPicker(exId=>{
       t.items[i].exId = exId;
       save(); render();
       retourFiche();                 /* on redescend sur l'aperçu, à jour */
@@ -10587,7 +10600,7 @@ function openPreview(tplId){
       TR("Retirer"), true, ()=>{
         t.items.splice(i, 1);
         save(); render();
-        if(t.items.length) setTimeout(()=>openPreview(tplId), 60);
+        if(t.items.length) setTimeout(()=>openPreview(tplId, true), 60);
       });
   });
   /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
@@ -10597,16 +10610,23 @@ function openPreview(tplId){
   document.getElementById("pv-close").onclick=closeSheet;
 }
 /* « Tu t'entraînes où aujourd'hui ? » — posée seulement quand les deux lieux existent */
-function demanderLieu(cb){
+function demanderLieu(cb, tpl){
+  /* Une séance adaptative ne « remplace » rien : elle se construit dans ce qui est
+     disponible. Promettre un remplacement serait faux, et inquiétant pour rien. */
+  const sous = (tpl && tpl.adaptatif)
+    ? TR("La séance sera construite avec le matériel disponible sur place.")
+    : TR("Chez toi, les exercices que tu ne peux pas faire seront remplacés par leur équivalent.");
   openSheet(`<h3 style="text-align:center;">${TR("Tu t'entraînes où aujourd'hui ?")}</h3>
-    <p style="margin:-4px 0 14px; text-align:center; font-size:13px; color:var(--ink-soft); line-height:1.5;">${
-      TR("Chez toi, les exercices que tu ne peux pas faire seront remplacés par leur équivalent.")}</p>
+    <p style="margin:-4px 0 14px; text-align:center; font-size:13px; color:var(--ink-soft); line-height:1.5;">${sous}</p>
     <div class="stack">
       <button class="btn btn-accent" id="lx-salle">${TR("En salle")}</button>
       <button class="btn" id="lx-maison">${TR("Chez moi")}</button>
     </div>`);
-  document.getElementById("lx-salle").onclick  = ()=>{ closeSheet(); cb("salle"); };
-  document.getElementById("lx-maison").onclick = ()=>{ closeSheet(); cb("maison"); };
+  /* On ne ferme pas ici : c'est à l'appelant de dire ce qui suit. L'aperçu REMPLACE
+     cette fiche par la sienne — la fermer d'abord aurait déclenché un history.back()
+     qui, au tour suivant, aurait emporté l'aperçu à peine ouvert. */
+  document.getElementById("lx-salle").onclick  = ()=>cb("salle");
+  document.getElementById("lx-maison").onclick = ()=>cb("maison");
 }
 function startWorkout(tplId, lieu){
   /* On demande le lieu AVANT de construire la séance : les charges suggérées et les
@@ -10616,7 +10636,8 @@ function startWorkout(tplId, lieu){
        la fermeture n'a lieu qu'au tour suivant. Ouvrir notre fiche tout de suite la ferait
        emporter par celle qui part — l'écran ne montrait alors plus rien du tout. On attend
        donc que la première soit vraiment partie. Rien d'ouvert : on n'attend pas. */
-    setTimeout(()=>demanderLieu(l=>startWorkout(tplId, l)),
+    setTimeout(()=>demanderLieu(l=>{ lieuProp = l; closeSheet(); startWorkout(tplId, l); },
+                                db.templates.find(t=>t.id===tplId)),
       overlay.classList.contains("show") ? 260 : 0);
     return;
   }
