@@ -2840,6 +2840,7 @@ const TRAD = {en:{
   "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
   "Pourquoi cette séance":"Why this session",
+  "Tu forces dessus sans que ça monte. On lève le pied cette semaine.":"You are grinding on it with nothing to show. We ease off this week.",
   "Pas encore récupéré. On l'épargne aujourd'hui.":"Not recovered yet. We go easy on it today.",
   "Jamais travaillé pour l'instant. On commence par lui.":"Never trained so far. We start with it.",
   "Rien depuis {n} jours. On rattrape.":"Nothing for {n} days. Time to catch up.",
@@ -6139,7 +6140,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 14h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 14h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10057,6 +10058,42 @@ function volumeRecent(muscle, jours){
   });
   return v;
 }
+/* ---- lever le pied, mais sur PREUVE ------------------------------------------
+   La semaine de décharge au calendrier n'est pas démontrée : rien ne dit qu'arrêter
+   tous les quatre lundis fasse mieux que continuer. Ce qui est solide, c'est le
+   constat inverse — quand la performance cesse de monter alors que chaque série est
+   un combat et que le muscle ne récupère plus, insister ne construit plus rien.
+
+   Alors on ne décharge pas au calendrier : on lève le pied sur LE muscle qui le
+   demande, quand trois signaux concordent. Deux suffisants seraient du bruit. */
+function musclePompe(muscle, perf, rec){
+  const g = groupeDe(muscle) || muscle;
+  /* 1. la charge ne monte plus sur ce muscle */
+  const noms = Object.keys(perf || {}).filter(n=>{
+    const w = MUSCLE_WORK[n] || [];
+    return w.some(m=>m[1] === 3 && (groupeDe(m[0]) || m[0]) === g);
+  });
+  if(noms.length < 2) return false;              /* pas assez de suivi pour trancher */
+  if(noms.some(n=>perf[n] > 0.02)) return false; /* quelque chose monte encore : on continue */
+  /* 2. chaque série est un combat : rien en réserve, sur au moins six séries récentes */
+  let dures = 0, total = 0;
+  const limite = Date.now() - 14 * 864e5;
+  (db.history || []).forEach(sess=>{
+    if(new Date(sess.date).getTime() < limite) return;
+    (sess.entries || []).forEach(en=>{
+      const w = MUSCLE_WORK[nomCanon(getEx(en.exId))] || [];
+      if(!w.some(m=>m[1] === 3 && (groupeDe(m[0]) || m[0]) === g)) return;
+      (en.sets || []).filter(x=>x.done && !x.warm).forEach(st=>{
+        total++;
+        if(st.rir !== undefined && st.rir !== null && st.rir <= 0) dures++;
+      });
+    });
+  });
+  if(total < 6 || dures * 2 < total) return false;
+  /* 3. et il ne récupère plus entre deux séances. `rec` est passé par l'appelant :
+     le recalculer pour chaque muscle relisait tout l'historique six fois de suite. */
+  return !!(rec && rec.muscles[g] && rec.muscles[g].pct < 65);
+}
 /* Le poids de chaque force, selon l'objectif. Ce n'est pas un détail : en force, on ne
    touche pas un muscle qui n'est pas frais, et le volume compte moins que la qualité.
    En entretien, c'est l'inverse — il s'agit surtout de tout revoir régulièrement. */
@@ -10081,6 +10118,7 @@ function poidsBesoin(){
 function besoinsMuscles(type){
   const cibles = MUSCLES_SEANCE[type] || MUSCLES_SEANCE.full;
   const rec = recuperation();
+  const perfs = progressionParExo();
   const prof = muscleProfile();
   const moy = mpMoyenne(prof);
   return cibles.map(m=>{
@@ -10093,14 +10131,16 @@ function besoinsMuscles(type){
     const vol = volumeRecent(m, 7);
     const cible = cibleHebdo(m);
     const jours = joursDepuisMuscle(m);
+    const pompe = musclePompe(m, perfs, rec);
     /* jamais travaillé : on plafonne à une semaine, l'urgence est déjà dite par le volume */
     const attente = Math.min(jours === null ? 7 : jours, 7);
     const P = poidsBesoin();
     const besoin = (recup - 55) * P.recup            /* frais = on peut charger ; à plat = on passe */
                  + Math.max(-40, -retard) * P.retard  /* en retard = prioritaire */
                  + (cible - vol) * P.volume           /* en dessous de sa semaine = on lui doit des séries */
-                 + attente * P.freq;                  /* et ça fait longtemps qu'il attend */
-    return {muscle:m, recup, retard, vol, cible, jours, besoin};
+                 + attente * P.freq                   /* et ça fait longtemps qu'il attend */
+                 - (pompe ? 30 : 0);                  /* à bout : on lui laisse la semaine */
+    return {muscle:m, recup, retard, vol, cible, jours, pompe, besoin};
   }).sort((a, b)=>b.besoin - a.besoin);
 }
 /* Depuis combien de jours ce muscle n'a rien encaissé de sérieux ? null = jamais.
@@ -10128,6 +10168,8 @@ function raisonsSeance(type){
   const j = m => joursDepuisMuscle(m);
   const phrase = p => {
     const n = nom(p.muscle), jours = j(p.muscle);
+    if(p.pompe)
+      return [n, TR("Tu forces dessus sans que ça monte. On lève le pied cette semaine.")];
     if(p.recup < 60)
       return [n, TR("Pas encore récupéré. On l'épargne aujourd'hui.")];
     if(jours === null)
@@ -10361,6 +10403,8 @@ function genererAdaptative(type, evites){
       let series = d.s;
       if(k === 0 && rang === 0 && p.recup >= 60) series = Math.min(5, series + 1);
       if(k === 0 && rang >= parts.length - 1 && parts.length > 2) series = Math.max(2, series - 1);
+      /* un muscle à bout garde sa place — on ne l'abandonne pas — mais on allège */
+      if(p.pompe) series = Math.max(2, series - 1);
       items.push({nom:choisi.nom, sets:series, reps:repsTenue(choisi.nom, reps),
                   rest:reposTenue(choisi.nom, repos),
                   role:p.muscle, charge:choisi.charge, niveau});
@@ -12992,6 +13036,14 @@ function poidsFatigue(st){
   f += (st.drops || []).length * 0.35;
   return f;
 }
+/* La récupération ralentit avec l'âge, mais modérément : l'écart est net après
+   cinquante ans, discret entre vingt-cinq et quarante. Le facteur reste donc petit —
+   +0,6 % par année au-delà de trente ans, plafonné à un tiers de temps en plus. Mieux
+   vaut une correction prudente qu'une correction inventée. */
+function facteurAge(){
+  const a = (db.profile && db.profile.age) || 30;
+  return Math.min(1.33, 1 + Math.max(0, a - 30) * 0.006);
+}
 /* état de chaque groupe : 100 % = frais, 0 % = à plat */
 function recuperation(){
   const now = Date.now();
@@ -13010,7 +13062,7 @@ function recuperation(){
       (MUSCLE_WORK[nomCanon(ex)]||[]).forEach(([mus, niveau])=>{
         const g = groupeDe(mus);
         if(!g) return;
-        const plein = RECUP_H[g] || 48;
+        const plein = (RECUP_H[g] || 48) * facteurAge();
         if(heures >= plein) return;
         const reste = 1 - heures/plein;              /* la fatigue s'efface avec le temps */
         fat[g] += cout * (niveau/3) * 11 * reste;    /* ~11 points pour 1 série lourde à 1-2 reps de l'échec */
