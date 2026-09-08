@@ -441,18 +441,25 @@
   .ad-pq .l span{color:var(--ink-mute);}
 
   /* la demande d'autorisation de l'alarme : ce qu'elle change, et à quoi elle ne sert pas */
-  .alm-tete{text-align:center; padding:2px 6px 12px;}
-  .alm-tete .ic{display:flex; justify-content:center; color:var(--accent); margin-bottom:10px;}
-  .alm-tete .ic svg{width:34px; height:34px;}
-  .sheet .alm-tete h3{font-size:22px; text-align:center; padding:0; margin:0; line-height:1.2;}
-  .alm-p{margin:0 2px 14px; font-size:14px; line-height:1.5; color:var(--ink-soft);}
-  .alm-note{display:flex; align-items:flex-start; gap:12px; background:var(--surface2);
-    border-radius:16px; padding:13px; margin-bottom:16px;}
-  .alm-note .ic{flex:0 0 auto; width:38px; height:38px; border-radius:50%; background:var(--surface);
-    color:var(--ink-mute); display:flex; align-items:center; justify-content:center;}
-  .alm-note .ic svg{width:19px; height:19px;}
-  .alm-note .t{font-size:14px; font-weight:800;}
-  .alm-note .s{font-size:12.5px; line-height:1.5; color:var(--ink-mute); margin-top:3px;}
+  .alm-tete{text-align:center; padding:2px 6px 16px;}
+  .alm-tete .ic{width:76px; height:76px; margin:0 auto 14px; border-radius:50%;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .alm-tete .ic svg{width:38px; height:38px;}
+  .sheet .alm-tete h3{font-size:23px; text-align:center; padding:0; margin:0 0 6px; line-height:1.2;}
+  .alm-tete p{margin:0; font-size:14.5px; line-height:1.45; color:var(--ink-soft);}
+  .alm-note{display:flex; align-items:flex-start; gap:13px; background:var(--surface2);
+    border-radius:16px; padding:14px; margin-bottom:10px;}
+  .alm-note .ic{flex:0 0 auto; width:44px; height:44px; border-radius:50%;
+    background:rgba(245,130,32,.13); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .alm-note .ic svg{width:22px; height:22px;}
+  .alm-note .t{font-size:15px; font-weight:800; line-height:1.25;}
+  .alm-note .s{font-size:13px; line-height:1.45; color:var(--ink-mute); margin-top:3px;}
+  /* la flèche dit que ça ouvre autre chose : le réglage d'Android, pas une page de l'app */
+  .alm-go{display:flex; align-items:center; justify-content:center; gap:9px;
+    width:100%; margin:16px 0 8px;}
+  .alm-go svg{width:18px; height:18px;}
 
   /* le rappel, dans le ton de l'app : un seul geste à retenir */
   .ad-note{display:flex; align-items:center; gap:13px; background:rgba(245,130,32,.12);
@@ -2029,6 +2036,8 @@ const TRAD = {en:{
   "Garder l'écran allumé":"Keep the screen on",
   "L'écran ne s'éteint pas entre deux séries.":"The screen stays on between sets.",
   "Sonner à l'heure, écran éteint":"Ring on time, screen off",
+  "Sonnerie précise":"Rings on time",
+  "Même si l'écran est éteint ou que ton téléphone est dans ta poche.":"Even with the screen off or your phone in your pocket.",
   "Permet à Tonnup de sonner à la fin de ton repos.":"Lets Tonnup ring when your rest is over.",
   "Seulement pendant tes séances":"Only during your workouts",
   "Aucune notification en dehors de tes entraînements.":"No notifications outside your training.",
@@ -6130,7 +6139,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "8 septembre 2026 13h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "8 septembre 2026 13h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -6840,6 +6849,11 @@ const IC_ECRAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 /* le bouclier : ce qui protège tes données */
 const IC_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 4.8 5.6v5.9c0 4.4 3 8.2 7.2 9.7 4.2-1.5 7.2-5.3 7.2-9.7V5.6L12 2.8Z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg>';
 const IC_CLOCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8.4a6 6 0 1 0-12 0c0 5.2-2.1 6.6-2.1 6.6h16.2S18 13.6 18 8.4Z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg>';
+/* Une horloge simple : le chronometre, avec sa couronne, disait « je mesure » alors
+   qu il s agit d une heure a laquelle ca doit sonner. */
+const IC_HORLOGE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 1.9"/></svg>';
+/* Celle qui sonne : pleine, avec ses ondes. Un trait fin se perdait dans la pastille. */
+const IC_CLOCHE_PLEINE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="2.7" r="1.15" fill="currentColor"/><path fill="currentColor" d="M12 3.6c-2.7 0-4.9 2.2-4.9 4.9 0 3-.6 4.4-1.2 5.2-.4.5-.1 1.3.5 1.3h11.2c.6 0 .9-.8.5-1.3-.6-.8-1.2-2.2-1.2-5.2 0-2.7-2.2-4.9-4.9-4.9Z"/><path fill="currentColor" d="M9.9 16.6h4.2a2.1 2.1 0 0 1-4.2 0Z"/><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5.6 7.2A4.6 4.6 0 0 0 5.6 10.4"/><path d="M3.3 5.9A7.6 7.6 0 0 0 3.3 11.7"/><path d="M18.4 7.2A4.6 4.6 0 0 1 18.4 10.4"/><path d="M20.7 5.9A7.6 7.6 0 0 1 20.7 11.7"/></g></svg>';
 const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" stroke="currentColor" stroke-width=".9" stroke-linejoin="round"><path d="M9.8 2.2 L14.2 2.2 L14.4 4.5 L15.6 5.0 L17.4 3.6 L20.4 6.6 L19.0 8.4 L19.5 9.6 L21.8 9.8 L21.8 14.2 L19.5 14.4 L19.0 15.6 L20.4 17.4 L17.4 20.4 L15.6 19.0 L14.4 19.5 L14.2 21.8 L9.8 21.8 L9.6 19.5 L8.4 19.0 L6.6 20.4 L3.6 17.4 L5.0 15.6 L4.5 14.4 L2.2 14.2 L2.2 9.8 L4.5 9.6 L5.0 8.4 L3.6 6.6 L6.6 3.6 L8.4 5.0 L9.6 4.5 Z M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 1 0 0-7.2Z"/></svg>';
 /* bandeau sombre : l'image fournie en fond, avatar à gauche, réglages à droite */
 /* Le disque sombre est dessiné, plus chargé : une image réinsérée à chaque rendu
@@ -7221,14 +7235,16 @@ async function ouvrirReglageAlarme(){
   return lireAlarmeExacte();
 }
 function ficheAlarmeExacte(){
-  openSheet(`<div class="alm-tete"><span class="ic">${IC_CLOCHE}</span>
-      <h3>${TR("Sonner à l'heure, écran éteint")}</h3></div>
-    <p class="alm-p">${TR("Permet à Tonnup de sonner à la fin de ton repos.")}</p>
-    <div class="alm-note"><span class="ic">${IC_BOUCLIER}</span>
-      <div><div class="t">${TR("Seulement pendant tes séances")}</div>
-        <div class="s">${TR("Aucune notification en dehors de tes entraînements.")}</div></div>
-    </div>
-    <button class="btn btn-accent" id="alm-ok" style="width:100%; margin-bottom:8px;">${TR("Autoriser")}</button>
+  const bloc = (ic, titre, texte) => `<div class="alm-note"><span class="ic">${ic}</span>
+    <div><div class="t">${titre}</div><div class="s">${texte}</div></div></div>`;
+  openSheet(`<div class="alm-tete"><span class="ic">${IC_CLOCHE_PLEINE}</span>
+      <h3>${TR("Sonner à l'heure, écran éteint")}</h3>
+      <p>${TR("Permet à Tonnup de sonner à la fin de ton repos.")}</p></div>
+    ${bloc(IC_HORLOGE, TR("Sonnerie précise"),
+           TR("Même si l'écran est éteint ou que ton téléphone est dans ta poche."))}
+    ${bloc(IC_BOUCLIER, TR("Seulement pendant tes séances"),
+           TR("Aucune notification en dehors de tes entraînements."))}
+    <button class="btn btn-accent alm-go" id="alm-ok">${TR("Autoriser")}${IC_FLECHE}</button>
     <button class="btn" id="alm-non" style="width:100%;">${TR("Plus tard")}</button>`);
   document.getElementById("alm-ok").onclick = ()=>{ closeSheet(); ouvrirReglageAlarme(); };
   document.getElementById("alm-non").onclick = closeSheet;
