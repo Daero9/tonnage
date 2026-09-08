@@ -2591,6 +2591,63 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Pourquoi cette séance");
+  neuf();
+  /* La fiche explique le mécanisme ; l'encadré dit ce que l'app a lu DANS TON
+     historique. Sans lui, « elle s'adapte à toi » reste une promesse invérifiable. */
+  (()=>{
+    const jours = h => new Date(Date.now() - h*864e5).toISOString();
+    DB.history = [];
+    /* aucun historique : rien n'est affirmé sur des muscles qu'on ne connaît pas */
+    const vierge = F.raisonsSeance("pull");
+    vrai("Sans historique, on dit qu'on ne connaît pas encore",
+      vierge.every(([m, t])=>/[Jj]amais/.test(t)), JSON.stringify(vierge));
+
+    /* du biceps il y a trois jours, rien d'autre : le dos doit passer devant */
+    DB.history = [{id:"h1", date:jours(3), name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(20,10)]}]}];
+    const r = F.raisonsSeance("pull");
+    vrai("Deux à trois raisons, pas plus", r.length >= 2 && r.length <= 3, r.length);
+    vrai("Chaque raison nomme un muscle et dit pourquoi",
+      r.every(([m, t])=>m && t && t.length > 10));
+    vrai("Le dos, jamais travaillé, est cité en premier",
+      /dorsal|Dos/i.test(r[0][0]), JSON.stringify(r[0]));
+    vrai("Le biceps est cité avec son compte de la semaine",
+      r.some(([m, t])=>/[Bb]iceps/.test(m) && /série/.test(t)), JSON.stringify(r));
+    vrai("…au singulier quand il n'y en a qu'une",
+      !r.some(([m, t])=>/\b1 séries/.test(t)), JSON.stringify(r));
+
+    /* la fiche porte bien l'encadré quand on lui donne le type */
+    F.openAdaptatifInfo("pull");
+    const D2 = F.document;
+    vrai("La fiche porte l'encadré", !!D2.querySelector(".ad-pq"));
+    eq("…avec une ligne par raison", D2.querySelectorAll(".ad-pq .l").length, r.length);
+    F.hideSheet();
+    /* sans type (ancien appel), la fiche reste valable, simplement sans encadré */
+    F.openAdaptatifInfo();
+    vrai("Sans type, la fiche s'ouvre quand même", !!D2.querySelector(".ad-liste"));
+    vrai("…et n'invente aucune raison", !D2.querySelector(".ad-pq"));
+    F.hideSheet();
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Déjà chaud en arrivant : on doit pouvoir cocher l'échauffement sans rien saisir. */
+  (()=>{
+    DB.templates = [{id:"tw", name:"Essai", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.startWorkout("tw");
+    const st = DB.active.entries[0].sets[0];
+    vrai("La première série est un échauffement", !!st.warm);
+    st.w = 0; st.r = 0; st.done = true;
+    vrai("Un échauffement à zéro reste validé", st.done && !st.w && !st.r);
+    /* et il ne fausse rien : il ne compte ni dans le tonnage ni dans les séries faites */
+    eq("Il n'ajoute pas de tonnage", F.sessionVolume(DB.active), 0);
+    DB.active = null; DB.templates = [];
+  })();
+  neuf();
+
   grp("La bibliothèque d'exercices");
   neuf();
   /* Trois filtres qui se cumulent : la famille, le matériel, la recherche. Et le détail
