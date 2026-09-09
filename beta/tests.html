@@ -4253,6 +4253,25 @@ async function lancer(){
     await F.poserAlarmeRepos();
     eq("Son coupé, rien n'est programmé", envois.length, avant);
 
+    /* De retour dans l'app, il ne reste rien : ni alarme en attente, ni notification
+       oubliée dans le volet. Les deux se retirent séparément — cancel() ne connaît
+       que les alarmes à venir, une notification déjà tombée lui échappe. */
+    const annules = [], retires = [];
+    F.window.Capacitor.Plugins.LocalNotifications.cancel = async o => {
+      annules.push(o.notifications[0].id); };
+    F.window.Capacitor.Plugins.LocalNotifications.removeDeliveredNotificationsById =
+      async o => { retires.push(o.ids[0]); };
+    await F.retirerAlarmeRepos();
+    eq("L'alarme en attente est annulée", annules.length, 1);
+    eq("…et la notification déjà tombée est retirée du volet", retires.length, 1);
+    vrai("…toutes deux sur la même", annules[0] === retires[0], annules[0]);
+
+    /* un greffon plus ancien n'a pas la seconde fonction : on ne doit pas planter */
+    delete F.window.Capacitor.Plugins.LocalNotifications.removeDeliveredNotificationsById;
+    let boum = null;
+    try{ await F.retirerAlarmeRepos(); }catch(e){ boum = String(e); }
+    vrai("Un greffon sans cette fonction ne fait pas tomber l'app", boum === null, boum);
+
     delete F.window.Capacitor;
     F.eval("canalPose = false; notifsOk = null; rest.int = null; rest.end = 0");
     DB.settings.son = gardeSon;
