@@ -6886,7 +6886,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "9 septembre 2026 11h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "9 septembre 2026 11h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8122,6 +8122,13 @@ async function retirerAlarmeRepos(){
   const n = pluginNotifs();
   if(!n) return;
   try{ await n.cancel({notifications:[{id: NOTIF_REPOS}]}); }catch(e){}
+  /* cancel() ne touche QUE les alarmes en attente : une notification déjà tombée
+     reste dans le volet. On la retrouverait en rouvrant l'app, alors qu'on vient
+     précisément de revenir pour enchaîner la série — elle n'a plus rien à dire. */
+  try{
+    if(n.removeDeliveredNotificationsById)
+      await n.removeDeliveredNotificationsById({ids:[NOTIF_REPOS]});
+  }catch(e){}
 }
 /* l'app quitte l'écran pendant un repos : on passe le relais au système */
 document.addEventListener("visibilitychange", ()=>{
