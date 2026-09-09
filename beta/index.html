@@ -3108,6 +3108,8 @@ const TRAD = {en:{
   "Durée max":"Longest hold",
   "Temps total":"Total time",
   "Repos terminé":"Rest over",
+  "Fin de repos":"Rest over",
+  "Le bip qui annonce la série suivante.":"The beep that calls the next set.",
   "C'est reparti pour la série suivante.":"Time for the next set.",
   "Une seule chose sort de l'appareil, et seulement si tu le demandes : le code-barres que tu scannes.":"Only one thing leaves the device, and only if you ask for it: the barcode you scan.",
   "Le scan de code-barres":"Barcode scanning",
@@ -6884,7 +6886,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "9 septembre 2026 11h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "9 septembre 2026 11h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8010,6 +8012,33 @@ async function autoriserNotifs(){
   }catch(e){ notifsOk = false; }
   return notifsOk;
 }
+/* Depuis Android 8, le son n'appartient pas à la notification mais au CANAL — et un
+   canal ne se modifie plus une fois créé. Le canal par défaut du greffon est MUET :
+   il ne reçoit un son que si la configuration en déclare un, et elle n'en déclarait
+   aucun. La notification s'affichait donc, vibrait, et se taisait.
+   On crée le nôtre, avec le bip. Le numéro dans l'identifiant n'est pas décoratif :
+   changer le son un jour obligera à changer d'identifiant, sinon les téléphones déjà
+   installés garderont l'ancien réglage pour toujours. */
+const CANAL_REPOS = "repos1";
+let canalPose = false;
+async function poserCanalRepos(){
+  if(canalPose) return;
+  canalPose = true;                    /* même en cas d'échec : on ne réessaie pas */
+  const n = pluginNotifs();
+  if(!n || !n.createChannel) return;
+  const c = window.Capacitor;
+  if(c.getPlatform && c.getPlatform() !== "android") return;   /* canaux : Android seul */
+  try{
+    await n.createChannel({
+      id: CANAL_REPOS,
+      name: TR("Fin de repos"),
+      description: TR("Le bip qui annonce la série suivante."),
+      sound: "bip_repos.wav",
+      importance: 4,                   /* haute : le bandeau s'affiche et le son sort */
+      visibility: 1                    /* lisible sur l'écran verrouillé */
+    });
+  }catch(e){}
+}
 async function poserAlarmeRepos(){
   if(db.settings.son === false) return;      /* son coupé : pas de sonnerie du tout */
   if(seqIso) return;                         /* un gainage a déjà posé toute sa suite */
@@ -8019,11 +8048,15 @@ async function poserAlarmeRepos(){
   const dans = rest.end - Date.now();
   if(dans < 700) return;                     /* trop tard pour que ça ait un sens */
   if(!(await autoriserNotifs())) return;
+  await poserCanalRepos();
   try{
     await n.schedule({notifications:[{
       id: NOTIF_REPOS,
       title: TR("Repos terminé"),
       body: TR("C'est reparti pour la série suivante."),
+      channelId: CANAL_REPOS,
+      /* pour les Android 7 et antérieurs, où le son tient encore à la notification */
+      sound: "bip_repos.wav",
       /* allowWhileIdle : sans lui, Android repousse l'alarme quand le téléphone dort */
       schedule: {at: new Date(rest.end), allowWhileIdle: true}
     }]});
