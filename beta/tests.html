@@ -4339,6 +4339,137 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La durée annoncée d'une séance");
+  neuf();
+  /* Elle reposait sur « le repos plus quarante secondes par série », partout dans
+     l'app et sous trois formes légèrement différentes. Quarante secondes forfaitaires
+     ne veulent rien dire : cinq répétitions lourdes en prennent quinze, vingt en
+     prennent une minute, et un gainage d'une minute en prend soixante. Et tout ce qui
+     n'est ni série ni repos — charger la barre, régler le siège, se mettre en place —
+     n'était compté nulle part. */
+  (()=>{
+    const it = (nom, sets, reps, rest) => ({exId:id(nom), sets, reps, rest});
+
+    /* le nombre de répétitions compte, à repos et séries identiques */
+    const court = F.dureeItem(id("Développé couché"), 3, "5", 120);
+    const long  = F.dureeItem(id("Développé couché"), 3, "20", 120);
+    vrai("Vingt répétitions durent plus longtemps que cinq", long > court + 100,
+      Math.round(court) + " s contre " + Math.round(long) + " s");
+
+    /* un gainage : la « répétition » EST une durée, on ne la multiplie pas par le
+       tempo. Soixante secondes de planche, c'est une minute — pas trois. On le
+       vérifie en le comparant aux mêmes chiffres lus comme des répétitions. */
+    const iso = F.dureeItem(id("Gainage"), 3, "60", 60);
+    const commeDesReps = F.dureeItem(id("Curl barre"), 3, "60", 60);
+    vrai("Une tenue de 60 s compte une minute, pas trois",
+      iso < commeDesReps / 2,
+      Math.round(iso) + " s contre " + Math.round(commeDesReps) + " s");
+
+    /* l'installation dépend du matériel : charger une barre prend plus de temps
+       que de saisir deux haltères */
+    vrai("Charger une barre coûte plus qu'attraper des haltères",
+      F.dureeItem(id("Squat"), 1, "10", 90) > F.dureeItem(id("Goblet squat"), 1, "10", 90));
+
+    /* pas de repos après la dernière série : c'est l'exercice suivant qui enchaîne */
+    const une = F.dureeItem(id("Développé couché"), 1, "10", 600);
+    vrai("Le repos qui suit la dernière série n'est pas compté", une < 200,
+      Math.round(une) + " s");
+
+    /* les séries se ralentissent en approchant de l'échec */
+    const s1 = F.dureeItem(id("Curl barre"), 1, "10", 0);
+    const s4 = F.dureeItem(id("Curl barre"), 4, "10", 0);
+    const install = s1 - (12 + 30);
+    vrai("Les dernières séries sont plus lentes que la première",
+      (s4 - install) > 4 * (s1 - install),
+      Math.round(s4 - install) + " s pour quatre séries");
+
+    /* et une seule formule pour toute l'app */
+    const seance = [it("Squat", 4, "8-12", 120), it("Gainage", 3, "45", 60)];
+    eq("La carte du programme et le calcul commun disent la même chose",
+      F.dureeSeance({items:seance}), F.dureeMinutes(seance));
+    vrai("Le résultat est arrondi à cinq minutes", F.dureeMinutes(seance) % 5 === 0,
+      F.dureeMinutes(seance));
+    /* plus de plancher artificiel à quinze minutes : trois gainages ne durent pas
+       un quart d'heure */
+    vrai("Une séance très courte n'est plus gonflée à 15 min",
+      F.dureeMinutes([it("Gainage", 3, "60", 60)]) < 15,
+      F.dureeMinutes([it("Gainage", 3, "60", 60)]));
+  })();
+  neuf();
+
+  grp("Les étiquettes de première visite");
+  neuf();
+  /* Elles désignent un élément réel de l'écran. Si cet élément est renommé un jour,
+     l'étape disparaît en silence — l'utilisateur ne verra rien, et personne ne s'en
+     apercevra. On vérifie donc que chaque cible existe vraiment sur son onglet. */
+  await (async ()=>{
+    const G = F.eval("GUIDES");
+    /* render() lance la visite tout seul une demi-seconde plus tard : pendant qu'on
+       inspecte les cibles, on la marque comme déjà vue pour qu'elle ne s'ouvre pas
+       dans notre dos. On rendra la main juste après. */
+    const gardes = {};
+    Object.keys(G).forEach(o=>{ gardes[o] = DB.seen["guide-" + o]; DB.seen["guide-" + o] = true; });
+    const manquantes = [];
+    for(const onglet of Object.keys(G)){
+      F.eval("curTab = " + JSON.stringify(onglet) + "; render()");
+      await new Promise(r=>setTimeout(r, 120));
+      G[onglet].forEach(([sel, titre])=>{
+        if(!F.document.querySelector(sel)) manquantes.push(onglet + " → " + sel + " (" + titre + ")");
+      });
+    }
+    vrai("Chaque étiquette désigne un élément qui existe", manquantes.length === 0,
+      manquantes.join(" ; "));
+    vrai("Les trois onglets sont couverts", Object.keys(G).length === 3,
+      Object.keys(G).join(", "));
+    /* on ne noie pas quelqu'un qui arrive : trois étapes au plus par onglet */
+    vrai("Pas plus de trois étapes par onglet",
+      Object.values(G).every(e=>e.length <= 3),
+      Object.values(G).map(e=>e.length).join("/"));
+    vrai("Chacune tient en une phrase courte",
+      Object.values(G).every(e=>e.every(([, , t])=>t.length <= 105)),
+      Math.max(...Object.values(G).flat().map(([, , t])=>t.length)) + " caractères");
+
+    F.eval("curTab = 'seance'; render()");
+    await new Promise(r=>setTimeout(r, 700));
+    /* table rase avant de tester le comportement lui-même */
+    F.document.querySelectorAll(".gd-voile, .gd-bulle").forEach(e=>e.remove());
+    F.eval("guideEnCours = false");
+    Object.keys(G).forEach(o=>{
+      if(gardes[o] === undefined) delete DB.seen["guide-" + o]; else DB.seen["guide-" + o] = gardes[o];
+    });
+
+    /* elle ne revient jamais */
+    const garde = DB.seen["guide-seance"];
+    DB.seen["guide-seance"] = true;
+    F.lancerGuide("seance");
+    vrai("Une visite déjà faite ne recommence pas", !F.document.querySelector(".gd-voile"));
+    delete DB.seen["guide-seance"];
+
+    /* pas avant que le profil soit rempli : le parcours de création a l'écran pour lui */
+    const gardeProfil = DB.profile;
+    DB.profile = {};
+    F.lancerGuide("seance");
+    vrai("Sans profil, aucune étiquette", !F.document.querySelector(".gd-voile"));
+    vrai("…et rien n'est marqué comme vu", !DB.seen["guide-seance"]);
+    DB.profile = gardeProfil;
+
+    /* elle s'affiche, et se referme au bout du compte */
+    F.lancerGuide("seance");
+    await new Promise(r=>setTimeout(r, 120));
+    vrai("Le voile s'ouvre sur la première étape", !!F.document.querySelector(".gd-voile"));
+    vrai("…avec un bouton pour avancer", !!F.document.getElementById("gd-suite"));
+    for(let k = 0; k < 6; k++){
+      const b2 = F.document.getElementById("gd-suite");
+      if(!b2) break;
+      b2.click();
+      await new Promise(r=>setTimeout(r, 90));
+    }
+    vrai("Au bout des étapes, tout se referme", !F.document.querySelector(".gd-voile"));
+    vrai("…et elle est retenue comme vue", !!DB.seen["guide-seance"]);
+    if(garde === undefined) delete DB.seen["guide-seance"]; else DB.seen["guide-seance"] = garde;
+  })();
+  neuf();
+
   grp("Les dessins d'exercice");
   neuf();
   /* La table est indexée sur le NOM français de l'exercice. Un renommage ferait donc
