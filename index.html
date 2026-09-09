@@ -6886,7 +6886,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "9 septembre 2026 11h26";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "9 septembre 2026 15h26";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7991,10 +7991,18 @@ function couperSon(){
    système, sous forme de notification programmée : c'est lui qui la déclenche, même
    application fermée.
 
-   Elle n'est posée QUE lorsque l'app quitte l'écran, et retirée dès qu'elle revient —
-   sinon la notification et le bip interne sonneraient tous les deux. Hors de
-   l'application empaquetée (navigateur, iPhone), rien de tout cela n'existe : on
-   retombe sur le bip, qui ne marche qu'à l'écran. */
+   Elle est posée DÈS LE DÉPART DU REPOS, pas au moment où l'écran se verrouille.
+   C'est tout le sujet : quand on verrouille, Android gèle la WebView en quelques
+   millisecondes, et programmer l'alarme demande deux allers-retours vers le système
+   (l'autorisation, puis le canal). Une fois sur cinq, le gel arrivait avant la fin de
+   ces allers-retours et l'alarme n'était jamais posée — d'où une sonnerie capricieuse.
+   Posée à l'avance, l'app a tout son temps : elle est encore à l'écran.
+
+   En contrepartie il faut la retirer avant qu'elle ne sonne dans le vide : une seconde
+   avant la fin, si l'app est toujours visible, on l'annule et c'est le bip de la page
+   qui prend le relais. Sinon la notification et le bip sonneraient tous les deux.
+   Hors de l'application empaquetée (navigateur, iPhone), rien de tout cela n'existe :
+   on retombe sur le bip, qui ne marche qu'à l'écran. */
 const NOTIF_REPOS = 4271;
 function pluginNotifs(){
   const p = window.Capacitor && window.Capacitor.Plugins;
@@ -8039,6 +8047,9 @@ async function poserCanalRepos(){
     });
   }catch(e){}
 }
+/* Vraie ou fausse, l'alarme est-elle programmée en ce moment ? Sert à ne pas
+   bombarder le pont Android d'appels à chaque quart de seconde. */
+let alarmePosee = false;
 async function poserAlarmeRepos(){
   if(db.settings.son === false) return;      /* son coupé : pas de sonnerie du tout */
   if(seqIso) return;                         /* un gainage a déjà posé toute sa suite */
@@ -8047,6 +8058,7 @@ async function poserAlarmeRepos(){
   if(!n || !rest.int || rest.paused) return;
   const dans = rest.end - Date.now();
   if(dans < 700) return;                     /* trop tard pour que ça ait un sens */
+  alarmePosee = true;
   if(!(await autoriserNotifs())) return;
   await poserCanalRepos();
   try{
@@ -8119,6 +8131,7 @@ async function verifierAlarmeExacte(){
   setTimeout(()=>{ if(document.visibilityState === "visible") ficheAlarmeExacte(); }, 700);
 }
 async function retirerAlarmeRepos(){
+  alarmePosee = false;
   const n = pluginNotifs();
   if(!n) return;
   try{ await n.cancel({notifications:[{id: NOTIF_REPOS}]}); }catch(e){}
@@ -8227,6 +8240,7 @@ function arreterSeqIso(fini){
      toute seule, comme un repos qu on n avait pas demande. */
   if(rest.int){ clearInterval(rest.int); rest.int = null; }
   rest.paused = false; rest.end = 0;
+  retirerAlarmeRepos();
   restbar.classList.remove("show", "ending", "paused");
   if(fini) toast(TR("Gainage terminé ✓"));
   try{ renderActive(document.getElementById("app")); }catch(e){}
@@ -8333,6 +8347,8 @@ function startRest(sec){
   document.getElementById("rest-lbl").textContent = TR("Repos");
   majAnneau(0); majIconePause();
   rest.int = setInterval(tickRest, 250);
+  /* tant qu'on est à l'écran, on a le temps : on pose l'alarme maintenant */
+  poserAlarmeRepos();
   tickRest();
   majIconeSon();
   if(!dejaVu("repos")){
@@ -8350,6 +8366,7 @@ function togglePauseRest(){
     majIconePause();
     if(rest.int) clearInterval(rest.int);
     rest.int = setInterval(tickRest, 250);
+    poserAlarmeRepos();                    /* l'heure de fin existe de nouveau */
     tickRest();
     if(seqIso) programmerSonneriesIso();   /* on repose la suite, décalée d'autant */
   } else {
@@ -8364,8 +8381,14 @@ function togglePauseRest(){
     retirerSonneriesIso();         /* ni celles qui suivaient */
   }
 }
+const AVANT_FIN = 1.2;      /* secondes : de quoi annuler avant que ça ne sonne */
 function tickRest(){
   const left = (rest.end - Date.now())/1000;
+  /* L'app est sous les yeux et la fin approche : c'est le bip de la page qui sonnera,
+     on retire l'alarme système avant qu'elle ne double la mise. Si l'écran s'éteint
+     dans cette dernière seconde, tant pis — la page serait gelée de toute façon. */
+  if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible")
+    retirerAlarmeRepos();
   if(left<=0){
     clearInterval(rest.int); rest.int=null;
     retirerAlarmeRepos();
@@ -8418,8 +8441,11 @@ document.getElementById("rest-skip").onclick=()=>{
   if(rest.int) clearInterval(rest.int); rest.int=null; rest.paused=false;
   restbar.classList.remove("show","paused"); retirerAlarmeRepos();
 };
-document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; tickRest(); } };
-document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; tickRest(); } };
+/* Changer la durée déplace l'heure de fin : l'alarme déjà posée sonnerait au mauvais
+   moment. On la repose sur la nouvelle heure — programmer le même identifiant remplace
+   l'ancienne, il n'y a pas à l'annuler d'abord. */
+document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; poserAlarmeRepos(); tickRest(); } };
+document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; poserAlarmeRepos(); tickRest(); } };
 document.getElementById("rest-son").onclick=e=>{
   e.stopPropagation();
   db.settings.son = db.settings.son === false;      /* faux -> vrai, vrai -> faux */
