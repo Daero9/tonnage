@@ -4278,6 +4278,67 @@ async function lancer(){
   })();
   neuf();
 
+  grp("L'alarme est posée à l'avance");
+  neuf();
+  /* Elle sonnait une fois sur cinq. La cause : elle n'était programmée qu'au moment
+     où l'écran se verrouille, or Android gèle la WebView en quelques millisecondes et
+     programmer l'alarme demande deux allers-retours vers le système. Le gel gagnait la
+     course une fois sur cinq. On la pose donc dès le départ du repos, pendant que
+     l'app est encore à l'écran, et on la retire juste avant la fin si on est resté
+     devant — sinon la notification et le bip sonneraient tous les deux. */
+  await (async ()=>{
+    const gardeSon = DB.settings.son;
+    const envois = [], annules = [];
+    F.window.Capacitor = {isNativePlatform:()=>true, getPlatform:()=>"android",
+      Plugins:{LocalNotifications:{
+        checkPermissions: async ()=>({display:"granted"}),
+        requestPermissions: async ()=>({display:"granted"}),
+        checkExactNotificationSetting: async ()=>({exact_alarm:"granted"}),
+        changeExactNotificationSetting: async ()=>({exact_alarm:"granted"}),
+        createChannel: async ()=>{},
+        schedule: async o => { envois.push(o.notifications[0]); return {}; },
+        cancel: async ()=>{ annules.push(1); },
+        removeDeliveredNotificationsById: async ()=>{}
+      }}};
+    /* la fenêtre des tests passe en arrière-plan dès qu'on regarde ailleurs : on force
+       l'état visible, c'est justement ce que le code teste */
+    const vraiEtat = Object.getOwnPropertyDescriptor(F.Document.prototype, "visibilityState");
+    Object.defineProperty(F.Document.prototype, "visibilityState",
+      {get:()=>"visible", configurable:true});
+    F.eval("canalPose = false; notifsOk = null; alarmePosee = false");
+    DB.settings.son = true;
+
+    F.startRest(120);
+    await new Promise(r=>setTimeout(r, 60));
+    eq("Lancer le repos programme l'alarme, sans quitter l'app", envois.length, 1);
+    vrai("…à l'heure de fin du repos",
+      Math.abs(new Date(envois[0].schedule.at).getTime() - F.eval("rest.end")) < 50);
+    vrai("…et elle survit à la veille", envois[0].schedule.allowWhileIdle === true);
+
+    /* +15 s déplace l'heure de fin : l'alarme doit suivre */
+    F.document.getElementById("rest-plus").click();
+    await new Promise(r=>setTimeout(r, 60));
+    eq("Ajouter 15 s repose l'alarme", envois.length, 2);
+    vrai("…sur la nouvelle heure",
+      new Date(envois[1].schedule.at).getTime() > new Date(envois[0].schedule.at).getTime());
+
+    /* la fin approche et on est resté devant : la page bipera, pas le système */
+    const avant = annules.length;
+    F.eval("rest.end = Date.now() + 900");
+    F.tickRest();
+    await new Promise(r=>setTimeout(r, 60));
+    vrai("Resté devant, l'alarme est retirée avant de sonner", annules.length > avant);
+    vrai("…et on ne la retire qu'une fois", (F.eval("alarmePosee")) === false);
+
+    F.eval("if(rest.int){ clearInterval(rest.int); rest.int = null; } rest.end = 0");
+    if(vraiEtat) Object.defineProperty(F.Document.prototype, "visibilityState", vraiEtat);
+    delete F.window.Capacitor;
+    F.eval("canalPose = false; notifsOk = null; alarmePosee = false");
+    DB.settings.son = gardeSon;
+    F.document.getElementById("restbar").classList.remove("show");
+  })();
+  neuf();
+
   grp("Les dessins d'exercice");
   neuf();
   /* La table est indexée sur le NOM français de l'exercice. Un renommage ferait donc
