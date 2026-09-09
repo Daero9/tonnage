@@ -2631,12 +2631,29 @@ async function lancer(){
       schedule: async ()=>({}), cancel: async ()=>({})
     }}};
 
+    /* Toute cette fonction se tait quand la page n'est pas à l'écran — c'est voulu :
+       on ne réclame pas une autorisation à quelqu'un qui regarde ailleurs. Mais la
+       suite de tests, elle, tourne souvent dans une fenêtre passée en arrière-plan,
+       et le navigateur déclare alors la page « hidden ». On force donc l'état visible
+       le temps du groupe, exactement comme on remplace Capacitor par un faux greffon.
+       Sans ça, ces essais échouaient selon que Nico avait la fenêtre devant lui. */
+    const vraiEtat = Object.getOwnPropertyDescriptor(F.Document.prototype, "visibilityState");
+    const vraiCache = Object.getOwnPropertyDescriptor(F.Document.prototype, "hidden");
+    Object.defineProperty(F.Document.prototype, "visibilityState",
+      {get:()=>"visible", configurable:true});
+    Object.defineProperty(F.Document.prototype, "hidden", {get:()=>false, configurable:true});
+    /* et on attend que la chose arrive plutôt qu'un délai fixe : en arrière-plan le
+       navigateur étire les minuteurs, un « attendre 800 ms » devenait un pile ou face */
+    const jusqua = async (cond, max) => { const t0 = Date.now();
+      while(Date.now() - t0 < (max || 4000)){ if(cond()) return true;
+        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
+
     delete DB.seen.alarmeExacte;
     DB.settings.son = true;
     await F.verifierAlarmeExacte();
     vrai("L'état est lu auprès du système", appels.check === 1, appels.check);
     vrai("Le refus est retenu pour ne plus jamais redemander", !!DB.seen.alarmeExacte);
-    await new Promise(r=>setTimeout(r, 800));
+    await jusqua(()=>!!F.document.getElementById("alm-ok"));
     vrai("La fiche explique à quoi sert l'autorisation",
       !!F.document.getElementById("alm-ok"));
     eq("Deux promesses, pas une", F.document.querySelectorAll("#sheet .alm-note").length, 2);
@@ -2649,9 +2666,12 @@ async function lancer(){
       F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length + " caractères");
 
     /* « Autoriser » ouvre la page système ; au retour l'état est relu, pas supposé */
-    F.document.getElementById("alm-ok").click();
-    await new Promise(r=>setTimeout(r, 60));
+    const bouton = F.document.getElementById("alm-ok");
+    if(bouton) bouton.click();
+    await jusqua(()=>appels.change === 1, 1000);
     vrai("« Autoriser » ouvre le réglage système", appels.change === 1, appels.change);
+    /* le réglage revient du système, il est relu ensuite : deux temps, pas un */
+    await jusqua(()=>F.eval("alarmeExacte") === "granted", 1000);
     eq("…et l'état est relu", F.eval("alarmeExacte"), "granted");
     F.hideSheet();
 
@@ -2677,6 +2697,8 @@ async function lancer(){
       appels.perm >= 1, appels.perm);
 
     delete F.window.Capacitor;
+    if(vraiEtat) Object.defineProperty(F.Document.prototype, "visibilityState", vraiEtat);
+    if(vraiCache) Object.defineProperty(F.Document.prototype, "hidden", vraiCache);
     F.eval("alarmeExacte = null; notifsOk = null");
     DB.seen.alarmeExacte = gardeSeen; DB.settings.son = gardeSon;
     if(gardeSeen === undefined) delete DB.seen.alarmeExacte;
@@ -4178,6 +4200,28 @@ async function lancer(){
   D.querySelector(".ex-done").click();
   vrai("Il se rouvre d'un appui", !!D.querySelector(".ex-card") && !D.querySelector(".ex-done"));
   DB.active = null;
+  neuf();
+
+  grp("Les dessins d'exercice");
+  neuf();
+  /* La table est indexée sur le NOM français de l'exercice. Un renommage ferait donc
+     disparaître son dessin sans rien casser d'autre — l'exercice reprendrait son icône
+     dessinée et personne ne s'en apercevrait. On vérifie que chaque clé désigne bien
+     un exercice qui existe. Le nom de fichier, lui, se vérifie au chargement de la
+     page : une image absente laisse une vignette vide, ça se voit tout de suite. */
+  (()=>{
+    const photos = F.eval("EXO_PHOTO");
+    const noms = new Set(F.eval("LIB").map(e=>e.nameFr || e.name));
+    const orphelines = Object.keys(photos).filter(n=>!noms.has(n));
+    vrai("Chaque dessin désigne un exercice qui existe", orphelines.length === 0,
+      orphelines.join(", "));
+    vrai("Aucun fichier n'est nommé à vide",
+      Object.values(photos).every(f=>/^[a-z0-9-]+$/.test(f)));
+    /* deux exercices peuvent partager un dessin — le butterfly avant et arrière se
+       montrent sur la même machine — mais un exercice n'en a qu'un */
+    vrai("Il y a bien des dessins", Object.keys(photos).length > 40,
+      Object.keys(photos).length);
+  })();
   neuf();
 
   /* ---------------------------------------------------------- bilan */
