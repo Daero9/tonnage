@@ -1727,6 +1727,32 @@
   .chart-tip b{font-variant-numeric:tabular-nums;}
 
   /* modal */
+  /* ---- les etiquettes de premiere visite ----
+     Un trou dans un voile sombre : on ne dessine pas le voile, on dessine le TROU et
+     on lui donne une ombre portee de neuf mille pixels. Tout le reste de l'ecran est
+     donc assombri d'un seul element, sans decouper quoi que ce soit.
+     Niveau 50 : au-dessus de la barre du bas (40) et du minuteur (45), en dessous du
+     parcours d'accueil (55) et des fiches (60). */
+  .gd-voile{position:fixed; inset:0; z-index:50;}
+  .gd-trou{position:fixed; border-radius:16px; pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.68);
+    transition:top .24s ease, left .24s ease, width .24s ease, height .24s ease;}
+  .gd-bulle{position:fixed; z-index:51; width:min(310px, calc(100vw - 24px));
+    background:var(--surface); border-radius:18px; padding:14px 15px 12px;
+    box-shadow:0 14px 38px rgba(0,0,0,.3);}
+  .gd-bulle .k{display:inline-block; background:rgba(245,130,32,.14); color:var(--accent);
+    font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    border-radius:99px; padding:3px 8px; margin-bottom:7px;}
+  .gd-bulle p{margin:0; font-size:13.5px; line-height:1.45; color:var(--ink);}
+  .gd-bas{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:12px;}
+  .gd-pts{display:flex; gap:5px;}
+  .gd-pts i{width:6px; height:6px; border-radius:50%; background:var(--border);}
+  .gd-pts i.on{background:var(--accent);}
+  .gd-bas .passer{background:none; border:0; padding:6px 2px; font-size:12px;
+    color:var(--ink-mute); font-weight:600;}
+  .gd-bas .suite{background:var(--accent); color:#fff; border:0; border-radius:99px;
+    padding:8px 16px; font-size:13px; font-weight:800;}
   .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center;}
   .overlay.show{display:flex;}
   .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
@@ -3363,6 +3389,24 @@ const TRAD = {en:{
   "Voir":"See",
   "tout":"all",
   "Par où commencer":"Where to start",
+  "Aucun exercice":"No exercise",
+  "Passer":"Skip","Suivant":"Next","C'est parti":"Got it",
+  "Tes séances":"Your sessions",
+  "Glisse pour en changer, touche pour la lancer.":"Swipe to switch, tap to start.",
+  "En créer une":"Create one",
+  "Compose la tienne, ou laisse l'app t'en proposer une selon ta récupération.":"Build your own, or let the app suggest one based on your recovery.",
+  "Ta semaine":"Your week",
+  "Ce que tu as fait, ce qu'il te reste. Le bilan s'ouvre d'un appui.":"What you have done, what is left. Tap for the summary.",
+  "Ton objectif du jour":"Today's target",
+  "Protéines et calories, calculés depuis ton profil et tes séances.":"Protein and calories, worked out from your profile and your sessions.",
+  "Ce que tu manges":"What you eat",
+  "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul.":"Pick the meal, then tap a food. The count updates on its own.",
+  "Ton aliment n'y est pas ?":"Food not listed?",
+  "Ajoute-le une fois avec ses valeurs : il restera dans ta liste.":"Add it once with its values: it stays in your list.",
+  "Ton poids":"Your weight",
+  "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines.":"What matters is not today's number but the slope over several weeks.",
+  "Tes courbes":"Your charts",
+  "Charges, volume par muscle, régularité. Elles se remplissent en t'entraînant.":"Loads, volume per muscle, consistency. They fill up as you train.",
   "Aucune séance pour l'instant.":"No workouts yet.",
   "Appuie sur ＋ pour créer la première.":"Tap ＋ to create your first one.",
   "Aucune séance enregistrée pour l'instant.":"No workouts logged yet.",
@@ -6886,7 +6930,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "9 septembre 2026 15h26 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 01h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7788,6 +7832,88 @@ function wireTopbar(){
   const x = document.getElementById("tb-close");
   if(x) x.onclick = ()=>{ curTab = "seance"; render(); };
 }
+/* ---- la visite guidee, une fois par onglet ------------------------------------
+   « Par ou commencer » disait quoi faire, jamais ou c'etait. Ces etiquettes montrent
+   du doigt : elles designent un element reel de l'ecran, disent ce qu'il fait en une
+   phrase, et ne reviennent jamais.
+
+   Elles ne se declenchent qu'une fois le profil rempli. Avant, l'ecran appartient au
+   parcours de creation ; deux explications qui se parlent par-dessus, personne ne lit
+   ni l'une ni l'autre. */
+const GUIDES = {
+  seance: [
+    ["#car", "Tes séances", "Glisse pour en changer, touche pour la lancer."],
+    ["#fab", "En créer une", "Compose la tienne, ou laisse l'app t'en proposer une selon ta récupération."],
+    [".wk-card", "Ta semaine", "Ce que tu as fait, ce qu'il te reste. Le bilan s'ouvre d'un appui."]
+  ],
+  eat: [
+    [".eat-stats", "Ton objectif du jour", "Protéines et calories, calculés depuis ton profil et tes séances."],
+    ["#meal-panel", "Ce que tu manges", "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul."],
+    ["#eat-add", "Ton aliment n'y est pas ?", "Ajoute-le une fois avec ses valeurs : il restera dans ta liste."]
+  ],
+  prg: [
+    ["#wt-sec", "Ton poids", "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines."],
+    ["#prg-body", "Tes courbes", "Charges, volume par muscle, régularité. Elles se remplissent en t'entraînant."]
+  ]
+};
+let guideEnCours = false;
+function lancerGuide(onglet){
+  if(guideEnCours || sheetOpen) return;
+  if(dejaVu("guide-" + onglet)) return;
+  if(!planFor(db.profile)) return;              /* le profil d'abord, la visite ensuite */
+  /* une etiquette qui designe un element absent ne designe rien : on saute l'etape */
+  const etapes = (GUIDES[onglet] || []).filter(e=>document.querySelector(e[0]));
+  if(!etapes.length) return;
+  marquerVu("guide-" + onglet);
+  guideEnCours = true;
+
+  const voile = document.createElement("div"); voile.className = "gd-voile";
+  const trou = document.createElement("div");  trou.className = "gd-trou";
+  const bulle = document.createElement("div"); bulle.className = "gd-bulle";
+  voile.appendChild(trou);
+  document.body.appendChild(voile); document.body.appendChild(bulle);
+
+  let i = 0;
+  const finir = ()=>{
+    voile.remove(); bulle.remove(); guideEnCours = false;
+  };
+  const montrer = ()=>{
+    const [sel, titre, texte] = etapes[i];
+    const cible = document.querySelector(sel);
+    if(!cible){ suivant(); return; }
+    cible.scrollIntoView({block:"center", inline:"nearest"});
+    /* on mesure APRÈS le défilement, sinon on encadre l'ancienne position */
+    requestAnimationFrame(()=>{
+      const r = cible.getBoundingClientRect(), m = 6;
+      trou.style.top = (r.top - m) + "px";
+      trou.style.left = (r.left - m) + "px";
+      trou.style.width = (r.width + m*2) + "px";
+      trou.style.height = (r.height + m*2) + "px";
+      bulle.innerHTML = `<span class="k">${esc(TR(titre))}</span>
+        <p>${esc(TR(texte))}</p>
+        <div class="gd-bas">
+          <div class="gd-pts">${etapes.map((_, k)=>
+            `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
+          <div>${i < etapes.length - 1
+            ? `<button class="passer" id="gd-passer">${TR("Passer")}</button>` : ""}
+            <button class="suite" id="gd-suite">${
+              TR(i < etapes.length - 1 ? "Suivant" : "C'est parti")}</button></div>
+        </div>`;
+      /* sous l'élément s'il y a la place, au-dessus sinon */
+      const h = bulle.offsetHeight, w = bulle.offsetWidth, vh = window.innerHeight;
+      let top = r.bottom + 12;
+      if(top + h > vh - 12) top = Math.max(12, r.top - h - 12);
+      let left = r.left + r.width/2 - w/2;
+      left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
+      bulle.style.top = top + "px"; bulle.style.left = left + "px";
+      const p = document.getElementById("gd-passer"); if(p) p.onclick = finir;
+      document.getElementById("gd-suite").onclick = suivant;
+    });
+  };
+  function suivant(){ i++; if(i >= etapes.length) finir(); else montrer(); }
+  voile.onclick = suivant;
+  montrer();
+}
 let curTab = "seance";
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
@@ -7807,6 +7933,10 @@ function render(){
   else if(curTab==="eat") renderEat(app);
   else if(curTab==="hist") renderHist(app);
   else renderProgress(app);
+  /* le temps que la page se pose : mesurer un élément en cours d'affichage
+     l'encadrerait de travers */
+  const onglet = curTab;
+  setTimeout(()=>{ if(curTab === onglet) lancerGuide(onglet); }, 500);
   if(gardeDefilement){ window.scrollTo(0, posDefilement); gardeDefilement = false; }
   else window.scrollTo(0,0);
 }
@@ -10584,7 +10714,58 @@ function photoSeance(t){
   return "push";
 }
 function photoUrl(nom){ return `img/${nom}.jpg`; }
-function dureeSeance(t){ return Math.max(15, Math.round(t.items.reduce((a,it)=>a+it.sets*(((it.rest||90)+45)/60),0)/5)*5); }
+/* ---- combien de temps dure vraiment une séance -------------------------------
+   Trois formules cohabitaient dans l'app, toutes bâties sur « le repos plus quarante
+   secondes ». Un forfait de quarante secondes par série est faux dans les deux sens :
+   cinq répétitions lourdes en prennent vingt, quinze en prennent cinquante, et un
+   gainage d'une minute en prend soixante. Il manquait surtout tout ce qui n'est ni
+   série ni repos : rejoindre le poste, charger la barre, régler le siège, se mettre
+   en position avant de tirer la première répétition.
+
+   Ce qui est établi : une répétition menée sous contrôle dure de deux à six secondes,
+   et la vitesse d'exécution chute nettement à mesure qu'on approche de l'échec — c'est
+   le fondement de l'entraînement basé sur la vitesse. Les secondes d'installation, en
+   revanche, sont une estimation de ma part et pas une mesure : elles sont là pour que
+   l'ordre de grandeur soit juste, pas pour prétendre à la seconde près. */
+const TEMPO_REP = 3;          /* secondes par répétition, tempo contrôlé */
+const MISE_EN_PLACE = 12;     /* se placer, souffler, saisir la charge */
+const FATIGUE_SERIE = 0.08;   /* chaque série suivante est un peu plus lente */
+/* le temps de s'installer, UNE fois par exercice */
+const INSTALL = {
+  "Barre": 75,                /* charger les disques, régler les supports */
+  "Machine": 45,              /* régler le siège et la goupille */
+  "Poulie": 40,
+  "Haltères": 35,
+  "Sangles": 30,
+  "Kettlebell": 25,
+  "Élastique": 25,
+  "Barre fixe": 20,
+  "Ballon": 20,
+  "Poids du corps": 15,
+  "Roue": 15
+};
+const INSTALL_DEFAUT = 40;
+function dureeItem(exId, sets, reps, repos){
+  const ex = getEx(exId), r = parseReps(reps);
+  const combien = r ? (r.lo + r.hi) / 2 : 10;
+  /* pour un gainage, la « répétition » EST une durée : on ne la multiplie pas */
+  const parSerie = estIsometrique(ex) ? combien : combien * TEMPO_REP;
+  let t = INSTALL[equipCanon(ex)] || INSTALL_DEFAUT;
+  const n = Math.max(1, sets || 1);
+  for(let i = 0; i < n; i++){
+    t += MISE_EN_PLACE + parSerie * (1 + FATIGUE_SERIE * i);
+    /* pas de repos après la dernière série : c'est l'installation de l'exercice
+       suivant qui fait la transition */
+    if(i < n - 1) t += (repos || 90);
+  }
+  return t;
+}
+function dureeMinutes(items){
+  const sec = items.reduce((a, it)=>a + dureeItem(it.exId, it.sets, it.reps, it.rest), 0);
+  /* arrondi à cinq minutes : annoncer « 47 min » donnerait une fausse précision */
+  return Math.max(5, Math.round(sec / 300) * 5);
+}
+function dureeSeance(t){ return dureeMinutes(t.items); }
 
 function renderSeance(app){
   if(chronoInt){ clearInterval(chronoInt); chronoInt=null; }
@@ -10683,8 +10864,13 @@ function renderSeance(app){
   } else {
     const ordered = sug? [sug].concat(db.templates.filter(t=>t.id!==sug.id)) : db.templates.slice();
     car.innerHTML = ordered.map(t=>{
-      const noms = t.items.map(it=>getEx(it.exId).name);
-      const liste = noms.slice(0,4).map(n=>`· ${esc(n)}`).join("<br>") + (noms.length>4? `<br>+ ${noms.length-4} autre${noms.length-4>1?"s":""}`:"");
+      /* Une séance adaptative ne choisit ses exercices qu'au lancement : les lister
+         ici serait à la fois faux et bavard. On garde le titre, l'étiquette dit le
+         reste. */
+      const noms = t.adaptatif ? [] : t.items.map(it=>getEx(it.exId).name);
+      const liste = noms.length
+        ? noms.slice(0,4).map(n=>`· ${esc(n)}`).join("<br>") + (noms.length>4? `<br>+ ${noms.length-4} autre${noms.length-4>1?"s":""}`:"")
+        : "";
       return `<div class="prog-slot">
         ${sug && sug.id===t.id? `<div class="sug">${TR("Conseillé aujourd'hui")}</div>`:""}
         <div class="prog-card${t.adaptatif? " adapt" : ""}" data-open="${t.id}">
@@ -10695,7 +10881,7 @@ function renderSeance(app){
             TR("Séance adaptative")}</span><i>i</i></button>` : ""}
           <div class="in">
             <div class="nm">${esc(TR(t.name))}</div>
-            <div class="ex">${liste || "Aucun exercice"}</div>
+            ${t.adaptatif ? "" : `<div class="ex">${liste || TR("Aucun exercice")}</div>`}
           </div>
           <button class="pen" data-edit="${t.id}" aria-label="Modifier"><img src="img/modif.png" alt=""></button>
         </div>
@@ -11776,7 +11962,7 @@ function apercuProposition(type, evites){
   const prop = avecMateriel(matProp(), ()=>genererSeance(type, evites));
   const dejaVus = (evites || []).concat(prop.items.map(it=>it.nom));
   const total = prop.items.reduce((a,it)=>a+it.sets, 0);
-  const minutes = Math.round(prop.items.reduce((a,it)=>a + it.sets*(it.rest+40), 0)/60);
+  const minutes = dureeMinutes(prop.items);
   openSheet(`<h3 style="text-align:center;">${esc(prop.nom)}</h3>
     <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">
       ${deuxLieux()? `<b>${lieuProp === "maison" ? TR("Chez moi") : TR("En salle")}</b> · ` : ""}${
@@ -12388,12 +12574,16 @@ function renderActive(app){
   /* un nom long tient sur deux lignes plutôt que d'être coupé : on réduit un peu le corps */
   const nbCar = (a.name || "").length;
   const tailleTitre = nbCar <= 18 ? 29 : (nbCar <= 26 ? 25 : (nbCar <= 36 ? 22 : 19));
-  /* ce que la séance représente, en un coup d'œil. La durée suit la même règle que
-     l'aperçu d'une proposition : chaque série coûte son repos plus quarante secondes. */
+  /* ce que la séance représente, en un coup d'œil. Même calcul que partout ailleurs :
+     l'installation, la mise en place, les répétitions à leur tempo, puis les repos. */
   const nbEx = a.entries.length;
   const nbSeries = a.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
-  const minSeance = Math.max(1, Math.round(a.entries.reduce((n, e)=>
-    n + e.sets.length * (((e.target && e.target.rest) || db.settings.rest || 60) + 40), 0) / 60));
+  const minSeance = dureeMinutes(a.entries.map(e=>({
+    exId: e.exId,
+    sets: e.sets.filter(st=>!st.warm).length || e.sets.length,
+    reps: e.target && e.target.reps,
+    rest: (e.target && e.target.rest) || db.settings.rest || 60
+  })));
   app.innerHTML = `
     ${hero(`<div class="grow">
         <div class="hero-kicker">${TR("Séance en cours")}</div>
