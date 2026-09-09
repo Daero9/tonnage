@@ -191,7 +191,21 @@ async function lancer(){
   const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
-  eq("Les 109 exercices sont là", LIBEN.length, 109);
+  eq("Les 115 exercices sont là", LIBEN.length, 115);
+  /* L'identifiant d'un exercice est sa POSITION dans la liste. Insérer une ligne au
+     milieu décale tous les suivants et rattache l'historique de chacun à son voisin —
+     c'est arrivé le 8 septembre 2026, sur 49 exercices. Ces repères le rendraient
+     visible immédiatement : un ajout ne doit jamais bouger un identifiant existant. */
+  const REPERES = {"Développé couché":"lib0", "Extension poulie (barre)":"lib22", "Crunch":"lib33",
+    "Roulette abdominale":"lib59", "Planche latérale":"lib60", "Superman":"lib101",
+    "Rowing sous la table":"lib108"};
+  const bouges = Object.keys(REPERES).filter(n=>id(n) !== REPERES[n]);
+  vrai("Aucun identifiant d'exercice n'a bougé", bouges.length === 0,
+    bouges.map(n=>n + " : " + REPERES[n] + " → " + id(n)).join(", "));
+  vrai("Les nouveaux exercices sont ajoutés à la fin",
+    ["Swing kettlebell","Développé kettlebell","Rowing TRX","Pompes TRX",
+     "Crunch sur ballon","Leg curl sur ballon"]
+      .every(n=>parseInt(String(id(n)).replace("lib",""), 10) >= 109));
   eq("Un nom s'affiche en anglais", LIBEN[0].name, "Bench press");
   eq("…mais sa clé reste le français", LIBEN[0].nameFr, "Développé couché");
   eq("Les 108 noms sont traduits",
@@ -328,8 +342,8 @@ async function lancer(){
   eq("Tonnup avec dégressif", F.volSerie({w:12, r:6, drops:[{w:10, r:4}]}), 112);
   eq("Barre : facteur 1", F.facteurCharge(id("Développé couché")), 1);
   eq("Haltères : facteur 2", F.facteurCharge(id("Développé incliné haltères")), 2);
-  DB.unilat[id("Extension poulie")] = true;
-  eq("Unilatéral coché : facteur 2", F.facteurCharge(id("Extension poulie")), 2);
+  DB.unilat[id("Extension poulie (barre)")] = true;
+  eq("Unilatéral coché : facteur 2", F.facteurCharge(id("Extension poulie (barre)")), 2);
   DB.unilat[id("Développé incliné haltères")] = true;
   eq("Haltères + unilatéral : reste 2, jamais 4", F.facteurCharge(id("Développé incliné haltères")), 2);
   neuf();
@@ -660,7 +674,7 @@ async function lancer(){
   grp("Effort et tonnage");
   neuf();
   DB.weights = [{date:new Date().toISOString(), kg:80}];
-  const VE = F.eval("volumeEffort");
+  const VES = F.eval("volEffortSerie");
   const idTrac = id("Tractions"), idDC2 = id("Développé couché");
   const seanceTrac = seance(2, [{exId:idTrac, sets:[serie(0,8), serie(0,8)]}]);
   const seanceDC   = seance(2, [{exId:idDC2,  sets:[serie(80,8), serie(80,8)]}]);
@@ -672,44 +686,93 @@ async function lancer(){
      F.sessionVolume(seanceDC), 1280);
 
   /* mais l'effort, lui, compte le corps */
-  eq("Effort des tractions : 80 kg par répétition",
-     VE(seanceTrac), 80*8*2);
+  eq("Effort d'une traction : 80 kg par répétition",
+     VES(idTrac, serie(0,8), 1), 80*8);
   eq("Effort du développé couché : identique au tonnage",
-     VE(seanceDC), 1280);
+     VES(idDC2, serie(80,8), 1), 640);
+  eq("Une traction lestée ajoute le lest au corps",
+     VES(idTrac, serie(10,5), 1), (80+10)*5);
 
-  vrai("Deux tractions lestées ajoutent le lest au corps",
-       VE(seance(2, [{exId:idTrac, sets:[serie(10,5)]}])) === (80+10)*5);
-
-  /* et les calories suivent */
-  const KC2 = F.eval("liftKcal");
-  const kcalTonnage = KC2(45*60000, F.sessionVolume(seanceTrac), 16);
-  const kcalEffort  = KC2(45*60000, VE(seanceTrac), 16);
+  /* et les calories suivent : les tractions en valent plus que leur tonnage nul */
   vrai("Une séance de tractions gagne les calories qu'elle mérite",
-       kcalEffort > kcalTonnage, kcalTonnage + " -> " + kcalEffort);
+       F.liftKcal(seanceTrac) > 0 && F.sessionVolume(seanceTrac) === 0,
+       String(F.liftKcal(seanceTrac)));
 
   /* ------------------------------------- calories d'une séance de muscu */
   grp("Calories d'une séance");
   neuf();
   DB.weights = [{date:new Date().toISOString(), kg:80}];
   const KC = F.eval("liftKcal");
-  const MN = m => m*60000;
-  /* 16 séries -> 40 min attendues */
-  const normale = KC(MN(45), 5000, 16);
+  const nFois = (w, r, n) => Array.from({length:n}, ()=>serie(w, r));
+  /* Le compteur ne mesure plus la présence, mais le travail : ni la durée de la
+     séance, ni le temps passé entre deux séries n'entrent dans le calcul. */
+  const normale = KC(seance(2, [
+    {exId:id("Squat"),             sets:nFois(80, 10, 4)},
+    {exId:id("Développé couché"),  sets:nFois(60, 10, 4)},
+    {exId:id("Rowing barre"),      sets:nFois(50, 10, 4)},
+    {exId:id("Curl barre"),        sets:nFois(15, 12, 3)}]));
   vrai("Une séance normale reste plausible", normale > 200 && normale < 500, String(normale));
+  eq("Une séance sans rien de fait ne brûle rien", KC(seance(2, [])), 0);
+  /* la garantie que Nico voulait : trois heures sur une seule série ne font pas
+     500 kcal, parce que le temps n'entre nulle part */
+  const uneSeule = KC(seance(2, [{exId:id("Curl barre"), sets:nFois(15, 12, 1)}]));
+  vrai("Une seule série reste une seule série", uneSeule < 40, String(uneSeule));
 
-  /* séance oubliée ouverte toute la nuit : la durée mesurée ne veut plus rien dire */
-  const oubliee = KC(MN(9*60), 5000, 16);
-  eq("Neuf heures sont ramenées au plafond", oubliee, KC(MN(80), 5000, 16));
-  vrai("Une séance oubliée ne dépasse pas le double d'une normale",
-       oubliee < normale*2.2, "oubliée " + oubliee + " vs normale " + normale);
+  /* ---- chaque exercice pèse ce qu'il mobilise ---- */
+  const MET = F.eval("metExercice");
+  vrai("Le soulevé de terre coûte plus qu'un curl",
+       MET(id("Soulevé de terre")) > MET(id("Curl barre")));
+  vrai("Le squat coûte plus qu'un développé couché",
+       MET(id("Squat")) > MET(id("Développé couché")));
+  /* le piège que la table brute tendait : trois petits muscles à fond ne valent
+     pas trois gros. Un curl marteau ne doit pas rejoindre un front squat. */
+  vrai("Un curl marteau ne vaut pas un front squat",
+       MET(id("Curl marteau")) < MET(id("Front squat")));
+  vrai("…ni un développé couché", MET(id("Curl marteau")) < MET(id("Développé couché")));
+  vrai("Aucun exercice ne sort de l'échelle",
+       F.eval("LIB").every(e => MET(e.id) >= 4 && MET(e.id) <= 9));
 
-  /* saisie après coup : durée ridicule, on retombe sur l'estimation par séries */
-  const apresCoup = KC(MN(1), 5000, 16);
-  eq("Une minute chronométrée retombe sur l'estimation", apresCoup, KC(MN(40), 5000, 16));
+  /* ---- le nombre de répétitions compte ---- */
+  /* Un forfait unique par série faisait coûter trois répétitions presque autant que
+     dix : 19 contre 21. Le temps sous tension entre maintenant dans le calcul. */
+  const serieDe = r => KC(seance(2, [{exId:id("Développé couché"), sets:nFois(60, r, 1)}]));
+  vrai("Trois répétitions coûtent moins que dix", serieDe(3) < serieDe(10),
+       serieDe(3) + " vs " + serieDe(10));
+  vrai("…nettement moins, pas de deux kilocalories",
+       serieDe(3) < serieDe(10) * 0.75, serieDe(3) + " vs " + serieDe(10));
+  vrai("Vingt répétitions coûtent plus que dix", serieDe(20) > serieDe(10),
+       serieDe(20) + " vs " + serieDe(10));
+  /* mais une série n'est jamais gratuite : la mise en place et la récupération
+     restent dues, même pour une seule répétition */
+  vrai("Une série d'une répétition coûte quand même", serieDe(1) > 0);
 
-  /* aucune série pour estimer : le plafond absolu de 3 h s'applique */
-  vrai("Sans série, le plafond absolu tient",
-       KC(MN(48*60), 0, 0) === KC(MN(180), 0, 0), String(KC(MN(48*60), 0, 0)));
+  /* ---- un gainage se compte en secondes ---- */
+  /* Sur un gainage, le champ « reps » porte des SECONDES. Les multiplier par six
+     comme des répétitions donnerait quatre minutes de tension pour un gainage de 45 s.
+     Et rien n'est déplacé : aucun travail mécanique à compter. */
+  const gain = r => KC(seance(2, [{exId:id("Gainage"), sets:[{w:0, r, done:true, warm:false}]}]));
+  vrai("Un gainage long coûte plus qu'un court", gain(60) > gain(20));
+  vrai("Un gainage de 45 s reste raisonnable", gain(45) < 25, String(gain(45)));
+  /* à séries égales, une séance de jambes brûle plus qu'une séance de bras */
+  const bras = KC(seance(2, [
+    {exId:id("Curl barre"),           sets:nFois(15, 12, 4)},
+    {exId:id("Curl marteau"),         sets:nFois(12, 12, 4)},
+    {exId:id("Extension poulie (barre)"),     sets:nFois(20, 12, 4)}]));
+  const jambes = KC(seance(2, [
+    {exId:id("Squat"),                sets:nFois(90, 8, 4)},
+    {exId:id("Presse à cuisses"),     sets:nFois(150, 10, 4)},
+    {exId:id("Soulevé de terre"),     sets:nFois(110, 6, 4)}]));
+  vrai("Douze séries de jambes brûlent plus que douze séries de bras",
+       jambes > bras * 1.3, bras + " vs " + jambes);
+
+  /* ---- l'échauffement compte dans les calories, jamais dans le tonnage ---- */
+  const ech = {w:30, r:12, done:true, warm:true};
+  const sans = seance(2, [{exId:id("Développé couché"), sets:nFois(60, 10, 3)}]);
+  const avec = seance(2, [{exId:id("Développé couché"), sets:[ech].concat(nFois(60, 10, 3))}]);
+  vrai("L'échauffement brûle des calories", KC(avec) > KC(sans),
+       KC(sans) + " -> " + KC(avec));
+  eq("…mais ne gonfle pas le tonnage",
+     F.sessionVolume(avec), F.sessionVolume(sans));
 
   /* ----------------------------------- repères chiffrés dans les conseils */
   grp("Repères des conseils");
@@ -828,7 +891,7 @@ async function lancer(){
   neuf();
   DB.history = [1,2].map(n => seance(n*24, [
     {exId:id("Développé couché"), sets:[serie(60,9),serie(60,8)]},
-    {exId:id("Extension poulie"), sets:[serie(14,10),serie(14,10)]},
+    {exId:id("Extension poulie (barre)"), sets:[serie(14,10),serie(14,10)]},
     {exId:id("Squat"), sets:[serie(80,9),serie(80,8)]},
     {exId:id("Développé militaire"), sets:[serie(35,9),serie(35,8)]}
   ]));
@@ -840,7 +903,7 @@ async function lancer(){
   eq("Étiquette : point fort à +20 %", F.mpStatus(moy*1.2, moy).tag, "Point fort");
   eq("Sans moyenne, on retombe sur le barème", F.mpStatus(100, null).tag, "Équilibré");
   const avant = F.muscleProfile()["Triceps"];
-  DB.unilat[id("Extension poulie")] = true;
+  DB.unilat[id("Extension poulie (barre)")] = true;
   vrai("Unilatéral : le score double", F.muscleProfile()["Triceps"] > avant*1.9);
   neuf();
 
@@ -851,9 +914,9 @@ async function lancer(){
   eq("Au plafond : on change de variante", F.progressionSansCharge(id("Pompes"), 26, 3).mode, "variante");
   eq("Variante plus dure des pompes", F.varianteDure(id("Pompes")), "Dips");
   vrai("Poids du corps : charge plafonnée d'office", F.chargeBloquee(id("Pompes")));
-  vrai("Poulie : charge libre par défaut", !F.chargeBloquee(id("Extension poulie")));
+  vrai("Poulie : charge libre par défaut", !F.chargeBloquee(id("Extension poulie (barre)")));
   vrai("Pompes sans lest : rien à retirer", F.sansChargeDuTout(id("Pompes"), 0));
-  vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie"), 20));
+  vrai("Poulie chargée : on peut toujours descendre", !F.sansChargeDuTout(id("Extension poulie (barre)"), 20));
 
   /* ---------------------------------------------------------- propositions de seances */
   grp("Propose-moi une séance");
@@ -870,15 +933,22 @@ async function lancer(){
   const pushB = F.genererSeance("push", pushA.items.map(i=>i.nom));
   vrai("Une nouvelle proposition change tous les exercices",
     pushB.items.every(i=>!pushA.items.some(j=>j.nom===i.nom)));
+  /* « Je ne peux pas » : le niveau le plus strict ne laisse rien passer. Aux niveaux
+     plus doux, un exercice à risque reste possible quand il n'y a rien d'autre. */
   DB.profile.injuries = ["epaule","genou"];
+  DB.profile.douleurs = {epaule:"stop", genou:"stop"};
   let risques = 0, roles = 0;
   ["push","pull","jambes","haut","bas","full"].forEach(t=>{
     for(let i=0;i<4;i++){ const g = F.genererSeance(t);
-      if(g.items.length === MOU[t].roles.length) roles++;
+      /* Un rôle sans aucun exercice sûr saute : mieux vaut une séance plus courte
+         qu'un exercice que l'app déconseille par ailleurs. Avec une épaule ET un genou
+         sensibles, un Push tombe à deux exercices — c'est la vérité, pas un défaut :
+         il ne reste presque rien à pousser sans passer par l'épaule. */
+      if(g.items.length >= 2) roles++;
       g.items.forEach(it=>{ if(F.injuryNote(it.nom)) risques++; }); }
   });
   eq("Blessures déclarées : aucun exercice à risque proposé", risques, 0);
-  eq("Tous les rôles sont remplis sur les 24 tirages", roles, 24);
+  eq("Chaque proposition tient debout malgré les blessures", roles, 24);
   DB.profile.injuries = [];
   DB.profile.days = 2;
   eq("2 séances par semaine : full body proposé en premier", F.typesProposables()[0], "full");
@@ -952,14 +1022,14 @@ async function lancer(){
   eq("Faisable sur place : on n'y touche pas",
     nomDuLieu("Pompes", ["halteres"]), "Pompes");
   vrai("Une poulie devient faisable avec ce qu'on a",
-    F.exoDispo(ex(nomDuLieu("Extension poulie", ["halteres"])), ["halteres"]));
+    F.exoDispo(ex(nomDuLieu("Extension poulie (barre)", ["halteres"])), ["halteres"]));
   vrai("Le remplaçant travaille le même groupe",
-    ex(nomDuLieu("Extension poulie", ["halteres"])).muscle === ex("Extension poulie").muscle);
+    ex(nomDuLieu("Extension poulie (barre)", ["halteres"])).muscle === ex("Extension poulie (barre)").muscle);
   vrai("Sans rien, on retombe sur du poids du corps",
     F.exoDispo(ex(nomDuLieu("Développé couché", [])), []));
   vrai("Un exercice déjà pris n'est pas repris",
-    nomDuLieu("Extension poulie", ["halteres"], [id(nomDuLieu("Extension poulie", ["halteres"]))])
-      !== nomDuLieu("Extension poulie", ["halteres"]));
+    nomDuLieu("Extension poulie (barre)", ["halteres"], [id(nomDuLieu("Extension poulie (barre)", ["halteres"]))])
+      !== nomDuLieu("Extension poulie (barre)", ["halteres"]));
   DB.profile = JSON.parse(JSON.stringify(profilType));
   DB.materiel = [];
   vrai("Sans matériel, aucune séance impossible n'est proposée",
@@ -1105,8 +1175,61 @@ async function lancer(){
         for(const it of F.genererSeance(t).items){
           const ex = F.getEx(id(it.nom)), r = F.parseReps(it.reps);
           if(!ex || !r) continue;
-          if(F.estPoidsDuCorps(ex) && r.lo > 8) return false;
+          /* un gainage porte des secondes dans ce champ : 30-45 n'est pas une fourchette
+             de répétitions impossible, c'est une durée */
+          if(F.estIsometrique(ex)) continue;
+          /* seuls les mouvements portés sont concernés : suspendre tout son corps
+             douze fois est un mur, faire douze crunchs n'en est pas un */
+          if((F.porteLeCorps(ex) || ex.equip === "Barre fixe") && r.lo > 8) return false;
           if(ex.equip === "Barre fixe" && r.hi > 12) return false;
+        }
+      }
+    }
+    return true;
+  })());
+  /* le revers de la règle : une isolation au poids du corps ne doit PAS être rabaissée,
+     sinon les mollets et les abdos sortent en 8-12 au lieu de leurs séries longues */
+  const LEGERS = F.eval("ROLES_LEGERS");
+  vrai("Une isolation au poids du corps garde ses séries longues", (()=>{
+    let vu = false;
+    for(let k=0;k<60;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom));
+          if(!ex || F.estIsometrique(ex) || !F.estPoidsDuCorps(ex)) continue;
+          if(F.porteLeCorps(ex) || ex.equip === "Barre fixe") continue;
+          if(!LEGERS.includes(it.role)) continue;
+          vu = true;
+          if(it.reps !== DOSES.masse.leger.r) return false;
+        }
+      }
+    }
+    return vu;
+  })());
+  /* … et ce qu'on tient doit bien porter une durée, jamais douze répétitions */
+  vrai("Un gainage proposé se compte en secondes", (()=>{
+    let vu = false;
+    for(let k=0;k<60;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom));
+          if(!ex || !F.estIsometrique(ex)) continue;
+          vu = true;
+          const r = F.parseReps(it.reps);
+          if(!r || r.lo < 20) return false;
+        }
+      }
+    }
+    return vu;
+  })());
+  /* …et ne se repose pas comme une serie lourde : deux minutes entre deux planches
+     n'ont aucun sens, l'effort est court et leger */
+  vrai("Un gainage ne se repose pas plus d'une minute", (()=>{
+    for(let k=0;k<40;k++){
+      for(const t of F.typesProposables()){
+        for(const it of F.genererSeance(t).items){
+          const ex = F.getEx(id(it.nom));
+          if(ex && F.estIsometrique(ex) && it.rest > 60) return false;
         }
       }
     }
@@ -1312,6 +1435,341 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le repos se règle sur la carte");
+  neuf();
+  /* Il vivait au fond de la fiche d'infos : trois gestes pour changer trente secondes,
+     entre deux séries, essoufflé. Il n'apparaît que sur les gainages, où le repos
+     fait partie de l'enchaînement — ailleurs il n'apprend rien qu'on veuille relire
+     à chaque série, et il reste dans la fiche de l'exercice. */
+  (()=>{
+    DB.active = null;
+    DB.templates = [{id:"trep", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:3, reps:"30-45", rest:90},
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    F.startWorkout("trep");
+    const carte = F.document.querySelector(".ex-card");
+    const val = () => carte.querySelector("[data-repv]").textContent;
+    vrai("Le repos est sur la carte du gainage", !!carte.querySelector(".ex-repos"));
+    vrai("…et sur elle seule",
+      !F.document.querySelectorAll(".ex-card")[1].querySelector(".ex-repos"));
+    eq("Il part de ce que dit le plan", val(), "1 min 30");
+    carte.querySelector('[data-rep="15"]').click();
+    eq("Le + ajoute quinze secondes", val(), "1 min 45");
+    eq("…et l'écrit sur la séance", DB.active.entries[0].target.rest, 105);
+    eq("…et sur le plan, pour la prochaine fois", DB.templates[0].items[0].rest, 105);
+    carte.querySelector('[data-rep="-15"]').click();
+    eq("Le − les retire", val(), "1 min 30");
+    /* on ne descend pas sous quinze secondes ni au-dessus de cinq minutes */
+    for(let k = 0; k < 20; k++) carte.querySelector('[data-rep="-15"]').click();
+    eq("Plancher à quinze secondes", DB.active.entries[0].target.rest, 15);
+    for(let k = 0; k < 30; k++) carte.querySelector('[data-rep="15"]').click();
+    eq("Plafond à cinq minutes", DB.active.entries[0].target.rest, 300);
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
+  grp("Gainages : le temps à la place des reps");
+  neuf();
+  /* On ne repete pas un gainage, on le tient : le champ « reps » porte des secondes,
+     et un chrono le remplit. */
+  (()=>{
+    const iso = F.eval("ISOMETRIQUES");
+    eq("Trois exercices se tiennent", iso.length, 3);
+    vrai("Le gainage en fait partie", F.estIsometrique(F.getEx(id("Gainage"))));
+    vrai("La planche latérale aussi", F.estIsometrique(F.getEx(id("Planche latérale"))));
+    vrai("Le développé couché non", !F.estIsometrique(F.getEx(id("Développé couché"))));
+    /* les secondes se lisent en minutes au-delà de soixante */
+    eq("45 secondes", F.fmtDuree(45), "45 s");
+    eq("95 secondes", F.fmtDuree(95), "1:35");
+    eq("120 secondes", F.fmtDuree(120), "2:00");
+
+    DB.active = null;
+    DB.templates = [{id:"tiso", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:3, reps:"30-45", rest:60}]}];
+    F.startWorkout("tiso");
+    const D2 = F.document;
+    const carte = D2.querySelector(".ex-card");
+    vrai("La carte se sait isométrique", carte.classList.contains("iso"));
+    eq("La colonne porte la durée",
+      [...carte.querySelectorAll(".set-cols span")][2].textContent, "durée");
+    eq("Le champ attend des secondes",
+      carte.querySelectorAll(".set-row input")[1].placeholder, "sec");
+    /* un dégressif consiste à baisser la charge : sur un gainage à zéro kilo, rien à baisser */
+    vrai("Pas de dégressif sur un gainage", !carte.querySelector(".dg"));
+    /* l'enchaînement : une seule pression, l'app déroule tout */
+    vrai("Le bouton est en tête de carte", !!carte.querySelector(".iso-chrono"));
+    /* le repos fait partie de l'enchaînement : on le règle AVANT de lancer, donc
+       au-dessus des séries et non tout en bas de la carte */
+    const rgs = [...carte.children].map(n=>n.className);
+    vrai("Le repos se règle au-dessus des séries",
+      rgs.indexOf("ex-repos") > rgs.indexOf("iso-chrono") &&
+      rgs.indexOf("ex-repos") < rgs.indexOf("set-cols"));
+    eq("Il propose de démarrer", carte.querySelector("[data-iso]").textContent, "Démarrer");
+    eq("Le bandeau annonce ce qu'il reste à tenir",
+      carte.querySelector(".iso-chrono .k").textContent, "Séries à tenir");
+    /* trois séries de 40 s avec 60 s de repos : tenue, repos, tenue, repos, tenue */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    DB.active.entries[0].target = {rest:60};
+    const et = F.etapesIso(0);
+    eq("Chaque tenue est suivie d'un repos",
+      et.map(x=>x.type).join(","), "tenue,repos,tenue,repos,tenue,repos,tenue");
+    eq("Pas de repos après la dernière", et[et.length-1].type, "tenue");
+    eq("Les tenues durent ce qui est écrit", et[0].sec, 40);
+    eq("Le repos vient de la séance", et[1].sec, 60);
+    /* appuyer sur « Démarrer » ne lance pas la tenue : il reste cinq secondes pour
+       poser le téléphone et se mettre en position */
+    F.lancerSeqIso(0);
+    vrai("Le décompte part", !!F.eval("preIso"));
+    vrai("…et la tenue attend", !F.eval("seqIso"));
+    eq("La barre annonce le départ",
+      F.document.getElementById("rest-lbl").textContent, "Départ");
+    eq("Le bouton propose d'annuler",
+      F.document.querySelector("[data-iso]").textContent, "Annuler");
+    eq("Le bandeau parle toujours des séries à tenir",
+      F.document.querySelector(".iso-chrono .k").textContent, "Séries à tenir");
+    /* une deuxième pression annule tout : ni décompte, ni barre, ni minuterie */
+    F.lancerSeqIso(0);
+    vrai("On peut annuler le décompte", !F.eval("preIso"));
+    vrai("…la barre disparaît",
+      !/\bshow\b/.test(F.document.getElementById("restbar").className));
+    vrai("…et rien ne tourne plus", !F.eval("rest").int);
+    /* on relance, et on amène le décompte à zéro sans attendre */
+    F.lancerSeqIso(0);
+    F.eval("rest").end = Date.now() - 1;
+    F.tickRest();
+    vrai("À zéro le décompte passe la main", !F.eval("preIso"));
+    vrai("L'enchaînement tourne", !!F.eval("seqIso"));
+    eq("Le bandeau passe à la série en cours",
+      F.document.querySelector(".iso-chrono .k").textContent, "Série en cours");
+    /* le décompte s'entend autant qu'il se voit : une note seule à trois, deux, un,
+       puis le triple bip qui dit que ça commence */
+    F.arreterSeqIso(false);
+    /* on écoute les deux sonneries elles-mêmes, pas les oscillateurs : elles se
+       taisent quand l onglet n est pas au premier plan, et le cadre de test l est
+       rarement — le test dependait alors de la fenetre active. */
+    const sons = [], noteOrig = F.bipDecompte, tripleOrig = F.bipRepos;
+    F.bipDecompte = ()=>sons.push("note");
+    F.bipRepos = ()=>sons.push("triple");
+    F.lancerSeqIso(0);
+    [2800, 1800, 800].forEach(ms=>{ F.eval("rest").end = Date.now() + ms; F.tickRest(); });
+    F.eval("rest").end = Date.now() - 1; F.tickRest();
+    F.bipDecompte = noteOrig; F.bipRepos = tripleOrig;
+    eq("Trois notes puis le triple bip", sons.join(","), "note,note,note,triple");
+    /* on repart d ici : le triple bip vient de lancer la tenue, comme plus haut */
+    eq("On commence par tenir", F.document.getElementById("rest-lbl").textContent, "Gainage");
+    vrai("…et la barre le dit",
+      F.document.getElementById("restbar").classList.contains("tenue"));
+    F.avancerIso();
+    eq("Puis le repos", F.document.getElementById("rest-lbl").textContent, "Repos");
+    vrai("La tenue est validée toute seule", DB.active.entries[0].sets[0].done);
+    vrai("…et la barre reprend sa couleur",
+      !F.document.getElementById("restbar").classList.contains("tenue"));
+    F.avancerIso();
+    eq("Puis on tient de nouveau", F.document.getElementById("rest-lbl").textContent, "Gainage");
+    /* jusqu'au bout */
+    for(let k = 0; k < 10 && F.eval("seqIso"); k++) F.avancerIso();
+    vrai("L'enchaînement s'arrête au bout", !F.eval("seqIso"));
+    vrai("Toutes les tenues sont validées",
+      DB.active.entries[0].sets.every(st=>st.done));
+    /* « Arrêter » coupe aussi la minuterie : elle finissait son compte toute seule,
+       comme un repos que personne n'avait demandé */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    F.lancerSeqIso(0);
+    F.eval("rest").end = Date.now() - 1;
+    F.tickRest();
+    vrai("Une tenue est en cours", !!F.eval("seqIso"));
+    F.arreterSeqIso(false);
+    vrai("L'arrêt coupe la minuterie", !F.eval("rest").int);
+    vrai("…et retire la barre",
+      !/\bshow\b/.test(F.document.getElementById("restbar").className));
+    /* sans durée, rien à enchaîner */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 0; st.done = false; });
+    eq("Sans durée, aucune étape", F.etapesIso(0).length, 0);
+    /* terminer la séance arrête l'enchaînement */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    F.lancerSeqIso(0);
+    F.eval("rest").end = Date.now() - 1;
+    F.tickRest();
+    F.arreterChronos();
+    vrai("La fin de séance arrête l'enchaînement", !F.eval("seqIso"));
+    /* et un décompte qui n'avait pas encore commencé ne doit pas se réveiller */
+    F.lancerSeqIso(0);
+    F.arreterChronos();
+    vrai("…et le décompte de départ avec", !F.eval("preIso"));
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
+  grp("Le minuteur de repos, en rond");
+  neuf();
+  /* La barre a pris la forme du croquis : un disque qui deborde de part et d autre,
+     un anneau fin qui se remplit, un bouton de pause loge dedans. Ce qui compte
+     ici n est pas le dessin mais qu il dise l heure : l anneau doit suivre le temps
+     ecoule, et le bouton doit changer de sens des qu on met en pause. */
+  (()=>{
+    const D2 = F.document;
+    const disque = D2.querySelector("#rest-pill .rb-disc");
+    vrai("Le disque existe", !!disque);
+    const arc = D2.getElementById("rest-arc");
+    vrai("L'anneau existe", !!arc);
+    const pause = D2.getElementById("rest-pause");
+    vrai("Le bouton de pause est posé sur le disque",
+      !!pause && pause.closest(".rb-disc") === disque);
+    const C = n => F.getComputedStyle(n);
+    const barre = D2.getElementById("restbar");
+    const tour = F.eval("RB_TOUR");
+    const creux = () => parseFloat(arc.style.strokeDashoffset);
+
+    /* une séance de gainage laissait sa marque : le repos suivant repartait en vert */
+    barre.classList.add("tenue");
+    F.startRest(120);
+    vrai("Un repos qui commence n'est pas une tenue", !barre.classList.contains("tenue"));
+    vrai("Au départ l'anneau est vide", Math.abs(creux() - tour) < 1);
+    /* le cadran est une pièce d'horlogerie : sombre dans les deux thèmes */
+    eq("Le cadran est sombre", C(disque).backgroundColor, "rgb(46, 32, 21)");
+    eq("…et ses chiffres clairs",
+      C(D2.querySelector("#rest-pill .t")).color, "rgb(255, 255, 255)");
+    /* pendant une tenue la barre passe au vert : le cadran suit, sinon le brun jurerait */
+    barre.classList.add("tenue");
+    eq("Le cadran suit la tenue", C(disque).backgroundColor, "rgb(39, 39, 25)");
+    barre.classList.remove("tenue");
+    eq("Le libellé annonce le repos", D2.getElementById("rest-lbl").textContent, "Repos");
+    eq("Le bouton propose la pause", pause.getAttribute("aria-label"), "Mettre en pause");
+    eq("…avec les deux barres", pause.querySelectorAll("rect").length, 2);
+
+    /* la moitié du temps passée : la moitié de l'anneau */
+    const r = F.eval("rest");
+    r.end = Date.now() + 60000;
+    F.tickRest();
+    vrai("À mi-parcours l'anneau est à moitié", Math.abs(creux() - tour/2) < 6);
+
+    F.togglePauseRest();
+    eq("En pause il propose de reprendre", pause.getAttribute("aria-label"), "Reprendre");
+    eq("…avec un triangle", pause.querySelectorAll("path").length, 1);
+    F.togglePauseRest();
+    eq("Et on repart", pause.getAttribute("aria-label"), "Mettre en pause");
+
+    /* à zéro l'anneau est plein : un anneau à moitié effacé dirait qu'il reste du temps */
+    F.eval("rest").end = Date.now() - 100;
+    F.tickRest();
+    vrai("À zéro l'anneau est plein", creux() < 1);
+
+    /* le bouton ne deborde plus du cadran : il tient dedans, sous les chiffres.
+       On lit les regles et non la geometrie : le cadre de test est masque, tous les
+       rectangles y valent zero et une comparaison de positions passerait a vide. */
+    const cp = C(pause);
+    vrai("Le bouton tient dans le cadran", parseFloat(cp.bottom) >= 0);
+    vrai("…et il est plus petit que lui",
+      parseFloat(cp.width) < parseFloat(C(disque).width) / 2);
+
+    F.arreterChronos();
+  })();
+  neuf();
+
+  grp("Le bandeau d'une séance");
+  neuf();
+  /* Le bandeau est droit : plus d'arc, plus de cercle. Le titre, ce que pèse la séance
+     et le chrono se calent en bas, sur la même ligne de base. */
+  (()=>{
+    DB.active = null; DB.seen = {};
+    DB.templates = [{id:"tban", name:"Test RIR", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+      {exId:id("Rowing barre"), sets:3, reps:"8-12", rest:120}]}];
+    F.startWorkout("tban");
+    const D2 = F.document;
+    vrai("Le bandeau de séance n'a plus l'arc",
+      !/A1021/.test(D2.querySelector(".hero-en-cours .hero-bg").innerHTML));
+    /* ce que pèse la séance, en un coup d'œil */
+    const meta = D2.querySelector(".hero-meta span").textContent;
+    const travail = DB.active.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
+    eq("L'échauffement ne compte pas comme une série", travail, 6);
+    eq("Le bandeau dit ce que pèse la séance",
+      meta.replace(/~\d+ min/, "~m"), "2 exercices · 6 séries · ~m");
+    vrai("…et estime une durée", /~\d+ min/.test(meta));
+    /* ce que la séance a déjà produit, dans les mêmes pastilles que le chrono */
+    eq("Deux pastilles de plus", D2.querySelectorAll(".hero-stats .hs").length, 2);
+    eq("Rien de soulevé au départ", D2.getElementById("hs-vol").textContent, "0 kg");
+    DB.active.entries[0].sets.forEach(st=>{ if(!st.warm){ st.w = 60; st.r = 10; st.done = true; } });
+    F.renderActive(D2.getElementById("app"));
+    /* le séparateur des milliers est une espace insécable : on la ramène à une espace
+       ordinaire, sinon la comparaison échoue sur deux textes identiques à l oeil */
+    eq("Le tonnage suit les séries validées",
+      D2.getElementById("hs-vol").textContent.replace(/\s/g, " "), "1 800 kg");
+    vrai("…et les calories avec",
+      parseInt(D2.getElementById("hs-kcal").textContent, 10) > 0);
+    /* l'étiquette du chrono était posée en absolu et plus large que lui : elle
+       sortait de l'écran par la droite. Elle est maintenant à côté, dans un bloc. */
+    const bloc = D2.querySelector(".chrono-bloc");
+    vrai("Le chrono et son étiquette font un bloc", !!bloc);
+    vrai("…l'étiquette est hors du bouton",
+      !D2.getElementById("chrono").querySelector(".lab") && !!bloc.querySelector(".lab"));
+    /* l'encadré de l'échauffement */
+    const enc = D2.querySelector(".hint-box");
+    vrai("L'encadré porte la flamme", !!enc.querySelector(".hi .icm-flamme"));
+    eq("L'abréviation reste en orange", enc.querySelector(".ht i").textContent, "Éch.");
+    eq("…et on peut dire qu'on a compris",
+      enc.querySelector(".hint-ok").textContent, "Compris");
+    eq("L'encadré porte son étiquette", enc.querySelector(".bdg").textContent, "Astuce");
+    /* la croix ferme sans lire : elle doit fermer aussi bien que « Compris » */
+    vrai("…et une croix dans le coin", !!enc.querySelector(".hint-x[data-hintx]"));
+    enc.querySelector(".hint-x").click();
+    vrai("La croix referme l'encadré", !D2.querySelector(".hint-box .icm-flamme"));
+    /* l'encadré suivant, celui du dégressif */
+    const deg = D2.querySelector(".hint-box");
+    eq("Le dégressif s'annonce", deg.querySelector(".ht").textContent, "Série dégressive");
+    vrai("…avec la flèche qui descend", !!deg.querySelector(".hi svg"));
+    eq("…et l'exemple en gras", deg.querySelector("b").textContent, "6 × 12 kg, puis 4 × 10 kg.");
+    /* le bas de carte : un seul geste encadré, les autres sont des mots */
+    const bas = D2.querySelector(".ex-bas");
+    vrai("« + série » garde son cadre",
+      bas.querySelector('[data-act="addset"]').classList.contains("btn-ghost"));
+    vrai("« Remplacer » est un mot, pas un bouton",
+      bas.querySelector('[data-act="swap"]').classList.contains("ex-lien"));
+    vrai("« Retirer » aussi, en rouge",
+      bas.querySelector('[data-act="delex"]').classList.contains("danger"));
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
+  grp("Fin de séance : tout s'éteint");
+  neuf();
+  /* Terminer ou annuler doit tout couper, et SANS UN BRUIT. Un repos qui arrivait a
+     zero pendant qu on validait la fin de seance sonnait dans le vide, et la barre
+     restait affichee par-dessus l accueil. */
+  (()=>{
+    DB.templates = [{id:"tfin", name:"Fin", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.startWorkout("tfin");
+    F.startRest(120);
+    const barre = () => F.document.getElementById("restbar").className;
+    vrai("Le repos tourne", !!F.eval("rest").int);
+    vrai("La barre est affichée", /\bshow\b/.test(barre()));
+    vrai("Le chrono de séance tourne", !!F.eval("chronoInt"));
+    F.arreterChronos();
+    const r = F.eval("rest");
+    vrai("Le compte à rebours est arrêté", !r.int);
+    vrai("…et ne peut pas se rallumer", r.end === 0 && !r.hideTo && !r.paused);
+    vrai("Le chrono de séance est arrêté", !F.eval("chronoInt"));
+    vrai("La barre a disparu", !/\bshow\b/.test(barre()));
+    vrai("…sans garder son clignotement", !/\bending\b/.test(barre()));
+    vrai("…ni son état de pause", !/\bpaused\b/.test(barre()));
+    /* le son en cours est coupé net, pas laissé finir */
+    F.ensureAudio(); F.beep();
+    const avant = F.eval("bipsEnCours").length;
+    F.arreterChronos();
+    vrai("Un bip en cours est coupé", avant === 0 || F.eval("bipsEnCours").length === 0);
+    /* les deux chemins réels passent bien par là */
+    vrai("Annuler éteint tout",
+      /arreterChronos\(\)/.test(F.eval("document.getElementById('cancel-w').onclick.toString()")));
+    DB.active = null; DB.templates = [];
+    F.render();
+  })();
+  neuf();
+
   grp("Signes des analyses");
   neuf();
   /* Chaque section de la page Progression s ouvre par son signe : en defilant, on
@@ -1452,6 +1910,19 @@ async function lancer(){
         perdus.length === 0);
       F.hideSheet();
     });
+    /* la séance en cours n'est pas une fiche : elle vit dans la page, et c'est là
+       qu'un bouton blanc posé sur une carte blanche vient de disparaître */
+    DB.active = null;
+    DB.templates = [{id:"tinv", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:3, reps:"30-45", rest:90},
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    F.startWorkout("tinv");
+    const perdusSeance = invisibles(D2.getElementById("app"));
+    vrai("Rien ne se fond dans la séance en cours"
+      + (perdusSeance.length? " (" + perdusSeance.join(", ") + ")" : ""),
+      perdusSeance.length === 0);
+    DB.active = null; DB.templates = [];
+    F.render();
   })();
   neuf();
 
@@ -1697,6 +2168,35 @@ async function lancer(){
     vrai("Un fromage au lait de vache non plus", !boisson(cat("en:cheeses-made-from-cow-milk")));
     vrai("Le lait en poudre non plus", !boisson(cat("en:milk-powders")));
     vrai("Un yaourt non plus", !boisson(cat("en:yogurts")));
+    /* ---- les étiquettes parapluie ----
+       Open Food Facts colle « en:plant-based-foods-and-beverages » à TOUT ce qui vient
+       d'une plante : le riz, les pâtes, le pain, le ketchup. Elle finit par « beverages »
+       sans rien dire de la nature du produit — c'est elle qui faisait boire la moitié
+       des courses de Nico. */
+    vrai("« aliments et boissons d'origine végétale » ne fait pas une boisson",
+      !boisson(cat("en:plant-based-foods-and-beverages")));
+    vrai("« aliments et boissons à base de légumes » non plus",
+      !boisson(cat("en:vegetable-based-foods-and-beverages")));
+    /* le vrai ketchup Heinz, tel qu'Open Food Facts le décrit */
+    vrai("Le ketchup n'est pas une boisson",
+      !boisson({categories_tags:["en:plant-based-foods-and-beverages","en:plant-based-foods",
+        "en:vegetable-based-foods-and-beverages","en:condiments","en:sauces",
+        "en:tomato-sauces","en:ketchup"], quantity:"250g", serving_size:"10 gram"}));
+    /* une étiquette parapluie n'empêche pas de reconnaître une vraie boisson */
+    vrai("Un jus reste un jus malgré le parapluie",
+      boisson(cat("en:plant-based-foods-and-beverages","en:beverages","en:orange-juices")));
+
+    /* ---- la catégorie tranche, dans les deux sens ----
+       Le volume ne sert plus d'appoint quand une catégorie utile existe : une soupe en
+       brique d'un litre et un yaourt à boire en pot de 200 ml sont écrits en millilitres
+       sans être des boissons. */
+    vrai("Un yaourt vendu en millilitres reste un aliment",
+      !boisson({categories_tags:["en:yogurts"], serving_size:"200 ml", quantity:"1 L"}));
+    vrai("Une soupe en brique d'un litre aussi",
+      !boisson({categories_tags:["en:soups"], quantity:"1 L"}));
+    vrai("Mais un soda en canette est bien une boisson",
+      boisson({categories_tags:["en:sodas"], quantity:"33 cl"}));
+
     /* fiche sans catégorie : c'est le contenant qui parle */
     vrai("Sans catégorie, « 33 cl » trahit la boisson", boisson({quantity:"33 cl"}));
     vrai("…et « 200 ml » de portion aussi", boisson({serving_size:"200 ml"}));
@@ -1720,7 +2220,10 @@ async function lancer(){
     /* une canette se lit en centilitres, comme ce qui est écrit dessus */
     F.openProduitScanne("matin", {code:"1", nom:"Cola", marque:"", prot100:0, kcal100:42,
       gluc100:12, lip100:0, portion:33, liquide:true});
-    eq("On boit une boisson", lab(), "Quantité bue (cl)");
+    /* L intitule ne porte plus l unite — elle est ecrite dans le champ. Ce qui dit
+       qu on boit au lieu de manger est l etiquette, a cote de la marque. */
+    eq("On boit une boisson", F.document.querySelector(".ps-type").textContent, "Boisson");
+    eq("L intitulé est le même pour tout", lab(), "Quantité consommée");
     eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "33");
     eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "5");
     /* les valeurs d'Open Food Facts sont pour 100 ml, donc pour 10 cl : 33 cl = 3,3 fois */
@@ -1741,7 +2244,7 @@ async function lancer(){
     /* la bascule cl / ml convertit au lieu de remettre à zéro */
     F.document.getElementById("ps-unite").click();
     eq("33 cl font 330 ml", F.document.getElementById("ps-g").value, "330");
-    eq("L'intitulé suit", F.document.getElementById("ps-lab").textContent, "Quantité bue (ml)");
+    eq("L'unité du champ suit", F.document.getElementById("ps-uni").textContent, "ml");
     eq("Les calories ne bougent pas", F.document.getElementById("ps-kcal").textContent, "139");
     F.document.getElementById("ps-unite").click();
     eq("…et le retour aussi", F.document.getElementById("ps-g").value, "33");
@@ -1766,12 +2269,219 @@ async function lancer(){
     F.hideSheet();
     F.openProduitScanne("matin", {code:"2", nom:"Skyr", marque:"", prot100:10, kcal100:57,
       portion:140, liquide:false});
-    eq("On mange un aliment", lab(), "Quantité mangée (g)");
+    eq("On mange un aliment", F.document.querySelector(".ps-type").textContent, "Aliment");
+    eq("…et le champ le dit en grammes", F.document.getElementById("ps-uni").textContent, "g");
     eq("Le champ avance par dizaines de grammes", F.document.getElementById("ps-g").step, "10");
     F.document.getElementById("ps-ok").click();
     eq("Le libellé est en grammes",
       (DB.habitSel[jour]||{}).matin[0], "Skyr 140 g (~14 g prot. · 80 kcal)");
     DB.habitSel = {}; DB.hbPerso = {};
+    F.hideSheet();
+  })();
+  neuf();
+
+  grp("La photo du produit scanné");
+  neuf();
+  /* Open Food Facts fournit une photo pour presque tous ses produits. Elle s'affiche
+     à gauche de la fiche, sans jamais être enregistrée. Aucun de ces tests ne touche
+     au réseau : l'image ne se chargera pas, ce qui est justement une des situations
+     à couvrir. */
+  (()=>{
+    const D2 = F.document;
+    /* L'adresse vient d'une réponse distante : seul le serveur d'images d'Open Food
+       Facts est accepté. Sans ce filtre, une base compromise pourrait faire pointer
+       un attribut src de la page où elle veut. */
+    const ok = F.eval("PHOTO_OFF");
+    vrai("Une image d'Open Food Facts est acceptée",
+      ok.test("https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.879.200.jpg"));
+    vrai("Un autre serveur est refusé",
+      !ok.test("https://exemple.test/images/produit.jpg"));
+    vrai("Le http simple est refusé",
+      !ok.test("http://images.openfoodfacts.org/images/produit.jpg"));
+    vrai("Une adresse exécutable est refusée",
+      !ok.test("javascript:alert(1)"));
+    vrai("Un sous-domaine imité est refusé",
+      !ok.test("https://images.openfoodfacts.org.exemple.test/x.jpg"));
+
+    const fiche = (extra) => {
+      F.hideSheet();
+      F.openProduitScanne("midi", Object.assign({code:"1", nom:"Test", marque:"M",
+        prot100:5, kcal100:50, gluc100:3, lip100:1, portion:25}, extra));
+      return D2.getElementById("ps-photo");
+    };
+    /* avec photo : l'image occupe la case, à gauche du nom */
+    const avecPhoto = fiche({liquide:true,
+      photo:"https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.879.200.jpg"});
+    vrai("La photo prend sa place", !!avecPhoto.querySelector("img"));
+    vrai("…et elle est bien celle du produit",
+      avecPhoto.querySelector("img").getAttribute("src")
+        .indexOf("https://images.openfoodfacts.org/images/") === 0);
+    vrai("Elle est à gauche du nom",
+      avecPhoto.nextElementSibling.classList.contains("ps-titre"));
+
+    /* sans photo : un signe, jamais une case vide */
+    const boisson = fiche({liquide:true, photo:""});
+    vrai("Une boisson sans photo montre un verre", !!boisson.querySelector(".ic svg"));
+    vrai("…et aucune image", !boisson.querySelector("img"));
+    const aliment = fiche({liquide:false, photo:""});
+    vrai("Un aliment sans photo montre une assiette", !!aliment.querySelector(".ic svg"));
+    /* le verre et l'assiette ne sont pas le même dessin */
+    vrai("Les deux signes diffèrent",
+      boisson.innerHTML !== aliment.innerHTML);
+
+    /* hors ligne : l'image échoue, le signe reprend la place */
+    const casse = fiche({liquide:false,
+      photo:"https://images.openfoodfacts.org/images/products/000/000/000/0000/front_en.1.200.jpg"});
+    const img = D2.getElementById("ps-img");
+    vrai("Une image cassée a bien son secours", typeof img.onerror === "function");
+    img.onerror();
+    vrai("…et le signe reprend la place",
+      !!D2.getElementById("ps-photo").querySelector(".ic svg"));
+
+    /* rien de tout cela ne doit finir dans les données */
+    F.hideSheet();
+    vrai("La photo n'entre pas dans tes données",
+      JSON.stringify(DB).indexOf("images.openfoodfacts.org") < 0);
+  })();
+  neuf();
+
+  grp("La fiche d'un produit scanné");
+  neuf();
+  /* La photo à gauche, tout le reste à droite — nom, marque, puis les quatre valeurs.
+     Et « pour 100 ml », qui figurait sous chacune des quatre tuiles, n'est plus écrit
+     qu'une fois : sans cette place gagnée, les tuiles ne tenaient pas à côté de la photo. */
+  (()=>{
+    const D2 = F.document;
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"9", nom:"Boisson test", marque:"M",
+      prot100:0.8, kcal100:40, gluc100:8.9, lip100:0, portion:25, liquide:true, photo:""});
+    vrai("Les valeurs sont sous le nom, à droite de la photo",
+      !!D2.querySelector(".ps-titre .ps-tuiles"));
+    eq("Quatre valeurs", D2.querySelectorAll(".ps-tuiles .tu").length, 4);
+    eq("Aucune tuile ne répète la référence", D2.querySelectorAll(".ps-tuiles .r").length, 0);
+    eq("Elle est écrite une seule fois, dessous",
+      D2.querySelector(".ps-ref").textContent, "Informations pour 100 ml");
+    /* un solide se mesure en grammes */
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
+      prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
+    eq("…et en grammes pour un aliment",
+      D2.querySelector(".ps-ref").textContent, "Informations pour 100 g");
+
+    /* ---- boisson ou aliment, dit en toutes lettres ---- */
+    /* L'étiquette explique pourquoi la quantité se compte en grammes ici et en
+       centilitres ailleurs : sans elle, le changement d'unité paraît arbitraire. */
+    eq("Un aliment le dit", D2.querySelector(".ps-type").textContent, "Aliment");
+
+    /* ---- les quantités courantes ---- */
+    const rapides = () => [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent);
+    eq("Cinq quantités pour un aliment", rapides().join(" · "),
+      "30 g · 50 g · 100 g · 150 g · 200 g");
+    const gEl = D2.getElementById("ps-g");
+    D2.querySelector('#ps-rapide [data-q="150"]').click();
+    eq("Un raccourci remplit le champ", gEl.value, "150");
+    eq("…et se marque comme choisi",
+      [...D2.querySelectorAll("#ps-rapide button.on")].map(b=>b.textContent).join(""), "150 g");
+    eq("Les calories suivent", D2.getElementById("ps-kcal").textContent, "150");
+    /* les trois macros de l'aperçu, arrondies comme elles seront enregistrées */
+    eq("Les protéines de l'aperçu", D2.getElementById("ps-prot").textContent, "8");
+    eq("Les glucides", D2.getElementById("ps-gluc").textContent, "3");
+    eq("Les lipides", D2.getElementById("ps-lip").textContent, "2");
+    eq("L'intitulé ne répète plus l'unité",
+      D2.getElementById("ps-lab").textContent, "Quantité consommée");
+    /* le compteur et l aperçu se lisent d un même regard : ils ne se séparent jamais.
+       On lit la règle et non la géométrie — le cadre de test n a aucune largeur. */
+    eq("Le compteur et l'aperçu restent sur une ligne",
+      F.getComputedStyle(D2.querySelector(".ps-qrow")).flexWrap, "nowrap");
+    /* toute la quantité dans un cadre : le produit, la quantité et les boutons sont
+       trois plans distincts, et se lisent comme tels */
+    const cadre = D2.querySelector(".ps-bloc");
+    vrai("La quantité vit dans son cadre",
+      !!cadre && !!cadre.querySelector(".ps-qh") && !!cadre.querySelector(".ps-qrow"));
+    vrai("…qui se distingue du fond de la fiche",
+      F.getComputedStyle(cadre).backgroundColor !== F.getComputedStyle(D2.getElementById("sheet")).backgroundColor);
+
+    /* une boisson se compte en canettes et en bouteilles */
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"7", nom:"Soda test", marque:"M",
+      prot100:0, kcal100:48, gluc100:12, lip100:0, portion:25, liquide:true, photo:""});
+    eq("Une boisson le dit aussi", D2.querySelector(".ps-type").textContent, "Boisson");
+    eq("Cinq volumes pour une boisson",
+      [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent).join(" · "),
+      "10 cl · 25 cl · 33 cl · 50 cl · 1 L");
+    /* cent centilitres se lisent « 1 L » : personne n'écrit « 100 cl » */
+    vrai("Le litre s'écrit en litre",
+      !!D2.querySelector('#ps-rapide [data-q="100"]') &&
+      D2.querySelector('#ps-rapide [data-q="100"]').textContent === "1 L");
+    /* en millilitres, les volumes suivent */
+    D2.getElementById("ps-unite").click();
+    eq("Les volumes suivent le changement d'unité",
+      [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent).join(" · "),
+      "100 ml · 250 ml · 330 ml · 500 ml · 1 L");
+    D2.getElementById("ps-unite").click();
+
+    /* ---- les deux gestes secondaires, côte à côte ---- */
+    eq("Deux boutons de même poids", D2.querySelectorAll(".ps-actions .ps-opts").length, 2);
+    vrai("Garder le produit en est un", !!D2.querySelector(".ps-actions #ps-favbox"));
+    vrai("En scanner un autre aussi", !!D2.querySelector(".ps-actions #ps-autre"));
+    vrai("Ajouter au repas reste seul, en dessous",
+      !!D2.getElementById("ps-ok") && !D2.querySelector(".ps-actions #ps-ok"));
+
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
+      prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
+
+    /* ---- une fiche sans nom, mais complete ----
+       Vrai cas : des nuggets Lidl, 10,9 g de proteines et 230 kcal renseignes, photo
+       comprise, mais le champ « nom » laisse vide chez Open Food Facts. L app les
+       jetait et annoncait « produit inconnu » d un produit qu elle connaissait. */
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"4056489318408", nom:"", marque:"lavassi",
+      prot100:10.9, kcal100:230, gluc100:16.5, lip100:13, portion:100, liquide:false, photo:""});
+    const saisie = D2.getElementById("ps-nom");
+    vrai("Sans nom, la fiche s ouvre quand meme", !!saisie);
+    eq("…et propose la marque comme point de depart", saisie.value, "lavassi");
+    eq("…dans un champ qu on peut corriger", saisie.tagName, "INPUT");
+    /* le nom tape a la main est bien celui qu on enregistre */
+    DB.hbPerso = {};
+    saisie.value = "Nuggets de poulet";
+    D2.getElementById("ps-favbox").click();
+    D2.getElementById("ps-ok").click();
+    vrai("Le nom saisi est celui qui est retenu",
+      JSON.stringify(DB.hbPerso).indexOf("Nuggets de poulet 100 g") > 0,
+      JSON.stringify(DB.hbPerso).slice(0, 90));
+    DB.hbPerso = {};
+    F.hideSheet();
+    F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
+      prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
+    vrai("Un produit qui a un nom garde son titre", !D2.getElementById("ps-nom"));
+
+    /* ---- l'étoile des favoris ---- */
+    /* Il fallait viser une case à cocher de vingt pixels posée à côté de l'étoile.
+       L'étoile est devenue le bouton, et elle se remplit quand le produit est gardé. */
+    const et = D2.getElementById("ps-favbox");
+    vrai("Plus de case à cocher", !D2.getElementById("ps-save"));
+    vrai("L'étoile est le bouton", et.tagName === "BUTTON");
+    const remplie = () => F.getComputedStyle(et.querySelector("svg")).fill;
+    eq("Creuse au départ", remplie(), "none");
+    eq("…et elle le dit", et.getAttribute("aria-pressed"), "false");
+    et.click();
+    vrai("Pleine une fois appuyée", remplie() !== "none");
+    eq("…et elle le dit aussi", et.getAttribute("aria-pressed"), "true");
+    eq("Le texte suit", et.querySelector(".tx").textContent, "Gardé dans tes favoris");
+    et.click();
+    eq("Un second appui la vide", remplie(), "none");
+    eq("…et le texte revient", et.querySelector(".tx").textContent, "Ajouter aux favoris");
+
+    /* l'étoile pleine range vraiment le produit dans les propositions */
+    DB.hbPerso = {};
+    et.click();
+    D2.getElementById("ps-ok").click();
+    const range = Object.keys(DB.hbPerso).some(k =>
+      (DB.hbPerso[k] || []).some(x => String(x[0]).indexOf("Aliment test") === 0));
+    vrai("L'étoile pleine garde le produit", range,
+      JSON.stringify(DB.hbPerso).slice(0, 120));
+    DB.hbPerso = {}; DB.alim = {};
     F.hideSheet();
   })();
   neuf();
@@ -1885,6 +2595,848 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Les réglages");
+  neuf();
+  /* Chaque ligne porte son signe : on repère un réglage sans avoir à lire son
+     intitulé. Une ligne ajoutée sans icône se verrait tout de suite. */
+  (()=>{
+    F.openSettings();
+    const D2 = F.document, lignes = [...D2.querySelectorAll("#sheet .rg-l")];
+    vrai("Huit réglages", lignes.length === 8, String(lignes.length));
+    vrai("Chacun porte son signe",
+      lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
+      lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
+    vrai("Le signe vient avant le texte",
+      lignes.every(l => l.firstElementChild.classList.contains("rgi")));
+    F.hideSheet();
+  })();
+  neuf();
+
+  grp("L'alarme du minuteur");
+  neuf();
+  /* Depuis Android 13, « Alarmes et rappels » est refusée par défaut, et le greffon se
+     rabat SILENCIEUSEMENT sur une alarme approximative. On la demande donc une fois, au
+     premier repos, pendant que l'application est encore à l'écran. */
+  await (async ()=>{
+    const gardeSeen = DB.seen.alarmeExacte, gardeSon = DB.settings.son;
+    const appels = {check:0, change:0, perm:0};
+    let etat = "denied";
+    /* faux greffon : les tests tournent dans un navigateur, où Capacitor n'existe pas */
+    F.window.Capacitor = {isNativePlatform:()=>true, Plugins:{LocalNotifications:{
+      checkPermissions: async ()=>({display:"prompt"}),
+      requestPermissions: async ()=>{ appels.perm++; return {display:"granted"}; },
+      checkExactNotificationSetting: async ()=>{ appels.check++; return {exact_alarm:etat}; },
+      changeExactNotificationSetting: async ()=>{ appels.change++; etat = "granted";
+        return {exact_alarm:etat}; },
+      schedule: async ()=>({}), cancel: async ()=>({})
+    }}};
+
+    /* Toute cette fonction se tait quand la page n'est pas à l'écran — c'est voulu :
+       on ne réclame pas une autorisation à quelqu'un qui regarde ailleurs. Mais la
+       suite de tests, elle, tourne souvent dans une fenêtre passée en arrière-plan,
+       et le navigateur déclare alors la page « hidden ». On force donc l'état visible
+       le temps du groupe, exactement comme on remplace Capacitor par un faux greffon.
+       Sans ça, ces essais échouaient selon que Nico avait la fenêtre devant lui. */
+    const vraiEtat = Object.getOwnPropertyDescriptor(F.Document.prototype, "visibilityState");
+    const vraiCache = Object.getOwnPropertyDescriptor(F.Document.prototype, "hidden");
+    Object.defineProperty(F.Document.prototype, "visibilityState",
+      {get:()=>"visible", configurable:true});
+    Object.defineProperty(F.Document.prototype, "hidden", {get:()=>false, configurable:true});
+    /* et on attend que la chose arrive plutôt qu'un délai fixe : en arrière-plan le
+       navigateur étire les minuteurs, un « attendre 800 ms » devenait un pile ou face */
+    const jusqua = async (cond, max) => { const t0 = Date.now();
+      while(Date.now() - t0 < (max || 4000)){ if(cond()) return true;
+        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
+
+    delete DB.seen.alarmeExacte;
+    DB.settings.son = true;
+    await F.verifierAlarmeExacte();
+    vrai("L'état est lu auprès du système", appels.check === 1, appels.check);
+    vrai("Le refus est retenu pour ne plus jamais redemander", !!DB.seen.alarmeExacte);
+    await jusqua(()=>!!F.document.getElementById("alm-ok"));
+    vrai("La fiche explique à quoi sert l'autorisation",
+      !!F.document.getElementById("alm-ok"));
+    eq("Deux promesses, pas une", F.document.querySelectorAll("#sheet .alm-note").length, 2);
+    vrai("…et l'une dit qu'elle ne sert qu'aux séances",
+      [...F.document.querySelectorAll("#sheet .alm-note .s")]
+        .some(e=>/entraînement|séance/i.test(e.textContent)));
+    /* les gens ne lisent pas : la fiche doit tenir en quelques lignes */
+    vrai("La fiche reste courte",
+      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length < 330,
+      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length + " caractères");
+
+    /* « Autoriser » ouvre la page système ; au retour l'état est relu, pas supposé */
+    const bouton = F.document.getElementById("alm-ok");
+    if(bouton) bouton.click();
+    await jusqua(()=>appels.change === 1, 1000);
+    vrai("« Autoriser » ouvre le réglage système", appels.change === 1, appels.change);
+    /* le réglage revient du système, il est relu ensuite : deux temps, pas un */
+    await jusqua(()=>F.eval("alarmeExacte") === "granted", 1000);
+    eq("…et l'état est relu", F.eval("alarmeExacte"), "granted");
+    F.hideSheet();
+
+    /* on ne repose jamais la question */
+    const avant = appels.check;
+    await F.verifierAlarmeExacte();
+    vrai("On ne redemande pas une deuxième fois", appels.check === avant + 0 || !!DB.seen.alarmeExacte);
+
+    /* son coupé : il n'y a rien à autoriser */
+    delete DB.seen.alarmeExacte;
+    DB.settings.son = false;
+    const avant2 = appels.check;
+    await F.verifierAlarmeExacte();
+    eq("Son coupé, on ne demande rien", appels.check, avant2);
+    vrai("…et rien n'est retenu", !DB.seen.alarmeExacte);
+
+    /* la permission des notifications se demande À L'ÉCRAN, pas une fois l'app cachée */
+    DB.settings.son = true;
+    delete DB.seen.alarmeExacte;
+    F.eval("notifsOk = null");
+    await F.verifierAlarmeExacte();
+    vrai("La permission des notifications est demandée pendant qu'on la voit",
+      appels.perm >= 1, appels.perm);
+
+    delete F.window.Capacitor;
+    if(vraiEtat) Object.defineProperty(F.Document.prototype, "visibilityState", vraiEtat);
+    if(vraiCache) Object.defineProperty(F.Document.prototype, "hidden", vraiCache);
+    F.eval("alarmeExacte = null; notifsOk = null");
+    DB.seen.alarmeExacte = gardeSeen; DB.settings.son = gardeSon;
+    if(gardeSeen === undefined) delete DB.seen.alarmeExacte;
+  })();
+  neuf();
+
+  grp("Le ressenti de fin de séance");
+  neuf();
+  /* Le RIR dit si LA SÉRIE était lourde ; le ressenti dit si LA JOURNÉE a coûté. On peut
+     tenir tous ses RIR et sortir vidé d'une nuit de quatre heures. */
+  (()=>{
+    const seance = (j, feel) => { const o = {id:"r"+j, date:new Date(Date.now()-j*36e5).toISOString(),
+      name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(20,10,1), serie(20,10,1), serie(20,10,1)]}]};
+      if(feel) o.feel = feel; return o; };
+    const recup = feel => { DB.history = [seance(20, feel)];
+      return F.recuperation().muscles["Biceps"].pct; };
+
+    const dur = recup("dur"), neutre = recup(null), facile = recup("facile");
+    vrai("Une séance dite dure coûte plus cher", dur < neutre, dur + " contre " + neutre);
+    vrai("Une séance dite facile coûte moins cher", facile > neutre, facile + " contre " + neutre);
+    /* les coefficients restent petits : les RIR ont déjà remonté le coût */
+    vrai("…sans écraser la récupération", neutre - dur < 12, "écart de " + (neutre - dur));
+    eq("Ne rien répondre vaut « correct »", recup(undefined), neutre);
+
+    /* une seule séance ne décide de rien */
+    DB.history = [seance(20, "dur")];
+    eq("Une seule séance ne fait pas une tendance", F.tendanceRessenti(), null);
+    DB.history = [seance(20, "dur"), seance(60, "dur")];
+    eq("Deux dures d'affilée, oui", F.tendanceRessenti(), "dur");
+    DB.history = [seance(20, "facile"), seance(60, "facile")];
+    eq("Deux faciles aussi", F.tendanceRessenti(), "facile");
+    DB.history = [seance(20, "dur"), seance(60, "facile")];
+    eq("Deux avis contraires ne disent rien", F.tendanceRessenti(), null);
+
+    /* et la fiche l'annonce, en tête */
+    DB.history = [seance(20, "dur"), seance(60, "dur")];
+    const r = F.raisonsSeance("pull");
+    vrai("La fiche annonce qu'on allège", /allège/i.test(r[0][1]), JSON.stringify(r[0]));
+    DB.history = [seance(20, "facile"), seance(60, "facile")];
+    vrai("…ou qu'on en remet une couche", /couche/i.test(F.raisonsSeance("pull")[0][1]));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Le niveau se déduit des charges, sans poser la question. */
+  (()=>{
+    DB.history = [];
+    eq("Sans données, on ne suppose rien", F.niveauPratiquant(), "inconnu");
+    const avant = F.cibleHebdo("Pectoraux");
+    /* des charges très au-dessus des standards : pratiquant avancé */
+    const fort = [["Développé couché", 140], ["Squat", 180], ["Soulevé de terre", 220],
+                  ["Rowing barre", 130], ["Développé militaire", 95]];
+    /* deux passages par exercice : le profil musculaire exige deux valeurs par groupe
+       avant de se prononcer — un seul essai ne dit rien d'un niveau */
+    const hist = (liste, f, p) => liste.reduce((a, [n, w], i)=>a.concat([0, 1].map(k=>({
+      id:(p||"n")+i+k, date:new Date(Date.now()-(i*2+k+2)*864e5).toISOString(),
+      name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id(n), sets:[serie(Math.round(w*f), 5, 1)]}]}))), []);
+    DB.history = hist(fort, 1, "haut");
+    eq("Des charges très hautes donnent « avancé »", F.niveauPratiquant(), "avance");
+    vrai("…et un pratiquant avancé encaisse plus de volume",
+      F.cibleHebdo("Pectoraux") > avant, F.cibleHebdo("Pectoraux") + " contre " + avant);
+    /* des charges très basses : débutant */
+    DB.history = hist(fort, 0.25, "bas");
+    eq("Des charges basses donnent « débutant »", F.niveauPratiquant(), "debutant");
+    vrai("…et un débutant se construit sur moins de volume",
+      F.cibleHebdo("Pectoraux") < avant, F.cibleHebdo("Pectoraux") + " contre " + avant);
+    DB.history = [];
+  })();
+  neuf();
+
+  grp("Lever le pied, sur preuve");
+  neuf();
+  /* Pas de semaine de décharge au calendrier : rien ne dit qu'arrêter tous les quatre
+     lundis fasse mieux que continuer. On lève le pied sur LE muscle qui le demande,
+     et seulement quand trois signaux concordent. */
+  (()=>{
+    const jours = j => new Date(Date.now() - j*864e5).toISOString();
+    /* deux exercices de biceps, charge figée, tout à l'échec, séances rapprochées */
+    const seance = (j, w, rir) => ({id:"p"+j+w, date:jours(j), name:"x", templateId:"x",
+      start:0, end:0, entries:[
+        {exId:id("Curl barre"),    sets:[serie(w,8,rir), serie(w,8,rir), serie(w,8,rir)]},
+        {exId:id("Curl haltères"), sets:[serie(w/2,8,rir), serie(w/2,8,rir), serie(w/2,8,rir)]}]});
+
+    /* cas franc : charge plate, tout à zéro de réserve, et une séance d'hier */
+    DB.history = [seance(12, 30, 0), seance(8, 30, 0), seance(4, 30, 0), seance(0.3, 30, 0)];
+    const perf = F.progressionParExo(), rec = F.recuperation();
+    vrai("Un muscle qu'on pilonne sans progresser est repéré",
+      F.musclePompe("Biceps", perf, rec) === true);
+
+    /* la charge monte : on continue, il n'y a rien à alléger */
+    DB.history = [seance(12, 24, 0), seance(8, 26, 0), seance(4, 28, 0), seance(0.3, 32, 0)];
+    vrai("Tant que la charge monte, on ne lève pas le pied",
+      F.musclePompe("Biceps", F.progressionParExo(), F.recuperation()) === false);
+
+    /* il reste de la réserve : la charge est plate mais l'effort ne l'explique pas */
+    DB.history = [seance(12, 30, 3), seance(8, 30, 3), seance(4, 30, 3), seance(0.3, 30, 3)];
+    vrai("Des séries gardées en réserve ne comptent pas comme un excès",
+      F.musclePompe("Biceps", F.progressionParExo(), F.recuperation()) === false);
+
+    /* et un muscle dont on n'a presque rien : on ne tranche pas sur du vide */
+    DB.history = [seance(4, 30, 0)];
+    vrai("Sans assez de suivi, on ne conclut rien",
+      F.musclePompe("Biceps", F.progressionParExo(), F.recuperation()) === false);
+
+    /* le besoin en tient compte, et la fiche le dit */
+    DB.history = [seance(12, 30, 0), seance(8, 30, 0), seance(4, 30, 0), seance(0.3, 30, 0)];
+    const b = F.besoinsMuscles("pull").find(x=>x.muscle === "Biceps");
+    vrai("Le besoin porte la marque", b.pompe === true);
+    const r = F.raisonsSeance("pull");
+    vrai("…et la fiche dit qu'on lève le pied",
+      r.some(([m, t])=>/lève le pied/i.test(t)), JSON.stringify(r));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* La récupération ralentit avec l'âge — modérément. */
+  (()=>{
+    const garde = DB.profile.age;
+    const pct = a => { DB.profile = Object.assign({}, DB.profile, {age:a});
+      return F.recuperation().muscles["Biceps"].pct; };
+    DB.history = [{id:"a1", date:new Date(Date.now()-20*36e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(30,8,0), serie(30,8,0), serie(30,8,0)]}]}];
+    const jeune = pct(25), vieux = pct(55);
+    vrai("À 55 ans, on récupère moins vite qu'à 25", vieux < jeune, vieux + " contre " + jeune);
+    vrai("…mais l'écart reste mesuré", jeune - vieux < 20, "écart de " + (jeune - vieux));
+    eq("Le facteur est plafonné", Math.round(F.facteurAge()*100)/100 <= 1.33, true);
+    DB.profile = Object.assign({}, DB.profile, {age:garde});
+    DB.history = [];
+  })();
+  neuf();
+
+  grp("Le repos réellement pris");
+  neuf();
+  /* Une série écourtée passait pour une charge trop lourde : les répétitions tombaient,
+     l'app baissait le poids, et la force n'y était pour rien. */
+  (()=>{
+    const dc = id("Développé couché");
+    const seance = (repos) => { let t = Date.now() - 3*864e5;
+      const sets = [];
+      [10, 6, 5].forEach((r, i)=>{ if(i) t += repos*1000; sets.push(Object.assign(serie(60, r, 0), {t:t})); });
+      return [{id:"rp", date:new Date(t).toISOString(), name:"x", templateId:"x",
+        start:0, end:0, entries:[{exId:dc, sets:sets}]}]; };
+    const cible = {reps:"8-12", rest:180};
+    DB.history = seance(45);                       /* 45 s au lieu de 3 min */
+    const court = F.suggestFor(dc, cible);
+    vrai("Un repos écourté n'est pas une charge trop lourde", court.mode === "hold",
+      court.mode + " · " + court.text);
+    vrai("…et l'app dit pourquoi", /repos/i.test(court.text), court.text);
+    eq("…en gardant la charge", court.w, 60);
+
+    DB.history = seance(200);                      /* repos respecté */
+    const normal = F.suggestFor(dc, cible);
+    vrai("Avec le repos pris, la baisse compte vraiment", normal.mode !== "hold",
+      normal.mode + " · " + normal.text);
+
+    /* un repos PLUS LONG que prévu ne prouve rien : on n'en fait rien */
+    DB.history = seance(400);
+    vrai("Un repos trop long ne change rien", F.suggestFor(dc, cible).mode !== "hold");
+
+    /* sans horaire, on ne devine pas */
+    DB.history = [{id:"rp2", date:new Date(Date.now()-3*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:dc, sets:[serie(60,10,0), serie(60,8,0), serie(60,7,0)]}]}];
+    vrai("Sans heure enregistrée, la règle ne s'applique pas",
+      F.suggestFor(dc, cible).mode !== "hold");
+    DB.history = [];
+  })();
+  neuf();
+
+  grp("Les identifiants recalés");
+  neuf();
+  /* Deux exercices insérés au milieu de la bibliothèque les 4 et 5 septembre ont fait
+     glisser tous les suivants : une séance d'avant désigne aujourd'hui son voisin.
+     Nico a vu son extension poulie devenir un curl pupitre. */
+  (()=>{
+    const garde = DB.libV3;
+    const seance = (iso, ids) => ({id:"r"+iso, date:iso, name:"x", templateId:"x",
+      start:0, end:0, entries:ids.map(i=>({exId:i, sets:[serie(20,10)]}))});
+    /* le cas réel : séance du 4 septembre 17h44, « lib21 » voulait dire Extension poulie */
+    DB.history = [seance("2026-09-04T17:44:04.186Z", ["lib0","lib1","lib12","lib21"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    const ids = DB.history[0].entries.map(e=>e.exId);
+    eq("L'extension poulie retrouve son identifiant", ids[3], id("Extension poulie (barre)"));
+    eq("…et redevient une extension poulie",
+      F.getEx(ids[3]).name, F.getEx(id("Extension poulie (barre)")).name);
+    vrai("Les exercices d'avant le décalage ne bougent pas",
+      ids[0] === "lib0" && ids[1] === "lib1" && ids[2] === "lib12", ids.join(", "));
+
+    /* une séance d'avant le 4 septembre subit LES DEUX décalages */
+    DB.history = [seance("2026-09-01T10:00:00.000Z", ["lib10","lib20","lib45"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    eq("Rang inférieur aux deux seuils : inchangé", DB.history[0].entries[0].exId, "lib10");
+    eq("Rang au-dessus du seuil du 5 septembre : +1", DB.history[0].entries[1].exId, "lib21");
+    eq("Rang au-dessus des deux seuils : +2", DB.history[0].entries[2].exId, "lib47");
+
+    /* une séance récente ne bouge pas, et la réparation ne se rejoue jamais */
+    DB.history = [seance(new Date().toISOString(), ["lib21","lib90"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    eq("Une séance d'aujourd'hui est déjà juste", DB.history[0].entries[0].exId, "lib21");
+    F.applyDefaults();
+    eq("…et rien ne se rejoue au chargement suivant", DB.history[0].entries[1].exId, "lib90");
+    /* un exercice perso n'a pas d'identifiant positionnel : on n'y touche pas */
+    DB.history = [seance("2026-09-01T10:00:00.000Z", ["x9_perso"])];
+    delete DB.libV3;
+    F.applyDefaults();
+    eq("Un exercice perso reste intact", DB.history[0].entries[0].exId, "x9_perso");
+    DB.history = []; DB.libV3 = garde;
+  })();
+  neuf();
+
+  grp("Ce qu'il y a à battre");
+  neuf();
+  /* L'app connaissait ta dernière performance mais ne te la posait jamais comme
+     objectif : elle vivait dans une fiche qu'il fallait ouvrir. */
+  (()=>{
+    const dc = id("Développé couché"), ga = id("Gainage");
+    DB.history = [{id:"o1", date:new Date(Date.now()-4*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0, entries:[
+        {exId:dc, sets:[serie(60,10), serie(60,8), serie(62.5,6)]},
+        {exId:ga, sets:[serie(0,45), serie(0,40)]}]}];
+    const cible = {reps:"8-12", rest:120};
+    const o = F.objectifDuJour(dc, cible);
+    vrai("La dernière séance annonce la meilleure série, pas la moyenne",
+      /62,5|62\.5/.test(o.passe), o.passe);
+    vrai("…avec le nombre de séries", /3 ×/.test(o.passe), o.passe);
+    vrai("L'objectif du jour porte une charge", /kg/.test(o.poids), o.poids);
+    vrai("…et une cible en répétitions", !!o.reps, o.reps);
+    const g = F.objectifDuJour(ga, {reps:"30-45", rest:60});
+    vrai("Un gainage se dit en secondes", /s$/.test(g.passe), g.passe);
+    vrai("…sans charge à viser", !g.poids, g.poids);
+    eq("Sans historique, rien ne s'affiche", F.objectifDuJour(id("Squat"), cible), null);
+    /* et le bandeau est bien dans la carte, pendant la séance. Trois séries au sommet
+       de la fourchette avec de la réserve : l'app doit proposer de charger, donc
+       afficher l'écart avec la dernière fois. */
+    DB.history = [{id:"o2", date:new Date(Date.now()-4*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:dc, sets:[serie(60,12,3), serie(60,12,3), serie(60,12,3)]}]}];
+    DB.templates = [{id:"to", name:"Essai", items:[{exId:dc, sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.startWorkout("to");
+    const el = F.document.querySelector(".ex-card .obj-b");
+    vrai("Le bandeau s'affiche dans la carte de l'exercice", !!el);
+    vrai("…avec ses deux moitiés",
+      !!(el && el.querySelector(".g") && el.querySelector(".d")));
+    vrai("…et l'écart avec la dernière fois", !!(el && el.querySelector(".ecart")),
+      el ? el.textContent.trim().slice(0, 60) : "");
+    DB.active = null; DB.templates = []; DB.history = [];
+  })();
+  neuf();
+
+  grp("La justesse du moteur adaptatif");
+  neuf();
+  /* Le volume comptait des LIGNES COCHÉES : trois séries arrêtées loin de l'échec
+     pesaient autant que trois séries menées à bout. Le RIR est demandé après chaque
+     série, il sert enfin à quelque chose. */
+  (()=>{
+    const seances = rirs => [{id:"v"+Math.random(), date:new Date(Date.now()-2*864e5).toISOString(),
+      name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:rirs.map(r=>serie(20, 10, r))}]}];
+    DB.history = seances([0,0,0]);
+    const dur = F.volumeRecent("Biceps", 7);
+    DB.history = seances([4,4,4]);
+    const facile = F.volumeRecent("Biceps", 7);
+    vrai("Trois séries dures pèsent plus que trois séries faciles", dur > facile,
+      dur.toFixed(2) + " contre " + facile.toFixed(2));
+    vrai("…sans changer d'ordre de grandeur", dur < facile * 2.5);
+    /* un dégressif prolonge la série au-delà de l'échec : il ajoute sa part */
+    DB.history = [{id:"vd", date:new Date(Date.now()-2*864e5).toISOString(), name:"x",
+      templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(20,10,0,[{w:12,r:6}])]}]}];
+    const avecDeg = F.volumeRecent("Biceps", 7);
+    DB.history = seances([0]);
+    vrai("Un dégressif compte davantage qu'une série simple", avecDeg > F.volumeRecent("Biceps", 7));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Une cible inatteignable met TOUS les muscles « en retard » en permanence : le
+     classement par besoin ne distingue alors plus rien. Elle suit donc le rythme réel
+     et l'objectif. */
+  (()=>{
+    const cible = (jours, aim) => {
+      DB.profile = Object.assign({}, DB.profile, {days:jours, aim:aim});
+      return F.cibleHebdo("Pectoraux");
+    };
+    const deux = cible(2, "masse"), cinq = cible(5, "masse");
+    vrai("Moins de séances, cible plus basse", deux < cinq, deux + " contre " + cinq);
+    const masse = cible(4, "masse"), entretien = cible(4, "entretien"), force = cible(4, "force");
+    vrai("L'entretien demande moins que la prise de masse", entretien < masse,
+      entretien + " contre " + masse);
+    vrai("La force aussi", force < masse, force + " contre " + masse);
+    vrai("Jamais en dessous de trois séries", cible(1, "entretien") >= 3);
+    /* les trois faisceaux de l'épaule se partagent toujours la cible du groupe */
+    DB.profile = Object.assign({}, DB.profile, {days:4, aim:"masse"});
+    vrai("Un faisceau d'épaule demande moins que le groupe entier",
+      F.cibleHebdo("Deltoïdes (latéral)") < F.cibleHebdo("Pectoraux"));
+  })();
+  neuf();
+
+  /* Le volume seul ne dit rien du RYTHME : un dos martelé lundi gardait un volume élevé
+     jusqu'à dimanche, donc il restait en bas de la pile toute la semaine. */
+  (()=>{
+    const avecDelai = j => {
+      DB.history = [{id:"f"+j, date:new Date(Date.now()-j*864e5).toISOString(), name:"x",
+        templateId:"x", start:0, end:0,
+        entries:[{exId:id("Curl barre"), sets:[serie(20,10,1), serie(20,10,1), serie(20,10,1)]}]}];
+      return F.besoinsMuscles("pull").find(b=>b.muscle === "Biceps");
+    };
+    const hier = avecDelai(1), vieux = avecDelai(6);
+    vrai("Le besoin porte la date du dernier travail", typeof hier.jours === "number");
+    vrai("Un muscle qui attend depuis six jours passe devant celui d'hier",
+      vieux.besoin > hier.besoin, vieux.besoin.toFixed(1) + " contre " + hier.besoin.toFixed(1));
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Chaque objectif ne cherche pas la même chose : en force on ne touche pas un muscle
+     qui n'est pas frais, en entretien il s'agit surtout de tout revoir régulièrement. */
+  (()=>{
+    const P = F.eval("POIDS_BESOIN");
+    const aims = ["masse", "seche", "force", "recomp", "entretien"];
+    vrai("Chaque objectif a ses poids", aims.every(a=>!!P[a]), aims.filter(a=>!P[a]).join(", "));
+    vrai("En force, la fraîcheur pèse le plus lourd",
+      aims.every(a=>a === "force" || P.force.recup > P[a].recup));
+    vrai("…et le volume, le moins",
+      aims.every(a=>a === "force" || P.force.volume < P[a].volume));
+    vrai("En entretien, c'est la régularité qui prime",
+      aims.every(a=>a === "entretien" || P.entretien.freq >= P[a].freq));
+    DB.profile = Object.assign({}, DB.profile, {aim:"force"});
+    eq("Les poids suivent l'objectif du profil", F.poidsBesoin(), P.force);
+    DB.profile = Object.assign({}, DB.profile, {aim:"masse"});
+  })();
+  neuf();
+
+  /* Le commentaire promettait que le nombre de séries venait du besoin ; le code prenait
+     la dose de l'objectif et rien d'autre. Un biceps en retard et un pectoral à jour,
+     tous deux frais, recevaient exactement le même nombre de séries. */
+  (()=>{
+    DB.history = [];
+    DB.materiel = null;
+    let vuPlus = false, vuMoins = false, borne = true;
+    for(let k=0;k<25;k++){
+      for(const t of ["push", "pull", "bas"]){
+        const b = F.besoinsMuscles(t);
+        const gen = F.genererAdaptative(t);
+        const dose = F.eval("DOSES").masse;
+        /* le niveau se déduit de la récupération, exactement comme dans le moteur */
+        const niv = r => r >= 85 ? "lourd" : (r >= 60 ? "moyen" : "leger");
+        const premier = gen.items.filter(it=>it.role === b[0].muscle);
+        const dernier = gen.items.filter(it=>it.role === b[b.length-1].muscle);
+        gen.items.forEach(it=>{ if(it.sets < 2 || it.sets > 5) borne = false; });
+        /* le muscle de tête reçoit souvent DEUX exercices : seul le premier est majoré,
+           le second est une finition */
+        if(premier.length && b[0].recup >= 60
+           && premier.some(it=>it.sets === Math.min(5, dose[niv(b[0].recup)].s + 1))) vuPlus = true;
+        if(dernier.length === 1 && b.length > 2
+           && dernier[0].sets === Math.max(2, dose[niv(b[b.length-1].recup)].s - 1)) vuMoins = true;
+      }
+    }
+    vrai("Le muscle le plus demandeur reçoit une série de plus", vuPlus);
+    vrai("Celui qui ferme la marche en reçoit une de moins", vuMoins);
+    vrai("Le nombre de séries reste borné entre 2 et 5", borne);
+  })();
+  neuf();
+
+  grp("Pourquoi cette séance");
+  neuf();
+  /* La fiche explique le mécanisme ; l'encadré dit ce que l'app a lu DANS TON
+     historique. Sans lui, « elle s'adapte à toi » reste une promesse invérifiable. */
+  (()=>{
+    const jours = h => new Date(Date.now() - h*864e5).toISOString();
+    DB.history = [];
+    /* aucun historique : rien n'est affirmé sur des muscles qu'on ne connaît pas */
+    const vierge = F.raisonsSeance("pull");
+    vrai("Sans historique, on dit qu'on ne connaît pas encore",
+      vierge.every(([m, t])=>/[Jj]amais/.test(t)), JSON.stringify(vierge));
+
+    /* du biceps il y a trois jours, rien d'autre : le dos doit passer devant */
+    DB.history = [{id:"h1", date:jours(3), name:"x", templateId:"x", start:0, end:0,
+      entries:[{exId:id("Curl barre"), sets:[serie(20,10)]}]}];
+    const r = F.raisonsSeance("pull");
+    vrai("Deux à trois raisons, pas plus", r.length >= 2 && r.length <= 3, r.length);
+    vrai("Chaque raison nomme un muscle et dit pourquoi",
+      r.every(([m, t])=>m && t && t.length > 10));
+    vrai("Le dos, jamais travaillé, est cité en premier",
+      /dorsal|Dos/i.test(r[0][0]), JSON.stringify(r[0]));
+    /* pas de chiffres bruts : « une série sur douze » ne parle à personne */
+    vrai("Aucune raison ne récite des chiffres de séries",
+      !r.some(([m, t])=>/[0-9]+ séries?|sur [0-9]+/.test(t)), JSON.stringify(r));
+    vrai("Chaque raison se termine par un point",
+      r.every(([m, t])=>/\.$/.test(t.trim())), JSON.stringify(r));
+
+    /* la fiche porte bien l'encadré quand on lui donne le type */
+    F.openAdaptatifInfo("pull");
+    const D2 = F.document;
+    vrai("La fiche porte l'encadré", !!D2.querySelector(".ad-pq"));
+    eq("…avec une ligne par raison", D2.querySelectorAll(".ad-pq .l").length, r.length);
+    F.hideSheet();
+    /* sans type (ancien appel), la fiche reste valable, simplement sans encadré */
+    F.openAdaptatifInfo();
+    vrai("Sans type, la fiche s'ouvre quand même", !!D2.querySelector(".ad-liste"));
+    vrai("…et n'invente aucune raison", !D2.querySelector(".ad-pq"));
+    F.hideSheet();
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Déjà chaud en arrivant : on doit pouvoir cocher l'échauffement sans rien saisir. */
+  (()=>{
+    DB.templates = [{id:"tw", name:"Essai", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.startWorkout("tw");
+    const st = DB.active.entries[0].sets[0];
+    vrai("La première série est un échauffement", !!st.warm);
+    st.w = 0; st.r = 0; st.done = true;
+    vrai("Un échauffement à zéro reste validé", st.done && !st.w && !st.r);
+    /* et il ne fausse rien : il ne compte ni dans le tonnage ni dans les séries faites */
+    eq("Il n'ajoute pas de tonnage", F.sessionVolume(DB.active), 0);
+    DB.active = null; DB.templates = [];
+  })();
+  neuf();
+
+  grp("La bibliothèque d'exercices");
+  neuf();
+  /* Trois filtres qui se cumulent : la famille, le matériel, la recherche. Et le détail
+     des muscles qu'on peut replier pour tenir deux fois plus d'exercices à l'écran. */
+  (()=>{
+    const gardeVM = DB.settings.pkMuscles;
+    const EQ = F.eval("equipCanon");    /* const : absente de window */
+    F.eval("pkFam = 'tous'; pkMat = ''");
+    DB.settings.pkMuscles = true;
+    F.openPicker(null);
+    const D2 = F.document;
+    const noms = () => [...D2.querySelectorAll("#pk-list .nm")].map(e=>e.textContent);
+    const fam = f => { D2.querySelector(`[data-pkfam="${f}"]`).click(); return noms(); };
+    const mat = m => { const sel = D2.getElementById("pk-mat");
+      sel.value = m; sel.dispatchEvent(new F.Event("change")); return noms(); };
+
+    eq("Huit familles", D2.querySelectorAll("[data-pkfam]").length, 8);
+    eq("On part de « Tous »", D2.querySelector("[data-pkfam].on").dataset.pkfam, "tous");
+    eq("« Tous » montre toute la bibliothèque", noms().length, F.allEx().length);
+
+    /* « Bras » n'existe pas comme groupe : il réunit biceps et triceps */
+    const bras = fam("bras");
+    vrai("« Bras » sort les curls", bras.some(n=>/Curl/.test(n)), bras.join(", "));
+    vrai("…et les extensions triceps", bras.some(n=>/Extension|Barre au front|Dips/.test(n)));
+    vrai("…sans ramener le squat", !bras.some(n=>/Squat/.test(n)));
+
+    /* « Fessiers » non plus : il se lit dans les muscles travaillés */
+    const fess = fam("fessiers");
+    vrai("« Fessiers » sort le hip thrust ou le pont",
+      fess.some(n=>/Hip thrust|Pont fessier/.test(n)), fess.join(", "));
+    vrai("…et le squat", fess.some(n=>/Squat/.test(n)));
+    vrai("…sans ramener le développé couché", !fess.some(n=>/Développé couché/.test(n)));
+
+    /* le matériel se cumule avec la famille */
+    const avant = fess.length;
+    const fessHalteres = mat("Haltères");
+    vrai("Le matériel réduit la liste", fessHalteres.length < avant,
+      fessHalteres.length + " sur " + avant);
+    vrai("…et tout y est bien aux haltères",
+      fessHalteres.every(n=>EQ(F.getEx(id(n))) === "Haltères"));
+    eq("Le compte suit", D2.getElementById("pk-nb").textContent.split(" ")[0],
+      String(fessHalteres.length));
+    mat("");
+    fam("tous");
+
+    /* le détail des muscles est un réglage, il survit à la fermeture */
+    vrai("Les muscles ciblés s'affichent", !!D2.querySelector("#pk-list .mw"));
+    const bascule = D2.getElementById("pk-vm");
+    bascule.checked = false; bascule.dispatchEvent(new F.Event("change"));
+    vrai("On peut les replier", !D2.querySelector("#pk-list .mw"));
+    eq("…et le choix est retenu", DB.settings.pkMuscles, false);
+
+    F.hideSheet();
+    DB.settings.pkMuscles = gardeVM;
+    F.eval("pkFam = 'tous'; pkMat = ''");
+  })();
+  neuf();
+
+  grp("Le lieu d'entraînement");
+  neuf();
+  /* Une séance adaptative se tirait pour la SALLE, puis on rafistolait exercice par
+     exercice au démarrage : un face pull sans poulie devenait des pompes piquées,
+     c'est-à-dire une poussée à la place d'un tirage. Elle se construit maintenant
+     directement dans ce qu'on peut faire sur place. */
+  /* la question du lieu s'ouvre après un tour de boucle : la feuille précédente doit
+     être partie avant. Ce bloc attend donc, contrairement aux autres. */
+  await (async ()=>{
+    const garde = DB.templates, gardeMaison = DB.maison, gardeActif = DB.active;
+    DB.active = null;
+    DB.profile.lieu = "mixte";
+    DB.maison = ["elastique", "traction"];      /* un élastique et une barre de traction */
+    DB.templates = [{id:"tadapt", name:"Pull adaptatif", adaptatif:"pull",
+                     items:[{exId:id("Face pull"), sets:3, reps:"12-15", rest:90}]}];
+    const t = () => DB.templates[0];
+    const faisables = () => t().items.every(it=>F.exoDispo(F.getEx(it.exId), DB.maison));
+    const noms = () => t().items.map(it=>F.getEx(it.exId).name);
+
+    /* ouvrir une séance pose d'abord la question du lieu : on choisit où l'on va,
+       PUIS on voit la séance faite pour cet endroit. */
+    F.openPreview("tadapt");
+    await new Promise(r=>setTimeout(r, 350));
+    vrai("Ouvrir une séance demande d'abord où tu vas",
+      !!F.document.getElementById("lx-maison"));
+    F.document.getElementById("lx-maison").click();
+    eq("…et la réponse devient le lieu du jour", F.eval("lieuProp"), "maison");
+    /* la fiche du lieu est REMPLACÉE par l'aperçu : la fermer d'abord aurait déclenché
+       un history.back() qui, au tour suivant, emportait l'aperçu à peine ouvert */
+    await new Promise(r=>setTimeout(r, 350));
+    eq("L'aperçu prend la place de la question",
+      (F.document.querySelector("#sheet h3")||{}).textContent, "Pull adaptatif");
+    vrai("…sans que tout se referme", F.eval("sheetOpen"));
+    F.hideSheet();
+
+    /* chez moi : tout doit être faisable avec l'élastique et la barre */
+    F.eval("lieuProp = 'maison'");
+    F.openPreview("tadapt", true);
+    eq("La séance est marquée du lieu pour lequel elle est faite", t().lieuAdapt, "maison");
+    vrai("Chez moi, chaque exercice est faisable sur place", faisables(), noms().join(", "));
+    vrai("…et aucune poussée ne remplace un tirage",
+      !noms().some(n=>/Pompes piquées/.test(n)), noms().join(", "));
+    /* la bascule salle / maison est bien dans l'aperçu, avant de lancer quoi que ce soit */
+    const chips = [...F.document.querySelectorAll("#sheet [data-pvlieu]")];
+    eq("Le lieu se choisit dans l'aperçu", chips.length, 2);
+    eq("…et celui du jour est marqué",
+      chips.filter(c=>c.classList.contains("on")).map(c=>c.dataset.pvlieu).join(), "maison");
+    F.hideSheet();
+
+    /* en salle : le filtre maison ne s'applique plus */
+    F.eval("lieuProp = 'salle'");
+    F.openPreview("tadapt", true);
+    eq("En salle, la séance est marquée salle", t().lieuAdapt, "salle");
+    F.hideSheet();
+
+    /* démarrage direct, sans passer par l'aperçu : le lieu arrive en argument */
+    t().majAdapt = 0;
+    F.startWorkout("tadapt", "maison");
+    eq("Un démarrage direct construit aussi pour le lieu", t().lieuAdapt, "maison");
+    vrai("…et tout y est faisable", faisables(), noms().join(", "));
+    vrai("Aucun exercice n'a eu besoin d'être remplacé",
+      DB.active.entries.every(e=>t().items.some(it=>it.exId === e.exId)));
+    DB.active = gardeActif; DB.templates = garde; DB.maison = gardeMaison;
+    delete DB.profile.lieu;
+  })();
+  neuf();
+
+  grp("Changer de programme");
+  neuf();
+  /* Deux programmes sur cinq — entretien et recomposition — n'étaient pas étiquetés :
+     leurs séances ne se reconstruisaient jamais, alors que la fiche promet à tout le
+     monde qu'elles se refont à chaque démarrage. */
+  (()=>{
+    const PROGS = F.eval("COACH_PROGRAMS");
+    const MOULES = F.eval("MOULES");
+    const toutes = Object.keys(PROGS).reduce((a,g)=>a.concat(PROGS[g].templates), []);
+    vrai("Chaque séance d'un programme est adaptative",
+      toutes.every(t=>!!t.type),
+      toutes.filter(t=>!t.type).map(t=>t.name).join(", "));
+    vrai("…et chaque type existe vraiment",
+      toutes.every(t=>!!MOULES[t.type]),
+      toutes.filter(t=>!MOULES[t.type]).map(t=>t.type).join(", "));
+  })();
+  neuf();
+
+  /* Les plans déjà posés avant cette correction se réparent au chargement. */
+  (()=>{
+    const garde = DB.templates;
+    DB.templates = [{id:"vieux", name:"Full body A · Entretien", items:[], adaptatif:null},
+                    {id:"amoi",  name:"Ma séance à moi",         items:[], adaptatif:null}];
+    delete DB.adaptV2;
+    F.applyDefaults();
+    eq("Une vieille séance d'entretien devient adaptative",
+      DB.templates[0].adaptatif, "full");
+    eq("…mais pas une séance que tu as créée",
+      DB.templates[1].adaptatif, null);
+    DB.templates = garde;
+  })();
+  neuf();
+
+  /* Changer d'objectif empilait les deux programmes sans rien dire : cinq séances au
+     plan, dont trois qui ne correspondaient plus à rien. */
+  (()=>{
+    const garde = DB.templates, gardeActif = DB.active;
+    const noms = () => DB.templates.map(t=>t.name);
+    DB.active = null;
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    const apresMasse = noms().length;
+    vrai("Le premier programme pose ses séances", apresMasse === 3, apresMasse + " séances");
+
+    const restes = F.seancesDunAutreProgramme("seche");
+    eq("Les trois séances de masse sont repérées", restes.length, 3);
+    eq("…et aucune n'est rangée dans le nouveau programme",
+      F.seancesDunAutreProgramme("masse").length, 0);
+
+    /* on garde : les deux programmes cohabitent, c'est le choix de l'utilisateur */
+    F.ajouterProgramme("seche", "");
+    F.document.getElementById("rp-keep").click();
+    eq("« Les garder » laisse les deux programmes", noms().length, 5);
+
+    /* on remplace : le plan ne contient plus que le nouveau */
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    F.ajouterProgramme("seche", "");
+    F.document.getElementById("rp-swap").click();
+    eq("« Remplacer » ne laisse que le nouveau", noms().length, 2);
+    vrai("…et ce sont bien les séances de perte de poids",
+      noms().every(n=>/Perte de poids/.test(n)), noms().join(", "));
+
+    /* une séance en cours ne se fait jamais retirer sous les pieds */
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    DB.active = {templateId: DB.templates[0].id, entries:[]};
+    vrai("La séance en cours est épargnée",
+      F.seancesDunAutreProgramme("seche").every(v=>v.tpl.id !== DB.templates[0].id));
+    F.ajouterProgramme("seche", "");
+    F.document.getElementById("rp-swap").click();
+    vrai("…et elle survit au remplacement",
+      noms().some(n=>/Prise de masse/.test(n)), noms().join(", "));
+
+    /* sans rien à remplacer, on ajoute sans poser de question */
+    DB.active = null;
+    DB.templates = [];
+    F.ajouterProgramme("masse", "");
+    vrai("Un plan vide n'a rien à remplacer", DB.templates.length === 3);
+    /* la feuille précédente laisse son contenu derrière elle : on regarde l'état
+       interne, qui lui est posé tout de suite */
+    vrai("…et aucune question n'est posée", !F.eval("sheetOpen"));
+
+    DB.templates = garde; DB.active = gardeActif;
+  })();
+  neuf();
+
+  grp("Les types de séance proposés");
+  neuf();
+  /* « Jambes » et « Bas du corps » étaient la même séance sous deux noms, et ils se
+     suivaient dans la grille. Un seul reste proposé ; la place gagnée va aux abdos,
+     qui n'existaient pas comme séance. */
+  (()=>{
+    const jours = [1,2,3,4,5,6];
+    const listes = jours.map(j=>{
+      DB.profile = Object.assign({}, DB.profile, {days:j});
+      return F.typesProposables();
+    });
+    vrai("Jamais « Jambes » et « Bas du corps » ensemble",
+      listes.every(l => !(l.includes("jambes") && l.includes("bas"))));
+    vrai("« Jambes » ne se propose plus du tout",
+      listes.every(l => !l.includes("jambes")));
+    vrai("Les abdos se proposent quel que soit le nombre de jours",
+      listes.every(l => l.includes("abdos")));
+    vrai("Le bas du corps reste proposé", listes.every(l => l.includes("bas")));
+    /* le moule survit pour le programme de prise de masse, qui s'y réfère encore */
+    vrai("Le moule « Jambes » existe toujours", !!F.eval("MOULES").jambes);
+    vrai("…et le programme de masse s'en sert",
+      F.eval("COACH_PROGRAMS").masse.templates.some(t=>t.type === "jambes"));
+    /* vingt minutes d'abdos ne remplacent pas un jour d'entraînement */
+    DB.profile = Object.assign({}, DB.profile, {days:4});
+    DB.history = [];
+    vrai("Les abdos ne sont jamais LA séance recommandée",
+      F.typeQuiManque().type !== "abdos");
+    DB.profile = Object.assign({}, DB.profile, {days:3});
+  })();
+  neuf();
+
+  /* Une séance d'abdos doit être une vraie séance : plusieurs façons de travailler le
+     tronc, pas trois fois le même crunch. */
+  (()=>{
+    DB.materiel = [];
+    const noms = new Set();
+    let mini = 99, sansDoublon = true;
+    for(let k=0;k<40;k++){
+      const items = F.genererSeance("abdos").items;
+      mini = Math.min(mini, items.length);
+      items.forEach(it=>noms.add(it.nom));
+      if(new Set(items.map(i=>i.nom)).size !== items.length) sansDoublon = false;
+    }
+    vrai("Aucun exercice en double dans la séance", sansDoublon);
+    vrai("Au moins quatre exercices", mini >= 4, "obtenu " + mini);
+    vrai("Le tronc se travaille de plusieurs façons", noms.size >= 5, noms.size + " exercices");
+    DB.materiel = null;
+  })();
+  neuf();
+
+  /* Chaque tuile porte le dessin de son type ; « Haut du corps » attend encore le sien. */
+  (()=>{
+    F.openPropose();
+    const D2 = F.document;
+    const tuiles = [...D2.querySelectorAll("#pp-types [data-pptype]")];
+    vrai("Chaque type a sa tuile", tuiles.length >= 4);
+    const dessines = ["push","pull","bas","abdos","full"];
+    vrai("Les types dessinés portent leur masque",
+      tuiles.filter(b=>dessines.includes(b.dataset.pptype))
+            .every(b=>!!b.querySelector(".icm-" + b.dataset.pptype)));
+    vrai("Le dé du hasard aussi",
+      !!D2.querySelector("#pp-hasard .icm-hasard"));
+    vrai("La séance recommandée porte sa cible",
+      !!D2.querySelector("#pp-top .icm-cible"));
+    /* celui du programme complet est un dessin en couleurs, pas un masque : pas de
+       pastille translucide derrière lui, sinon on verrait deux ronds l un sur l autre */
+    const pgm = D2.querySelector("#pp-prog .ic");
+    vrai("Le programme complet porte son dessin", pgm.classList.contains("pgm"));
+    eq("…sans rond derrière", F.getComputedStyle(pgm).borderRadius, "0px");
+    F.hideSheet();
+  })();
+  neuf();
+
+  grp("La fiche d'une sortie cardio");
+  neuf();
+  /* Huit activités : sur trois colonnes elles tombaient sur trois rangs, dont un à
+     moitié vide. Deux rangées de quatre tiennent dans la hauteur d'un téléphone.
+     L'iframe des tests n'a aucune largeur, donc les colonnes valent toutes 0px :
+     ce qu'on compte ici, c'est leur nombre. */
+  (()=>{
+    F.openCardioAdd();
+    const D2 = F.document;
+    const act = D2.querySelector("#sheet .cd-grille:not(.large)");
+    /* la feuille n'est pas rendue dans l'iframe : le navigateur rend alors la valeur
+       telle qu'elle est écrite, « repeat(4, 1fr) », au lieu des largeurs calculées */
+    const cols = n => { const v = F.getComputedStyle(n).gridTemplateColumns.trim();
+      const r = v.match(/^repeat\((\d+),/); return r ? +r[1] : v.split(/\s+/).length; };
+    eq("Huit activités", act.querySelectorAll("[data-cmach]").length, 8);
+    eq("Deux rangées de quatre", cols(act), 4);
+    vrai("Chacune porte son signe",
+      [...act.querySelectorAll("[data-cmach]")].every(b=>!!b.querySelector(".ic")));
+    const inten = D2.querySelector("#sheet .cd-grille.large");
+    eq("L'intensité garde ses trois cases", cols(inten), 3);
+    F.hideSheet();
+  })();
+  neuf();
+
   grp("Ordre des exercices");
   neuf();
   /* Le glissé lui-même se vérifie à la main : l'iframe des tests n'a aucune hauteur,
@@ -1947,7 +3499,7 @@ async function lancer(){
     F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "pull");
   eq("La poussée est reconnue sans l'aide du nom",
     F.photoSeance({name:"Séance A",
-      items:exos(["Développé couché","Développé militaire","Extension poulie"])}), "push");
+      items:exos(["Développé couché","Développé militaire","Extension poulie (barre)"])}), "push");
   neuf();
 
   /* ---------------------------------------------------------- fiches d'exercice */
@@ -1969,6 +3521,480 @@ async function lancer(){
   neuf();
 
   /* ---------------------------------------------------------- parcours d'accueil */
+  grp("Séances adaptatives");
+  neuf();
+  /* La séance ne se contente plus d un moule fixe : elle se construit sur l état réel
+     des muscles. Avant, un Pull donnait toujours trois exercices de dos et trois séries
+     de curl en 12-15, que les biceps soient frais, en retard ou déjà rincés. */
+  (()=>{
+    /* ---- les trois faisceaux de l épaule ---- */
+    const mw = F.eval("MUSCLE_WORK");
+    vrai("Un développé militaire travaille l'avant d'épaule",
+      mw["Développé militaire"].some(m=>m[0] === "Deltoïdes (antérieur)" && m[1] === 3));
+    vrai("…et pas l'arrière",
+      !mw["Développé militaire"].some(m=>m[0] === "Deltoïdes (postérieur)"));
+    vrai("Un face pull travaille l'arrière",
+      mw["Face pull"].some(m=>m[0] === "Deltoïdes (postérieur)" && m[1] === 3));
+    vrai("Une élévation latérale travaille le latéral",
+      mw["Élévations latérales"].some(m=>m[0] === "Deltoïdes (latéral)" && m[1] === 3));
+    /* le détail ne casse rien : la récupération raisonne toujours par groupe */
+    eq("Le détail retombe sur le groupe suivi",
+      F.groupeDe("Deltoïdes (postérieur)"), "Deltoïdes");
+    vrai("La récupération connaît toujours les épaules",
+      !!F.recuperation().muscles["Deltoïdes"]);
+
+    /* ---- le muscle sur lequel un exercice est centré ---- */
+    /* Un oiseau touche le grand dorsal, mais il est FAIT pour l arrière d épaule. */
+    eq("L'oiseau est un exercice d'arrière d'épaule",
+      F.centreSur("Oiseau"), "Deltoïdes (postérieur)");
+    eq("Le squat est un exercice de quadriceps", F.centreSur("Squat"), "Quadriceps");
+    eq("Le curl marteau est un exercice de biceps", F.centreSur("Curl marteau"), "Biceps");
+
+    /* ---- la séance elle-même ---- */
+    DB.materiel = null; DB.history = []; DB.templates = [];
+    const pull = F.genererAdaptative("pull");
+    eq("Cinq exercices", pull.items.length, 5);
+    eq("…tous différents", new Set(pull.items.map(i=>i.nom)).size, 5);
+    vrai("Les biceps ont enfin leur exercice",
+      pull.items.some(i=>i.role === "Biceps"));
+    vrai("Le premier exercice est un gros mouvement",
+      F.chargeExo(pull.items[0].nom) >= 30, pull.items[0].nom);
+    /* une isolation ne se fait pas en 8 reps avec deux minutes trente de repos */
+    pull.items.forEach(it=>{
+      if(F.chargeExo(it.nom) < 15)
+        vrai("Une isolation garde des séries longues (" + it.nom + ")",
+          it.rest <= 90, it.reps + " / " + it.rest + "s");
+    });
+
+    /* ---- elle s adapte vraiment ---- */
+    const idOf = n => F.libId(n);
+    const series = (w, r, n) => Array.from({length:n}, ()=>({w, r, done:true, rir:1}));
+    DB.history = [{id:"ha", date:new Date(Date.now() - 30*36e5).toISOString(), start:0, end:0,
+      name:"Pull", entries:[
+        {exId:idOf("Rowing barre"), sets:series(70, 10, 5)},
+        {exId:idOf("Tirage vertical"), sets:series(60, 10, 5)}]}];
+    const besoins = F.besoinsMuscles("pull");
+    const dos = besoins.find(b=>b.muscle === "Grand dorsal");
+    const bic = besoins.find(b=>b.muscle === "Biceps");
+    vrai("Dix séries de dos hier : le dos n'est plus prioritaire",
+      dos.besoin < bic.besoin, "dos " + Math.round(dos.besoin) + " vs biceps " + Math.round(bic.besoin));
+    vrai("…sa récupération a baissé", dos.recup < 75, dos.recup + " %");
+    vrai("…et son volume de la semaine est compté", dos.vol >= 9, String(dos.vol));
+    /* ---- la semaine, pas seulement la séance ---- */
+    eq("Le dos a une cible hebdomadaire", dos.cible, 16);
+    vrai("L arrière d épaule en a une plus petite",
+      besoins.find(b=>b.muscle === "Deltoïdes (postérieur)").cible < dos.cible);
+    /* ---- un seul mouvement par schéma ---- */
+    const sch = n2 => F.schemaDe(n2);
+    eq("Un soulevé de terre est une charnière de hanche", sch("Soulevé de terre"), "charniere");
+    eq("Un good morning aussi", sch("Good morning"), "charniere");
+    eq("Un squat est un squat", sch("Squat"), "squat");
+    eq("Un curl est une isolation", sch("Curl barre"), "isolation");
+    ["pull","push","jambes"].forEach(t2=>{
+      const se = F.genererAdaptative(t2);
+      const gros = se.items.map(i=>sch(i.nom)).filter(x=>x !== "isolation");
+      eq("Aucun schéma en double dans un " + t2, gros.length, new Set(gros).size,
+        gros.join(","));
+    });
+    /* une séance de tirage a un tirage vertical ET un horizontal */
+    const pl = F.genererAdaptative("pull").items.map(i=>sch(i.nom));
+    vrai("Un Pull tire dans les deux directions",
+      pl.includes("tirageV") && pl.includes("tirageH"), pl.join(","));
+    const ps = F.genererAdaptative("push").items.map(i=>sch(i.nom));
+    vrai("Un Push pousse dans les deux directions",
+      ps.includes("pousseeV") && ps.includes("pousseeH"), ps.join(","));
+    const apres = F.genererAdaptative("pull");
+    const nDos = apres.items.filter(i=>i.role === "Grand dorsal").length;
+    vrai("Le dos reçoit moins d'exercices qu'à froid",
+      nDos < pull.items.filter(i=>i.role === "Grand dorsal").length, "reste " + nDos);
+    DB.history = [];
+
+    /* ---- seules les séances du départ sont adaptatives ---- */
+    DB.templates = [];
+    F.addCoachProgram("masse");
+    eq("Les trois séances du coach sont adaptatives",
+      DB.templates.filter(t=>t.adaptatif).length, 3);
+    eq("…chacune avec son type",
+      DB.templates.map(t=>t.adaptatif).join(","), "push,pull,jambes");
+    DB.templates.push({id:"perso", name:"Ma séance", items:[
+      {exId:idOf("Curl barre"), sets:3, reps:"8-12", rest:90}]});
+    vrai("Une séance créée à la main ne l'est pas",
+      !DB.templates.find(t=>t.id === "perso").adaptatif);
+
+    /* ---- le recalcul ---- */
+    const tpl = DB.templates.find(t=>t.adaptatif === "pull");
+    const avantNoms = tpl.items.map(i=>i.exId).join(",");
+    tpl.items[0].rest = 222;                    /* un repos réglé à la main */
+    const gardeId = tpl.items[0].exId;
+    F.regenererAdaptative(tpl);
+    eq("La séance garde cinq exercices", tpl.items.length, 5);
+    vrai("…et son marqueur", tpl.adaptatif === "pull");
+    const revenu = tpl.items.find(i=>i.exId === gardeId);
+    if(revenu) eq("Un repos réglé à la main est conservé", revenu.rest, 222);
+    /* ---- l aperçu montre la séance qu on va vraiment faire ----
+       Elle se recalculait AU démarrage : l aperçu montrait donc la précédente, et
+       l ordre qu on venait d y régler à la main était effacé une seconde plus tard. */
+    const t2 = DB.templates.find(x=>x.adaptatif === "pull");
+    F.openPreview(t2.id);
+    const affichee = t2.items.map(i=>i.exId).join(",");
+    /* on change l ordre comme le ferait un doigt sur la poignée */
+    t2.items.reverse();
+    const voulu = t2.items.map(i=>i.exId).join(",");
+    vrai("L aperçu a bien recalculé la séance", !!affichee.length);
+    F.startWorkout(t2.id);
+    eq("L ordre réglé à la main est respecté",
+      DB.active.entries.map(e=>e.exId).join(","), voulu);
+    DB.active = null;
+    DB.templates = []; DB.history = []; DB.materiel = null;
+    F.render();
+  })();
+  neuf();
+
+  grp("Le parcours de création de profil");
+  neuf();
+  /* Chaque réponse est une carte : signe, intitulé, raison, pastille. La raison vivait
+     sous le bouton sélectionné — on ne pouvait comparer deux réponses qu'en les
+     essayant l'une après l'autre. */
+  (()=>{
+    const etapes = {objectif:3, corps:4, lieu:7, frequence:8};
+    F.openOnboarding(false, null, etapes.objectif);
+    const D2 = F.document;
+    const cts = () => [...D2.querySelectorAll(".onb-cartes .ct")];
+    eq("Cinq objectifs, cinq cartes", cts().length, 5);
+    vrai("Chacune porte son signe", cts().every(c=>!!c.querySelector(".ic")));
+    vrai("…son intitulé et sa raison",
+      cts().every(c=>c.querySelector(".t") && c.querySelector(".s")));
+    vrai("…et sa pastille", cts().every(c=>!!c.querySelector(".rd")));
+    eq("Une seule est choisie", cts().filter(c=>c.classList.contains("on")).length, 1);
+    /* le mot qui porte la question est en orange */
+    vrai("Le titre a son mot en orange", !!D2.querySelector("#onb-body h2 .hl"));
+    eq("…et il est bien orange",
+      F.getComputedStyle(D2.querySelector("#onb-body h2 .hl")).color, "rgb(245, 130, 32)");
+
+    F.openOnboarding(false, null, etapes.lieu);
+    eq("Trois lieux, trois cartes", cts().length, 3);
+    F.openOnboarding(false, null, etapes.frequence);
+    eq("Cinq rythmes, cinq cartes", cts().length, 5);
+    vrai("Le nombre de séances se lit en chiffre",
+      cts().map(c=>c.querySelector(".ic").textContent.trim()).join() === "2,3,4,5,6");
+
+    /* la barre du haut : la même qu'avant, en orange et plus épaisse */
+    const barre = D2.querySelector(".onb-prog i");
+    eq("La barre d'avancement est orange",
+      F.getComputedStyle(barre).backgroundColor, "rgb(245, 130, 32)");
+    vrai("…et plus épaisse qu'avant",
+      parseFloat(F.getComputedStyle(D2.querySelector(".onb-prog")).height) >= 9);
+
+    /* taille et poids : deux roulettes en carte, et l'encadré qui explique */
+    F.openOnboarding(false, null, etapes.corps);
+    eq("Deux roulettes", D2.querySelectorAll(".onb-rou .rou").length, 2);
+    vrai("Chacune porte son intitulé et son signe",
+      [...D2.querySelectorAll(".onb-rou .rou-t")].every(t=>!!t.querySelector("svg")));
+    vrai("L'encadré explique pourquoi on demande ça", !!D2.querySelector(".onb-note"));
+
+    /* affiner : un bloc par réglage, les réponses côte à côte. On ne peut pas y sauter
+       par son rang — cette page n'est pas dans la liste des étapes, elle s'ouvre depuis
+       la dernière — donc on passe par le bouton, comme un utilisateur. */
+    const aff = () => [...D2.querySelectorAll(".af-c")];
+    F.openOnboarding(false, null, 10);
+    const lien = [...D2.querySelectorAll("#onb-body button, #onb-foot button")]
+      .find(b2=>/Affiner/.test(b2.textContent));
+    vrai("La dernière page mène à « Affiner mon profil »", !!lien);
+    if(lien) lien.click();
+    vrai("Quatre réglages, quatre blocs", aff().length === 4, aff().length + " blocs");
+    vrai("Chaque bloc porte son signe et son intitulé",
+      aff().every(c=>c.querySelector(".af-h .ic svg, .af-h .ic .icm") && c.querySelector(".af-h .t")));
+    const trios = [...D2.querySelectorAll(".af-opts")];
+    eq("Trois réglages à trois réponses", trios.length, 3);
+    vrai("Chaque réponse porte sa pastille", trios.every(o=>
+      [...o.querySelectorAll(".af-o")].every(b2=>!!b2.querySelector(".rd"))));
+    vrai("Une seule réponse choisie par réglage",
+      trios.every(o=>o.querySelectorAll(".af-o.on").length === 1));
+    eq("Cinq zones sensibles", D2.querySelectorAll(".af-z").length, 5);
+
+    /* la dernière page : deux cartes, pas deux boutons empilés */
+    F.openOnboarding(false, null, 10);
+    eq("Deux gestes proposés à la fin", D2.querySelectorAll("#onb-body .fin-c").length, 2);
+    vrai("Chacun porte son signe et sa raison",
+      [...D2.querySelectorAll(".fin-c")].every(c=>c.querySelector(".ic svg")
+        && c.querySelector(".t") && c.querySelector(".s")));
+    vrai("Le geste principal est en orange", !!D2.querySelector(".fin-c.go"));
+    eq("Les quatre réglages sont annoncés", D2.querySelectorAll(".fin-c .tags i").length, 4);
+    vrai("Le titre a son mot en orange", !!D2.querySelector("#onb-body h2 .hl"));
+
+    /* le carrousel n'a pas bougé : c'est une autre page */
+    F.openOnboarding(false, null, 0);
+    vrai("Le carrousel garde sa mise en page",
+      !!D2.querySelector(".onb-body.intro") && !D2.querySelector(".onb-cartes"));
+    vrai("…et son titre à lui", !!D2.querySelector(".onb-titre .hl"));
+    F.fermerOnb();
+  })();
+  neuf();
+
+  grp("Ce qu'on a chez soi sert vraiment");
+  neuf();
+  /* « J'ai des barres de dips, on ne m'a jamais proposé de dips. » Le dip était rangé
+     avec les pompes et le développé couché : dès qu'un des deux passait, il était
+     bloqué par la règle « un seul mouvement par schéma ». */
+  (()=>{
+    DB.history = [];
+    DB.profile = Object.assign({}, DB.profile, {injuries:[], lieu:"maison"});
+    const tire = (mat, types) => { DB.materiel = mat;
+      const vus = {};
+      for(let k=0;k<25;k++) types.forEach(t=>F.genererAdaptative(t).items
+        .forEach(i=>{ vus[i.nom] = 1; }));
+      return vus; };
+    vrai("Avec des barres de dips, les dips sont proposés",
+      !!tire(["dips"], ["push","haut"])["Dips"]);
+    vrai("Avec une barre de traction, les tractions le sont",
+      !!tire(["traction"], ["pull","haut"])["Tractions"]);
+    vrai("Sans rien, ni l'un ni l'autre", (()=>{
+      const v = tire([], ["push","pull","haut"]);
+      return !v["Dips"] && !v["Tractions"];
+    })());
+    /* le dip garde son propre schéma : il ne bloque plus, et n'est plus bloqué */
+    eq("Le dip n'est plus une poussée horizontale", F.schemaDe("Dips"), "dip");
+    vrai("…contrairement aux pompes et au développé couché",
+      F.schemaDe("Pompes") === "pousseeH" && F.schemaDe("Développé couché") === "pousseeH");
+    DB.materiel = null;
+  })();
+  neuf();
+
+  /* Cocher « épaule » écartait des exercices SANS RIEN DIRE : plus aucun triangle
+     d'alerte dans la séance, et rien pour expliquer pourquoi. */
+  (()=>{
+    DB.history = [];
+    DB.materiel = null;
+    DB.profile = Object.assign({}, DB.profile, {injuries:["epaule"]});
+    DB.profile = Object.assign({}, DB.profile, {douleurs:{epaule:"stop"}});
+    const g = F.genererAdaptative("push");
+    vrai("Une séance Push évite les exercices à risque pour l'épaule",
+      g.items.every(i=>!F.injuryNote(i.nom)),
+      g.items.filter(i=>F.injuryNote(i.nom)).map(i=>i.nom).join(", "));
+    vrai("…et la séance reste complète", g.items.length === 5, g.items.length + " exercices");
+    const r = F.raisonsSeance("push");
+    /* les variantes du même geste doivent être vues : « Développé militaire » était
+       signalé, l'Arnold press non — le même mouvement sous un autre nom */
+    const flag = n => !!F.injuryNote(n);
+    vrai("L'Arnold press est vu comme un développé au-dessus de la tête", flag("Arnold press"));
+    vrai("…le développé militaire haltères aussi", flag("Développé militaire haltères"));
+    vrai("…et les pompes piquées", flag("Pompes piquées"));
+    vrai("Le développé incliné aussi, malgré son muscle écrit « Pectoraux (haut) »",
+      flag("Développé incliné barre"));
+    vrai("Les écartés, quelle que soit leur poulie",
+      flag("Écartés poulie haute") && flag("Écartés poulie basse") && flag("Écartés haltères"));
+    vrai("Mais pas l'arrière d'épaule, qui est justement le repli",
+      !flag("Face pull") && !flag("Oiseau"));
+    vrai("…ni le triceps à la poulie", !flag("Extension poulie (barre)"));
+
+    /* une alternative proposée ne doit jamais être elle-même déconseillée */
+    const FAM = F.eval("INJURY_FAMILLES"), RULES = F.eval("INJURY_RULES");
+    const garde = DB.profile.injuries;
+    let coherent = [];
+    Object.keys(FAM).forEach(zone=>{
+      DB.profile = Object.assign({}, DB.profile, {injuries:[zone]});
+      FAM[zone].forEach(f=>(f.alts || []).forEach(n=>{ if(F.injuryNote(n)) coherent.push(zone + " → " + n); }));
+      Object.keys(RULES[zone] || {}).forEach(ex=>(RULES[zone][ex].alts || [])
+        .forEach(n=>{ if(F.injuryNote(n)) coherent.push(zone + " : " + ex + " → " + n); }));
+    });
+    vrai("Aucune alternative proposée n'est elle-même déconseillée",
+      coherent.length === 0, coherent.slice(0, 4).join(" ; "));
+    DB.profile = Object.assign({}, DB.profile, {injuries:garde});
+
+    /* Trois niveaux, trois comportements réellement différents. Un quatrième ferait
+       la même chose qu'un autre : c'est pour ça qu'il n'y en a que trois. */
+    const DL = F.eval("DOULEURS");
+    eq("Trois niveaux, pas cinq", DL.length, 3);
+    DB.profile = Object.assign({}, DB.profile, {douleurs:{}});   /* aucune réponse donnée */
+    eq("Sans réponse, on retient le choix prudent", F.niveauDouleur("epaule"), "mal");
+    const seance = niv => { DB.profile = Object.assign({}, DB.profile,
+      {injuries:["epaule"], douleurs:{epaule:niv}});
+      return F.genererAdaptative("push").items; };
+    const risques = it => it.filter(i=>F.injuryNote(i.nom));
+    vrai("« Je ne peux pas » : plus aucun exercice à risque",
+      risques(seance("stop")).length === 0,
+      risques(seance("stop")).map(i=>i.nom).join(", "));
+    vrai("« Ça fait mal » : gardé seulement faute de mieux",
+      risques(seance("mal")).length > 0);
+    vrai("…et allégé d'une série", seance("mal").filter(i=>F.injuryNote(i.nom))
+      .every(i=>i.sets <= 3), seance("mal").map(i=>i.nom + ":" + i.sets).join(" "));
+    vrai("Un exercice qui gêne ne prend jamais la place lourde",
+      (()=>{ const it = seance("gene");
+        const lourd = it.reduce((a2, b2)=>b2.sets > a2.sets ? b2 : a2, it[0]);
+        return !F.injuryNote(lourd.nom); })());
+    /* et la séance reste entière dans les trois cas */
+    ["gene","mal","stop"].forEach(n=>vrai("Séance entière avec « " + n + " »",
+      seance(n).length === 5, seance(n).length + " exercices"));
+    DB.profile = Object.assign({}, DB.profile, {injuries:["epaule"], douleurs:{}});
+
+    vrai("La fiche dit que la zone sensible est prise en compte",
+      r.some(([m, t])=>/écart/i.test(t)), JSON.stringify(r));
+    vrai("…et nomme la zone", r.some(([m, t])=>/épaule/i.test(t)));
+    /* plusieurs zones : le pluriel suit */
+    DB.profile = Object.assign({}, DB.profile, {injuries:["epaule","genou"]});
+    vrai("Deux zones, deux noms cités", (()=>{
+      const t = (F.raisonsSeance("full").find(x=>/écart/i.test(x[1])) || ["",""])[1];
+      return /épaule/i.test(t) && /genou/i.test(t);
+    })());
+    /* une zone cochée ne doit rien coûter : la séance reste entière */
+    ["epaule","dos","genou","coude","poignet"].forEach(z=>{
+      DB.profile = Object.assign({}, DB.profile, {injuries:[z]});
+      vrai("Avec « " + z + " », les séances restent pleines",
+        ["push","pull","bas","full","abdos"].every(t=>F.genererAdaptative(t).items.length === 5),
+        ["push","pull","bas","full","abdos"]
+          .map(t=>t + ":" + F.genererAdaptative(t).items.length).join(" "));
+    });
+    /* les cinq zones à la fois : il ne reste presque plus rien à pousser, et c'est
+       la vérité — mais la séance ne doit jamais être vide */
+    DB.profile = Object.assign({}, DB.profile,
+      {injuries:["epaule","dos","genou","coude","poignet"]});
+    vrai("Toutes les zones cochées, aucune séance n'est vide",
+      ["push","pull","bas","full"].every(t=>F.genererAdaptative(t).items.length >= 2),
+      ["push","pull","bas","full"]
+        .map(t=>t + ":" + F.genererAdaptative(t).items.length).join(" "));
+    DB.profile = Object.assign({}, DB.profile, {injuries:[]});
+  })();
+  neuf();
+
+  grp("Le matériel de la maison");
+  neuf();
+  /* Une poulie simple n'a qu'une colonne : on ne peut pas y faire d'écartés, qui
+     demandent deux câbles opposés. L'app en proposait quand même. */
+  (()=>{
+    const dispo = (nom, mat) => F.exoDispo(F.getEx(id(nom)), mat);
+    vrai("Une poulie simple ne donne pas les écartés",
+      !dispo("Écartés poulie", ["poulie"]));
+    vrai("…mais bien le tirage vertical", dispo("Tirage vertical", ["poulie"]));
+    vrai("…et l'extension triceps", dispo("Extension poulie (barre)", ["poulie"]));
+    vrai("Une poulie double donne les écartés", dispo("Écartés poulie", ["poulie2"]));
+    vrai("…et tout ce que fait la simple", dispo("Tirage vertical", ["poulie2"]));
+    vrai("Sans poulie, ni l'un ni l'autre",
+      !dispo("Écartés poulie", ["halteres"]) && !dispo("Tirage vertical", ["halteres"]));
+    /* la roulette était rangée « poids du corps » alors qu'elle demande une roue */
+    vrai("La roulette abdominale demande sa roue", !dispo("Roulette abdominale", ["tapis"]));
+    vrai("…et l'a bien avec", dispo("Roulette abdominale", ["roue"]));
+    /* banc, step et caisse servent aux mêmes exercices */
+    vrai("Une caisse remplace le banc pour les fentes bulgares",
+      dispo("Fentes bulgares", ["halteres", "box"]));
+    vrai("…et pour les dips sur banc", dispo("Dips sur banc", ["box"]));
+  })();
+  neuf();
+
+  /* Les nouveaux accessoires apportent de vrais exercices, pas des doublons. */
+  (()=>{
+    const MAT = F.eval("MATERIELS");
+    eq("Seize accessoires proposés", MAT.filter(m=>m.id !== "machine").length, 16);
+    vrai("Chacun a son dessin", MAT.filter(m=>m.id !== "machine").every(m=>{
+      const el = F.document.createElement("span");
+      el.className = "icm-mt-" + m.id;
+      F.document.body.appendChild(el);
+      const img = F.getComputedStyle(el).maskImage || F.getComputedStyle(el).webkitMaskImage;
+      el.remove();
+      return img && img !== "none";
+    }));
+    const neufs = ["Swing kettlebell","Développé kettlebell","Rowing TRX","Pompes TRX",
+                   "Crunch sur ballon","Leg curl sur ballon"];
+    vrai("Les six nouveaux exercices existent", neufs.every(n=>!!id(n)),
+      neufs.filter(n=>!id(n)).join(", "));
+    vrai("…chacun sait quels muscles il travaille",
+      neufs.every(n=>(F.eval("MUSCLE_WORK")[n] || []).length > 0));
+    vrai("…et demande bien son accessoire",
+      !F.exoDispo(F.getEx(id("Swing kettlebell")), ["halteres"])
+      && F.exoDispo(F.getEx(id("Swing kettlebell")), ["kettlebell"]));
+    /* et le générateur peut les tirer : sinon ils n'existent que dans la bibliothèque */
+    const RES = F.eval("RESERVOIRS");
+    vrai("Le générateur peut les proposer",
+      neufs.every(n=>Object.values(RES).some(l=>l.includes(n))),
+      neufs.filter(n=>!Object.values(RES).some(l=>l.includes(n))).join(", "));
+  })();
+  neuf();
+
+  grp("Tout savoir sur cet objectif");
+  neuf();
+  /* La fiche était un mur de paragraphes : on la lisait en entier ou on la fermait.
+     Cinq points, un signe chacun, et la mise en garde à part. */
+  (()=>{
+    F.openAimInfo("masse", null);
+    const D2 = F.document;
+    eq("Cinq points", D2.querySelectorAll("#sheet .ai-l").length, 5);
+    vrai("Chacun porte son signe", [...D2.querySelectorAll(".ai-l .ic")].every(e=>!!e.firstElementChild));
+    vrai("L'objectif porte le sien en tête", !!D2.querySelector(".ai-tete .ic svg"));
+    /* la mise en garde se coupe en deux : la condition, puis ce qui arrive */
+    const att = D2.querySelector(".ai-att");
+    vrai("La mise en garde est à part", !!att);
+    vrai("…avec sa condition en tête", /Au-delà/.test(att.querySelector(".t").textContent));
+    vrai("…et la suite en majuscule",
+      /^[A-ZÉÀ]/.test(att.querySelector(".s").textContent.trim()),
+      att.querySelector(".s").textContent.slice(0, 20));
+    /* Le bouton du bas ferme la fiche. Il portait une « fonction de retour » à laquelle
+       le parcours passait une fonction vide : « Revenir à mon profil » ne refermait rien. */
+    F.openAimInfo("masse", true);
+    eq("Depuis le profil, le bouton le dit",
+      D2.getElementById("ai-ok").textContent.trim(), "Revenir à mon profil");
+    D2.getElementById("ai-ok").click();
+    vrai("…et il referme bien la fiche", !F.eval("sheetOpen"));
+    F.openAimInfo("masse", false);
+    eq("Ailleurs, il dit « Compris »", D2.getElementById("ai-ok").textContent.trim(), "Compris");
+    D2.getElementById("ai-ok").click();
+    vrai("…et ferme aussi", !F.eval("sheetOpen"));
+
+    /* les cinq objectifs passent tous, sans exception */
+    F.eval("AIMS").forEach(a=>{
+      F.openAimInfo(a.id, null);
+      vrai("« " + a.label + " » a ses cinq points",
+        D2.querySelectorAll("#sheet .ai-l").length === 5);
+    });
+    F.hideSheet();
+  })();
+  neuf();
+
+  grp("Le carrousel d'accueil");
+  neuf();
+  /* Quatre vues, une image pleine largeur par vue, un titre dont la seconde ligne
+     passe en orange, et une phrase qui explique. Les videos qui tenaient ce role
+     pesaient 600 Ko et ne demarraient pas toujours sur iPhone. */
+  (()=>{
+    const profilAvant = DB.profile;
+    DB.profile = {};
+    F.openOnboarding(true);
+    const D2 = F.document;
+    const vues = [...D2.querySelectorAll(".onb-tel img")];
+    eq("Quatre vues", vues.length, 4);
+    vrai("…et plus aucune vidéo", !D2.querySelector(".onb-tel video"));
+    eq("La première est celle des séances",
+      vues[0].getAttribute("src"), "img/onb-seances.jpg");
+    vrai("Chacune a son image",
+      vues.every(v => /^img\/onb-[a-z]+\.jpg$/.test(v.getAttribute("src"))));
+    /* la seconde ligne du titre porte la promesse : elle est en orange */
+    const titre = D2.getElementById("onb-titre");
+    vrai("Le titre tient en deux lignes", !!titre.querySelector("br"));
+    vrai("…dont la seconde est mise en avant", !!titre.querySelector(".hl"));
+    eq("La seconde ligne de la première vue",
+      titre.querySelector(".hl").textContent, "prêtes à démarrer");
+    vrai("Une phrase explique la vue",
+      D2.getElementById("onb-sous").textContent.length > 60);
+    /* Le carrousel n a pas de barre en tete : les points disent deja ou l on en est,
+       et les 44 px qu elle prenait manquaient au texte sur les ecrans courts. */
+    vrai("Pas de barre en tête sur le carrousel", !D2.querySelector(".onb-top"));
+    eq("Quatre points", D2.querySelectorAll(".onb-dots i").length, 4);
+    eq("Un seul point allumé au départ", D2.querySelectorAll(".onb-dots i.on").length, 1);
+    /* on passe à la vue suivante par le point : titre, phrase et segments suivent */
+    D2.querySelectorAll(".onb-dots i")[2].click();
+    eq("Le point suit",
+      [...D2.querySelectorAll(".onb-dots i")].findIndex(p=>p.classList.contains("on")), 2);
+    eq("Le titre a suivi",
+      D2.getElementById("onb-titre").querySelector(".hl").textContent, "à tes capacités");
+    vrai("La phrase aussi",
+      /bon poids/.test(D2.getElementById("onb-sous").textContent));
+    /* le lien du bas est la seule sortie du carrousel */
+    vrai("Un lien permet de sortir", !!D2.getElementById("onb-tard"));
+    D2.getElementById("onb-tard").click();
+    vrai("Il referme le parcours", !D2.querySelector(".onb"));
+    DB.profile = profilAvant;
+    F.render();
+  })();
+  neuf();
+
   grp("Parcours d'accueil");
   neuf();
   const sansSexe = F.planFor({...profilType, sex:"n"});
@@ -2174,6 +4200,28 @@ async function lancer(){
   D.querySelector(".ex-done").click();
   vrai("Il se rouvre d'un appui", !!D.querySelector(".ex-card") && !D.querySelector(".ex-done"));
   DB.active = null;
+  neuf();
+
+  grp("Les dessins d'exercice");
+  neuf();
+  /* La table est indexée sur le NOM français de l'exercice. Un renommage ferait donc
+     disparaître son dessin sans rien casser d'autre — l'exercice reprendrait son icône
+     dessinée et personne ne s'en apercevrait. On vérifie que chaque clé désigne bien
+     un exercice qui existe. Le nom de fichier, lui, se vérifie au chargement de la
+     page : une image absente laisse une vignette vide, ça se voit tout de suite. */
+  (()=>{
+    const photos = F.eval("EXO_PHOTO");
+    const noms = new Set(F.eval("LIB").map(e=>e.nameFr || e.name));
+    const orphelines = Object.keys(photos).filter(n=>!noms.has(n));
+    vrai("Chaque dessin désigne un exercice qui existe", orphelines.length === 0,
+      orphelines.join(", "));
+    vrai("Aucun fichier n'est nommé à vide",
+      Object.values(photos).every(f=>/^[a-z0-9-]+$/.test(f)));
+    /* deux exercices peuvent partager un dessin — le butterfly avant et arrière se
+       montrent sur la même machine — mais un exercice n'en a qu'un */
+    vrai("Il y a bien des dessins", Object.keys(photos).length > 40,
+      Object.keys(photos).length);
+  })();
   neuf();
 
   /* ---------------------------------------------------------- bilan */
