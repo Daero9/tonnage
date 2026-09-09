@@ -4202,6 +4202,63 @@ async function lancer(){
   DB.active = null;
   neuf();
 
+  grp("Le bip de fin de repos");
+  neuf();
+  /* Le son ne se joue pas depuis la page quand l'écran est éteint : c'est Android qui
+     sonne, et depuis Android 8 le son appartient au CANAL de notification, pas à la
+     notification. Un canal créé sans son reste muet pour toujours — il ne se modifie
+     plus après coup. C'est exactement ce qui se passait : le canal par défaut du
+     greffon n'a de son que si la configuration en déclare un, et elle n'en déclarait
+     aucun. On vérifie donc que l'app pose bien SON canal, avec le fichier. */
+  await (async ()=>{
+    const gardeSon = DB.settings.son;
+    const canaux = [], envois = [];
+    F.window.Capacitor = {isNativePlatform:()=>true, getPlatform:()=>"android",
+      Plugins:{LocalNotifications:{
+        checkPermissions: async ()=>({display:"granted"}),
+        requestPermissions: async ()=>({display:"granted"}),
+        checkExactNotificationSetting: async ()=>({exact_alarm:"granted"}),
+        changeExactNotificationSetting: async ()=>({exact_alarm:"granted"}),
+        createChannel: async c => { canaux.push(c); },
+        schedule: async o => { envois.push(o.notifications[0]); return {}; },
+        cancel: async ()=>({})
+      }}};
+    F.eval("canalPose = false; notifsOk = null");
+    DB.settings.son = true;
+    F.eval("rest.int = 1; rest.paused = false; rest.end = Date.now() + 90000");
+    await F.poserAlarmeRepos();
+
+    vrai("Un canal est créé", canaux.length === 1, canaux.length);
+    const c = canaux[0] || {};
+    vrai("…avec un fichier de son", !!c.sound, c.sound);
+    vrai("…et une importance qui laisse sortir le son", (c.importance || 0) >= 4, c.importance);
+    /* le numéro dans l'identifiant permettra de changer le son un jour : un canal
+       déjà installé garde ses réglages, seul un identifiant neuf les renouvelle */
+    vrai("…sous un identifiant à nous, numéroté", /[0-9]$/.test(c.id || ""), c.id);
+
+    const e = envois[0] || {};
+    vrai("La notification part sur ce canal", e.channelId === c.id, e.channelId);
+    vrai("…et porte aussi le son, pour les vieux Android", e.sound === c.sound, e.sound);
+
+    /* on ne recrée pas le canal à chaque série */
+    F.eval("rest.end = Date.now() + 90000");
+    await F.poserAlarmeRepos();
+    eq("Le canal n'est posé qu'une fois", canaux.length, 1);
+    vrai("…mais l'alarme est bien reposée", envois.length === 2, envois.length);
+
+    /* son coupé : ni canal ni alarme */
+    const avant = envois.length;
+    DB.settings.son = false;
+    F.eval("rest.end = Date.now() + 90000");
+    await F.poserAlarmeRepos();
+    eq("Son coupé, rien n'est programmé", envois.length, avant);
+
+    delete F.window.Capacitor;
+    F.eval("canalPose = false; notifsOk = null; rest.int = null; rest.end = 0");
+    DB.settings.son = gardeSon;
+  })();
+  neuf();
+
   grp("Les dessins d'exercice");
   neuf();
   /* La table est indexée sur le NOM français de l'exercice. Un renommage ferait donc
