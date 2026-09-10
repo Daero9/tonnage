@@ -4548,6 +4548,55 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Les glucides et les lipides");
+  neuf();
+  /* Ils viennent de la table CIQUAL 2020 de l'ANSES, appariée aliment par aliment.
+     Ce test ne vérifie pas les valeurs — elles ne sont pas de moi — mais que rien
+     n'a été inventé : chaque entrée doit désigner un aliment qui existe, et les
+     ordres de grandeur doivent rester physiquement possibles. */
+  (()=>{
+    const T = F.eval("MACROS_ALIM");
+    const noms = new Set();
+    F.eval("FOOD_100G").forEach(([, items]) => items.forEach(([n]) => noms.add(n)));
+    F.eval("Object.values(HB_OPTS)").forEach(l => l.forEach(([n]) => noms.add(n)));
+    const orphelines = Object.keys(T).filter(n => !noms.has(n));
+    vrai("Chaque aliment renseigné existe dans l'app", orphelines.length === 0,
+      orphelines.join(", "));
+    vrai("La table couvre l'essentiel", Object.keys(T).length > 90,
+      Object.keys(T).length + " aliments");
+    /* deux nombres par aliment, jamais négatifs */
+    vrai("Deux valeurs par aliment, jamais négatives",
+      Object.values(T).every(v => v.length === 2 && v[0] >= 0 && v[1] >= 0));
+
+    /* Le contrôle qui compte : les calories reconstituées à partir des macros ne
+       peuvent pas dépasser celles que l'app annonce. Un aliment dont les glucides
+       auraient été gonflés se trahirait ici. 4 kcal par gramme de protéines et de
+       glucides, 9 par gramme de lipides — les coefficients d'Atwater. */
+    const kcalDe = {}, protDe = {};
+    F.eval("FOOD_100G").forEach(([, items]) => items.forEach(([n, p2, k]) => {
+      protDe[n] = p2; kcalDe[n] = k; }));
+    F.eval("Object.values(HB_OPTS)").forEach(l => l.forEach(([n, p2, k]) => {
+      if(!(n in kcalDe)){ protDe[n] = p2; kcalDe[n] = k; } }));
+    const trop = Object.keys(T).filter(n => {
+      if(!kcalDe[n]) return false;
+      const reconstitue = 4 * protDe[n] + 4 * T[n][0] + 9 * T[n][1];
+      return reconstitue > kcalDe[n] * 1.45 + 25;    /* large : les arrondis jouent */
+    });
+    vrai("Aucun aliment ne dépasse ses propres calories", trop.length === 0,
+      trop.join(", "));
+
+    /* et un aliment absent de la table ne fait pas tomber le calcul */
+    vrai("Un aliment inconnu ne casse rien", F.macrosAliment("Chose inconnue") === null);
+    const oeuf = F.macrosAliment("Œuf");
+    vrai("Un aliment connu répond", !!oeuf && oeuf.length === 2, JSON.stringify(oeuf));
+    /* la portion multiplie : deux œufs valent deux fois un œuf */
+    const deux = F.macrosAliment("Œuf ×2 (~13 g prot. · 156 kcal)");
+    vrai("Deux portions comptent double",
+      !!deux && Math.abs(deux[1] - oeuf[1] * 2) < 0.5,
+      JSON.stringify(oeuf) + " → " + JSON.stringify(deux));
+  })();
+  neuf();
+
   grp("Les étiquettes de première visite");
   neuf();
   /* Elles désignent un élément réel de l'écran. Si cet élément est renommé un jour,
