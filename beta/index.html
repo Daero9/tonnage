@@ -1608,11 +1608,16 @@
   .obj-b .d .ic{background:var(--surface); color:var(--ink-soft);}
   .obj-b .co{min-width:0;}
   /* l'intitulé de gauche est une étiquette, pas un titre : il se pose sur son fond */
-  /* le point vit DANS l'étiquette : il appartient au titre, pas au chiffre */
-  .obj-b .g .k .obj-i{display:inline-flex; align-items:center; justify-content:center;
-    width:13px; height:13px; margin:0 0 0 5px; padding:0; vertical-align:-1px;
-    border:0; border-radius:50%; background:var(--accent); color:#fff;
-    font-size:9px; font-weight:800; font-style:italic; line-height:1;}
+  /* Le point se tient au coin haut droit du bandeau, pas dans l'étiquette : dedans,
+     il poussait le titre et se lisait comme une décoration. Là, il désigne tout le
+     bloc — et le pouce le trouve sans viser. */
+  .obj-b .g{position:relative;}
+  .obj-b .g .obj-i{position:absolute; top:5px; right:6px; z-index:2;
+    display:flex; align-items:center; justify-content:center;
+    width:19px; height:19px; padding:0; border:0; border-radius:50%;
+    background:rgba(245,130,32,.20); color:var(--accent);
+    font-size:11px; font-weight:800; font-style:italic; line-height:1;}
+  .obj-b .g .obj-i:active{background:rgba(245,130,32,.34);}
   .obj-b .g .k{display:inline-block; background:var(--surface); color:var(--accent);
     font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
     border-radius:99px; padding:2px 7px; margin-bottom:3px;}
@@ -3665,6 +3670,18 @@ const TRAD = {en:{
   "Objectif du jour":"Today's target",
   "Dernière séance":"Last session",
   "Pourquoi ce poids ?":"Why this load?",
+  "Tu montes à {n} répétitions : au-delà, en ajouter encore ne rend plus l'exercice plus dur.":"You are up to {n} reps: past that, adding more no longer makes the exercise harder.",
+  "Tu es déjà à {n} répétitions : le volume monte mieux en ajoutant une série qu'en allongeant celles-ci.":"You are already at {n} reps: volume climbs better by adding a set than by lengthening these.",
+  "Tu ne peux pas ajouter de charge sur cet exercice : c'est le nombre de répétitions qui fait la progression.":"You cannot add load on this exercise: reps are what carry the progression.",
+  "Tes répétitions ont baissé, mais tu n'as pris que {p} de repos au lieu de {c} : c'est le repos qui a manqué, pas la force.":"Your reps dropped, but you only rested {p} instead of {c}: it was the rest that was missing, not strength.",
+  "C'était trop dur la dernière fois, et il n'y a rien à retirer sur cet exercice : on baisse donc la cible en répétitions, pas la charge.":"It was too hard last time and there is nothing to take off here: so we lower the rep target, not the load.",
+  "Tu n'atteins pas encore {} répétitions sur toutes tes séries : on ne durcit rien avant que ce soit acquis.":"You are not yet hitting {} reps on every set: nothing gets harder until that is solid.",
+  "Tes séries sont dans la fourchette visée : c'est le bon niveau, il s'agit maintenant de le dépasser d'un cran.":"Your sets land in the target range: that is the right level, now beat it by a notch.",
+  "La dernière fois, tu as tenu {r} répétitions ou plus sur TOUTES tes séries à {c}. Quand le haut de la fourchette est atteint partout, la charge est devenue trop légère.":"Last time you held {r} reps or more on EVERY set at {c}. When the top of the range is reached everywhere, the load has become too light.",
+  "Tu as répondu qu'il te restait 3 répétitions ou plus en réserve. Une série qui finit aussi loin de l'échec ne fait plus assez travailler le muscle.":"You answered that you had 3 reps or more left. A set that ends that far from failure no longer works the muscle enough.",
+  "Tu es descendu sous {r} répétitions sur {n} {s}, en répondant que tu étais à bout. Les deux ensemble veulent dire que {c} était trop lourd.":"You dropped below {r} reps on {n} {s}, answering that you were spent. Together those mean {c} was too heavy.",
+  "Tu n'as pas encore fait {r} répétitions sur toutes tes séries à {c}. Tant que le bas de la fourchette n'est pas tenu partout, charger plus ferait reculer.":"You have not yet done {r} reps on every set at {c}. Until the bottom of the range holds everywhere, adding load would set you back.",
+  "Tes séries à {c} tombent dans la fourchette visée : la charge est juste. On la garde et on gagne une répétition avant de monter.":"Your sets at {c} land in the target range: the load is right. We keep it and win a rep before going up.",
   "Recommandé par l'app.":"Recommended by the app.",
   "Progression suggérée":"Suggested step up","Allègement suggéré":"Suggested step down",
   "{n} à {p}":"{n} at {p}",
@@ -7094,7 +7111,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 15h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 16h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7535,7 +7552,9 @@ function objectifDuJour(exId, cible){
   /* suggestFor() sait POURQUOI il propose cette charge — « trop facile la dernière
      fois », « tu n'as pris que 45 s de repos »… — et cette phrase était jetée. Elle
      remonte : le chiffre tombait du ciel, il a maintenant sa raison. */
-  return {poids, reps, passe, ecart, iso, pourquoi: (sug && sug.text) || ""};
+  /* la CAUSE, pas la consigne : « pourquoi ce poids » ne se répond pas par
+     « garde 68 kg ». La consigne reste dans sug.text, elle sert ailleurs. */
+  return {poids, reps, passe, ecart, iso, pourquoi: (sug && (sug.why || sug.text)) || ""};
 }
 function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
@@ -7652,17 +7671,23 @@ function varianteDure(exId){
 function progressionSansCharge(exId, repsActuelles, nbSeries){
   const v = varianteDure(exId);
   if(repsActuelles >= REPS_PLAFOND){
-    return v ? {mode:"variante", cible:v,
+    const pourquoiPlafond = TR("Tu montes à {n} répétitions : au-delà, en ajouter encore ne rend plus l'exercice plus dur.")
+                              .replace("{n}", repsActuelles);
+    return v ? {mode:"variante", cible:v, why: pourquoiPlafond,
                 text: TR("Tu plafonnes à {n} reps — passe à « {v} », plus dur à charge égale.")
                         .replace("{n}", repsActuelles).replace("{v}", TR(v))}
-             : {mode:"tempo",
+             : {mode:"tempo", why: pourquoiPlafond,
                 text: TR("Tu plafonnes à {n} reps — ralentis la descente (3 s) et marque 2 s en bas plutôt que d'en rajouter.")
                         .replace("{n}", repsActuelles)};
   }
   if(repsActuelles >= REPS_PLAFOND - 5 && nbSeries < 5){
-    return {mode:"serie", text: TR("Ajoute une série plutôt que des reps : tu es déjà à {n}.").replace("{n}", repsActuelles)};
+    return {mode:"serie",
+            why: TR("Tu es déjà à {n} répétitions : le volume monte mieux en ajoutant une série qu'en allongeant celles-ci.")
+                   .replace("{n}", repsActuelles),
+            text: TR("Ajoute une série plutôt que des reps : tu es déjà à {n}.").replace("{n}", repsActuelles)};
   }
   return {mode:"reps", reps: repsActuelles + 2,
+          why: TR("Tu ne peux pas ajouter de charge sur cet exercice : c'est le nombre de répétitions qui fait la progression."),
           text: TR("Vise {n} reps — et termine à une rep de l'échec.").replace("{n}", repsActuelles + 2)};
 }
 function suggestFor(exId, target){
@@ -7701,6 +7726,9 @@ function suggestFor(exId, target){
   const reposTropCourt = reposPris.length >= 2 && courts * 2 > reposPris.length;
   if(reposTropCourt && anyBelow)
     return {mode:"hold", w:maxW, reps:rng.lo,
+      why: TR("Tes répétitions ont baissé, mais tu n'as pris que {p} de repos au lieu de {c} : c'est le repos qui a manqué, pas la force.")
+        .replace("{p}", fmtRepos(Math.round(reposPris.reduce((a2, b2)=>a2 + b2, 0) / reposPris.length)))
+        .replace("{c}", fmtRepos(reposCible)),
       text: TR("Tes répétitions ont baissé, mais tu n'as pris que {p} de repos sur {c}. Garde {w} : c'est le repos qui manquait, pas la force.")
         .replace("{p}", fmtRepos(Math.round(reposPris.reduce((a2, b2)=>a2 + b2, 0) / reposPris.length)))
         .replace("{c}", fmtRepos(reposCible)).replace("{w}", pds(maxW))};
@@ -7709,7 +7737,7 @@ function suggestFor(exId, target){
     const maxR = Math.max(...last.sets.map(s=>s.r||0));
     if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow)){
       const pr = progressionSansCharge(exId, maxR, last.sets.length);
-      return {mode:pr.mode, w:maxW, text:pr.text};
+      return {mode:pr.mode, w:maxW, text:pr.text, why:pr.why};
     }
     if(anyBelow && avgRir!==null && avgRir<0.5){
       /* Charge fixe : la barre ne peut pas s'alléger, donc le seul levier qui reste est la
@@ -7723,28 +7751,43 @@ function suggestFor(exId, target){
         ? faites[m]
         : Math.round((faites[m-1] + faites[m]) / 2));
       return {mode:"hold", w:maxW, reps:basse,
+        why: TR("C'était trop dur la dernière fois, et il n'y a rien à retirer sur cet exercice : on baisse donc la cible en répétitions, pas la charge."),
         text: TR("Trop dur la dernière fois, et tu ne peux pas alléger : vise {} reps sur toutes les séries, puis remonte d'une rep à chaque séance.").replace("{}", basse)};
     }
     if(anyBelow)
       return {mode:"hold", w:maxW, reps:rng.lo,
+              why: TR("Tu n'atteins pas encore {} répétitions sur toutes tes séries : on ne durcit rien avant que ce soit acquis.").replace("{}", rng.lo),
               text: TR("Continue à viser {} reps sur toutes les séries avant de charger.").replace("{}", rng.lo)};
-    return {mode:"beat", w:0, text: TR("Essaie de gratter une répétition de plus sur la première série.")};
+    return {mode:"beat", w:0,
+            why: TR("Tes séries sont dans la fourchette visée : c'est le bon niveau, il s'agit maintenant de le dépasser d'un cran."),
+            text: TR("Essaie de gratter une répétition de plus sur la première série.")};
   }
   if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
-    return {mode:"up", w:maxW+inc, text: allTop
+    return {mode:"up", w:maxW+inc, why: allTop
+      ? TR("La dernière fois, tu as tenu {r} répétitions ou plus sur TOUTES tes séries à {c}. Quand le haut de la fourchette est atteint partout, la charge est devenue trop légère.")
+          .replace("{r}", rng.hi).replace("{c}", pds(maxW))
+      : TR("Tu as répondu qu'il te restait 3 répétitions ou plus en réserve. Une série qui finit aussi loin de l'échec ne fait plus assez travailler le muscle."),
+      text: allTop
       ? TR("Toutes les séries à {r} reps ou plus la dernière fois — passe à {c}.")
           .replace("{r}", rng.hi).replace("{c}", pds(maxW+inc))
       : TR("Trop facile la dernière fois (3+ reps en réserve) — passe à {}.").replace("{}", pds(maxW+inc))};
   if(anyBelow && avgRir!==null && avgRir<0.5)
     return {mode:"down", w:Math.max(0,maxW-inc),
+            why: TR("Tu es descendu sous {r} répétitions sur {n} {s}, en répondant que tu étais à bout. Les deux ensemble veulent dire que {c} était trop lourd.")
+                   .replace("{r}", rng.lo).replace("{n}", sousLaCible)
+                   .replace("{s}", TR(sousLaCible>1 ? "séries" : "série")).replace("{c}", pds(maxW)),
             text: TR("Trop lourd la dernière fois sur {n} {s} — repars à {c} pour tenir {r} reps.")
                     .replace("{n}", sousLaCible).replace("{s}", TR(sousLaCible>1 ? "séries" : "série"))
                     .replace("{c}", pds(Math.max(0,maxW-inc))).replace("{r}", rng.lo)};
   if(anyBelow)
     return {mode:"hold", w:maxW,
+            why: TR("Tu n'as pas encore fait {r} répétitions sur toutes tes séries à {c}. Tant que le bas de la fourchette n'est pas tenu partout, charger plus ferait reculer.")
+                   .replace("{r}", rng.lo).replace("{c}", pds(maxW)),
             text: TR("Reste à {c} jusqu'à faire {r} reps sur toutes les séries.")
                     .replace("{c}", pds(maxW)).replace("{r}", rng.lo)};
   return {mode:"beat", w:maxW,
+          why: TR("Tes séries à {c} tombent dans la fourchette visée : la charge est juste. On la garde et on gagne une répétition avant de monter.")
+                 .replace("{c}", pds(maxW)),
           text: TR("Garde {} et essaie de gratter une rep de plus.").replace("{}", pds(maxW))};
 }
 
@@ -13114,10 +13157,10 @@ function renderActive(app){
         if(!o || (!o.poids && !o.reps)) return "";
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
         return `<div class="obj-b">
-          <div class="g"><span class="ic">${IC_CIBLE}</span>
-            <div class="co"><span class="k">${TR("Objectif du jour")}${
-              o.pourquoi ? `<button class="obj-i" data-pourquoi="${esc(TR(o.pourquoi))}"
-                aria-label="${TR("Pourquoi ce poids ?")}">i</button>` : ""}</span>
+          <div class="g">${o.pourquoi ? `<button class="obj-i"
+              data-pourquoi="${esc(TR(o.pourquoi))}"
+              aria-label="${TR("Pourquoi ce poids ?")}">i</button>` : ""}<span class="ic">${IC_CIBLE}</span>
+            <div class="co"><span class="k">${TR("Objectif du jour")}</span>
               <div class="v">${o.poids ? `<b>${esc(o.poids)}</b>` : ""}${
                 o.poids && o.reps ? ` <span class="x">×</span> ` : ""}${
                 o.reps ? `<i>${esc(o.reps)} ${o.iso ? "s" : TR("reps")}</i>` : ""}</div>
