@@ -619,9 +619,13 @@
   .kt-idee .t{font-size:16px; font-weight:800; line-height:1.2;}
   .kt-idee .s{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:4px;}
   .kt-pil{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px;}
-  .kt-pil span{display:inline-flex; align-items:center; gap:5px; background:rgba(245,130,32,.16);
+  /* « > span » et pas « span » : l'icône masquée est elle-même un span à l'intérieur
+     de la pastille. Sans l'enfant direct, elle héritait du fond pâle de la pastille,
+     qui écrasait son background-color:currentColor — un dessin pâle sur un fond pâle,
+     donc invisible. */
+  .kt-pil > span{display:inline-flex; align-items:center; gap:5px; background:rgba(245,130,32,.16);
     color:var(--accent); border-radius:99px; padding:5px 11px; font-size:12px; font-weight:800;}
-  .kt-pil span svg{width:14px; height:14px;}
+  .kt-pil > span > svg{width:14px; height:14px;}
   .ai-l{display:flex; align-items:flex-start; gap:13px; background:var(--surface2);
     border-radius:16px; padding:14px; margin-bottom:9px;}
   .ai-l .ic{flex:0 0 auto; width:44px; height:44px; border-radius:14px;
@@ -2046,13 +2050,17 @@
   /* Les valeurs de l'aliment, en petit sous la quantite. Meme dessin que sur la fiche
      d'un produit scanne : c'est la meme information, elle se lit pareil. */
   .nut{display:flex; gap:6px; margin-top:9px;}
-  .nut .n-c{flex:1; min-width:0; background:var(--surface2); border:1px solid var(--border);
-    border-radius:12px; padding:9px 3px; text-align:center;}
-  .nut .n-c .ic{display:flex; justify-content:center; color:var(--ink-soft); line-height:1;}
-  .nut .n-c b{display:block; font-size:15px; font-weight:800; line-height:1.15; margin-top:4px;}
-  .nut .n-c b span{font-size:10px; font-weight:700;}
+  /* une couleur par nutriment, la même partout dans l'app : l'orange pour les
+     protéines, le doré pour les glucides, le vert pour les lipides — celles du
+     rapport détaillé de la journée. On reconnaît la ligne sans lire l'intitulé. */
+  .nut .n-c{flex:1; min-width:0; background:var(--surface); border:1px solid var(--border);
+    border-radius:13px; padding:10px 3px 9px; text-align:center;
+    box-shadow:0 1px 2px rgba(0,0,0,.05);}
+  .nut .n-c .ic{display:flex; justify-content:center; line-height:1;}
+  .nut .n-c b{display:block; font-size:16px; font-weight:800; line-height:1.15; margin-top:5px;}
+  .nut .n-c b span{font-size:10.5px; font-weight:700;}
   .nut .n-c i{display:block; font-style:normal; font-size:9.5px; color:var(--ink-mute);
-    margin-top:2px; overflow-wrap:anywhere;}
+    margin-top:3px; overflow-wrap:anywhere;}
   .nut-l{text-align:center; font-size:11px; color:var(--ink-mute); margin-top:7px;}
   .al-cats{display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch;
     overscroll-behavior-x:contain; margin:0 -16px 10px; padding:1px 16px 3px;
@@ -3276,6 +3284,8 @@ const TRAD = {en:{
   "Dur":"Hard",
   "Ta forme":"Your shape",
   "Ta zone sensible":"Your sensitive area",
+  "intensité {}":"{} sensitivity",
+  "faible":"low","moyenne":"medium","élevée":"high",
   "Une gêne":"A niggle","Ça fait mal":"It hurts","Je ne peux pas":"I can't",
   "On garde l'exercice, en le signalant.":"We keep it, and flag it.",
   "Écarté dès qu'une alternative existe.":"Set aside whenever there is an alternative.",
@@ -5415,6 +5425,11 @@ const DOULEURS = [
 ];
 /* Sans réponse, on retient « ça fait mal » : c'est ce que faisait l'app avant qu'on
    pose la question, et c'est le choix prudent. */
+/* « Épaule : évite les tirages derrière la nuque, garde les coudes… » — le conseil
+   est juste, mais il est écrit trois fois sur la même page, avant même d'avoir
+   commencé. Ici on annonce seulement DE QUOI il s'agit et À QUEL POINT ; le conseil
+   et les variantes attendent la séance, au moment où on va faire le mouvement. */
+const INTENSITE = {gene:"faible", mal:"moyenne", stop:"élevée"};
 function niveauDouleur(id){
   const d = (db.profile && db.profile.douleurs) || {};
   return DOULEURS.some(x=>x[0] === d[id]) ? d[id] : "mal";
@@ -7023,7 +7038,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 03h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 03h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9498,6 +9513,13 @@ async function lancerScan(meal){
 }
 
 /* fiche « Ajouter un aliment » : liste d'aliments, quantité, garder dans les propositions */
+/* Une tuile de valeur nutritionnelle. Sortie de la fiche d'un produit scanné pour
+   servir aussi à la recherche : c'est la même information, elle doit se lire pareil. */
+const NUT_C = {kcal:"#e2622a", prot:"#f58220", gluc:"#c8a24a", lip:"#6f9c5f"};
+function tuileNut(ic, couleur, val, unite, libelle){
+  return `<div class="n-c"><span class="ic" style="color:${couleur};">${ic}</span>
+    <b>${val}${unite? `<span>${unite}</span>`:""}</b><i>${libelle}</i></div>`;
+}
 function openAjoutAliment(meal){
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
@@ -9577,10 +9599,8 @@ function openAjoutAliment(meal){
        des aliments ne porte que les protéines et les calories : on n'affiche que ce
        qu'on sait. Inventer des glucides serait pire que de ne rien dire. */
     liveEl.innerHTML = `<div class="nut">
-        <div class="n-c"><span class="ic">${icoM("flamme", 17)}</span>
-          <b>${kcal}</b><i>kcal</i></div>
-        <div class="n-c"><span class="ic">${icoM("muscle", 17)}</span>
-          <b>${prot}<span>g</span></b><i>${TR("protéines")}</i></div>
+        ${tuileNut(icoM("flamme", 18), "#e2622a", kcal, "", "kcal")}
+        ${tuileNut(icoM("muscle", 18), "#f58220", prot, "g", TR("protéines"))}
       </div>
       <div class="nut-l">${esc(piece
         ? TR("Pour {q} {u}").replace("{q}", q).replace("{u}", uni + (q > 1 ? "s" : ""))
@@ -12100,7 +12120,9 @@ function apercuProposition(type, evites){
             </div>
             <button class="btn btn-sm" data-ppswap="${esc(it.nom)}" style="flex:0 0 auto;">↻</button>
           </div>
-          ${bless? `<div class="inj-note" style="margin:8px 0 0; font-size:11.5px;">⚠️ ${esc(bless.injury)} : ${esc(bless.tip)}</div>`:""}
+          ${bless? `<div class="inj-note" style="margin:8px 0 0; font-size:11.5px;">⚠️ <b>${
+            esc(TR(bless.injury))}</b> · ${TR("intensité {}").replace("{}",
+            TR(INTENSITE[bless.niveau] || INTENSITE.mal))}</div>`:""}
         </div>`;
       }).join("")}
     </div>
@@ -12383,7 +12405,8 @@ function openPreview(tplId, lieuFait){
           <div class="meta"><b>${it.sets} × ${esc(String(it.reps||"?"))}</b> · ${TR("repos")} ${fmtRepos(it.rest||90)}${
             last? ` · ${TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0))))}`:""}</div>
           ${musclesHtml(nomCanon(ex),3)}
-          ${note? `<div class="inj">⚠️ ${esc(TR(note.injury))} : ${esc(TR(note.tip))}</div>`:""}</div>
+          ${note? `<div class="inj">⚠️ <b>${esc(TR(note.injury))}</b> · ${
+            TR("intensité {}").replace("{}", TR(INTENSITE[note.niveau] || INTENSITE.mal))}</div>`:""}</div>
         <span class="act">
           <button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button>
           <button data-pvswap="${i}" title="${TR("Remplacer")}" aria-label="${TR("Remplacer")}">⇄</button>

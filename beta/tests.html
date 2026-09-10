@@ -4511,6 +4511,43 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La sensibilité, en trois mots");
+  neuf();
+  /* Le conseil de posture et les variantes étaient écrits sous CHAQUE exercice de
+     l'aperçu, avant même d'avoir commencé : trois pavés à lire pour une séance de
+     trois mouvements. Ici on annonce de quoi il s'agit et à quel point ; le conseil
+     attend la séance, au moment où l'on va faire le mouvement. */
+  await (async ()=>{
+    const gardeP = DB.profile, gardeT = DB.templates;
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
+    DB.templates = [{id:"tsens", name:"Push", items:[
+      {exId:id("Développé militaire"), sets:3, reps:"8-12", rest:120}]}];
+    F.openPreview("tsens", true);
+    await new Promise(r=>setTimeout(r, 150));
+    const n = F.document.querySelector(".pv-ex .inj");
+    vrai("L'exercice sensible est signalé", !!n);
+    if(n){
+      const txt = n.textContent.trim();
+      vrai("…avec la zone concernée", /Épaule/.test(txt), txt);
+      vrai("…et l'intensité", /intensité/.test(txt), txt);
+      /* c'est tout : pas de conseil, pas de liste de variantes */
+      vrai("Rien de plus qu'une ligne", txt.length < 46, txt.length + " caractères : " + txt);
+    }
+    F.hideSheet();
+
+    /* les trois niveaux se disent chacun par leur mot */
+    const mots = F.eval("INTENSITE");
+    eq("Une gêne est une intensité faible", mots.gene, "faible");
+    eq("« ça fait mal » est moyenne", mots.mal, "moyenne");
+    eq("« je ne peux pas » est élevée", mots.stop, "élevée");
+    /* et le conseil complet reste accessible là où il sert */
+    const note = F.injuryNote("Développé militaire");
+    vrai("Le conseil existe toujours, pour la séance", !!(note && note.tip));
+
+    DB.profile = gardeP; DB.templates = gardeT;
+  })();
+  neuf();
+
   grp("Les étiquettes de première visite");
   neuf();
   /* Elles désignent un élément réel de l'écran. Si cet élément est renommé un jour,
