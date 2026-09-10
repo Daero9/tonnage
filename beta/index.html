@@ -3334,6 +3334,9 @@ const TRAD = {en:{
   "Ta forme":"Your shape",
   "Ta zone sensible":"Your sensitive area",
   "intensité {}":"{} sensitivity",
+  "charge maintenue":"load held",
+  "Tu pourrais charger, mais tu as signalé « {z} » sur ce mouvement. On garde {c} : la progression se fera en répétitions tant que ça tire.":"You could add load, but you flagged « {z} » on this movement. We keep {c}: progress comes from reps while it still pulls.",
+  "Garde {c} et gagne une répétition — {z} sensible.":"Keep {c} and win a rep — {z} is sensitive.",
   "faible":"low","moyenne":"medium","élevée":"high",
   "Une gêne":"A niggle","Ça fait mal":"It hurts","Je ne peux pas":"I can't",
   "On garde l'exercice, en le signalant.":"We keep it, and flag it.",
@@ -7111,7 +7114,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 16h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 16h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7554,7 +7557,8 @@ function objectifDuJour(exId, cible){
      remonte : le chiffre tombait du ciel, il a maintenant sa raison. */
   /* la CAUSE, pas la consigne : « pourquoi ce poids » ne se répond pas par
      « garde 68 kg ». La consigne reste dans sug.text, elle sert ailleurs. */
-  return {poids, reps, passe, ecart, iso, pourquoi: (sug && (sug.why || sug.text)) || ""};
+  return {poids, reps, passe, ecart, iso, pourquoi: (sug && (sug.why || sug.text)) || "",
+          menage: (sug && sug.menage) || ""};
 }
 function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
@@ -7762,6 +7766,19 @@ function suggestFor(exId, target){
             why: TR("Tes séries sont dans la fourchette visée : c'est le bon niveau, il s'agit maintenant de le dépasser d'un cran."),
             text: TR("Essaie de gratter une répétition de plus sur la première série.")};
   }
+  /* L'app avertissait d'un côté et poussait de l'autre : elle pouvait annoncer
+     « épaule sensible » sous un développé militaire, et proposer 2,5 kg de plus sur
+     ce même exercice à la ligne suivante. Sur un mouvement marqué « ça fait mal »,
+     on ne monte donc plus la charge — la progression se fait en répétitions, et on
+     le DIT, parce qu'une adaptation muette est pire qu'aucune adaptation. */
+  const bobo = injuryNote(nomCanon(getEx(exId)));
+  const menage = bobo && bobo.niveau !== "gene";
+  if(menage && (allTop || (avgRir!==null && avgRir>=3 && !anyBelow)))
+    return {mode:"hold", w:maxW, menage:bobo.injury,
+            why: TR("Tu pourrais charger, mais tu as signalé « {z} » sur ce mouvement. On garde {c} : la progression se fera en répétitions tant que ça tire.")
+                   .replace("{z}", TR(bobo.injury)).replace("{c}", pds(maxW)),
+            text: TR("Garde {c} et gagne une répétition — {z} sensible.")
+                    .replace("{c}", pds(maxW)).replace("{z}", TR(bobo.injury))};
   if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
     return {mode:"up", w:maxW+inc, why: allTop
       ? TR("La dernière fois, tu as tenu {r} répétitions ou plus sur TOUTES tes séries à {c}. Quand le haut de la fourchette est atteint partout, la charge est devenue trop légère.")
@@ -12660,7 +12677,9 @@ function openPreview(tplId, lieuFait){
             last? ` · ${TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0))))}`:""}</div>
           ${musclesHtml(nomCanon(ex),3)}
           ${note? `<div class="inj">⚠️ <b>${esc(TR(note.injury))}</b> · ${
-            TR("intensité {}").replace("{}", TR(INTENSITE[note.niveau] || INTENSITE.mal))}</div>`:""}</div>
+            TR("intensité {}").replace("{}", TR(INTENSITE[note.niveau] || INTENSITE.mal))}${
+            (()=>{ const o2 = objectifDuJour(it.exId, {reps:it.reps, rest:it.rest});
+              return (o2 && o2.menage) ? ` · ${TR("charge maintenue")}` : ""; })()}</div>`:""}</div>
         <span class="act">
           <button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button>
           <button data-pvswap="${i}" title="${TR("Remplacer")}" aria-label="${TR("Remplacer")}">⇄</button>
