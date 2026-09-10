@@ -2676,6 +2676,10 @@ const TRAD = {en:{
   "Sur {n} semaines, ton tonnage n'a pas suivi tes protéines : les semaines au quota sont {e} % en dessous. Regarde plutôt ton sommeil et ta récupération.":"Across {n} weeks, your tonnage didn't follow your protein: the weeks on target came in {e} % lower. Look at your sleep and recovery instead.",
   "Pas travaillé depuis {n} {j}.":"Not trained for {n} {j}.",
   "jour":"day",
+  "Objectif":"Target",
+  "jour au quota":"day on target",
+  "jours au quota":"days on target",
+  "Note ton poids pour connaître ton objectif":"Log your weight to get your target",
   "jours":"days",
   "dernière fois {}":"last time {}",
   "Dernière fois ({d}) : {s}":"Last time ({d}): {s}",
@@ -6270,10 +6274,15 @@ function planAdvice(pl, p){
   return TR("Mange à ta maintenance, <b>{kcal} kcal</b> par jour, avec <b>{prot} g de protéines</b> ({perKg} g par kilo) pour conserver ta masse musculaire.")
       .replace("{kcal}", pl.kcal).replace("{prot}", pl.prot).replace("{perKg}", perKg);
 }
+/* Sans plan calorique, la cible se deduit du poids — 1,9 g par kilo. Mais sans POIDS,
+   il n y a rien a deduire : elle valait « 74 kg » en dur, et l ecran affichait 141 g
+   comme un objectif alors que personne n avait donne ce chiffre. On rend null, et
+   l affichage dit « — », comme le font deja les calories. Une pesee rallume tout. */
 function proteinTarget(){
   const pl = planFor(db.profile);
   if(pl) return pl.prot;
-  return Math.round((currentWeight()||74)*1.9);
+  const kg = currentWeight();
+  return kg > 0 ? Math.round(kg * 1.9) : null;
 }
 /* ================= PARCOURS D'ACCUEIL =================
    Plein écran, une question par étape. Rejoué par « Modifier mon profil » :
@@ -7309,7 +7318,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 00h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 01h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9499,8 +9508,8 @@ function renderEat(app){
                 Math.round(protNow/protTarget*100)} %</span>` : ""}</div>
             <div class="lb">${TR("Protéines")}</div>
             <div class="eat-jauge">
-              <div class="eat-bar"><i data-jauge="prot" style="width:${pctProt}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i></div>
-              <b>${protTarget} g</b></div>
+              <div class="eat-bar"><i data-jauge="prot" style="width:${pctProt}%; background:${(protTarget && protNow>=protTarget)?'var(--good)':'var(--accent)'};"></i></div>
+              <b>${protTarget ? protTarget + " g" : "—"}</b></div>
           </div>
         </div>
         <div class="eat-card eat-stat">
@@ -15999,8 +16008,12 @@ function renderProteinSection(sec){
     if(v>0 || kc>0) any = true;
     days.push({d, v, kc, key:k, fix:dayCorrige(k)});
   }
-  const cap = target*1.3;
-  const hit = days.filter(x=>x.v>=target).length;
+  /* Sans cible, l echelle du graphique ne peut plus s appuyer dessus : on la prend sur
+     la plus grosse journee. Les barres gardent tout leur sens — c est le REPERE qui
+     disparait, pas les chiffres. */
+  const maxJour = days.reduce((m, x)=>Math.max(m, x.v || 0), 0);
+  const cap = target ? target * 1.3 : Math.max(20, maxJour * 1.15);
+  const hit = target ? days.filter(x=>x.v >= target).length : 0;
   const div = document.createElement("div");
   /* une étiquette de la visite guidée le désigne : sans repère, elle encadrait toute
      la section, poids compris */
@@ -16022,12 +16035,16 @@ function renderProteinSection(sec){
       <div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
         <div>
           <div class="card-t">${icoTitre(icoM("muscle", 22))}${TR("Protéines")}</div>
-          <div class="card-sub">Objectif <b style="color:var(--ink);">${target} g</b> / jour</div>
+          <div class="card-sub">${target
+            ? TR("Objectif") + ` <b style="color:var(--ink);">${target} g</b> / ` + TR("jour")
+            : TR("Note ton poids pour connaître ton objectif")}</div>
         </div>
-        <span style="font-size:12.5px; font-weight:700; white-space:nowrap; color:${hit>=5?'var(--good)':'var(--ink-soft)'};">${hit} jour${hit>1?"s":""} au quota</span>
+        ${/* « 0 jour au quota » sans quota se lit comme un echec alors qu il n y a
+             simplement pas de cible : on se tait plutot que de compter vers rien. */""}
+        ${target ? `<span style="font-size:12.5px; font-weight:700; white-space:nowrap; color:${hit>=5?'var(--good)':'var(--ink-soft)'};">${hit} ${TR(hit>1?"jours au quota":"jour au quota")}</span>` : ""}
       </div>
       <div class="pr-plot">
-        <div class="pr-target" style="bottom:calc(${(target/cap).toFixed(3)} * (100% - 15px));"><i>${target} g</i></div>
+        ${target ? `<div class="pr-target" style="bottom:calc(${(target/cap).toFixed(3)} * (100% - 15px));"><i>${target} g</i></div>` : ""}
         ${days.map(x=>`<button class="pr-col" data-day="${x.key}">
             <span class="pr-val" style="color:${x.v>=target?'var(--good)':(x.v>0?'var(--ink-soft)':'transparent')};">${x.v>0?Math.round(x.v):"·"}${x.fix?"*":""}</span>
             <span class="pr-barwrap"><span class="pr-b" style="height:${Math.max(x.v>0?4:2, Math.min(100, x.v/cap*100))}%; background:${x.v>=target?'var(--good)':(x.v>0?'var(--accent)':'var(--surface2)')};"></span></span>
