@@ -4548,6 +4548,46 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Valider un gainage ne pose pas de question");
+  neuf();
+  /* « Aurais-tu pu faire plus de reps ? » n'a pas de sens quand la consigne est une
+     durée : un gainage se tient, il ne se rate pas de quelques répétitions. On valide
+     et on passe. Le moteur adaptatif sait faire sans la réponse — une série sans RIR
+     compte pour un effort ordinaire. */
+  await (async ()=>{
+    const gardeT = DB.templates, gardeA = DB.active;
+    DB.templates = [{id:"tiso", name:"Abdos", items:[
+      {exId:id("Gainage"), sets:2, reps:"45", rest:60},
+      {exId:id("Crunch"),  sets:2, reps:"15", rest:60}]}];
+    DB.active = null;
+    F.eval("curTab = 'seance'");
+    F.startWorkout("tiso");
+    F.eval("render()");
+    await new Promise(r=>setTimeout(r, 250));
+    const D2 = F.document;
+    const cartes = [...D2.querySelectorAll(".ex-card")];
+    vrai("Les deux exercices sont là", cartes.length === 2, cartes.length);
+    if(cartes.length === 2){
+      const ckIso = cartes[0].querySelector(".set-row:not(.warm) .ck");
+      ckIso.click();
+      await new Promise(r=>setTimeout(r, 250));
+      vrai("Le gainage ne demande rien", !D2.querySelector(".rir-ask"));
+      vrai("…mais la série est bien validée",
+        DB.active.entries[0].sets.some(s2=>s2.done && !s2.warm));
+      vrai("…et le repos démarre quand même", !!F.eval("rest.int"));
+
+      const ckAutre = cartes[1].querySelector(".set-row:not(.warm) .ck");
+      ckAutre.click();
+      await new Promise(r=>setTimeout(r, 250));
+      vrai("Un exercice en répétitions, lui, pose toujours la question",
+        !!D2.querySelector(".rir-ask"),
+        (D2.querySelector(".rir-ask .q") || {}).textContent || "aucune question");
+    }
+    DB.active = gardeA; DB.templates = gardeT;
+    F.eval("if(rest.int){ clearInterval(rest.int); rest.int = null; } rest.end = 0");
+  })();
+  neuf();
+
   grp("Les glucides et les lipides");
   neuf();
   /* Ils viennent de la table CIQUAL 2020 de l'ANSES, appariée aliment par aliment.
