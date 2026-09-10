@@ -123,8 +123,15 @@
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2);
     border:1px solid var(--border); border-radius:99px; padding:3px 9px; white-space:nowrap;}
-  .hint-box{position:relative; display:flex; gap:12px; align-items:center; background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
+  /* Le bouton « Compris » vivait sur la MÊME ligne que le texte, coincé à droite :
+     il rognait la phrase sur un téléphone étroit, et l'œil le rencontrait avant
+     d'avoir fini de lire. Il passe sous le texte, aligné avec lui. */
+  .hint-box{position:relative; display:flex; flex-wrap:wrap; gap:12px; align-items:center;
+    background:rgba(232,163,61,.10); border:1px solid rgba(232,163,61,.32);
     border-radius:14px; padding:13px 40px 13px 13px; margin-bottom:11px; font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
+  /* le texte prend toute la largeur qui reste : le bouton n'a plus la place de
+     tenir à côté, il se reporte donc à la ligne suivante */
+  .hint-box > .grow{flex:1 1 calc(100% - 56px); min-width:0;}
   .hint-box b{color:var(--ink);}
   /* le signe de l encadre, dans sa pastille : on sait de quoi il parle avant de lire */
   .hint-box .hi{flex:0 0 auto; width:44px; height:44px; border-radius:50%;
@@ -140,9 +147,12 @@
     line-height:1.25; margin-bottom:3px;}
   /* l abreviation reste en orange : c est elle qu on retrouve dans le tableau */
   .hint-box .ht i{font-style:normal; color:var(--accent);}
-  .hint-box .hint-ok{flex:none; font-size:12px; font-weight:800; color:var(--accent);
+  .hint-box .hint-ok{flex:0 0 auto; font-size:12px; font-weight:800; color:var(--accent);
     background:var(--surface); border:1px solid rgba(232,163,61,.55); border-radius:999px;
-    padding:8px 14px; align-self:center;}
+    padding:8px 16px; margin:-2px 0 0 56px;}
+  /* sans pastille de signe, rien à quoi s'aligner : le bouton revient à gauche */
+  .hint-box .hi + .grow + .hint-ok{margin-left:56px;}
+  .hint-box > .grow:first-child ~ .hint-ok{margin-left:0;}
   /* la croix ferme sans lire : elle vise le coin, la ou le pouce va la chercher */
   .hint-box .hint-x{position:absolute; top:6px; right:6px; width:28px; height:28px;
     padding:0; background:none; border:none; color:var(--ink-mute);
@@ -7064,7 +7074,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 14h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 15h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
