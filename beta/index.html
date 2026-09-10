@@ -3202,6 +3202,7 @@ const TRAD = {en:{
   "Ne plus me le proposer":"Stop suggesting it",
   "Retirer cet aliment ?":"Remove this food?",
   "ne sera plus proposé, et sort de ce repas.":"will no longer be suggested, and leaves this meal.",
+  "ne sera plus proposé, même si tu l'as souvent mangé à ce repas.":"will no longer be suggested, even though you often had it at this meal.",
   "ne sera plus proposé quand tu coches un repas.":"will no longer be suggested when you fill in a meal.",
   "Les autres journées ne changent pas.":"Other days are not affected.",
   "Retirer des propositions":"Remove from suggestions",
@@ -7299,7 +7300,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 20h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 20h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9552,7 +9553,7 @@ function dessineRepas(panel){
   const mySel = sel[mealCur] || [];
   let groups = habitOpts(mealCur);
   /* tes habitudes de ce repas passent devant, et ne sont plus répétées dessous */
-  const hab = habitudesDuRepas(mealCur);
+  const hab = habitudesDuRepas(mealCur).filter(x=>!habitudeMasquee(x[0], mealCur));
   if(hab.length >= 3){
     const pris = hab.map(x=>x[0]);
     groups = [[TR("Tes habitudes"), "hab", hab]]
@@ -10319,7 +10320,7 @@ function openModifAliment(meal, label){
   const k = jourAlim();
   const prot = protOf(label), kcal = kcalOf(label);
   const pa = partsAliment(TR(label), prot);
-  const grp = trouverGroupe(label);
+  const grp = trouverGroupe(label, meal);
   /* la portion contient-elle un poids (« 150 g cuit », « 300 ml ») ? alors on peut la régler au gramme */
   const mg = (pa.q || "").match(/([\d.,]+)\s*(g|ml|cl)\b/i);
   const gBase = mg ? parseFloat(mg[1].replace(",", ".")) : 0;
@@ -10407,13 +10408,24 @@ function openModifAliment(meal, label){
   const del = document.getElementById("ma-del");
   if(del) del.onclick = ()=> demanderRetrait(label, grp, meal);
 }
+/* Masquer une habitude : elle n'existe dans aucune liste, elle se recalcule a chaque
+   affichage depuis les jours passes. Sa clef porte le repas — ce qu'on mange souvent le
+   midi n'a rien a voir avec le soir. */
+function cleHabitude(meal){ return "hab:" + meal; }
+function habitudeMasquee(label, meal){
+  return (db.hbMasque[cleHabitude(meal)] || []).includes(label);
+}
 /* à quel groupe de propositions appartient cet aliment (null s'il est libre) */
-function trouverGroupe(label){
+function trouverGroupe(label, meal){
   let cle = null;
   Object.keys(HB_OPTS).forEach(k=>{ if(HB_OPTS[k].some(x=>x[0]===label)) cle = cle || k; });
   if(cle) return cle;
   Object.keys(db.hbPerso||{}).forEach(ty=>{ if((db.hbPerso[ty]||[]).some(x=>x[0]===label)) cle = cle || "perso:"+ty; });
-  return cle;
+  if(cle) return cle;
+  /* Rien dans les listes : c'est peut-etre une HABITUDE, deduite de ce qu'on a mange.
+     Sans cette branche, la fiche n'offrait aucun moyen de la faire disparaitre. */
+  if(meal && habitudesDuRepas(meal).some(x=>x[0] === label)) return cleHabitude(meal);
+  return null;
 }
 
 /* ================= CARDIO ================= */
@@ -11184,12 +11196,17 @@ function demanderRetrait(label, grp, meal){
      journee : il n'aurait plus de pastille a decocher nulle part. Un aliment de la
      bibliotheque, lui, reste — on cesse de le proposer, on ne nie pas qu'il a ete mange. */
   const sortDuRepas = perso && !!meal && !!(db.habitSel[k] && (db.habitSel[k][meal]||[]).includes(label));
+  /* « Tes habitudes » se recalcule a chaque affichage : on ne supprime rien, on masque */
+  const habitude = grp.indexOf("hab:") === 0;
   openSheet(`<h3>${TR("Retirer cet aliment ?")}</h3>
     <div style="font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px;">
       <b style="color:var(--ink);">${esc(label)}</b> ${sortDuRepas
         ? TR("ne sera plus proposé, et sort de ce repas.")
-        : TR("ne sera plus proposé quand tu coches un repas.")}
-      ${perso? TR("Tu pourras le recréer depuis « ＋ Autre… ».") : TR("Tu pourras le remettre depuis « ＋ Autre… », en bas de la fiche.")}
+        : (habitude
+            ? TR("ne sera plus proposé, même si tu l'as souvent mangé à ce repas.")
+            : TR("ne sera plus proposé quand tu coches un repas."))}
+      ${perso ? TR("Tu pourras le recréer depuis « ＋ Autre… ».")
+              : TR("Tu pourras le remettre depuis « ＋ Autre… », en bas de la fiche.")}
       ${TR("Les autres journées ne changent pas.")}</div>
     <div class="row" style="gap:8px;">
       <button class="btn grow" id="rt-non">${TR("Annuler")}</button>
