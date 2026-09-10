@@ -4409,10 +4409,16 @@ async function lancer(){
 
     /* la fin approche et on est resté devant : la page bipera, pas le système */
     const avant = annules.length;
+    /* attendre la chose plutôt qu'un délai : retirerAlarmeRepos passe par le pont
+       Android, qu'un onglet en arrière-plan fait attendre */
+    const patienter = async (cond, max)=>{ const t0 = Date.now();
+      while(Date.now() - t0 < (max || 1500)){ if(cond()) return true;
+        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
     F.eval("rest.end = Date.now() + 900");
     F.tickRest();
-    await new Promise(r=>setTimeout(r, 60));
-    vrai("Resté devant, l'alarme est retirée avant de sonner", annules.length > avant);
+    await patienter(()=>annules.length > avant);
+    vrai("Resté devant, l'alarme est retirée avant de sonner", annules.length > avant,
+      "posée : " + F.eval("alarmePosee") + ", annulations : " + annules.length);
     vrai("…et on ne la retire qu'une fois", (F.eval("alarmePosee")) === false);
 
     F.eval("if(rest.int){ clearInterval(rest.int); rest.int = null; } rest.end = 0");
@@ -4555,19 +4561,56 @@ async function lancer(){
      suggestFor() la calcule, l'écart est une soustraction — et la jetait. */
   await (async ()=>{
     const gardeT = DB.templates, gardeH = DB.history, gardeA = DB.active;
+    /* on redessine plusieurs fois ici : sans ça, une visite guidée s'ouvrirait au
+       milieu du test et laisserait son voile en travers des suivants */
+    const gardeVu = {};
+    ["seance", "eat", "prg", "seanceActive"].forEach(g=>{
+      gardeVu[g] = DB.seen["guide-" + g]; DB.seen["guide-" + g] = true; });
     const s2 = (w, r, rir) => ({w, r, done:true, warm:false, rir});
-    DB.history = [];
-    for(let k = 6; k >= 1; k--)
-      DB.history.push({id:"hv"+k, date:new Date(Date.now() - k*3.5*864e5).toISOString(),
-        name:"Push", templateId:"tv", start:0, end:0,
-        entries:[{exId:id("Développé couché"), sets:[s2(60 + k, 9, 2), s2(60 + k, 8, 1)]}]});
+    const poserHistorique = ()=>{
+      DB.history = [];
+      for(let k = 6; k >= 1; k--)
+        DB.history.push({id:"hv"+k, date:new Date(Date.now() - k*3.5*864e5).toISOString(),
+          name:"Push", templateId:"tv", start:0, end:0,
+          entries:[{exId:id("Développé couché"), sets:[s2(60 + k, 9, 2), s2(60 + k, 8, 1)]}]});
+    };
+    poserHistorique();
     DB.templates = [{id:"tv", name:"Push", items:[
       {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
 
     /* la charge du jour porte sa raison */
     const o = F.objectifDuJour(id("Développé couché"), {reps:"8-12", rest:120});
     vrai("L'objectif du jour connaît sa raison", !!(o && o.pourquoi), JSON.stringify(o));
-    vrai("…et elle tient en une phrase", o.pourquoi.length < 150, o.pourquoi.length);
+    vrai("…et elle tient en deux phrases", o.pourquoi.length < 210, o.pourquoi.length);
+    /* Une CAUSE, pas une consigne : « garde 68 kg et gratte une rep » dit quoi faire,
+       pas pourquoi. La phrase doit parler de la dernière séance, pas donner un ordre. */
+    const s3 = (w, r, rir) => ({w, r, done:true, warm:false, rir});
+    const bench = id("Développé couché");
+    const raisonPour = sets => {
+      DB.history = [{id:"hw", date:new Date(Date.now() - 3*864e5).toISOString(),
+        name:"P", templateId:"tv", start:0, end:0, entries:[{exId:bench, sets}]}];
+      const sg = F.suggestFor(bench, {reps:"8-12", rest:120});
+      return sg ? (sg.why || "") : "";
+    };
+    const cas = [
+      ["toutes au sommet", [s3(60,12,1), s3(60,12,1), s3(60,12,1)]],
+      ["réserve de 3+",    [s3(60,9,3),  s3(60,9,4),  s3(60,10,3)]],
+      ["trop lourd",       [s3(60,6,0),  s3(60,5,0),  s3(60,6,0)]],
+      ["dans la cible",    [s3(60,10,2), s3(60,9,1),  s3(60,9,1)]]
+    ];
+    const sansRaison = cas.filter(([, sets]) => !raisonPour(sets));
+    vrai("Chaque situation a sa raison", sansRaison.length === 0,
+      sansRaison.map(c=>c[0]).join(", "));
+    /* aucune ne doit se contenter de donner un ordre */
+    const ordres = cas.filter(([, sets]) => /^(Garde|Reste|Vise|Continue|Ajoute|Essaie|Repars|Passe)[ ]/
+      .test(raisonPour(sets)));
+    vrai("Aucune raison ne se contente d'un ordre", ordres.length === 0,
+      ordres.map(c=>c[0]).join(", "));
+    /* et chacune parle bien de ce qui s'est passé */
+    const muettes = cas.filter(([, sets]) => !/répétition|repos|réserve|fourchette|charge/i
+      .test(raisonPour(sets)));
+    vrai("Chacune s'appuie sur la dernière séance", muettes.length === 0,
+      muettes.map(c=>c[0]).join(", "));
 
     DB.active = null;
     F.eval("curTab = 'seance'");
@@ -4577,7 +4620,9 @@ async function lancer(){
     const pt = F.document.querySelector("[data-pourquoi]");
     vrai("Un point d'info est posé à côté de l'objectif", !!pt);
     if(pt){
-      vrai("…dans l'étiquette, pas ailleurs", !!pt.closest(".obj-b .k"));
+      /* au coin du bandeau, pas dans l'étiquette : dedans il poussait le titre */
+      vrai("…au coin du bandeau, hors de l'étiquette",
+        !!pt.closest(".obj-b .g") && !pt.closest(".obj-b .k"));
       pt.click();
       await new Promise(r=>setTimeout(r, 200));
       const f = F.document.getElementById("sheet");
@@ -4588,6 +4633,8 @@ async function lancer(){
     }
     DB.active = null;
 
+    /* les essais ci-dessus ont réduit l'historique à une séance : on le remet */
+    poserHistorique();
     /* le record ne se contente plus de côtoyer la dernière séance */
     F.eval("curTab = 'prg'; prgEx = " + JSON.stringify(id("Développé couché")) +
            "; prgMetric = 'max'; render()");
@@ -4609,6 +4656,20 @@ async function lancer(){
     vrai("…et la couleur aussi", /haut/.test(v2.className), v2.className);
 
     DB.templates = gardeT; DB.history = gardeH; DB.active = gardeA;
+    /* Chaque render() programme une visite guidée 500 ms plus tard. Si on rend les
+       drapeaux « déjà vu » tout de suite, ces minuteurs en attente ouvrent une visite
+       APRÈS le nettoyage et laissent leur voile en travers des groupes suivants.
+       On les laisse donc s'éteindre d'abord, drapeaux encore posés. */
+    await new Promise(r=>setTimeout(r, 700));
+    Object.keys(gardeVu).forEach(g=>{
+      if(gardeVu[g] === undefined) delete DB.seen["guide-" + g];
+      else DB.seen["guide-" + g] = gardeVu[g]; });
+    F.document.querySelectorAll(".gd-voile, .gd-bulle").forEach(e=>e.remove());
+    F.eval("guideEnCours = false");
+    /* démarrer une séance a pu lancer un repos, donc poser une alarme : on rend la
+       main propre au groupe du minuteur, qui compte les alarmes posées */
+    F.eval("if(rest.int){ clearInterval(rest.int); rest.int = null; } rest.end = 0; alarmePosee = false");
+    F.hideSheet();
   })();
   neuf();
 
@@ -4860,12 +4921,20 @@ async function lancer(){
     F.lancerGuide("seance");
     await new Promise(r=>setTimeout(r, 120));
     vrai("Le voile s'ouvre sur la première étape", !!F.document.querySelector(".gd-voile"));
+    /* La bulle se remplit dans un requestAnimationFrame, et un onglet en arrière-plan
+       les met en sommeil : on attend le bouton au lieu de parier sur un délai. */
+    const attendre = async (cond, max)=>{ const t0 = Date.now();
+      while(Date.now() - t0 < (max || 3000)){ if(cond()) return true;
+        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
+    await attendre(()=>!!F.document.getElementById("gd-suite"));
     vrai("…avec un bouton pour avancer", !!F.document.getElementById("gd-suite"));
     for(let k = 0; k < 6; k++){
       const b2 = F.document.getElementById("gd-suite");
       if(!b2) break;
       b2.click();
-      await new Promise(r=>setTimeout(r, 90));
+      /* même raison : l'étape suivante s'écrit dans un requestAnimationFrame */
+      await attendre(()=>!F.document.querySelector(".gd-voile")
+                       || !!F.document.getElementById("gd-suite"), 1500);
     }
     vrai("Au bout des étapes, tout se referme", !F.document.querySelector(".gd-voile"));
     vrai("…et elle est retenue comme vue", !!DB.seen["guide-seance"]);
