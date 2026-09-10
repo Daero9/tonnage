@@ -3470,6 +3470,54 @@ async function lancer(){
   })();
   neuf();
 
+  /* La carte qui restait « bloquée en l'air ». Déplacer la carte dans le DOM — ce que
+     fait le tri à chaque échange — arrache la capture du pointeur à la poignée, qui
+     voyage avec la carte. Les événements suivants partaient alors ailleurs : plus de
+     déplacement, et surtout plus de pointerup, donc la carte restait figée sous le
+     doigt avec son ombre portée. Les écouteurs vivent désormais sur la fenêtre.
+     Aucune géométrie ici : l'iframe des tests n'a pas de hauteur. On vérifie la
+     plomberie, qui est exactement ce qui cassait. */
+  await (async ()=>{
+    DB.templates = [{id:"tglis", name:"Glisse", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
+      {exId:id("Rowing barre"),     sets:3, reps:"8-12", rest:120}]}];
+    F.openPreview("tglis", true);
+    await new Promise(r=>setTimeout(r, 120));
+    const D2 = F.document;
+    const poignee = D2.querySelector(".pv-liste [data-poignee]");
+    vrai("La poignée existe", !!poignee);
+    if(poignee){
+      const carte = poignee.closest(".pv-ex");
+      const ev = (type, cible) => cible.dispatchEvent(new F.window.PointerEvent(type,
+        {bubbles:true, cancelable:true, pointerId:1, pointerType:"touch", clientY:100}));
+      ev("pointerdown", poignee);
+      vrai("Appuyer sur la poignée saisit la carte", carte.classList.contains("prend"));
+      /* le relâchement arrive AILLEURS que sur la poignée — c'est le cas réel une fois
+         que la carte a changé de place dans le DOM */
+      ev("pointerup", D2.body);
+      vrai("Relâcher hors de la poignée repose quand même la carte",
+        !carte.classList.contains("prend"), carte.className);
+      eq("…et la carte ne reste pas décalée", carte.style.transform, "");
+
+      /* un geste interrompu par le système ne bloque pas le suivant */
+      ev("pointerdown", poignee);
+      ev("pointercancel", D2.body);
+      vrai("Un geste annulé relâche aussi la carte", !carte.classList.contains("prend"));
+
+      /* et si malgré tout une carte restait saisie, un nouvel appui la libère */
+      ev("pointerdown", poignee);
+      const autre = [...D2.querySelectorAll(".pv-liste [data-poignee]")][1];
+      if(autre) ev("pointerdown", autre);
+      vrai("Une seule carte à la fois est saisie",
+        D2.querySelectorAll(".pv-ex.prend").length <= 1,
+        D2.querySelectorAll(".pv-ex.prend").length);
+      ev("pointerup", D2.body);
+      vrai("Rien ne reste saisi à la fin", D2.querySelectorAll(".pv-ex.prend").length === 0);
+    }
+    F.hideSheet();
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- photo de la séance */
   grp("Photo de la séance");
   neuf();
@@ -4419,6 +4467,21 @@ async function lancer(){
     }
     vrai("Chaque étiquette désigne un élément qui existe", manquantes.length === 0,
       manquantes.join(" ; "));
+    /* Un projecteur braqué sur un conteneur n'éclaire plus rien : « #wt-sec »
+       englobait le poids ET les protéines, et l'étiquette montrait la moitié de la
+       page. On ne peut pas mesurer de hauteur ici — l'iframe n'en a pas — mais on
+       peut vérifier qu'aucune cible n'en contient une autre du même onglet. */
+    const englobantes = [];
+    for(const onglet of Object.keys(G)){
+      F.eval("curTab = " + JSON.stringify(onglet) + "; render()");
+      await new Promise(r=>setTimeout(r, 120));
+      const els = G[onglet].map(([sel])=>[sel, F.document.querySelector(sel)]);
+      els.forEach(([selA, a2])=>els.forEach(([selB, b2])=>{
+        if(a2 && b2 && a2 !== b2 && a2.contains(b2)) englobantes.push(selA + " contient " + selB);
+      }));
+    }
+    vrai("Aucune étiquette n'englobe une autre étape", englobantes.length === 0,
+      englobantes.join(" ; "));
     vrai("Les trois onglets sont couverts", Object.keys(G).length === 3,
       Object.keys(G).join(", "));
     /* on ne noie pas quelqu'un qui arrive : trois étapes au plus par onglet */
