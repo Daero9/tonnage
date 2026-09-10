@@ -4716,6 +4716,53 @@ async function lancer(){
       !!l && /charge maintenue/.test(l.textContent), l ? l.textContent.trim() : "aucune ligne");
     F.hideSheet();
 
+    /* Nico a vu deux séries au lieu de trois et a cru à un bug. C'en était un, au sens
+       où l'app retirait une série pour cause de blessure SANS LE DIRE. Chaque règle
+       qui touche au volume inscrit maintenant sa raison. */
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
+    let vu = null;
+    for(let i = 0; i < 40 && !vu; i++){
+      const g = F.genererAdaptative("haut");
+      vu = (g.items || []).find(it=>it.pourquoiSeries && it.ecartSeries < 0);
+    }
+    vrai("Une série retirée porte sa raison", !!vu, vu ? JSON.stringify(vu) : "jamais vu");
+    if(vu){
+      vrai("…et la raison n'est pas vide", vu.pourquoiSeries.length > 5, vu.pourquoiSeries);
+      vrai("…et le compte reste au moins à deux", vu.sets >= 2, vu.sets);
+    }
+    /* et une série AJOUTÉE se dit aussi : l'app ne montre pas que ses restrictions */
+    let plus = null;
+    for(let i = 0; i < 40 && !plus; i++){
+      const g = F.genererAdaptative("haut");
+      plus = (g.items || []).find(it=>it.ecartSeries > 0 && it.pourquoiSeries);
+    }
+    vrai("Une série ajoutée porte aussi sa raison", !!plus,
+      plus ? plus.pourquoiSeries : "jamais vu");
+
+    /* la fiche ⚠ garde l'avertissement, la fiche ⓘ ne le répète plus */
+    DB.templates = [{id:"tw", name:"P", items:[{exId:dm, sets:3, reps:"8-12", rest:120}]}];
+    DB.active = null;
+    F.eval("curTab = 'seance'");
+    F.startWorkout("tw");
+    F.eval("render()");
+    await new Promise(r=>setTimeout(r, 200));
+    F.openExoInfo(dm);
+    await new Promise(r=>setTimeout(r, 150));
+    vrai("La fiche de l'exercice ne redit plus la blessure",
+      !/sensible/.test(F.document.getElementById("sheet").textContent));
+    F.hideSheet();
+    await new Promise(r=>setTimeout(r, 150));
+    const bInj = F.document.querySelector(".ex-head .inj-btn");
+    vrai("Le bouton d'attention existe toujours", !!bInj);
+    if(bInj){
+      bInj.click();
+      await new Promise(r=>setTimeout(r, 150));
+      const f2 = F.document.getElementById("sheet");
+      vrai("…et c'est lui qui porte l'avertissement", /sensible/.test(f2.textContent));
+      vrai("…dans la carte encadrée", !!f2.querySelector(".exo-c"));
+      F.hideSheet();
+    }
+
     DB.profile = gardeP; DB.history = gardeH; DB.templates = gardeT; DB.active = gardeA;
   })();
   neuf();

@@ -223,6 +223,10 @@
   .pv-ex .nm .eqp{font-size:12px; font-weight:600; color:var(--ink-mute); white-space:nowrap;}
   .pv-ex .meta{font-size:12px; color:var(--ink-soft); margin:3px 0 5px; line-height:1.4;}
   .pv-ex .meta b{color:var(--ink); font-weight:700;}
+  /* pourquoi CET exercice n'a pas le nombre de séries habituel */
+  .vol-note{display:inline-block; font-size:11px; font-weight:700; color:var(--ink-soft);
+    background:var(--surface2); border-radius:8px; padding:3px 8px; margin-top:5px;
+    line-height:1.35;}
   .pv-ex .inj{font-size:11.5px; color:var(--bad); line-height:1.45; margin-top:5px;}
   .tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
   .tile{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 10px; text-align:left;}
@@ -3335,6 +3339,12 @@ const TRAD = {en:{
   "Ta zone sensible":"Your sensitive area",
   "intensité {}":"{} sensitivity",
   "charge maintenue":"load held",
+  "muscle frais et prioritaire":"fresh muscle, top priority",
+  "muscle le moins prioritaire aujourd'hui":"lowest-priority muscle today",
+  "ce muscle récupère encore":"this muscle is still recovering",
+  "exercice sensible pour toi":"exercise you flagged as sensitive",
+  "tes dernières séances t'ont paru faciles":"your recent sessions felt easy",
+  "tes dernières séances t'ont paru dures":"your recent sessions felt hard",
   "Tu pourrais charger, mais tu as signalé « {z} » sur ce mouvement. On garde {c} : la progression se fera en répétitions tant que ça tire.":"You could add load, but you flagged « {z} » on this movement. We keep {c}: progress comes from reps while it still pulls.",
   "Garde {c} et gagne une répétition — {z} sensible.":"Keep {c} and win a rep — {z} is sensitive.",
   "faible":"low","moyenne":"medium","élevée":"high",
@@ -5334,9 +5344,9 @@ function openExoInfo(exId){
       <div class="grow"><h3>${esc(ex.name)}</h3>
         <div class="sous">${[ex.equip, ex.muscle].filter(Boolean).map(esc).join(" · ")}</div></div>
     </div>
-    ${note? `<div class="exo-c" style="border:1.5px solid var(--bad);">
-        <div class="exo-t" style="color:var(--bad);">⚠️ ${TR("{} sensible").replace("{}", esc(TR(note.injury)))}</div>
-        <div class="exo-txt">${esc(TR(note.tip))}</div></div>`:""}
+    ${/* La blessure ne se dit plus ici : elle a son bouton ⚠ dans la séance, et le
+         même avertissement à deux endroits finit par ne plus être lu nulle part.
+         La fiche parle de l'exercice, l'attention parle de toi. */""}
     ${info? `<div class="exo-c tip">
         <div class="exo-t">${TR("Astuce de Pro ✨")}</div>
         <div class="exo-txt">${esc(info.tip)}</div></div>`:""}
@@ -7114,7 +7124,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 16h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 16h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12126,21 +12136,37 @@ function genererAdaptative(type, evites){
          ajuste la dose de l'objectif, on ne la remplace pas — c'est elle qui sait ce que
          demande une prise de masse ou un cycle de force. Le deuxième exercice d'un même
          muscle n'y a pas droit : c'est une finition, elle ne se gonfle pas. */
-      let series = d.s;
-      if(k === 0 && rang === 0 && p.recup >= 60 && !choisi.risque) series = Math.min(5, series + 1);
-      if(k === 0 && rang >= parts.length - 1 && parts.length > 2) series = Math.max(2, series - 1);
+      /* Le nombre de séries bougeait sous l'effet de cinq règles, sans qu'aucune ne se
+         nomme : on voyait deux séries au lieu de trois et on concluait au bug. Chaque
+         règle inscrit maintenant sa raison, et l'aperçu l'affiche. On garde la
+         DERNIÈRE qui a joué : c'est elle qui explique le chiffre final. */
+      let series = d.s, pourquoiSeries = "";
+      const moins = raison => {
+        if(series <= 2) return;              /* jamais en dessous de deux */
+        series -= 1; pourquoiSeries = raison;
+      };
+      const plus = raison => {
+        if(series >= 5) return;
+        series += 1; pourquoiSeries = raison;
+      };
+      if(k === 0 && rang === 0 && p.recup >= 60 && !choisi.risque)
+        plus("muscle frais et prioritaire");
+      if(k === 0 && rang >= parts.length - 1 && parts.length > 2)
+        moins("muscle le moins prioritaire aujourd'hui");
       /* un muscle à bout garde sa place — on ne l'abandonne pas — mais on allège */
-      if(p.pompe) series = Math.max(2, series - 1);
+      if(p.pompe) moins("ce muscle récupère encore");
       /* et un exercice qu'on ne garde que faute de mieux ne se travaille pas à fond */
-      if(choisi.risque) series = Math.max(2, series - 1);
+      if(choisi.risque) moins("exercice sensible pour toi");
       /* et ce que TU as ressenti sur les deux dernières séances : une série de plus sur
          l'exercice de tête si elles t'ont paru faciles, une de moins sur le dernier si
          elles t'ont paru dures. Jamais les deux, jamais plus d'une. */
-      if(k === 0 && humeur === "facile" && rang === 0) series = Math.min(5, series + 1);
+      if(k === 0 && humeur === "facile" && rang === 0) plus("tes dernières séances t'ont paru faciles");
       if(k === 0 && humeur === "dur" && rang >= parts.length - 1 && parts.length > 2)
-        series = Math.max(2, series - 1);
+        moins("tes dernières séances t'ont paru dures");
+      const ecartSeries = series - d.s;
       items.push({nom:choisi.nom, sets:series, reps:repsTenue(choisi.nom, reps),
                   rest:reposTenue(choisi.nom, repos),
+                  ecartSeries, pourquoiSeries: ecartSeries ? pourquoiSeries : "",
                   role:p.muscle, charge:choisi.charge, niveau});
     }
   });
@@ -12231,6 +12257,7 @@ function regenererAdaptative(tpl){
     const exId = libId(it.nom);
     if(!exId) return null;
     return {exId, sets:it.sets, reps:it.reps,
+            ecartSeries: it.ecartSeries || 0, pourquoiSeries: it.pourquoiSeries || "",
             rest: anciens[exId] !== undefined ? anciens[exId] : it.rest};
   }).filter(Boolean);
   if(!items.length) return false;      /* rien de disponible : on ne casse pas la séance */
@@ -12290,7 +12317,8 @@ function enregistrerProposition(prop){
   const tpl = {
     id: uid(),
     name: nomLibre(`${prop.nom} · ${aimOf((db.profile&&db.profile.aim)||"masse").label}`),
-    items: prop.items.map(it=>({exId:libId(it.nom), sets:it.sets, reps:it.reps, rest:it.rest})).filter(it=>it.exId)
+    items: prop.items.map(it=>({exId:libId(it.nom), sets:it.sets, reps:it.reps, rest:it.rest,
+      ecartSeries: it.ecartSeries || 0, pourquoiSeries: it.pourquoiSeries || ""})).filter(it=>it.exId)
   };
   db.templates.push(tpl);
   save();
@@ -12394,6 +12422,10 @@ function apercuProposition(type, evites){
           ${bless? `<div class="inj-note" style="margin:8px 0 0; font-size:11.5px;">⚠️ <b>${
             esc(TR(bless.injury))}</b> · ${TR("intensité {}").replace("{}",
             TR(INTENSITE[bless.niveau] || INTENSITE.mal))}</div>`:""}
+          ${it.pourquoiSeries ? `<div class="vol-note" style="margin-top:6px;">${
+            it.ecartSeries < 0 ? "−" : "+"}${Math.abs(it.ecartSeries)} ${
+            TR(Math.abs(it.ecartSeries) > 1 ? "séries" : "série")} · ${
+            esc(TR(it.pourquoiSeries))}</div>` : ""}
         </div>`;
       }).join("")}
     </div>
@@ -12679,7 +12711,11 @@ function openPreview(tplId, lieuFait){
           ${note? `<div class="inj">⚠️ <b>${esc(TR(note.injury))}</b> · ${
             TR("intensité {}").replace("{}", TR(INTENSITE[note.niveau] || INTENSITE.mal))}${
             (()=>{ const o2 = objectifDuJour(it.exId, {reps:it.reps, rest:it.rest});
-              return (o2 && o2.menage) ? ` · ${TR("charge maintenue")}` : ""; })()}</div>`:""}</div>
+              return (o2 && o2.menage) ? ` · ${TR("charge maintenue")}` : ""; })()}</div>`:""}
+          ${it.pourquoiSeries ? `<div class="vol-note">${
+            it.ecartSeries < 0 ? "−" : "+"}${Math.abs(it.ecartSeries)} ${
+            TR(Math.abs(it.ecartSeries) > 1 ? "séries" : "série")} · ${
+            esc(TR(it.pourquoiSeries))}</div>` : ""}</div>
         <span class="act">
           <button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button>
           <button data-pvswap="${i}" title="${TR("Remplacer")}" aria-label="${TR("Remplacer")}">⇄</button>
@@ -12935,9 +12971,13 @@ function openBlessureExo(ei){
   const en = a.entries[ei], ex = getEx(en.exId);
   const note = injuryNote(nomCanon(ex));
   if(!note) return;
+  /* La carte encadrée de rouge vient de la fiche d'exercice, où elle faisait doublon.
+     Elle est bien meilleure que l'ancien bloc plat : c'est elle qu'on garde ici. */
   openSheet(`<h3>${esc(ex.name)}</h3>
-    <div class="inj-note" style="margin:0 0 14px;">
-      <b style="color:var(--bad);">⚠️ ${TR("{} sensible").replace("{}", esc(TR(note.injury)))}</b><br>${esc(TR(note.tip))}</div>
+    <div class="exo-c" style="border:1.5px solid var(--bad); margin-bottom:14px;">
+      <div class="exo-t" style="color:var(--bad);">⚠️ ${
+        TR("{} sensible").replace("{}", esc(TR(note.injury)))}</div>
+      <div class="exo-txt">${esc(TR(note.tip))}</div></div>
     <div class="stack">
       ${note.alts.length? `<button class="btn btn-accent" id="bl-swap">${TR("Remplacer par un autre exercice")}</button>`:""}
       <button class="btn btn-ghost" id="bl-ok">${TR("Je continue avec celui-ci")}</button>
