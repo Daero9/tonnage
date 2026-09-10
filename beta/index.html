@@ -6934,7 +6934,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 02h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 02h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12103,19 +12103,71 @@ function majNumerosApercu(){
    de carte à chaque échange. */
 function trierParGlisse(liste, onFin){
   if(!liste) return;
-  let el = null, y0 = 0, dy = 0, pid = null;
-  const bouger = (carte, e)=>{
-    dy = e.clientY - y0;
-    carte.style.transform = `translateY(${dy}px)`;
-  };
-  const echanger = (carte, voisine, avant, e)=>{
+  let el = null, y0 = 0, dy = 0, pid = null, doigtY = 0, boucle = null;
+  let zone = null, maxDefile = 0;
+  /* La bande, en haut et en bas, où l'on considère qu'on veut aller plus loin. */
+  const BORD = 56, VITESSE = 14;
+  const echanger = (carte, voisine, avant, clientY)=>{
     const hautVisuel = carte.getBoundingClientRect().top;
     liste.insertBefore(carte, avant ? voisine : voisine.nextElementSibling);
     /* position de mise en page (sans la translation) après le déplacement */
     const hautMiseEnPage = carte.getBoundingClientRect().top - dy;
     dy = hautVisuel - hautMiseEnPage;
-    y0 = e.clientY - dy;
+    y0 = clientY - dy;
     carte.style.transform = `translateY(${dy}px)`;
+  };
+  /* Suivre le doigt, puis regarder si la carte a dépassé une voisine. Appelée par le
+     déplacement du doigt ET par le défilement automatique — sans quoi, doigt immobile
+     au bord de la liste, elle défilerait sans jamais échanger quoi que ce soit. */
+  const majPosition = clientY=>{
+    if(!el) return;
+    dy = clientY - y0;
+    el.style.transform = `translateY(${dy}px)`;
+    const r = el.getBoundingClientRect(), centre = r.top + r.height/2;
+    const prec = el.previousElementSibling, suiv = el.nextElementSibling;
+    if(prec && prec.classList.contains("pv-ex")){
+      const rp = prec.getBoundingClientRect();
+      if(centre < rp.top + rp.height/2){ echanger(el, prec, true, clientY); return; }
+    }
+    if(suiv && suiv.classList.contains("pv-ex")){
+      const rs = suiv.getBoundingClientRect();
+      if(centre > rs.top + rs.height/2){ echanger(el, suiv, false, clientY); return; }
+    }
+  };
+  /* La liste ne montre qu'un demi-écran : sans ceci, on ne peut pas remonter le
+     dernier exercice tout en haut d'une séance de six. Le doigt approche d'un bord,
+     la liste défile ; plus il s'en approche, plus elle va vite. */
+  const zoneDefilante = ()=>{
+    let n = liste;
+    while(n && n !== document.body){
+      if(n.scrollHeight > n.clientHeight + 2) return n;
+      n = n.parentElement;
+    }
+    return null;
+  };
+  const defiler = ()=>{
+    boucle = null;
+    if(!el) return;
+    const c = zone;
+    if(c){
+      const r = c.getBoundingClientRect();
+      let v = 0;
+      if(doigtY < r.top + BORD)         v = -VITESSE * (r.top + BORD - doigtY) / BORD;
+      else if(doigtY > r.bottom - BORD) v =  VITESSE * (doigtY - (r.bottom - BORD)) / BORD;
+      if(v){
+        const avant = c.scrollTop;
+        /* On borne avec la mesure prise AVANT le geste. Une carte translatée agrandit
+           la zone défilante de son conteneur — un déplacement n'est pas une mise en
+           page, mais il compte quand même dans le débordement. Sans cette borne, la
+           liste défilait bien au-delà de son contenu, sur du vide. */
+        c.scrollTop = Math.max(0, Math.min(maxDefile, avant + v));
+        const bouge = c.scrollTop - avant;
+        /* la liste a glissé sous la carte : on décale l'origine du geste d'autant,
+           sinon la carte remonterait toute seule et fuirait le doigt */
+        if(bouge){ y0 -= bouge; majPosition(doigtY); }
+      }
+    }
+    boucle = requestAnimationFrame(defiler);
   };
   /* Les écouteurs vivent sur la FENÊTRE, pas sur la poignée.
      C'est tout le correctif du glissement qui restait bloqué en l'air. echanger()
@@ -12137,24 +12189,16 @@ function trierParGlisse(liste, onFin){
   surMove = e=>{
     if(!el || e.pointerId !== pid) return;
     e.preventDefault();
-    bouger(el, e);
-    const r = el.getBoundingClientRect(), centre = r.top + r.height/2;
-    const prec = el.previousElementSibling, suiv = el.nextElementSibling;
-    if(prec && prec.classList.contains("pv-ex")){
-      const rp = prec.getBoundingClientRect();
-      if(centre < rp.top + rp.height/2){ echanger(el, prec, true, e); return; }
-    }
-    if(suiv && suiv.classList.contains("pv-ex")){
-      const rs = suiv.getBoundingClientRect();
-      if(centre > rs.top + rs.height/2){ echanger(el, suiv, false, e); return; }
-    }
+    doigtY = e.clientY;
+    majPosition(e.clientY);
   };
   lacher = e=>{
     if(!el) return;
     if(e && e.pointerId != null && e.pointerId !== pid) return;
     el.style.transform = "";
     el.classList.remove("prend");
-    el = null; pid = null;
+    el = null; pid = null; zone = null;
+    if(boucle){ cancelAnimationFrame(boucle); boucle = null; }
     finir();
     onFin([...liste.querySelectorAll(".pv-ex")].map(c=>Number(c.dataset.ord)));
   };
@@ -12166,8 +12210,12 @@ function trierParGlisse(liste, onFin){
       el = p.closest(".pv-ex");
       if(!el) return;
       pid = e.pointerId;
-      y0 = e.clientY; dy = 0;
+      y0 = e.clientY; dy = 0; doigtY = e.clientY;
       el.classList.add("prend");
+      /* mesuré avant que la carte ne soit déplacée : c'est la hauteur réelle du contenu */
+      zone = zoneDefilante();
+      maxDefile = zone ? zone.scrollHeight - zone.clientHeight : 0;
+      if(!boucle) boucle = requestAnimationFrame(defiler);
       window.addEventListener("pointermove", surMove, {passive:false});
       window.addEventListener("pointerup", lacher);
       window.addEventListener("pointercancel", lacher);
