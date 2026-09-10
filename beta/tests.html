@@ -4578,6 +4578,17 @@ async function lancer(){
     });
     vrai("Les sucres ne dépassent pas les glucides, les saturés pas les lipides",
       debordent.length === 0, debordent.join(", "));
+    /* Une part sous le demi-gramme s'affiche forcément à zéro : quand le tout y est
+       déjà, le détail ne peut pas rester inconnu. C'est de l'arithmétique, et ça
+       évite qu'une viande sans glucides fasse disparaître la ligne des sucres de
+       toute la journée. */
+    const trousEvitables = Object.keys(T).filter(n => {
+      const v = T[n];
+      return (v[0] < 0.5 && (v.length < 3 || v[2] == null))
+          || (v[1] < 0.5 && (v.length < 4 || v[3] == null));
+    });
+    vrai("Aucun trou là où l'arithmétique donne la réponse",
+      trousEvitables.length === 0, trousEvitables.join(", "));
     /* un trou reste un trou : jamais transformé en zéro */
     vrai("Ce qui manque est écrit null, pas 0",
       Object.values(T).some(v => v.length === 3 || v[3] === null || v[2] === null)
@@ -4629,11 +4640,11 @@ async function lancer(){
       /dont .* saturés/.test(l[2].textContent), l[2].textContent.replace(/\s+/g, " "));
     F.hideSheet();
 
-    /* Si un aliment CONNU n'a pas le détail des sucres — l'agneau, que CIQUAL ne
-       renseigne pas là-dessus — on ne publie pas un total qui l'oublierait en
-       silence. Un aliment absent de la table, lui, est déjà signalé par le compteur
-       « renseignés sur total ». */
-    DB.habitSel[k2] = {matin:["Œuf", "Agneau"]};
+    /* Si un aliment CONNU n'a pas le détail des sucres — le veau, seul aliment que
+       CIQUAL ne renseigne pas là-dessus — on ne publie pas un total qui l'oublierait
+       en silence. Un aliment absent de la table, lui, est déjà signalé par le
+       compteur « renseignés sur total ». */
+    DB.habitSel[k2] = {matin:["Œuf", "Veau"]};
     const m2 = F.macrosDuJour(k2);
     vrai("Un aliment sans détail met les sucres en attente", m2.sucres === null,
       JSON.stringify(m2));
