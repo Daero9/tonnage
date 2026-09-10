@@ -2056,7 +2056,10 @@
   .nut .n-c{flex:1; min-width:0; background:var(--surface); border:1px solid var(--border);
     border-radius:13px; padding:10px 3px 9px; text-align:center;
     box-shadow:0 1px 2px rgba(0,0,0,.05);}
+  /* les icônes masquées portent leur taille en attribut, les SVG bruts non :
+     sans cette règle, la goutte des lipides remplissait toute la case */
   .nut .n-c .ic{display:flex; justify-content:center; line-height:1;}
+  .nut .n-c .ic > svg{width:18px; height:18px;}
   .nut .n-c b{display:block; font-size:16px; font-weight:800; line-height:1.15; margin-top:5px;}
   .nut .n-c b span{font-size:10.5px; font-weight:700;}
   .nut .n-c i{display:block; font-style:normal; font-size:9.5px; color:var(--ink-mute);
@@ -3860,6 +3863,10 @@ const TRAD = {en:{
   "Protéines · moyenne de la semaine":"Protein · weekly average",
   "{} kcal brûlées à l'entraînement":"{} kcal burned training",
   "Glucides et lipides":"Carbs and fat",
+  "table CIQUAL":"CIQUAL table",
+  "Table de composition des aliments de l'ANSES.":"French food composition table (ANSES).",
+  "Un aliment du jour n'y figure pas : il compte pour zéro.":"One of today's foods is not in it: it counts as zero.",
+  "{n} aliments du jour n'y figurent pas : ils comptent pour zéro.":"{n} of today's foods are not in it: they count as zero.",
   "Ta journée en détail":"Your day in detail",
   "Voici un résumé de tes apports du jour.":"Here is a summary of what you took in today.",
   "Total consommé":"Total taken in","de protéines":"of protein",
@@ -7038,7 +7045,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 03h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 03h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8790,12 +8797,92 @@ function kcalBruleesDuJour(k){
    table des aliments courants ne porte que protéines et calories. On additionne donc ce
    qu'on sait, et on dit franchement quelle part de la journée c'est — plutôt que
    d'inventer les valeurs manquantes. */
+/* ---- glucides et lipides ------------------------------------------------------
+   Tirés de la table CIQUAL 2020 de l'ANSES — la table officielle française de
+   composition des aliments, publiée en accès libre sur data.gouv.fr. Aucun de ces
+   nombres n'est estimé : chaque aliment a été apparié à une entrée de la table, et
+   l'appariement VÉRIFIÉ en comparant les protéines que l'app annonçait déjà à celles
+   de la table. Un aliment dont les protéines ne concordaient pas a été écarté plutôt
+   que rempli au jugé — c'est le cas du kebab, de la salade César et des « repas »
+   composites, qui ne correspondent à aucun aliment unique. La whey et le skyr, eux,
+   n'existent pas dans CIQUAL.
+
+   Les valeurs sont dans la MÊME unité que les protéines et les calories de l'aliment :
+   pour 100 g quand il est compté au poids, pour une pièce quand il est compté à la
+   pièce. [glucides, lipides] en grammes. */
+const MACROS_ALIM = {
+  "Agneau":[0.0,10.6], "Amandes":[9.5,51.3], "Amandes / noix (30 g)":[2.9,15.4],
+  "Aubergine":[4.2,0.3], "Avocat":[0.8,20.6], "Avoine (60 g)":[34.7,3.9],
+  "Avoine (sèche)":[57.9,6.5], "Banane":[22.9,0.0], "Barre de céréales":[25.3,2.4],
+  "Betterave":[7.1,0.4], "Beurre de cacahuète":[16.1,52.5], "Biscuit":[6.2,2.0],
+  "Blanc d'œuf":[0.4,0.1], "Blanc de poulet (130 g cuit)":[0.0,2.6],
+  "Boîte de thon (95 g égoutté)":[0.6,1.9], "Brocoli":[1.1,0.8], "Brocoli (200 g)":[2.2,1.6],
+  "Burger":[59.8,17.8], "Bœuf (entrecôte, faux-filet)":[0.0,8.2], "Bœuf haché 5 %":[0.0,5.8],
+  "Bœuf haché 5 % — pesé cru":[0.3,4.6], "Cabillaud":[0.0,0.7], "Carotte":[2.6,0.1],
+  "Carottes (150 g)":[3.9,0.2], "Champignons":[3.1,0.4], "Chou-fleur":[1.6,0.5],
+  "Compote (1 gourde)":[12.4,0.0], "Comté / emmental":[0.0,34.6], "Concombre":[2.5,0.1],
+  "Courge / potiron":[4.5,0.1], "Courgette":[1.4,0.4], "Courgette (200 g)":[2.8,0.7],
+  "Crevettes":[1.9,1.2], "Croissant":[26.1,12.9],
+  "Cuillère de beurre de cacahuète (30 g)":[4.8,15.8],
+  "Cuillère à soupe d'huile d'olive":[0.0,13.3], "Dinde (escalope)":[0.5,3.0],
+  "Frites (portion 150 g)":[59.1,17.9], "Fromage blanc 0 %":[3.9,0.0],
+  "Fromage blanc 0 % (200 g)":[7.8,0.1], "Gourde de compote":[12.4,0.0],
+  "Haricots rouges cuits":[12.3,0.6], "Haricots verts":[3.0,0.2],
+  "Haricots verts (200 g)":[6.0,0.3], "Jambon (1 tranche)":[0.3,1.5], "Jambon blanc":[0.8,4.3],
+  "Lait demi-écrémé":[4.8,1.6], "Lait entier":[4.8,3.6], "Lasagnes (part 300 g)":[40.5,17.2],
+  "Lentilles cuites":[16.2,0.6], "Légumineuses (150 g cuites)":[24.3,0.9],
+  "Maïs (égoutté)":[18.6,1.5], "Mozzarella":[0.8,17.7], "Nuggets 6 pièces":[19.0,15.5],
+  "Oignon":[6.2,0.6], "Pain":[52.0,2.0], "Pain (1 tranche)":[17.6,0.7],
+  "Pain au chocolat":[30.1,14.9], "Part de pizza (1/8)":[18.3,4.7], "Patate":[17.2,1.4],
+  "Patates (250 g)":[43.0,3.4], "Petits pois":[9.9,0.6], "Petits pois (150 g)":[14.9,0.9],
+  "Poignée d'amandes (25 g)":[2.4,12.8], "Poireau":[3.0,0.2], "Pois chiches cuits":[17.7,3.0],
+  "Poisson blanc (120 g cuit)":[0.0,2.4], "Poisson blanc — pesé cru":[0.0,2.0],
+  "Poivron":[4.5,0.3], "Pomme":[22.2,0.5], "Porc (filet mignon)":[0.0,9.4],
+  "Pot de fromage blanc (100 g)":[3.9,0.0], "Poulet (1 filet, 130 g cuit)":[0.0,2.6],
+  "Poulet (blanc)":[0.0,2.0], "Poulet (blanc) — pesé cru":[0.0,1.5],
+  "Pâtes (200 g cuites)":[50.0,1.1], "Pâtes bolognaise (assiette 300 g)":[40.8,12.2],
+  "Pâtes cuites":[25.0,0.6], "Quiche (part 150 g)":[31.5,25.2], "Quinoa cuit":[27.9,1.1],
+  "Ratatouille":[5.0,3.1], "Riz (200 g cuit)":[63.6,0.8],
+  "Riz cantonais (assiette 300 g)":[70.8,14.8], "Riz cuit":[31.8,0.4], "Salade verte":[1.3,0.2],
+  "Salade verte (bol)":[1.6,0.2], "Sandwich jambon-beurre":[55.6,19.0], "Saumon":[0.0,12.5],
+  "Saumon (1 pavé, 120 g cuit)":[0.0,15.0], "Semoule (200 g cuite)":[45.8,0.8],
+  "Semoule cuite":[22.8,0.4], "Soupe de légumes":[4.5,1.4],
+  "Steak haché 5 % (100 g cuit)":[0.0,6.4], "Sushi 6 pièces":[36.2,5.0],
+  "Thon (1 boîte, 95 g égoutté)":[0.6,1.9], "Thon frais":[0.0,5.1], "Tofu":[2.9,8.5],
+  "Tomate":[2.5,0.3], "Tomates (150 g)":[3.7,0.4], "Tranche de jambon":[0.3,1.5],
+  "Tranche de pain (35 g)":[18.2,0.7], "Veau":[0.7,5.5], "Yaourt grec":[4.2,9.2],
+  "Yaourt nature (125 g)":[3.3,1.9], "Épinards":[0.0,0.7], "Épinards (200 g)":[0.0,1.4],
+  "Œuf":[0.3,5.0]
+};
+/* Un même aliment se retrouve sous deux libellés : « Œuf » dans les pastilles, mais
+   « Œuf ×2 (~13 g prot. · 156 kcal) » une fois enregistré. On indexe donc aussi le nom
+   dépouillé de sa parenthèse, sans jamais écraser une entrée exacte. */
+const MACROS_IDX = (()=>{
+  const o = Object.assign({}, MACROS_ALIM);
+  Object.keys(MACROS_ALIM).forEach(n=>{
+    const court = n.replace(/\s*\(.*?\)\s*$/, "").trim();
+    if(court && !(court in o)) o[court] = MACROS_ALIM[n];
+  });
+  return o;
+})();
+/* Les glucides et lipides d'un libellé enregistré. Un produit scanné a les siens,
+   relevés sur l'étiquette ; sinon on va les chercher dans la table. */
+function macrosAliment(label){
+  const scan = (db.macros || {})[label];
+  if(scan) return scan;
+  const socle = socleAliment(label);
+  const t = MACROS_IDX[socle] || MACROS_IDX[label]
+    || MACROS_IDX[partsAliment(socle, 0).nom] || MACROS_IDX[partsAliment(label, 0).nom];
+  if(!t) return null;
+  const f = facteurAliment(socle, label);
+  return [t[0] * f, t[1] * f];
+}
 function macrosDuJour(k){
   const sel = (db.habitSel || {})[k];
   const labels = sel ? Object.values(sel).flat() : [];
   let gluc = 0, lip = 0, connus = 0, kcalConnues = 0;
   labels.forEach(l=>{
-    const m = (db.macros || {})[l];
+    const m = macrosAliment(l);
     if(!m) return;
     gluc += m[0] || 0; lip += m[1] || 0; connus++; kcalConnues += kcalOf(l);
   });
@@ -8845,8 +8932,18 @@ function openMacros(k){
       <div class="co">
         <div class="t">${TR("Ce que l'app sait")}</div>
         <div class="l ok">${IC_COCHE_RONDE}<span>${TR("Protéines et calories")} : <b>${TR("complets")}</b></span></div>
-        <div class="l">${IC_INFO_R}<span>${TR("Glucides et lipides")} : <b>${TR("estimés")}</b></span></div>
-        <div class="s">${TR("Certains aliments ne sont pas encore renseignés.")}</div>
+        ${/* Les glucides et lipides ne sont plus estimés : ils viennent de la table
+             officielle. On le dit, et on dit aussi ce qui manque encore — un aliment
+             sans correspondance vaut mieux annoncé que compté pour zéro en silence. */""}
+        <div class="l ${m.connus >= m.total ? "ok" : ""}">${
+          m.connus >= m.total ? IC_COCHE_RONDE : IC_INFO_R}<span>${
+          TR("Glucides et lipides")} : <b>${TR("table CIQUAL")}</b></span></div>
+        <div class="s">${m.connus >= m.total
+          ? TR("Table de composition des aliments de l'ANSES.")
+          : (m.total - m.connus === 1
+              ? TR("Un aliment du jour n'y figure pas : il compte pour zéro.")
+              : TR("{n} aliments du jour n'y figurent pas : ils comptent pour zéro.")
+                  .replace("{n}", m.total - m.connus))}</div>
       </div>
     </div>
     <button class="btn btn-accent" id="mc-ok" style="width:100%;">${TR("Compris !")}</button>`);
@@ -9598,9 +9695,15 @@ function openAjoutAliment(meal){
     /* Ce que ça pèse vraiment, en quatre cases plutôt qu'en une phrase. Le tableau
        des aliments ne porte que les protéines et les calories : on n'affiche que ce
        qu'on sait. Inventer des glucides serait pire que de ne rien dire. */
+    /* les glucides et les lipides viennent de la table CIQUAL, quand l'aliment y est */
+    const mac = MACROS_IDX[nom] || MACROS_IDX[court];
+    const gluc = mac ? Math.round(mac[0] * part) : null;
+    const lipi = mac ? Math.round(mac[1] * part) : null;
     liveEl.innerHTML = `<div class="nut">
-        ${tuileNut(icoM("flamme", 18), "#e2622a", kcal, "", "kcal")}
-        ${tuileNut(icoM("muscle", 18), "#f58220", prot, "g", TR("protéines"))}
+        ${tuileNut(icoM("flamme", 18), NUT_C.kcal, kcal, "", "kcal")}
+        ${tuileNut(icoM("muscle", 18), NUT_C.prot, prot, "g", TR("protéines"))}
+        ${mac ? tuileNut(icoM("cereale", 18), NUT_C.gluc, gluc, "g", TR("glucides")) : ""}
+        ${mac ? tuileNut(IC_GOUTTE, NUT_C.lip, lipi, "g", TR("lipides")) : ""}
       </div>
       <div class="nut-l">${esc(piece
         ? TR("Pour {q} {u}").replace("{q}", q).replace("{u}", uni + (q > 1 ? "s" : ""))
@@ -9608,7 +9711,8 @@ function openAjoutAliment(meal){
             .replace("{u}", liquide ? "cl" : "g").replace("{n}", court.toLowerCase()))}</div>`;
     return {label: piece
       ? `${court} ×${q} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`
-      : `${court} ${q} ${liquide?"cl":"g"} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`, prot, kcal};
+      : `${court} ${q} ${liquide?"cl":"g"} (~${prot} ${TR("g prot.")} · ${kcal} kcal)`,
+      prot, kcal, gluc, lip: lipi};
   };
   foodEl.onchange = calc; gEl.oninput = calc;
   /* on rouvre la fiche avec le produit dedans : plus simple et plus sûr que de
@@ -9696,6 +9800,9 @@ function openAjoutAliment(meal){
       const r = calc();
       if(!r) return;
       label = r.label; prot = r.prot; kcal = r.kcal;
+      /* on retient les glucides et lipides pour CE libellé, comme le fait un scan :
+         le rapport de la journée les retrouvera sans avoir à redéfaire le calcul */
+      if(r.gluc != null){ if(!db.macros) db.macros = {}; db.macros[label] = [r.gluc, r.lip]; }
     }
     if(document.getElementById("ot-save").checked){
       const ty = habitType(meal);
