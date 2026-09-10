@@ -2503,7 +2503,13 @@ async function lancer(){
     eq("Une grille par groupe", liste.querySelectorAll(".al-grid").length, F.eval("FOOD_100G").length);
     vrai("Chaque pastille porte une émoticône",
       cartes.every(c=>{ const t = c.querySelector(".ic").textContent.trim(); return t.length > 0; }));
-    vrai("…et ses protéines", cartes.every(c=>/\d/.test(c.querySelector(".g").textContent)));
+    /* Les protéines ne sont plus en bout de fiche : « Frites … 6 g » se lisait comme
+       le poids de la portion. Les valeurs complètes s'affichent sous la quantité,
+       une fois l'aliment choisi. */
+    vrai("Plus de grammes de protéines en bout de fiche",
+      cartes.every(c=>!c.querySelector(".g")));
+    vrai("…mais chacune dit encore ses calories",
+      cartes.every(c=>/kcal/.test(c.querySelector(".q").textContent)));
     const par = n => cartes.find(c=>c.querySelector(".nm").textContent === n);
     vrai("Le poulet a son pilon", par("Poulet").querySelector(".ic").textContent === "🍗");
     vrai("L'œuf a son œuf", par("Œuf").querySelector(".ic").textContent === "🥚");
