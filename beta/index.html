@@ -1733,7 +1733,9 @@
      donc assombri d'un seul element, sans decouper quoi que ce soit.
      Niveau 50 : au-dessus de la barre du bas (40) et du minuteur (45), en dessous du
      parcours d'accueil (55) et des fiches (60). */
-  .gd-voile{position:fixed; inset:0; z-index:50;}
+  /* touch-action:none : sans lui, un doigt posé sur le voile fait défiler la page
+     DERRIÈRE, et le trou reste en place — il désigne alors le vide. */
+  .gd-voile{position:fixed; inset:0; z-index:50; touch-action:none; overscroll-behavior:none;}
   .gd-trou{position:fixed; border-radius:16px; pointer-events:none;
     box-shadow:0 0 0 9999px rgba(0,0,0,.68);
     transition:top .24s ease, left .24s ease, width .24s ease, height .24s ease;}
@@ -3405,8 +3407,10 @@ const TRAD = {en:{
   "Ajoute-le une fois avec ses valeurs : il restera dans ta liste.":"Add it once with its values: it stays in your list.",
   "Ton poids":"Your weight",
   "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines.":"What matters is not today's number but the slope over several weeks.",
-  "Tes courbes":"Your charts",
-  "Charges, volume par muscle, régularité. Elles se remplissent en t'entraînant.":"Loads, volume per muscle, consistency. They fill up as you train.",
+  "Tes protéines":"Your protein",
+  "Sept jours d'un coup d'œil. Ils viennent de ce que tu coches dans Alimentation.":"Seven days at a glance, from what you tick off under Food.",
+  "Tes charges":"Your loads",
+  "L'évolution de ce que tu soulèves, exercice par exercice.":"How what you lift changes, exercise by exercise",
   "Aucune séance pour l'instant.":"No workouts yet.",
   "Appuie sur ＋ pour créer la première.":"Tap ＋ to create your first one.",
   "Aucune séance enregistrée pour l'instant.":"No workouts logged yet.",
@@ -6930,7 +6934,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 01h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 02h03 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7851,9 +7855,13 @@ const GUIDES = {
     ["#meal-panel", "Ce que tu manges", "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul."],
     ["#eat-add", "Ton aliment n'y est pas ?", "Ajoute-le une fois avec ses valeurs : il restera dans ta liste."]
   ],
+  /* Des cibles PRÉCISES, jamais un conteneur : « #wt-sec » englobait le poids et les
+     protéines, et le projecteur éclairait la moitié de l'écran — il ne montrait plus
+     rien du tout. */
   prg: [
-    ["#wt-sec", "Ton poids", "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines."],
-    ["#prg-body", "Tes courbes", "Charges, volume par muscle, régularité. Elles se remplissent en t'entraînant."]
+    ["#wt-sec > .card", "Ton poids", "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines."],
+    ["#prot-sec .card", "Tes protéines", "Sept jours d'un coup d'œil. Ils viennent de ce que tu coches dans Alimentation."],
+    ["#prg-body .card", "Tes charges", "L'évolution de ce que tu soulèves, exercice par exercice."]
   ]
 };
 let guideEnCours = false;
@@ -7875,20 +7883,39 @@ function lancerGuide(onglet){
 
   let i = 0;
   const finir = ()=>{
+    window.removeEventListener("scroll", placer, {capture:true});
+    window.removeEventListener("resize", placer);
     voile.remove(); bulle.remove(); guideEnCours = false;
   };
+  /* Le trou et la bulle sont en position fixe, la page ne l'est pas : au moindre
+     défilement — le nôtre comme celui d'un doigt égaré — l'encadré se retrouverait à
+     désigner autre chose. On replace donc à chaque défilement et à chaque
+     redimensionnement, tant que la visite est ouverte. */
+  let cibleCourante = null;
+  const placer = ()=>{
+    if(!cibleCourante) return;
+    const r = cibleCourante.getBoundingClientRect(), m = 6;
+    trou.style.top = (r.top - m) + "px";
+    trou.style.left = (r.left - m) + "px";
+    trou.style.width = (r.width + m*2) + "px";
+    trou.style.height = (r.height + m*2) + "px";
+    const h = bulle.offsetHeight, w = bulle.offsetWidth, vh = window.innerHeight;
+    let top = r.bottom + 12;
+    if(top + h > vh - 12) top = Math.max(12, r.top - h - 12);
+    let left = r.left + r.width/2 - w/2;
+    left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
+    bulle.style.top = top + "px"; bulle.style.left = left + "px";
+  };
+  window.addEventListener("scroll", placer, {passive:true, capture:true});
+  window.addEventListener("resize", placer);
   const montrer = ()=>{
     const [sel, titre, texte] = etapes[i];
     const cible = document.querySelector(sel);
     if(!cible){ suivant(); return; }
+    cibleCourante = cible;
     cible.scrollIntoView({block:"center", inline:"nearest"});
     /* on mesure APRÈS le défilement, sinon on encadre l'ancienne position */
     requestAnimationFrame(()=>{
-      const r = cible.getBoundingClientRect(), m = 6;
-      trou.style.top = (r.top - m) + "px";
-      trou.style.left = (r.left - m) + "px";
-      trou.style.width = (r.width + m*2) + "px";
-      trou.style.height = (r.height + m*2) + "px";
       bulle.innerHTML = `<span class="k">${esc(TR(titre))}</span>
         <p>${esc(TR(texte))}</p>
         <div class="gd-bas">
@@ -7900,12 +7927,7 @@ function lancerGuide(onglet){
               TR(i < etapes.length - 1 ? "Suivant" : "C'est parti")}</button></div>
         </div>`;
       /* sous l'élément s'il y a la place, au-dessus sinon */
-      const h = bulle.offsetHeight, w = bulle.offsetWidth, vh = window.innerHeight;
-      let top = r.bottom + 12;
-      if(top + h > vh - 12) top = Math.max(12, r.top - h - 12);
-      let left = r.left + r.width/2 - w/2;
-      left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
-      bulle.style.top = top + "px"; bulle.style.left = left + "px";
+      placer();
       const p = document.getElementById("gd-passer"); if(p) p.onclick = finir;
       document.getElementById("gd-suite").onclick = suivant;
     });
@@ -8883,17 +8905,19 @@ function dessineRepas(panel){
     /* on traduit avant de découper : le nom ET la portion ressortent en anglais.
        data-opt garde le libellé français, qui est la clé enregistrée. */
     const pa = partsAliment(TR(on ? choisiL : socle), on ? protOf(choisiL) : prot);
-    /* choisie, la pastille cède sa place de droite aux boutons : les protéines
-       rejoignent la portion, sur la ligne du dessous */
-    const bas = on ? [pa.qCourt, pa.prot + " g"].filter(Boolean).join(" · ") : pa.qCourt;
+    /* La pastille ne dit plus les protéines. « Œuf … 6 g » se lisait comme le POIDS
+       de l'œuf, pas comme ce qu'il apporte : le chiffre le plus visible de l'écran
+       était celui que tout le monde comprenait de travers. Le total du jour est juste
+       au-dessus, et l'appui long ouvre le détail complet. Reste la portion, qui, elle,
+       est bien une quantité. */
+    const bas = pa.qCourt;
     return `<button class="fchip ${on?'on':''}" data-opt="${esc(on ? choisiL : socle)}"
         data-socle="${esc(soc)}" style="${on? `background:${coul};`:""}">
       <span class="ic">${foodIcon(socle)}</span>
       <span class="tx"><span class="nm">${esc(pa.nom)}</span>${bas? `<span class="q">${esc(bas)}</span>`:""}</span>
       ${on ? `<span class="fst">${f > 1.001
           ? `<span class="st" data-pas="-1" role="button" aria-label="${TR("Une portion de moins")}">−</span>` : ""}
-          <span class="st" data-pas="1" role="button" aria-label="${TR("Une portion de plus")}">＋</span></span>`
-        : `<span class="g">${pa.prot}<span style="font-size:9px;">g</span></span>`}
+          <span class="st" data-pas="1" role="button" aria-label="${TR("Une portion de plus")}">＋</span></span>` : ""}
     </button>`;
   };
   panel.innerHTML = groups.map(([titre,cle,items])=>`
@@ -12075,7 +12099,7 @@ function majNumerosApercu(){
    de carte à chaque échange. */
 function trierParGlisse(liste, onFin){
   if(!liste) return;
-  let el = null, y0 = 0, dy = 0;
+  let el = null, y0 = 0, dy = 0, pid = null;
   const bouger = (carte, e)=>{
     dy = e.clientY - y0;
     carte.style.transform = `translateY(${dy}px)`;
@@ -12089,39 +12113,62 @@ function trierParGlisse(liste, onFin){
     y0 = e.clientY - dy;
     carte.style.transform = `translateY(${dy}px)`;
   };
+  /* Les écouteurs vivent sur la FENÊTRE, pas sur la poignée.
+     C'est tout le correctif du glissement qui restait bloqué en l'air. echanger()
+     déplace la carte dans le DOM à chaque échange, et la poignée voyage avec elle :
+     un navigateur traite ce insertBefore comme un retrait suivi d'une insertion, ce
+     qui ARRACHE la capture du pointeur. Les pointermove suivants partaient alors vers
+     l'élément réellement sous le doigt, le pointerup n'était jamais reçu par la
+     poignée, et la carte restait figée, translatée, la classe « prend » collée.
+     Écoutés sur la fenêtre, ces événements arrivent quoi qu'il arrive. */
+  let surMove = null, lacher = null;
+  /* On retire les écouteurs, on ne détruit PAS les fonctions : elles resservent au
+     glissé suivant. Les mettre à null ici faisait que le deuxième déplacement posait
+     des écouteurs vides — la carte se saisissait, et plus rien ne la reposait. */
+  const finir = ()=>{
+    window.removeEventListener("pointermove", surMove);
+    window.removeEventListener("pointerup", lacher);
+    window.removeEventListener("pointercancel", lacher);
+  };
+  surMove = e=>{
+    if(!el || e.pointerId !== pid) return;
+    e.preventDefault();
+    bouger(el, e);
+    const r = el.getBoundingClientRect(), centre = r.top + r.height/2;
+    const prec = el.previousElementSibling, suiv = el.nextElementSibling;
+    if(prec && prec.classList.contains("pv-ex")){
+      const rp = prec.getBoundingClientRect();
+      if(centre < rp.top + rp.height/2){ echanger(el, prec, true, e); return; }
+    }
+    if(suiv && suiv.classList.contains("pv-ex")){
+      const rs = suiv.getBoundingClientRect();
+      if(centre > rs.top + rs.height/2){ echanger(el, suiv, false, e); return; }
+    }
+  };
+  lacher = e=>{
+    if(!el) return;
+    if(e && e.pointerId != null && e.pointerId !== pid) return;
+    el.style.transform = "";
+    el.classList.remove("prend");
+    el = null; pid = null;
+    finir();
+    onFin([...liste.querySelectorAll(".pv-ex")].map(c=>Number(c.dataset.ord)));
+  };
   liste.querySelectorAll("[data-poignee]").forEach(p=>{
     p.addEventListener("pointerdown", e=>{
       if(e.pointerType === "mouse" && e.button !== 0) return;
+      /* un glissement resté coincé ne doit pas empêcher le suivant */
+      if(el) lacher(null);
       el = p.closest(".pv-ex");
+      if(!el) return;
+      pid = e.pointerId;
       y0 = e.clientY; dy = 0;
       el.classList.add("prend");
-      try{ p.setPointerCapture(e.pointerId); }catch(err){}
+      window.addEventListener("pointermove", surMove, {passive:false});
+      window.addEventListener("pointerup", lacher);
+      window.addEventListener("pointercancel", lacher);
       e.preventDefault();
     });
-    p.addEventListener("pointermove", e=>{
-      if(!el) return;
-      e.preventDefault();
-      bouger(el, e);
-      const r = el.getBoundingClientRect(), centre = r.top + r.height/2;
-      const prec = el.previousElementSibling, suiv = el.nextElementSibling;
-      if(prec && prec.classList.contains("pv-ex")){
-        const rp = prec.getBoundingClientRect();
-        if(centre < rp.top + rp.height/2){ echanger(el, prec, true, e); return; }
-      }
-      if(suiv && suiv.classList.contains("pv-ex")){
-        const rs = suiv.getBoundingClientRect();
-        if(centre > rs.top + rs.height/2){ echanger(el, suiv, false, e); return; }
-      }
-    });
-    const lacher = ()=>{
-      if(!el) return;
-      el.style.transform = "";
-      el.classList.remove("prend");
-      el = null;
-      onFin([...liste.querySelectorAll(".pv-ex")].map(c=>Number(c.dataset.ord)));
-    };
-    p.addEventListener("pointerup", lacher);
-    p.addEventListener("pointercancel", lacher);
   });
 }
 /* `lieuFait` : l'aperçu se redessine (on a changé de lieu, refermé une fiche
@@ -14900,6 +14947,9 @@ function renderProteinSection(sec){
   const cap = target*1.3;
   const hit = days.filter(x=>x.v>=target).length;
   const div = document.createElement("div");
+  /* une étiquette de la visite guidée le désigne : sans repère, elle encadrait toute
+     la section, poids compris */
+  div.id = "prot-sec";
   if(!any){
     div.innerHTML = `<div class="card">
       <div class="card-t">${icoTitre(icoM("muscle", 22))}${TR("Protéines")}</div>
