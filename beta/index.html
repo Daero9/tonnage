@@ -7074,7 +7074,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 15h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 15h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13243,6 +13243,25 @@ function renderActive(app){
           majSerieActive();
           ondeSurBloc();
           startRest(60);
+          return;
+        }
+        /* Un gainage se TIENT, il ne se rate pas de quelques répétitions : « aurais-tu
+           pu faire plus de reps ? » ne veut rien dire quand la consigne est une durée.
+           On valide, on lance le repos, et on s'arrête là. Le moteur adaptatif sait
+           faire sans la réponse — une série sans RIR compte pour un effort ordinaire. */
+        if(st.done && estIsometrique(ex)){
+          const resteIso = a.entries.some(e2=>e2.sets.some(s2=>!s2.done && !s2.warm));
+          if(resteIso) startRest((en.target && en.target.rest) || db.settings.rest);
+          else {
+            restbar.classList.remove("show");
+            if(rest.int){ clearInterval(rest.int); rest.int = null; }
+            setTimeout(()=>{
+              if(!document.body.contains(card)) return;
+              exerciceFini(card, ex.name, ()=>{ en.replie = true; save(); renderSurPlace(); });
+            }, 500);
+          }
+          majSerieActive();
+          ondeSurBloc();
           return;
         }
         if(st.done){
