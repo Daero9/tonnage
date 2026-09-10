@@ -1332,7 +1332,21 @@
   .restbar.drag{transition:none; box-shadow:0 14px 40px rgba(0,0,0,.55); cursor:grabbing;}
   .restbar .grip{width:17px; flex:0 0 auto; display:flex; flex-direction:column; gap:3.5px; opacity:.65; margin-right:2px;}
   .restbar .grip i{display:block; height:2.5px; border-radius:2px; background:#fff;}
-  .restbar.show{display:flex;}
+  /* Elle apparaissait d'un bloc — « display:none » puis « display:flex » — et c'est
+     l'element le PLUS frequent de l'app : une fois par serie validee, quatorze fois
+     dans une seance de cinq exercices. Elle monte donc de sa propre hauteur, sur le
+     meme ressort que les fiches, et repart par ou elle est venue.
+     La courbe litterale d'abord, le ressort ensuite : un navigateur qui ignore linear()
+     laisse tomber la seconde ligne et garde la premiere. */
+  .restbar.show{display:flex; animation:reposIn .42s cubic-bezier(.22,1,.36,1) backwards;}
+  .restbar.show{animation-timing-function:linear(0, 0.0329, 0.1133, 0.2193, 0.3353, 0.4505, 0.5583, 0.6546, 0.7377, 0.8072, 0.8637, 0.9083, 0.9426, 0.9682, 0.9866, 0.9992, 1.0074, 1.0122, 1.0146, 1.0152, 1.0146, 1.0134, 1.0118, 1.01, 1.0083, 1.0066, 1);}
+  @keyframes reposIn{from{opacity:0; transform:translateY(26px) scale(.94);}}
+  /* posee en haut de l'ecran, elle vient de l'autre cote */
+  .restbar.show.haut{animation-name:reposInHaut;}
+  @keyframes reposInHaut{from{opacity:0; transform:translateY(-26px) scale(.94);}}
+  /* pendant un glisse, aucune animation ne doit disputer la position au doigt */
+  .restbar.drag{animation:none;}
+  @media (prefers-reduced-motion:reduce){ .restbar.show{animation:none;} }
   .restbar .t{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; min-width:86px;}
   .restbar .lbl{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.75;}
   .restbar button{background:rgba(26,20,8,.14); border-radius:10px; padding:8px 12px; font-weight:800; font-size:14px; color:var(--accent-ink);}
@@ -3802,6 +3816,8 @@ const TRAD = {en:{
   "Tu progresses":"You are progressing",
   "Il manque des séances":"Sessions are missing",
   "Tes charges stagnent":"Your loads have stalled",
+  "Tes séances s'arrêtent en route":"Your sessions stop halfway",
+  "Tu viens t'entraîner, mais tu ne fais que {f} des {p} exercices prévus, et {b}. Termine ce que tu commences avant de chercher ailleurs.":"You show up, but you only do {f} of the {p} exercises planned, and {b}. Finish what you start before looking elsewhere.",
   "{n} séances sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.":"{n} sessions over the last three weeks. {m} more {s} and I can tell you whether you are progressing.",
   "{n} séances enregistrées, mais aucun exercice revu deux fois. Refais les mêmes mouvements d'une séance à l'autre : c'est ce qui permet de comparer.":"{n} sessions logged, but no exercise repeated twice. Do the same movements from one session to the next: that is what makes them comparable.",
   "aucun de tes {t} exercices suivis n'a monté":"none of your {t} tracked exercises went up",
@@ -7300,7 +7316,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 20h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 23h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8394,6 +8410,10 @@ function lancerGuide(onglet, surFiche){
     cible.scrollIntoView({block:"center", inline:"nearest"});
     /* on mesure APRÈS le défilement, sinon on encadre l'ancienne position */
     apresRendu(()=>{
+      /* Entre l'appel et ce rendu différé, la visite a pu se fermer — un appui sur le
+         voile, un « Passer », un test qui enchaîne. La bulle n'est alors plus dans la
+         page, et « getElementById("gd-suite").onclick » plantait sur null. */
+      if(!bulle.isConnected) return;
       bulle.innerHTML = `<span class="k">${esc(TR(titre))}</span>
         <p>${esc(TR(texte))}</p>
         <div class="gd-bas">
@@ -9065,6 +9085,11 @@ function startRest(sec){
   rest.remaining = 0;
   rest.total = sec;
   rest.end = Date.now() + sec*1000;
+  /* Entre deux series la barre reste affichee : rajouter « show » n'anime alors rien,
+     une classe deja posee ne relance aucune animation. On la retire le temps d'une
+     image pour que chaque repos ait bien son arrivee. */
+  restbar.classList.remove("show");
+  void restbar.offsetWidth;
   restbar.classList.add("show");
   verifierAlarmeExacte();          /* une seule fois dans la vie de l'application */
   /* « tenue » aussi : une seance de gainage terminee laissait la marque, et le repos
@@ -13477,6 +13502,19 @@ function exerciceFini(card, nom, apres){
   if(navigator.vibrate) try{ navigator.vibrate([12, 60, 18]); }catch(e){}
   setTimeout(()=>{ if(typeof apres === "function") apres(); }, 1250);
 }
+/* Une carte terminee se replie — c est ainsi qu on sait qu elle est finie — mais le
+   suivant restait a trouver soi-meme, en remontant a la main, en soufflant, par-dessus
+   la carte d astuce. On l amene. Le bloc « start » et non « center » : la carte doit
+   commencer sous le bandeau, pas flotter au milieu. */
+function allerAuProchainExo(){
+  const a = db.active; if(!a) return;
+  const i = a.entries.findIndex(en=>!en.replie && en.sets.some(s=>!s.done && !s.warm));
+  const cible = (i >= 0)
+    ? document.querySelector('.ex-card[data-ei="' + i + '"]')
+    : document.getElementById("finish-w");     /* plus rien a faire : le bouton de fin */
+  if(!cible) return;
+  try{ cible.scrollIntoView({block:"start", behavior:"smooth"}); }catch(e){ cible.scrollIntoView(); }
+}
 function renderActive(app){
   const a = db.active;
   /* la photo du bandeau suit les exercices de la séance, comme sur la carte du programme */
@@ -13766,7 +13804,9 @@ function renderActive(app){
             if(rest.int){ clearInterval(rest.int); rest.int = null; }
             setTimeout(()=>{
               if(!document.body.contains(card)) return;
-              exerciceFini(card, ex.name, ()=>{ en.replie = true; save(); renderSurPlace(); });
+              exerciceFini(card, ex.name, ()=>{
+                en.replie = true; save(); renderSurPlace(); allerAuProchainExo();
+              });
             }, 500);
           }
           majSerieActive();
@@ -13835,7 +13875,9 @@ function renderActive(app){
               delai || (reste ? 2600 : 1200));
             if(!reste) setTimeout(()=>{
               if(!document.body.contains(card)) return;
-              exerciceFini(card, ex.name, ()=>{ en.replie = true; save(); renderSurPlace(); });
+              exerciceFini(card, ex.name, ()=>{
+                en.replie = true; save(); renderSurPlace(); allerAuProchainExo();
+              });
             }, 1300);
           };
           ask.innerHTML = `<div class="rir-fait">${esc(fait)}</div>
@@ -14137,7 +14179,15 @@ function renderActive(app){
       db.history.push({
         id:recap.id, date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         start:a.start, end:a.start + dureeSeance2(a),
-        entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), t:(s.t || undefined), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length)
+        entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), t:(s.t || undefined), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length),
+        /* Ce qui etait AU PLAN et n a pas ete fait. Sans cette ligne, une seance ou l on
+           abandonne apres deux exercices sur cinq s enregistre comme une seance de deux
+           exercices : rien ne distingue « je n avais rien prevu de plus » de « j ai
+           laisse tomber ». Le bandeau de progression concluait alors a une stagnation
+           de charges et renvoyait vers le sommeil et les proteines.
+           On garde a cote, jamais dans `entries` : tout le reste du code parcourt
+           `entries` en supposant des series, une entree vide y ferait des degats. */
+        sautes: a.entries.filter(en=>!en.sets.some(s=>s.done && !s.warm)).map(en=>en.exId)
       });
       db.active=null; arreterChronos(); save(); render();
       setTimeout(()=>openFinSeance(recap), 260);
@@ -15165,6 +15215,15 @@ function verdictProgression(){
     if(!v) return;
     (suites[en.exId] = suites[en.exId] || []).push({charge: w > 0, v});
   }));
+  /* Ce qu'on prevoit et ce qu'on fait. Une seance abandonnee en cours de route pese
+     autant qu'une seance manquee : elle ne compte pas ses exercices. */
+  let prevus = 0, faits = 0;
+  recentes.forEach(s=>{
+    const s2 = (s.sautes || []).length;
+    faits += (s.entries || []).length;
+    prevus += (s.entries || []).length + s2;
+  });
+  const abandon = prevus > 0 && faits * 4 < prevus * 3;   /* moins des trois quarts */
   let monte = 0, compares = 0;
   Object.keys(suites).forEach(exId=>{
     const l = suites[exId];
@@ -15195,13 +15254,18 @@ function verdictProgression(){
     return {ton:"bon", titre: TR("Tu progresses"),
       texte: TR("{s} séances en trois semaines, et {b}.")
                .replace("{s}", recentes.length).replace("{b}", bilan)};
-  /* Ça ne monte pas. Deux causes très différentes, et la mauvaise réponse fait perdre
-     des semaines : on ne conseille pas de changer d'entraînement à quelqu'un qui n'y
-     va pas. L'assiduité passe donc en premier. */
+  /* Ça ne monte pas. Plusieurs causes très différentes, et la mauvaise réponse fait
+     perdre des semaines : on ne conseille pas de changer d'entraînement à quelqu'un qui
+     n'y va pas, ni de dormir plus à quelqu'un qui abandonne au troisième exercice.
+     L'assiduité passe donc en premier, puis les séances menées jusqu'au bout. */
   if(recentes.length * 5 < attendues * 3)
     return {ton:"plat", titre: TR("Il manque des séances"),
       texte: TR("{s} séances en trois semaines au lieu de {a}, et {b}. C'est la régularité qui bloque le reste.")
                .replace("{s}", recentes.length).replace("{a}", attendues).replace("{b}", bilan)};
+  if(abandon)
+    return {ton:"plat", titre: TR("Tes séances s'arrêtent en route"),
+      texte: TR("Tu viens t'entraîner, mais tu ne fais que {f} des {p} exercices prévus, et {b}. Termine ce que tu commences avant de chercher ailleurs.")
+               .replace("{f}", faits).replace("{p}", prevus).replace("{b}", bilan)};
   return {ton:"plat", titre: TR("Tes charges stagnent"),
     texte: TR("{s} séances en trois semaines — la régularité est là — mais {b}. Regarde tes protéines et ton sommeil avant de changer d'entraînement.")
              .replace("{s}", recentes.length).replace("{b}", bilan)};

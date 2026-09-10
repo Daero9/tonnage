@@ -5223,6 +5223,114 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- ce qu'on a sauté laisse une trace */
+  /* finirSeance() ne gardait que les séries cochées : l'app enregistrait ce qu'on avait
+     fait, jamais ce qu'on avait prévu et pas fait. Une séance abandonnée au deuxième
+     exercice sur cinq s'enregistrait comme une séance de deux exercices — et le bandeau
+     de progression concluait à une stagnation de charges, renvoyant vers le sommeil et
+     les protéines quelqu'un qui, en réalité, ne terminait pas ses séances. */
+  grp("Ce qu'on a sauté laisse une trace");
+  neuf();
+  await (async ()=>{
+    const noms = ["Développé couché", "Tirage vertical", "Développé militaire haltères",
+                  "Élévations latérales poulie", "Extension poulie (corde)"];
+    const ids = noms.map(n=>id(n));
+    DB.active = {id:"t-saut", name:"Haut", templateId:null, start:Date.now() - 6e5,
+      entries: ids.map(i=>({exId:i, target:{sets:2, reps:"8-12", rest:120},
+        sets:[serie(60, 10), serie(60, 10)].map(x=>Object.assign({}, x, {done:false}))}))};
+    /* deux exercices menés au bout, trois laissés de côté */
+    DB.active.entries[0].sets.forEach(x=>{ x.done = true; });
+    DB.active.entries[1].sets.forEach(x=>{ x.done = true; });
+
+    F.eval("curTab = 'seance'; render()");
+    await attendre(()=>!!F.document.getElementById("finish-w"), 3000);
+    F.document.getElementById("finish-w").click();
+    /* terminer une séance demande confirmation : la fiche s'ouvre, on répond oui */
+    await attendre(()=>!!F.document.getElementById("cf-yes"), 3000);
+    F.document.getElementById("cf-yes").click();
+    await attendre(()=>DB.history.length > 0, 4000);
+    const s2 = DB.history[DB.history.length - 1];
+    eq("Les exercices faits sont enregistrés", (s2.entries || []).length, 2);
+    eq("…et les trois sautés aussi", (s2.sautes || []).length, 3);
+    vrai("…nommément",
+      (s2.sautes || []).join() === ids.slice(2).join(), (s2.sautes || []).join(" / "));
+    /* la trace vit À CÔTÉ des entrées : tout le reste du code parcourt « entries » en
+       supposant des séries, une entrée vide y ferait des dégâts */
+    vrai("Aucune entrée vide dans l'historique",
+      (s2.entries || []).every(en=>en.sets && en.sets.length));
+    F.hideSheet();
+  })();
+  neuf();
+
+  /* --------------------------------------- le verdict nomme la bonne cause */
+  grp("Le verdict distingue l'abandon de la stagnation");
+  neuf();
+  await (async ()=>{
+    const iso = n => new Date(Date.now() - n*864e5).toISOString();
+    const A = id("Développé couché"), B = id("Squat");
+    const C = id("Tirage vertical"), D = id("Curl haltères"), Eq = id("Face pull");
+    /* dix séances, assidu, charges plates — mais deux exercices faits sur cinq prévus */
+    const seance = j => ({id:"s" + j, date: iso(j),
+      entries:[{exId:A, sets:[serie(80, 10), serie(80, 10)]},
+               {exId:B, sets:[serie(100, 10), serie(100, 10)]}],
+      sautes:[C, D, Eq]});
+    DB.profile.days = 4;
+    DB.active = null;
+    DB.history = [20, 19, 17, 15, 13, 10, 8, 6, 3, 1].map(seance).reverse();
+
+    const avec = F.verdictProgression();
+    eq("L'abandon est nommé", avec.titre, "Tes séances s'arrêtent en route");
+    vrai("…avec les deux chiffres", /20 des 50/.test(avec.texte), avec.texte);
+    vrai("…et il n'envoie pas dormir", !/sommeil/.test(avec.texte));
+
+    /* sans la trace — l'état d'avant — l'app disait exactement le contraire */
+    DB.history.forEach(x=>{ delete x.sautes; });
+    const sans = F.verdictProgression();
+    eq("Sans la trace, l'app parlait de stagnation", sans.titre, "Tes charges stagnent");
+    vrai("…et renvoyait vers le sommeil", /sommeil/.test(sans.texte));
+
+    /* et quelqu'un qui termine ses séances n'est pas accusé d'abandonner */
+    DB.history = [20, 19, 17, 15, 13, 10, 8, 6, 3, 1].map(j=>{
+      const x = seance(j); x.sautes = []; return x; }).reverse();
+    eq("Séances menées au bout : on revient à la stagnation",
+      F.verdictProgression().titre, "Tes charges stagnent");
+  })();
+  neuf();
+
+  /* --------------------------------------- le suivant vient à toi */
+  grp("Le prochain exercice vient à toi");
+  neuf();
+  await (async ()=>{
+    const ids = ["Développé couché", "Tirage vertical", "Développé militaire haltères"].map(n=>id(n));
+    DB.active = {id:"t-suite", name:"Haut", templateId:null, start:Date.now() - 6e5,
+      entries: ids.map(i=>({exId:i, target:{sets:2, reps:"8-12", rest:120},
+        sets:[serie(60, 10), serie(60, 10)].map(x=>Object.assign({}, x, {done:false}))}))};
+    F.eval("curTab = 'seance'; render()");
+    await attendre(()=>!!F.document.querySelector('.ex-card[data-ei="1"]'), 3000);
+
+    /* le premier exercice est terminé et replié : c'est le DEUXIÈME qu'on vise */
+    DB.active.entries[0].sets.forEach(x=>{ x.done = true; });
+    DB.active.entries[0].replie = true;
+    const vise = () => {
+      const i = DB.active.entries.findIndex(en=>!en.replie && en.sets.some(x=>!x.done && !x.warm));
+      return i;
+    };
+    eq("On vise le premier exercice qui reste à faire", vise(), 1);
+    /* tout est fait : on vise le bouton de fin, pas une carte qui n'existe plus */
+    DB.active.entries.forEach(en=>{ en.sets.forEach(x=>{ x.done = true; }); en.replie = true; });
+    eq("Plus rien à faire : aucune carte à viser", vise(), -1);
+    F.eval("render()");
+    await attendre(()=>!!F.document.getElementById("finish-w"), 2000);
+    vrai("…et le bouton de fin est bien là pour prendre le relais",
+      !!F.document.getElementById("finish-w"));
+    /* la fonction existe et ne casse rien quand il n'y a plus de séance */
+    DB.active = null;
+    let plante = false;
+    try{ F.allerAuProchainExo(); }catch(e){ plante = true; }
+    vrai("Sans séance, elle ne fait rien plutôt que d'échouer", !plante);
+  })();
+  neuf();
+
   /* --------------------------------------- la pastille ne fuit pas sous le doigt */
   /* « Tes habitudes » se calculait sur TOUTES les journées, aujourd'hui compris. Cocher
      un aliment pour la deuxième fois de sa vie le promouvait donc d'un coup dans ce
