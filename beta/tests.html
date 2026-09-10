@@ -4673,6 +4673,53 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Une blessure ne fait plus monter la charge");
+  neuf();
+  /* L'app avertissait d'un côté et poussait de l'autre : elle pouvait afficher
+     « épaule sensible » sous un développé militaire ET proposer 2,5 kg de plus sur ce
+     même mouvement. Sur un exercice marqué « ça fait mal », la charge se maintient —
+     et surtout, l'app le DIT : une adaptation muette ne vaut rien. */
+  await (async ()=>{
+    const gardeP = DB.profile, gardeH = DB.history, gardeT = DB.templates, gardeA = DB.active;
+    const s4 = (w, r, rir) => ({w, r, done:true, warm:false, rir});
+    const dm = id("Développé militaire");
+    /* toutes les séries au sommet de la fourchette : sans blessure, l'app charge */
+    DB.history = [{id:"hb", date:new Date(Date.now() - 3*864e5).toISOString(),
+      name:"P", templateId:"tb", start:0, end:0,
+      entries:[{exId:dm, sets:[s4(30,12,1), s4(30,12,1)]}]}];
+    DB.templates = [{id:"tb", name:"Push", items:[
+      {exId:dm, sets:3, reps:"8-12", rest:120}]}];
+
+    DB.profile = Object.assign({}, gardeP, {injuries:[], douleurs:{}});
+    const sain = F.suggestFor(dm, {reps:"8-12", rest:120});
+    eq("Sans blessure, l'app charge", sain.mode, "up");
+
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
+    const bless = F.suggestFor(dm, {reps:"8-12", rest:120});
+    eq("Épaule douloureuse : la charge se maintient", bless.mode, "hold");
+    eq("…au même poids qu'avant", bless.w, sain.w - 2.5);
+    vrai("…et l'app sait qu'elle a ménagé quelque chose", !!bless.menage, bless.menage);
+    vrai("…et la raison nomme la zone", /Épaule/.test(bless.why || ""), bless.why);
+
+    /* une simple gêne ne bride rien : on ne prive pas de progression pour un tiraillement */
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"gene"}});
+    eq("Une simple gêne ne bloque pas la charge",
+      F.suggestFor(dm, {reps:"8-12", rest:120}).mode, "up");
+
+    /* et l'aperçu de la séance l'annonce, à côté de l'intensité */
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
+    DB.active = null;
+    F.openPreview("tb", true);
+    await new Promise(r=>setTimeout(r, 200));
+    const l = F.document.querySelector(".pv-ex .inj");
+    vrai("L'aperçu dit que la charge est maintenue",
+      !!l && /charge maintenue/.test(l.textContent), l ? l.textContent.trim() : "aucune ligne");
+    F.hideSheet();
+
+    DB.profile = gardeP; DB.history = gardeH; DB.templates = gardeT; DB.active = gardeA;
+  })();
+  neuf();
+
   grp("Valider un gainage ne pose pas de question");
   neuf();
   /* « Aurais-tu pu faire plus de reps ? » n'a pas de sens quand la consigne est une
