@@ -58,11 +58,13 @@ async function lancer(){
     DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
-    /* La visite de la fiche « Ajouter un aliment » se joue sur un voile plein écran :
-       elle passerait devant les boutons qu'un test cherche à toucher. Aucun test n'en
-       veut, sauf celui qui l'éprouve — et qui l'efface lui-même. */
+    /* Une visite se joue sur un voile plein écran : elle passerait devant les boutons
+       qu'un test cherche à toucher. Pire, render() en programme une pour 500 ms plus
+       tard — elle s'ouvrait alors au milieu d'un groupe suivant, et le test de la fiche
+       d'ajout mesurait CETTE visite-là au lieu de la sienne. Aucun test n'en veut, sauf
+       ceux qui les éprouvent, et qui effacent la clef eux-mêmes. */
     if(!DB.seen) DB.seen = {};
-    DB.seen["guide-ajoutAliment"] = true;
+    Object.keys(F.eval("GUIDES")).forEach(g=>{ DB.seen["guide-" + g] = true; });
   };
   const id = n => F.libId(n);
   /* Attendre une CONDITION, jamais un délai : la bulle d'une visite se remplit dans un
@@ -5218,6 +5220,57 @@ async function lancer(){
        (77 kg il y a 20 jours, 85 kg hier). Sans le tri, la lecture s'inverserait. */
     DB.history = assidu([85,84,82,82,80,80,79,78,77,77], [110,108,105,104,100,100,99,98,95,95]);
     eq("L'historique est retrié avant d'être lu", F.verdictProgression().ton, "bon");
+  })();
+  neuf();
+
+  /* --------------------------------------- une habitude se retire aussi */
+  /* Le panneau d'un repas montre TROIS sortes de pastilles : la bibliothèque, tes
+     favoris, et « Tes habitudes » — déduites de ce que tu as déjà mangé. trouverGroupe()
+     ne connaissait que les deux premières. Une habitude ne rendait donc aucun groupe :
+     pas de « Ne plus me le proposer », et pas de « Retirer de ce repas » puisqu'elle
+     n'est pas cochée aujourd'hui. Il restait « Ajouter à ce repas » et « Annuler » :
+     la pastille était indestructible. */
+  grp("Une habitude se retire aussi");
+  neuf();
+  await (async ()=>{
+    const L = "Œuf ×2 (~13 g prot. · 160 kcal)";
+    const jk = n => F.dayKey(new Date(Date.now() - n*864e5));
+    const repas = [L, "Riz (200 g cuit)", "Poulet (1 filet, 130 g cuit)"];
+    DB.hbPerso = {}; DB.hbMasque = {};
+    DB.habitSel = {};
+    DB.habitSel[jk(3)] = {midi: repas.slice()};
+    DB.habitSel[jk(5)] = {midi: repas.slice()};
+    DB.habitSel[jk(0)] = {midi: []};        /* mangé les jours passés, PAS aujourd'hui */
+
+    vrai("L'aliment est bien une habitude du midi",
+      F.habitudesDuRepas("midi").some(x=>x[0] === L));
+    vrai("…qui n'est ni dans la bibliothèque ni dans les favoris",
+      !F.eval("HB_OPTS").prot.some(x=>x[0] === L) && !Object.keys(DB.hbPerso).length);
+    eq("Elle rend maintenant un groupe", F.trouverGroupe(L, "midi"), "hab:midi");
+    vrai("…qui n'existe que pour ce repas", F.trouverGroupe(L, "soir") !== "hab:midi");
+
+    /* la fiche offre enfin de quoi la faire disparaître */
+    F.eval("curTab = 'eat'; render()");
+    await attendre(()=>!!F.document.querySelector("#meal-panel .fgrid"), 3000);
+    F.openModifAliment("midi", L);
+    await attendre(()=>!!F.document.getElementById("ma-cancel"), 2000);
+    vrai("La fiche propose de ne plus le proposer", !!F.document.getElementById("ma-del"));
+    /* il n'est pas au menu du jour : rien à en retirer */
+    vrai("…et pas de « retirer de ce repas », il n'y est pas",
+      !F.document.getElementById("ma-off"));
+
+    F.document.getElementById("ma-del").click();
+    await attendre(()=>!!F.document.getElementById("rt-oui"), 2000);
+    F.document.getElementById("rt-oui").click();
+    await attendre(()=>!F.document.getElementById("rt-oui"), 2000);
+
+    eq("Elle est masquée, par repas",
+      JSON.stringify(DB.hbMasque), JSON.stringify({"hab:midi": [L]}));
+    vrai("…et ne compte plus comme habitude proposée",
+      !F.habitudesDuRepas("midi").filter(x=>!F.habitudeMasquee(x[0], "midi")).some(x=>x[0] === L));
+    /* une habitude ne se supprime pas — elle se recalcule — donc elle se restaure */
+    eq("Elle reste restaurable", F.nbMasques(), 1);
+    F.hideSheet();
   })();
   neuf();
 
