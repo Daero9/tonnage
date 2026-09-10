@@ -1352,19 +1352,23 @@ async function lancer(){
       [...D2.querySelectorAll(".eat-stat .ico")].every(e=>!!e.querySelector(".icm")));
     vrai("Les protéines ont le biceps", !!D2.querySelector(".eat-stat .icm-muscle"));
     vrai("Les calories ont la flamme", !!D2.querySelector(".eat-stat .icm-flamme"));
-    vrai("Chacun affiche la part atteinte",
-      [...D2.querySelectorAll(".eat-stat .pc")].every(e=>/%|—/.test(e.textContent)));
+    /* Le pourcentage n'a de sens qu'une fois qu'on a mangé quelque chose : « 0 g » et
+       « 0 % » disaient deux fois le même vide. */
+    vrai("La part atteinte ne s'affiche que s'il y a de quoi la calculer",
+      [...D2.querySelectorAll(".eat-stat .pc")].every(e=>/%/.test(e.textContent)));
     eq("Les protéines du jour sont comptées",
       D2.querySelector(".eat-stat .v").textContent, String(F.dayProt(k)));
-    /* le recapitulatif des repas */
-    eq("Cinq repas au récapitulatif", D2.querySelectorAll(".eat-repas .er").length, 5);
-    vrai("Chaque repas porte son moment de la journée",
-      [...D2.querySelectorAll(".eat-repas .er .i")].every(e=>!!e.querySelector(".icm")));
-    vrai("Le matin a son lever de soleil", !!D2.querySelector(".eat-repas .icm-matin"));
-    vrai("Le soir a sa lune", !!D2.querySelector(".eat-repas .icm-soir"));
-    eq("Le repas ouvert est marqué", D2.querySelectorAll(".eat-repas .er.ici").length, 1);
-    eq("…de sa couleur",
-      D2.querySelector(".eat-repas .er.ici").style.borderColor, "var(--midi)");
+    /* Les cinq repas n'étaient écrits qu'une fois de trop : une rangée de cartes
+       au-dessus des onglets, mêmes noms, même effet. La rangée a disparu, son chiffre
+       — les protéines du repas — a rejoint l'onglet. */
+    eq("Plus de rangée de repas en double", D2.querySelectorAll(".eat-repas .er").length, 0);
+    eq("Cinq onglets de repas, et cinq seulement",
+      D2.querySelectorAll(".meal-tab").length, 5);
+    vrai("Chaque onglet porte les protéines de son repas",
+      [...D2.querySelectorAll(".meal-tab b")].length === 5
+      && [...D2.querySelectorAll(".meal-tab b")].every(e=>/\d+ g|—/.test(e.textContent)),
+      [...D2.querySelectorAll(".meal-tab b")].map(e=>e.textContent).join("/"));
+    eq("Un seul repas est ouvert", D2.querySelectorAll(".meal-tab.on").length, 1);
     /* les titres de categorie */
     const hs = [...D2.querySelectorAll(".meal-h")];
     vrai("Chaque catégorie porte un signe", hs.length > 0 && hs.every(h=>!!h.querySelector(".icm")));
@@ -4469,6 +4473,35 @@ async function lancer(){
     vrai("Une séance très courte n'est plus gonflée à 15 min",
       F.dureeMinutes([it("Gainage", 3, "60", 60)]) < 15,
       F.dureeMinutes([it("Gainage", 3, "60", 60)]));
+  })();
+  neuf();
+
+  grp("« Par où commencer » sait s'effacer");
+  neuf();
+  /* Ce bloc existait parce que rien n'expliquait le parcours. Les étiquettes de
+     première visite montrent maintenant du doigt le carrousel et le bouton ＋ —
+     répéter la même chose en liste juste au-dessus n'aide plus. Il ne reste que
+     pour quelqu'un à qui il manque vraiment une étape. */
+  await (async ()=>{
+    const gardeT = DB.templates, gardeH = DB.history, gardeP = DB.profile;
+    const zone = () => { F.eval("curTab='seance'; render()"); const z = F.document.getElementById("start-zone");
+      return z ? z.textContent.trim() : ""; };
+
+    DB.history = []; DB.templates = []; DB.profile = {};
+    vrai("Sans profil ni séance, le bloc guide", zone().length > 0);
+
+    DB.profile = gardeP;
+    vrai("Avec le profil mais sans séance, il reste", zone().length > 0);
+
+    DB.templates = [{id:"tsc", name:"X", items:[{exId:id("Squat"), sets:3, reps:"8-12", rest:90}]}];
+    eq("Profil rempli et séance créée : il s'efface", zone(), "");
+
+    /* et il ne revient évidemment pas une fois qu'on s'est entraîné */
+    DB.history = [{id:"h1", date:new Date().toISOString(), name:"X", templateId:"tsc",
+      start:0, end:0, entries:[]}];
+    eq("Après une séance faite, toujours rien", zone(), "");
+
+    DB.templates = gardeT; DB.history = gardeH; DB.profile = gardeP;
   })();
   neuf();
 
