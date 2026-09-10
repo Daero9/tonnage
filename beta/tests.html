@@ -4564,9 +4564,24 @@ async function lancer(){
       orphelines.join(", "));
     vrai("La table couvre l'essentiel", Object.keys(T).length > 90,
       Object.keys(T).length + " aliments");
-    /* deux nombres par aliment, jamais négatifs */
-    vrai("Deux valeurs par aliment, jamais négatives",
-      Object.values(T).every(v => v.length === 2 && v[0] >= 0 && v[1] >= 0));
+    /* glucides, lipides, puis sucres et saturés quand la table les donne */
+    vrai("Glucides et lipides pour chacun, jamais négatifs",
+      Object.values(T).every(v => v.length >= 2 && v[0] >= 0 && v[1] >= 0));
+    vrai("Au plus quatre valeurs",
+      Object.values(T).every(v => v.length <= 4));
+    /* Le détail ne peut pas dépasser le tout : il y a au plus autant de sucres que de
+       glucides, et au plus autant de saturés que de lipides. Un chiffre gonflé se
+       trahirait ici. On tolère l'arrondi. */
+    const debordent = Object.keys(T).filter(n => {
+      const v = T[n];
+      return (v[2] != null && v[2] > v[0] + 0.6) || (v[3] != null && v[3] > v[1] + 0.6);
+    });
+    vrai("Les sucres ne dépassent pas les glucides, les saturés pas les lipides",
+      debordent.length === 0, debordent.join(", "));
+    /* un trou reste un trou : jamais transformé en zéro */
+    vrai("Ce qui manque est écrit null, pas 0",
+      Object.values(T).some(v => v.length === 3 || v[3] === null || v[2] === null)
+      || Object.values(T).every(v => v.length === 4));
 
     /* Le contrôle qui compte : les calories reconstituées à partir des macros ne
        peuvent pas dépasser celles que l'app annonce. Un aliment dont les glucides
@@ -4588,12 +4603,43 @@ async function lancer(){
     /* et un aliment absent de la table ne fait pas tomber le calcul */
     vrai("Un aliment inconnu ne casse rien", F.macrosAliment("Chose inconnue") === null);
     const oeuf = F.macrosAliment("Œuf");
-    vrai("Un aliment connu répond", !!oeuf && oeuf.length === 2, JSON.stringify(oeuf));
+    vrai("Un aliment connu répond", !!oeuf && oeuf.length >= 2, JSON.stringify(oeuf));
     /* la portion multiplie : deux œufs valent deux fois un œuf */
     const deux = F.macrosAliment("Œuf ×2 (~13 g prot. · 156 kcal)");
     vrai("Deux portions comptent double",
       !!deux && Math.abs(deux[1] - oeuf[1] * 2) < 0.5,
       JSON.stringify(oeuf) + " → " + JSON.stringify(deux));
+
+    /* Une seule cible dans la fiche du jour : celle des protéines, qui vient du
+       profil. Celle des glucides et des lipides était de mon invention, et la
+       répartition entre les deux n'a pas d'effet démontré à calories et protéines
+       égales — la barre promettait un objectif qui n'en était pas un. */
+    const gardeSel = DB.habitSel;
+    DB.habitSel = {};
+    const k2 = F.jourAlim();
+    DB.habitSel[k2] = {matin:["Œuf", "Riz (200 g cuit)"]};
+    F.openMacros(k2);
+    const l = [...F.document.querySelectorAll(".mc-l")];
+    eq("Trois nutriments détaillés", l.length, 3);
+    eq("Une seule barre de progression : les protéines",
+      F.document.querySelectorAll(".mc-l .b").length, 1);
+    vrai("Les glucides disent leurs sucres",
+      /dont .* sucres/.test(l[1].textContent), l[1].textContent.replace(/\s+/g, " "));
+    vrai("Les lipides disent leurs saturés",
+      /dont .* saturés/.test(l[2].textContent), l[2].textContent.replace(/\s+/g, " "));
+    F.hideSheet();
+
+    /* Si un aliment CONNU n'a pas le détail des sucres — l'agneau, que CIQUAL ne
+       renseigne pas là-dessus — on ne publie pas un total qui l'oublierait en
+       silence. Un aliment absent de la table, lui, est déjà signalé par le compteur
+       « renseignés sur total ». */
+    DB.habitSel[k2] = {matin:["Œuf", "Agneau"]};
+    const m2 = F.macrosDuJour(k2);
+    vrai("Un aliment sans détail met les sucres en attente", m2.sucres === null,
+      JSON.stringify(m2));
+    vrai("…mais les saturés, eux, restent comptés", m2.satures != null,
+      JSON.stringify(m2));
+    DB.habitSel = gardeSel;
   })();
   neuf();
 
