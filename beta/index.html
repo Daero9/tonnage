@@ -6934,7 +6934,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 02h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 02h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8041,6 +8041,10 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
     if(e.touches.length !== 1){ y0 = null; return; }
     if(sheet.scrollTop > 0){ y0 = null; return; }
     if(e.target.closest('input[type="range"], select, textarea')){ y0 = null; return; }
+    /* La poignée d'un exercice sert à le déplacer VERS LE BAS aussi. Sans cette
+       exception, le même geste faisait deux choses : la carte descendait, et la fiche
+       entière descendait avec elle comme si on voulait la refermer. */
+    if(e.target.closest("[data-poignee]")){ y0 = null; return; }
     if(zoneDefilante(e.target)){ y0 = null; return; }
     y0 = e.touches[0].clientY; dy = 0; glisse = false;
     dernierY = y0; dernierT = performance.now(); vitesse = 0;
