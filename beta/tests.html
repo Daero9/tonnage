@@ -4548,6 +4548,70 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Le chiffre dit d'où il vient");
+  neuf();
+  /* Deux endroits où l'app posait un nombre sans un mot : la charge du jour, et le
+     record face à la dernière séance. Elle CONNAISSAIT la raison dans les deux cas —
+     suggestFor() la calcule, l'écart est une soustraction — et la jetait. */
+  await (async ()=>{
+    const gardeT = DB.templates, gardeH = DB.history, gardeA = DB.active;
+    const s2 = (w, r, rir) => ({w, r, done:true, warm:false, rir});
+    DB.history = [];
+    for(let k = 6; k >= 1; k--)
+      DB.history.push({id:"hv"+k, date:new Date(Date.now() - k*3.5*864e5).toISOString(),
+        name:"Push", templateId:"tv", start:0, end:0,
+        entries:[{exId:id("Développé couché"), sets:[s2(60 + k, 9, 2), s2(60 + k, 8, 1)]}]});
+    DB.templates = [{id:"tv", name:"Push", items:[
+      {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+
+    /* la charge du jour porte sa raison */
+    const o = F.objectifDuJour(id("Développé couché"), {reps:"8-12", rest:120});
+    vrai("L'objectif du jour connaît sa raison", !!(o && o.pourquoi), JSON.stringify(o));
+    vrai("…et elle tient en une phrase", o.pourquoi.length < 150, o.pourquoi.length);
+
+    DB.active = null;
+    F.eval("curTab = 'seance'");
+    F.startWorkout("tv");
+    F.eval("render()");
+    await new Promise(r=>setTimeout(r, 250));
+    const pt = F.document.querySelector("[data-pourquoi]");
+    vrai("Un point d'info est posé à côté de l'objectif", !!pt);
+    if(pt){
+      vrai("…dans l'étiquette, pas ailleurs", !!pt.closest(".obj-b .k"));
+      pt.click();
+      await new Promise(r=>setTimeout(r, 200));
+      const f = F.document.getElementById("sheet");
+      vrai("…et il ouvre une fiche courte",
+        /Pourquoi/.test(f.textContent) && f.textContent.trim().length < 260,
+        f.textContent.trim().length + " caractères");
+      F.hideSheet();
+    }
+    DB.active = null;
+
+    /* le record ne se contente plus de côtoyer la dernière séance */
+    F.eval("curTab = 'prg'; prgEx = " + JSON.stringify(id("Développé couché")) +
+           "; prgMetric = 'max'; render()");
+    await new Promise(r=>setTimeout(r, 250));
+    const v = F.document.getElementById("prg-verdict");
+    vrai("L'écart au record est écrit", !!v && v.textContent.trim().length > 0,
+      v ? v.textContent.trim() : "absent");
+    vrai("…et il dit qu'on est en dessous", /sous ton record/.test(v.textContent),
+      v.textContent.trim());
+
+    /* et quand la dernière séance EST le record, on le dit autrement */
+    DB.history = DB.history.map((h, i) => ({...h, entries:[{exId:id("Développé couché"),
+      sets:[s2(60 + i, 9, 2)]}]}));
+    F.eval("render()");
+    await new Promise(r=>setTimeout(r, 250));
+    const v2 = F.document.getElementById("prg-verdict");
+    vrai("Au sommet, le ton change", /meilleur niveau/.test(v2.textContent),
+      v2.textContent.trim());
+    vrai("…et la couleur aussi", /haut/.test(v2.className), v2.className);
+
+    DB.templates = gardeT; DB.history = gardeH; DB.active = gardeA;
+  })();
+  neuf();
+
   grp("Valider un gainage ne pose pas de question");
   neuf();
   /* « Aurais-tu pu faire plus de reps ? » n'a pas de sens quand la consigne est une
