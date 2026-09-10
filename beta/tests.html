@@ -5083,10 +5083,26 @@ async function lancer(){
       orphelines.join(", "));
     vrai("Aucun fichier n'est nommé à vide",
       Object.values(photos).every(f=>/^[a-z0-9-]+$/.test(f)));
-    /* deux exercices peuvent partager un dessin — le butterfly avant et arrière se
-       montrent sur la même machine — mais un exercice n'en a qu'un */
-    vrai("Il y a bien des dessins", Object.keys(photos).length > 40,
-      Object.keys(photos).length);
+    /* Chaque exercice a le sien : plus aucun ne retombe sur l'icône dessinée. */
+    const orphelins = [...noms].filter(n=>!photos[n]);
+    vrai("Chaque exercice a son dessin", orphelins.length === 0, orphelins.join(", "));
+    eq("Autant d'entrées que d'exercices", Object.keys(photos).length, noms.size);
+    /* Cinq mouvements donnent la MÊME image et se partagent un dessin — ce sont des
+       emprunts décidés, pas des oublis. On les nomme, pour qu'un partage qui
+       apparaîtrait par accident se voie. */
+    const partages = {};
+    Object.keys(photos).forEach(n=>{ (partages[photos[n]] = partages[photos[n]] || []).push(n); });
+    const doubles = Object.keys(partages).filter(f=>partages[f].length > 1).sort();
+    eq("Cinq dessins seulement sont partagés", doubles.length, 5);
+    const attendu = {
+      "butterfly-arriere-et-avant":["Butterfly (pec deck)", "Butterfly arrière"],
+      "developpe-haltere":["Développé militaire haltères", "Développé machine épaules"],
+      "extension-triceps-poulie-corde":["Extension poulie (corde)", "Kickback poulie"],
+      "pompes":["Pompes", "Pompes diamant"],
+      "traction":["Tractions", "Tractions supination"]
+    };
+    const inattendus = doubles.filter(f=>!attendu[f]);
+    vrai("…et chacun est un emprunt décidé", inattendus.length === 0, inattendus.join(", "));
   })();
   neuf();
 
