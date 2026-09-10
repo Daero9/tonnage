@@ -5239,6 +5239,53 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- la cible de protéines n'invente rien */
+  /* Elle valait « (currentWeight() || 74) * 1.9 » : quelqu'un qui répond « plus tard,
+     je veux d'abord regarder » au parcours d'accueil voyait 141 g s'afficher comme SON
+     objectif — un chiffre tiré d'un corps qui n'est pas le sien. Les calories, elles,
+     affichaient déjà « — » dans ce cas : la ligne des protéines était la seule à
+     inventer. */
+  grp("La cible de protéines n'invente rien");
+  neuf();
+  await (async ()=>{
+    /* le profil qu'on obtient en disant « plus tard » : aucun chiffre corporel */
+    DB.profile = {skipped:true};
+    DB.weights = []; DB.habitSel = {}; DB.dayFix = {}; DB.active = null;
+    vrai("Sans plan calorique, il n'y a rien à déduire", !F.planFor(DB.profile));
+    eq("La cible est inconnue, pas inventée", F.proteinTarget(), null);
+
+    F.eval("curTab = 'eat'; render()");
+    await attendre(()=>!!F.document.querySelector("[data-compte=prot]"), 3000);
+    const entete = F.document.getElementById("app").innerText.replace(/\s+/g, " ");
+    vrai("L'écran n'affiche plus 141 g", !/141/.test(entete), entete.slice(0, 120));
+    vrai("…il affiche un tiret, comme les calories", /PROTÉINES —|— 0 kcal|PROTÉINES\s*—/i.test(entete),
+      entete.slice(0, 120));
+
+    /* la section de Progression tient debout sans repère : ce sont les barres qui
+       comptent, pas la ligne de cible */
+    const jk = n => F.dayKey(new Date(Date.now() - n*864e5));
+    for(let n = 0; n < 5; n++)
+      DB.habitSel[jk(n)] = {midi:["Poulet (1 filet, 130 g cuit)", "Riz (200 g cuit)"]};
+    F.eval("curTab = 'prg'; render()");
+    await attendre(()=>!!F.document.getElementById("prot-sec"), 3000);
+    const sec = F.document.getElementById("prot-sec");
+    const barres = [...sec.querySelectorAll(".pr-b")].map(b=>b.style.height);
+    vrai("Les barres gardent une hauteur valable", barres.length > 0
+      && barres.every(h=>/^[\d.]+%$/.test(h)), barres.join(" "));
+    vrai("…mais aucun repère de cible n'est tracé", !sec.querySelector(".pr-target"));
+    vrai("…et on ne compte pas les jours « au quota » vers rien",
+      !/au quota/.test(sec.innerText), sec.innerText.replace(/\s+/g, " ").slice(0, 90));
+    vrai("…l'app dit ce qui lui manque", /Note ton poids/.test(sec.innerText));
+
+    /* une seule pesée rallume tout */
+    DB.weights = [{date:new Date().toISOString(), kg:80}];
+    eq("Une pesée suffit à retrouver une cible", F.proteinTarget(), Math.round(80 * 1.9));
+    F.eval("curTab = 'prg'; render()");
+    await attendre(()=>!!F.document.getElementById("prot-sec"), 3000);
+    vrai("…et le repère revient", !!F.document.querySelector("#prot-sec .pr-target"));
+  })();
+  neuf();
+
   /* --------------------------------------- ce qu'on a sauté laisse une trace */
   /* finirSeance() ne gardait que les séries cochées : l'app enregistrait ce qu'on avait
      fait, jamais ce qu'on avait prévu et pas fait. Une séance abandonnée au deuxième
