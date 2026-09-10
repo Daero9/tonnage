@@ -1840,8 +1840,32 @@
     color:var(--ink-mute); font-weight:600;}
   .gd-bas .suite{background:var(--accent); color:#fff; border:0; border-radius:99px;
     padding:8px 16px; font-size:13px; font-weight:800;}
+  /* Une fiche apparaissait d'un bloc : « display:none » puis « display:flex », sans
+     rien entre les deux. C'est le geste le plus frequent de l'app — fiche d'exercice,
+     detail du jour, recherche d'aliment, « pourquoi ce poids » — et le seul moment ou
+     l'ecran CASSE au lieu de bouger.
+     Elle monte donc du bas, et le fond s'assombrit pendant ce temps. La courbe est un
+     vrai ressort : linear() echantillonne l'equation, la fiche depasse sa cible de 1,5 %
+     et s'y pose. Un navigateur qui ignore linear() laisse tomber la ligne suivante et
+     garde le cubic-bezier — aucune regression possible.
+     Le fond s'anime en « background », pas en « opacity » : sinon la fiche s'ouvrirait
+     en fondu au lieu de glisser. */
   .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center;}
-  .overlay.show{display:flex;}
+  .overlay.show{display:flex; animation:voileIn .3s ease backwards;}
+  .overlay.show > .sheet{animation:ficheIn .48s cubic-bezier(.22,1,.36,1) backwards;}
+  .overlay.show > .sheet{animation-timing-function:linear(0, 0.0329, 0.1133, 0.2193, 0.3353, 0.4505, 0.5583, 0.6546, 0.7377, 0.8072, 0.8637, 0.9083, 0.9426, 0.9682, 0.9866, 0.9992, 1.0074, 1.0122, 1.0146, 1.0152, 1.0146, 1.0134, 1.0118, 1.01, 1.0083, 1.0066, 1);}
+  @keyframes voileIn{from{background:rgba(0,0,0,0);}}
+  @keyframes ficheIn{from{transform:translateY(100%);}}
+  /* La fermeture refait le chemin. Quand elle vient d'un glisse, l'image de depart est
+     la position ou le doigt a laisse la fiche : le geste se termine au lieu de repartir
+     de zero. Une courbe qui accelere, sans rebond — on ne « pose » pas ce qui s'en va. */
+  .overlay.part{animation:voileOut .26s ease forwards;}
+  .overlay.part > .sheet{animation:ficheOut .26s cubic-bezier(.4,0,.7,.3) forwards;}
+  @keyframes voileOut{to{background:rgba(0,0,0,0);}}
+  @keyframes ficheOut{to{transform:translateY(100%);}}
+  @media (prefers-reduced-motion:reduce){
+    .overlay.show, .overlay.show > .sheet, .overlay.part, .overlay.part > .sheet{animation:none;}
+  }
   .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
   /* ---- clavier ouvert ----
      Le clavier ne rogne pas la page : sur iOS jamais, sur Android seulement si
@@ -2005,6 +2029,17 @@
     -webkit-mask-size:100% 100%; mask-size:100% 100%;
     -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
     -webkit-mask-position:center; mask-position:center;}
+  /* Changer d'onglet remplacait le DOM d'un coup, suivi d'un saut de defilement : un
+     flash. La nouvelle page se pose maintenant en fondu.
+     UNIQUEMENT en opacite. #app contient un element « position:fixed » (le bouton
+     flottant d'Alimentation) : une transformation ou un filtre sur #app en ferait le
+     bloc conteneur, et le bouton sauterait le temps de l'animation. L'opacite, elle,
+     ne cree pas de bloc conteneur.
+     La barre d'onglets et les fiches sont hors de #app : elles ne bougent pas, c'est
+     bien la page qui change sous elles. */
+  #app.entre{animation:pageIn .24s cubic-bezier(.32,.72,.3,1) backwards;}
+  @keyframes pageIn{from{opacity:0;}}
+  @media (prefers-reduced-motion:reduce){ #app.entre{animation:none;} }
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(78px + env(safe-area-inset-bottom)); z-index:80;
     background:var(--good); color:#0d1a12; font-weight:700; font-size:14px; padding:11px 18px; border-radius:12px;
     box-shadow:0 8px 26px rgba(0,0,0,.5); transition:opacity .4s; max-width:88%; text-align:center;}
@@ -7198,7 +7233,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 16h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 18h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8296,9 +8331,15 @@ function renderTabs(){
     curTab=b.dataset.tab; render();
   });
 }
+/* De quel ecran on vient. Ce n'est pas tout a fait l'onglet : lancer ou terminer une
+   seance change tout l'ecran sans changer d'onglet, et merite le meme fondu. */
+let ecranPrecedent = null;
 function render(){
   renderTabs();
   const app = document.getElementById("app");
+  const ecran = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
+  const changeEcran = ecran !== ecranPrecedent;
+  ecranPrecedent = ecran;
   if(curTab==="seance") renderSeance(app);
   else if(curTab==="eat") renderEat(app);
   else if(curTab==="hist") renderHist(app);
@@ -8314,6 +8355,13 @@ function render(){
   }, 500);
   if(gardeDefilement){ window.scrollTo(0, posDefilement); gardeDefilement = false; }
   else window.scrollTo(0,0);
+  /* renderSurPlace() redessine sur le MEME ecran — cocher un aliment, valider une
+     serie. Y jouer le fondu ferait clignoter la page a chaque case cochee. */
+  if(changeEcran){
+    app.classList.remove("entre");
+    void app.offsetWidth;               /* sans quoi la classe re-ajoutee ne relance rien */
+    app.classList.add("entre");
+  }
 }
 let gardeDefilement = false, posDefilement = 0;
 /* redessine sans faire remonter la page (cases à cocher, aliments…) */
@@ -8334,6 +8382,12 @@ function openSheet(html, opts){
   sheet.innerHTML = (sheetVerrou ? "" : `<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="${TR("Fermer")}">✕</button>`)+html;
   const croix = document.getElementById("sheet-x");
   if(croix) croix.onclick = closeSheet;
+  /* Rejouer la montee a chaque appel serait faux : openSheet() sert AUSSI a remplacer
+     le contenu d'une fiche deja ouverte, et l'ecran repartirait du bas pour rien. On ne
+     rejoue que si la fiche n'etait pas la — ou si elle etait en train de partir. */
+  const rejoue = !overlay.classList.contains("show") || overlay.classList.contains("part");
+  annulerFermeture();
+  if(rejoue){ overlay.classList.remove("show"); void overlay.offsetWidth; }
   overlay.classList.add("show");
   if(!sheetOpen){
     sheetOpen = true;
@@ -8357,9 +8411,26 @@ function retourFiche(){
   try{ f(); }catch(e){ return false; }
   return true;
 }
+/* La fermeture dure le temps de l'animation. L'etat, lui, tombe tout de suite : une
+   fiche « encore un peu la » ne doit plus repondre a rien. */
+let fermetureEnCours = null;
+function annulerFermeture(){
+  if(fermetureEnCours){ clearTimeout(fermetureEnCours); fermetureEnCours = null; }
+  overlay.classList.remove("part");
+}
 function hideSheet(){
-  sheet.style.transition = ""; sheet.style.transform = "";
-  overlay.classList.remove("show");
+  sheet.style.transition = "";
+  annulerFermeture();
+  if(overlay.classList.contains("show")){
+    overlay.classList.add("part");
+    fermetureEnCours = setTimeout(()=>{
+      overlay.classList.remove("show", "part");
+      sheet.style.transform = "";        /* seulement une fois hors de vue */
+      fermetureEnCours = null;
+    }, 270);
+  } else {
+    sheet.style.transform = "";
+  }
   sheetOpen = false; sheetVerrou = false;
   pileFiches = [];                    /* on ferme pour de bon : rien ne doit resurgir */
   if(onSheetClose){ const f = onSheetClose; onSheetClose = null; try{ f(); }catch(e){} }
@@ -8420,11 +8491,16 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
   const fin = ()=>{
     if(y0 === null) return;
     const assez = glisse && (dy > seuilFermeture() || (vitesse > 0.9 && dy > 70));
-    sheet.style.transition = "transform .2s ease";
     if(assez){
-      sheet.style.transform = "translateY(100%)";
-      setTimeout(()=>{ sheet.style.transform = ""; sheet.style.transition = ""; closeSheet(); }, 190);
+      /* On ne rejoue plus la descente a la main : la fermeture reprend la fiche la ou
+         le doigt l'a laissee — l'image de depart de ficheOut est la position courante —
+         et termine le geste. Une seule animation, plus de delai a deviner. */
+      sheet.style.transition = "";
+      closeSheet();
     } else {
+      /* Pas assez : la fiche remonte en s'appuyant, comme un elastique qu'on relache. */
+      sheet.style.transition = "transform .28s cubic-bezier(.22,1,.36,1)";
+      sheet.style.transition = "transform .28s linear(0, 0.0292, 0.1005, 0.195, 0.299, 0.4036, 0.5028, 0.5932, 0.6731, 0.7419, 0.7999, 0.8478, 0.8867, 0.9177, 0.942, 0.9607, 0.9747, 0.9851, 0.9925, 0.9977, 1.0011, 1.0032, 1.0044, 1.0049, 1.005, 1.0048, 1)";
       sheet.style.transform = "";
     }
     y0 = null; dy = 0; glisse = false;
