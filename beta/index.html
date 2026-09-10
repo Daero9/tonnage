@@ -158,6 +158,16 @@
     padding:0; background:none; border:none; color:var(--ink-mute);
     display:flex; align-items:center; justify-content:center;}
   .hint-box .hint-x svg{width:15px; height:15px;}
+  /* la phrase qui remplace la soustraction mentale */
+  .prg-verdict:empty{display:none;}
+  .prg-verdict{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; margin-top:10px;
+    padding:9px 12px; border-radius:11px; background:var(--surface2);
+    font-size:13px; line-height:1.4;}
+  .prg-verdict b{font-weight:800; color:var(--ink);}
+  .prg-verdict span{font-size:11.5px; color:var(--ink-mute);}
+  .prg-verdict.haut{background:rgba(90,160,80,.14);}
+  .prg-verdict.haut b{color:var(--good);}
+  .prg-verdict.bas b{color:var(--accent);}
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
   .ob-steps i.on{background:var(--accent);}
@@ -1598,6 +1608,11 @@
   .obj-b .d .ic{background:var(--surface); color:var(--ink-soft);}
   .obj-b .co{min-width:0;}
   /* l'intitulé de gauche est une étiquette, pas un titre : il se pose sur son fond */
+  /* le point vit DANS l'étiquette : il appartient au titre, pas au chiffre */
+  .obj-b .g .k .obj-i{display:inline-flex; align-items:center; justify-content:center;
+    width:13px; height:13px; margin:0 0 0 5px; padding:0; vertical-align:-1px;
+    border:0; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:9px; font-weight:800; font-style:italic; line-height:1;}
   .obj-b .g .k{display:inline-block; background:var(--surface); color:var(--accent);
     font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
     border-radius:99px; padding:2px 7px; margin-bottom:3px;}
@@ -3202,6 +3217,10 @@ const TRAD = {en:{
   "Elles apparaîtront ici une fois terminées.":"They'll show up here once finished.",
   "Tes courbes par exercice apparaîtront ici après tes premières séances.":"Your per-exercise curves will appear here after your first few workouts.",
   "Charge max":"Top load",
+  "Tu es à ton meilleur niveau.":"You are at your best.",
+  "{e} {u} sous ton record":"{e} {u} below your best",
+  "établi le {}":"set on {}",
+  "Une seule séance pour l'instant : la courbe démarrera à la prochaine.":"Only one session so far: the curve starts with the next one.",
   "Avec lest":"Weighted",
   "durée":"time",
   "Quinze secondes de plus":"Fifteen seconds more",
@@ -3645,6 +3664,7 @@ const TRAD = {en:{
   "Terminer la séance":"Finish workout",
   "Objectif du jour":"Today's target",
   "Dernière séance":"Last session",
+  "Pourquoi ce poids ?":"Why this load?",
   "Recommandé par l'app.":"Recommended by the app.",
   "Progression suggérée":"Suggested step up","Allègement suggéré":"Suggested step down",
   "{n} à {p}":"{n} at {p}",
@@ -7074,7 +7094,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 15h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 15h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7512,7 +7532,10 @@ function objectifDuJour(exId, cible){
   /* L'écart avec la dernière fois : c'est lui qui dit si on monte ou si on tient. */
   let ecart = 0;
   if(poids && chargePassee > 0) ecart = Math.round((sug.w - chargePassee) * 100) / 100;
-  return {poids, reps, passe, ecart, iso};
+  /* suggestFor() sait POURQUOI il propose cette charge — « trop facile la dernière
+     fois », « tu n'as pris que 45 s de repos »… — et cette phrase était jetée. Elle
+     remonte : le chiffre tombait du ciel, il a maintenant sa raison. */
+  return {poids, reps, passe, ecart, iso, pourquoi: (sug && sug.text) || ""};
 }
 function volSerie(s){
   return (s.w||0)*(s.r||0) + ((s.drops||[]).reduce((a,d)=>a+(d.w||0)*(d.r||0),0));
@@ -13092,7 +13115,9 @@ function renderActive(app){
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
         return `<div class="obj-b">
           <div class="g"><span class="ic">${IC_CIBLE}</span>
-            <div class="co"><span class="k">${TR("Objectif du jour")}</span>
+            <div class="co"><span class="k">${TR("Objectif du jour")}${
+              o.pourquoi ? `<button class="obj-i" data-pourquoi="${esc(TR(o.pourquoi))}"
+                aria-label="${TR("Pourquoi ce poids ?")}">i</button>` : ""}</span>
               <div class="v">${o.poids ? `<b>${esc(o.poids)}</b>` : ""}${
                 o.poids && o.reps ? ` <span class="x">×</span> ` : ""}${
                 o.reps ? `<i>${esc(o.reps)} ${o.iso ? "s" : TR("reps")}</i>` : ""}</div>
@@ -13576,6 +13601,18 @@ function renderActive(app){
     };
     wireHints(card);
     card.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); openExoInfo(b.dataset.exinfo); });
+    /* Une phrase, un bouton. Pas de pavé : on veut savoir pourquoi ce poids, pas
+       comment fonctionne le moteur. */
+    card.querySelectorAll("[data-pourquoi]").forEach(b=>b.onclick=(e)=>{
+      e.stopPropagation();
+      openSheet(`<div class="ai-tete"><span class="ic">${IC_CIBLE}</span>
+          <h3>${TR("Pourquoi ce poids ?")}</h3></div>
+        <p style="margin:0 0 16px; font-size:14.5px; line-height:1.6; text-align:center;
+          color:var(--ink-soft);">${esc(b.dataset.pourquoi)}</p>
+        <button class="btn btn-accent" id="pq-ok" style="width:100%;">${TR("Compris")}</button>`);
+      const ok = document.getElementById("pq-ok");
+      if(ok) ok.onclick = closeSheet;
+    });
     const hx = card.querySelector("[data-hist-ex]");
     if(hx) hx.onclick = (e)=>{ e.stopPropagation(); openHistoExo(parseInt(hx.dataset.histEx)); };
     const bl = card.querySelector("[data-injinfo]");
@@ -14679,6 +14716,7 @@ function renderProgress(app){
           isoPrg? TR("Temps total") : (mode==="sans"? TR("Reps totales") : "Volume")}</button>
       </div>
       <div class="tiles" id="prg-tiles"></div>
+      <div id="prg-verdict"></div>
       <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;"><div class="chart-tip" id="chart-tip"></div></div>
     </div>`;
   /* changer d'exercice ou de mesure ne doit pas renvoyer en haut de page */
@@ -14724,6 +14762,21 @@ function renderProgress(app){
       dateRec ? `<br><i class="rec-d">${esc(dateRec)}</i>` : ""}</div></div>
     <div class="tile"><div class="v">${nb(lastV)}</div><div class="u">${TR("dernière")} (${unit})</div></div>
     <div class="tile"><div class="v">${pts.length}</div><div class="u">${TR("séance")}${pts.length>1?TR("s"):""}</div></div>`;
+
+  /* Le record et la dernière séance se regardaient en chiens de faïence : deux
+     nombres côte à côte, et à l'utilisateur de faire la soustraction. Une phrase
+     suffit — et c'est celle qu'on vient chercher. */
+  const verdict = document.getElementById("prg-verdict");
+  if(verdict){
+    const ecart = Math.round((record - lastV) * 10) / 10;
+    verdict.className = "prg-verdict " + (ecart <= 0 ? "haut" : (pts.length < 2 ? "" : "bas"));
+    verdict.innerHTML = pts.length < 2
+      ? `<span>${TR("Une seule séance pour l'instant : la courbe démarrera à la prochaine.")}</span>`
+      : (ecart <= 0
+        ? `<b>${TR("Tu es à ton meilleur niveau.")}</b>`
+        : `<b>${TR("{e} {u} sous ton record").replace("{e}", nb(ecart)).replace("{u}", unit)}</b>${
+            dateRec ? `<span>${TR("établi le {}").replace("{}", dateRec)}</span>` : ""}`);
+  }
 
   drawChart(document.getElementById("chart-wrap"), pts, unit);
 }
