@@ -111,8 +111,11 @@
   .grow{flex:1; min-width:0;}
 
   /* les boutons gris portent exactement le gris du fond ; --surface2 reste la surface  en creux  */
-  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--btn); border:1px solid var(--border);}
-  .btn:active{transform:scale(.98);}
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--btn); border:1px solid var(--border);
+    transition:transform .3s cubic-bezier(.22,1,.36,1);}
+  /* Vite a la descente, en s appuyant au retour : c est ce rapport-la qui fait
+     « repondre » un bouton. La meme duree dans les deux sens le rend mou. */
+  .btn:active{transform:scale(.98); transition-duration:.06s;}
   /* un SVG sans dimension s etire a toute la hauteur d un bouton en flex */
   .btn > svg{flex:0 0 auto; width:20px; height:20px;}
   .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
@@ -1159,7 +1162,9 @@
   .eat-stat .lb{font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
     color:var(--accent); margin-top:1px;}
   .eat-bar{height:16px; border-radius:9px; background:var(--surface2); overflow:hidden; margin:6px 0 12px; position:relative;}
-  .eat-bar i{display:block; height:100%; border-radius:9px; background:var(--accent);}
+  .eat-bar i{display:block; height:100%; border-radius:9px; background:var(--accent);
+    transition:width .55s cubic-bezier(.22,.86,.3,1), background .3s ease;}
+  @media (prefers-reduced-motion:reduce){ .eat-bar i{transition:none;} }
   /* L objectif n est plus POSE SUR la barre : la barre s arrete a sa gauche et le
      chiffre vit a cote. Il reste lisible quelle que soit la hauteur du remplissage,
      et on n a plus besoin de le faire passer en blanc quand la jauge le rattrape. */
@@ -2493,9 +2498,40 @@
   .tpl-item .cfg .label{margin-bottom:4px; display:block;}
   .tpl-item input{padding:8px 8px; text-align:center;}
 
+  /* ---- le retour au toucher, par defaut ----
+     Beaucoup de zones tapables ne repondaient a rien : le doigt appuie, rien ne bouge,
+     puis l ecran change. On enfonce donc tout bouton qui ne dit pas le contraire.
+     En « scale », surtout pas en « transform » : scale est une propriete independante
+     qui se COMPOSE avec le transform existant. Un onglet de repas est pose a
+     translateY(16px) au repos — un transform:scale l aurait ecrase et fait sauter de
+     seize pixels a chaque appui. Un navigateur qui ignore scale ne fait rien du tout,
+     ce qui est exactement l etat d avant.
+     La barre du bas est exclue : son icone a deja son propre enfoncement. */
+  button:not(.tab):not(.sheet-x){transition:scale .3s cubic-bezier(.22,1,.36,1);}
+  button:not(.tab):not(.sheet-x):active{scale:.97; transition-duration:.06s;}
+
+  /* ---- les ressorts ----
+     Les transitions de deplacement etaient en « ease » ou en Bezier : une courbe
+     symetrique, qui freine autant qu elle accelere. iOS n en utilise jamais pour un
+     mouvement — il utilise un ressort, qui depasse legerement sa cible et s y pose.
+     linear() echantillonne la vraie equation. Tout est dans un @supports : la ou
+     linear() n existe pas, rien n est redefini et les courbes d avant tiennent. Et
+     dedans, var() est sur — sans le @supports, une valeur inconnue rendrait toute la
+     declaration « transition » invalide, donc NULLE, et supprimerait l animation. */
+  @supports (animation-timing-function:linear(0, 1)){
+    :root{--ressort-court:linear(0, 0.0462, 0.1567, 0.2977, 0.4456, 0.5852, 0.7075, 0.8087, 0.888, 0.947, 0.9882, 1.0149, 1.0302, 1.0371, 1.0383, 1.0357, 1.031, 1.0255, 1.0198, 1.0146, 1.0101, 1.0065, 1);}
+    /* deplacement seul : le ressort prend toute la transition */
+    .btn, button:not(.tab):not(.sheet-x), .onb-btn, .onb-back, .fin-c, .tab svg,
+    .set-row .ck, .set-row .dg{transition-timing-function:var(--ressort-court);}
+    /* deplacement PUIS couleurs : seule la premiere se ressort, une couleur qui
+       depasse sa cible ne veut rien dire */
+    .onb-choix .ch, .fchip{transition-timing-function:var(--ressort-court), ease, ease;}
+  }
+
   @media (prefers-reduced-motion:reduce){
     .restbar.ending{animation:none;}
     .btn:active{transform:none;}
+    button:not(.tab):not(.sheet-x):active{scale:none;}
   }
 </style>
 
@@ -7233,7 +7269,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 18h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 18h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8362,6 +8398,53 @@ function render(){
     void app.offsetWidth;               /* sans quoi la classe re-ajoutee ne relance rien */
     app.classList.add("entre");
   }
+  animerChiffres();
+}
+/* ---- les chiffres defilent ----
+   Ajouter un aliment faisait sauter « 62 g » a « 91 g » d un bloc, et la jauge avec.
+   Le piege : render() reconstruit le DOM a chaque fois. Les elements sont NEUFS, donc
+   aucune transition CSS ne se declenche jamais toute seule — un element qui vient de
+   naitre n a pas d ancienne valeur a quitter. On garde donc nous-memes ce que l ecran
+   affichait, et on rejoue l ecart.
+   On memorise la valeur COURANTE de l animation, pas la cible : deux ajouts coup sur
+   coup repartent d ou le chiffre en est, au lieu de sauter a l arrivee du premier. */
+const chiffresVus = {};
+const DUREE_COMPTE = 550;
+function animerChiffres(){
+  const sobre = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  document.querySelectorAll("[data-compte]").forEach(el=>{
+    const cle = el.dataset.compte, vers = parseFloat(el.dataset.valeur);
+    const de = chiffresVus[cle];
+    if(!isFinite(vers)){ return; }
+    if(sobre || de === undefined || de === vers){ chiffresVus[cle] = vers; return; }
+    const t0 = performance.now();
+    el.textContent = Math.round(de);
+    const pas = t=>{
+      /* l element peut avoir ete remplace entre-temps : on ecrit dans le vide sans
+         degat, mais on arrete de compter pour ce qui n est plus a l ecran */
+      const u = Math.min(1, (t - t0) / DUREE_COMPTE);
+      const e = 1 - Math.pow(1 - u, 3);            /* freine en arrivant */
+      const v = de + (vers - de) * e;
+      chiffresVus[cle] = v;
+      el.textContent = Math.round(v);
+      if(u < 1 && el.isConnected) requestAnimationFrame(pas);
+      else { chiffresVus[cle] = vers; if(el.isConnected) el.textContent = Math.round(vers); }
+    };
+    requestAnimationFrame(pas);
+  });
+  /* la jauge part de son ancienne largeur, le temps d une image, puis rejoint la
+     nouvelle : c est la seule facon de faire mordre une transition sur un element neuf */
+  document.querySelectorAll("[data-jauge]").forEach(el=>{
+    const cle = "jauge:" + el.dataset.jauge, vers = parseFloat(el.style.width);
+    const de = chiffresVus[cle];
+    chiffresVus[cle] = vers;
+    if(sobre || de === undefined || de === vers || !isFinite(vers)) return;
+    el.style.transition = "none";
+    el.style.width = de + "%";
+    void el.offsetWidth;
+    el.style.transition = "";
+    el.style.width = vers + "%";
+  });
 }
 let gardeDefilement = false, posDefilement = 0;
 /* redessine sans faire remonter la page (cases à cocher, aliments…) */
@@ -9332,27 +9415,27 @@ function renderEat(app){
         <div class="eat-card eat-stat">
           <span class="ico">${icoM("muscle", 20)}</span>
           <div class="co">
-            <div class="ln"><span class="v">${protNow}</span><span class="u">g</span>
+            <div class="ln"><span class="v" data-compte="prot" data-valeur="${protNow}">${protNow}</span><span class="u">g</span>
               ${/* « 0 g … 0 % » dit deux fois la même chose. Le pourcentage n'apparaît
                    qu'une fois qu'il y a quelque chose à rapporter à la cible. */""}
               ${protNow > 0 && protTarget ? `<span class="pc">${
                 Math.round(protNow/protTarget*100)} %</span>` : ""}</div>
             <div class="lb">${TR("Protéines")}</div>
             <div class="eat-jauge">
-              <div class="eat-bar"><i style="width:${pctProt}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i></div>
+              <div class="eat-bar"><i data-jauge="prot" style="width:${pctProt}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i></div>
               <b>${protTarget} g</b></div>
           </div>
         </div>
         <div class="eat-card eat-stat">
           <span class="ico">${icoM("flamme", 20)}</span>
           <div class="co">
-            <div class="ln"><span class="v">${kcalNow}</span><span class="u">kcal</span>
+            <div class="ln"><span class="v" data-compte="kcal" data-valeur="${kcalNow}">${kcalNow}</span><span class="u">kcal</span>
               <button class="icon-btn info-btn" id="eat-kinfo" title="${TR("Comment sont calculées mes calories ?")}">ⓘ</button>
               ${kcalNow > 0 && kRef ? `<span class="pc">${
                 Math.round(kcalNow/kRef*100)} %</span>` : ""}</div>
             <div class="lb">${TR("Calories")}</div>
             <div class="eat-jauge">
-              <div class="eat-bar"><i style="width:${pctKcal}%; background:${
+              <div class="eat-bar"><i data-jauge="kcal" style="width:${pctKcal}%; background:${
               !kRef? 'var(--accent)' : (kcalNow>kMax? 'var(--bad)' : (kcalNow>=kMin? 'var(--good)' : 'var(--accent)'))};"></i></div>
               <b>${kRef? kRef+" kcal" : "—"}</b></div>
             ${(()=>{ const b = kcalBruleesDuJour(k);
