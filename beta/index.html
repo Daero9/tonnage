@@ -7300,7 +7300,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 20h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 20h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8331,6 +8331,16 @@ let guideEnCours = false;
 /* Une visite peut se jouer SUR une fiche ouverte — celle qui explique comment ajouter
    un aliment. Deux choses changent alors : on ne refuse plus au motif qu'une fiche est
    ouverte, et le voile doit passer AU-DESSUS d'elle (la fiche est en z-index 60). */
+/* Attendre que la page se soit posée, sans dépendre uniquement de requestAnimationFrame.
+   Un onglet en arrière-plan met les rAF en sommeil : la visite restait alors une bulle
+   VIDE, et le restait jusqu'au retour au premier plan. On prend le premier des deux
+   qui répond, et jamais les deux. */
+function apresRendu(fn){
+  let fait = false;
+  const une = ()=>{ if(fait) return; fait = true; fn(); };
+  requestAnimationFrame(une);
+  setTimeout(une, 60);
+}
 function lancerGuide(onglet, surFiche){
   if(guideEnCours) return;
   if(sheetOpen && !surFiche) return;
@@ -8383,7 +8393,7 @@ function lancerGuide(onglet, surFiche){
     cibleCourante = cible;
     cible.scrollIntoView({block:"center", inline:"nearest"});
     /* on mesure APRÈS le défilement, sinon on encadre l'ancienne position */
-    requestAnimationFrame(()=>{
+    apresRendu(()=>{
       bulle.innerHTML = `<span class="k">${esc(TR(titre))}</span>
         <p>${esc(TR(texte))}</p>
         <div class="gd-bas">
@@ -11141,7 +11151,15 @@ function habitType(h){
    Deux fois minimum : une seule prise ne fait pas une habitude. */
 function habitudesDuRepas(meal){
   const compte = {};
+  /* La journée AFFICHÉE ne compte pas. Elle comptait, et cocher un aliment le faisait
+     sauter sous le doigt : sa deuxième prise le promouvait d'un coup dans « Tes
+     habitudes », tout en haut — il quittait son groupe, changeait de colonne et remontait
+     de cent pixels au moment même où on le touchait. Décocher le faisait redescendre.
+     Et une habitude, de toute façon, c'est ce qu'on mange D'ORDINAIRE : ce qu'on vient
+     de cocher est déjà sous les yeux, allumé, dans son propre groupe. */
+  const aujourdhui = jourAlim();
   Object.keys(db.habitSel).forEach(jour=>{
+    if(jour === aujourdhui) return;
     (db.habitSel[jour][meal] || []).forEach(l=>{ compte[l] = (compte[l]||0) + 1; });
   });
   /* on garde tout ce qu'on sait chiffrer, meme un aliment propose pour un autre repas :

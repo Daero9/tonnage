@@ -5223,6 +5223,59 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- la pastille ne fuit pas sous le doigt */
+  /* « Tes habitudes » se calculait sur TOUTES les journées, aujourd'hui compris. Cocher
+     un aliment pour la deuxième fois de sa vie le promouvait donc d'un coup dans ce
+     groupe, tout en haut : il quittait sa section, changeait de colonne et remontait de
+     cent pixels — au moment même où le doigt le touchait. Décocher le faisait
+     redescendre. Une habitude, c'est ce qu'on mange d'ORDINAIRE : la journée affichée
+     n'y entre plus. */
+  grp("La pastille ne fuit pas sous le doigt");
+  neuf();
+  await (async ()=>{
+    const jk = n => F.dayKey(new Date(Date.now() - n*864e5));
+    const HAB = ["Poulet (1 filet, 130 g cuit)", "Riz (200 g cuit)", "Brocoli (200 g)"];
+    const PRESQUE = "Thon (1 boîte, 95 g égoutté)";   /* pris UNE fois : le prochain clic en ferait une habitude */
+    DB.hbPerso = {}; DB.hbMasque = {}; DB.habitSel = {};
+    DB.habitSel[jk(3)] = {midi: HAB.concat([PRESQUE])};
+    DB.habitSel[jk(5)] = {midi: HAB.slice()};
+    DB.habitSel[jk(0)] = {midi: []};
+
+    vrai("Trois habitudes tiennent le groupe", F.habitudesDuRepas("midi").length >= 3);
+    vrai("…et l'aliment pris une seule fois n'en est pas une",
+      !F.habitudesDuRepas("midi").some(x=>x[0] === PRESQUE));
+
+    F.eval("curTab = 'eat'; render()");
+    await attendre(()=>!!F.document.querySelector("#meal-panel .fgrid"), 3000);
+    const onglet = [...F.document.querySelectorAll(".meal-tab")].find(b=>/midi|déj/i.test(b.textContent));
+    if(onglet) onglet.click();
+    await attendre(()=>!!F.document.querySelector('[data-opt="' + PRESQUE + '"]'), 2000);
+
+    /* On compare le RANG dans le panneau, pas des pixels : le cadre de test n'a pas de
+       hauteur de rendu. Le rang dit tout — il porte la section et la colonne. */
+    const rang = l => [...F.document.querySelectorAll("[data-opt]")].findIndex(b=>b.dataset.opt === l);
+    const avant = rang(PRESQUE);
+    F.document.querySelector('[data-opt="' + PRESQUE + '"]').click();
+    await attendre(()=>true, 60);
+    eq("Cocher un aliment ne le déplace pas", rang(PRESQUE), avant);
+    vrai("…et il est bien coché",
+      F.document.querySelector('[data-opt="' + PRESQUE + '"]').classList.contains("on"));
+    /* la deuxième prise ne doit pas non plus en faire une habitude du jour même */
+    vrai("…sans devenir une habitude pour autant",
+      !F.habitudesDuRepas("midi").some(x=>x[0] === PRESQUE));
+
+    /* et une habitude déjà établie ne se réordonne pas quand on la coche */
+    const rAvant = rang(HAB[2]);
+    F.document.querySelector('[data-opt="' + HAB[2] + '"]').click();
+    await attendre(()=>true, 60);
+    eq("Cocher une habitude ne la réordonne pas", rang(HAB[2]), rAvant);
+    /* décocher non plus */
+    F.document.querySelector('[data-opt="' + HAB[2] + '"]').click();
+    await attendre(()=>true, 60);
+    eq("Décocher non plus", rang(HAB[2]), rAvant);
+  })();
+  neuf();
+
   /* --------------------------------------- une habitude se retire aussi */
   /* Le panneau d'un repas montre TROIS sortes de pastilles : la bibliothèque, tes
      favoris, et « Tes habitudes » — déduites de ce que tu as déjà mangé. trouverGroupe()
@@ -5321,7 +5374,10 @@ async function lancer(){
     eq("Trois étapes : scanner, choisir, peser", (G.ajoutAliment || []).length, 3);
     delete DB.seen["guide-ajoutAliment"];
     F.openAjoutAliment("midi");
-    await attendre(()=>!!F.document.querySelector(".gd-bulle"), 3000);
+    /* La bulle est ajoutée VIDE, puis remplie en différé : guetter « .gd-bulle » rend
+       la main avant que le bouton existe, et la traversée s'arrêtait au premier tour.
+       On attend le titre — c'est lui qui prouve que l'étape est écrite. */
+    await attendre(()=>!!F.document.querySelector(".gd-bulle .k"), 3000);
     const bulle = F.document.querySelector(".gd-bulle"), voile = F.document.querySelector(".gd-voile");
     vrai("Elle se lance sur la fiche ouverte", !!bulle);
     /* la fiche vit en z-index 60 : un voile en 50 se serait affiché DERRIÈRE elle */
@@ -5332,13 +5388,17 @@ async function lancer(){
     /* chaque étape désigne quelque chose qui existe VRAIMENT dans la fiche */
     const manquantes = G.ajoutAliment.filter(e=>!F.document.querySelector(e[0])).map(e=>e[0]);
     vrai("Chaque étape désigne un élément de la fiche", manquantes.length === 0, manquantes.join(" / "));
-    /* on la traverse : elle doit se refermer et laisser la fiche utilisable */
-    for(let i = 0; i < 4 && F.document.querySelector(".gd-bulle"); i++){
+    /* On la traverse : elle doit se refermer et laisser la fiche utilisable.
+       La bulle se réécrit en différé — on attend donc que le TITRE change, pas que le
+       bouton existe : l'ancien est encore là le temps d'une image, et guetter sa
+       présence rend la main aussitôt, sur l'étape qu'on vient de quitter. */
+    const titre = ()=>{ const k = F.document.querySelector(".gd-bulle .k"); return k ? k.textContent : null; };
+    for(let i = 0; i < 8 && F.document.querySelector(".gd-voile"); i++){
+      const avantTitre = titre();
       const b = F.document.getElementById("gd-suite");
       if(!b) break;
       b.click();
-      await attendre(()=>!F.document.querySelector(".gd-voile")
-                     || !!F.document.getElementById("gd-suite"), 1500);
+      await attendre(()=>!F.document.querySelector(".gd-voile") || titre() !== avantTitre, 1500);
     }
     vrai("Au bout des étapes, tout se referme", !F.document.querySelector(".gd-voile"));
     vrai("…et la fiche est toujours là", !!F.document.getElementById("ot-ok"));
