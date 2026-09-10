@@ -4666,14 +4666,39 @@ async function lancer(){
        dans notre dos. On rendra la main juste après. */
     const gardes = {};
     Object.keys(G).forEach(o=>{ gardes[o] = DB.seen["guide-" + o]; DB.seen["guide-" + o] = true; });
+    /* « seanceActive » n'est pas un onglet mais un état : il faut une séance en cours
+       pour que ses cibles existent. On la lance donc au lieu de changer d'onglet. */
+    const gardeAct = DB.active, gardeTpl = DB.templates, gardeHist = DB.history;
+    const poser = onglet => {
+      if(onglet === "seanceActive"){
+        DB.templates = [{id:"tguide", name:"G", items:[
+          {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120}]}];
+        /* Le bandeau de l'objectif n'existe qu'une fois qu'il y a une séance passée
+           à battre — c'est voulu. Il faut donc un historique pour que cette cible
+           soit là, comme elle le sera dès la deuxième séance de l'utilisateur. */
+        DB.history = [{id:"hg", date:new Date(Date.now() - 3*864e5).toISOString(),
+          name:"G", templateId:"tguide", start:0, end:0,
+          entries:[{exId:id("Développé couché"),
+            sets:[serie(80, 10, 2), serie(80, 10, 2)]}]}];
+        /* la séance s'affiche dans l'onglet Séance : sans ça, startWorkout redessine
+           l'onglet où l'on se trouvait, et aucune de ses cibles n'existe */
+        F.eval("curTab = 'seance'");
+        F.startWorkout("tguide");
+        F.eval("render()");
+      } else {
+        DB.active = null;
+        F.eval("curTab = " + JSON.stringify(onglet) + "; render()");
+      }
+    };
     const manquantes = [];
     for(const onglet of Object.keys(G)){
-      F.eval("curTab = " + JSON.stringify(onglet) + "; render()");
-      await new Promise(r=>setTimeout(r, 120));
+      poser(onglet);
+      await new Promise(r=>setTimeout(r, 150));
       G[onglet].forEach(([sel, titre])=>{
         if(!F.document.querySelector(sel)) manquantes.push(onglet + " → " + sel + " (" + titre + ")");
       });
     }
+    DB.active = gardeAct; DB.templates = gardeTpl;
     vrai("Chaque étiquette désigne un élément qui existe", manquantes.length === 0,
       manquantes.join(" ; "));
     /* Un projecteur braqué sur un conteneur n'éclaire plus rien : « #wt-sec »
@@ -4682,8 +4707,8 @@ async function lancer(){
        peut vérifier qu'aucune cible n'en contient une autre du même onglet. */
     const englobantes = [];
     for(const onglet of Object.keys(G)){
-      F.eval("curTab = " + JSON.stringify(onglet) + "; render()");
-      await new Promise(r=>setTimeout(r, 120));
+      poser(onglet);
+      await new Promise(r=>setTimeout(r, 150));
       const els = G[onglet].map(([sel])=>[sel, F.document.querySelector(sel)]);
       els.forEach(([selA, a2])=>els.forEach(([selB, b2])=>{
         if(a2 && b2 && a2 !== b2 && a2.contains(b2)) englobantes.push(selA + " contient " + selB);
@@ -4691,8 +4716,9 @@ async function lancer(){
     }
     vrai("Aucune étiquette n'englobe une autre étape", englobantes.length === 0,
       englobantes.join(" ; "));
-    vrai("Les trois onglets sont couverts", Object.keys(G).length === 3,
-      Object.keys(G).join(", "));
+    vrai("Les trois onglets et la séance en cours sont couverts",
+      Object.keys(G).length === 4, Object.keys(G).join(", "));
+    vrai("La séance en cours a sa propre visite", !!G.seanceActive);
     /* on ne noie pas quelqu'un qui arrive : trois étapes au plus par onglet */
     vrai("Pas plus de trois étapes par onglet",
       Object.values(G).every(e=>e.length <= 3),
@@ -4701,6 +4727,7 @@ async function lancer(){
       Object.values(G).every(e=>e.every(([, , t])=>t.length <= 105)),
       Math.max(...Object.values(G).flat().map(([, , t])=>t.length)) + " caractères");
 
+    DB.active = gardeAct; DB.templates = gardeTpl; DB.history = gardeHist;
     F.eval("curTab = 'seance'; render()");
     await new Promise(r=>setTimeout(r, 700));
     /* table rase avant de tester le comportement lui-même */

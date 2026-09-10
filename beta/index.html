@@ -1783,10 +1783,16 @@
   .gd-bulle{position:fixed; z-index:51; width:min(310px, calc(100vw - 24px));
     background:var(--surface); border-radius:18px; padding:14px 15px 12px;
     box-shadow:0 14px 38px rgba(0,0,0,.3);}
-  .gd-bulle .k{display:inline-block; background:rgba(245,130,32,.14); color:var(--accent);
-    font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
-    border-radius:99px; padding:3px 8px; margin-bottom:7px;}
-  .gd-bulle p{margin:0; font-size:13.5px; line-height:1.45; color:var(--ink);}
+  /* Le titre etait une pastille orange pale, en corps 9 et en capitales : il se lisait
+     comme une decoration, pas comme un titre. Nico ne lisait que la phrase du dessous,
+     qui perdait alors la moitie de son sens — « glisse pour en changer », mais changer
+     quoi ? Le titre reprend donc la hierarchie : plus gros, plus sombre, en tete. Le
+     trait orange devant garde l accent sans voler la lisibilite. */
+  .gd-bulle .k{display:flex; align-items:center; gap:7px; font-size:15.5px;
+    font-weight:800; color:var(--ink); line-height:1.25; margin-bottom:5px;}
+  .gd-bulle .k::before{content:""; flex:0 0 auto; width:3px; height:15px;
+    border-radius:2px; background:var(--accent);}
+  .gd-bulle p{margin:0; font-size:13px; line-height:1.5; color:var(--ink-soft);}
   .gd-bas{display:flex; align-items:center; justify-content:space-between; gap:10px;
     margin-top:12px;}
   .gd-pts{display:flex; gap:5px;}
@@ -3476,19 +3482,24 @@ const TRAD = {en:{
   "Aucun exercice":"No exercise",
   "Passer":"Skip","Suivant":"Next","C'est parti":"Got it",
   "Tes séances":"Your sessions",
+  "La charge à viser, calculée d'après tes dernières séances.":"The load to aim for, worked out from your recent sessions.",
+  "Note tes poids et tes répétitions":"Log your weights and reps",
+  "Ils sont gardés d'une séance à l'autre : l'app s'en sert pour ajuster la suivante.":"They carry over from session to session: the app uses them to adjust the next one.",
+  "Termine quand tu as fini":"Finish when you are done",
+  "Ta séance est enregistrée et ta récupération mise à jour.":"Your session is saved and your recovery updated.",
   "Glisse pour en changer, touche pour la lancer.":"Swipe to switch, tap to start.",
   "En créer une":"Create one",
-  "Compose la tienne, ou laisse l'app t'en proposer une selon ta récupération.":"Build your own, or let the app suggest one based on your recovery.",
+  "Crée tes propres entraînements, ou laisse l'application t'en proposer un selon ta récupération.":"Create your own workouts, or let the app suggest one based on your recovery.",
   "Ta semaine":"Your week",
-  "Ce que tu as fait, ce qu'il te reste. Le bilan s'ouvre d'un appui.":"What you have done, what is left. Tap for the summary.",
+  "Suis ton activité de la semaine. Plus d'informations dans le bilan.":"Track your week. More detail in the summary.",
   "Ton objectif du jour":"Today's target",
-  "Protéines et calories, calculés depuis ton profil et tes séances.":"Protein and calories, worked out from your profile and your sessions.",
+  "Suis ta consommation de protéines et de calories de la journée.":"Track your protein and calories for the day.",
   "Ce que tu manges":"What you eat",
   "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul.":"Pick the meal, then tap a food. The count updates on its own.",
   "Ton aliment n'y est pas ?":"Food not listed?",
   "Ajoute-le une fois avec ses valeurs : il restera dans ta liste.":"Add it once with its values: it stays in your list.",
   "Ton poids":"Your weight",
-  "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines.":"What matters is not today's number but the slope over several weeks.",
+  "Suis ton poids et ta progression sur plusieurs semaines.":"Track your weight and your progress over several weeks.",
   "Tes protéines":"Your protein",
   "Sept jours d'un coup d'œil. Ils viennent de ce que tu coches dans Alimentation.":"Seven days at a glance, from what you tick off under Food.",
   "Tes charges":"Your loads",
@@ -7053,7 +7064,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 14h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 14h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7966,19 +7977,27 @@ function wireTopbar(){
 const GUIDES = {
   seance: [
     ["#car", "Tes séances", "Glisse pour en changer, touche pour la lancer."],
-    ["#fab", "En créer une", "Compose la tienne, ou laisse l'app t'en proposer une selon ta récupération."],
-    [".wk-card", "Ta semaine", "Ce que tu as fait, ce qu'il te reste. Le bilan s'ouvre d'un appui."]
+    ["#fab", "En créer une", "Crée tes propres entraînements, ou laisse l'application t'en proposer un selon ta récupération."],
+    [".wk-card", "Ta semaine", "Suis ton activité de la semaine. Plus d'informations dans le bilan."]
   ],
   eat: [
-    [".eat-stats", "Ton objectif du jour", "Protéines et calories, calculés depuis ton profil et tes séances."],
+    [".eat-stats", "Ton objectif du jour", "Suis ta consommation de protéines et de calories de la journée."],
     ["#meal-panel", "Ce que tu manges", "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul."],
     ["#eat-add", "Ton aliment n'y est pas ?", "Ajoute-le une fois avec ses valeurs : il restera dans ta liste."]
   ],
   /* Des cibles PRÉCISES, jamais un conteneur : « #wt-sec » englobait le poids et les
      protéines, et le projecteur éclairait la moitié de l'écran — il ne montrait plus
      rien du tout. */
+  /* La séance en cours a sa propre visite : c'est le seul écran où l'on SAISIT
+     quelque chose, et le seul où la boucle de l'app se comprend — ce qu'on note
+     aujourd'hui décide de ce qui sera proposé la prochaine fois. */
+  seanceActive: [
+    [".obj-b", "Ton objectif du jour", "La charge à viser, calculée d'après tes dernières séances."],
+    [".sets", "Note tes poids et tes répétitions", "Ils sont gardés d'une séance à l'autre : l'app s'en sert pour ajuster la suivante."],
+    ["#finish-w", "Termine quand tu as fini", "Ta séance est enregistrée et ta récupération mise à jour."]
+  ],
   prg: [
-    ["#wt-sec > .card", "Ton poids", "Ce qui compte n'est pas le chiffre du jour, mais la pente sur plusieurs semaines."],
+    ["#wt-sec > .card", "Ton poids", "Suis ton poids et ta progression sur plusieurs semaines."],
     ["#prot-sec .card", "Tes protéines", "Sept jours d'un coup d'œil. Ils viennent de ce que tu coches dans Alimentation."],
     ["#prg-body .card", "Tes charges", "L'évolution de ce que tu soulèves, exercice par exercice."]
   ]
@@ -8076,8 +8095,13 @@ function render(){
   else renderProgress(app);
   /* le temps que la page se pose : mesurer un élément en cours d'affichage
      l'encadrerait de travers */
-  const onglet = curTab;
-  setTimeout(()=>{ if(curTab === onglet) lancerGuide(onglet); }, 500);
+  /* pendant une séance, c'est la visite de la séance qui s'ouvre, pas celle de
+     l'accueil : l'écran n'a plus rien de commun avec le carrousel */
+  const onglet = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
+  setTimeout(()=>{
+    const encore = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
+    if(encore === onglet) lancerGuide(onglet);
+  }, 500);
   if(gardeDefilement){ window.scrollTo(0, posDefilement); gardeDefilement = false; }
   else window.scrollTo(0,0);
 }
