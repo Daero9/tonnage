@@ -3513,6 +3513,33 @@ async function lancer(){
         D2.querySelectorAll(".pv-ex.prend").length);
       ev("pointerup", D2.body);
       vrai("Rien ne reste saisi à la fin", D2.querySelectorAll(".pv-ex.prend").length === 0);
+
+      /* La fiche se referme d'un glissé vers le bas. Descendre un exercice, c'est
+         aussi un glissé vers le bas : le même geste descendait la carte ET toute la
+         fiche derrière elle. La poignée est donc exclue de ce geste-là. */
+      const feuille = D2.getElementById("sheet");
+      const toucher = (type, cible, y) => cible.dispatchEvent(
+        new F.window.TouchEvent(type, {bubbles:true, cancelable:true,
+          touches: type === "touchend" ? [] : [new F.window.Touch(
+            {identifier:1, target:cible, clientY:y})]}));
+      feuille.scrollTop = 0;
+      feuille.style.transform = "";
+      toucher("touchstart", poignee, 100);
+      toucher("touchmove", poignee, 260);
+      vrai("Descendre un exercice ne fait pas descendre la fiche",
+        !feuille.style.transform, feuille.style.transform);
+      toucher("touchend", poignee, 260);
+
+      /* mais le geste reste possible ailleurs sur la fiche */
+      const titre = feuille.querySelector("h3, .pv-tete, div");
+      if(titre){
+        toucher("touchstart", titre, 100);
+        toucher("touchmove", titre, 260);
+        vrai("Ailleurs sur la fiche, le glissé vers le bas fonctionne toujours",
+          !!feuille.style.transform, feuille.style.transform || "(rien)");
+        toucher("touchend", titre, 260);
+        feuille.style.transform = "";
+      }
     }
     F.hideSheet();
   })();
