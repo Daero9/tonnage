@@ -58,8 +58,18 @@ async function lancer(){
     DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
+    /* La visite de la fiche « Ajouter un aliment » se joue sur un voile plein écran :
+       elle passerait devant les boutons qu'un test cherche à toucher. Aucun test n'en
+       veut, sauf celui qui l'éprouve — et qui l'efface lui-même. */
+    if(!DB.seen) DB.seen = {};
+    DB.seen["guide-ajoutAliment"] = true;
   };
   const id = n => F.libId(n);
+  /* Attendre une CONDITION, jamais un délai : la bulle d'une visite se remplit dans un
+     requestAnimationFrame, et un onglet en arrière-plan les met en sommeil. */
+  const attendre = async (cond, max)=>{ const t0 = Date.now();
+    while(Date.now() - t0 < (max || 3000)){ if(cond()) return true;
+      await new Promise(r=>setTimeout(r, 40)); } return cond(); };
   const serie = (w,r,rir,drops) => ({w, r, done:true, warm:false, rir:(rir===undefined?1:rir), drops});
   const seance = (heuresAvant, entrees) => ({
     id:"t"+Math.random(), date:new Date(Date.now()-heuresAvant*36e5).toISOString(),
@@ -2085,15 +2095,23 @@ async function lancer(){
     vrai("…et un code-barres plus grand",
       parseFloat(F.getComputedStyle(scan.querySelector("svg")).width) >= 24);
 
-    /* les favoris ont leur encadré */
-    const fb = F.document.getElementById("ot-favbox"), ck = F.document.getElementById("ot-save");
-    vrai("Les favoris sont dans un encadré", !!fb && fb.contains(ck));
+    /* Les favoris : l'étoile EST le bouton. La case à cocher demandait de viser un
+       carré de vingt pixels à côté d'une étoile qui, elle, ne servait à rien. */
+    const fb = F.document.getElementById("ot-favbox");
+    vrai("Les favoris sont dans un encadré", !!fb);
+    vrai("…sans case à cocher", !F.document.getElementById("ot-save"));
     vrai("…avec leur intitulé", /Ajouter aux favoris/.test(fb.textContent));
+    const et = fb.querySelector(".et svg");
     const nu = F.getComputedStyle(fb).borderTopColor;
-    ck.checked = true; ck.dispatchEvent(new F.Event("change", {bubbles:true}));
-    eq("Le cadre s'allume quand on coche",
+    eq("L'étoile est creuse au départ", F.getComputedStyle(et).fill, "none");
+    fb.click();
+    eq("Le cadre s'allume quand on garde",
       F.getComputedStyle(fb).borderTopColor, "rgb(245, 130, 32)");
     vrai("…et il était éteint avant", nu !== "rgb(245, 130, 32)");
+    eq("…l'étoile se remplit", F.getComputedStyle(et).fill, "rgb(245, 130, 32)");
+    vrai("…et le texte le dit", /Gardé dans tes favoris/.test(fb.textContent), fb.textContent.trim());
+    fb.click();
+    eq("Un second appui la vide", F.getComputedStyle(et).fill, "none");
     F.hideSheet();
     DB.hbPerso = {};
   })();
@@ -4963,7 +4981,9 @@ async function lancer(){
       }
     };
     const manquantes = [];
-    for(const onglet of Object.keys(G)){
+    /* « ajoutAliment » ne se joue pas sur un onglet mais SUR une fiche : ses cibles
+       n'existent que la fiche ouverte. Son propre groupe de tests s'en charge. */
+    for(const onglet of Object.keys(G).filter(o=>o !== "ajoutAliment")){
       poser(onglet);
       await new Promise(r=>setTimeout(r, 150));
       G[onglet].forEach(([sel, titre])=>{
@@ -4989,11 +5009,13 @@ async function lancer(){
     vrai("Aucune étiquette n'englobe une autre étape", englobantes.length === 0,
       englobantes.join(" ; "));
     vrai("Les trois onglets et la séance en cours sont couverts",
-      Object.keys(G).length === 4, Object.keys(G).join(", "));
+      ["seance", "seanceActive", "eat", "prg"].every(o=>!!G[o]), Object.keys(G).join(", "));
     vrai("La séance en cours a sa propre visite", !!G.seanceActive);
-    /* on ne noie pas quelqu'un qui arrive : trois étapes au plus par onglet */
-    vrai("Pas plus de trois étapes par onglet",
-      Object.values(G).every(e=>e.length <= 3),
+    /* On ne noie pas quelqu'un qui arrive. Quatre et non trois depuis qu'Alimentation
+       sépare « choisis le repas » de « touche un aliment » : c'était UNE étiquette qui
+       désignait toute la liste, et le projecteur couvrait l'écran. */
+    vrai("Pas plus de quatre étapes par visite",
+      Object.values(G).every(e=>e.length <= 4),
       Object.values(G).map(e=>e.length).join("/"));
     vrai("Chacune tient en une phrase courte",
       Object.values(G).every(e=>e.every(([, , t])=>t.length <= 105)),
@@ -5028,11 +5050,6 @@ async function lancer(){
     F.lancerGuide("seance");
     await new Promise(r=>setTimeout(r, 120));
     vrai("Le voile s'ouvre sur la première étape", !!F.document.querySelector(".gd-voile"));
-    /* La bulle se remplit dans un requestAnimationFrame, et un onglet en arrière-plan
-       les met en sommeil : on attend le bouton au lieu de parier sur un délai. */
-    const attendre = async (cond, max)=>{ const t0 = Date.now();
-      while(Date.now() - t0 < (max || 3000)){ if(cond()) return true;
-        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
     await attendre(()=>!!F.document.getElementById("gd-suite"));
     vrai("…avec un bouton pour avancer", !!F.document.getElementById("gd-suite"));
     for(let k = 0; k < 6; k++){
@@ -5201,6 +5218,79 @@ async function lancer(){
        (77 kg il y a 20 jours, 85 kg hier). Sans le tri, la lecture s'inverserait. */
     DB.history = assidu([85,84,82,82,80,80,79,78,77,77], [110,108,105,104,100,100,99,98,95,95]);
     eq("L'historique est retrié avant d'être lu", F.verdictProgression().ton, "bon");
+  })();
+  neuf();
+
+  /* --------------------------------------- la visite tient dans un mouchoir */
+  /* « #meal-panel », c'était la liste ENTIÈRE : sur un repas rempli le projecteur fait
+     près de 700 px sur un écran de 812, la bulle ne tient plus dessous, bascule en haut
+     et se retrouve sous la caméra du téléphone. Une étiquette doit désigner UNE chose. */
+  grp("Le projecteur désigne une seule chose");
+  neuf();
+  await (async ()=>{
+    const G = F.eval("GUIDES");
+    const cibles = G.eat.map(e=>e[0]);
+    vrai("La liste entière n'est plus une cible", cibles.indexOf("#meal-panel") < 0, cibles.join(" / "));
+    /* le repas et les aliments sont deux gestes : deux étiquettes */
+    vrai("Le choix du repas a la sienne", cibles.indexOf(".meal-tabs") >= 0);
+    vrai("Les aliments ont la leur", cibles.indexOf("#meal-panel .fgrid") >= 0);
+
+    DB.habitSel = {}; DB.hbPerso = {}; DB.active = null;
+    /* « curTab » est declare avec let : il n'apparait pas sur window, lui affecter une
+       valeur de l'exterieur ne cree qu'une propriete morte. On passe par eval. */
+    F.eval("curTab = 'eat'; render()");
+    await attendre(()=>!!F.document.querySelector("#meal-panel .fgrid"), 3000);
+    /* On ne mesure PAS de pixels ici : le cadre de test n'a pas de hauteur de rendu,
+       tout y vaut zéro. Ce qui se vérifie, c'est la structure — la cible est une
+       PARTIE de la liste, et la liste en compte plusieurs. */
+    const panneau = F.document.querySelector("#meal-panel");
+    const section = F.document.querySelector("#meal-panel .fgrid");
+    vrai("Le panneau des repas est bien rendu", !!panneau && !!section);
+    vrai("La cible est une section, pas le panneau",
+      !!section && section !== panneau && panneau.contains(section));
+    const nbSections = panneau ? panneau.querySelectorAll(".fgrid").length : 0;
+    vrai("…et le panneau en compte plusieurs", nbSections > 1, nbSections + " section(s)");
+    const tete = panneau && panneau.querySelector(".meal-h");
+    vrai("…la première étant les protéines",
+      !!tete && /prot/i.test(tete.textContent), tete ? tete.textContent.trim() : "aucune");
+    /* aucune étiquette n'en contient une autre : sinon le projecteur en éclaire deux */
+    const els = cibles.map(c=>F.document.querySelector(c)).filter(Boolean);
+    const emboite = els.some((a, i)=>els.some((b, j)=>i !== j && a.contains(b)));
+    vrai("Aucune étiquette n'en contient une autre", !emboite);
+  })();
+  neuf();
+
+  /* ------------------------------------ la visite de la fiche d'ajout */
+  grp("La visite de la fiche d'ajout");
+  neuf();
+  await (async ()=>{
+    const G = F.eval("GUIDES");
+    eq("Trois étapes : scanner, choisir, peser", (G.ajoutAliment || []).length, 3);
+    delete DB.seen["guide-ajoutAliment"];
+    F.openAjoutAliment("midi");
+    await attendre(()=>!!F.document.querySelector(".gd-bulle"), 3000);
+    const bulle = F.document.querySelector(".gd-bulle"), voile = F.document.querySelector(".gd-voile");
+    vrai("Elle se lance sur la fiche ouverte", !!bulle);
+    /* la fiche vit en z-index 60 : un voile en 50 se serait affiché DERRIÈRE elle */
+    const z = e => parseInt(F.getComputedStyle(e).zIndex, 10);
+    const zFiche = z(F.document.getElementById("overlay"));
+    vrai("Le voile passe au-dessus de la fiche", z(voile) > zFiche, z(voile) + " contre " + zFiche);
+    vrai("…et la bulle au-dessus du voile", z(bulle) > z(voile));
+    /* chaque étape désigne quelque chose qui existe VRAIMENT dans la fiche */
+    const manquantes = G.ajoutAliment.filter(e=>!F.document.querySelector(e[0])).map(e=>e[0]);
+    vrai("Chaque étape désigne un élément de la fiche", manquantes.length === 0, manquantes.join(" / "));
+    /* on la traverse : elle doit se refermer et laisser la fiche utilisable */
+    for(let i = 0; i < 4 && F.document.querySelector(".gd-bulle"); i++){
+      const b = F.document.getElementById("gd-suite");
+      if(!b) break;
+      b.click();
+      await attendre(()=>!F.document.querySelector(".gd-voile")
+                     || !!F.document.getElementById("gd-suite"), 1500);
+    }
+    vrai("Au bout des étapes, tout se referme", !F.document.querySelector(".gd-voile"));
+    vrai("…et la fiche est toujours là", !!F.document.getElementById("ot-ok"));
+    vrai("…et elle est retenue comme vue", !!DB.seen["guide-ajoutAliment"]);
+    F.hideSheet();
   })();
   neuf();
 

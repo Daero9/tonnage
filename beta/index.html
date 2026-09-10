@@ -1823,6 +1823,10 @@
   .gd-trou{position:fixed; border-radius:16px; pointer-events:none;
     box-shadow:0 0 0 9999px rgba(0,0,0,.68);
     transition:top .24s ease, left .24s ease, width .24s ease, height .24s ease;}
+  /* au-dessus de la fiche, qui vit en 60 */
+  .gd-voile.sur-fiche{z-index:70;}
+  .gd-trou.sur-fiche{z-index:70;}
+  .gd-bulle.sur-fiche{z-index:71;}
   .gd-bulle{position:fixed; z-index:51; width:min(310px, calc(100vw - 24px));
     background:var(--surface); border-radius:18px; padding:14px 15px 12px;
     box-shadow:0 14px 38px rgba(0,0,0,.3);}
@@ -2400,11 +2404,21 @@
     background:var(--surface); border:1.5px solid var(--border); border-radius:13px;
     padding:11px 13px; cursor:pointer;}
   .fav-box.on{border-color:var(--accent);}
-  .fav-box .et{display:flex; color:var(--accent); flex:0 0 auto;}
+  /* La case a cocher demandait de viser un carre de vingt pixels a cote d une etoile
+     qui, elle, ne servait a rien. L etoile EST le bouton : creuse tant que rien n est
+     garde, pleine des que ca l est — exactement comme sur la fiche d un produit
+     scanne, ou le geste est deja appris. */
+  .fav-box .et{display:flex; color:var(--ink-mute); flex:0 0 auto;}
+  .fav-box .et svg{width:21px; height:21px; fill:none;
+    transition:fill .18s ease, transform .18s cubic-bezier(.22,.9,.35,1);}
+  .fav-box:active .et svg{transform:scale(.86);}
+  .fav-box.on .et{color:var(--accent);}
+  .fav-box.on .et svg{fill:currentColor;}
+  @media (prefers-reduced-motion:reduce){ .fav-box .et svg{transition:none;} }
   .fav-box .tx{flex:1; min-width:0;}
   .fav-box b{display:block; font-size:13.5px; font-weight:700;}
   .fav-box i{display:block; font-style:normal; font-size:11.5px; color:var(--ink-mute); margin-top:1px;}
-  .fav-box input{width:20px; height:20px; accent-color:var(--accent); flex:0 0 auto;}
+
   /* La recherche reprend la grille de la page principale : deux colonnes, une émoticône
      par aliment. On y reconnaît d'avance la pastille qu'on retrouvera dans son repas, et
      il en tient deux fois plus à l'écran. Le fond doit être surface2 : sur le blanc de
@@ -3184,6 +3198,12 @@ const TRAD = {en:{
   "Nombre de portions":"Number of portions",
   "Mettre à jour":"Update",
   "Ajouter à ce repas":"Add to this meal",
+  "Retirer de ce repas":"Remove from this meal",
+  "Ne plus me le proposer":"Stop suggesting it",
+  "Retirer cet aliment ?":"Remove this food?",
+  "ne sera plus proposé, et sort de ce repas.":"will no longer be suggested, and leaves this meal.",
+  "ne sera plus proposé quand tu coches un repas.":"will no longer be suggested when you fill in a meal.",
+  "Les autres journées ne changent pas.":"Other days are not affected.",
   "Retirer des propositions":"Remove from suggestions",
   "Vélo":"Cycling",
   "Corde à sauter":"Jump rope",
@@ -3625,8 +3645,18 @@ const TRAD = {en:{
   "Suis ton activité de la semaine. Plus d'informations dans le bilan.":"Track your week. More detail in the summary.",
   "Ton objectif du jour":"Today's target",
   "Suis ta consommation de protéines et de calories de la journée.":"Track your protein and calories for the day.",
+  "Choisis le repas":"Pick the meal",
+  "Matin, midi, collation, soir : chacun garde ce que tu y mets.":"Morning, midday, snack, evening: each keeps what you put in it.",
+  "Touche un aliment":"Tap a food",
+  "Le compte du jour se met à jour tout seul. Appui long pour la quantité.":"The day's tally updates on its own. Long-press for the amount.",
   "Ce que tu manges":"What you eat",
   "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul.":"Pick the meal, then tap a food. The count updates on its own.",
+  "Le plus rapide : le code-barres":"Fastest: the barcode",
+  "Sur un produit emballé, les protéines et les calories se remplissent toutes seules.":"On a packaged product, protein and calories fill themselves in.",
+  "Sinon, choisis dans la liste":"Otherwise, pick from the list",
+  "Cherche par nom, ou filtre par famille juste au-dessus : viande, poisson, légume…":"Search by name, or filter by family just above: meat, fish, vegetable…",
+  "Dis combien tu en as mangé":"Say how much you ate",
+  "Tout se recalcule sur ce poids. Les valeurs s'affichent en dessous avant d'enregistrer.":"Everything is recalculated from that weight. The values show below before you save.",
   "Ton aliment n'y est pas ?":"Food not listed?",
   "Ajoute-le une fois avec ses valeurs : il restera dans ta liste.":"Add it once with its values: it stays in your list.",
   "Ton poids":"Your weight",
@@ -7269,7 +7299,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 18h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 20h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8263,7 +8293,12 @@ const GUIDES = {
   ],
   eat: [
     [".eat-stats", "Ton objectif du jour", "Suis ta consommation de protéines et de calories de la journée."],
-    ["#meal-panel", "Ce que tu manges", "Choisis le repas, puis touche un aliment. Le compte se met à jour tout seul."],
+    /* « #meal-panel », c'était la liste ENTIÈRE : sur un repas rempli le trou fait
+       quatre cents pixels, la bulle ne tient plus en dessous et remonte tout en haut,
+       sous la caméra du téléphone. Le repas et les aliments sont deux gestes de toute
+       façon : ils ont chacun leur étiquette, et chacune tient dans un mouchoir. */
+    [".meal-tabs", "Choisis le repas", "Matin, midi, collation, soir : chacun garde ce que tu y mets."],
+    ["#meal-panel .fgrid", "Touche un aliment", "Le compte du jour se met à jour tout seul. Appui long pour la quantité."],
     ["#eat-add", "Ton aliment n'y est pas ?", "Ajoute-le une fois avec ses valeurs : il restera dans ta liste."]
   ],
   /* Des cibles PRÉCISES, jamais un conteneur : « #wt-sec » englobait le poids et les
@@ -8277,6 +8312,14 @@ const GUIDES = {
     [".sets", "Note tes poids et tes répétitions", "Ils sont gardés d'une séance à l'autre : l'app s'en sert pour ajuster la suivante."],
     ["#finish-w", "Termine quand tu as fini", "Ta séance est enregistrée et ta récupération mise à jour."]
   ],
+  /* La fiche d'ajout offre deux chemins qu'on ne devine pas : le code-barres remplit
+     tout seul, la liste sert au reste. Et la quantite est la seule chose qu'on doive
+     vraiment saisir a la main — c'est elle qui decide des chiffres du jour. */
+  ajoutAliment: [
+    ["#ot-scan", "Le plus rapide : le code-barres", "Sur un produit emballé, les protéines et les calories se remplissent toutes seules."],
+    ["#ot-liste", "Sinon, choisis dans la liste", "Cherche par nom, ou filtre par famille juste au-dessus : viande, poisson, légume…"],
+    ["#ot-gwrap", "Dis combien tu en as mangé", "Tout se recalcule sur ce poids. Les valeurs s'affichent en dessous avant d'enregistrer."]
+  ],
   prg: [
     ["#wt-sec > .card", "Ton poids", "Suis ton poids et ta progression sur plusieurs semaines."],
     ["#prot-sec .card", "Tes protéines", "Sept jours d'un coup d'œil. Ils viennent de ce que tu coches dans Alimentation."],
@@ -8284,8 +8327,12 @@ const GUIDES = {
   ]
 };
 let guideEnCours = false;
-function lancerGuide(onglet){
-  if(guideEnCours || sheetOpen) return;
+/* Une visite peut se jouer SUR une fiche ouverte — celle qui explique comment ajouter
+   un aliment. Deux choses changent alors : on ne refuse plus au motif qu'une fiche est
+   ouverte, et le voile doit passer AU-DESSUS d'elle (la fiche est en z-index 60). */
+function lancerGuide(onglet, surFiche){
+  if(guideEnCours) return;
+  if(sheetOpen && !surFiche) return;
   if(dejaVu("guide-" + onglet)) return;
   if(!planFor(db.profile)) return;              /* le profil d'abord, la visite ensuite */
   /* une etiquette qui designe un element absent ne designe rien : on saute l'etape */
@@ -8294,9 +8341,10 @@ function lancerGuide(onglet){
   marquerVu("guide-" + onglet);
   guideEnCours = true;
 
-  const voile = document.createElement("div"); voile.className = "gd-voile";
-  const trou = document.createElement("div");  trou.className = "gd-trou";
-  const bulle = document.createElement("div"); bulle.className = "gd-bulle";
+  const haut = surFiche ? " sur-fiche" : "";
+  const voile = document.createElement("div"); voile.className = "gd-voile" + haut;
+  const trou = document.createElement("div");  trou.className = "gd-trou" + haut;
+  const bulle = document.createElement("div"); bulle.className = "gd-bulle" + haut;
   voile.appendChild(trou);
   document.body.appendChild(voile); document.body.appendChild(bulle);
 
@@ -10058,6 +10106,7 @@ function tuileNut(ic, couleur, val, unite, libelle){
     <b>${val}${unite? `<span>${unite}</span>`:""}</b><i>${libelle}</i></div>`;
 }
 function openAjoutAliment(meal){
+  let garder = false;              /* « ajouter aux favoris » : l etoile porte l etat */
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
       <button class="btn" id="ot-scan" style="background:var(--hero); color:#fff; border-color:var(--hero);">
@@ -10093,11 +10142,10 @@ function openAjoutAliment(meal){
         <p style="margin:7px 0 0; font-size:11.5px; color:var(--ink-mute); line-height:1.5;">${TR("Le poids est facultatif, mais si tu le donnes tu pourras ensuite ajuster la portion au gramme près.")}</p>
       </div>
       <div id="ot-live" style="font-size:14.5px; font-weight:700; color:var(--accent); min-height:20px;"></div>
-      <label class="fav-box" id="ot-favbox">
-        <span class="et">${icoM("etoile", 21)}</span>
-        <span class="tx"><b>${TR("Ajouter aux favoris")}</b><i>${TR("Pour le retrouver d'un geste au prochain repas")}</i></span>
-        <input type="checkbox" id="ot-save">
-      </label>
+      <button type="button" class="fav-box" id="ot-favbox" aria-pressed="false">
+        <span class="et">${IC_ETOILE}</span>
+        <span class="tx"><b id="ot-favtx">${TR("Ajouter aux favoris")}</b><i>${TR("Pour le retrouver d'un geste au prochain repas")}</i></span>
+      </button>
       <button class="btn btn-accent" id="ot-ok">${TR("Enregistrer")}</button>
       ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? TR("Restaurer les {} propositions retirées").replace("{}", nbMasques()) : TR("Restaurer la proposition retirée")}</button>`:""}
       <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;">${TR("Astuce : appui long sur une proposition pour la modifier.")}</p>
@@ -10219,10 +10267,19 @@ function openAjoutAliment(meal){
     listeEl.scrollTop = 0;
     dessinerListe();
   });
-  /* le cadre des favoris s allume quand la case est prise */
-  const fbox = document.getElementById("ot-favbox"), fchk = document.getElementById("ot-save");
-  fchk.onchange = ()=>fbox.classList.toggle("on", fchk.checked);
+  /* l etoile se remplit, le cadre s allume : un seul et meme appui */
+  const fbox = document.getElementById("ot-favbox");
+  fbox.onclick = ()=>{
+    garder = !garder;
+    fbox.classList.toggle("on", garder);
+    fbox.setAttribute("aria-pressed", garder ? "true" : "false");
+    const tx = document.getElementById("ot-favtx");
+    if(tx) tx.textContent = garder ? TR("Gardé dans tes favoris") : TR("Ajouter aux favoris");
+    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+  };
   dessinerListe();
+  /* la visite se joue une fois, la liste une fois remplie : elle en est une des etapes */
+  setTimeout(()=>{ if(sheetOpen) lancerGuide("ajoutAliment", true); }, 420);
   const resto = document.getElementById("ot-restore");
   if(resto) resto.onclick = ()=>{ db.hbMasque = {}; save(); closeSheet(); render(); };
   document.getElementById("ot-ok").onclick = ()=>{
@@ -10244,7 +10301,7 @@ function openAjoutAliment(meal){
          le rapport de la journée les retrouvera sans avoir à redéfaire le calcul */
       if(r.gluc != null){ if(!db.macros) db.macros = {}; db.macros[label] = [r.gluc, r.lip]; }
     }
-    if(document.getElementById("ot-save").checked){
+    if(garder){
       const ty = habitType(meal);
       const liste = db.hbPerso[ty] || (db.hbPerso[ty] = []);
       if(!liste.some(x=>x[0]===label)) liste.push([label, prot, kcal, familleAliment(label, prot, kcal)]);
@@ -10268,6 +10325,9 @@ function openModifAliment(meal, label){
   const gBase = mg ? parseFloat(mg[1].replace(",", ".")) : 0;
   const unite = mg ? mg[2].toLowerCase() : "";
   const auPoids = gBase > 0;
+  /* Dans le repas ou pas : c'est ce qui decide des actions offertes. Un aliment qu'on
+     regarde pour l'ajouter n'a rien a se faire retirer. */
+  const choisi = !!(db.habitSel[k] && (db.habitSel[k][meal]||[]).includes(label));
 
   openSheet(`<h3 style="text-align:center; text-transform:uppercase;">${esc(TR(pa.nom))}</h3>
     <div class="row" style="justify-content:center; gap:34px; margin-bottom:14px;">
@@ -10286,8 +10346,10 @@ function openModifAliment(meal, label){
         <input type="number" inputmode="decimal" step="${auPoids? (unite === "cl" ? 5 : 10) : 0.5}" min="0" id="ma-n" value="${auPoids? gBase : 1}">
       </div>
       <div id="ma-live" style="font-size:13.5px; font-weight:700; color:var(--accent);"></div>
-      <button class="btn btn-accent" id="ma-ok">${(db.habitSel[k] && (db.habitSel[k][meal]||[]).includes(label))? TR("Mettre à jour") : TR("Ajouter à ce repas")}</button>
-      <button class="btn" id="ma-del" style="background:var(--hero); color:#fff; border-color:var(--hero);">${TR(grp? "Retirer des propositions" : "Supprimer")}</button>
+      <button class="btn btn-accent" id="ma-ok">${choisi? TR("Mettre à jour") : TR("Ajouter à ce repas")}</button>
+      ${choisi? `<button class="btn" id="ma-off" style="background:var(--hero); color:#fff; border-color:var(--hero);">${
+        TR("Retirer de ce repas")}</button>`:""}
+      ${grp? `<button class="btn" id="ma-del">${TR("Ne plus me le proposer")}</button>`:""}
       <button class="btn btn-ghost" id="ma-cancel">${TR("Annuler")}</button>
     </div>`);
 
@@ -10334,11 +10396,16 @@ function openModifAliment(meal, label){
     if(db.dayFix[k]) delete db.dayFix[k];
     save(); closeSheet(); render();
   };
-  document.getElementById("ma-del").onclick = ()=>{
-    if(grp){ demanderRetrait(label, grp); return; }
+  /* le sortir d'ici : le geste qu'on vient chercher neuf fois sur dix */
+  const off = document.getElementById("ma-off");
+  if(off) off.onclick = ()=>{
     if(db.habitSel[k]) db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).filter(x=>x!==label);
+    if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
     save(); closeSheet(); render();
   };
+  /* ne plus se le faire proposer : un tout autre sujet */
+  const del = document.getElementById("ma-del");
+  if(del) del.onclick = ()=> demanderRetrait(label, grp, meal);
 }
 /* à quel groupe de propositions appartient cet aliment (null s'il est libre) */
 function trouverGroupe(label){
@@ -11109,14 +11176,21 @@ function habitOpts(h){
 }
 function nbMasques(){ return Object.values(db.hbMasque||{}).reduce((a,l)=>a+(l?l.length:0),0); }
 /* appui long sur une proposition : on la retire de la liste (masquée, ou supprimée si c'est la tienne) */
-function demanderRetrait(label, grp){
+function demanderRetrait(label, grp, meal){
   const tyPerso = Object.keys(db.hbPerso || {}).find(t=>(db.hbPerso[t]||[]).some(x=>x[0]===label));
   const perso = grp.indexOf("perso:")===0 || !!tyPerso;
-  openSheet(`<h3>Retirer cet aliment ?</h3>
+  const k = jourAlim();
+  /* Un aliment a soi qu'on supprime pour de bon ne doit pas rester coche dans la
+     journee : il n'aurait plus de pastille a decocher nulle part. Un aliment de la
+     bibliotheque, lui, reste — on cesse de le proposer, on ne nie pas qu'il a ete mange. */
+  const sortDuRepas = perso && !!meal && !!(db.habitSel[k] && (db.habitSel[k][meal]||[]).includes(label));
+  openSheet(`<h3>${TR("Retirer cet aliment ?")}</h3>
     <div style="font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px;">
-      <b style="color:var(--ink);">${esc(label)}</b> ne sera plus proposé quand tu coches un repas.
+      <b style="color:var(--ink);">${esc(label)}</b> ${sortDuRepas
+        ? TR("ne sera plus proposé, et sort de ce repas.")
+        : TR("ne sera plus proposé quand tu coches un repas.")}
       ${perso? TR("Tu pourras le recréer depuis « ＋ Autre… ».") : TR("Tu pourras le remettre depuis « ＋ Autre… », en bas de la fiche.")}
-      Les journées déjà enregistrées ne changent pas.</div>
+      ${TR("Les autres journées ne changent pas.")}</div>
     <div class="row" style="gap:8px;">
       <button class="btn grow" id="rt-non">${TR("Annuler")}</button>
       <button class="btn btn-accent grow" id="rt-oui">${TR("Retirer")}</button>
@@ -11128,6 +11202,10 @@ function demanderRetrait(label, grp){
       db.hbPerso[ty] = (db.hbPerso[ty]||[]).filter(x=>x[0]!==label);
     } else {
       db.hbMasque[grp] = (db.hbMasque[grp]||[]).concat(label);
+    }
+    if(sortDuRepas){
+      db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).filter(x=>x!==label);
+      if(db.dayFix[k]) delete db.dayFix[k];
     }
     save(); closeSheet(); render();
   };
