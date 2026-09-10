@@ -2413,6 +2413,15 @@
   .exo-h{display:flex; gap:12px; align-items:center; margin:2px 0 16px;}
   .exo-h h3{margin:0; padding:0; font-size:22px; line-height:1.15; text-align:left;}
   .exo-h .sous{font-size:13px; color:var(--ink-mute); margin-top:3px;}
+  /* Le verdict ouvre la page Progression : la cause, puis la conclusion. Le trait de
+     couleur donne le ton avant même la lecture — vert ça monte, orange ça coince,
+     gris on ne sait pas encore. */
+  .vd-card{background:var(--surface); border-radius:16px; padding:13px 15px 14px;
+    border-left:4px solid var(--ink-mute); margin-bottom:12px;}
+  .vd-card.bon{border-left-color:var(--good);}
+  .vd-card.plat{border-left-color:var(--accent);}
+  .vd-card .t{font-size:15.5px; font-weight:800; letter-spacing:-.01em; margin-bottom:4px;}
+  .vd-card p{margin:0; font-size:13px; line-height:1.55; color:var(--ink-soft);}
   .exo-c{background:var(--surface); border-radius:16px; padding:16px 15px; margin-bottom:12px;}
   .exo-c.tip{border:1.5px solid var(--ink);}   /* le conseil est encadré : on ne le rate pas */
   .exo-t{font-size:16px; font-weight:800; letter-spacing:-.01em; margin-bottom:13px;}
@@ -3687,6 +3696,24 @@ const TRAD = {en:{
   "Objectif du jour":"Today's target",
   "Dernière séance":"Last session",
   "Pourquoi ce poids ?":"Why this load?",
+  "Encore un peu de matière":"A little more to go on",
+  "Tu progresses":"You are progressing",
+  "Il manque des séances":"Sessions are missing",
+  "Tes charges stagnent":"Your loads have stalled",
+  "{n} séances sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.":"{n} sessions over the last three weeks. {m} more {s} and I can tell you whether you are progressing.",
+  "{n} séances enregistrées, mais aucun exercice revu deux fois. Refais les mêmes mouvements d'une séance à l'autre : c'est ce qui permet de comparer.":"{n} sessions logged, but no exercise repeated twice. Do the same movements from one session to the next: that is what makes them comparable.",
+  "aucun de tes {t} exercices suivis n'a monté":"none of your {t} tracked exercises went up",
+  "{m} de tes {t} exercices suivis ont monté":"{m} of your {t} tracked exercises went up",
+  "tes {t} exercices suivis ont tous monté":"all {t} of your tracked exercises went up",
+  "{s} séances en trois semaines, et {b}.":"{s} sessions in three weeks, and {b}.",
+  "{s} séances en trois semaines au lieu de {a}, et {b}. C'est la régularité qui bloque le reste.":"{s} sessions in three weeks instead of {a}, and {b}. Consistency is what is holding back the rest.",
+  "{s} séances en trois semaines — la régularité est là — mais {b}. Regarde tes protéines et ton sommeil avant de changer d'entraînement.":"{s} sessions in three weeks — consistency is there — but {b}. Check your protein and your sleep before changing your training.",
+  "{} semaines":"{} weeks",
+  "{} mois":"{} months",
+  "plus d'un an":"over a year",
+  "Ta dernière séance sur cet exercice remonte à {d}. Après une coupure, personne ne peut savoir ce que tu as gardé : on repart de ta dernière charge sans chercher à la battre, et la suivante se réglera sur ce que tu fais aujourd'hui.":"Your last session on this exercise was {d} ago. After a break, nobody can tell what you have kept: we start again from your last load without trying to beat it, and the next one will be set by what you do today.",
+  "Rien sur cet exercice depuis {d} : reprends à {c}, vise {r} reps et garde deux répétitions en réserve.":"Nothing on this exercise for {d}: go back to {c}, aim for {r} reps and keep two in reserve.",
+  "Rien sur cet exercice depuis {d} : vise {r} reps et garde deux répétitions en réserve.":"Nothing on this exercise for {d}: aim for {r} reps and keep two in reserve.",
   "Tu montes à {n} répétitions : au-delà, en ajouter encore ne rend plus l'exercice plus dur.":"You are up to {n} reps: past that, adding more no longer makes the exercise harder.",
   "Tu es déjà à {n} répétitions : le volume monte mieux en ajoutant une série qu'en allongeant celles-ci.":"You are already at {n} reps: volume climbs better by adding a set than by lengthening these.",
   "Tu ne peux pas ajouter de charge sur cet exercice : c'est le nombre de répétitions qui fait la progression.":"You cannot add load on this exercise: reps are what carry the progression.",
@@ -3863,7 +3890,7 @@ const TRAD = {en:{
   "Tu es…":"You are…",
 
   /* --- charge fixe et renvois --- */
-  "Pour un seul haltère ou une seule barre. L'app ne touche plus au poids, ni pour monter ni pour descendre : elle fait progresser en répétitions, puis en séries, puis avec une variante plus dure. Et si une séance est trop dure, c'est la cible en répétitions qui baisse.":"For a single dumbbell or a single bar. The app stops changing the weight, up or down: it progresses you in reps, then in sets, then with a harder variation. And if a session is too hard, it's the rep target that comes down.",
+  "L'application ne touche plus au poids : elle adapte uniquement les répétitions.":"The app no longer changes the weight: it only adjusts the reps.",
   "Coche tes repas sur l'écran {} : ton historique de protéines s'affichera ici, jour par jour.":"Tick off your meals on the {} tab and your protein history will show up here, day by day.",
 
   /* --- derniers écrans --- */
@@ -4533,21 +4560,63 @@ function avecMateriel(mat, fn){
 /* Cet exercice est-il faisable avec ce matériel ? Sinon, par quoi le remplacer ? On
    cherche d'abord dans les équivalences déjà écrites pour lui, puis, à défaut, dans les
    exercices du même groupe musculaire réalisables sur place — le poids du corps d'abord. */
+/* Le groupe musculaire servait de filet de sécurité quand aucune alternative n'était
+   nommée. Il suffit en haut du corps — « Épaules » ou « Biceps » ne recouvrent qu'un
+   geste. Il ne suffit pas en bas : « Jambes » mélange le squat, la charnière de
+   hanche, la fente, le mollet et l'abduction. Résultat mesuré à la maison : les
+   mollets, les ischios et toutes les charnières tombaient sur le SQUAT au poids du
+   corps — un mollet remplacé par un squat.
+   On nomme donc le geste, mais seulement là où le muscle est trop large pour en tenir
+   lieu. Ailleurs, patronDe() rend le muscle : le comportement d'avant, à l'identique. */
+const PATRON = {
+  "Squat":"squat", "Presse à cuisses":"squat", "Hack squat":"squat", "Goblet squat":"squat",
+  "Front squat":"squat", "Leg extension":"squat", "Squat au poids du corps":"squat",
+  "Chaise contre le mur":"squat", "Squat élastique":"squat",
+
+  "Fentes":"fente", "Fentes bulgares":"fente", "Montées sur banc":"fente",
+  "Fentes avant":"fente", "Fentes latérales":"fente", "Montées sur step":"fente",
+  "Squat bulgare au poids du corps":"fente",
+
+  "Soulevé de terre roumain":"charniere", "Soulevé de terre sumo":"charniere",
+  "Good morning":"charniere", "Hip thrust":"charniere", "Kickback fessier poulie":"charniere",
+  "Leg curl":"charniere", "Leg curl sur ballon":"charniere", "Swing kettlebell":"charniere",
+  "Pont fessier":"charniere", "Pont fessier une jambe":"charniere",
+  "Soulevé de terre élastique":"charniere",
+
+  "Mollets debout":"mollet", "Mollets assis":"mollet",
+  "Mollets debout au poids du corps":"mollet", "Mollets sur marche":"mollet",
+
+  "Abducteurs machine":"hanche", "Adducteurs machine":"hanche",
+  "Abduction hanche élastique":"hanche",
+
+  "Crunch":"abdo-flexion", "Relevés de jambes":"abdo-flexion",
+  "Crunch câble":"abdo-flexion", "Crunch sur ballon":"abdo-flexion",
+  "Gainage":"abdo-gainage", "Planche latérale":"abdo-gainage",
+  "Roulette abdominale":"abdo-gainage", "Mountain climber":"abdo-gainage"
+};
+function patronDe(ex){ return (ex && PATRON[nomCanon(ex)]) || (ex ? ex.muscle : ""); }
 function exoDuLieu(exId, mat, deja){
   const ex = getEx(exId);
   if(!ex || exoDispo(ex, mat)) return exId;
   const pris = deja || [];
   const equiv = (ALTS[nomCanon(ex)] || [])
     .map(n => allEx().find(e => nomCanon(e) === n)).filter(Boolean);
-  const groupe = allEx().filter(e => e.muscle === ex.muscle && e.id !== exId);
+  const patron = patronDe(ex);
+  const memePatron = allEx().filter(e => e.id !== exId && patronDe(e) === patron);
+  /* Dans le même geste, on suit l'ordre de la bibliothèque — du plus chargé au poids
+     du corps : quelqu'un qui a des haltères mérite le goblet squat, pas le squat à
+     vide. Le filet du groupe musculaire, lui, garde sa préférence au poids du corps :
+     là on ne sait plus quel geste on remplace, autant proposer le plus faisable. */
   const cands = equiv
-    .concat(groupe.filter(e => e.equip === "Poids du corps"), groupe)
+    .concat(memePatron,
+            groupe(ex, exId).filter(e => e.equip === "Poids du corps"), groupe(ex, exId))
     .filter(e => exoDispo(e, mat));
   /* Deux exercices remplacés ne doivent pas atterrir sur le même : la séance perdrait
      un mouvement au lieu d'en changer un. À défaut de mieux, on accepte le doublon
      plutôt que de laisser un exercice infaisable. */
   return (cands.find(e => pris.indexOf(e.id) < 0) || cands[0] || ex).id;
 }
+function groupe(ex, exId){ return allEx().filter(e => e.muscle === ex.muscle && e.id !== exId); }
 
 /* alternatives équivalentes, pour remplacer un exercice (machine prise, matériel manquant…) */
 const ALTS = {
@@ -4564,7 +4633,7 @@ const ALTS = {
   "Soulevé de terre sumo":["Soulevé de terre","Hip thrust"],
   "Good morning":["Soulevé de terre roumain","Leg curl"],
   "Montées sur banc":["Fentes","Fentes bulgares"],
-  "Kickback fessier poulie":["Hip thrust","Fentes bulgares"],
+  "Kickback fessier poulie":["Hip thrust","Pont fessier une jambe","Fentes bulgares"],
   "Russian twist":["Crunch câble","Planche latérale"],
   "Mountain climber":["Gainage","Relevés de jambes"],
   "Développé couché":["Développé couché haltères","Développé incliné haltères","Dips","Pompes"],
@@ -4592,13 +4661,13 @@ const ALTS = {
   "Extension poulie (barre)":["Barre au front","Extension nuque haltère","Dips"],
   "Barre au front":["Extension poulie (barre)","Extension nuque haltère"],
   "Extension nuque haltère":["Extension poulie (barre)","Barre au front"],
-  "Squat":["Presse à cuisses","Fentes","Leg extension"],
-  "Presse à cuisses":["Squat","Fentes","Leg extension"],
+  "Squat":["Presse à cuisses","Hack squat","Goblet squat","Front squat","Fentes","Leg extension"],
+  "Presse à cuisses":["Squat","Hack squat","Goblet squat","Leg extension","Fentes"],
   "Fentes":["Presse à cuisses","Squat","Hip thrust"],
   "Leg curl":["Soulevé de terre roumain","Hip thrust"],
   "Leg extension":["Presse à cuisses","Squat"],
   "Soulevé de terre roumain":["Leg curl","Hip thrust","Soulevé de terre"],
-  "Hip thrust":["Soulevé de terre roumain","Fentes","Leg curl"],
+  "Hip thrust":["Soulevé de terre roumain","Pont fessier","Pont fessier une jambe","Leg curl","Fentes"],
   "Crunch":["Relevés de jambes","Crunch câble","Gainage"],
   "Gainage":["Crunch","Relevés de jambes"],
   "Relevés de jambes":["Crunch","Gainage"],
@@ -4620,10 +4689,11 @@ const ALTS = {
   "Extension poulie (corde)":["Extension poulie (barre)","Barre au front"],
   "Extension triceps machine":["Extension poulie (barre)","Extension poulie (corde)"],
   "Kickback poulie":["Extension poulie (corde)","Extension poulie (barre)"],
-  "Hack squat":["Presse à cuisses","Squat","Fentes bulgares"],
+  "Hack squat":["Presse à cuisses","Squat","Goblet squat","Fentes bulgares"],
   "Fentes bulgares":["Fentes","Presse à cuisses","Hip thrust"],
-  "Abducteurs machine":["Hip thrust","Fentes"],
-  "Adducteurs machine":["Fentes","Presse à cuisses"],
+  "Abducteurs machine":["Adducteurs machine","Abduction hanche élastique","Fentes latérales","Hip thrust"],
+  "Adducteurs machine":["Abducteurs machine","Abduction hanche élastique","Fentes latérales","Presse à cuisses"],
+  "Abduction hanche élastique":["Abducteurs machine","Adducteurs machine","Fentes latérales"],
   "Mollets assis":["Mollets debout"],
   "Roulette abdominale":["Gainage","Crunch"],
   "Planche latérale":["Gainage","Crunch"]
@@ -7128,7 +7198,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 16h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 16h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7644,6 +7714,22 @@ function parseReps(reps){
 }
 /* charge bloquée : ni haltères plus lourds, ni lest disponible */
 const REPS_PLAFOND = 25;                       /* au-delà, mieux vaut durcir le mouvement */
+/* Une coupure ne se voyait nulle part : suggestFor() lisait la dernière performance
+   sans jamais regarder sa DATE. Après trois mois sans toucher au banc, l'app disait
+   encore « tes séries à 80 kg tombent dans la fourchette, gratte une rep de plus » —
+   un record vieux d'un trimestre présenté comme l'état du jour, et un objectif qui
+   demande de le battre.
+   Trois semaines, c'est mon choix, pas un fait : quelques jours d'arrêt ne coûtent
+   pratiquement rien, et la perte ne devient nette qu'ensuite — mais nul ne peut dire
+   COMBIEN un individu a perdu. L'app ne l'invente donc pas : elle ne baisse aucune
+   charge de X %, elle dit la coupure, repart de la dernière charge sans chercher à la
+   battre, et vise le bas de la fourchette. Une séance suffit ensuite à la réétalonner. */
+const COUPURE_JOURS = 21;
+function depuisTexte(jours){
+  if(jours < 60) return TR("{} semaines").replace("{}", Math.round(jours / 7));
+  if(jours < 365) return TR("{} mois").replace("{}", Math.round(jours / 30.4));
+  return TR("plus d'un an");
+}
 /* vrai seulement quand il n'y a physiquement rien à retirer : poids du corps sans lest.
    « Je n'ai pas de charge plus lourde » plafonne vers le haut, mais on peut toujours descendre. */
 function sansChargeDuTout(exId, poidsSaisi){
@@ -7664,7 +7750,7 @@ function blocChargeFixe(exId, id){
     <input type="checkbox" id="${id}" ${chargeBloquee(exId)?"checked":""}
       style="width:19px; height:19px; accent-color:var(--accent); flex:0 0 auto; margin-top:1px;">
     <span style="font-size:13.5px; color:var(--ink); line-height:1.45;">${TR("Charge fixe — je n'ai pas plus lourd")}<br>
-      <span style="font-size:12px; color:var(--ink-mute);">${TR("Pour un seul haltère ou une seule barre. L'app ne touche plus au poids, ni pour monter ni pour descendre : elle fait progresser en répétitions, puis en séries, puis avec une variante plus dure. Et si une séance est trop dure, c'est la cible en répétitions qui baisse.")}</span></span>
+      <span style="font-size:12px; color:var(--ink-mute);">${TR("L'application ne touche plus au poids : elle adapte uniquement les répétitions.")}</span></span>
   </label>`;
 }
 function chargeBloquee(exId){
@@ -7715,6 +7801,23 @@ function suggestFor(exId, target){
   if(!rng) return null;
   const maxW = Math.max(...last.sets.map(s=>s.w||0));
   const inc = maxW>=20? 2.5 : 1;
+  /* La coupure passe AVANT tout le reste : ce qui s'est joué dans cette séance —
+     les reps tenues, le repos pris, la réserve annoncée — a cessé de décrire
+     l'utilisateur d'aujourd'hui. */
+  /* db.history stocke la date en ISO, pas en millisecondes : soustraire la chaîne
+     telle quelle rend NaN, et NaN >= 21 est faux — la coupure serait passée inaperçue. */
+  const coupure = Math.round((Date.now() - new Date(last.date).getTime()) / 864e5);
+  if(coupure >= COUPURE_JOURS){
+    const d = depuisTexte(coupure);
+    return {mode:"reprise", w:maxW, reps:rng.lo,
+      why: TR("Ta dernière séance sur cet exercice remonte à {d}. Après une coupure, personne ne peut savoir ce que tu as gardé : on repart de ta dernière charge sans chercher à la battre, et la suivante se réglera sur ce que tu fais aujourd'hui.")
+             .replace("{d}", d),
+      text: maxW > 0
+        ? TR("Rien sur cet exercice depuis {d} : reprends à {c}, vise {r} reps et garde deux répétitions en réserve.")
+            .replace("{d}", d).replace("{c}", pds(maxW)).replace("{r}", rng.lo)
+        : TR("Rien sur cet exercice depuis {d} : vise {r} reps et garde deux répétitions en réserve.")
+            .replace("{d}", d).replace("{r}", rng.lo)};
+  }
   const rirs = last.sets.map(s=>s.rir).filter(r=>r!==undefined && r!==null);
   const avgRir = rirs.length? rirs.reduce((a,b)=>a+b,0)/rirs.length : null;
   const allTop = last.sets.every(s=>(s.r||0)>=rng.hi);
@@ -14757,6 +14860,90 @@ const CHEV = '<svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-
 function pliBouton(id, ouvert, libelle){
   return `<div class="pli"><button id="${id}" aria-expanded="${ouvert}" aria-label="${esc(libelle)}">${CHEV}</button></div>`;
 }
+/* ---------- le verdict : est-ce que je progresse ? ----------
+   La page Progression savait déjà dire quel muscle est en retard (analyseProfil) et
+   quoi faire cette semaine (le bilan). Elle ne répondait pas à la question qu'on vient
+   y poser : est-ce que ça monte ? On ouvrait dix courbes pour le deviner.
+   Trois semaines, c'est mon choix : assez pour qu'une charge ait eu le temps de bouger,
+   assez court pour que le constat parle encore d'aujourd'hui.
+   La CAUSE avant le verdict — « tu as fait 2 séances sur 9 » se comprend, « tu stagnes »
+   ne s'explique pas tout seul. */
+const VERDICT_JOURS = 21;
+const VERDICT_SEANCES_MIN = 4;   /* en dessous, il n'y a rien à conclure */
+const VERDICT_EXOS_MIN = 2;      /* et il faut deux exercices revus deux fois chacun */
+function verdictProgression(){
+  const t0 = Date.now() - VERDICT_JOURS * 864e5;
+  /* On compare le PREMIER passage au DERNIER : l'ordre décide du verdict. db.history
+     est chronologique — mais on le retrie ici plutôt que de le supposer, sans quoi une
+     séance dont la date a été corrigée à la main inverserait la conclusion. */
+  const recentes = db.history.filter(s=> new Date(s.date).getTime() >= t0)
+    .slice().sort((a, b)=> new Date(a.date) - new Date(b.date));
+  const parSem = (db.profile && db.profile.days) || 3;
+  const attendues = Math.round(parSem * VERDICT_JOURS / 7);
+  /* Le score d'un exercice : la charge quand il y en a une, sinon les répétitions —
+     30 pompes valent mieux que 20, et la courbe de charge y reste plate à zéro.
+     Un exercice qu'on fait tantôt lesté tantôt à vide mélangerait les deux échelles
+     (12 tractions puis 5 kg passeraient pour un recul) : on l'écarte. */
+  const suites = {};
+  recentes.forEach(s=>s.entries.forEach(en=>{
+    const sets = (en.sets || []).filter(x=>x.done && !x.warm);
+    if(!sets.length) return;
+    const w = Math.max(...sets.map(x=>chargeReelle(en.exId, x) || 0));
+    const v = w > 0 ? w : Math.max(...sets.map(x=>x.r || 0));
+    if(!v) return;
+    (suites[en.exId] = suites[en.exId] || []).push({charge: w > 0, v});
+  }));
+  let monte = 0, compares = 0;
+  Object.keys(suites).forEach(exId=>{
+    const l = suites[exId];
+    if(l.length < 2) return;
+    if(l.some(x=>x.charge !== l[0].charge)) return;
+    compares++;
+    if(l[l.length - 1].v > l[0].v) monte++;
+  });
+
+  if(recentes.length < VERDICT_SEANCES_MIN || compares < VERDICT_EXOS_MIN){
+    const manqueS = Math.max(0, VERDICT_SEANCES_MIN - recentes.length);
+    return {ton:"manque", titre: TR("Encore un peu de matière"),
+      texte: manqueS
+        ? TR("{n} séances sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.")
+            .replace("{n}", recentes.length).replace("{m}", manqueS)
+            .replace("{s}", TR(manqueS > 1 ? "séances" : "séance"))
+        : TR("{n} séances enregistrées, mais aucun exercice revu deux fois. Refais les mêmes mouvements d'une séance à l'autre : c'est ce qui permet de comparer.")
+            .replace("{n}", recentes.length)};
+  }
+  /* « 0 de tes 2 exercices ont monté » n'est pas une phrase : le cas où rien ne bouge
+     est justement celui qu'on lira le plus, il mérite sa formulation. */
+  const bilan = monte === 0
+    ? TR("aucun de tes {t} exercices suivis n'a monté").replace("{t}", compares)
+    : (monte === compares
+        ? TR("tes {t} exercices suivis ont tous monté").replace("{t}", compares)
+        : TR("{m} de tes {t} exercices suivis ont monté").replace("{m}", monte).replace("{t}", compares));
+  if(monte * 2 >= compares)
+    return {ton:"bon", titre: TR("Tu progresses"),
+      texte: TR("{s} séances en trois semaines, et {b}.")
+               .replace("{s}", recentes.length).replace("{b}", bilan)};
+  /* Ça ne monte pas. Deux causes très différentes, et la mauvaise réponse fait perdre
+     des semaines : on ne conseille pas de changer d'entraînement à quelqu'un qui n'y
+     va pas. L'assiduité passe donc en premier. */
+  if(recentes.length * 5 < attendues * 3)
+    return {ton:"plat", titre: TR("Il manque des séances"),
+      texte: TR("{s} séances en trois semaines au lieu de {a}, et {b}. C'est la régularité qui bloque le reste.")
+               .replace("{s}", recentes.length).replace("{a}", attendues).replace("{b}", bilan)};
+  return {ton:"plat", titre: TR("Tes charges stagnent"),
+    texte: TR("{s} séances en trois semaines — la régularité est là — mais {b}. Regarde tes protéines et ton sommeil avant de changer d'entraînement.")
+             .replace("{s}", recentes.length).replace("{b}", bilan)};
+}
+function renderVerdictSection(sec){
+  if(!db.history.length) return;
+  const v = verdictProgression();
+  const d = document.createElement("div");
+  d.className = "vd-card " + v.ton;
+  d.innerHTML = `<div class="t">${esc(v.titre)}</div><p>${esc(v.texte)}</p>`;
+  /* renderWeightSection() écrit la section avec innerHTML : appelée après nous, elle
+     effaçait le bandeau. On passe donc derrière elle, et on se remet en tête. */
+  sec.insertBefore(d, sec.firstChild);
+}
 function renderProgress(app){
   const counts = {};
   db.history.forEach(s=>s.entries.forEach(en=>{ counts[en.exId]=(counts[en.exId]||0)+1; }));
@@ -14768,6 +14955,7 @@ function renderProgress(app){
     <div id="prg-body"></div>`;
   wireTopbar();
   renderWeightSection(document.getElementById("wt-sec"));
+  renderVerdictSection(document.getElementById("wt-sec"));
   renderProteinSection(document.getElementById("wt-sec"));
   renderMuscleSection(document.getElementById("wt-sec"));
   renderCardioSection(document.getElementById("wt-sec"));

@@ -5071,6 +5071,139 @@ async function lancer(){
   })();
   neuf();
 
+  /* ------------------------------------------------- une coupure se voit */
+  /* suggestFor() lisait la dernière performance sans regarder sa DATE : après trois
+     mois sans toucher au banc, l'app disait encore « gratte une rep de plus » sur un
+     record vieux d'un trimestre. Et db.history stocke la date en ISO — soustraire la
+     chaîne rend NaN, donc le garde-fou serait passé inaperçu. On vérifie les deux. */
+  grp("Une coupure se voit");
+  neuf();
+  (()=>{
+    const dc = id("Développé couché");
+    const trois = [serie(80, 10), serie(80, 10), serie(80, 10)];
+    const poser = jours => { DB.history = [seance(jours * 24, [{exId:dc, sets:trois}])]; };
+
+    poser(5);
+    eq("Cinq jours après, rien ne change",
+      F.suggestFor(dc, {reps:"8-12", rest:120}).mode, "beat");
+    poser(20);
+    eq("À vingt jours non plus",
+      F.suggestFor(dc, {reps:"8-12", rest:120}).mode, "beat");
+
+    poser(45);
+    const rep = F.suggestFor(dc, {reps:"8-12", rest:120});
+    eq("Au-delà de trois semaines, c'est une reprise", rep.mode, "reprise");
+    eq("…on repart de la même charge, pas d'un chiffre inventé", rep.w, 80);
+    eq("…en visant le bas de la fourchette", rep.reps, 8);
+    vrai("…et la consigne dit la durée de la coupure",
+      /6 semaines/.test(rep.text), rep.text);
+    vrai("…la cause aussi",
+      /6 semaines/.test(rep.why), rep.why);
+    /* la date est une chaîne ISO : c'est exactement ce que la vraie base contient */
+    vrai("La date lue est bien une chaîne ISO, pas un nombre",
+      typeof DB.history[0].date === "string" && !isNaN(new Date(DB.history[0].date)));
+    poser(200);
+    vrai("Passé un an de recul, la durée reste lisible",
+      /mois|an/.test(F.suggestFor(dc, {reps:"8-12", rest:120}).text));
+    /* et l'objectif du jour remonte la cause, pas la consigne */
+    poser(45);
+    vrai("« Pourquoi ce poids » explique la coupure",
+      /semaines/.test(F.objectifDuJour(dc, {reps:"8-12", rest:120}).pourquoi));
+  })();
+  neuf();
+
+  /* ------------------------------------------------- le geste, pas le muscle */
+  /* « Jambes » mélange le squat, la charnière de hanche, la fente, le mollet et
+     l'abduction : le filet de secours faisait tomber les mollets et les ischios sur le
+     SQUAT au poids du corps. On vérifie qu'un remplacement garde le geste. */
+  grp("À la maison, le geste est respecté");
+  neuf();
+  (()=>{
+    const LIBX = F.eval("LIB");
+    /* le seul geste sans équivalent au poids du corps dans la bibliothèque */
+    const SANS_EQUIVALENT = "hanche";
+    const essayer = mat => {
+      const rates = [];
+      LIBX.forEach(ex=>{
+        if(F.exoDispo(ex, mat)) return;
+        const c = F.getEx(F.exoDuLieu(ex.id, mat, []));
+        if(!c || F.patronDe(ex) === SANS_EQUIVALENT) return;
+        if(F.patronDe(c) !== F.patronDe(ex)) rates.push(ex.name + " → " + c.name);
+      });
+      return rates;
+    };
+
+    const jeux = {"élastique seul":["elastique","tapis"],
+                  "haltères seuls":["halteres","tapis"],
+                  "maison équipée":["halteres","elastique","tapis","banc","traction"]};
+    Object.keys(jeux).forEach(k=>{
+      const r = essayer(jeux[k]);
+      vrai("Le remplacement garde le geste — " + k, r.length === 0, r.join(" / "));
+    });
+    /* les cas nommément corrigés : un mollet ne devient pas un squat */
+    const mat = ["halteres","tapis"];
+    const remp = n => F.getEx(F.exoDuLieu(id(n), mat, [])).name;
+    eq("Un mollet reste un mollet", F.patronDe(F.getEx(id("Mollets debout"))), "mollet");
+    eq("…et son remplaçant aussi",
+      F.patronDe({name: remp("Mollets debout"), muscle:"Jambes"}), "mollet");
+    vrai("Un leg curl ne devient pas un squat", !/[Ss]quat/.test(remp("Leg curl")), remp("Leg curl"));
+    vrai("Un soulevé de terre roumain non plus",
+      !/[Ss]quat/.test(remp("Soulevé de terre roumain")), remp("Soulevé de terre roumain"));
+    /* et là où le muscle suffisait, rien ne change : le haut du corps garde son muscle */
+    eq("Sans geste nommé, c'est le muscle qui fait office",
+      F.patronDe(F.getEx(id("Curl haltères"))), "Biceps");
+  })();
+  neuf();
+
+  /* ------------------------------------------------- le verdict de progression */
+  /* Est-ce que je progresse ? La page savait dire quel muscle est en retard, pas si ça
+     monte. Le bandeau répond, avec la CAUSE avant le verdict — et il ne conseille pas
+     de changer d'entraînement à quelqu'un qui n'y va pas. */
+  grp("Le verdict de progression");
+  neuf();
+  (()=>{
+    const dc = id("Développé couché"), sq = id("Squat");
+    const S = (jours, wa, wb) => seance(jours * 24, [
+      {exId:dc, sets:[serie(wa, 10), serie(wa, 10)]},
+      {exId:sq, sets:[serie(wb, 10), serie(wb, 10)]}]);
+    const poser = l => { DB.history = l.slice().sort((a, b)=> new Date(a.date) - new Date(b.date)); };
+    DB.profile.days = 4;
+
+    poser([S(3, 80, 100), S(10, 80, 100)]);
+    eq("Deux séances ne suffisent pas à conclure", F.verdictProgression().ton, "manque");
+    vrai("…et l'app dit ce qui lui manque",
+      /Encore/.test(F.verdictProgression().texte), F.verdictProgression().texte);
+
+    const assidu = (a, b) => [S(1, a[0], b[0]), S(3, a[1], b[1]), S(6, a[2], b[2]),
+      S(8, a[3], b[3]), S(10, a[4], b[4]), S(13, a[5], b[5]), S(15, a[6], b[6]),
+      S(17, a[7], b[7]), S(19, a[8], b[8]), S(20, a[9], b[9])];
+    poser(assidu([85,84,82,82,80,80,79,78,77,77], [110,108,105,104,100,100,99,98,95,95]));
+    eq("Dix séances et deux charges qui montent : ça progresse",
+      F.verdictProgression().ton, "bon");
+
+    poser(assidu([80,80,80,80,80,80,80,80,80,80], [100,100,100,100,100,100,100,100,100,100]));
+    const plat = F.verdictProgression();
+    eq("Assidu mais rien ne monte : ça stagne", plat.ton, "plat");
+    vrai("…et on ne lui reproche pas son assiduité",
+      !/manque des séances/.test(plat.titre), plat.titre);
+    vrai("…la phrase se tient quand RIEN n'a monté",
+      /aucun/.test(plat.texte), plat.texte);
+
+    poser([S(2, 80, 100), S(9, 80, 100), S(17, 80, 100), S(19, 80, 100)]);
+    const absent = F.verdictProgression();
+    eq("Absent et rien ne monte : ça stagne aussi", absent.ton, "plat");
+    vrai("…mais c'est la régularité qu'on nomme d'abord",
+      /régularité/.test(absent.texte), absent.texte);
+
+    /* l'ordre décide du verdict : une date corrigée à la main ne doit pas l'inverser */
+    /* assidu() rend les séances de la plus RÉCENTE à la plus ancienne : la liste est
+       donc à l'envers de l'ordre chronologique, et pourtant les charges y montent
+       (77 kg il y a 20 jours, 85 kg hier). Sans le tri, la lecture s'inverserait. */
+    DB.history = assidu([85,84,82,82,80,80,79,78,77,77], [110,108,105,104,100,100,99,98,95,95]);
+    eq("L'historique est retrié avant d'être lu", F.verdictProgression().ton, "bon");
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
   bilan.innerHTML = echecs === 0
