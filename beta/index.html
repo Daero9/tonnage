@@ -1124,7 +1124,11 @@
     /* pas de fondu : à mi-transition le bloc laissait voir la couleur de l onglet
        et ne paraissait plus tout à fait du même blanc que la page. Il monte, il ne s efface pas. */
     border-radius:8px 8px 0 0; background:var(--surface); opacity:0;}
+  /* les protéines du repas, sous son nom : c'est ce que la rangée supprimée disait */
+  .meal-tab b{display:block; font-size:11px; font-weight:800; letter-spacing:0;
+    text-transform:none; margin-top:3px; opacity:.85;}
   .meal-tab.on{transform:translateY(0); color:#fff; box-shadow:none;}
+  .meal-tab.on b{opacity:1;}
   .meal-tab.on i{opacity:1;}
   @media (prefers-reduced-motion:reduce){
     .meal-tab{transition:background .2s ease, color .2s ease;}
@@ -6934,7 +6938,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 02h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 02h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8786,7 +8790,10 @@ function renderEat(app){
           <span class="ico">${icoM("muscle", 20)}</span>
           <div class="co">
             <div class="ln"><span class="v">${protNow}</span><span class="u">g</span>
-              <span class="pc">${protTarget? Math.round(protNow/protTarget*100)+" %" : "—"}</span></div>
+              ${/* « 0 g … 0 % » dit deux fois la même chose. Le pourcentage n'apparaît
+                   qu'une fois qu'il y a quelque chose à rapporter à la cible. */""}
+              ${protNow > 0 && protTarget ? `<span class="pc">${
+                Math.round(protNow/protTarget*100)} %</span>` : ""}</div>
             <div class="lb">${TR("Protéines")}</div>
             <div class="eat-jauge">
               <div class="eat-bar"><i style="width:${pctProt}%; background:${protNow>=protTarget?'var(--good)':'var(--accent)'};"></i></div>
@@ -8798,7 +8805,8 @@ function renderEat(app){
           <div class="co">
             <div class="ln"><span class="v">${kcalNow}</span><span class="u">kcal</span>
               <button class="icon-btn info-btn" id="eat-kinfo" title="${TR("Comment sont calculées mes calories ?")}">ⓘ</button>
-              <span class="pc">${kRef? Math.round(kcalNow/kRef*100)+" %" : "—"}</span></div>
+              ${kcalNow > 0 && kRef ? `<span class="pc">${
+                Math.round(kcalNow/kRef*100)} %</span>` : ""}</div>
             <div class="lb">${TR("Calories")}</div>
             <div class="eat-jauge">
               <div class="eat-bar"><i style="width:${pctKcal}%; background:${
@@ -8817,23 +8825,19 @@ function renderEat(app){
         <button id="eat-tips" title="${TR("Idées d'aliments")}" aria-label="${TR("Idées d'aliments")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9v.2h5v-.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3z"/></svg></button>
       </div>
     </div>
-    <div class="eat-card" style="margin-top:9px; padding:9px 8px;">
-      <div class="eat-repas">${MEALS.map(([id,lab])=>{
-        const g = mealProt(k, id);
-        return `<button class="er ${g? "on":""}${mealCur===id? " ici":""}" data-goto="${id}"
-            style="${mealCur===id? `border-color:${MEAL_C[id]};`:""}">
-          <span class="i" style="${mealCur===id? `color:${MEAL_C[id]};`:""}">${
-            icoM(MEAL_IC[id], 17)}</span><span class="n">${esc(TR(lab))}</span>
-          <b style="${mealCur===id? `color:${MEAL_C[id]};`:""}">${g? g+" g" : "—"}</b></button>`;
-      }).join("")}</div>
-    </div>
     ${auj? "" : `<div class="jour-passe">
       <span>${TR("Tu modifies une journée passée.")}</span>
       <button id="eat-auj">${TR("Aujourd'hui")}</button>
     </div>`}
-    <div class="meal-tabs">${MEALS.map(([id,lab])=>`
-      <button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
-        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${TR(lab)}${(sel[id]||[]).length? " ·"+(sel[id]||[]).length : ""}</span><i></i></button>`).join("")}</div>
+    ${/* Les cinq repas n'étaient écrits qu'une fois de trop : une rangée de cartes
+         juste au-dessus des onglets, mêmes noms, même effet. Le seul apport de la
+         rangée — les protéines de chaque repas — a rejoint l'onglet. */""}
+    <div class="meal-tabs">${MEALS.map(([id,lab])=>{
+      const g = mealProt(k, id);
+      return `<button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
+        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${TR(lab)}<b>${
+          g? g+" g" : "—"}</b></span><i></i></button>`;
+    }).join("")}</div>
     <div class="meal-panel" id="meal-panel"></div>
     <div style="height:34px;"></div>
     <div class="eat-fab">
@@ -8850,10 +8854,6 @@ function renderEat(app){
   const bAuj = document.getElementById("eat-auj");
   if(bAuj) bAuj.onclick = ()=>poserJour(null);
   /* le récapitulatif sert aussi de raccourci vers le repas */
-  document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{
-    if(b.dataset.goto === mealCur) return;
-    mealCur = b.dataset.goto; renderSurPlace();
-  });
   /* changer de repas ne redessine que le panneau : l'onglet peut alors s'animer */
   document.querySelectorAll("[data-meal]").forEach(b=>b.onclick=()=>{
     if(b.dataset.meal === mealCur) return;
@@ -10871,7 +10871,12 @@ function renderSeance(app){
   const profilOk = !!planFor(db.profile);
   const aDesSeances = db.templates.length>0;
   const startZone = document.getElementById("start-zone");
-  if(!db.history.length){
+  /* Le bloc disparaît dès que le profil est rempli ET qu'une séance existe : il ne
+     resterait qu'une ligne, « la faire », alors que la carte « Conseillé aujourd'hui »
+     est juste en dessous et fait exactement ça. La visite guidée, elle, montre du
+     doigt le carrousel et le bouton ＋ — répéter la même chose en liste au-dessus
+     n'aidait plus personne. Avant, il tenait jusqu'à la première séance terminée. */
+  if(!db.history.length && !(profilOk && aDesSeances)){
     const etape = (ok, num, txt, act) => `<div class="start-step ${ok?"done":""}">
       <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b>${act&&!ok? `<div style="margin-top:5px;"><button class="btn btn-accent btn-sm" id="${act}">${TR("Commencer")}</button></div>`:""}</div></div>`;
     startZone.innerHTML = `<div class="section-t"><i>🚩</i>${TR("Par où commencer")}</div>
