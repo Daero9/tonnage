@@ -4701,10 +4701,23 @@ async function lancer(){
     vrai("…et l'app sait qu'elle a ménagé quelque chose", !!bless.menage, bless.menage);
     vrai("…et la raison nomme la zone", /Épaule/.test(bless.why || ""), bless.why);
 
-    /* une simple gêne ne bride rien : on ne prive pas de progression pour un tiraillement */
+    /* Une simple gêne ne bride RIEN — ni la charge, ni le volume. C'est un
+       tiraillement, pas une blessure : quelqu'un qui trouve l'exercice facile doit
+       pouvoir avancer normalement. Elle recule seulement d'un cran dans le choix des
+       exercices, ce qui est un autre sujet. */
     DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"gene"}});
     eq("Une simple gêne ne bloque pas la charge",
       F.suggestFor(dm, {reps:"8-12", rest:120}).mode, "up");
+    const compter = () => {
+      let touches = 0;
+      for(let i = 0; i < 25; i++)
+        (F.genererAdaptative("haut").items || []).forEach(it=>{
+          if(it.pourquoiSeries === "exercice sensible pour toi") touches++; });
+      return touches;
+    };
+    eq("…ni ne retire de série", compter(), 0);
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
+    vrai("…alors que « ça fait mal » en retire bien une", compter() > 0);
 
     /* et l'aperçu de la séance l'annonce, à côté de l'intensité */
     DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});

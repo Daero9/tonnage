@@ -828,17 +828,21 @@
   /* ---- fiche d'exercice : ce qu'il faut savoir avant d'attaquer ---- */
   /* La charge du jour est la seule chose qu'on vient vraiment chercher : elle a sa
      carte, en grand. Le reste se range en deux colonnes, pour tenir sans défiler. */
-  .hx-now{background:var(--surface2); border-radius:14px; padding:12px 14px;}
+  /* « À faire maintenant » porte le trait noir des astuces de pro : c'est la seule
+     ligne de la fiche qui dit quoi faire, elle doit s'attraper avant tout le reste. */
+  .hx-now{background:var(--surface); border:1.5px solid var(--ink);
+    border-radius:14px; padding:12px 14px;}
   .hx-now .v{font-size:21px; font-weight:800; color:var(--accent); line-height:1.15;}
   .hx-now .t{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:6px;}
   .hx-duo{display:flex; gap:9px;}
-  .hx-duo > div{flex:1; min-width:0; background:var(--surface2); border-radius:14px; padding:10px 12px;}
+  /* le rappel et l'objectif ne se disputent rien : fond blanc, sans contour */
+  .hx-duo > div{flex:1; min-width:0; background:var(--surface); border-radius:14px; padding:10px 12px;}
   .hx-k{font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
     color:var(--ink-mute); margin-bottom:4px;}
   .hx-duo .v{font-size:13.5px; font-weight:700; line-height:1.35;}
   .hx-duo .s{font-size:11.5px; color:var(--ink-mute); line-height:1.5; margin-top:3px; overflow-wrap:anywhere;}
-  /* la seule carte avec laquelle on interagit : elle est blanche, les autres restent
-     dans le ton de la fiche. Le trait sépare ce qu'on lit de ce qu'on manipule, et
+  /* la carte avec laquelle on interagit : son liseré gris la distingue des cartes
+     qu'on ne fait que lire. Le trait sépare ce qu'on lit de ce qu'on manipule, et
      s'arrête avant les bords — sinon il coupe la carte en deux au lieu de l'articuler. */
   .hx-repos{background:var(--surface); border:1px solid var(--border);
     border-radius:14px; padding:11px 12px 4px; text-align:center;}
@@ -7124,7 +7128,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "10 septembre 2026 16h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "10 septembre 2026 16h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12149,14 +12153,17 @@ function genererAdaptative(type, evites){
         if(series >= 5) return;
         series += 1; pourquoiSeries = raison;
       };
-      if(k === 0 && rang === 0 && p.recup >= 60 && !choisi.risque)
+      if(k === 0 && rang === 0 && p.recup >= 60 && choisi.risque < 2)
         plus("muscle frais et prioritaire");
       if(k === 0 && rang >= parts.length - 1 && parts.length > 2)
         moins("muscle le moins prioritaire aujourd'hui");
       /* un muscle à bout garde sa place — on ne l'abandonne pas — mais on allège */
       if(p.pompe) moins("ce muscle récupère encore");
-      /* et un exercice qu'on ne garde que faute de mieux ne se travaille pas à fond */
-      if(choisi.risque) moins("exercice sensible pour toi");
+      /* Seul « ça fait mal » coûte une série. Une simple GÊNE ne retire rien : c'est un
+         tiraillement, pas une blessure, et quelqu'un qui trouve l'exercice facile doit
+         pouvoir avancer normalement. Elle continue de reculer d'un cran dans le choix
+         des exercices — on la préfère à rien, on ne la met pas en avant. */
+      if(choisi.risque >= 2) moins("exercice sensible pour toi");
       /* et ce que TU as ressenti sur les deux dernières séances : une série de plus sur
          l'exercice de tête si elles t'ont paru faciles, une de moins sur le dernier si
          elles t'ont paru dures. Jamais les deux, jamais plus d'une. */
