@@ -5348,11 +5348,11 @@ async function lancer(){
     vrai("La mention de renouvellement est là", /Renouvellement/.test(D2.querySelector(".abo-gages").textContent));
     vrai("…et celle de la résiliation aussi", /Résiliable/.test(D2.getElementById("abo-mensuel").textContent));
     vrai("Le lien de restauration existe", !!D2.getElementById("abo-restaurer"));
-    /* tant que le greffon de facturation n'existe pas, un appui le dit, sans faire semblant */
+    /* sur le web il n'y a pas de Google Play : un appui le dit, sans faire semblant */
     const dits = []; const vraiToast = F.toast; F.toast = m => dits.push(m);
     D2.getElementById("abo-mensuel").click();
     await attendre(()=>dits.length > 0, 1500);
-    vrai("Sans facturation, l'appui l'annonce honnêtement", /prochaine version/.test(dits.join(" ")), dits.join(" | "));
+    vrai("Sans Google Play, l'appui renvoie vers l'app Android ou le code", /app Android/.test(dits.join(" ")), dits.join(" | "));
     F.toast = vraiToast;
     /* c'est une fenetre, pas une fiche : la barre d'onglets reste sous elle, et la
        croix ramene a Seance */
@@ -5361,6 +5361,104 @@ async function lancer(){
     F.fermerAbonnement();
     await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
     vrai("…et se ferme sans laisser de trace", !D2.getElementById("abo-fenetre"));
+  })();
+  neuf();
+
+  /* --------------------------------------- Google Play, vu de la page */
+  /* Le greffon natif ne tourne pas ici ; on lui substitue un faux pont, pose la ou la
+     page range le vrai (aboPont), pour eprouver ce que la page en FAIT : Google a le
+     dernier mot sur Android, sauf pour un code d'acces ; les prix de Google remplacent
+     les notres ; un achat reussi ouvre, un achat annule ne dit rien. Le branchement
+     lui-meme (registerPlugin) ne se prouve que sur un telephone — lecon du minuteur. */
+  grp("L'abonnement Google Play, vu de la page");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const faux = {
+      reponseEtat: {dispo:true, abonne:false, renouvelle:false, panne:""},
+      reponseAchat: {abonne:true, raison:""},
+      appels: [],
+      etat(){ this.appels.push("etat"); return Promise.resolve(this.reponseEtat); },
+      forfaits(){ this.appels.push("forfaits"); return Promise.resolve({forfaits:[
+        {id:"mensuel", prix:"6,49 $", montant:6.49, monnaie:"CAD", periode:"P1M", essaiJours:7, jeton:"j1"},
+        {id:"annuel-1", prix:"44,99 $", montant:44.99, monnaie:"CAD", periode:"P1Y", essaiJours:0, jeton:"j2"}
+      ], panne:""}); },
+      acheter(o){ this.appels.push("acheter:" + o.forfait); return Promise.resolve(this.reponseAchat); }
+    };
+    const prixAvant = JSON.parse(JSON.stringify(F.eval("PRIX_ABO")));
+    F.eval("aboPont = null; forfaitsCharges = false");
+    F.__faux = faux; F.eval("aboPont = window.__faux");
+
+    /* 1. Google dit « pas abonné » : rien ne s'ouvre, et le code d'accès reste respecté */
+    delete DB.abo; delete DB.aboVia;
+    await F.sonderAbo();
+    vrai("Pas abonné chez Google : verrouillé", !F.estAbonne());
+    DB.abo = true; DB.aboVia = "code";
+    await F.sonderAbo();
+    vrai("Débloqué par code : Google ne le retire pas", F.estAbonne() && DB.aboVia === "code");
+
+    /* 2. Google dit « abonné » : ouvert, et marqué comme venant de Play */
+    delete DB.abo; delete DB.aboVia;
+    faux.reponseEtat = {dispo:true, abonne:true, renouvelle:true, panne:""};
+    await F.sonderAbo();
+    vrai("Abonné chez Google : ouvert", F.estAbonne() && DB.aboVia === "play");
+    /* 3. …et quand l'abonnement expire, ça se referme */
+    faux.reponseEtat = {dispo:true, abonne:false, renouvelle:false, panne:""};
+    await F.sonderAbo();
+    vrai("Abonnement expiré chez Google : refermé", !F.estAbonne() && !DB.aboVia);
+    /* 4. Google injoignable : on ne touche à rien */
+    DB.abo = true; DB.aboVia = "play";
+    faux.reponseEtat = {dispo:false, abonne:null, panne:"connexion : SERVICE_UNAVAILABLE"};
+    await F.sonderAbo();
+    vrai("Google injoignable : l'état connu reste tel quel", F.estAbonne());
+    delete DB.abo; delete DB.aboVia;
+
+    /* 5. les prix de Google remplacent les nôtres, essai compris */
+    const ok = await F.chargerForfaits();
+    const P = F.eval("PRIX_ABO");
+    vrai("Les forfaits de Google sont lus", ok === true);
+    eq("Le mensuel prend le prix de Google", P.mensuel.texte, "6,49 $");
+    eq("…et l'annuel aussi", P.annuel.texte, "44,99 $");
+    eq("L'essai gratuit est retenu", P.mensuel.essaiJours, 7);
+    F.eval("curTab='seance'; render()");
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-mensuel"), 2000);
+    vrai("La fenêtre affiche le prix de Google", /6,49 \$/.test(D2.getElementById("abo-mensuel").textContent));
+    vrai("…et annonce les 7 jours gratuits", /7 jours/.test(D2.getElementById("abo-mensuel").textContent));
+    eq("L'économie est recalculée sur ces prix", F.economieAnnuel(), Math.round((1 - (44.99 / 12) / 6.49) * 100));
+
+    /* 6. un achat : le plan de base envoyé est celui de la console, et l'app s'ouvre */
+    faux.appels.length = 0;
+    D2.getElementById("abo-annuel").click();
+    await attendre(()=>DB.abo === true, 2000);
+    vrai("Le forfait annuel demande le plan « annuel-1 »", faux.appels.includes("acheter:annuel-1"), faux.appels.join(","));
+    vrai("Un achat réussi débloque, venant de Play", DB.abo === true && DB.aboVia === "play");
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("…et la fenêtre se referme", !D2.getElementById("abo-fenetre"));
+    /* 7. un achat annulé : rien, pas même un message */
+    delete DB.abo; delete DB.aboVia;
+    faux.reponseAchat = {abonne:false, raison:"annule"};
+    const dits = []; const vraiToast = F.toast; F.toast = m => dits.push(m);
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-mensuel"), 2000);
+    D2.getElementById("abo-mensuel").click();
+    await attendre(()=>faux.appels.includes("acheter:mensuel"), 2000);
+    await new Promise(r=>setTimeout(r, 120));
+    vrai("Un achat annulé ne débloque pas", !F.estAbonne());
+    vrai("…et ne réprimande pas", dits.length === 0, dits.join(" | "));
+    /* 8. un achat refusé : on le dit */
+    faux.reponseAchat = {abonne:false, raison:"BILLING_UNAVAILABLE (3)"};
+    D2.getElementById("abo-mensuel").click();
+    await attendre(()=>dits.length > 0, 2000);
+    vrai("Un achat refusé est annoncé", /Google Play/.test(dits.join(" ")), dits.join(" | "));
+    F.toast = vraiToast;
+    F.fermerAbonnement();
+
+    /* on remet la page comme on l'a trouvée */
+    F.eval("aboPont = null; forfaitsCharges = false; aboEtat = {dispo:false, abonne:null, panne:''}");
+    Object.assign(F.eval("PRIX_ABO"), prixAvant);
+    delete F.__faux;
+    delete DB.abo; delete DB.aboVia;
   })();
   neuf();
 
