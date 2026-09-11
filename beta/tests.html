@@ -58,6 +58,7 @@ async function lancer(){
     DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
+    DB.abo = true;           /* les écrans payants s'ouvrent en clair ; le voile a son propre groupe */
     /* Une visite se joue sur un voile plein écran : elle passerait devant les boutons
        qu'un test cherche à toucher. Pire, render() en programme une pour 500 ms plus
        tard — elle s'ouvrait alors au milieu d'un groupe suivant, et le test de la fiche
@@ -2635,8 +2636,10 @@ async function lancer(){
     /* neuf depuis que le retour vibrant a son interrupteur : on pouvait couper le son,
        pas la vibration — et quelqu'un qui s'entraîne à côté de gens n'avait aucune
        échappatoire */
-    vrai("Neuf réglages", lignes.length === 9, String(lignes.length));
+    /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
+    vrai("Dix réglages", lignes.length === 10, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
+    vrai("…et l'abonnement en première ligne", lignes[0].id === "st-abo");
     vrai("Chacun porte son signe",
       lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
       lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
@@ -5358,6 +5361,42 @@ async function lancer(){
     F.fermerAbonnement();
     await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
     vrai("…et se ferme sans laisser de trace", !D2.getElementById("abo-fenetre"));
+  })();
+  neuf();
+
+  /* --------------------------------------- le voile */
+  /* Alimentation, Progression et le Bilan sont derriere l'abonnement. Pas un mur : l'ecran
+     reel, dessine sur un profil de demonstration, floute sous la fenetre. Et surtout, ce
+     faux profil ne doit laisser AUCUNE trace dans les vraies donnees. */
+  grp("Le voile de l'abonnement");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document, app = D2.getElementById("app");
+    delete DB.abo;
+    vrai("Sans abonnement, Alimentation et Progression sont verrouillées", F.verrouille("eat") && F.verrouille("prg"));
+    vrai("…le Bilan aussi", F.verrouille("bilan"));
+    vrai("…mais jamais la séance", !F.verrouille("seance"));
+    F.eval("curTab='eat'; render()");
+    await attendre(()=>!!D2.getElementById("abo-fenetre"), 2000);
+    vrai("L'onglet verrouillé ouvre la fenêtre d'abonnement de lui-même", !!D2.getElementById("abo-fenetre"));
+    vrai("…et la page passe sous le voile", app.classList.contains("verrou"));
+    vrai("…avec un écran rempli derrière (le profil de démonstration)", D2.querySelectorAll("#app .fgrid .chip, #app .fgrid button").length > 0
+      || /Protéines/.test(app.textContent));
+    eq("Le vrai historique n'a pas bougé", DB.history.length, 0);
+    eq("…ni les vrais repas", Object.keys(DB.habitSel).length, 0);
+    vrai("…et le vrai profil est de retour", F.eval("db") === DB);
+    F.eval("curTab='prg'; render()");
+    await attendre(()=>app.classList.contains("verrou") && /Progression/i.test(app.textContent), 2000);
+    vrai("Progression aussi est voilée", app.classList.contains("verrou") && !!D2.getElementById("abo-fenetre"));
+    F.eval("curTab='seance'; render()");
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("Retour à la séance : le voile et la fenêtre s'en vont", !app.classList.contains("verrou") && !D2.getElementById("abo-fenetre"));
+    DB.abo = true;
+    F.eval("curTab='eat'; render()");
+    await attendre(()=>!app.classList.contains("verrou") && !!D2.querySelector("#app .meal-tabs"), 2000);
+    vrai("Abonné : l'alimentation s'ouvre en clair", !app.classList.contains("verrou") && !D2.getElementById("abo-fenetre"));
+    delete DB.abo;
+    F.eval("curTab='seance'; render()");
   })();
   neuf();
 
