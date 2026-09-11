@@ -1900,6 +1900,10 @@
   :root.clavier .sheet{max-height:100%;}
   /* rien ne flotte par-dessus le clavier : ni la barre du bas, ni le minuteur */
   :root.clavier .tabbar, :root.clavier #app > .eat-fab{display:none;}
+  /* la fenetre d'abonnement aussi : clavier ouvert (le code d'acces), elle prend toute
+     la zone visible et laisse sa carte defiler jusqu'au champ */
+  :root.clavier .abo-fenetre{top:var(--v-haut, 0px); height:var(--v-haut-h, 100dvh); bottom:auto;
+    padding:10px 22px; align-items:flex-start;}
   .sheet h3{font-size:18px; margin-bottom:14px; text-align:center; padding:0 34px;}
   /* croix de fermeture, présente sur toutes les fiches */
   .sheet-x{position:absolute; top:10px; right:12px; z-index:5; width:32px; height:32px; border-radius:50%;
@@ -7448,7 +7452,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 00h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 00h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -15147,7 +15151,13 @@ function openAbonnement(){
   document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel-1");
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
   const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
-  lien.onclick = ()=>{ lien.hidden = true; form.hidden = false; document.getElementById("abo-code-in").focus(); };
+  const champ = document.getElementById("abo-code-in");
+  /* le clavier rogne la zone visible : on amene le champ sous les yeux, une fois la
+     fenetre recalee (visualViewport met un instant a le dire) */
+  const voir = ()=>{ if(document.activeElement === champ) champ.scrollIntoView({block:"center"}); };
+  const amener = ()=>{ setTimeout(voir, 350); setTimeout(voir, 900); };
+  lien.onclick = ()=>{ lien.hidden = true; form.hidden = false; champ.focus(); amener(); };
+  champ.addEventListener("focus", amener);
   form.onsubmit = async e=>{
     e.preventDefault();
     const ok = await verifierCodeAcces(document.getElementById("abo-code-in").value);
