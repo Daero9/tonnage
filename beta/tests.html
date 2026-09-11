@@ -5397,6 +5397,26 @@ async function lancer(){
     vrai("Abonné : l'alimentation s'ouvre en clair", !app.classList.contains("verrou") && !D2.getElementById("abo-fenetre"));
     delete DB.abo;
     F.eval("curTab='seance'; render()");
+
+    /* le code d'acces : la page ne connait que son empreinte ; on en glisse une d'essai */
+    const emp = await F.empreinte("TONNUPTEST0000");   /* sans tirets : la forme canonique */
+    vrai("L'empreinte est un SHA-256", /^[0-9a-f]{64}$/.test(emp));
+    vrai("…et ce n'est pas le code en clair", !F.eval("CODES_ACCES").some(c => /TONNUP/.test(c)));
+    F.eval("CODES_ACCES").push(emp);
+    eq("Un code inconnu est refusé", await F.verifierCodeAcces("TONNUP-XXXX-YYYY"), false);
+    eq("Le bon code passe, même tapé en minuscules avec des espaces", await F.verifierCodeAcces(" tonnup test 0000 "), true);
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-code-lien"), 2000);
+    D2.getElementById("abo-code-lien").click();
+    vrai("« J'ai un code » dévoile le champ", !D2.getElementById("abo-code").hidden);
+    D2.getElementById("abo-code-in").value = "TONNUP-TEST-0000";
+    D2.getElementById("abo-code").requestSubmit();
+    await attendre(()=>DB.abo === true, 2000);
+    vrai("Le code valide débloque l'appareil", DB.abo === true && DB.aboVia === "code");
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("…et la fenêtre se referme", !D2.getElementById("abo-fenetre"));
+    F.eval("CODES_ACCES").pop();
+    delete DB.abo; delete DB.aboVia;
   })();
   neuf();
 

@@ -2575,6 +2575,12 @@
   .abo-gages span em{display:block; font-style:normal; font-weight:500; color:var(--ink-mute);}
   .abo-restaurer{display:block; width:100%; text-align:center; padding:14px 0 4px; color:var(--accent);
     font-weight:800; font-size:14px; text-decoration:underline; text-underline-offset:3px;}
+  .abo-code-lien{display:block; width:100%; text-align:center; padding:6px 0 2px; color:var(--ink-mute);
+    font-size:12.5px; text-decoration:underline; text-underline-offset:3px;}
+  .abo-code{display:flex; gap:8px; margin-top:10px;}
+  .abo-code input{flex:1; min-width:0; padding:10px 12px; border-radius:12px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font:inherit; font-size:15px; letter-spacing:.06em; text-transform:uppercase;}
+  .abo-code .btn{flex:none; padding:10px 14px;}
   @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .abo-populaire{background:#5a3512; color:#ffb476;} }
   :root[data-theme="dark"] .abo-populaire{background:#5a3512; color:#ffb476;}
   .exo-c{background:var(--surface); border-radius:16px; padding:16px 15px; margin-bottom:12px;}
@@ -3356,6 +3362,12 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "J'ai un code d'accès":"I have an access code",
+  "Ton code":"Your code",
+  "Valider":"Confirm",
+  "Code inconnu.":"Unknown code.",
+  "Impossible de vérifier le code ici (page non sécurisée).":"Can't verify the code here (insecure page).",
+  "Tonnup Analyse est débloqué.":"Tonnup Analyse is unlocked.",
   "Une vibration à chaque appui, et à la fin d'un repos.":"A buzz on every tap, and when a rest ends.",
   "Retour vibrant coupé":"Haptic feedback off",
   "Retour vibrant activé":"Haptic feedback on",
@@ -7436,7 +7448,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 00h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 00h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -15119,6 +15131,12 @@ function openAbonnement(){
       <div>${IC_ABO_PLAY}<span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
     </div>
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
+    <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
+    <form class="abo-code" id="abo-code" hidden>
+      <input type="text" id="abo-code-in" autocomplete="off" autocapitalize="characters" spellcheck="false"
+        placeholder="${TR("Ton code")}" aria-label="${TR("Ton code")}">
+      <button type="submit" class="btn btn-accent">${TR("Valider")}</button>
+    </form>
   </div>`;
   document.body.appendChild(f);
   /* fermer, c'est repartir : la fenêtre ne s'ouvre que sur un onglet verrouillé, il n'y
@@ -15128,6 +15146,38 @@ function openAbonnement(){
   document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
   document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel-1");
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
+  const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
+  lien.onclick = ()=>{ lien.hidden = true; form.hidden = false; document.getElementById("abo-code-in").focus(); };
+  form.onsubmit = async e=>{
+    e.preventDefault();
+    const ok = await verifierCodeAcces(document.getElementById("abo-code-in").value);
+    if(ok === null){ toast(TR("Impossible de vérifier le code ici (page non sécurisée).")); return; }
+    if(!ok){ vibrer(40); toast(TR("Code inconnu.")); return; }
+    db.abo = true; db.aboVia = "code"; save();
+    vibrer(26);
+    toast(TR("Tonnup Analyse est débloqué."));
+    fermerAbonnement(); render();
+  };
+}
+/* Les codes d'acces — testeurs iPhone, amis, et Nico sur sa version d'essai. La page ne
+   contient que leurs EMPREINTES : lire le code source ne donne pas le code. Retirer une
+   ligne revoque le code pour les prochains, pas pour ceux qui l'ont deja saisi.
+   L'empreinte est celle du code SANS tirets ni espaces, en majuscules. */
+const CODES_ACCES = [
+  "8d66037d2d22894dbeb4bce69c33a94c04410bf82bb5b0cf89ade7bd68d77c94"
+];
+async function empreinte(txt){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2, "0")).join("");
+}
+/* true / false, ou null si la page ne peut pas calculer d'empreinte (http sans https) */
+async function verifierCodeAcces(saisie){
+  /* on ne garde que lettres et chiffres : tirets, espaces et casse ne comptent pas */
+  const code = String(saisie || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if(!code) return false;
+  if(!(crypto && crypto.subtle)) return null;
+  try{ return CODES_ACCES.includes(await empreinte(code)); }
+  catch(e){ return null; }
 }
 /* Les deux points d'entree vers Google. Sans greffon de facturation — le web, ou une
    version qui ne l'a pas encore — on le dit, on ne fait pas semblant. */
