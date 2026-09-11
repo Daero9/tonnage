@@ -3372,6 +3372,20 @@ const TRAD = {en:{
   "Code inconnu.":"Unknown code.",
   "Impossible de vérifier le code ici (page non sécurisée).":"Can't verify the code here (insecure page).",
   "Tonnup Analyse est débloqué.":"Tonnup Analyse is unlocked.",
+  "Sur le web, l'abonnement se prend dans l'app Android — ou avec un code d'accès.":"On the web, subscribe from the Android app — or use an access code.",
+  "Bienvenue dans Tonnup Analyse.":"Welcome to Tonnup Analyse.",
+  "Google Play n'a pas pu finaliser l'achat.":"Google Play couldn't complete the purchase.",
+  "Abonnement retrouvé.":"Subscription restored.",
+  "Aucun abonnement actif sur ce compte Google.":"No active subscription on this Google account.",
+  "Google Play ne répond pas.":"Google Play isn't responding.",
+  "{} jours<br>gratuits":"{} days<br>free",
+  "Abonné · gérer sur Google Play":"Subscribed · manage on Google Play",
+  "Débloqué par code":"Unlocked with a code",
+  "Abonnement :":"Subscription:",
+  "Google Play relié":"Google Play connected",
+  "abonnement actif":"active subscription",
+  "aucun abonnement":"no subscription",
+  "hors de l'app Android":"outside the Android app",
   "Une vibration à chaque appui, et à la fin d'un repos.":"A buzz on every tap, and when a rest ends.",
   "Retour vibrant coupé":"Haptic feedback off",
   "Retour vibrant activé":"Haptic feedback on",
@@ -7452,7 +7466,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 00h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 01h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7545,6 +7559,9 @@ function applyDefaults(){
   if(!("active" in db)) db.active = null;
 }
 applyDefaults();
+/* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
+   des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
+setTimeout(()=>{ sonderAbo(); chargerForfaits(); }, 0);
 /* Les libellés de la barre de repos sont du HTML statique : on les traduit
    au chargement et à chaque changement de langue. */
 /* « Repos » est réécrit par le minuteur lui-même ; seul « Passer » est statique. */
@@ -15021,7 +15038,62 @@ const LIB_UNITS = {
    Les prix ci-dessous sont des valeurs par defaut, celles de la console pour la France.
    Le greffon de facturation les remplace par ce que Google renvoie — dans la devise de
    l'utilisateur, avec la virgule ou le point qui convient — des qu'il a repondu. */
-const PRIX_ABO = {mensuel:{montant:5.99, texte:"5,99 €"}, annuel:{montant:39.99, texte:"39,99 €"}};
+/* Les prix par defaut sont ceux de la console Play en euros ; sur Android, Google les
+   remplace par les siens (monnaie et format de la personne) des que forfaits() repond. */
+const PRIX_ABO = {mensuel:{montant:5.99, texte:"5,99 €", essaiJours:0}, annuel:{montant:39.99, texte:"39,99 €", essaiJours:0}};
+const PLAN_ABO = {mensuel:"mensuel", annuel:"annuel-1"};     /* nos noms -> plans de base Play */
+/* ---- le pont vers Google Play — meme dessin que pluginRepos() : on ne retient que le
+   succes, et on construit le mandataire nous-memes, sur un vrai appareil seulement */
+let aboPont = null;
+function pluginAbo(){
+  if(aboPont) return aboPont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Abo) aboPont = c.Plugins.Abo;
+  else if(c && typeof c.registerPlugin === "function"
+          && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ aboPont = c.registerPlugin("Abo"); }catch(e){ aboPont = null; }
+  }
+  return aboPont;
+}
+/* Ce que Google a repondu en dernier — pour les reglages, et pour ne rien affirmer
+   qu'on ne sache. dispo=false : pas de reponse (web, ou Play injoignable). */
+let aboEtat = {dispo:false, abonne:null, panne:""};
+/* Google a le dernier mot sur Android : abonne -> debloque ; plus abonne -> verrouille,
+   SAUF si c'est un code d'acces qui a ouvert cet appareil (Google n'en sait rien). */
+async function sonderAbo(){
+  const p = pluginAbo();
+  if(!p) return false;
+  try{ aboEtat = await p.etat() || aboEtat; }
+  catch(e){ aboEtat = {dispo:false, abonne:null, panne:String((e && e.message) || e).slice(0, 80)}; }
+  if(!aboEtat.dispo) return false;
+  const avant = estAbonne();
+  if(aboEtat.abonne){ db.abo = true; db.aboVia = "play"; }
+  else if(db.aboVia === "play"){ db.abo = false; delete db.aboVia; }
+  if(estAbonne() !== avant){ save(); render(); }
+  return true;
+}
+/* Les prix de Google, dans la fenetre : on ecrase les valeurs par defaut, puis on
+   redessine la fenetre si elle est ouverte. */
+let forfaitsCharges = false;
+async function chargerForfaits(){
+  const p = pluginAbo();
+  if(!p || forfaitsCharges) return false;
+  let r;
+  try{ r = await p.forfaits(); }catch(e){ return false; }
+  if(!r || !Array.isArray(r.forfaits) || !r.forfaits.length) return false;
+  r.forfaits.forEach(f=>{
+    const cle = Object.keys(PLAN_ABO).find(k=>PLAN_ABO[k] === f.id);
+    if(!cle || !(f.montant > 0)) return;
+    PRIX_ABO[cle] = {montant:f.montant, texte:f.prix, essaiJours:f.essaiJours || 0, jeton:f.jeton};
+  });
+  forfaitsCharges = true;
+  if(document.getElementById("abo-fenetre")){ fermerAbonnement(); openAbonnement(); }
+  return true;
+}
+/* Ou l'on gere un abonnement pris sur Google Play : chez Google, pas chez nous */
+function gererSurPlay(){
+  window.open("https://play.google.com/store/account/subscriptions?sku=tonnup_analyse&package=com.inncop.tonnup", "_blank");
+}
 function estAbonne(){ return db.abo === true; }
 /* Ce qui est derriere l'abonnement : Alimentation, Progression et le Bilan. La seance,
    elle, reste gratuite de bout en bout — c'est la vitrine. */
@@ -15119,7 +15191,9 @@ function openAbonnement(){
         <span class="abo-populaire">${TR("Le plus populaire")}</span>
         <div class="gauche"><div class="prix">${esc(PRIX_ABO.mensuel.texte)} <small>/ ${TR("mois")}</small></div></div>
         <span class="sep"></span>
-        <div class="droite">${TR("Résiliable<br>à tout moment")}</div>
+        <div class="droite">${PRIX_ABO.mensuel.essaiJours > 0
+          ? TR("{} jours<br>gratuits").replace("{}", PRIX_ABO.mensuel.essaiJours)
+          : TR("Résiliable<br>à tout moment")}</div>
         <span class="go">${IC_ABO_CHEVRON}</span>
       </button>
       <button class="abo-f annuel" id="abo-annuel">
@@ -15148,7 +15222,8 @@ function openAbonnement(){
   document.getElementById("abo-x").onclick = ()=>{ fermerAbonnement(); if(curTab !== "seance"){ curTab = "seance"; render(); } };
   f.addEventListener("click", e=>{ if(e.target === f) document.getElementById("abo-x").click(); });
   document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
-  document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel-1");
+  document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel");
+  chargerForfaits();                 /* les vrais prix, s'ils ne sont pas encore la */
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
   const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
   const champ = document.getElementById("abo-code-in");
@@ -15193,10 +15268,30 @@ async function verifierCodeAcces(saisie){
    version qui ne l'a pas encore — on le dit, on ne fait pas semblant. */
 async function acheterAbonnement(forfait){
   vibrer(20);
-  toast(TR("L'abonnement arrive dans une prochaine version."));
+  const p = pluginAbo();
+  if(!p){ toast(TR("Sur le web, l'abonnement se prend dans l'app Android — ou avec un code d'accès.")); return; }
+  const b = document.getElementById("abo-" + forfait);
+  if(b){ if(b.disabled) return; b.disabled = true; }
+  try{
+    const r = await p.acheter({forfait: PLAN_ABO[forfait] || forfait});
+    if(r && r.abonne){
+      db.abo = true; db.aboVia = "play"; save();
+      vibrer(26);
+      toast(TR("Bienvenue dans Tonnup Analyse."));
+      fermerAbonnement(); render();
+    }else if(!(r && r.raison === "annule")){
+      toast(TR("Google Play n'a pas pu finaliser l'achat.") + (r && r.raison ? " · " + String(r.raison).slice(0, 60) : ""));
+    }
+  }catch(e){ toast(TR("Google Play n'a pas pu finaliser l'achat.")); }
+  finally{ if(b) b.disabled = false; }
 }
 async function restaurerAbonnement(){
-  toast(TR("L'abonnement arrive dans une prochaine version."));
+  const p = pluginAbo();
+  if(!p){ toast(TR("Sur le web, l'abonnement se prend dans l'app Android — ou avec un code d'accès.")); return; }
+  await sonderAbo();
+  if(estAbonne()){ toast(TR("Abonnement retrouvé.")); fermerAbonnement(); render(); }
+  else toast(aboEtat.dispo ? TR("Aucun abonnement actif sur ce compte Google.")
+                           : TR("Google Play ne répond pas.") + (aboEtat.panne ? " · " + String(aboEtat.panne).slice(0, 60) : ""));
 }
 function openSettings(){
   openSheet(`<h3>${TR("Réglages")}</h3>
@@ -15205,7 +15300,9 @@ function openSettings(){
         <span class="rgi">${IC_ABO_COURBE}</span>
         <span class="grow">${TR("Tonnup Analyse")}
           <em>${TR("Alimentation, progression et bilan.")}</em></span>
-        <span class="val">${TR("Voir les forfaits")}</span>
+        <span class="val">${estAbonne()
+          ? (db.aboVia === "play" ? TR("Abonné · gérer sur Google Play") : TR("Débloqué par code"))
+          : TR("Voir les forfaits")}</span>
       </button>
     </div>
     <div class="rg-c">
@@ -15307,7 +15404,11 @@ function openSettings(){
                   : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
   };
   /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
-  document.getElementById("st-abo").onclick = ()=>{ hideSheet(); setTimeout(openAbonnement, 260); };
+  document.getElementById("st-abo").onclick = ()=>{
+    if(estAbonne() && db.aboVia === "play"){ gererSurPlay(); return; }
+    if(estAbonne()) return;                          /* debloque par code : rien a gerer */
+    hideSheet(); setTimeout(openAbonnement, 260);
+  };
   const bVibr = document.getElementById("st-vibr");
   if(bVibr) bVibr.onclick = ()=>{
     db.settings.vibrer = db.settings.vibrer === false;
@@ -15444,6 +15545,10 @@ function openSettings(){
         + (autoFile.err ? " · " + esc(autoFile.err) : "")}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute);" id="st-repos">${TR("Minuteur natif :")} ${esc(reposEtat)}</div>
+    <div style="color:var(--ink-mute);">${TR("Abonnement :")} ${esc(
+      !pluginAbo() ? TR("hors de l'app Android")
+      : !aboEtat.dispo ? TR("Google Play ne répond pas.") + (aboEtat.panne ? " · ⚠ " + String(aboEtat.panne).slice(0, 70) : "")
+      : TR("Google Play relié") + " · " + (aboEtat.abonne ? TR("abonnement actif") : TR("aucun abonnement")))}</div>
     <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
     ${(!survived && !dansLApp())? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${
       /* la trace manque aussi a la PREMIERE ouverture, ou c'est normal : dans
