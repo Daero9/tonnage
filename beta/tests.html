@@ -5316,6 +5316,45 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- la fiche d'abonnement */
+  /* Les prix de la fiche sont des valeurs par defaut que Google remplacera ; l'economie
+     de l'annuel se CALCULE, elle n'est jamais ecrite en dur — si le prix change dans la
+     console, le pourcentage suit sans nouvelle version. */
+  grp("La fiche d'abonnement");
+  neuf();
+  await (async ()=>{
+    const P = F.eval("PRIX_ABO");
+    eq("L'économie de l'annuel est calculée depuis les deux prix",
+      F.economieAnnuel(), Math.round((1 - (P.annuel.montant / 12) / P.mensuel.montant) * 100));
+    vrai("…et vaut bien −44 % aux prix du jour", F.economieAnnuel() === 44, F.economieAnnuel());
+    eq("Le prix par mois de l'annuel est celui des douze parts", F.prixParMois(), "3,33 €");
+
+    F.openAbonnement();
+    await attendre(()=>!!F.document.getElementById("abo-mensuel"), 2000);
+    const D2 = F.document;
+    vrai("La fiche s'ouvre sur son bandeau", !!D2.querySelector(".abo-tete"));
+    eq("Trois promesses", D2.querySelectorAll(".abo-promesses li").length, 3);
+    vrai("Le mensuel porte son prix", /5,99/.test(D2.getElementById("abo-mensuel").textContent));
+    vrai("…et le badge « le plus populaire »", !!D2.querySelector("#abo-mensuel .abo-populaire"));
+    vrai("L'annuel porte son prix, son économie et son prix par mois",
+      /39,99/.test(D2.getElementById("abo-annuel").textContent)
+      && /−44 %/.test(D2.getElementById("abo-annuel").textContent)
+      && /3,33 €/.test(D2.getElementById("abo-annuel").textContent),
+      D2.getElementById("abo-annuel").textContent.replace(/\s+/g, " "));
+    /* Google exige que l'ecran dise, avant le bouton, que ca se renouvelle et se resilie */
+    vrai("La mention de renouvellement est là", /Renouvellement/.test(D2.querySelector(".abo-gages").textContent));
+    vrai("…et celle de la résiliation aussi", /Résiliable/.test(D2.getElementById("abo-mensuel").textContent));
+    vrai("Le lien de restauration existe", !!D2.getElementById("abo-restaurer"));
+    /* tant que le greffon de facturation n'existe pas, un appui le dit, sans faire semblant */
+    const dits = []; const vraiToast = F.toast; F.toast = m => dits.push(m);
+    D2.getElementById("abo-mensuel").click();
+    await attendre(()=>dits.length > 0, 1500);
+    vrai("Sans facturation, l'appui l'annonce honnêtement", /prochaine version/.test(dits.join(" ")), dits.join(" | "));
+    F.toast = vraiToast;
+    F.hideSheet();
+  })();
+  neuf();
+
   /* --------------------------------------- le gainage passe par le service */
   /* Le service ne couvrait que le repos simple. Une sequence de gainage — tenue,
      repos, tenue — programmait encore une liste d'alarmes, avec le meme defaut qu'hier.
