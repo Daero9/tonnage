@@ -2851,6 +2851,11 @@ const TRAD = {en:{
   "Tout est dans ce téléphone. Dernière sauvegarde fichier : {}.":"Everything is on this phone. Last file backup: {}.",
   "Dernier enregistrement chargé :":"Last saved state loaded:",
   "Dernière sauvegarde fichier :":"Last file backup:",
+  "Minuteur natif :":"Native timer:",
+  "absent — l'ancienne alarme prend le relais":"missing — the old alarm takes over",
+  "relié":"connected",
+  "décompte en cours":"counting down",
+  "relié, mais muet":"connected, but silent",
   "Écran maintenu allumé :":"Screen kept awake:",
   "Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.":"Your data is saved automatically on this phone. These options are only for copying it to another device, or keeping it safe before you change phone.",
 
@@ -7322,7 +7327,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 02h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 03h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8822,9 +8827,40 @@ async function poserCanalRepos(){
    reste éveillé et sonne tout seul. La page lui dit seulement l'heure de fin.
    Le greffon n'existe que dans l'application empaquetée : sur le web, on garde le
    chemin d'avant — minuteur JavaScript tant que la page est visible. */
+let reposPont = null;          /* le mandataire, une fois construit */
 function pluginRepos(){
+  /* On ne retient QUE le succès. Mémoriser une absence gèlerait la réponse d'un instant
+     où Capacitor n'était peut-être pas encore prêt — et plus rien ne la remettrait en
+     cause de toute la session. Rechercher coûte deux lectures de propriété. */
+  if(reposPont) return reposPont;
   const c = window.Capacitor;
-  return (c && c.Plugins && c.Plugins.Repos) ? c.Plugins.Repos : null;
+  /* Capacitor.Plugins n'est PAS peuplé par l'enregistrement natif : le mandataire
+     JavaScript naît de registerPlugin(), côté page, et de lui seul. Sans cet appel,
+     Capacitor.Plugins.Repos vaut undefined — l'app retombait alors en silence sur
+     l'ancien chemin, et le service n'était jamais démarré.
+     Sur le web, registerPlugin() rendrait un mandataire qui lève une erreur au premier
+     appel : on ne le construit que sur un vrai appareil. */
+  if(c && c.Plugins && c.Plugins.Repos) reposPont = c.Plugins.Repos;
+  else if(c && typeof c.registerPlugin === "function"
+          && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ reposPont = c.registerPlugin("Repos"); }catch(e){ reposPont = null; }
+  }
+  return reposPont;
+}
+/* Ce que le téléphone peut dire de lui-même, dans les réglages : la question « le
+   minuteur natif est-il branché ? » se tranchait jusqu'ici par un empaquetage. */
+let reposEtat = "—";
+async function sonderRepos(){
+  const p = pluginRepos();
+  if(!p){ reposEtat = TR("absent — l'ancienne alarme prend le relais"); return; }
+  try{
+    const r = await p.etat();
+    /* « panne » porte ce que le systeme a refuse, en clair. Sans elle, un service qui
+       ne demarre pas se lit comme un service absent — deux causes tres differentes. */
+    reposEtat = TR("relié")
+      + (r && r.actif ? " · " + TR("décompte en cours") : "")
+      + (r && r.panne ? " · ⚠ " + String(r.panne).slice(0, 70) : "");
+  }catch(e){ reposEtat = TR("relié, mais muet") + " · " + String((e && e.message) || e).slice(0, 40); }
 }
 async function demarrerServiceRepos(sec){
   const p = pluginRepos();
@@ -14979,6 +15015,12 @@ function openSettings(){
       + "<br>"
       + TR("Tout est dans ce téléphone. Dernière sauvegarde fichier : {}.").replace("{}", ago(db.lastBackup));
   }
+  /* La reponse du service traverse le pont natif : elle n'est pas instantanee. On
+     peint la ligne en attente, puis on la remplit quand elle arrive. */
+  sonderRepos().then(()=>{
+    const l = document.getElementById("st-repos");
+    if(l) l.textContent = TR("Minuteur natif :") + " " + reposEtat;
+  });
   document.getElementById("st-diag").innerHTML = `
     <div>${ico(diag.ls)} ${TR("Mémoire principale :")} ${diag.ls}</div>
     <div>${ico(diag.idb)} ${TR("Mémoire de secours :")} ${diag.idb}</div>
@@ -14991,6 +15033,7 @@ function openSettings(){
       : (autoFile.ok ? TR("actif") : TR("en pause")) + " · " + esc(autoFile.name || "?")
         + (autoFile.err ? " · " + esc(autoFile.err) : "")}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
+    <div style="color:var(--ink-mute);" id="st-repos">${TR("Minuteur natif :")} ${esc(reposEtat)}</div>
     <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
     ${(!survived && !dansLApp())? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${
       /* la trace manque aussi a la PREMIERE ouverture, ou c'est normal : dans
