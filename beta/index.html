@@ -2490,14 +2490,29 @@
   .vd-card.plat{border-left-color:var(--accent);}
   .vd-card .t{font-size:15.5px; font-weight:800; letter-spacing:-.01em; margin-bottom:4px;}
   .vd-card p{margin:0; font-size:13px; line-height:1.55; color:var(--ink-soft);}
-  /* ---- la fiche d'abonnement ---- */
+  /* ---- la fiche d'abonnement ----
+     Une FENÊTRE au centre de l'écran, pas un panneau du bas : elle s'arrête au-dessus de
+     la barre d'onglets, qui reste touchable. On peut donc toujours repartir vers Séance
+     — un verrou qui bloquerait la navigation ferait fuir. Sous la barre (z 40), au-dessus
+     de la page (le voile est en 39 lui aussi, la fenêtre vient par-dessus). */
+  .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
+    z-index:39; display:flex; align-items:center; justify-content:center; padding:14px 12px;
+    background:rgba(0,0,0,.42);}
+  .abo-carte-f{position:relative; width:100%; max-width:380px; max-height:100%; overflow-y:auto;
+    background:var(--sheet); border-radius:22px; padding:18px 16px 14px;
+    box-shadow:0 22px 60px rgba(0,0,0,.4); -webkit-overflow-scrolling:touch;}
+  .abo-carte-f .sheet-x{top:10px; right:10px;}
+  @media (prefers-reduced-motion:no-preference){
+    .abo-carte-f{animation:ficheIn .48s cubic-bezier(.22,1,.36,1) backwards;}
+    .abo-fenetre{animation:voileIn .3s ease backwards;}
+  }
   /* L'image de Nico sert de bandeau, bord a bord : la fiche a 16 px de marge, on les
      annule. Elle est carree ; on n'en garde que ce qui tient, le haut. */
   /* L'image est agrandie a 132 % et calee A GAUCHE : ses telephones, qui occupent le
      centre-droit, partent alors vers la droite et liberent la colonne de gauche pour le
      titre et les trois promesses — la mise en page de la maquette. Le second telephone
      sort du cadre : c'est le prix de cette colonne. */
-  .abo-tete{position:relative; margin:-18px -16px 0; padding:18px 16px 0;
+  .abo-tete{position:relative; margin:-18px -16px 0; padding:16px 16px 0;
     background:url(img/abonnement.webp) left top / 112% auto no-repeat; min-height:352px;}
   .abo-titre{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
   .abo-titre .logo{width:40px; height:40px; border-radius:11px; background:var(--accent); flex:none;
@@ -7403,7 +7418,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 00h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 00h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14983,9 +14998,17 @@ const IC_ABO_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentCol
 const IC_ABO_RENOUV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.7 3v3.6h-3.6"/><path d="M6.3 21v-3.6h3.6"/></svg>';
 const IC_ABO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.5v17c0 .6.7 1 1.2.7l14-8.5c.5-.3.5-1 0-1.4l-14-8.5C5.7 2.5 5 2.9 5 3.5z"/></svg>';
 const IC_ABO_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+function fermerAbonnement(){
+  const f = document.getElementById("abo-fenetre");
+  if(f) f.remove();
+}
 function openAbonnement(){
+  fermerAbonnement();
   const eco = economieAnnuel();
-  openSheet(`
+  const f = document.createElement("div");
+  f.className = "abo-fenetre"; f.id = "abo-fenetre";
+  f.innerHTML = `<div class="abo-carte-f">
+    <button class="sheet-x" id="abo-x" aria-label="${TR("Fermer")}">✕</button>
     <div class="abo-tete">
       <div class="abo-titre"><span class="logo">${IC_ABO_LOGO}</span>
         <h3>Tonnup <em>Analyse</em></h3></div>
@@ -15019,7 +15042,13 @@ function openAbonnement(){
       <div>${IC_ABO_RENOUV}<span>${TR("Renouvellement")}<em>${TR("automatique")}</em></span></div>
       <div>${IC_ABO_PLAY}<span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
     </div>
-    <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>`);
+    <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
+  </div>`;
+  document.body.appendChild(f);
+  /* fermer, c'est repartir : la fenêtre ne s'ouvre que sur un onglet verrouillé, il n'y
+     a rien d'autre à y faire. On revient donc à la séance. */
+  document.getElementById("abo-x").onclick = ()=>{ fermerAbonnement(); if(curTab !== "seance"){ curTab = "seance"; render(); } };
+  f.addEventListener("click", e=>{ if(e.target === f) document.getElementById("abo-x").click(); });
   document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
   document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel-1");
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
