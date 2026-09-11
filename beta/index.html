@@ -2,6 +2,7 @@
 <title>Tonnup bêta</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1b1b1d">
+<meta name="robots" content="noindex">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2495,6 +2496,17 @@
      la barre d'onglets, qui reste touchable. On peut donc toujours repartir vers Séance
      — un verrou qui bloquerait la navigation ferait fuir. Sous la barre (z 40), au-dessus
      de la page (le voile est en 39 lui aussi, la fenêtre vient par-dessus). */
+  /* Le voile : les cartes se floutent, les titres restent lisibles — on sait ce qu'on
+     regarde sans pouvoir le lire. Rien ne repond au doigt derriere la fenetre. */
+  #app.verrou{pointer-events:none; user-select:none;}
+  #app.verrou .eat-card, #app.verrou .fgrid, #app.verrou .meal-tabs,
+  #app.verrou svg, #app.verrou canvas, #app.verrou table, #app.verrou .jauge, #app.verrou .pill,
+  #app.verrou .vd-card, #app.verrou .rg-resume{filter:blur(6px);}
+  /* dans une carte, la premiere ligne porte le titre : elle reste nette, sauf le chiffre
+     qu'elle affiche a cote (Poids 77,6 kg) ; tout le reste se floute */
+  #app.verrou .card > :not(:first-child), #app.verrou .card > .row:first-child > :not(:first-child),
+  #app.verrou .card > :first-child:not(.row):not(.card-t), #app.verrou .card-sub{filter:blur(6px);}
+  #app.verrou .eat-fab, #app.verrou .fab{display:none;}
   .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
     z-index:39; display:flex; align-items:center; justify-content:center;
     /* la carte reste sous la barre d'etat (heure, batterie) : sans ca la croix passe
@@ -7424,7 +7436,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 00h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 00h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7682,6 +7694,7 @@ function vibrer(motif){
   try{ navigator.vibrate(v); }catch(e){}
 }
 function save(){
+  if(demoEnCours) return;                      /* on dessine un faux profil : rien a garder */
   db.savedAt = Date.now();
   let json;
   try{ json = JSON.stringify(db); }catch(e){ return; }
@@ -8580,9 +8593,17 @@ function render(){
   const changeEcran = ecran !== ecranPrecedent;
   ecranPrecedent = ecran;
   if(curTab==="seance") renderSeance(app);
+  else if(verrouille(curTab)){
+    /* onglet payant, pas abonne : l'ecran REEL, calcule sur un profil de demonstration,
+       floute derriere la fenetre d'abonnement. On voit ce qu'on achete, pas un mur. */
+    app.classList.add("verrou");
+    avecDemo(()=>{ if(curTab==="eat") renderEat(app); else renderProgress(app); });
+    openAbonnement();
+  }
   else if(curTab==="eat") renderEat(app);
   else if(curTab==="hist") renderHist(app);
   else renderProgress(app);
+  if(curTab==="seance" || !verrouille(curTab)){ app.classList.remove("verrou"); fermerAbonnement(); }
   /* le temps que la page se pose : mesurer un élément en cours d'affichage
      l'encadrerait de travers */
   /* pendant une séance, c'est la visite de la séance qui s'ouvre, pas celle de
@@ -8590,7 +8611,7 @@ function render(){
   const onglet = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
   setTimeout(()=>{
     const encore = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
-    if(encore === onglet) lancerGuide(onglet);
+    if(encore === onglet && !verrouille(onglet)) lancerGuide(onglet);
   }, 500);
   if(gardeDefilement){ window.scrollTo(0, posDefilement); gardeDefilement = false; }
   else window.scrollTo(0,0);
@@ -11948,7 +11969,7 @@ function renderSeance(app){
     <div class="section-t" style="margin-top:14px;"><i>▤</i>${TR("Historique")}</div>
     <div class="hist-strip" id="hist-strip"></div>`;
   wireTopbar();
-  document.getElementById("bilan-btn").onclick=openBilan;
+  document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
   if(rc) rc.onclick = openRecup;
@@ -14986,6 +15007,55 @@ const LIB_UNITS = {
    l'utilisateur, avec la virgule ou le point qui convient — des qu'il a repondu. */
 const PRIX_ABO = {mensuel:{montant:5.99, texte:"5,99 €"}, annuel:{montant:39.99, texte:"39,99 €"}};
 function estAbonne(){ return db.abo === true; }
+/* Ce qui est derriere l'abonnement : Alimentation, Progression et le Bilan. La seance,
+   elle, reste gratuite de bout en bout — c'est la vitrine. */
+const ONGLETS_PAYANTS = ["eat", "prg", "bilan"];
+function verrouille(quoi){ return ONGLETS_PAYANTS.includes(quoi) && !estAbonne(); }
+/* Le profil de demonstration : un mois d'entrainement et de repas plausibles, pour que
+   l'ecran floute ait l'air d'un vrai — chiffres, courbes, jauges remplies. Aucune
+   valeur ici n'est une recommandation : ce sont des exemples, pas des cibles. */
+let demoEnCours = false;
+function dbDemo(){
+  const ex = n => libId(n), j = n => new Date(Date.now() - n * 864e5);
+  const serie = (w, r) => ({w, r, done:true, warm:false, rir:1});
+  const seance = (n, name, entries) => ({id:"demo" + n, date:j(n).toISOString(), name, templateId:"demo",
+    start:j(n).getTime() - 3.3e6, end:j(n).getTime(), entries});
+  const semaine = (k, plus) => [
+    seance(k*7 + 1, "Push", [{exId:ex("Développé couché"), sets:[serie(70+plus,8),serie(70+plus,8),serie(70+plus,7)]},
+      {exId:ex("Développé militaire"), sets:[serie(40+plus/2,8),serie(40+plus/2,8),serie(40+plus/2,8)]},
+      {exId:ex("Extension poulie (barre)"), sets:[serie(25,12),serie(25,12),serie(25,11)]}]),
+    seance(k*7 + 3, "Pull", [{exId:ex("Tractions"), sets:[serie(0,8),serie(0,7),serie(0,6)]},
+      {exId:ex("Rowing barre"), sets:[serie(60+plus,10),serie(60+plus,10),serie(60+plus,9)]},
+      {exId:ex("Curl haltères"), sets:[serie(14,12),serie(14,11),serie(14,10)]}]),
+    seance(k*7 + 5, "Legs", [{exId:ex("Squat"), sets:[serie(90+plus,6),serie(90+plus,6),serie(90+plus,6)]},
+      {exId:ex("Presse à cuisses"), sets:[serie(140+plus*2,10),serie(140+plus*2,10),serie(140+plus*2,10)]},
+      {exId:ex("Leg curl"), sets:[serie(35,12),serie(35,12),serie(35,12)]}])
+  ];
+  const history = [].concat(semaine(0, 5), semaine(1, 2.5), semaine(2, 2.5), semaine(3, 0)).reverse();
+  const weights = [28, 21, 14, 7, 0].map((n, i) => ({date:j(n).toISOString(), kg:+(76.4 + i * 0.3).toFixed(1)}));
+  const habitSel = {};
+  for(let n = 0; n < 14; n++){
+    habitSel[dayKey(j(n))] = {
+      matin:["Œuf", "Œuf", "Pain (1 tranche)", "Pain (1 tranche)", "Yaourt grec"],
+      midi:["Poulet (1 filet, 130 g cuit)", "Riz (200 g cuit)", "Brocoli (200 g)"],
+      collation: n % 2 ? ["Pomme", "Poignée d'amandes (25 g)"] : ["Pot de fromage blanc (100 g)"],
+      soir:["Saumon (1 pavé, 120 g cuit)", "Patates (250 g)", "Salade verte (bol)"]
+    };
+  }
+  return {
+    profile:{name:"", sex:"h", age:29, height:180, weight:77.6, goalWeight:80, metab:"normal",
+      days:3, injuries:[], aim:"masse", pace:"modere", protPerKg:1.8, onboard:true},
+    settings:Object.assign({}, db.settings, {name:""}),
+    history, weights, habitSel, cardio:[], custom:[], templates:[], seen:{}, mealsV2:1, adaptV2:1
+  };
+}
+/* Dessiner avec le faux profil, puis rendre le vrai — quoi qu'il arrive */
+function avecDemo(fn){
+  const vrai = db;
+  db = dbDemo(); demoEnCours = true;
+  try{ applyDefaults(); fn(); }
+  finally{ db = vrai; demoEnCours = false; }
+}
 /* l'economie de l'annuel, calculee — jamais ecrite en dur, les prix peuvent changer */
 function economieAnnuel(){
   const m = PRIX_ABO.mensuel.montant, a = PRIX_ABO.annuel.montant;
@@ -15009,7 +15079,7 @@ function fermerAbonnement(){
   if(f) f.remove();
 }
 function openAbonnement(){
-  fermerAbonnement();
+  if(document.getElementById("abo-fenetre")) return;   /* deja ouverte : on la laisse en place */
   const eco = economieAnnuel();
   const f = document.createElement("div");
   f.className = "abo-fenetre"; f.id = "abo-fenetre";
