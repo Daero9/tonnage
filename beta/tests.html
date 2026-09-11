@@ -2632,7 +2632,11 @@ async function lancer(){
   (()=>{
     F.openSettings();
     const D2 = F.document, lignes = [...D2.querySelectorAll("#sheet .rg-l")];
-    vrai("Huit réglages", lignes.length === 8, String(lignes.length));
+    /* neuf depuis que le retour vibrant a son interrupteur : on pouvait couper le son,
+       pas la vibration — et quelqu'un qui s'entraîne à côté de gens n'avait aucune
+       échappatoire */
+    vrai("Neuf réglages", lignes.length === 9, String(lignes.length));
+    vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
     vrai("Chacun porte son signe",
       lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
       lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
@@ -5236,6 +5240,53 @@ async function lancer(){
        (77 kg il y a 20 jours, 85 kg hier). Sans le tri, la lecture s'inverserait. */
     DB.history = assidu([85,84,82,82,80,80,79,78,77,77], [110,108,105,104,100,100,99,98,95,95]);
     eq("L'historique est retrié avant d'être lu", F.verdictProgression().ton, "bon");
+  })();
+  neuf();
+
+  /* --------------------------------------- le retour vibrant vibre vraiment */
+  /* Deux causes se cumulaient. La permission VIBRATE n'était déclarée nulle part —
+     navigator.vibrate ne faisait donc RIEN, en silence. Et même accordée, la moitié des
+     impulsions seraient restées muettes : un moteur ne rend pas trois millisecondes.
+     Les tapotements à 3, 6, 8 et 12 ms étaient inaudibles par construction. */
+  grp("Le retour vibrant vibre vraiment");
+  neuf();
+  (()=>{
+    const recu = [];
+    const vrai0 = F.navigator.vibrate;
+    F.navigator.vibrate = v => { recu.push(v); return true; };
+    const dernier = () => recu[recu.length - 1];
+
+    F.vibrer(3);
+    eq("Trois millisecondes remontent au plancher", dernier(), F.eval("VIBR_MIN"));
+    F.vibrer(8);
+    eq("Huit aussi", dernier(), F.eval("VIBR_MIN"));
+    F.vibrer(30);
+    eq("Une impulsion déjà perceptible n'est pas touchée", dernier(), 30);
+
+    /* le motif de fin de repos : les vibrations montent au plancher, les SILENCES non —
+       ce sont eux qui donnent le rythme du « ta-ta-taa » */
+    F.vibrer([200, 100, 200]);
+    eq("Un motif déjà long passe intact", dernier().join(), "200,100,200");
+    F.vibrer([12, 60, 18]);
+    eq("Les vibrations d'un motif court remontent, pas ses silences",
+      dernier().join(), F.eval("VIBR_MIN") + ",60," + F.eval("VIBR_MIN"));
+
+    /* couper le son laissait la vibration sans interrupteur : elle en a un */
+    const garde = DB.settings.vibrer;
+    DB.settings.vibrer = false;
+    const avant = recu.length;
+    F.vibrer(200);
+    eq("Coupée, elle ne vibre plus du tout", recu.length, avant);
+    DB.settings.vibrer = true;
+    F.vibrer(200);
+    eq("…et rallumée, elle repart", recu.length, avant + 1);
+    DB.settings.vibrer = garde;
+
+    /* plus un seul appel direct : tout passe par la fonction qui applique le plancher */
+    const src = F.document.documentElement.outerHTML;
+    const directs = (src.match(/navigator\.vibrate/g) || []).length;
+    eq("navigator.vibrate n'est appelé que depuis vibrer()", directs, 2);
+    F.navigator.vibrate = vrai0;
   })();
   neuf();
 
