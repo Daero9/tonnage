@@ -5352,6 +5352,22 @@ async function lancer(){
     eq("…et rallumée, elle repart", recu.length, avant + 1);
     DB.settings.vibrer = garde;
 
+    /* Les gestes les plus frequents d'Alimentation doivent repondre. Toucher un aliment
+       ne repondait rien, alors que le « + » d'une portion, lui, vibrait — et le lecteur
+       de code-barres ne vibrait que sur sa version EN DIRECT, jamais sur la lecture
+       d'une photo, qui est pourtant le chemin des telephones sans BarcodeDetector. */
+    const k2 = F.dayKey();
+    DB.habitSel = {}; DB.dayFix = {};
+    const n0 = recu.length;
+    F.basculerAliment("midi", "Œuf");
+    vrai("Ajouter un aliment répond au doigt", recu.length === n0 + 1, recu.length - n0);
+    vrai("…au-dessus du seuil perceptible", dernier() >= F.eval("VIBR_MIN"), dernier());
+    F.basculerAliment("midi", "Œuf");
+    eq("Le retirer aussi", recu.length, n0 + 2);
+    /* le geste qui ajoute se sent un peu plus que celui qui retire : c'est le sens
+       du geste, pas sa force */
+    vrai("…un peu moins fort", recu[n0 + 1] < recu[n0], recu[n0] + " puis " + recu[n0 + 1]);
+
     /* plus un seul appel direct : tout passe par la fonction qui applique le plancher */
     const src = F.document.documentElement.outerHTML;
     const directs = (src.match(/navigator\.vibrate/g) || []).length;
