@@ -7322,7 +7322,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 02h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 02h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8846,20 +8846,35 @@ async function poserAlarmeRepos(){
      l'écran. Le service, lui, sait vibrer sans sonner : on le laisse partir, il choisit
      son canal selon ce réglage. Seul l'ancien chemin, qui n'a que le canal sonore,
      renonce encore. */
-  if(db.settings.son === false && !pluginRepos()) return;
   if(seqIso) return;                         /* un gainage a déjà posé toute sa suite */
   if(preIso) return;                         /* cinq secondes de décompte, on reste devant */
-  const n = pluginNotifs();
-  if(!n || !rest.int || rest.paused) return;
+  if(!rest.int || rest.paused) return;
   const dans = rest.end - Date.now();
   if(dans < 700) return;                     /* trop tard pour que ça ait un sens */
+
+  /* LE SERVICE D'ABORD, et sans rien lui imposer.
+     Je l'avais d'abord rangé derrière le greffon de notifications et derrière
+     l'autorisation accordée : il n'était donc jamais démarré là où ces deux-là
+     manquaient, alors qu'il n'a besoin ni de l'un ni de l'autre pour COMPTER.
+     L'autorisation ne décide que de l'affichage de sa notification finale — on la
+     demande, on ne s'y soumet pas. Et le son coupé ne l'arrête plus : il sait vibrer
+     sans sonner, ce que l'app promettait depuis toujours sans le tenir. */
+  if(pluginRepos()){
+    alarmePosee = true;
+    autoriserNotifs();                                          /* pour l'affichage, pas pour le décompte */
+    if(db.settings.son !== false) poserCanalRepos();             /* le canal porte le bip */
+    if(await demarrerServiceRepos(dans / 1000)) return;
+    alarmePosee = false;                                         /* refusé : on retombe sur l'ancien chemin */
+  }
+
+  /* L'ancien chemin — le web, et les téléphones où le service n'a pas démarré. Lui n'a
+     que le canal sonore : le son coupé le laisse sans rien à dire. */
+  if(db.settings.son === false) return;
+  const n = pluginNotifs();
+  if(!n) return;
   alarmePosee = true;
   if(!(await autoriserNotifs())) return;
-  if(db.settings.son !== false) await poserCanalRepos();
-  /* Le service d'abord : c'est lui qui tient la promesse. S'il répond, on n'a plus
-     besoin de programmer quoi que ce soit — il compte lui-même et sonne sur le même
-     canal, donc le même bip et le même réglage. */
-  if(await demarrerServiceRepos((rest.end - Date.now()) / 1000)) return;
+  await poserCanalRepos();
   try{
     await n.schedule({notifications:[{
       id: NOTIF_REPOS,

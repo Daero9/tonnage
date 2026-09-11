@@ -5243,6 +5243,76 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- le minuteur natif est bien piloté */
+  /* Le décompte est descendu dans un service Android : une page web ne sait pas compter
+     quand l'écran s'éteint, Chrome gèle ses minuteurs dès qu'elle devient invisible.
+     Je ne peux pas éprouver le service lui-même ici — ça ne se teste que sur un
+     téléphone, écran éteint. Mais je peux éprouver ce que la page LUI DIT, et c'est là
+     que j'avais déjà fait une erreur : le service était rangé derrière le greffon de
+     notifications, dont il n'a aucun besoin, et n'était donc jamais démarré. */
+  grp("Le minuteur natif est bien piloté");
+  neuf();
+  await (async ()=>{
+    const j = [];
+    const C = F.Capacitor || (F.Capacitor = {});
+    const garde = C.Plugins;
+    C.Plugins = Object.assign({}, C.Plugins, {Repos:{
+      demarrer: async o => { j.push("demarrer:" + Math.round(o.sec) + ":" + o.son); return {actif:true}; },
+      arreter:  async () => { j.push("arreter"); return {actif:false}; }
+    }});
+    const vide = () => j.splice(0).join(" ");
+    const souffler = () => attendre(()=>true, 120);
+
+    DB.settings.son = true; DB.active = null;
+
+    F.startRest(120);
+    await souffler();
+    eq("Le repos démarre le décompte natif", vide(), "demarrer:120:true");
+
+    F.document.getElementById("rest-plus").click();
+    await souffler();
+    eq("+15 s le relance sur la nouvelle durée", vide(), "demarrer:135:true");
+
+    F.document.getElementById("rest-minus").click();
+    await souffler();
+    vrai("−15 s aussi", /^demarrer:1(19|20):true$/.test(vide() || "(rien)"));
+
+    F.document.getElementById("rest-pause").click();
+    await souffler();
+    eq("La pause l'arrête — il n'y a plus d'heure de fin", vide(), "arreter");
+
+    F.document.getElementById("rest-pause").click();
+    await souffler();
+    vrai("La reprise le relance sur ce qui reste", /^demarrer:\d+:true$/.test(vide() || "(rien)"));
+
+    F.document.getElementById("rest-skip").click();
+    await souffler();
+    eq("Passer le repos l'arrête", vide(), "arreter");
+
+    /* Le son coupé bloquait TOUT : rien n'était programmé, alors que l'app promet
+       « Son coupé — la vibration reste ». Le service, lui, sait vibrer sans sonner. */
+    DB.settings.son = false;
+    F.startRest(90);
+    await souffler();
+    eq("Son coupé, le décompte part quand même", vide(), "demarrer:90:false");
+    F.document.getElementById("rest-skip").click();
+    await souffler(); vide();
+    DB.settings.son = true;
+
+    /* Et le va-et-vient ne touche plus à rien : c'est lui qui perdait l'alarme, chaque
+       aller-retour rejouant une course contre le gel du processus. */
+    F.startRest(120);
+    await souffler(); vide();
+    F.document.dispatchEvent(new F.Event("visibilitychange"));
+    await souffler();
+    eq("Quitter l'écran ne relance ni n'arrête rien", vide(), "");
+    F.document.getElementById("rest-skip").click();
+    await souffler();
+
+    C.Plugins = garde;
+  })();
+  neuf();
+
   /* --------------------------------------- le retour vibrant vibre vraiment */
   /* Deux causes se cumulaient. La permission VIBRATE n'était déclarée nulle part —
      navigator.vibrate ne faisait donc RIEN, en silence. Et même accordée, la moitié des
