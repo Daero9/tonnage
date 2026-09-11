@@ -3338,6 +3338,9 @@ const TRAD = {en:{
   "Déjà abonné ? Restaurer mes achats":"Already subscribed? Restore purchases",
   "L'abonnement arrive dans une prochaine version.":"Subscriptions are coming in a future version.",
   "Retour vibrant":"Haptic feedback",
+  "Tonnup Analyse":"Tonnup Analyse",
+  "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
+  "Voir les forfaits":"See plans",
   "Une vibration à chaque appui, et à la fin d'un repos.":"A buzz on every tap, and when a rest ends.",
   "Retour vibrant coupé":"Haptic feedback off",
   "Retour vibrant activé":"Haptic feedback on",
@@ -7418,7 +7421,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 00h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 00h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -15065,6 +15068,14 @@ async function restaurerAbonnement(){
 function openSettings(){
   openSheet(`<h3>${TR("Réglages")}</h3>
     <div class="rg-c">
+      <button class="rg-l" id="st-abo">
+        <span class="rgi">${IC_ABO_COURBE}</span>
+        <span class="grow">${TR("Tonnup Analyse")}
+          <em>${TR("Alimentation, progression et bilan.")}</em></span>
+        <span class="val">${TR("Voir les forfaits")}</span>
+      </button>
+    </div>
+    <div class="rg-c">
       <div class="rg-t">${TR("Pendant la séance")}</div>
       <button class="rg-l" id="st-ecran">
         <span class="rgi">${IC_ECRAN}</span>
@@ -15162,6 +15173,8 @@ function openSettings(){
     v.textContent = alarmeExacte === "granted" ? TR("Activée")
                   : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
   };
+  /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
+  document.getElementById("st-abo").onclick = ()=>{ hideSheet(); setTimeout(openAbonnement, 260); };
   const bVibr = document.getElementById("st-vibr");
   if(bVibr) bVibr.onclick = ()=>{
     db.settings.vibrer = db.settings.vibrer === false;
