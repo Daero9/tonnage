@@ -5351,7 +5351,13 @@ async function lancer(){
     await attendre(()=>dits.length > 0, 1500);
     vrai("Sans facturation, l'appui l'annonce honnêtement", /prochaine version/.test(dits.join(" ")), dits.join(" | "));
     F.toast = vraiToast;
-    F.hideSheet();
+    /* c'est une fenetre, pas une fiche : la barre d'onglets reste sous elle, et la
+       croix ramene a Seance */
+    vrai("La fenêtre passe sous la barre d'onglets",
+      +F.getComputedStyle(D2.getElementById("abo-fenetre")).zIndex < +F.getComputedStyle(D2.querySelector(".tabbar")).zIndex);
+    F.fermerAbonnement();
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("…et se ferme sans laisser de trace", !D2.getElementById("abo-fenetre"));
   })();
   neuf();
 
