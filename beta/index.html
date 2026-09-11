@@ -2493,31 +2493,31 @@
   /* ---- la fiche d'abonnement ---- */
   /* L'image de Nico sert de bandeau, bord a bord : la fiche a 16 px de marge, on les
      annule. Elle est carree ; on n'en garde que ce qui tient, le haut. */
-  /* Les telephones de l'image occupent le centre-droit et sa legende le bas gauche : il
-     n'y a pas de colonne libre pour trois lignes de texte. Le bandeau ne porte donc que
-     le titre et l'accroche, sur le sombre du haut ; les promesses viennent en dessous. */
-  .abo-tete{position:relative; margin:-18px -16px 0; padding:22px 16px 0;
-    background:url(img/abonnement.webp) top center / 100% auto no-repeat;
-    aspect-ratio:1080/1028; min-height:0;}
-  .abo-titre{display:flex; align-items:center; gap:12px; margin-bottom:6px;}
-  .abo-titre .logo{width:46px; height:46px; border-radius:13px; background:var(--accent); flex:none;
+  /* L'image est agrandie a 132 % et calee A GAUCHE : ses telephones, qui occupent le
+     centre-droit, partent alors vers la droite et liberent la colonne de gauche pour le
+     titre et les trois promesses — la mise en page de la maquette. Le second telephone
+     sort du cadre : c'est le prix de cette colonne. */
+  .abo-tete{position:relative; margin:-18px -16px 0; padding:18px 16px 0;
+    background:url(img/abonnement.webp) left top / 112% auto no-repeat; min-height:352px;}
+  .abo-titre{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .abo-titre .logo{width:40px; height:40px; border-radius:11px; background:var(--accent); flex:none;
     display:flex; align-items:center; justify-content:center;}
-  .abo-titre .logo svg{width:26px; height:26px;}
-  .abo-titre h3{margin:0; padding:0; text-align:left; font-size:23px; letter-spacing:-.01em; color:#fff; line-height:1.1;}
+  .abo-titre .logo svg{width:22px; height:22px;}
+  .abo-titre h3{margin:0; padding:0; text-align:left; font-size:20px; letter-spacing:-.01em; color:#fff; line-height:1.1;}
   .abo-titre h3 em{font-style:normal; color:var(--accent);}
-  .abo-accroche{margin:0; font-size:13px; line-height:1.4; color:rgba(255,255,255,.78); max-width:58%;}
-  /* sous l'image, sur le clair : pastilles orange pale, comme sur la maquette claire */
-  .abo-promesses{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:10px;}
-  .abo-promesses li{display:flex; align-items:center; gap:12px;}
-  .abo-promesses .ic{width:42px; height:42px; border-radius:50%; flex:none; background:#FDE7D3;
+  .abo-accroche{margin:0; font-size:11.5px; line-height:1.4; color:rgba(255,255,255,.78); max-width:52%;}
+  /* Sur le sombre, a gauche des telephones : texte petit et serre, pour laisser l'image
+     respirer — c'est elle qui vend, le texte confirme. */
+  .abo-promesses{list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:8px;
+    max-width:50%; position:relative; z-index:1;}
+  .abo-promesses li{display:flex; align-items:center; gap:11px;}
+  .abo-promesses .ic{width:32px; height:32px; border-radius:50%; flex:none; background:rgba(255,255,255,.13);
     display:flex; align-items:center; justify-content:center; color:var(--accent);}
-  .abo-promesses .ic svg{width:21px; height:21px;}
-  .abo-promesses b{display:block; font-size:14.5px; color:var(--ink); line-height:1.2;}
-  .abo-promesses span{display:block; font-size:12px; color:var(--ink-soft); line-height:1.35; margin-top:2px;}
-  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .abo-promesses .ic{background:#3a2412;} }
-  :root[data-theme="dark"] .abo-promesses .ic{background:#3a2412;}
+  .abo-promesses .ic svg{width:16px; height:16px;}
+  .abo-promesses b{display:block; font-size:12px; color:#fff; line-height:1.2;}
+  .abo-promesses span{display:block; font-size:10px; color:rgba(255,255,255,.75); line-height:1.25; margin-top:2px;}
   /* les deux forfaits sont des BOUTONS : la carte entiere se touche */
-  .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:16px;}
+  .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:20px;}
   .abo-f{position:relative; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
     border-radius:18px; padding:16px 14px 16px 18px; border:1.5px solid transparent;}
   .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px;}
@@ -7403,7 +7403,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 23h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 00h10 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14990,15 +14990,15 @@ function openAbonnement(){
       <div class="abo-titre"><span class="logo">${IC_ABO_LOGO}</span>
         <h3>Tonnup <em>Analyse</em></h3></div>
       <p class="abo-accroche">${TR("Ce que tu soulèves, ce que tu manges, où ça te mène.")}</p>
-    </div>
-    <ul class="abo-promesses">
+      <ul class="abo-promesses">
         <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Analyse ton alimentation")}</b>
           <span>${TR("Calories, protéines, ce que tu manges vraiment.")}</span></div></li>
         <li><span class="ic">${IC_ABO_COURBE}</span><div><b>${TR("Suis tes progrès")}</b>
           <span>${TR("Tes courbes de charge, exercice par exercice.")}</span></div></li>
         <li><span class="ic">${IC_ABO_MUSCLE}</span><div><b>${TR("Ton profil complet")}</b>
           <span>${TR("Ton profil musculaire et ton bilan de la semaine.")}</span></div></li>
-    </ul>
+      </ul>
+    </div>
     <div class="abo-forfaits">
       <button class="abo-f mensuel" id="abo-mensuel">
         <span class="abo-populaire">${TR("Le plus populaire")}</span>
