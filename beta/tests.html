@@ -59,6 +59,7 @@ async function lancer(){
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
     DB.abo = true;           /* les écrans payants s'ouvrent en clair ; le voile a son propre groupe */
+    DB.essaiDebut = new Date(Date.now() - 30 * 864e5).toISOString();   /* essai fini depuis longtemps */
     /* Une visite se joue sur un voile plein écran : elle passerait devant les boutons
        qu'un test cherche à toucher. Pire, render() en programme une pour 500 ms plus
        tard — elle s'ouvrait alors au milieu d'un groupe suivant, et le test de la fiche
@@ -5459,6 +5460,42 @@ async function lancer(){
     Object.assign(F.eval("PRIX_ABO"), prixAvant);
     delete F.__faux;
     delete DB.abo; delete DB.aboVia;
+  })();
+  neuf();
+
+  /* --------------------------------------- l'essai de 7 jours */
+  /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
+     la premiere seance. Au huitieme jour le voile revient — et pas avant. */
+  grp("L'essai de sept jours");
+  neuf();
+  await (async ()=>{
+    delete DB.abo; delete DB.aboVia; delete DB.essaiDebut;
+    vrai("Sans essai ni abonnement : verrouillé", F.verrouille("eat"));
+    vrai("L'essai démarre une seule fois", F.demarrerEssai() === true && F.demarrerEssai() === false);
+    eq("Il reste sept jours", F.essaiRestant(), 7);
+    vrai("…et Alimentation est ouverte", !F.verrouille("eat") && F.essaiEnCours());
+    DB.essaiDebut = new Date(Date.now() - 6.5 * 864e5).toISOString();
+    eq("Au septième jour, il en reste un", F.essaiRestant(), 1);
+    vrai("…toujours ouvert", !F.verrouille("prg"));
+    DB.essaiDebut = new Date(Date.now() - 7.01 * 864e5).toISOString();
+    eq("Au huitième jour, zéro", F.essaiRestant(), 0);
+    vrai("…et le voile revient", F.verrouille("eat") && !F.essaiEnCours());
+    DB.essaiDebut = "n'importe quoi";
+    eq("Une date illisible ne donne rien", F.essaiRestant(), 0);
+    /* la fenêtre dit ce qui reste gratuit, et que l'essai est fini */
+    DB.essaiDebut = new Date(Date.now() - 9 * 864e5).toISOString();
+    F.eval("curTab='seance'; render()");
+    F.openAbonnement();
+    const D2 = F.document;
+    await attendre(()=>!!D2.querySelector(".abo-gratuit"), 2000);
+    const g = D2.querySelector(".abo-gratuit").textContent;
+    vrai("La fenêtre rappelle que les séances restent gratuites", /séances/.test(g) && /gratuits/.test(g), g);
+    vrai("…et que l'essai est terminé", /essai sont terminés/.test(g), g);
+    F.fermerAbonnement();
+    /* un abonnement prime sur l'essai fini */
+    DB.abo = true;
+    vrai("Abonné après l'essai : ouvert", !F.verrouille("eat") && !F.essaiEnCours());
+    delete DB.abo;
   })();
   neuf();
 

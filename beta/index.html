@@ -2576,6 +2576,9 @@
     border-radius:99px; padding:4px 11px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;}
   /* trois gages en colonnes : a 375 px, icone et deux lignes cote a cote ne tiennent pas */
   .abo-gages{display:flex; justify-content:space-between; gap:6px; margin:18px 0 0; padding-bottom:14px; border-bottom:1px solid var(--border);}
+  /* ce qui ne sera jamais payant, dit noir sur blanc sous les forfaits */
+  .abo-gratuit{margin:12px 2px 0; font-size:12.5px; line-height:1.45; color:var(--ink-soft); text-align:center;}
+  .abo-gratuit b{color:var(--ink);}
   .abo-gages div{display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; flex:1 1 0; min-width:0;}
   .abo-gages svg{width:24px; height:24px; flex:none; color:var(--ink);}
   .abo-gages span{font-size:10.5px; line-height:1.3; color:var(--ink); font-weight:700;}
@@ -3369,6 +3372,11 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Essai · encore {} jours":"Trial · {} days left",
+  "Essai · dernier jour":"Trial · last day",
+  "7 jours d'Analyse offerts — les séances restent gratuites, toujours.":"7 days of Analyse on us — workouts stay free, always.",
+  "Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.":"Workouts, training and load adaptation stay free, forever. Only nutrition, progress and the weekly review go through Tonnup Analyse.",
+  "Tes 7 jours d'essai sont terminés.":"Your 7-day trial is over.",
   "J'ai un code d'accès":"I have an access code",
   "Ton code":"Your code",
   "Valider":"Confirm",
@@ -6530,6 +6538,7 @@ function openOnboarding(first, brouillon, depart){
     db.weights.push({date:new Date().toISOString(), kg:d.weight});
     coachGoal = null;
     save();
+    if(demarrerEssai()) setTimeout(()=>toast(TR("7 jours d'Analyse offerts — les séances restent gratuites, toujours.")), 900);
     fermerOnb(); render(); showPlan(true);
   }
 
@@ -7469,7 +7478,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 01h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 01h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7565,6 +7574,8 @@ applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
 setTimeout(()=>{ sonderAbo(); chargerForfaits(); }, 0);
+/* un profil deja cree avant l'essai : ses 7 jours commencent aujourd'hui */
+if(db.profile && !db.profile.skipped && !db.essaiDebut) setTimeout(()=>demarrerEssai(), 0);
 /* Les libellés de la barre de repos sont du HTML statique : on les traduit
    au chargement et à chaque changement de langue. */
 /* « Repos » est réécrit par le minuteur lui-même ; seul « Passer » est statique. */
@@ -14544,6 +14555,7 @@ function renderActive(app){
         sautes: a.entries.filter(en=>!en.sets.some(s=>s.done && !s.warm)).map(en=>en.exId)
       });
       db.active=null; arreterChronos(); save(); render();
+      demarrerEssai();                       /* la premiere seance ouvre l'essai, si rien ne l'a fait */
       setTimeout(()=>openFinSeance(recap), 260);
     });
   };
@@ -15102,7 +15114,28 @@ async function chargerForfaits(){
 function gererSurPlay(){
   window.open("https://play.google.com/store/account/subscriptions?sku=tonnup_analyse&package=com.inncop.tonnup", "_blank");
 }
-function estAbonne(){ return db.abo === true; }
+/* L'essai : 7 jours d'Analyse offerts, comptes dans l'app — pas chez Google, sans
+   carte, rien a resilier. Il demarre quand le profil est cree ou a la premiere seance
+   terminee (le premier des deux), et pour ceux qui avaient deja un profil, a la
+   premiere ouverture de cette version. Compte sur le telephone : quelqu'un qui
+   reinstalle peut le recommencer — et perd ses donnees au passage, ce n'est pas un
+   plan. */
+const ESSAI_JOURS = 7;
+function demarrerEssai(){
+  if(db.essaiDebut) return false;
+  db.essaiDebut = new Date().toISOString();
+  save();
+  return true;
+}
+/* jours restants, entiers, 0 quand c'est fini ou pas commence */
+function essaiRestant(){
+  if(!db.essaiDebut) return 0;
+  const fin = new Date(db.essaiDebut).getTime() + ESSAI_JOURS * 864e5;
+  if(isNaN(fin)) return 0;
+  return Math.max(0, Math.ceil((fin - Date.now()) / 864e5));
+}
+function essaiEnCours(){ return db.abo !== true && essaiRestant() > 0; }
+function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
 /* Ce qui est derriere l'abonnement : Alimentation, Progression et le Bilan. La seance,
    elle, reste gratuite de bout en bout — c'est la vitrine. */
 const ONGLETS_PAYANTS = ["eat", "prg", "bilan"];
@@ -15215,6 +15248,8 @@ function openAbonnement(){
       <div>${IC_ABO_RENOUV}<span>${TR("Renouvellement")}<em>${TR("automatique")}</em></span></div>
       <div>${IC_ABO_PLAY}<span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
     </div>
+    <p class="abo-gratuit">${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b> ` : ""}${
+      TR("Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.")}</p>
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
     <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
     <form class="abo-code" id="abo-code" hidden>
@@ -15307,9 +15342,11 @@ function openSettings(){
         <span class="rgi">${IC_ABO_COURBE}</span>
         <span class="grow">${TR("Tonnup Analyse")}
           <em>${TR("Alimentation, progression et bilan.")}</em></span>
-        <span class="val">${estAbonne()
+        <span class="val">${db.abo === true
           ? (db.aboVia === "play" ? TR("Abonné · gérer sur Google Play") : TR("Débloqué par code"))
-          : TR("Voir les forfaits")}</span>
+          : essaiEnCours()
+            ? (essaiRestant() > 1 ? TR("Essai · encore {} jours").replace("{}", essaiRestant()) : TR("Essai · dernier jour"))
+            : TR("Voir les forfaits")}</span>
       </button>
     </div>
     <div class="rg-c">
@@ -15412,9 +15449,9 @@ function openSettings(){
   };
   /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
   document.getElementById("st-abo").onclick = ()=>{
-    if(estAbonne() && db.aboVia === "play"){ gererSurPlay(); return; }
-    if(estAbonne()) return;                          /* debloque par code : rien a gerer */
-    hideSheet(); setTimeout(openAbonnement, 260);
+    if(db.abo === true && db.aboVia === "play"){ gererSurPlay(); return; }
+    if(db.abo === true) return;                      /* debloque par code : rien a gerer */
+    hideSheet(); setTimeout(openAbonnement, 260);    /* en essai aussi : on peut voir les forfaits */
   };
   const bVibr = document.getElementById("st-vibr");
   if(bVibr) bVibr.onclick = ()=>{
