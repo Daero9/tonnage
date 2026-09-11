@@ -3241,6 +3241,10 @@ const TRAD = {en:{
   "＋ Ajouter un dégressif":"＋ Add a drop set",
   "Repos lancé — touche la barre pour la mettre en pause":"Rest started — tap the bar to pause it",
   "Son de fin de repos activé":"Rest-over sound on",
+  "Retour vibrant":"Haptic feedback",
+  "Une vibration à chaque appui, et à la fin d'un repos.":"A buzz on every tap, and when a rest ends.",
+  "Retour vibrant coupé":"Haptic feedback off",
+  "Retour vibrant activé":"Haptic feedback on",
   "Son coupé — la vibration reste":"Sound off — vibration stays",
   "Exercice supprimé":"Exercise deleted",
   "Séances ajoutées ✓":"Workouts added ✓",
@@ -3391,7 +3395,7 @@ const TRAD = {en:{
   "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.":"This is the only feature that leaves your phone, and only when you tap the button. It sends <b>the barcode digits and nothing else</b> to Open Food Facts, an open food database, which returns the product name and its values. Not your name, not your weight, not what you eat, no identifier.",
   "L'appareil photo":"The camera",
   "Il sert <b>uniquement à lire un code-barres</b>, pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.":"It is used <b>only to read a barcode</b>, while the scan screen is open. On Android the picture is analysed live and nothing is saved. On iPhone, where no browser can read a barcode live, the app takes a photo and decodes it <b>on your phone</b>: it never joins your gallery and is sent to no one. You can decline the permission and type the digits by hand.",
-  "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.":"Only what the app actually uses: <b>the camera</b>, for scanning; <b>notifications</b>, to tell you a rest is over with the phone in your pocket; <b>keeping the screen on</b> during a workout; <b>haptic feedback</b>. Nothing else: no location, no contacts, no microphone, no access to your files.",
+  "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>l'alarme à l'heure exacte</b>, pour que ce repos sonne juste même écran éteint ; <b>le redémarrage</b>, pour remettre en place un minuteur en cours si le téléphone redémarre ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.":"Only what the app actually uses: <b>the camera</b>, for scanning; <b>notifications</b>, to tell you a rest is over with the phone in your pocket; <b>exact alarms</b>, so that rest rings on time even with the screen off; <b>restart</b>, to put a running timer back in place if the phone reboots; <b>keeping the screen on</b> during a workout; <b>haptic feedback</b>. Nothing else: no location, no contacts, no microphone, no access to your files.",
   "En dehors du scan, l'application installée depuis le Play Store fonctionne entièrement hors ligne. La version ouverte dans un navigateur va en plus chercher ses mises à jour chez son hébergeur, sans jamais envoyer la moindre donnée personnelle.":"Apart from scanning, the app installed from the Play Store works entirely offline. The version opened in a browser also fetches its updates from its host, without ever sending any personal data.",
   "séries au total":"sets in total",
   "série au total":"set in total",
@@ -6298,7 +6302,7 @@ function fermerOnb(){
 let onbAudio = null;
 function clicRoue(){
   try{
-    if(navigator.vibrate) navigator.vibrate(3);
+    vibrer(3);
     onbAudio = onbAudio || new (window.AudioContext||window.webkitAudioContext)();
     if(onbAudio.state === "suspended") onbAudio.resume();
     const o = onbAudio.createOscillator(), g = onbAudio.createGain();
@@ -7318,7 +7322,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 01h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 02h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7558,6 +7562,22 @@ async function autoFileOff(){
   await idbDel(AUTOFILE);
   toast(TR("Sauvegarde automatique désactivée"));
   openSettings();
+}
+/* Un moteur de vibration ne rend pas une impulsion trop courte : sous une vingtaine de
+   millisecondes, la plupart des telephones ne font rien. Nos tapotements a 3, 6 et 8 ms
+   etaient muets par construction. On releve donc chaque duree a un plancher perceptible
+   — en gardant la hierarchie : un tapotement reste plus discret qu une fin de repos.
+   Les pauses d un motif ne sont PAS relevees : ce sont des silences, ils ont le droit
+   d etre courts, c est ce qui donne son rythme au « ta-ta-taa » de la fin de repos. */
+const VIBR_MIN = 20;
+function vibrer(motif){
+  if(db.settings.vibrer === false) return;     /* on peut la couper, comme le son */
+  if(!navigator.vibrate) return;
+  const plancher = d => (d > 0 ? Math.max(VIBR_MIN, d) : d);
+  const v = Array.isArray(motif)
+    ? motif.map((d, i) => i % 2 === 0 ? plancher(d) : d)   /* pair = vibration, impair = silence */
+    : plancher(motif);
+  try{ navigator.vibrate(v); }catch(e){}
 }
 function save(){
   db.savedAt = Date.now();
@@ -8731,7 +8751,7 @@ function bipCourt(){
 function couperSon(){
   bipsEnCours.forEach(o=>{ try{ o.stop(); }catch(e){} });
   bipsEnCours = [];
-  if(navigator.vibrate) try{ navigator.vibrate(0); }catch(e){}
+  vibrer(0);
 }
 /* ---- sonner quand l'écran est éteint ----------------------------------------
    Dès que l'application passe en arrière-plan, Android gèle son WebView : aucun
@@ -9009,7 +9029,7 @@ function lancerSeqIso(ei){
   ensureAudio();                 /* le geste de l'utilisateur : c'est ici qu'on a le droit */
   startRest(PRE_ISO);
   document.getElementById("rest-lbl").textContent = TR("Départ");
-  if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
+  vibrer(12);
   try{ renderActive(document.getElementById("app")); }catch(e){}
 }
 function annulerPreIso(){
@@ -9154,7 +9174,7 @@ function tickRest(){
     if(preIso){
       const ei = preIso.ei; preIso = null;
       bipRepos();                                     /* le triple bip du départ */
-      if(navigator.vibrate) try{ navigator.vibrate([90,70,90,70,180]); }catch(e){}
+      vibrer([90,70,90,70,180]);
       demarrerSeqIso(ei);
       return;
     }
@@ -9162,7 +9182,7 @@ function tickRest(){
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
     if(left > -2) bipRepos();
-    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    vibrer([200,100,200]);
     /* un gainage en cours enchaîne sur l'étape suivante au lieu de s'arrêter là */
     if(seqIso){ avancerIso(); return; }
     if(rest.hideTo) clearTimeout(rest.hideTo);
@@ -9246,7 +9266,7 @@ function restDragEnd(){
   save();
   restbar.style.top = ""; restbar.style.bottom = "";
   placerRest();
-  if(navigator.vibrate) navigator.vibrate(12);
+  vibrer(12);
 }
 restbar.addEventListener("touchstart", e=>{ restDragStart(e.touches[0].clientY, e.target); }, {passive:true});
 restbar.addEventListener("touchmove", e=>{ if(restDrag.actif && restDrag.bouge) e.preventDefault(); restDragMove(e.touches[0].clientY); }, {passive:false});
@@ -9655,7 +9675,7 @@ function dessineRepas(panel){
     /* l'appui long reste le réglage précis : quantité au gramme, retrait, suppression */
     const deb = e=>{ if(e.target.closest(".st")) return;
       lpFired=false; clearTimeout(lpT);
-      lpT = setTimeout(()=>{ lpFired=true; if(navigator.vibrate) navigator.vibrate(18); openModifAliment(mealCur, label); }, 340); };
+      lpT = setTimeout(()=>{ lpFired=true; vibrer(18); openModifAliment(mealCur, label); }, 340); };
     const fin = ()=>clearTimeout(lpT);
     b.addEventListener("touchstart", deb, {passive:true});
     ["touchend","touchmove","touchcancel"].forEach(e=>b.addEventListener(e, fin));
@@ -9680,7 +9700,7 @@ function reglerPortions(meal, socle, actuel, pas){
   const reste = (db.habitSel[k][meal]||[]).filter(x=>x !== actuel);
   db.habitSel[k][meal] = f < 0.05 ? reste : reste.concat(libelleQuantite(socle, f));
   if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
-  if(navigator.vibrate) navigator.vibrate(8);
+  vibrer(8);
   save(); renderSurPlace();
 }
 function basculerAliment(meal, label){
@@ -9820,7 +9840,7 @@ function scannerCodeBarres(){
           try{
             const vus = await lecteur.detect(video);
             if(vus && vus.length){
-              if(navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
+              vibrer(30);
               finir(vus[0].rawValue);
             }
           }catch(e){}
@@ -10012,7 +10032,7 @@ function openProduitScanne(meal, p){
     pbox.setAttribute("aria-pressed", favori ? "true" : "false");
     pbox.querySelector(".tx").textContent = favori ? TR("Gardé dans tes favoris")
                                                    : TR("Ajouter aux favoris");
-    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+    vibrer(8);
   };
   const gEl = document.getElementById("ps-g");
   /* Combien de fois la valeur de reference : tout le reste en decoule. Open Food Facts
@@ -10039,7 +10059,7 @@ function openProduitScanne(meal, p){
     box.querySelectorAll("[data-q]").forEach(b=>b.onclick = ()=>{
       gEl.value = b.dataset.q;
       maj();
-      if(navigator.vibrate) try{ navigator.vibrate(6); }catch(e){}
+      vibrer(6);
     });
     majRapide();
   };
@@ -10313,7 +10333,7 @@ function openAjoutAliment(meal){
     fbox.setAttribute("aria-pressed", garder ? "true" : "false");
     const tx = document.getElementById("ot-favtx");
     if(tx) tx.textContent = garder ? TR("Gardé dans tes favoris") : TR("Ajouter aux favoris");
-    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+    vibrer(8);
   };
   dessinerListe();
   /* la visite se joue une fois, la liste une fois remplie : elle en est une des etapes */
@@ -13501,7 +13521,7 @@ function exerciceFini(card, nom, apres){
   v.className = "ex-fini";
   v.innerHTML = `<div class="rond">✓</div><div class="txt">${esc(nom)}, terminé</div>`;
   card.appendChild(v);
-  if(navigator.vibrate) try{ navigator.vibrate([12, 60, 18]); }catch(e){}
+  vibrer([12, 60, 18]);
   setTimeout(()=>{ if(typeof apres === "function") apres(); }, 1250);
 }
 /* Une carte terminee se replie — c est ainsi qu on sait qu elle est finie — mais le
@@ -13714,7 +13734,7 @@ function renderActive(app){
         seqIso.etapes.forEach((e2, k)=>{ if(k > seqIso.i && e2.type === "repos") e2.sec = v; });
         programmerSonneriesIso();
       }
-      if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+      vibrer(8);
     });
     const setsDiv = card.querySelector(".sets");
     /* posé après la construction des lignes, plus bas */
@@ -13756,7 +13776,7 @@ function renderActive(app){
         const v = Math.max(0, (parseInt(rIn.value, 10) || 0) + pas);
         rIn.value = v;
         st.r = v; save();
-        if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+        vibrer(8);
       });
       row.querySelector(".ck").onclick=()=>{
         /* une question attend sa réponse : on ne passe pas à la série suivante avant */
@@ -13767,7 +13787,7 @@ function renderActive(app){
           void enAttente.offsetWidth;
           enAttente.classList.add("rappel");
           enAttente.scrollIntoView({block:"nearest", behavior:"smooth"});
-          if(navigator.vibrate) try{ navigator.vibrate(14); }catch(e){}
+          vibrer(14);
           return;
         }
         ensureAudio();
@@ -14059,7 +14079,7 @@ function renderActive(app){
       let sTimer = null, sLong = false;
       const ouvrirMenu = ()=>{
         sLong = true;
-        if(navigator.vibrate) navigator.vibrate(18);
+        vibrer(18);
         openSheet(`<h3>${st.warm? TR("Série d'échauffement") : TR("Série {}").replace("{}", num)}</h3>
           <div class="stack">
             <button class="btn btn-accent" id="ms-drop">${TR("＋ Ajouter un dégressif")}</button>
@@ -14098,7 +14118,7 @@ function renderActive(app){
         dr.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{
           const v = Math.max(0, (parseInt(dq.value, 10) || 0) + parseInt(b.dataset.rs, 10));
           dq.value = v; d.r = v; save();
-          if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+          vibrer(8);
         });
         dr.querySelector(".ck").onclick = ()=>{
           st.drops.splice(di,1);
@@ -14308,7 +14328,7 @@ function openFinSeance(r){
     if(v === "correct") delete h.feel; else h.feel = v;
     document.querySelectorAll("[data-feel]").forEach(x=>x.classList.toggle("on", x === b));
     save();
-    if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+    vibrer(8);
   });
   document.getElementById("fin-ok").onclick = closeSheet;
   const cv = document.getElementById("fin-conf");
@@ -14626,7 +14646,7 @@ function openConfidentialite(){
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience. L'application ne contient aucun outil d'analyse d'un autre éditeur.")}
     ${b("Le scan de code-barres", "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.")}
     ${b("L'appareil photo", "Il sert <b>uniquement à lire un code-barres</b>, pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.")}
-    ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
+    ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>l'alarme à l'heure exacte</b>, pour que ce repos sonne juste même écran éteint ; <b>le redémarrage</b>, pour remettre en place un minuteur en cours si le téléphone redémarre ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
     ${b("Réseau", "En dehors du scan, l'application installée depuis le Play Store fonctionne entièrement hors ligne. La version ouverte dans un navigateur va en plus chercher ses mises à jour chez son hébergeur, sans jamais envoyer la moindre donnée personnelle.")}
     ${b("Ce que Google sait, lui", "Si tu as installé l'app depuis le Play Store, Google enregistre de son côté l'installation et, le cas échéant, l'achat d'un abonnement. Ces données relèvent de la politique de confidentialité de Google, pas de la nôtre : l'éditeur n'y a pas accès, hormis des statistiques anonymes de téléchargement.")}
     ${b("Ce que ça implique", "Si tu désinstalles l'app, effaces les données du navigateur ou changes de téléphone, tout disparaît. Pense à enregistrer un fichier de sauvegarde depuis les réglages.")}
@@ -14699,6 +14719,12 @@ function openSettings(){
         <span class="grow">${TR("Garder l'écran allumé")}
           <em>${TR("L'écran ne s'éteint pas entre deux séries.")}</em></span>
         <span class="val">${TR(db.settings.ecranAllume===false? "Non" : "Oui")}</span>
+      </button>
+      <button class="rg-l" id="st-vibr">
+        <span class="rgi">${IC_CLOCHE}</span>
+        <span class="grow">${TR("Retour vibrant")}
+          <em>${TR("Une vibration à chaque appui, et à la fin d'un repos.")}</em></span>
+        <span class="val">${TR(db.settings.vibrer===false? "Non" : "Oui")}</span>
       </button>
       ${pluginNotifs()? `<button class="rg-l" id="st-alarme">
         <span class="rgi">${IC_CLOCHE}</span>
@@ -14783,6 +14809,14 @@ function openSettings(){
     if(!v) return;
     v.textContent = alarmeExacte === "granted" ? TR("Activée")
                   : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
+  };
+  const bVibr = document.getElementById("st-vibr");
+  if(bVibr) bVibr.onclick = ()=>{
+    db.settings.vibrer = db.settings.vibrer === false;
+    save();
+    bVibr.querySelector(".val").textContent = TR(db.settings.vibrer === false ? "Non" : "Oui");
+    vibrer(30);                                   /* on montre ce qu'on vient d'allumer */
+    toast(db.settings.vibrer === false ? TR("Retour vibrant coupé") : TR("Retour vibrant activé"));
   };
   const ligneAlarme = document.getElementById("st-alarme");
   if(ligneAlarme){
