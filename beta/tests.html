@@ -5256,6 +5256,9 @@ async function lancer(){
     const j = [];
     const C = F.Capacitor || (F.Capacitor = {});
     const garde = C.Plugins;
+    /* pluginRepos() retient le pont une fois trouve : on l'oublie, sinon un groupe
+       de tests herite du simulacre du precedent et parle dans le vide */
+    F.eval("reposPont = null");
     C.Plugins = Object.assign({}, C.Plugins, {Repos:{
       demarrer: async o => { j.push("demarrer:" + Math.round(o.sec) + ":" + o.son); return {actif:true}; },
       arreter:  async () => { j.push("arreter"); return {actif:false}; }
@@ -5309,7 +5312,76 @@ async function lancer(){
     F.document.getElementById("rest-skip").click();
     await souffler();
 
-    C.Plugins = garde;
+    C.Plugins = garde; F.eval("reposPont = null");
+  })();
+  neuf();
+
+  /* --------------------------------------- le gainage passe par le service */
+  /* Le service ne couvrait que le repos simple. Une sequence de gainage — tenue,
+     repos, tenue — programmait encore une liste d'alarmes, avec le meme defaut qu'hier.
+     La page ne peut pas piloter etape par etape, elle dort : le service tient toute
+     la chaine. Et au reveil, la page doit se retrouver — le service a pu jouer
+     plusieurs etapes pendant qu'elle dormait. */
+  grp("Le gainage passe par le service natif");
+  neuf();
+  await (async ()=>{
+    const j = [];
+    const C = F.Capacitor || (F.Capacitor = {});
+    const garde = C.Plugins;
+    F.eval("reposPont = null");
+    C.Plugins = Object.assign({}, C.Plugins, {Repos:{
+      demarrer: async o => { j.push("demarrer"); return {actif:true}; },
+      sequence: async o => { j.push("sequence:" + o.etapes.map(e=>Math.round(e.sec) + e.titre[0]).join(",")); return {actif:true}; },
+      arreter:  async () => { j.push("arreter"); return {actif:false}; }
+    }});
+    const vide = () => j.splice(0).join(" ");
+    const souffler = () => attendre(()=>true, 150);
+    const g = id("Gainage");
+    DB.settings.son = true;
+    DB.active = {id:"t-iso", name:"Abdos", templateId:null, start:Date.now() - 6e5,
+      entries:[{exId:g, target:{sets:3, reps:"30-45", rest:20},
+        sets:[{w:0, r:30, done:false}, {w:0, r:30, done:false}, {w:0, r:30, done:false}]}]};
+    F.eval("curTab = 'seance'; render()");
+    await attendre(()=>!!F.document.querySelector(".ex-card"), 3000);
+
+    F.demarrerSeqIso(0);
+    await souffler();
+    /* G = « Gainage terminé », R = « Repos terminé » : le texte de la sonnerie suit
+       l'etape qui s'acheve */
+    eq("Toute la chaîne part au service, avec ses textes", vide(), "sequence:30G,20R,30G,20R,30G");
+
+    /* une seconde avant la fin, sous les yeux : la page sonnera, on retire la main */
+    F.eval("rest.end = Date.now() + 900"); F.tickRest();
+    await souffler();
+    eq("Sous les yeux, le service est coupé juste avant la fin", vide(), "arreter");
+
+    /* zero : la page sonne, valide la tenue, avance, et repose la suite */
+    F.eval("rest.end = Date.now() - 10"); F.tickRest();
+    await souffler();
+    const S = F.eval("seqIso");
+    eq("La tenue achevée est validée", DB.active.entries[0].sets[0].done, true);
+    eq("…et on passe à l'étape suivante", S.i, 1);
+    eq("…qui repose le reste au service", vide(), "arreter sequence:20R,30G,20R,30G");
+
+    /* la page s'endort 80 s : repos 20, tenue 30 et repos 20 passent ; on est a 20 s
+       de la fin de la derniere tenue */
+    F.eval("seqIso.fins = seqIso.fins.map(f => f - 80000); rest.end -= 80000;");
+    F.resyncIso();
+    await souffler();
+    const S2 = F.eval("seqIso");
+    eq("Au réveil, la page saute à l'étape réellement en cours", S2.i, 4);
+    eq("…la tenue passée pendant le sommeil est validée", DB.active.entries[0].sets[1].done, true);
+    vrai("…et l'étape en cours reprend là où elle en est, pas à zéro",
+      Math.abs(F.eval("(rest.end - Date.now())/1000") - 20) < 3, F.eval("(rest.end - Date.now())/1000"));
+
+    /* et un sommeil qui dépasse tout : la séquence se termine d'elle-même */
+    F.eval("seqIso.fins = seqIso.fins.map(f => f - 600000); rest.end -= 600000;");
+    F.resyncIso();
+    await souffler();
+    vrai("Un sommeil plus long que la séquence la termine", F.eval("seqIso") === null);
+    eq("…toutes les tenues validées", DB.active.entries[0].sets.filter(x=>x.done).length, 3);
+    vide();
+    C.Plugins = garde; F.eval("reposPont = null");
   })();
   neuf();
 

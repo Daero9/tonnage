@@ -7327,7 +7327,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 03h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 19h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9001,6 +9001,9 @@ async function retirerAlarmeRepos(){
    Ne reste que l'ancien chemin, pour le web et les téléphones où le service n'existe
    pas : là, l'alarme programmée est encore la seule chose qui puisse sonner. */
 document.addEventListener("visibilitychange", ()=>{
+  /* au retour, une sequence de gainage se remet a la bonne etape — le service a pu
+     en jouer plusieurs pendant que la page dormait */
+  if(document.visibilityState === "visible" && seqIso) resyncIso();
   if(pluginRepos()) return;                     /* le service s'en charge, on ne touche à rien */
   if(document.visibilityState === "hidden") poserAlarmeRepos();
   else retirerAlarmeRepos();
@@ -9066,13 +9069,75 @@ function etapesIso(ei){
 function etapeIsoEnCours(){
   return seqIso && seqIso.etapes[seqIso.i] || null;
 }
-function afficherEtapeIso(){
+/* Ce que dit la sonnerie a la fin de l'etape k : la meme phrase que l'ancienne alarme */
+function texteFinEtapeIso(k){
+  const e = seqIso.etapes[k], suite = seqIso.etapes[k + 1];
+  return {
+    titre: e.type === "tenue" ? TR("Gainage terminé") : TR("Repos terminé"),
+    corps: suite
+      ? (suite.type === "tenue" ? TR("En position, on repart.") : TR("Repose-toi."))
+      : TR("Dernière tenue : c'est fini.")
+  };
+}
+/* Le service natif prend TOUTE la suite, de l'etape en cours a la derniere. On lui
+   donne des durees : la premiere est ce qui reste de l'etape en cours, les autres
+   sont entieres. Il rend true s'il a pris la main. */
+async function poserSequenceIso(){
+  const p = pluginRepos();
+  if(!p || !seqIso) return false;
+  const etapes = [];
+  for(let k = seqIso.i; k < seqIso.etapes.length; k++){
+    const sec = (k === seqIso.i && rest.end)
+      ? Math.max(0.5, (rest.end - Date.now()) / 1000)
+      : seqIso.etapes[k].sec;
+    const t = texteFinEtapeIso(k);
+    etapes.push({sec, titre: t.titre, corps: t.corps});
+  }
+  try{ await p.sequence({etapes, son: db.settings.son !== false}); return true; }
+  catch(e){ return false; }
+}
+/* L'heure de fin de chaque etape restante, pour se retrouver au reveil */
+function noterFinsIso(){
+  if(!seqIso || !rest.end) return;
+  seqIso.fins = [];
+  let t = rest.end;
+  for(let k = seqIso.i; k < seqIso.etapes.length; k++){
+    if(k > seqIso.i) t += seqIso.etapes[k].sec * 1000;
+    seqIso.fins[k] = t;
+  }
+}
+/* Au retour a l'ecran : ou en est-on VRAIMENT ? Le service a peut-etre enchaine
+   plusieurs etapes pendant que la page dormait. On saute a la premiere dont la fin
+   est encore a venir, en validant les tenues passees ; s'il n'en reste aucune, la
+   sequence est finie. */
+function resyncIso(){
+  if(!seqIso || !seqIso.fins) return;
+  const now = Date.now();
+  let k = seqIso.i;
+  while(k < seqIso.etapes.length && seqIso.fins[k] !== undefined && seqIso.fins[k] <= now) k++;
+  if(k === seqIso.i) return;                       /* rien n'a bouge */
+  const en = db.active && db.active.entries[seqIso.ei];
+  for(let j = seqIso.i; j < k; j++){
+    const e = seqIso.etapes[j];
+    if(e.type === "tenue" && en && en.sets[e.si]) en.sets[e.si].done = true;
+  }
+  save();
+  if(k >= seqIso.etapes.length){ arreterSeqIso(true); return; }
+  seqIso.i = k;
+  /* on reprend l'etape en cours la ou elle en est, pas depuis son debut */
+  const restant = Math.max(0, (seqIso.fins[k] - now) / 1000);
+  afficherEtapeIso(restant);
+}
+function afficherEtapeIso(reste){
   const e = etapeIsoEnCours();
   if(!e) return;
-  startRest(e.sec);
+  startRest(reste !== undefined ? reste : e.sec);
   document.getElementById("rest-lbl").textContent =
     e.type === "tenue" ? TR("Gainage") : TR("Repos");
   restbar.classList.toggle("tenue", e.type === "tenue");
+  /* le service prend la suite a partir d'ici ; a defaut, l'ancien chemin */
+  noterFinsIso();
+  poserSequenceIso().then(ok=>{ if(!ok) programmerSonneriesIso(); });
 }
 function avancerIso(){
   if(!seqIso) return;
@@ -9083,6 +9148,7 @@ function avancerIso(){
     if(en && en.sets[e.si]){ en.sets[e.si].done = true; save(); }
   }
   seqIso.i++;
+  seqIso.retiree = false;
   if(seqIso.i >= seqIso.etapes.length){ arreterSeqIso(true); return; }
   afficherEtapeIso();
 }
@@ -9133,8 +9199,7 @@ function demarrerSeqIso(ei){
   const etapes = etapesIso(ei);
   if(!etapes.length) return;
   seqIso = {ei, etapes, i:0};
-  afficherEtapeIso();
-  programmerSonneriesIso();
+  afficherEtapeIso();                 /* pose aussi la suite au service */
   try{ renderActive(document.getElementById("app")); }catch(e){}
 }
 /* toutes les sonneries a venir, posees d un coup */
@@ -9160,6 +9225,7 @@ async function programmerSonneriesIso(){
   try{ await n.schedule({notifications: liste}); }catch(e){}
 }
 async function retirerSonneriesIso(){
+  arreterServiceRepos();               /* la chaine native s'arrete avec la sequence */
   const n = pluginNotifs();
   if(!n) return;
   const ids = [];
@@ -9230,7 +9296,8 @@ function togglePauseRest(){
     rest.int = setInterval(tickRest, 250);
     poserAlarmeRepos();                    /* l'heure de fin existe de nouveau */
     tickRest();
-    if(seqIso) programmerSonneriesIso();   /* on repose la suite, décalée d'autant */
+    /* une sequence reprend au service, decalee d'autant ; l'ancien chemin a defaut */
+    if(seqIso){ seqIso.retiree = false; noterFinsIso(); poserSequenceIso().then(ok=>{ if(!ok) programmerSonneriesIso(); }); }
   } else {
     rest.remaining = Math.max(0, rest.end - Date.now());
     rest.paused = true;
@@ -9240,7 +9307,7 @@ function togglePauseRest(){
     if(rest.int) clearInterval(rest.int);
     rest.int = null;
     retirerAlarmeRepos();          /* en pause, l'heure de fin n'existe plus */
-    retirerSonneriesIso();         /* ni celles qui suivaient */
+    if(seqIso) retirerSonneriesIso();   /* ni celles qui suivaient */
   }
 }
 const AVANT_FIN = 1.2;      /* secondes : de quoi annuler avant que ça ne sonne */
@@ -9251,6 +9318,14 @@ function tickRest(){
      dans cette dernière seconde, tant pis — la page serait gelée de toute façon. */
   if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible")
     retirerAlarmeRepos();
+  /* meme regle pour une etape de gainage : sous les yeux, c'est la page qui sonne, et
+     l'etape suivante reposera la suite au service. Si l'ecran s'eteint dans cette
+     derniere seconde, la page est gelee de toute facon — et le service, lui, est deja
+     arrete : c'est le seul trou, il dure une seconde. */
+  if(seqIso && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible" && !seqIso.retiree){
+    seqIso.retiree = true;
+    arreterServiceRepos();
+  }
   if(left<=0){
     clearInterval(rest.int); rest.int=null;
     retirerAlarmeRepos();
