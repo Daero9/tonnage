@@ -259,6 +259,11 @@
   .hero-ic{width:28px; height:28px; border-radius:50%; background:#fff; color:#1b1b1d;
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
   .hero-ic svg{width:17px; height:17px;}
+  .hero-droite{display:flex; align-items:center; gap:8px;}
+  /* la bulle d'essai : le compte a rebours a cote du reglage, pour que le voile du
+     huitieme jour ne surprenne personne */
+  .hero-essai{height:28px; padding:0 11px; border-radius:14px; background:var(--accent); color:#fff;
+    font-size:12px; font-weight:800; letter-spacing:.01em; white-space:nowrap;}
   .hero-h{position:relative; z-index:2; text-align:center; margin-top:11%;}
   .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
   .hero-h .sub{font-size:14px; font-weight:600; color:var(--hero-soft); margin-top:8px;}
@@ -3373,6 +3378,7 @@ const TRAD = {en:{
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
   "Essai · encore {} jours":"Trial · {} days left",
+  "Essai Analyse · {} j":"Analyse trial · {}d",
   "Essai · dernier jour":"Trial · last day",
   "7 jours d'Analyse offerts — les séances restent gratuites, toujours.":"7 days of Analyse on us — workouts stay free, always.",
   "Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.":"Workouts, training and load adaptation stay free, forever. Only nutrition, progress and the weekly review go through Tonnup Analyse.",
@@ -7478,7 +7484,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 01h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 01h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8424,7 +8430,8 @@ function hero(inner, opts){
         <button class="hero-ic" id="tb-close" title="Fermer" aria-label="${TR("Fermer")}">${IC_CROIX}</button>`
         : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}">${IC_USER}</button>
-        <button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button>`}
+        <span class="hero-droite">${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
+          TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
       </div>
       <div class="hero-h">${inner}</div>
     </div>
@@ -8479,6 +8486,7 @@ function openProfil(){
 }
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
+  const es = document.getElementById("hero-essai"); if(es) es.onclick = openAbonnement;   /* voir les forfaits, sans attendre */
   const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
   const x = document.getElementById("tb-close");
   if(x) x.onclick = ()=>{ curTab = "seance"; render(); };
@@ -9848,7 +9856,7 @@ function renderEat(app){
     ${hero(`<div class="ico">${IC_SOLEIL}</div>
       <div class="big">${auj ? TR("Aujourd'hui")
       : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>
-      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour"})}
+      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour", essai:true})}
     <div class="under-hero sous-jour" style="display:flex; gap:9px; align-items:stretch;">
       <div class="eat-stats">
         <div class="eat-card eat-stat">
@@ -15977,7 +15985,7 @@ function renderProgress(app){
 
   app.innerHTML = `
     ${hero(`<div class="ico">${IC_PROGRESSION}</div>
-      <div class="big">${TR("Progression")}</div>`)}
+      <div class="big">${TR("Progression")}</div>`, {essai:true})}
     <div class="under-hero stack" id="wt-sec"></div>
     <div id="prg-body"></div>`;
   wireTopbar();
