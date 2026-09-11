@@ -7327,7 +7327,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 03h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 03h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9795,8 +9795,13 @@ function basculerAliment(meal, label){
   const k = jourAlim();
   if(!db.habitSel[k]) db.habitSel[k] = {};
   const arr = db.habitSel[k][meal] || [];
-  db.habitSel[k][meal] = arr.includes(label)? arr.filter(x=>x!==label) : arr.concat(label);
+  const enleve = arr.includes(label);
+  db.habitSel[k][meal] = enleve ? arr.filter(x=>x!==label) : arr.concat(label);
   if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
+  /* Le geste le plus frequent de l'ecran ne repondait rien, alors que le « + » d'une
+     portion, lui, vibrait. Ajouter se sent un peu plus que retirer : c'est le sens du
+     geste, pas sa force. */
+  vibrer(enleve ? 20 : 26);
   save(); renderSurPlace();
 }
 
@@ -9893,7 +9898,9 @@ function scannerCodeBarres(){
     boite.querySelector("[data-non]").onclick = ()=>finir(null);
     boite.querySelector("[data-main]").onclick = ()=>{
       const c = prompt(TR("Code-barres (les chiffres sous les barres)"));
-      finir(c && /^[0-9]{6,14}$/.test(c.trim()) ? c.trim() : null);
+      const ok = c && /^[0-9]{6,14}$/.test(c.trim());
+      if(ok) vibrer(30);
+      finir(ok ? c.trim() : null);
     };
     if(!scanDispo()){
       /* pas de lecteur en direct : on prend une photo et on la décode ici même */
@@ -9908,7 +9915,10 @@ function scannerCodeBarres(){
         titre.textContent = TR("Lecture de la photo…");
         try{
           const code = await lireCodeSurPhoto(f);
-          if(code) return finir(code);
+          /* Le lecteur EN DIRECT vibrait, celui de la photo non : sur un telephone ou
+             BarcodeDetector manque, on ne sentait jamais rien. Meme reussite, meme
+             signal — c'est le code trouve qu'on annonce, pas la technique employee. */
+          if(code){ vibrer(30); return finir(code); }
           titre.textContent = TR("Code illisible. Réessaie de plus près, ou saisis les chiffres.");
         }catch(e){
           titre.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main.");
