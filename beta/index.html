@@ -7322,7 +7322,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 02h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "11 septembre 2026 02h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8816,11 +8816,37 @@ async function poserCanalRepos(){
     });
   }catch(e){}
 }
+/* ---- le minuteur natif ----
+   Une page web ne sait pas compter quand l'écran s'éteint : Chrome gèle les minuteurs
+   d'une page invisible. On confie donc le décompte à un service de premier plan, qui
+   reste éveillé et sonne tout seul. La page lui dit seulement l'heure de fin.
+   Le greffon n'existe que dans l'application empaquetée : sur le web, on garde le
+   chemin d'avant — minuteur JavaScript tant que la page est visible. */
+function pluginRepos(){
+  const c = window.Capacitor;
+  return (c && c.Plugins && c.Plugins.Repos) ? c.Plugins.Repos : null;
+}
+async function demarrerServiceRepos(sec){
+  const p = pluginRepos();
+  if(!p) return false;
+  try{ await p.demarrer({sec, son: db.settings.son !== false}); return true; }
+  catch(e){ return false; }
+}
+async function arreterServiceRepos(){
+  const p = pluginRepos();
+  if(!p) return;
+  try{ await p.arreter(); }catch(e){}
+}
 /* Vraie ou fausse, l'alarme est-elle programmée en ce moment ? Sert à ne pas
    bombarder le pont Android d'appels à chaque quart de seconde. */
 let alarmePosee = false;
 async function poserAlarmeRepos(){
-  if(db.settings.son === false) return;      /* son coupé : pas de sonnerie du tout */
+  /* Le son coupé arrêtait TOUT : rien n'était programmé, et l'app promettait pourtant
+     « Son coupé — la vibration reste ». Elle ne restait que tant que la page était à
+     l'écran. Le service, lui, sait vibrer sans sonner : on le laisse partir, il choisit
+     son canal selon ce réglage. Seul l'ancien chemin, qui n'a que le canal sonore,
+     renonce encore. */
+  if(db.settings.son === false && !pluginRepos()) return;
   if(seqIso) return;                         /* un gainage a déjà posé toute sa suite */
   if(preIso) return;                         /* cinq secondes de décompte, on reste devant */
   const n = pluginNotifs();
@@ -8829,7 +8855,11 @@ async function poserAlarmeRepos(){
   if(dans < 700) return;                     /* trop tard pour que ça ait un sens */
   alarmePosee = true;
   if(!(await autoriserNotifs())) return;
-  await poserCanalRepos();
+  if(db.settings.son !== false) await poserCanalRepos();
+  /* Le service d'abord : c'est lui qui tient la promesse. S'il répond, on n'a plus
+     besoin de programmer quoi que ce soit — il compte lui-même et sonne sur le même
+     canal, donc le même bip et le même réglage. */
+  if(await demarrerServiceRepos((rest.end - Date.now()) / 1000)) return;
   try{
     await n.schedule({notifications:[{
       id: NOTIF_REPOS,
@@ -8901,6 +8931,7 @@ async function verifierAlarmeExacte(){
 }
 async function retirerAlarmeRepos(){
   alarmePosee = false;
+  arreterServiceRepos();          /* le décompte natif s'arrête avec le repos */
   const n = pluginNotifs();
   if(!n) return;
   try{ await n.cancel({notifications:[{id: NOTIF_REPOS}]}); }catch(e){}
@@ -8912,8 +8943,14 @@ async function retirerAlarmeRepos(){
       await n.removeDeliveredNotificationsById({ids:[NOTIF_REPOS]});
   }catch(e){}
 }
-/* l'app quitte l'écran pendant un repos : on passe le relais au système */
+/* L'app quitte l'écran pendant un repos, ou y revient. Avec le service natif, le
+   décompte tourne DÉJÀ : il a été lancé au départ du repos, il n'y a rien à reposer
+   ni à retirer au passage. C'est ce va-et-vient qui perdait l'alarme — chaque
+   aller-retour rejouait une course contre le gel du processus.
+   Ne reste que l'ancien chemin, pour le web et les téléphones où le service n'existe
+   pas : là, l'alarme programmée est encore la seule chose qui puisse sonner. */
 document.addEventListener("visibilitychange", ()=>{
+  if(pluginRepos()) return;                     /* le service s'en charge, on ne touche à rien */
   if(document.visibilityState === "hidden") poserAlarmeRepos();
   else retirerAlarmeRepos();
 });
