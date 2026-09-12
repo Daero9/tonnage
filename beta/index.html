@@ -3377,6 +3377,25 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Google Drive":"Google Drive",
+  "Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.":"A copy of your data in a private folder of your Drive, kept up to date on its own. To get Tonnup back on a new phone.",
+  "Connecter Google Drive":"Connect Google Drive",
+  "✓ Google Drive connecté":"✓ Google Drive connected",
+  "Dernière copie : {}":"Last copy: {}",
+  "Sauvegarder maintenant":"Back up now",
+  "Restaurer depuis Drive":"Restore from Drive",
+  "Déconnecter":"Disconnect",
+  "Connexion Google annulée.":"Google sign-in cancelled.",
+  "Google Drive ne répond pas.":"Google Drive isn't responding.",
+  "Sauvegardé sur Google Drive ✓":"Backed up to Google Drive ✓",
+  "Aucune sauvegarde Tonnup sur ce Drive.":"No Tonnup backup on this Drive.",
+  "Restaurer la sauvegarde Drive ?":"Restore the Drive backup?",
+  "Copie du {}. Elle remplacera toutes les données de ce téléphone.":"Copy from {}. It will replace all the data on this phone.",
+  "Restaurer":"Restore",
+  "Une sauvegarde existe sur ton Drive":"A backup exists on your Drive",
+  "Copie du {}. La récupérer sur ce téléphone ?":"Copy from {}. Get it back on this phone?",
+  "Google Drive déconnecté. La copie reste dans ton Drive.":"Google Drive disconnected. The copy stays in your Drive.",
+  "Sur le web, il faut être en ligne et autoriser la fenêtre Google.":"On the web, you need to be online and allow the Google popup.",
   "Essai · encore {} jours":"Trial · {} days left",
   "Essai Analyse · {} j":"Analyse trial · {}d",
   "Essai · dernier jour":"Trial · last day",
@@ -7484,7 +7503,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 02h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 02h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7757,6 +7776,7 @@ function save(){
   }catch(e){ storageOK = false; }
   idbSet(json);
   autoFileSchedule();
+  driveSchedule();
 }
 /* ---- la zone que le clavier laisse voir -------------------------------------
    visualViewport donne la portion d ecran reellement visible, clavier deduit. C est
@@ -15070,6 +15090,187 @@ const LIB_UNITS = {
    remplace par les siens (monnaie et format de la personne) des que forfaits() repond. */
 const PRIX_ABO = {mensuel:{montant:5.99, texte:"5,99 €", essaiJours:0}, annuel:{montant:39.99, texte:"39,99 €", essaiJours:0}};
 const PLAN_ABO = {mensuel:"mensuel", annuel:"annuel-1"};     /* nos noms -> plans de base Play */
+/* ================================================================== Google Drive
+   Une copie de la base dans le dossier cache de l'app (appDataFolder) sur le Drive de
+   la personne. Un seul fichier, tonnup.json, reecrit a chaque changement (avec un
+   delai), relu sur un nouveau telephone. Pas de synchronisation entre appareils :
+   la copie la plus recente gagne, et c'est la personne qui decide de restaurer.
+   Le jeton vient du natif sur Android (Play services), de Google Identity Services
+   sur le web ; les appels a Drive, eux, sont les memes partout : trois requetes. */
+const DRIVE_CLIENT_WEB = "577496590500-pnltn421kqaujk8rhki20v068d3bj9lu.apps.googleusercontent.com";
+const DRIVE_PORTEE = "https://www.googleapis.com/auth/drive.appdata";
+const DRIVE_FICHIER = "tonnup.json";
+let drivePont = null;
+function pluginDrive(){
+  if(drivePont) return drivePont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Drive) drivePont = c.Plugins.Drive;
+  else if(c && typeof c.registerPlugin === "function"
+          && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ drivePont = c.registerPlugin("Drive"); }catch(e){ drivePont = null; }
+  }
+  return drivePont;
+}
+/* le jeton vit en memoire, jamais dans la base : il expire en une heure de toute facon */
+let driveJeton = null, driveJetonFin = 0, driveEnCours = false, driveTo = null, driveDernierEnvoi = "";
+let driveErreur = "";
+function driveActif(){ return !!(db.drive && db.drive.actif); }
+function chargerGIS(){
+  if(window.google && google.accounts && google.accounts.oauth2) return Promise.resolve(true);
+  return new Promise(res=>{
+    const sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client"; sc.async = true;
+    sc.onload = ()=>res(!!(window.google && google.accounts && google.accounts.oauth2));
+    sc.onerror = ()=>res(false);
+    document.head.appendChild(sc);
+  });
+}
+/* interactif : on a le droit d'ouvrir un ecran Google. Sinon, seulement ce qui ne
+   derange pas — le natif rend le jeton en silence, le web n'a que son cache. */
+async function driveAutoriser(interactif){
+  if(driveJeton && Date.now() < driveJetonFin) return driveJeton;
+  const p = pluginDrive();
+  if(p){
+    try{
+      const r = await p.autoriser();
+      if(!r || r.refuse || !r.jeton){ driveErreur = TR("Connexion Google annulée."); return null; }
+      driveJeton = r.jeton; driveJetonFin = Date.now() + 50 * 60e3; driveErreur = "";
+      return driveJeton;
+    }catch(e){ driveErreur = String((e && e.message) || e).slice(0, 80); return null; }
+  }
+  if(!interactif) return null;
+  if(!(await chargerGIS())){ driveErreur = TR("Google Drive ne répond pas."); return null; }
+  return new Promise(res=>{
+    let fini = false;
+    const rendre = j => { if(fini) return; fini = true; res(j); };
+    try{
+      const tc = google.accounts.oauth2.initTokenClient({
+        client_id: DRIVE_CLIENT_WEB, scope: DRIVE_PORTEE,
+        callback: t => {
+          if(t && t.access_token){
+            driveJeton = t.access_token; driveJetonFin = Date.now() + (Math.max(60, (t.expires_in || 3600) - 60)) * 1000;
+            driveErreur = ""; rendre(driveJeton);
+          }else{ driveErreur = TR("Connexion Google annulée."); rendre(null); }
+        },
+        error_callback: ()=>{ driveErreur = TR("Connexion Google annulée."); rendre(null); }
+      });
+      tc.requestAccessToken({prompt: ""});
+    }catch(e){ driveErreur = String((e && e.message) || e).slice(0, 80); rendre(null); }
+  });
+}
+/* une requete Drive ; un 401 jette le jeton, qui sera redemande */
+async function driveReq(chemin, opts){
+  const o = opts || {};
+  const r = await fetch("https://www.googleapis.com/" + chemin, {
+    method: o.method || "GET",
+    headers: Object.assign({Authorization: "Bearer " + driveJeton}, o.headers || {}),
+    body: o.body
+  });
+  if(r.status === 401){ driveJeton = null; driveJetonFin = 0; }
+  if(!r.ok){ const t = await r.text().catch(()=>""); throw new Error("Drive " + r.status + " " + t.slice(0, 120)); }
+  return r;
+}
+async function driveTrouver(){
+  const r = await driveReq("drive/v3/files?spaces=appDataFolder&fields=files(id,name,modifiedTime,size)&q="
+    + encodeURIComponent("name = '" + DRIVE_FICHIER + "' and trashed = false"));
+  const j = await r.json();
+  return (j.files || [])[0] || null;
+}
+/* ce qu'on compare pour ne pas reenvoyer la meme chose : la base sans ses horodatages */
+function driveEmpreinte(){
+  const copie = Object.assign({}, db); delete copie.savedAt; delete copie.drive; delete copie.lastBackup;
+  return JSON.stringify(copie);
+}
+async function driveSauver(interactif){
+  if(driveEnCours) return false;
+  driveEnCours = true;
+  try{
+    if(!(await driveAutoriser(interactif))) return false;
+    const json = JSON.stringify(db);
+    let id = db.drive && db.drive.fichierId;
+    if(!id){ const f = await driveTrouver(); id = f && f.id; }
+    if(id){
+      await driveReq("upload/drive/v3/files/" + id + "?uploadType=media",
+        {method:"PATCH", headers:{"Content-Type":"application/json"}, body: json});
+    }else{
+      const lim = "tonnup" + Date.now();
+      const corps = "--" + lim + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"
+        + JSON.stringify({name: DRIVE_FICHIER, parents: ["appDataFolder"]})
+        + "\r\n--" + lim + "\r\nContent-Type: application/json\r\n\r\n" + json + "\r\n--" + lim + "--";
+      const r = await driveReq("upload/drive/v3/files?uploadType=multipart&fields=id",
+        {method:"POST", headers:{"Content-Type": "multipart/related; boundary=" + lim}, body: corps});
+      id = (await r.json()).id;
+    }
+    db.drive = Object.assign({}, db.drive, {actif:true, fichierId:id, derniere:Date.now()});
+    driveDernierEnvoi = driveEmpreinte();
+    driveErreur = "";
+    save();
+    return true;
+  }catch(e){
+    driveErreur = String((e && e.message) || e).slice(0, 100);
+    return false;
+  }finally{ driveEnCours = false; }
+}
+/* apres chaque changement, avec un delai : on n'ecrit pas a chaque aliment coche */
+function driveSchedule(){
+  if(!driveActif()) return;
+  if(driveTo) clearTimeout(driveTo);
+  driveTo = setTimeout(()=>{ if(driveEmpreinte() !== driveDernierEnvoi) driveSauver(false); }, 20000);
+}
+async function driveLire(){
+  const f = await driveTrouver();
+  if(!f) return null;
+  const r = await driveReq("drive/v3/files/" + f.id + "?alt=media");
+  const d = await r.json();
+  if(!d || !Array.isArray(d.history)) throw new Error(TR("Ce n'est pas un fichier de sauvegarde Tonnup."));
+  return {fichier:f, donnees:d};
+}
+function driveAppliquer(d, fichier){
+  db = d; applyDefaults();
+  db.drive = Object.assign({}, db.drive, {actif:true, fichierId: fichier.id, derniere: Date.now()});
+  driveDernierEnvoi = driveEmpreinte();
+  save(); closeSheet(); render();
+  toast(TR("Sauvegarde restaurée ✓"));
+}
+function dateLisible(iso){
+  try{ return new Date(iso).toLocaleString(loc(), {day:"numeric", month:"long", hour:"2-digit", minute:"2-digit"}); }
+  catch(e){ return String(iso); }
+}
+/* Connecter : jeton, puis regarde ce qu'il y a deja. Un telephone vide devant une
+   copie existante, c'est presque toujours un nouveau telephone : on propose. */
+async function driveConnecter(){
+  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée.")); return false; }
+  let existante = null;
+  try{ existante = await driveLire(); }catch(e){ /* fichier absent ou illisible : on ecrira le notre */ }
+  db.drive = Object.assign({}, db.drive, {actif:true, fichierId: existante ? existante.fichier.id : null});
+  save();
+  const vide = !db.history.length && !Object.keys(db.habitSel || {}).length;
+  if(existante && vide){
+    askConfirm(TR("Une sauvegarde existe sur ton Drive"),
+      TR("Copie du {}. La récupérer sur ce téléphone ?").replace("{}", dateLisible(existante.fichier.modifiedTime)),
+      TR("Restaurer"), false, ()=>driveAppliquer(existante.donnees, existante.fichier));
+    return true;
+  }
+  const ok = await driveSauver(true);
+  toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")));
+  return ok;
+}
+async function driveRestaurer(){
+  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée.")); return; }
+  let r = null;
+  try{ r = await driveLire(); }
+  catch(e){ toast(String((e && e.message) || e).slice(0, 100)); return; }
+  if(!r){ toast(TR("Aucune sauvegarde Tonnup sur ce Drive.")); return; }
+  askConfirm(TR("Restaurer la sauvegarde Drive ?"),
+    TR("Copie du {}. Elle remplacera toutes les données de ce téléphone.").replace("{}", dateLisible(r.fichier.modifiedTime)),
+    TR("Restaurer"), true, ()=>driveAppliquer(r.donnees, r.fichier));
+}
+function driveDeconnecter(){
+  db.drive = {actif:false, fichierId: db.drive && db.drive.fichierId, derniere: db.drive && db.drive.derniere};
+  driveJeton = null; driveJetonFin = 0;
+  save();
+  toast(TR("Google Drive déconnecté. La copie reste dans ton Drive."));
+}
 /* ---- le pont vers Google Play — meme dessin que pluginRepos() : on ne retient que le
    succes, et on construit le mandataire nous-memes, sur un vrai appareil seulement */
 let aboPont = null;
@@ -15429,6 +15630,7 @@ function openSettings(){
       <div id="st-backup" class="stack" style="display:none; padding:4px 2px 2px;">
       <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">${TR("Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.")}</p>
       <div id="st-auto"></div>
+      <div id="st-drive"></div>
       <button class="btn" id="st-file">${TR("💾 Enregistrer un fichier")}</button>
       <label class="btn" for="st-restore-in" style="display:flex;">${TR("📂 Restaurer depuis un fichier")}</label>
       <input type="file" id="st-restore-in" accept=".json,application/json,text/plain" style="display:none;">
@@ -15609,6 +15811,38 @@ function openSettings(){
       estIOS()
         ? TR("iOS efface la mémoire de l'app entre deux ouvertures. Utilise l'icône 💾 avant de fermer, et 📂 pour restaurer.")
         : TR("Ce navigateur a effacé la mémoire de l'app. Utilise l'icône 💾 pour en garder une copie, et 📂 pour la restaurer.")}</div>`:""}`;
+  /* Google Drive : un bloc qui se redessine apres chaque action */
+  const driveBox = document.getElementById("st-drive");
+  const dessinerDrive = ()=>{
+    if(!driveBox) return;
+    if(!driveActif()){
+      driveBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
+        <div style="font-weight:800; font-size:13.5px;">${TR("Google Drive")}</div>
+        <div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin:4px 0 8px;">${TR("Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.")}${
+          pluginDrive() ? "" : " " + TR("Sur le web, il faut être en ligne et autoriser la fenêtre Google.")}</div>
+        <button class="btn btn-accent" id="dr-connect" style="width:100%;">${TR("Connecter Google Drive")}</button>
+        ${driveErreur ? `<div style="font-size:12px; color:var(--bad); margin-top:6px;">${esc(driveErreur)}</div>` : ""}</div>`;
+      document.getElementById("dr-connect").onclick = async ()=>{ await driveConnecter(); dessinerDrive(); };
+    }else{
+      driveBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
+        <div style="font-weight:700; color:var(--good); font-size:13.5px;">${TR("✓ Google Drive connecté")}</div>
+        <div style="font-size:12px; color:var(--ink-mute); margin:2px 0 8px;">${TR("Dernière copie : {}").replace("{}", ago(db.drive.derniere))}${
+          driveErreur ? ` · <span style="color:var(--bad);">${esc(driveErreur)}</span>` : ""}</div>
+        <div class="row" style="gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="dr-now" style="flex:1;">${TR("Sauvegarder maintenant")}</button>
+          <button class="btn" id="dr-restore" style="flex:1;">${TR("Restaurer depuis Drive")}</button>
+        </div>
+        <button id="dr-off" style="margin-top:8px; font-size:12.5px; color:var(--ink-mute); text-decoration:underline;">${TR("Déconnecter")}</button></div>`;
+      document.getElementById("dr-now").onclick = async ()=>{
+        const ok = await driveSauver(true);
+        toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")));
+        dessinerDrive();
+      };
+      document.getElementById("dr-restore").onclick = ()=>driveRestaurer();
+      document.getElementById("dr-off").onclick = ()=>{ driveDeconnecter(); dessinerDrive(); };
+    }
+  };
+  dessinerDrive();
   const retry = document.getElementById("af-retry");
   if(retry) retry.onclick = ()=>{ delete db.autoFileImpossible; save(); autoFilePick(); };
   document.getElementById("st-file").onclick=async()=>{
