@@ -58,6 +58,8 @@ async function lancer(){
     DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
+    DB.abo = true;           /* les écrans payants s'ouvrent en clair ; le voile a son propre groupe */
+    DB.essaiDebut = new Date(Date.now() - 30 * 864e5).toISOString();   /* essai fini depuis longtemps */
     /* Une visite se joue sur un voile plein écran : elle passerait devant les boutons
        qu'un test cherche à toucher. Pire, render() en programme une pour 500 ms plus
        tard — elle s'ouvrait alors au milieu d'un groupe suivant, et le test de la fiche
@@ -2635,8 +2637,10 @@ async function lancer(){
     /* neuf depuis que le retour vibrant a son interrupteur : on pouvait couper le son,
        pas la vibration — et quelqu'un qui s'entraîne à côté de gens n'avait aucune
        échappatoire */
-    vrai("Neuf réglages", lignes.length === 9, String(lignes.length));
+    /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
+    vrai("Dix réglages", lignes.length === 10, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
+    vrai("…et l'abonnement en première ligne", lignes[0].id === "st-abo");
     vrai("Chacun porte son signe",
       lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
       lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
@@ -5256,6 +5260,9 @@ async function lancer(){
     const j = [];
     const C = F.Capacitor || (F.Capacitor = {});
     const garde = C.Plugins;
+    /* pluginRepos() retient le pont une fois trouve : on l'oublie, sinon un groupe
+       de tests herite du simulacre du precedent et parle dans le vide */
+    F.eval("reposPont = null");
     C.Plugins = Object.assign({}, C.Plugins, {Repos:{
       demarrer: async o => { j.push("demarrer:" + Math.round(o.sec) + ":" + o.son); return {actif:true}; },
       arreter:  async () => { j.push("arreter"); return {actif:false}; }
@@ -5309,7 +5316,427 @@ async function lancer(){
     F.document.getElementById("rest-skip").click();
     await souffler();
 
-    C.Plugins = garde;
+    C.Plugins = garde; F.eval("reposPont = null");
+  })();
+  neuf();
+
+  /* --------------------------------------- la fiche d'abonnement */
+  /* Les prix de la fiche sont des valeurs par defaut que Google remplacera ; l'economie
+     de l'annuel se CALCULE, elle n'est jamais ecrite en dur — si le prix change dans la
+     console, le pourcentage suit sans nouvelle version. */
+  grp("La fiche d'abonnement");
+  neuf();
+  await (async ()=>{
+    const P = F.eval("PRIX_ABO");
+    eq("L'économie de l'annuel est calculée depuis les deux prix",
+      F.economieAnnuel(), Math.round((1 - (P.annuel.montant / 12) / P.mensuel.montant) * 100));
+    vrai("…et vaut bien −44 % aux prix du jour", F.economieAnnuel() === 44, F.economieAnnuel());
+    eq("Le prix par mois de l'annuel est celui des douze parts", F.prixParMois(), "3,33 €");
+
+    F.openAbonnement();
+    await attendre(()=>!!F.document.getElementById("abo-mensuel"), 2000);
+    const D2 = F.document;
+    vrai("La fiche s'ouvre sur son bandeau", !!D2.querySelector(".abo-tete"));
+    eq("Trois promesses", D2.querySelectorAll(".abo-promesses li").length, 3);
+    vrai("Le mensuel porte son prix", /5,99/.test(D2.getElementById("abo-mensuel").textContent));
+    vrai("…et le badge « le plus populaire »", !!D2.querySelector("#abo-mensuel .abo-populaire"));
+    vrai("L'annuel porte son prix, son économie et son prix par mois",
+      /39,99/.test(D2.getElementById("abo-annuel").textContent)
+      && /−44 %/.test(D2.getElementById("abo-annuel").textContent)
+      && /3,33 €/.test(D2.getElementById("abo-annuel").textContent),
+      D2.getElementById("abo-annuel").textContent.replace(/\s+/g, " "));
+    /* Google exige que l'ecran dise, avant le bouton, que ca se renouvelle et se resilie */
+    vrai("La mention de renouvellement est là", /Renouvellement/.test(D2.querySelector(".abo-gages").textContent));
+    vrai("…et celle de la résiliation aussi", /Résiliable/.test(D2.getElementById("abo-mensuel").textContent));
+    vrai("Le lien de restauration existe", !!D2.getElementById("abo-restaurer"));
+    /* sur le web il n'y a pas de Google Play : un appui le dit, sans faire semblant */
+    const dits = []; const vraiToast = F.toast; F.toast = m => dits.push(m);
+    D2.getElementById("abo-mensuel").click();
+    await attendre(()=>dits.length > 0, 1500);
+    vrai("Sans Google Play, l'appui renvoie vers l'app Android ou le code", /app Android/.test(dits.join(" ")), dits.join(" | "));
+    F.toast = vraiToast;
+    /* c'est une fenetre, pas une fiche : la barre d'onglets reste sous elle, et la
+       croix ramene a Seance */
+    vrai("La fenêtre passe sous la barre d'onglets",
+      +F.getComputedStyle(D2.getElementById("abo-fenetre")).zIndex < +F.getComputedStyle(D2.querySelector(".tabbar")).zIndex);
+    F.fermerAbonnement();
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("…et se ferme sans laisser de trace", !D2.getElementById("abo-fenetre"));
+  })();
+  neuf();
+
+  /* --------------------------------------- Google Play, vu de la page */
+  /* Le greffon natif ne tourne pas ici ; on lui substitue un faux pont, pose la ou la
+     page range le vrai (aboPont), pour eprouver ce que la page en FAIT : Google a le
+     dernier mot sur Android, sauf pour un code d'acces ; les prix de Google remplacent
+     les notres ; un achat reussi ouvre, un achat annule ne dit rien. Le branchement
+     lui-meme (registerPlugin) ne se prouve que sur un telephone — lecon du minuteur. */
+  grp("L'abonnement Google Play, vu de la page");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const faux = {
+      reponseEtat: {dispo:true, abonne:false, renouvelle:false, panne:""},
+      reponseAchat: {abonne:true, raison:""},
+      appels: [],
+      etat(){ this.appels.push("etat"); return Promise.resolve(this.reponseEtat); },
+      forfaits(){ this.appels.push("forfaits"); return Promise.resolve({forfaits:[
+        {id:"mensuel", prix:"6,49 $", montant:6.49, monnaie:"CAD", periode:"P1M", essaiJours:7, jeton:"j1"},
+        {id:"annuel-1", prix:"44,99 $", montant:44.99, monnaie:"CAD", periode:"P1Y", essaiJours:0, jeton:"j2"}
+      ], panne:""}); },
+      acheter(o){ this.appels.push("acheter:" + o.forfait); return Promise.resolve(this.reponseAchat); }
+    };
+    const prixAvant = JSON.parse(JSON.stringify(F.eval("PRIX_ABO")));
+    F.eval("aboPont = null; forfaitsCharges = false");
+    F.__faux = faux; F.eval("aboPont = window.__faux");
+
+    /* 1. Google dit « pas abonné » : rien ne s'ouvre, et le code d'accès reste respecté */
+    delete DB.abo; delete DB.aboVia;
+    await F.sonderAbo();
+    vrai("Pas abonné chez Google : verrouillé", !F.estAbonne());
+    DB.abo = true; DB.aboVia = "code";
+    await F.sonderAbo();
+    vrai("Débloqué par code : Google ne le retire pas", F.estAbonne() && DB.aboVia === "code");
+
+    /* 2. Google dit « abonné » : ouvert, et marqué comme venant de Play */
+    delete DB.abo; delete DB.aboVia;
+    faux.reponseEtat = {dispo:true, abonne:true, renouvelle:true, panne:""};
+    await F.sonderAbo();
+    vrai("Abonné chez Google : ouvert", F.estAbonne() && DB.aboVia === "play");
+    /* 3. …et quand l'abonnement expire, ça se referme */
+    faux.reponseEtat = {dispo:true, abonne:false, renouvelle:false, panne:""};
+    await F.sonderAbo();
+    vrai("Abonnement expiré chez Google : refermé", !F.estAbonne() && !DB.aboVia);
+    /* 4. Google injoignable : on ne touche à rien */
+    DB.abo = true; DB.aboVia = "play";
+    faux.reponseEtat = {dispo:false, abonne:null, panne:"connexion : SERVICE_UNAVAILABLE"};
+    await F.sonderAbo();
+    vrai("Google injoignable : l'état connu reste tel quel", F.estAbonne());
+    delete DB.abo; delete DB.aboVia;
+
+    /* 5. les prix de Google remplacent les nôtres, essai compris */
+    const ok = await F.chargerForfaits();
+    const P = F.eval("PRIX_ABO");
+    vrai("Les forfaits de Google sont lus", ok === true);
+    eq("Le mensuel prend le prix de Google", P.mensuel.texte, "6,49 $");
+    eq("…et l'annuel aussi", P.annuel.texte, "44,99 $");
+    eq("L'essai gratuit est retenu", P.mensuel.essaiJours, 7);
+    F.eval("curTab='seance'; render()");
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-mensuel"), 2000);
+    vrai("La fenêtre affiche le prix de Google", /6,49 \$/.test(D2.getElementById("abo-mensuel").textContent));
+    vrai("…et annonce les 7 jours gratuits", /7 jours/.test(D2.getElementById("abo-mensuel").textContent));
+    eq("L'économie est recalculée sur ces prix", F.economieAnnuel(), Math.round((1 - (44.99 / 12) / 6.49) * 100));
+
+    /* 6. un achat : le plan de base envoyé est celui de la console, et l'app s'ouvre */
+    faux.appels.length = 0;
+    D2.getElementById("abo-annuel").click();
+    await attendre(()=>DB.abo === true, 2000);
+    vrai("Le forfait annuel demande le plan « annuel-1 »", faux.appels.includes("acheter:annuel-1"), faux.appels.join(","));
+    vrai("Un achat réussi débloque, venant de Play", DB.abo === true && DB.aboVia === "play");
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("…et la fenêtre se referme", !D2.getElementById("abo-fenetre"));
+    /* 7. un achat annulé : rien, pas même un message */
+    delete DB.abo; delete DB.aboVia;
+    faux.reponseAchat = {abonne:false, raison:"annule"};
+    const dits = []; const vraiToast = F.toast; F.toast = m => dits.push(m);
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-mensuel"), 2000);
+    D2.getElementById("abo-mensuel").click();
+    await attendre(()=>faux.appels.includes("acheter:mensuel"), 2000);
+    await new Promise(r=>setTimeout(r, 120));
+    vrai("Un achat annulé ne débloque pas", !F.estAbonne());
+    vrai("…et ne réprimande pas", dits.length === 0, dits.join(" | "));
+    /* 8. un achat refusé : on le dit */
+    faux.reponseAchat = {abonne:false, raison:"BILLING_UNAVAILABLE (3)"};
+    D2.getElementById("abo-mensuel").click();
+    await attendre(()=>dits.length > 0, 2000);
+    vrai("Un achat refusé est annoncé", /Google Play/.test(dits.join(" ")), dits.join(" | "));
+    F.toast = vraiToast;
+    F.fermerAbonnement();
+
+    /* on remet la page comme on l'a trouvée */
+    F.eval("aboPont = null; forfaitsCharges = false; aboEtat = {dispo:false, abonne:null, panne:''}");
+    Object.assign(F.eval("PRIX_ABO"), prixAvant);
+    delete F.__faux;
+    delete DB.abo; delete DB.aboVia;
+  })();
+  neuf();
+
+  /* --------------------------------------- Google Drive */
+  /* Ni Google ni le natif ne tournent ici : un faux pont rend un jeton, un faux fetch
+     joue le serveur Drive (liste, creation, reecriture, lecture, et un 401). On eprouve
+     ce que la page en fait : un seul fichier, cree puis reecrit ; rien d'envoye deux
+     fois pour rien ; une restauration qui remplace la base ; un jeton perime jete. */
+  grp("La sauvegarde Google Drive");
+  neuf();
+  await (async ()=>{
+    const serveur = {fichiers:{}, appels:[], jetonValide:"j1", suivant:1};
+    const rep = (code, obj) => ({ok: code < 300, status: code, json: async ()=>obj, text: async ()=>JSON.stringify(obj)});
+    const vraiFetch = F.fetch;
+    F.fetch = async (url, o)=>{
+      o = o || {};
+      const auth = (o.headers || {}).Authorization || "";
+      serveur.appels.push((o.method || "GET") + " " + url.replace("https://www.googleapis.com/", "").split("?")[0]);
+      if(auth !== "Bearer " + serveur.jetonValide) return rep(401, {error:"jeton"});
+      if(/^https:\/\/www\.googleapis\.com\/drive\/v3\/files\?/.test(url)){
+        const liste = Object.keys(serveur.fichiers).map(id=>({id, name:"tonnup.json", modifiedTime:serveur.fichiers[id].date, size:String(serveur.fichiers[id].json.length)}));
+        return rep(200, {files:liste});
+      }
+      let m;
+      if((m = url.match(/drive\/v3\/files\/([^?]+)\?alt=media/))){
+        const f = serveur.fichiers[m[1]]; return f ? rep(200, JSON.parse(f.json)) : rep(404, {});
+      }
+      if(/upload\/drive\/v3\/files\?uploadType=multipart/.test(url)){
+        const id = "f" + (serveur.suivant++);
+        const json = o.body.split("\r\n\r\n")[2].split("\r\n--")[0];
+        serveur.fichiers[id] = {json, date:new Date().toISOString()};
+        return rep(200, {id});
+      }
+      if((m = url.match(/upload\/drive\/v3\/files\/([^?]+)\?uploadType=media/))){
+        if(!serveur.fichiers[m[1]]) return rep(404, {});
+        serveur.fichiers[m[1]] = {json:o.body, date:new Date().toISOString()};
+        return rep(200, {id:m[1]});
+      }
+      return rep(404, {});
+    };
+    F.__drive = {autoriser: async ()=>({jeton:"j1", refuse:false})};
+    F.__dbOrig = DB;                 /* la restauration remplace l'objet db : on le remettra */
+    F.eval("drivePont = window.__drive; driveJeton = null; driveJetonFin = 0; driveDernierEnvoi = ''");
+    delete DB.drive;
+
+    /* 1. connecter sur un telephone qui a des donnees : la copie part tout de suite */
+    DB.history = [seance(30, [{exId:id("Squat"), sets:[serie(80,8)]}])];
+    const ok = await F.driveConnecter();
+    vrai("Connecter écrit la première copie", ok === true && Object.keys(serveur.fichiers).length === 1, serveur.appels.join(" | "));
+    vrai("…et retient le fichier", DB.drive && DB.drive.actif && DB.drive.fichierId === "f1");
+    vrai("…par une création multipart dans appDataFolder", serveur.appels.some(a=>/POST upload\/drive\/v3\/files$/.test(a)));
+    vrai("La copie contient bien l'historique", JSON.parse(serveur.fichiers.f1.json).history.length === 1);
+
+    /* 2. sauvegarder a nouveau : reecriture du MEME fichier, pas un second */
+    serveur.appels.length = 0;
+    DB.history.push(seance(2, [{exId:id("Squat"), sets:[serie(82,8)]}]));
+    vrai("Une nouvelle sauvegarde réécrit le même fichier", await F.driveSauver(false) === true
+      && Object.keys(serveur.fichiers).length === 1 && serveur.appels.some(a=>/PATCH upload\/drive\/v3\/files\/f1$/.test(a)), serveur.appels.join(" | "));
+    eq("…avec les deux séances", JSON.parse(serveur.fichiers.f1.json).history.length, 2);
+
+    /* 3. rien n'a change : le delai n'envoie rien */
+    serveur.appels.length = 0;
+    vrai("Sans changement, l'empreinte est la même", F.driveEmpreinte() === F.eval("driveDernierEnvoi"));
+
+    /* 4. jeton perime : 401, le jeton est jete, un nouveau est demande, ca repart */
+    serveur.jetonValide = "j2";
+    F.__drive.autoriser = async ()=>({jeton:"j2", refuse:false});
+    DB.history.push(seance(1, [{exId:id("Squat"), sets:[serie(84,8)]}]));
+    const ok1 = await F.driveSauver(false);          /* echoue : j1 n'est plus bon */
+    vrai("Un jeton périmé fait échouer l'envoi et jette le jeton", ok1 === false && F.eval("driveJeton") === null);
+    vrai("…et l'envoi suivant repart avec un jeton neuf", await F.driveSauver(false) === true
+      && JSON.parse(serveur.fichiers.f1.json).history.length === 3);
+
+    /* 5. restaurer sur un telephone vide : proposition, puis remplacement */
+    const copie = serveur.fichiers.f1.json;
+    neuf(); delete DB.drive; F.eval("driveJeton = null; driveJetonFin = 0; driveDernierEnvoi = ''");
+    eq("Le nouveau téléphone est vide", DB.history.length, 0);
+    const vraiAsk = F.askConfirm; let demande = null;
+    F.askConfirm = (t, m, ok, danger, cb)=>{ demande = {t, m}; cb(); };
+    await F.driveConnecter();
+    vrai("Sur un téléphone vide, une copie existante est proposée", !!demande && /Drive/.test(demande.t), demande && demande.t);
+    const DB2 = F.eval("db");
+    eq("…et la restauration ramène les trois séances", DB2.history.length, 3);
+    vrai("…en gardant Drive connecté au même fichier", DB2.drive.actif && DB2.drive.fichierId === "f1");
+    vrai("…et la copie sur Drive n'a pas été écrasée par le vide", serveur.fichiers.f1.json === copie);
+    F.askConfirm = vraiAsk;
+
+    /* 5b. sur le web, jeton perime : l'envoi attend le prochain geste, puis part */
+    F.eval("drivePont = null; driveJeton = null; driveJetonFin = 0");
+    const DBw = F.eval("db");
+    DBw.history.push(seance(0.5, [{exId:id("Squat"), sets:[serie(86,8)]}]));
+    vrai("Sans jeton et sans natif, l'envoi silencieux échoue", await F.driveSauver(false) === false);
+    vrai("Une copie du jour ne justifie pas de fenêtre Google", F.driveCopieTropVieille() === false);
+    DBw.drive.derniere = Date.now() - 25 * 3600e3;
+    vrai("…une copie d'hier, si", F.driveCopieTropVieille() === true);
+    F.driveAuProchainGeste();
+    vrai("…et un geste est attendu", F.eval("driveGesteArme") === true);
+    /* le geste : on simule un jeton rendu par la fenetre Google */
+    F.__drive.autoriser = async ()=>({jeton:"j2", refuse:false});
+    F.eval("drivePont = window.__drive");
+    F.document.dispatchEvent(new F.PointerEvent("pointerdown", {bubbles:true}));
+    await attendre(()=>JSON.parse(serveur.fichiers.f1.json).history.length === 4, 3000);
+    eq("Au geste suivant, la copie part", JSON.parse(serveur.fichiers.f1.json).history.length, 4);
+    vrai("…et le geste n'est plus attendu", F.eval("driveGesteArme") === false);
+
+    /* 6. refus du consentement : rien ne casse */
+    F.__drive.autoriser = async ()=>({jeton:"", refuse:true});
+    F.eval("driveJeton = null; driveJetonFin = 0");
+    vrai("Un refus Google est une simple annulation", await F.driveSauver(true) === false && /annulée/.test(F.eval("driveErreur")));
+
+    /* on range */
+    F.fetch = vraiFetch;
+    F.eval("drivePont = null; driveJeton = null; driveJetonFin = 0; driveDernierEnvoi = ''; driveErreur = ''");
+    F.eval("db = window.__dbOrig");  /* les groupes suivants parlent a DB : c'est de nouveau lui */
+    delete F.__drive; delete F.__dbOrig;
+    neuf(); delete DB.drive;
+  })();
+  neuf();
+
+  /* --------------------------------------- l'essai de 7 jours */
+  /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
+     la premiere seance. Au huitieme jour le voile revient — et pas avant. */
+  grp("L'essai de sept jours");
+  neuf();
+  await (async ()=>{
+    delete DB.abo; delete DB.aboVia; delete DB.essaiDebut;
+    vrai("Sans essai ni abonnement : verrouillé", F.verrouille("eat"));
+    vrai("L'essai démarre une seule fois", F.demarrerEssai() === true && F.demarrerEssai() === false);
+    eq("Il reste sept jours", F.essaiRestant(), 7);
+    vrai("…et Alimentation est ouverte", !F.verrouille("eat") && F.essaiEnCours());
+    DB.essaiDebut = new Date(Date.now() - 6.5 * 864e5).toISOString();
+    eq("Au septième jour, il en reste un", F.essaiRestant(), 1);
+    vrai("…toujours ouvert", !F.verrouille("prg"));
+    DB.essaiDebut = new Date(Date.now() - 7.01 * 864e5).toISOString();
+    eq("Au huitième jour, zéro", F.essaiRestant(), 0);
+    vrai("…et le voile revient", F.verrouille("eat") && !F.essaiEnCours());
+    DB.essaiDebut = "n'importe quoi";
+    eq("Une date illisible ne donne rien", F.essaiRestant(), 0);
+    /* la fenêtre dit ce qui reste gratuit, et que l'essai est fini */
+    DB.essaiDebut = new Date(Date.now() - 9 * 864e5).toISOString();
+    F.eval("curTab='seance'; render()");
+    F.openAbonnement();
+    const D2 = F.document;
+    await attendre(()=>!!D2.querySelector(".abo-gratuit"), 2000);
+    const g = D2.querySelector(".abo-gratuit").textContent;
+    vrai("La fenêtre rappelle que les séances restent gratuites", /séances/.test(g) && /gratuits/.test(g), g);
+    vrai("…et que l'essai est terminé", /essai sont terminés/.test(g), g);
+    F.fermerAbonnement();
+    /* un abonnement prime sur l'essai fini */
+    DB.abo = true;
+    vrai("Abonné après l'essai : ouvert", !F.verrouille("eat") && !F.essaiEnCours());
+    delete DB.abo;
+  })();
+  neuf();
+
+  /* --------------------------------------- le voile */
+  /* Alimentation, Progression et le Bilan sont derriere l'abonnement. Pas un mur : l'ecran
+     reel, dessine sur un profil de demonstration, floute sous la fenetre. Et surtout, ce
+     faux profil ne doit laisser AUCUNE trace dans les vraies donnees. */
+  grp("Le voile de l'abonnement");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document, app = D2.getElementById("app");
+    delete DB.abo;
+    vrai("Sans abonnement, Alimentation et Progression sont verrouillées", F.verrouille("eat") && F.verrouille("prg"));
+    vrai("…le Bilan aussi", F.verrouille("bilan"));
+    vrai("…mais jamais la séance", !F.verrouille("seance"));
+    F.eval("curTab='eat'; render()");
+    await attendre(()=>!!D2.getElementById("abo-fenetre"), 2000);
+    vrai("L'onglet verrouillé ouvre la fenêtre d'abonnement de lui-même", !!D2.getElementById("abo-fenetre"));
+    vrai("…et la page passe sous le voile", app.classList.contains("verrou"));
+    vrai("…avec un écran rempli derrière (le profil de démonstration)", D2.querySelectorAll("#app .fgrid .chip, #app .fgrid button").length > 0
+      || /Protéines/.test(app.textContent));
+    eq("Le vrai historique n'a pas bougé", DB.history.length, 0);
+    eq("…ni les vrais repas", Object.keys(DB.habitSel).length, 0);
+    vrai("…et le vrai profil est de retour", F.eval("db") === DB);
+    F.eval("curTab='prg'; render()");
+    await attendre(()=>app.classList.contains("verrou") && /Progression/i.test(app.textContent), 2000);
+    vrai("Progression aussi est voilée", app.classList.contains("verrou") && !!D2.getElementById("abo-fenetre"));
+    F.eval("curTab='seance'; render()");
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("Retour à la séance : le voile et la fenêtre s'en vont", !app.classList.contains("verrou") && !D2.getElementById("abo-fenetre"));
+    DB.abo = true;
+    F.eval("curTab='eat'; render()");
+    await attendre(()=>!app.classList.contains("verrou") && !!D2.querySelector("#app .meal-tabs"), 2000);
+    vrai("Abonné : l'alimentation s'ouvre en clair", !app.classList.contains("verrou") && !D2.getElementById("abo-fenetre"));
+    delete DB.abo;
+    F.eval("curTab='seance'; render()");
+
+    /* le code d'acces : la page ne connait que son empreinte ; on en glisse une d'essai */
+    const emp = await F.empreinte("TONNUPTEST0000");   /* sans tirets : la forme canonique */
+    vrai("L'empreinte est un SHA-256", /^[0-9a-f]{64}$/.test(emp));
+    vrai("…et ce n'est pas le code en clair", !F.eval("CODES_ACCES").some(c => /TONNUP/.test(c)));
+    F.eval("CODES_ACCES").push(emp);
+    eq("Un code inconnu est refusé", await F.verifierCodeAcces("TONNUP-XXXX-YYYY"), false);
+    eq("Le bon code passe, même tapé en minuscules avec des espaces", await F.verifierCodeAcces(" tonnup test 0000 "), true);
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-code-lien"), 2000);
+    D2.getElementById("abo-code-lien").click();
+    vrai("« J'ai un code » dévoile le champ", !D2.getElementById("abo-code").hidden);
+    D2.getElementById("abo-code-in").value = "TONNUP-TEST-0000";
+    D2.getElementById("abo-code").requestSubmit();
+    await attendre(()=>DB.abo === true, 2000);
+    vrai("Le code valide débloque l'appareil", DB.abo === true && DB.aboVia === "code");
+    await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
+    vrai("…et la fenêtre se referme", !D2.getElementById("abo-fenetre"));
+    F.eval("CODES_ACCES").pop();
+    delete DB.abo; delete DB.aboVia;
+  })();
+  neuf();
+
+  /* --------------------------------------- le gainage passe par le service */
+  /* Le service ne couvrait que le repos simple. Une sequence de gainage — tenue,
+     repos, tenue — programmait encore une liste d'alarmes, avec le meme defaut qu'hier.
+     La page ne peut pas piloter etape par etape, elle dort : le service tient toute
+     la chaine. Et au reveil, la page doit se retrouver — le service a pu jouer
+     plusieurs etapes pendant qu'elle dormait. */
+  grp("Le gainage passe par le service natif");
+  neuf();
+  await (async ()=>{
+    const j = [];
+    const C = F.Capacitor || (F.Capacitor = {});
+    const garde = C.Plugins;
+    F.eval("reposPont = null");
+    C.Plugins = Object.assign({}, C.Plugins, {Repos:{
+      demarrer: async o => { j.push("demarrer"); return {actif:true}; },
+      sequence: async o => { j.push("sequence:" + o.etapes.map(e=>Math.round(e.sec) + e.titre[0]).join(",")); return {actif:true}; },
+      arreter:  async () => { j.push("arreter"); return {actif:false}; }
+    }});
+    const vide = () => j.splice(0).join(" ");
+    const souffler = () => attendre(()=>true, 150);
+    const g = id("Gainage");
+    DB.settings.son = true;
+    DB.active = {id:"t-iso", name:"Abdos", templateId:null, start:Date.now() - 6e5,
+      entries:[{exId:g, target:{sets:3, reps:"30-45", rest:20},
+        sets:[{w:0, r:30, done:false}, {w:0, r:30, done:false}, {w:0, r:30, done:false}]}]};
+    F.eval("curTab = 'seance'; render()");
+    await attendre(()=>!!F.document.querySelector(".ex-card"), 3000);
+
+    F.demarrerSeqIso(0);
+    await souffler();
+    /* G = « Gainage terminé », R = « Repos terminé » : le texte de la sonnerie suit
+       l'etape qui s'acheve */
+    eq("Toute la chaîne part au service, avec ses textes", vide(), "sequence:30G,20R,30G,20R,30G");
+
+    /* une seconde avant la fin, sous les yeux : la page sonnera, on retire la main */
+    F.eval("rest.end = Date.now() + 900"); F.tickRest();
+    await souffler();
+    eq("Sous les yeux, le service est coupé juste avant la fin", vide(), "arreter");
+
+    /* zero : la page sonne, valide la tenue, avance, et repose la suite */
+    F.eval("rest.end = Date.now() - 10"); F.tickRest();
+    await souffler();
+    const S = F.eval("seqIso");
+    eq("La tenue achevée est validée", DB.active.entries[0].sets[0].done, true);
+    eq("…et on passe à l'étape suivante", S.i, 1);
+    eq("…qui repose le reste au service", vide(), "arreter sequence:20R,30G,20R,30G");
+
+    /* la page s'endort 80 s : repos 20, tenue 30 et repos 20 passent ; on est a 20 s
+       de la fin de la derniere tenue */
+    F.eval("seqIso.fins = seqIso.fins.map(f => f - 80000); rest.end -= 80000;");
+    F.resyncIso();
+    await souffler();
+    const S2 = F.eval("seqIso");
+    eq("Au réveil, la page saute à l'étape réellement en cours", S2.i, 4);
+    eq("…la tenue passée pendant le sommeil est validée", DB.active.entries[0].sets[1].done, true);
+    vrai("…et l'étape en cours reprend là où elle en est, pas à zéro",
+      Math.abs(F.eval("(rest.end - Date.now())/1000") - 20) < 3, F.eval("(rest.end - Date.now())/1000"));
+
+    /* et un sommeil qui dépasse tout : la séquence se termine d'elle-même */
+    F.eval("seqIso.fins = seqIso.fins.map(f => f - 600000); rest.end -= 600000;");
+    F.resyncIso();
+    await souffler();
+    vrai("Un sommeil plus long que la séquence la termine", F.eval("seqIso") === null);
+    eq("…toutes les tenues validées", DB.active.entries[0].sets.filter(x=>x.done).length, 3);
+    vide();
+    C.Plugins = garde; F.eval("reposPont = null");
   })();
   neuf();
 

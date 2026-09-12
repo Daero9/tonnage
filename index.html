@@ -2,6 +2,7 @@
 <title>Tonnup</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1b1b1d">
+<meta name="robots" content="noindex">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -258,6 +259,11 @@
   .hero-ic{width:28px; height:28px; border-radius:50%; background:#fff; color:#1b1b1d;
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
   .hero-ic svg{width:17px; height:17px;}
+  .hero-droite{display:flex; align-items:center; gap:8px;}
+  /* la bulle d'essai : le compte a rebours a cote du reglage, pour que le voile du
+     huitieme jour ne surprenne personne */
+  .hero-essai{height:28px; padding:0 11px; border-radius:14px; background:var(--accent); color:#fff;
+    font-size:12px; font-weight:800; letter-spacing:.01em; white-space:nowrap;}
   .hero-h{position:relative; z-index:2; text-align:center; margin-top:11%;}
   .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
   .hero-h .sub{font-size:14px; font-weight:600; color:var(--hero-soft); margin-top:8px;}
@@ -1899,6 +1905,10 @@
   :root.clavier .sheet{max-height:100%;}
   /* rien ne flotte par-dessus le clavier : ni la barre du bas, ni le minuteur */
   :root.clavier .tabbar, :root.clavier #app > .eat-fab{display:none;}
+  /* la fenetre d'abonnement aussi : clavier ouvert (le code d'acces), elle prend toute
+     la zone visible et laisse sa carte defiler jusqu'au champ */
+  :root.clavier .abo-fenetre{top:var(--v-haut, 0px); height:var(--v-haut-h, 100dvh); bottom:auto;
+    padding:10px 22px; align-items:flex-start;}
   .sheet h3{font-size:18px; margin-bottom:14px; text-align:center; padding:0 34px;}
   /* croix de fermeture, présente sur toutes les fiches */
   .sheet-x{position:absolute; top:10px; right:12px; z-index:5; width:32px; height:32px; border-radius:50%;
@@ -2490,6 +2500,104 @@
   .vd-card.plat{border-left-color:var(--accent);}
   .vd-card .t{font-size:15.5px; font-weight:800; letter-spacing:-.01em; margin-bottom:4px;}
   .vd-card p{margin:0; font-size:13px; line-height:1.55; color:var(--ink-soft);}
+  /* ---- la fiche d'abonnement ----
+     Une FENÊTRE au centre de l'écran, pas un panneau du bas : elle s'arrête au-dessus de
+     la barre d'onglets, qui reste touchable. On peut donc toujours repartir vers Séance
+     — un verrou qui bloquerait la navigation ferait fuir. Sous la barre (z 40), au-dessus
+     de la page (le voile est en 39 lui aussi, la fenêtre vient par-dessus). */
+  /* Le voile : les cartes se floutent, les titres restent lisibles — on sait ce qu'on
+     regarde sans pouvoir le lire. Rien ne repond au doigt derriere la fenetre. */
+  #app.verrou{pointer-events:none; user-select:none;}
+  #app.verrou .eat-card, #app.verrou .fgrid, #app.verrou .meal-tabs,
+  #app.verrou svg, #app.verrou canvas, #app.verrou table, #app.verrou .jauge, #app.verrou .pill,
+  #app.verrou .vd-card, #app.verrou .rg-resume{filter:blur(6px);}
+  /* dans une carte, la premiere ligne porte le titre : elle reste nette, sauf le chiffre
+     qu'elle affiche a cote (Poids 77,6 kg) ; tout le reste se floute */
+  #app.verrou .card > :not(:first-child), #app.verrou .card > .row:first-child > :not(:first-child),
+  #app.verrou .card > :first-child:not(.row):not(.card-t), #app.verrou .card-sub{filter:blur(6px);}
+  #app.verrou .eat-fab, #app.verrou .fab{display:none;}
+  .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
+    z-index:39; display:flex; align-items:center; justify-content:center;
+    /* la carte reste sous la barre d'etat (heure, batterie) : sans ca la croix passe
+       dessous et rien ne se ferme */
+    padding:max(44px, calc(18px + env(safe-area-inset-top))) 22px 18px;
+    background:rgba(0,0,0,.42);}
+  .abo-carte-f{position:relative; width:100%; max-width:340px; max-height:100%; overflow-y:auto;
+    background:var(--sheet); border-radius:22px; padding:18px 16px 14px;
+    box-shadow:0 22px 60px rgba(0,0,0,.4); -webkit-overflow-scrolling:touch;}
+  .abo-carte-f .sheet-x{top:10px; right:10px;}
+  @media (prefers-reduced-motion:no-preference){
+    .abo-carte-f{animation:ficheIn .48s cubic-bezier(.22,1,.36,1) backwards;}
+    .abo-fenetre{animation:voileIn .3s ease backwards;}
+  }
+  /* L'image de Nico sert de bandeau, bord a bord : la fiche a 16 px de marge, on les
+     annule. Elle est carree ; on n'en garde que ce qui tient, le haut. */
+  /* L'image est agrandie a 132 % et calee A GAUCHE : ses telephones, qui occupent le
+     centre-droit, partent alors vers la droite et liberent la colonne de gauche pour le
+     titre et les trois promesses — la mise en page de la maquette. Le second telephone
+     sort du cadre : c'est le prix de cette colonne. */
+  .abo-tete{position:relative; margin:-18px -16px 0; padding:16px 16px 0;
+    background:url(img/abonnement.webp) left top / 112% auto no-repeat; min-height:300px;}
+  .abo-titre{display:flex; align-items:flex-start; gap:10px; margin-bottom:4px;}
+  .abo-titre .logo{width:40px; height:40px; border-radius:11px; background:var(--accent); flex:none;
+    display:flex; align-items:center; justify-content:center;}
+  .abo-titre .logo svg{width:22px; height:22px;}
+  .abo-titre h3{margin:0; padding:0; text-align:left; font-size:20px; letter-spacing:-.01em; color:#fff; line-height:1.1;}
+  .abo-titre h3 em{font-style:normal; color:var(--accent);}
+  .abo-accroche{margin:3px 0 0; font-size:11px; line-height:1.35; color:rgba(255,255,255,.78); max-width:168px;}
+  /* Sur le sombre, a gauche des telephones : texte petit et serre, pour laisser l'image
+     respirer — c'est elle qui vend, le texte confirme. */
+  .abo-promesses{list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:8px;
+    max-width:50%; position:relative; z-index:1;}
+  .abo-promesses li{display:flex; align-items:center; gap:11px;}
+  .abo-promesses .ic{width:32px; height:32px; border-radius:50%; flex:none; background:rgba(255,255,255,.13);
+    display:flex; align-items:center; justify-content:center; color:var(--accent);}
+  .abo-promesses .ic svg{width:16px; height:16px;}
+  /* le biceps est un masque : sa couleur est un fond, et la regle des sous-titres
+     (span blanc) l'attrapait */
+  .abo-promesses .ic .icm{background-color:var(--accent);}
+  .abo-promesses b{display:block; font-size:12px; color:#fff; line-height:1.2;}
+  .abo-promesses span{display:block; font-size:10px; color:rgba(255,255,255,.75); line-height:1.25; margin-top:2px;}
+  /* les deux forfaits sont des BOUTONS : la carte entiere se touche */
+  .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .abo-f{position:relative; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    border-radius:18px; padding:13px 14px 13px 18px; border:1.5px solid transparent;}
+  .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px;}
+  .abo-f.annuel{background:var(--surface2); color:var(--ink); border-color:var(--border);}
+  .abo-f .prix{font-size:22px; font-weight:900; letter-spacing:-.02em; line-height:1; white-space:nowrap;}
+  .abo-f .prix small{font-size:15px; font-weight:800; letter-spacing:0;}
+  .abo-f .sous{font-size:12.5px; font-weight:600; margin-top:5px; opacity:.85;}
+  .abo-f .sous b{font-weight:800;}
+  .abo-f .sep{width:1px; align-self:stretch; background:currentColor; opacity:.28; margin:0 2px;}
+  .abo-f .gauche{flex:1 1 55%; min-width:0;}
+  .abo-f .droite{flex:1 1 40%; min-width:0; font-size:13px; font-weight:700; line-height:1.3;}
+  .abo-f .go{width:40px; height:40px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
+    background:#fff; color:var(--accent); box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  .abo-f.annuel .go{color:var(--ink);}
+  .abo-f .go svg{width:18px; height:18px;}
+  .abo-f .eco{display:inline-block; background:var(--ink); color:#fff; border-radius:99px; padding:3px 9px;
+    font-size:12px; font-weight:800; margin-left:8px; vertical-align:middle; letter-spacing:0;}
+  .abo-populaire{position:absolute; top:-11px; left:14px; background:#FDE0C8; color:var(--accent);
+    border-radius:99px; padding:4px 11px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;}
+  /* trois gages en colonnes : a 375 px, icone et deux lignes cote a cote ne tiennent pas */
+  .abo-gages{display:flex; justify-content:space-between; gap:6px; margin:18px 0 0; padding-bottom:14px; border-bottom:1px solid var(--border);}
+  /* ce qui ne sera jamais payant, dit noir sur blanc sous les forfaits */
+  .abo-gratuit{margin:12px 2px 0; font-size:12.5px; line-height:1.45; color:var(--ink-soft); text-align:center;}
+  .abo-gratuit b{color:var(--ink);}
+  .abo-gages div{display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; flex:1 1 0; min-width:0;}
+  .abo-gages svg{width:24px; height:24px; flex:none; color:var(--ink);}
+  .abo-gages span{font-size:10.5px; line-height:1.3; color:var(--ink); font-weight:700;}
+  .abo-gages span em{display:block; font-style:normal; font-weight:500; color:var(--ink-mute);}
+  .abo-restaurer{display:block; width:100%; text-align:center; padding:14px 0 4px; color:var(--accent);
+    font-weight:800; font-size:14px; text-decoration:underline; text-underline-offset:3px;}
+  .abo-code-lien{display:block; width:100%; text-align:center; padding:6px 0 2px; color:var(--ink-mute);
+    font-size:12.5px; text-decoration:underline; text-underline-offset:3px;}
+  .abo-code{display:flex; gap:8px; margin-top:10px;}
+  .abo-code input{flex:1; min-width:0; padding:10px 12px; border-radius:12px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--ink); font:inherit; font-size:15px; letter-spacing:.06em; text-transform:uppercase;}
+  .abo-code .btn{flex:none; padding:10px 14px;}
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .abo-populaire{background:#5a3512; color:#ffb476;} }
+  :root[data-theme="dark"] .abo-populaire{background:#5a3512; color:#ffb476;}
   .exo-c{background:var(--surface); border-radius:16px; padding:16px 15px; margin-bottom:12px;}
   .exo-c.tip{border:1.5px solid var(--ink);}   /* le conseil est encadré : on ne le rate pas */
   .exo-t{font-size:16px; font-weight:800; letter-spacing:-.01em; margin-bottom:13px;}
@@ -3246,7 +3354,74 @@ const TRAD = {en:{
   "＋ Ajouter un dégressif":"＋ Add a drop set",
   "Repos lancé — touche la barre pour la mettre en pause":"Rest started — tap the bar to pause it",
   "Son de fin de repos activé":"Rest-over sound on",
+  "Ce que tu soulèves, ce que tu manges, où ça te mène.":"What you lift, what you eat, where it takes you.",
+  "Analyse ton alimentation":"Analyse your nutrition",
+  "Calories, protéines, ce que tu manges vraiment.":"Calories, protein, what you really eat.",
+  "Suis tes progrès":"Track your progress",
+  "Tes courbes de charge, exercice par exercice.":"Your load curves, exercise by exercise.",
+  "Ton profil complet":"Your full profile",
+  "Ton profil musculaire et ton bilan de la semaine.":"Your muscle profile and your weekly review.",
+  "Le plus populaire":"Most popular",
+  "Résiliable<br>à tout moment":"Cancel<br>anytime",
+  "Soit":"That's",
+  "an":"year",
+  "Paiement sécurisé":"Secure payment",
+  "via Google Play":"via Google Play",
+  "Renouvellement":"Renews",
+  "automatique":"automatically",
+  "Disponible sur":"Available on",
+  "le Play Store":"the Play Store",
+  "Déjà abonné ? Restaurer mes achats":"Already subscribed? Restore purchases",
+  "L'abonnement arrive dans une prochaine version.":"Subscriptions are coming in a future version.",
   "Retour vibrant":"Haptic feedback",
+  "Tonnup Analyse":"Tonnup Analyse",
+  "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
+  "Voir les forfaits":"See plans",
+  "Google Drive":"Google Drive",
+  "Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.":"A copy of your data in a private folder of your Drive, kept up to date on its own. To get Tonnup back on a new phone.",
+  "Connecter Google Drive":"Connect Google Drive",
+  "✓ Google Drive connecté":"✓ Google Drive connected",
+  "Dernière copie : {}":"Last copy: {}",
+  "Sauvegarder maintenant":"Back up now",
+  "Restaurer depuis Drive":"Restore from Drive",
+  "Déconnecter":"Disconnect",
+  "Connexion Google annulée.":"Google sign-in cancelled.",
+  "Google Drive ne répond pas.":"Google Drive isn't responding.",
+  "Sauvegardé sur Google Drive ✓":"Backed up to Google Drive ✓",
+  "Aucune sauvegarde Tonnup sur ce Drive.":"No Tonnup backup on this Drive.",
+  "Restaurer la sauvegarde Drive ?":"Restore the Drive backup?",
+  "Copie du {}. Elle remplacera toutes les données de ce téléphone.":"Copy from {}. It will replace all the data on this phone.",
+  "Restaurer":"Restore",
+  "Une sauvegarde existe sur ton Drive":"A backup exists on your Drive",
+  "Copie du {}. La récupérer sur ce téléphone ?":"Copy from {}. Get it back on this phone?",
+  "Google Drive déconnecté. La copie reste dans ton Drive.":"Google Drive disconnected. The copy stays in your Drive.",
+  "Sur le web, il faut être en ligne et autoriser la fenêtre Google.":"On the web, you need to be online and allow the Google popup.",
+  "Essai · encore {} jours":"Trial · {} days left",
+  "Essai Analyse · {} j":"Analyse trial · {}d",
+  "Essai · dernier jour":"Trial · last day",
+  "7 jours d'Analyse offerts — les séances restent gratuites, toujours.":"7 days of Analyse on us — workouts stay free, always.",
+  "Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.":"Workouts, training and load adaptation stay free, forever. Only nutrition, progress and the weekly review go through Tonnup Analyse.",
+  "Tes 7 jours d'essai sont terminés.":"Your 7-day trial is over.",
+  "J'ai un code d'accès":"I have an access code",
+  "Ton code":"Your code",
+  "Valider":"Confirm",
+  "Code inconnu.":"Unknown code.",
+  "Impossible de vérifier le code ici (page non sécurisée).":"Can't verify the code here (insecure page).",
+  "Tonnup Analyse est débloqué.":"Tonnup Analyse is unlocked.",
+  "Sur le web, l'abonnement se prend dans l'app Android — ou avec un code d'accès.":"On the web, subscribe from the Android app — or use an access code.",
+  "Bienvenue dans Tonnup Analyse.":"Welcome to Tonnup Analyse.",
+  "Google Play n'a pas pu finaliser l'achat.":"Google Play couldn't complete the purchase.",
+  "Abonnement retrouvé.":"Subscription restored.",
+  "Aucun abonnement actif sur ce compte Google.":"No active subscription on this Google account.",
+  "Google Play ne répond pas.":"Google Play isn't responding.",
+  "{} jours<br>gratuits":"{} days<br>free",
+  "Abonné · gérer sur Google Play":"Subscribed · manage on Google Play",
+  "Débloqué par code":"Unlocked with a code",
+  "Abonnement :":"Subscription:",
+  "Google Play relié":"Google Play connected",
+  "abonnement actif":"active subscription",
+  "aucun abonnement":"no subscription",
+  "hors de l'app Android":"outside the Android app",
   "Une vibration à chaque appui, et à la fin d'un repos.":"A buzz on every tap, and when a rest ends.",
   "Retour vibrant coupé":"Haptic feedback off",
   "Retour vibrant activé":"Haptic feedback on",
@@ -3400,7 +3575,7 @@ const TRAD = {en:{
   "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.":"This is the only feature that leaves your phone, and only when you tap the button. It sends <b>the barcode digits and nothing else</b> to Open Food Facts, an open food database, which returns the product name and its values. Not your name, not your weight, not what you eat, no identifier.",
   "L'appareil photo":"The camera",
   "Il sert <b>uniquement à lire un code-barres</b>, pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.":"It is used <b>only to read a barcode</b>, while the scan screen is open. On Android the picture is analysed live and nothing is saved. On iPhone, where no browser can read a barcode live, the app takes a photo and decodes it <b>on your phone</b>: it never joins your gallery and is sent to no one. You can decline the permission and type the digits by hand.",
-  "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>l'alarme à l'heure exacte</b>, pour que ce repos sonne juste même écran éteint ; <b>le redémarrage</b>, pour remettre en place un minuteur en cours si le téléphone redémarre ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.":"Only what the app actually uses: <b>the camera</b>, for scanning; <b>notifications</b>, to tell you a rest is over with the phone in your pocket; <b>exact alarms</b>, so that rest rings on time even with the screen off; <b>restart</b>, to put a running timer back in place if the phone reboots; <b>keeping the screen on</b> during a workout; <b>haptic feedback</b>. Nothing else: no location, no contacts, no microphone, no access to your files.",
+  "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.":"Only what the app actually uses: <b>the camera</b>, for scanning; <b>notifications</b>, to tell you a rest is over with the phone in your pocket; <b>a foreground service</b> (the “rest running” notification), so that rest rings on time even with the screen off; <b>keeping the screen on</b> during a workout; <b>haptic feedback</b>; <b>Google Play</b>, for the subscription — payment happens at Google, the app never sees your card details. Nothing else: no location, no contacts, no microphone, no access to your files.",
   "En dehors du scan, l'application installée depuis le Play Store fonctionne entièrement hors ligne. La version ouverte dans un navigateur va en plus chercher ses mises à jour chez son hébergeur, sans jamais envoyer la moindre donnée personnelle.":"Apart from scanning, the app installed from the Play Store works entirely offline. The version opened in a browser also fetches its updates from its host, without ever sending any personal data.",
   "séries au total":"sets in total",
   "série au total":"set in total",
@@ -6388,6 +6563,7 @@ function openOnboarding(first, brouillon, depart){
     db.weights.push({date:new Date().toISOString(), kg:d.weight});
     coachGoal = null;
     save();
+    if(demarrerEssai()) setTimeout(()=>toast(TR("7 jours d'Analyse offerts — les séances restent gratuites, toujours.")), 900);
     fermerOnb(); render(); showPlan(true);
   }
 
@@ -7327,7 +7503,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "11 septembre 2026 04h03";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 03h53";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7420,6 +7596,11 @@ function applyDefaults(){
   if(!("active" in db)) db.active = null;
 }
 applyDefaults();
+/* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
+   des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
+setTimeout(()=>{ sonderAbo(); chargerForfaits(); }, 0);
+/* un profil deja cree avant l'essai : ses 7 jours commencent aujourd'hui */
+if(db.profile && !db.profile.skipped && !db.essaiDebut) setTimeout(()=>demarrerEssai(), 0);
 /* Les libellés de la barre de repos sont du HTML statique : on les traduit
    au chargement et à chaque changement de langue. */
 /* « Repos » est réécrit par le minuteur lui-même ; seul « Passer » est statique. */
@@ -7585,6 +7766,7 @@ function vibrer(motif){
   try{ navigator.vibrate(v); }catch(e){}
 }
 function save(){
+  if(demoEnCours) return;                      /* on dessine un faux profil : rien a garder */
   db.savedAt = Date.now();
   let json;
   try{ json = JSON.stringify(db); }catch(e){ return; }
@@ -7594,6 +7776,7 @@ function save(){
   }catch(e){ storageOK = false; }
   idbSet(json);
   autoFileSchedule();
+  driveSchedule();
 }
 /* ---- la zone que le clavier laisse voir -------------------------------------
    visualViewport donne la portion d ecran reellement visible, clavier deduit. C est
@@ -8086,6 +8269,11 @@ const IC_LIVRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const IC_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
 /* Code-barres : quatre angles de visee, et des barres d'epaisseurs differentes —
    c'est l'irregularite qui fait lire « code-barres » plutot que « rayures ». */
+/* la courbe de l'onglet, en grand, au-dessus du titre Progression — comme le soleil
+   au-dessus d'Aujourd'hui */
+const IC_PROGRESSION = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"'
+  + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M7 15l3.5-4 2.5 2.5L17 9"/></svg>';
 const IC_SOLEIL = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"'
   + ' stroke-width="2" stroke-linecap="round" aria-hidden="true">'
   + '<circle cx="12" cy="12" r="4.3" fill="currentColor" stroke="none"/>'
@@ -8240,7 +8428,7 @@ function heroSvg(photo, plat){
       <rect width="1210" height="${HERO_H}" fill="#000"/>
       ${plat ? `<rect width="1210" height="${HERO_H}" fill="#fff"/>`
         : `<path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
-      <circle cx="605" cy="-50" r="797" fill="none" stroke="#000" stroke-width="16"/>
+      <circle cx="605" cy="-44" r="868" fill="none" stroke="#000" stroke-width="10"/>
       <circle cx="605" cy="-60" r="171" fill="#000"/>`}
     </mask></defs>
     <g mask="url(#hero-m)">
@@ -8262,7 +8450,8 @@ function hero(inner, opts){
         <button class="hero-ic" id="tb-close" title="Fermer" aria-label="${TR("Fermer")}">${IC_CROIX}</button>`
         : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}">${IC_USER}</button>
-        <button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button>`}
+        <span class="hero-droite">${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
+          TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
       </div>
       <div class="hero-h">${inner}</div>
     </div>
@@ -8317,6 +8506,7 @@ function openProfil(){
 }
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
+  const es = document.getElementById("hero-essai"); if(es) es.onclick = openAbonnement;   /* voir les forfaits, sans attendre */
   const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
   const x = document.getElementById("tb-close");
   if(x) x.onclick = ()=>{ curTab = "seance"; render(); };
@@ -8483,9 +8673,17 @@ function render(){
   const changeEcran = ecran !== ecranPrecedent;
   ecranPrecedent = ecran;
   if(curTab==="seance") renderSeance(app);
+  else if(verrouille(curTab)){
+    /* onglet payant, pas abonne : l'ecran REEL, calcule sur un profil de demonstration,
+       floute derriere la fenetre d'abonnement. On voit ce qu'on achete, pas un mur. */
+    app.classList.add("verrou");
+    avecDemo(()=>{ if(curTab==="eat") renderEat(app); else renderProgress(app); });
+    openAbonnement();
+  }
   else if(curTab==="eat") renderEat(app);
   else if(curTab==="hist") renderHist(app);
   else renderProgress(app);
+  if(curTab==="seance" || !verrouille(curTab)){ app.classList.remove("verrou"); fermerAbonnement(); }
   /* le temps que la page se pose : mesurer un élément en cours d'affichage
      l'encadrerait de travers */
   /* pendant une séance, c'est la visite de la séance qui s'ouvre, pas celle de
@@ -8493,7 +8691,7 @@ function render(){
   const onglet = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
   setTimeout(()=>{
     const encore = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
-    if(encore === onglet) lancerGuide(onglet);
+    if(encore === onglet && !verrouille(onglet)) lancerGuide(onglet);
   }, 500);
   if(gardeDefilement){ window.scrollTo(0, posDefilement); gardeDefilement = false; }
   else window.scrollTo(0,0);
@@ -9001,6 +9199,9 @@ async function retirerAlarmeRepos(){
    Ne reste que l'ancien chemin, pour le web et les téléphones où le service n'existe
    pas : là, l'alarme programmée est encore la seule chose qui puisse sonner. */
 document.addEventListener("visibilitychange", ()=>{
+  /* au retour, une sequence de gainage se remet a la bonne etape — le service a pu
+     en jouer plusieurs pendant que la page dormait */
+  if(document.visibilityState === "visible" && seqIso) resyncIso();
   if(pluginRepos()) return;                     /* le service s'en charge, on ne touche à rien */
   if(document.visibilityState === "hidden") poserAlarmeRepos();
   else retirerAlarmeRepos();
@@ -9066,13 +9267,75 @@ function etapesIso(ei){
 function etapeIsoEnCours(){
   return seqIso && seqIso.etapes[seqIso.i] || null;
 }
-function afficherEtapeIso(){
+/* Ce que dit la sonnerie a la fin de l'etape k : la meme phrase que l'ancienne alarme */
+function texteFinEtapeIso(k){
+  const e = seqIso.etapes[k], suite = seqIso.etapes[k + 1];
+  return {
+    titre: e.type === "tenue" ? TR("Gainage terminé") : TR("Repos terminé"),
+    corps: suite
+      ? (suite.type === "tenue" ? TR("En position, on repart.") : TR("Repose-toi."))
+      : TR("Dernière tenue : c'est fini.")
+  };
+}
+/* Le service natif prend TOUTE la suite, de l'etape en cours a la derniere. On lui
+   donne des durees : la premiere est ce qui reste de l'etape en cours, les autres
+   sont entieres. Il rend true s'il a pris la main. */
+async function poserSequenceIso(){
+  const p = pluginRepos();
+  if(!p || !seqIso) return false;
+  const etapes = [];
+  for(let k = seqIso.i; k < seqIso.etapes.length; k++){
+    const sec = (k === seqIso.i && rest.end)
+      ? Math.max(0.5, (rest.end - Date.now()) / 1000)
+      : seqIso.etapes[k].sec;
+    const t = texteFinEtapeIso(k);
+    etapes.push({sec, titre: t.titre, corps: t.corps});
+  }
+  try{ await p.sequence({etapes, son: db.settings.son !== false}); return true; }
+  catch(e){ return false; }
+}
+/* L'heure de fin de chaque etape restante, pour se retrouver au reveil */
+function noterFinsIso(){
+  if(!seqIso || !rest.end) return;
+  seqIso.fins = [];
+  let t = rest.end;
+  for(let k = seqIso.i; k < seqIso.etapes.length; k++){
+    if(k > seqIso.i) t += seqIso.etapes[k].sec * 1000;
+    seqIso.fins[k] = t;
+  }
+}
+/* Au retour a l'ecran : ou en est-on VRAIMENT ? Le service a peut-etre enchaine
+   plusieurs etapes pendant que la page dormait. On saute a la premiere dont la fin
+   est encore a venir, en validant les tenues passees ; s'il n'en reste aucune, la
+   sequence est finie. */
+function resyncIso(){
+  if(!seqIso || !seqIso.fins) return;
+  const now = Date.now();
+  let k = seqIso.i;
+  while(k < seqIso.etapes.length && seqIso.fins[k] !== undefined && seqIso.fins[k] <= now) k++;
+  if(k === seqIso.i) return;                       /* rien n'a bouge */
+  const en = db.active && db.active.entries[seqIso.ei];
+  for(let j = seqIso.i; j < k; j++){
+    const e = seqIso.etapes[j];
+    if(e.type === "tenue" && en && en.sets[e.si]) en.sets[e.si].done = true;
+  }
+  save();
+  if(k >= seqIso.etapes.length){ arreterSeqIso(true); return; }
+  seqIso.i = k;
+  /* on reprend l'etape en cours la ou elle en est, pas depuis son debut */
+  const restant = Math.max(0, (seqIso.fins[k] - now) / 1000);
+  afficherEtapeIso(restant);
+}
+function afficherEtapeIso(reste){
   const e = etapeIsoEnCours();
   if(!e) return;
-  startRest(e.sec);
+  startRest(reste !== undefined ? reste : e.sec);
   document.getElementById("rest-lbl").textContent =
     e.type === "tenue" ? TR("Gainage") : TR("Repos");
   restbar.classList.toggle("tenue", e.type === "tenue");
+  /* le service prend la suite a partir d'ici ; a defaut, l'ancien chemin */
+  noterFinsIso();
+  poserSequenceIso().then(ok=>{ if(!ok) programmerSonneriesIso(); });
 }
 function avancerIso(){
   if(!seqIso) return;
@@ -9083,6 +9346,7 @@ function avancerIso(){
     if(en && en.sets[e.si]){ en.sets[e.si].done = true; save(); }
   }
   seqIso.i++;
+  seqIso.retiree = false;
   if(seqIso.i >= seqIso.etapes.length){ arreterSeqIso(true); return; }
   afficherEtapeIso();
 }
@@ -9133,8 +9397,7 @@ function demarrerSeqIso(ei){
   const etapes = etapesIso(ei);
   if(!etapes.length) return;
   seqIso = {ei, etapes, i:0};
-  afficherEtapeIso();
-  programmerSonneriesIso();
+  afficherEtapeIso();                 /* pose aussi la suite au service */
   try{ renderActive(document.getElementById("app")); }catch(e){}
 }
 /* toutes les sonneries a venir, posees d un coup */
@@ -9160,6 +9423,7 @@ async function programmerSonneriesIso(){
   try{ await n.schedule({notifications: liste}); }catch(e){}
 }
 async function retirerSonneriesIso(){
+  arreterServiceRepos();               /* la chaine native s'arrete avec la sequence */
   const n = pluginNotifs();
   if(!n) return;
   const ids = [];
@@ -9230,7 +9494,8 @@ function togglePauseRest(){
     rest.int = setInterval(tickRest, 250);
     poserAlarmeRepos();                    /* l'heure de fin existe de nouveau */
     tickRest();
-    if(seqIso) programmerSonneriesIso();   /* on repose la suite, décalée d'autant */
+    /* une sequence reprend au service, decalee d'autant ; l'ancien chemin a defaut */
+    if(seqIso){ seqIso.retiree = false; noterFinsIso(); poserSequenceIso().then(ok=>{ if(!ok) programmerSonneriesIso(); }); }
   } else {
     rest.remaining = Math.max(0, rest.end - Date.now());
     rest.paused = true;
@@ -9240,7 +9505,7 @@ function togglePauseRest(){
     if(rest.int) clearInterval(rest.int);
     rest.int = null;
     retirerAlarmeRepos();          /* en pause, l'heure de fin n'existe plus */
-    retirerSonneriesIso();         /* ni celles qui suivaient */
+    if(seqIso) retirerSonneriesIso();   /* ni celles qui suivaient */
   }
 }
 const AVANT_FIN = 1.2;      /* secondes : de quoi annuler avant que ça ne sonne */
@@ -9251,6 +9516,14 @@ function tickRest(){
      dans cette dernière seconde, tant pis — la page serait gelée de toute façon. */
   if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible")
     retirerAlarmeRepos();
+  /* meme regle pour une etape de gainage : sous les yeux, c'est la page qui sonne, et
+     l'etape suivante reposera la suite au service. Si l'ecran s'eteint dans cette
+     derniere seconde, la page est gelee de toute facon — et le service, lui, est deja
+     arrete : c'est le seul trou, il dure une seconde. */
+  if(seqIso && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible" && !seqIso.retiree){
+    seqIso.retiree = true;
+    arreterServiceRepos();
+  }
   if(left<=0){
     clearInterval(rest.int); rest.int=null;
     retirerAlarmeRepos();
@@ -9603,7 +9876,7 @@ function renderEat(app){
     ${hero(`<div class="ico">${IC_SOLEIL}</div>
       <div class="big">${auj ? TR("Aujourd'hui")
       : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>
-      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour"})}
+      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour", essai:true})}
     <div class="under-hero sous-jour" style="display:flex; gap:9px; align-items:stretch;">
       <div class="eat-stats">
         <div class="eat-card eat-stat">
@@ -11776,7 +12049,7 @@ function renderSeance(app){
     <div class="section-t" style="margin-top:14px;"><i>▤</i>${TR("Historique")}</div>
     <div class="hist-strip" id="hist-strip"></div>`;
   wireTopbar();
-  document.getElementById("bilan-btn").onclick=openBilan;
+  document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
   if(rc) rc.onclick = openRecup;
@@ -14310,6 +14583,7 @@ function renderActive(app){
         sautes: a.entries.filter(en=>!en.sets.some(s=>s.done && !s.warm)).map(en=>en.exId)
       });
       db.active=null; arreterChronos(); save(); render();
+      demarrerEssai();                       /* la premiere seance ouvre l'essai, si rien ne l'a fait */
       setTimeout(()=>openFinSeance(recap), 260);
     });
   };
@@ -14744,7 +15018,7 @@ function openConfidentialite(){
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience. L'application ne contient aucun outil d'analyse d'un autre éditeur.")}
     ${b("Le scan de code-barres", "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.")}
     ${b("L'appareil photo", "Il sert <b>uniquement à lire un code-barres</b>, pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.")}
-    ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>l'alarme à l'heure exacte</b>, pour que ce repos sonne juste même écran éteint ; <b>le redémarrage</b>, pour remettre en place un minuteur en cours si le téléphone redémarre ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b>. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
+    ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
     ${b("Réseau", "En dehors du scan, l'application installée depuis le Play Store fonctionne entièrement hors ligne. La version ouverte dans un navigateur va en plus chercher ses mises à jour chez son hébergeur, sans jamais envoyer la moindre donnée personnelle.")}
     ${b("Ce que Google sait, lui", "Si tu as installé l'app depuis le Play Store, Google enregistre de son côté l'installation et, le cas échéant, l'achat d'un abonnement. Ces données relèvent de la politique de confidentialité de Google, pas de la nôtre : l'éditeur n'y a pas accès, hormis des statistiques anonymes de téléchargement.")}
     ${b("Ce que ça implique", "Si tu désinstalles l'app, effaces les données du navigateur ou changes de téléphone, tout disparaît. Pense à enregistrer un fichier de sauvegarde depuis les réglages.")}
@@ -14808,8 +15082,507 @@ const LIB_UNITS = {
   get auto(){ return "Auto (" + (estImperial() ? "lb" : "kg") + ")"; },
   metrique:"kg · cm", imperial:"lb · ft/in"
 };
+/* ---- Tonnup Analyse : l'abonnement ----
+   Les prix ci-dessous sont des valeurs par defaut, celles de la console pour la France.
+   Le greffon de facturation les remplace par ce que Google renvoie — dans la devise de
+   l'utilisateur, avec la virgule ou le point qui convient — des qu'il a repondu. */
+/* Les prix par defaut sont ceux de la console Play en euros ; sur Android, Google les
+   remplace par les siens (monnaie et format de la personne) des que forfaits() repond. */
+const PRIX_ABO = {mensuel:{montant:5.99, texte:"5,99 €", essaiJours:0}, annuel:{montant:39.99, texte:"39,99 €", essaiJours:0}};
+const PLAN_ABO = {mensuel:"mensuel", annuel:"annuel-1"};     /* nos noms -> plans de base Play */
+/* ================================================================== Google Drive
+   Une copie de la base dans le dossier cache de l'app (appDataFolder) sur le Drive de
+   la personne. Un seul fichier, tonnup.json, reecrit a chaque changement (avec un
+   delai), relu sur un nouveau telephone. Pas de synchronisation entre appareils :
+   la copie la plus recente gagne, et c'est la personne qui decide de restaurer.
+   Le jeton vient du natif sur Android (Play services), de Google Identity Services
+   sur le web ; les appels a Drive, eux, sont les memes partout : trois requetes. */
+const DRIVE_CLIENT_WEB = "577496590500-pnltn421kqaujk8rhki20v068d3bj9lu.apps.googleusercontent.com";
+const DRIVE_PORTEE = "https://www.googleapis.com/auth/drive.appdata";
+const DRIVE_FICHIER = "tonnup.json";
+let drivePont = null;
+function pluginDrive(){
+  if(drivePont) return drivePont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Drive) drivePont = c.Plugins.Drive;
+  else if(c && typeof c.registerPlugin === "function"
+          && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ drivePont = c.registerPlugin("Drive"); }catch(e){ drivePont = null; }
+  }
+  return drivePont;
+}
+/* le jeton vit en memoire, jamais dans la base : il expire en une heure de toute facon */
+let driveJeton = null, driveJetonFin = 0, driveEnCours = false, driveTo = null, driveDernierEnvoi = "";
+let driveErreur = "";
+function driveActif(){ return !!(db.drive && db.drive.actif); }
+function chargerGIS(){
+  if(window.google && google.accounts && google.accounts.oauth2) return Promise.resolve(true);
+  return new Promise(res=>{
+    const sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client"; sc.async = true;
+    sc.onload = ()=>res(!!(window.google && google.accounts && google.accounts.oauth2));
+    sc.onerror = ()=>res(false);
+    document.head.appendChild(sc);
+  });
+}
+/* interactif : on a le droit d'ouvrir un ecran Google. Sinon, seulement ce qui ne
+   derange pas — le natif rend le jeton en silence, le web n'a que son cache. */
+async function driveAutoriser(interactif){
+  if(driveJeton && Date.now() < driveJetonFin) return driveJeton;
+  const p = pluginDrive();
+  if(p){
+    try{
+      const r = await p.autoriser();
+      if(!r || r.refuse || !r.jeton){ driveErreur = TR("Connexion Google annulée."); return null; }
+      driveJeton = r.jeton; driveJetonFin = Date.now() + 50 * 60e3; driveErreur = "";
+      return driveJeton;
+    }catch(e){ driveErreur = String((e && e.message) || e).slice(0, 80); return null; }
+  }
+  if(!interactif) return null;
+  if(!(await chargerGIS())){ driveErreur = TR("Google Drive ne répond pas."); return null; }
+  return new Promise(res=>{
+    let fini = false;
+    const rendre = j => { if(fini) return; fini = true; res(j); };
+    try{
+      const tc = google.accounts.oauth2.initTokenClient({
+        client_id: DRIVE_CLIENT_WEB, scope: DRIVE_PORTEE,
+        callback: t => {
+          if(t && t.access_token){
+            driveJeton = t.access_token; driveJetonFin = Date.now() + (Math.max(60, (t.expires_in || 3600) - 60)) * 1000;
+            driveErreur = ""; rendre(driveJeton);
+          }else{ driveErreur = TR("Connexion Google annulée."); rendre(null); }
+        },
+        error_callback: ()=>{ driveErreur = TR("Connexion Google annulée."); rendre(null); }
+      });
+      tc.requestAccessToken({prompt: ""});
+    }catch(e){ driveErreur = String((e && e.message) || e).slice(0, 80); rendre(null); }
+  });
+}
+/* une requete Drive ; un 401 jette le jeton, qui sera redemande */
+async function driveReq(chemin, opts){
+  const o = opts || {};
+  const r = await fetch("https://www.googleapis.com/" + chemin, {
+    method: o.method || "GET",
+    headers: Object.assign({Authorization: "Bearer " + driveJeton}, o.headers || {}),
+    body: o.body
+  });
+  if(r.status === 401){ driveJeton = null; driveJetonFin = 0; }
+  if(!r.ok){ const t = await r.text().catch(()=>""); throw new Error("Drive " + r.status + " " + t.slice(0, 120)); }
+  return r;
+}
+async function driveTrouver(){
+  const r = await driveReq("drive/v3/files?spaces=appDataFolder&fields=files(id,name,modifiedTime,size)&q="
+    + encodeURIComponent("name = '" + DRIVE_FICHIER + "' and trashed = false"));
+  const j = await r.json();
+  return (j.files || [])[0] || null;
+}
+/* ce qu'on compare pour ne pas reenvoyer la meme chose : la base sans ses horodatages */
+function driveEmpreinte(){
+  const copie = Object.assign({}, db); delete copie.savedAt; delete copie.drive; delete copie.lastBackup;
+  return JSON.stringify(copie);
+}
+async function driveSauver(interactif){
+  if(driveEnCours) return false;
+  driveEnCours = true;
+  try{
+    if(!(await driveAutoriser(interactif))) return false;
+    const json = JSON.stringify(db);
+    let id = db.drive && db.drive.fichierId;
+    if(!id){ const f = await driveTrouver(); id = f && f.id; }
+    if(id){
+      await driveReq("upload/drive/v3/files/" + id + "?uploadType=media",
+        {method:"PATCH", headers:{"Content-Type":"application/json"}, body: json});
+    }else{
+      const lim = "tonnup" + Date.now();
+      const corps = "--" + lim + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"
+        + JSON.stringify({name: DRIVE_FICHIER, parents: ["appDataFolder"]})
+        + "\r\n--" + lim + "\r\nContent-Type: application/json\r\n\r\n" + json + "\r\n--" + lim + "--";
+      const r = await driveReq("upload/drive/v3/files?uploadType=multipart&fields=id",
+        {method:"POST", headers:{"Content-Type": "multipart/related; boundary=" + lim}, body: corps});
+      id = (await r.json()).id;
+    }
+    db.drive = Object.assign({}, db.drive, {actif:true, fichierId:id, derniere:Date.now()});
+    driveDernierEnvoi = driveEmpreinte();
+    driveErreur = "";
+    save();
+    return true;
+  }catch(e){
+    driveErreur = String((e && e.message) || e).slice(0, 100);
+    return false;
+  }finally{ driveEnCours = false; }
+}
+/* apres chaque changement, avec un delai : on n'ecrit pas a chaque aliment coche */
+function driveSchedule(){
+  if(!driveActif()) return;
+  if(driveTo) clearTimeout(driveTo);
+  driveTo = setTimeout(async ()=>{
+    if(driveEmpreinte() === driveDernierEnvoi) return;
+    if(await driveSauver(false)) return;
+    /* Sur le web, le jeton vit une heure et Google n'en rend un nouveau que dans un
+       geste de l'utilisateur. On attend donc son prochain appui, n'importe ou : la
+       fenetre Google s'ouvre et se referme d'elle-meme (il a deja consenti). */
+    if(!pluginDrive() && !driveJeton && driveCopieTropVieille()) driveAuProchainGeste();
+  }, 20000);
+}
+/* Sur le web, pas plus d'une fenetre Google par jour : on ne redemande le jeton que si
+   la derniere copie date de plus de 24 h. Entre-temps, tout ce qui a change part avec
+   le jeton en cours (une heure apres chaque fenetre), ou le lendemain. */
+const DRIVE_JOUR = 24 * 3600e3;
+function driveCopieTropVieille(){
+  return !(db.drive && db.drive.derniere) || Date.now() - db.drive.derniere > DRIVE_JOUR;
+}
+let driveGesteArme = false;
+function driveAuProchainGeste(){
+  if(driveGesteArme) return;
+  driveGesteArme = true;
+  const h = ()=>{
+    document.removeEventListener("pointerdown", h, true);
+    driveGesteArme = false;
+    if(driveActif() && driveEmpreinte() !== driveDernierEnvoi && driveCopieTropVieille()) driveSauver(true);
+  };
+  document.addEventListener("pointerdown", h, true);
+}
+async function driveLire(){
+  const f = await driveTrouver();
+  if(!f) return null;
+  const r = await driveReq("drive/v3/files/" + f.id + "?alt=media");
+  const d = await r.json();
+  if(!d || !Array.isArray(d.history)) throw new Error(TR("Ce n'est pas un fichier de sauvegarde Tonnup."));
+  return {fichier:f, donnees:d};
+}
+function driveAppliquer(d, fichier){
+  db = d; applyDefaults();
+  db.drive = Object.assign({}, db.drive, {actif:true, fichierId: fichier.id, derniere: Date.now()});
+  driveDernierEnvoi = driveEmpreinte();
+  save(); closeSheet(); render();
+  toast(TR("Sauvegarde restaurée ✓"));
+}
+function dateLisible(iso){
+  try{ return new Date(iso).toLocaleString(loc(), {day:"numeric", month:"long", hour:"2-digit", minute:"2-digit"}); }
+  catch(e){ return String(iso); }
+}
+/* Connecter : jeton, puis regarde ce qu'il y a deja. Un telephone vide devant une
+   copie existante, c'est presque toujours un nouveau telephone : on propose. */
+async function driveConnecter(){
+  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée.")); return false; }
+  let existante = null;
+  try{ existante = await driveLire(); }catch(e){ /* fichier absent ou illisible : on ecrira le notre */ }
+  db.drive = Object.assign({}, db.drive, {actif:true, fichierId: existante ? existante.fichier.id : null});
+  save();
+  const vide = !db.history.length && !Object.keys(db.habitSel || {}).length;
+  if(existante && vide){
+    askConfirm(TR("Une sauvegarde existe sur ton Drive"),
+      TR("Copie du {}. La récupérer sur ce téléphone ?").replace("{}", dateLisible(existante.fichier.modifiedTime)),
+      TR("Restaurer"), false, ()=>driveAppliquer(existante.donnees, existante.fichier));
+    return true;
+  }
+  const ok = await driveSauver(true);
+  toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")));
+  return ok;
+}
+async function driveRestaurer(){
+  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée.")); return; }
+  let r = null;
+  try{ r = await driveLire(); }
+  catch(e){ toast(String((e && e.message) || e).slice(0, 100)); return; }
+  if(!r){ toast(TR("Aucune sauvegarde Tonnup sur ce Drive.")); return; }
+  askConfirm(TR("Restaurer la sauvegarde Drive ?"),
+    TR("Copie du {}. Elle remplacera toutes les données de ce téléphone.").replace("{}", dateLisible(r.fichier.modifiedTime)),
+    TR("Restaurer"), true, ()=>driveAppliquer(r.donnees, r.fichier));
+}
+function driveDeconnecter(){
+  db.drive = {actif:false, fichierId: db.drive && db.drive.fichierId, derniere: db.drive && db.drive.derniere};
+  driveJeton = null; driveJetonFin = 0;
+  save();
+  toast(TR("Google Drive déconnecté. La copie reste dans ton Drive."));
+}
+/* ---- le pont vers Google Play — meme dessin que pluginRepos() : on ne retient que le
+   succes, et on construit le mandataire nous-memes, sur un vrai appareil seulement */
+let aboPont = null;
+function pluginAbo(){
+  if(aboPont) return aboPont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Abo) aboPont = c.Plugins.Abo;
+  else if(c && typeof c.registerPlugin === "function"
+          && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ aboPont = c.registerPlugin("Abo"); }catch(e){ aboPont = null; }
+  }
+  return aboPont;
+}
+/* Ce que Google a repondu en dernier — pour les reglages, et pour ne rien affirmer
+   qu'on ne sache. dispo=false : pas de reponse (web, ou Play injoignable). */
+let aboEtat = {dispo:false, abonne:null, panne:""};
+/* Google a le dernier mot sur Android : abonne -> debloque ; plus abonne -> verrouille,
+   SAUF si c'est un code d'acces qui a ouvert cet appareil (Google n'en sait rien). */
+async function sonderAbo(){
+  const p = pluginAbo();
+  if(!p) return false;
+  try{ aboEtat = await p.etat() || aboEtat; }
+  catch(e){ aboEtat = {dispo:false, abonne:null, panne:String((e && e.message) || e).slice(0, 80)}; }
+  if(!aboEtat.dispo) return false;
+  const avant = estAbonne();
+  if(aboEtat.abonne){ db.abo = true; db.aboVia = "play"; }
+  else if(db.aboVia === "play"){ db.abo = false; delete db.aboVia; }
+  if(estAbonne() !== avant){ save(); render(); }
+  return true;
+}
+/* Les prix de Google, dans la fenetre : on ecrase les valeurs par defaut, puis on
+   redessine la fenetre si elle est ouverte. */
+let forfaitsCharges = false;
+async function chargerForfaits(){
+  const p = pluginAbo();
+  if(!p || forfaitsCharges) return false;
+  let r;
+  try{ r = await p.forfaits(); }catch(e){ return false; }
+  if(!r || !Array.isArray(r.forfaits) || !r.forfaits.length) return false;
+  r.forfaits.forEach(f=>{
+    const cle = Object.keys(PLAN_ABO).find(k=>PLAN_ABO[k] === f.id);
+    if(!cle || !(f.montant > 0)) return;
+    PRIX_ABO[cle] = {montant:f.montant, texte:f.prix, essaiJours:f.essaiJours || 0, jeton:f.jeton};
+  });
+  forfaitsCharges = true;
+  if(document.getElementById("abo-fenetre")){ fermerAbonnement(); openAbonnement(); }
+  return true;
+}
+/* Ou l'on gere un abonnement pris sur Google Play : chez Google, pas chez nous */
+function gererSurPlay(){
+  window.open("https://play.google.com/store/account/subscriptions?sku=tonnup_analyse&package=com.inncop.tonnup", "_blank");
+}
+/* L'essai : 7 jours d'Analyse offerts, comptes dans l'app — pas chez Google, sans
+   carte, rien a resilier. Il demarre quand le profil est cree ou a la premiere seance
+   terminee (le premier des deux), et pour ceux qui avaient deja un profil, a la
+   premiere ouverture de cette version. Compte sur le telephone : quelqu'un qui
+   reinstalle peut le recommencer — et perd ses donnees au passage, ce n'est pas un
+   plan. */
+const ESSAI_JOURS = 7;
+function demarrerEssai(){
+  if(db.essaiDebut) return false;
+  db.essaiDebut = new Date().toISOString();
+  save();
+  return true;
+}
+/* jours restants, entiers, 0 quand c'est fini ou pas commence */
+function essaiRestant(){
+  if(!db.essaiDebut) return 0;
+  const fin = new Date(db.essaiDebut).getTime() + ESSAI_JOURS * 864e5;
+  if(isNaN(fin)) return 0;
+  return Math.max(0, Math.ceil((fin - Date.now()) / 864e5));
+}
+function essaiEnCours(){ return db.abo !== true && essaiRestant() > 0; }
+function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
+/* Ce qui est derriere l'abonnement : Alimentation, Progression et le Bilan. La seance,
+   elle, reste gratuite de bout en bout — c'est la vitrine. */
+const ONGLETS_PAYANTS = ["eat", "prg", "bilan"];
+function verrouille(quoi){ return ONGLETS_PAYANTS.includes(quoi) && !estAbonne(); }
+/* Le profil de demonstration : un mois d'entrainement et de repas plausibles, pour que
+   l'ecran floute ait l'air d'un vrai — chiffres, courbes, jauges remplies. Aucune
+   valeur ici n'est une recommandation : ce sont des exemples, pas des cibles. */
+let demoEnCours = false;
+function dbDemo(){
+  const ex = n => libId(n), j = n => new Date(Date.now() - n * 864e5);
+  const serie = (w, r) => ({w, r, done:true, warm:false, rir:1});
+  const seance = (n, name, entries) => ({id:"demo" + n, date:j(n).toISOString(), name, templateId:"demo",
+    start:j(n).getTime() - 3.3e6, end:j(n).getTime(), entries});
+  const semaine = (k, plus) => [
+    seance(k*7 + 1, "Push", [{exId:ex("Développé couché"), sets:[serie(70+plus,8),serie(70+plus,8),serie(70+plus,7)]},
+      {exId:ex("Développé militaire"), sets:[serie(40+plus/2,8),serie(40+plus/2,8),serie(40+plus/2,8)]},
+      {exId:ex("Extension poulie (barre)"), sets:[serie(25,12),serie(25,12),serie(25,11)]}]),
+    seance(k*7 + 3, "Pull", [{exId:ex("Tractions"), sets:[serie(0,8),serie(0,7),serie(0,6)]},
+      {exId:ex("Rowing barre"), sets:[serie(60+plus,10),serie(60+plus,10),serie(60+plus,9)]},
+      {exId:ex("Curl haltères"), sets:[serie(14,12),serie(14,11),serie(14,10)]}]),
+    seance(k*7 + 5, "Legs", [{exId:ex("Squat"), sets:[serie(90+plus,6),serie(90+plus,6),serie(90+plus,6)]},
+      {exId:ex("Presse à cuisses"), sets:[serie(140+plus*2,10),serie(140+plus*2,10),serie(140+plus*2,10)]},
+      {exId:ex("Leg curl"), sets:[serie(35,12),serie(35,12),serie(35,12)]}])
+  ];
+  const history = [].concat(semaine(0, 5), semaine(1, 2.5), semaine(2, 2.5), semaine(3, 0)).reverse();
+  const weights = [28, 21, 14, 7, 0].map((n, i) => ({date:j(n).toISOString(), kg:+(76.4 + i * 0.3).toFixed(1)}));
+  const habitSel = {};
+  for(let n = 0; n < 14; n++){
+    habitSel[dayKey(j(n))] = {
+      matin:["Œuf", "Œuf", "Pain (1 tranche)", "Pain (1 tranche)", "Yaourt grec"],
+      midi:["Poulet (1 filet, 130 g cuit)", "Riz (200 g cuit)", "Brocoli (200 g)"],
+      collation: n % 2 ? ["Pomme", "Poignée d'amandes (25 g)"] : ["Pot de fromage blanc (100 g)"],
+      soir:["Saumon (1 pavé, 120 g cuit)", "Patates (250 g)", "Salade verte (bol)"]
+    };
+  }
+  return {
+    profile:{name:"", sex:"h", age:29, height:180, weight:77.6, goalWeight:80, metab:"normal",
+      days:3, injuries:[], aim:"masse", pace:"modere", protPerKg:1.8, onboard:true},
+    settings:Object.assign({}, db.settings, {name:""}),
+    history, weights, habitSel, cardio:[], custom:[], templates:[], seen:{}, mealsV2:1, adaptV2:1
+  };
+}
+/* Dessiner avec le faux profil, puis rendre le vrai — quoi qu'il arrive */
+function avecDemo(fn){
+  const vrai = db;
+  db = dbDemo(); demoEnCours = true;
+  try{ applyDefaults(); fn(); }
+  finally{ db = vrai; demoEnCours = false; }
+}
+/* l'economie de l'annuel, calculee — jamais ecrite en dur, les prix peuvent changer */
+function economieAnnuel(){
+  const m = PRIX_ABO.mensuel.montant, a = PRIX_ABO.annuel.montant;
+  if(!(m > 0) || !(a > 0)) return null;
+  return Math.round((1 - (a / 12) / m) * 100);
+}
+function prixParMois(){
+  const a = PRIX_ABO.annuel.montant;
+  return a > 0 ? (a / 12).toFixed(2).replace(".", langue() === "en" ? "." : ",") + (PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") ? " " + PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") : "") : "";
+}
+const IC_ABO_LOGO = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>';
+const IC_ABO_ASSIETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v7a2.5 2.5 0 0 0 5 0V3"/><path d="M9.5 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v3h3v10"/></svg>';
+const IC_ABO_COURBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
+const IC_ABO_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>';
+const IC_ABO_RENOUV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.7 3v3.6h-3.6"/><path d="M6.3 21v-3.6h3.6"/></svg>';
+const IC_ABO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.5v17c0 .6.7 1 1.2.7l14-8.5c.5-.3.5-1 0-1.4l-14-8.5C5.7 2.5 5 2.9 5 3.5z"/></svg>';
+const IC_ABO_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+function fermerAbonnement(){
+  const f = document.getElementById("abo-fenetre");
+  if(f) f.remove();
+}
+function openAbonnement(){
+  if(document.getElementById("abo-fenetre")) return;   /* deja ouverte : on la laisse en place */
+  const eco = economieAnnuel();
+  const f = document.createElement("div");
+  f.className = "abo-fenetre"; f.id = "abo-fenetre";
+  f.innerHTML = `<div class="abo-carte-f">
+    <button class="sheet-x" id="abo-x" aria-label="${TR("Fermer")}">✕</button>
+    <div class="abo-tete">
+      <div class="abo-titre"><span class="logo">${IC_ABO_LOGO}</span>
+        <div><h3>Tonnup <em>Analyse</em></h3>
+          <p class="abo-accroche">${TR("Ce que tu soulèves, ce que tu manges, où ça te mène.")}</p></div></div>
+      <ul class="abo-promesses">
+        <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Analyse ton alimentation")}</b>
+          <span>${TR("Calories, protéines, ce que tu manges vraiment.")}</span></div></li>
+        <li><span class="ic">${IC_ABO_COURBE}</span><div><b>${TR("Suis tes progrès")}</b>
+          <span>${TR("Tes courbes de charge, exercice par exercice.")}</span></div></li>
+        <li><span class="ic"><span class="icm icm-muscle" style="width:17px; height:17px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
+          <span>${TR("Ton profil musculaire et ton bilan de la semaine.")}</span></div></li>
+      </ul>
+    </div>
+    <div class="abo-forfaits">
+      <button class="abo-f mensuel" id="abo-mensuel">
+        <span class="abo-populaire">${TR("Le plus populaire")}</span>
+        <div class="gauche"><div class="prix">${esc(PRIX_ABO.mensuel.texte)} <small>/ ${TR("mois")}</small></div></div>
+        <span class="sep"></span>
+        <div class="droite">${PRIX_ABO.mensuel.essaiJours > 0
+          ? TR("{} jours<br>gratuits").replace("{}", PRIX_ABO.mensuel.essaiJours)
+          : TR("Résiliable<br>à tout moment")}</div>
+        <span class="go">${IC_ABO_CHEVRON}</span>
+      </button>
+      <button class="abo-f annuel" id="abo-annuel">
+        <div class="gauche"><div class="prix">${esc(PRIX_ABO.annuel.texte)} <small>/ ${TR("an")}</small>${
+          eco > 0 ? `<span class="eco">−${eco} %</span>` : ""}</div>
+          <div class="sous">${TR("Soit")} <b>${esc(prixParMois())}</b> / ${TR("mois")}</div></div>
+        <span class="go">${IC_ABO_CHEVRON}</span>
+      </button>
+    </div>
+    <div class="abo-gages">
+      <div>${IC_ABO_BOUCLIER}<span>${TR("Paiement sécurisé")}<em>${TR("via Google Play")}</em></span></div>
+      <div>${IC_ABO_RENOUV}<span>${TR("Renouvellement")}<em>${TR("automatique")}</em></span></div>
+      <div>${IC_ABO_PLAY}<span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
+    </div>
+    <p class="abo-gratuit">${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b> ` : ""}${
+      TR("Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.")}</p>
+    <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
+    <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
+    <form class="abo-code" id="abo-code" hidden>
+      <input type="text" id="abo-code-in" autocomplete="off" autocapitalize="characters" spellcheck="false"
+        placeholder="${TR("Ton code")}" aria-label="${TR("Ton code")}">
+      <button type="submit" class="btn btn-accent">${TR("Valider")}</button>
+    </form>
+  </div>`;
+  document.body.appendChild(f);
+  /* fermer, c'est repartir : la fenêtre ne s'ouvre que sur un onglet verrouillé, il n'y
+     a rien d'autre à y faire. On revient donc à la séance. */
+  document.getElementById("abo-x").onclick = ()=>{ fermerAbonnement(); if(curTab !== "seance"){ curTab = "seance"; render(); } };
+  f.addEventListener("click", e=>{ if(e.target === f) document.getElementById("abo-x").click(); });
+  document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
+  document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel");
+  chargerForfaits();                 /* les vrais prix, s'ils ne sont pas encore la */
+  document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
+  const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
+  const champ = document.getElementById("abo-code-in");
+  /* le clavier rogne la zone visible : on amene le champ sous les yeux, une fois la
+     fenetre recalee (visualViewport met un instant a le dire) */
+  const voir = ()=>{ if(document.activeElement === champ) champ.scrollIntoView({block:"center"}); };
+  const amener = ()=>{ setTimeout(voir, 350); setTimeout(voir, 900); };
+  lien.onclick = ()=>{ lien.hidden = true; form.hidden = false; champ.focus(); amener(); };
+  champ.addEventListener("focus", amener);
+  form.onsubmit = async e=>{
+    e.preventDefault();
+    const ok = await verifierCodeAcces(document.getElementById("abo-code-in").value);
+    if(ok === null){ toast(TR("Impossible de vérifier le code ici (page non sécurisée).")); return; }
+    if(!ok){ vibrer(40); toast(TR("Code inconnu.")); return; }
+    db.abo = true; db.aboVia = "code"; save();
+    vibrer(26);
+    toast(TR("Tonnup Analyse est débloqué."));
+    fermerAbonnement(); render();
+  };
+}
+/* Les codes d'acces — testeurs iPhone, amis, et Nico sur sa version d'essai. La page ne
+   contient que leurs EMPREINTES : lire le code source ne donne pas le code. Retirer une
+   ligne revoque le code pour les prochains, pas pour ceux qui l'ont deja saisi.
+   L'empreinte est celle du code SANS tirets ni espaces, en majuscules. */
+const CODES_ACCES = [
+  "8d66037d2d22894dbeb4bce69c33a94c04410bf82bb5b0cf89ade7bd68d77c94"
+];
+async function empreinte(txt){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2, "0")).join("");
+}
+/* true / false, ou null si la page ne peut pas calculer d'empreinte (http sans https) */
+async function verifierCodeAcces(saisie){
+  /* on ne garde que lettres et chiffres : tirets, espaces et casse ne comptent pas */
+  const code = String(saisie || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if(!code) return false;
+  if(!(crypto && crypto.subtle)) return null;
+  try{ return CODES_ACCES.includes(await empreinte(code)); }
+  catch(e){ return null; }
+}
+/* Les deux points d'entree vers Google. Sans greffon de facturation — le web, ou une
+   version qui ne l'a pas encore — on le dit, on ne fait pas semblant. */
+async function acheterAbonnement(forfait){
+  vibrer(20);
+  const p = pluginAbo();
+  if(!p){ toast(TR("Sur le web, l'abonnement se prend dans l'app Android — ou avec un code d'accès.")); return; }
+  const b = document.getElementById("abo-" + forfait);
+  if(b){ if(b.disabled) return; b.disabled = true; }
+  try{
+    const r = await p.acheter({forfait: PLAN_ABO[forfait] || forfait});
+    if(r && r.abonne){
+      db.abo = true; db.aboVia = "play"; save();
+      vibrer(26);
+      toast(TR("Bienvenue dans Tonnup Analyse."));
+      fermerAbonnement(); render();
+    }else if(!(r && r.raison === "annule")){
+      toast(TR("Google Play n'a pas pu finaliser l'achat.") + (r && r.raison ? " · " + String(r.raison).slice(0, 60) : ""));
+    }
+  }catch(e){ toast(TR("Google Play n'a pas pu finaliser l'achat.")); }
+  finally{ if(b) b.disabled = false; }
+}
+async function restaurerAbonnement(){
+  const p = pluginAbo();
+  if(!p){ toast(TR("Sur le web, l'abonnement se prend dans l'app Android — ou avec un code d'accès.")); return; }
+  await sonderAbo();
+  if(estAbonne()){ toast(TR("Abonnement retrouvé.")); fermerAbonnement(); render(); }
+  else toast(aboEtat.dispo ? TR("Aucun abonnement actif sur ce compte Google.")
+                           : TR("Google Play ne répond pas.") + (aboEtat.panne ? " · " + String(aboEtat.panne).slice(0, 60) : ""));
+}
 function openSettings(){
   openSheet(`<h3>${TR("Réglages")}</h3>
+    <div class="rg-c">
+      <button class="rg-l" id="st-abo">
+        <span class="rgi">${IC_ABO_COURBE}</span>
+        <span class="grow">${TR("Tonnup Analyse")}
+          <em>${TR("Alimentation, progression et bilan.")}</em></span>
+        <span class="val">${db.abo === true
+          ? (db.aboVia === "play" ? TR("Abonné · gérer sur Google Play") : TR("Débloqué par code"))
+          : essaiEnCours()
+            ? (essaiRestant() > 1 ? TR("Essai · encore {} jours").replace("{}", essaiRestant()) : TR("Essai · dernier jour"))
+            : TR("Voir les forfaits")}</span>
+      </button>
+    </div>
     <div class="rg-c">
       <div class="rg-t">${TR("Pendant la séance")}</div>
       <button class="rg-l" id="st-ecran">
@@ -14882,6 +15655,7 @@ function openSettings(){
       <div id="st-backup" class="stack" style="display:none; padding:4px 2px 2px;">
       <p style="margin:0; font-size:13.5px; color:var(--ink-soft);">${TR("Tes données sont enregistrées automatiquement dans ce téléphone. Ces options servent seulement à les copier sur un autre appareil, ou à les mettre à l'abri avant un changement de téléphone.")}</p>
       <div id="st-auto"></div>
+      <div id="st-drive"></div>
       <button class="btn" id="st-file">${TR("💾 Enregistrer un fichier")}</button>
       <label class="btn" for="st-restore-in" style="display:flex;">${TR("📂 Restaurer depuis un fichier")}</label>
       <input type="file" id="st-restore-in" accept=".json,application/json,text/plain" style="display:none;">
@@ -14907,6 +15681,12 @@ function openSettings(){
     if(!v) return;
     v.textContent = alarmeExacte === "granted" ? TR("Activée")
                   : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
+  };
+  /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
+  document.getElementById("st-abo").onclick = ()=>{
+    if(db.abo === true && db.aboVia === "play"){ gererSurPlay(); return; }
+    if(db.abo === true) return;                      /* debloque par code : rien a gerer */
+    hideSheet(); setTimeout(openAbonnement, 260);    /* en essai aussi : on peut voir les forfaits */
   };
   const bVibr = document.getElementById("st-vibr");
   if(bVibr) bVibr.onclick = ()=>{
@@ -15044,6 +15824,10 @@ function openSettings(){
         + (autoFile.err ? " · " + esc(autoFile.err) : "")}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute);" id="st-repos">${TR("Minuteur natif :")} ${esc(reposEtat)}</div>
+    <div style="color:var(--ink-mute);">${TR("Abonnement :")} ${esc(
+      !pluginAbo() ? TR("hors de l'app Android")
+      : !aboEtat.dispo ? TR("Google Play ne répond pas.") + (aboEtat.panne ? " · ⚠ " + String(aboEtat.panne).slice(0, 70) : "")
+      : TR("Google Play relié") + " · " + (aboEtat.abonne ? TR("abonnement actif") : TR("aucun abonnement")))}</div>
     <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
     ${(!survived && !dansLApp())? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${
       /* la trace manque aussi a la PREMIERE ouverture, ou c'est normal : dans
@@ -15052,6 +15836,38 @@ function openSettings(){
       estIOS()
         ? TR("iOS efface la mémoire de l'app entre deux ouvertures. Utilise l'icône 💾 avant de fermer, et 📂 pour restaurer.")
         : TR("Ce navigateur a effacé la mémoire de l'app. Utilise l'icône 💾 pour en garder une copie, et 📂 pour la restaurer.")}</div>`:""}`;
+  /* Google Drive : un bloc qui se redessine apres chaque action */
+  const driveBox = document.getElementById("st-drive");
+  const dessinerDrive = ()=>{
+    if(!driveBox) return;
+    if(!driveActif()){
+      driveBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
+        <div style="font-weight:800; font-size:13.5px;">${TR("Google Drive")}</div>
+        <div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin:4px 0 8px;">${TR("Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.")}${
+          pluginDrive() ? "" : " " + TR("Sur le web, il faut être en ligne et autoriser la fenêtre Google.")}</div>
+        <button class="btn btn-accent" id="dr-connect" style="width:100%;">${TR("Connecter Google Drive")}</button>
+        ${driveErreur ? `<div style="font-size:12px; color:var(--bad); margin-top:6px;">${esc(driveErreur)}</div>` : ""}</div>`;
+      document.getElementById("dr-connect").onclick = async ()=>{ await driveConnecter(); dessinerDrive(); };
+    }else{
+      driveBox.innerHTML = `<div class="card" style="padding:12px; margin-bottom:2px;">
+        <div style="font-weight:700; color:var(--good); font-size:13.5px;">${TR("✓ Google Drive connecté")}</div>
+        <div style="font-size:12px; color:var(--ink-mute); margin:2px 0 8px;">${TR("Dernière copie : {}").replace("{}", ago(db.drive.derniere))}${
+          driveErreur ? ` · <span style="color:var(--bad);">${esc(driveErreur)}</span>` : ""}</div>
+        <div class="row" style="gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="dr-now" style="flex:1;">${TR("Sauvegarder maintenant")}</button>
+          <button class="btn" id="dr-restore" style="flex:1;">${TR("Restaurer depuis Drive")}</button>
+        </div>
+        <button id="dr-off" style="margin-top:8px; font-size:12.5px; color:var(--ink-mute); text-decoration:underline;">${TR("Déconnecter")}</button></div>`;
+      document.getElementById("dr-now").onclick = async ()=>{
+        const ok = await driveSauver(true);
+        toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")));
+        dessinerDrive();
+      };
+      document.getElementById("dr-restore").onclick = ()=>driveRestaurer();
+      document.getElementById("dr-off").onclick = ()=>{ driveDeconnecter(); dessinerDrive(); };
+    }
+  };
+  dessinerDrive();
   const retry = document.getElementById("af-retry");
   if(retry) retry.onclick = ()=>{ delete db.autoFileImpossible; save(); autoFilePick(); };
   document.getElementById("st-file").onclick=async()=>{
@@ -15427,7 +16243,8 @@ function renderProgress(app){
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    ${hero(`<div class="big">${TR("Progression")}</div>`)}
+    ${hero(`<div class="ico">${IC_PROGRESSION}</div>
+      <div class="big">${TR("Progression")}</div>`, {classe:"hero-jour", essai:true})}   /* meme calage que le soleil : le titre ne descend pas sous les cartes */
     <div class="under-hero stack" id="wt-sec"></div>
     <div id="prg-body"></div>`;
   wireTopbar();
