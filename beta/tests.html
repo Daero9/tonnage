@@ -5463,6 +5463,104 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- Google Drive */
+  /* Ni Google ni le natif ne tournent ici : un faux pont rend un jeton, un faux fetch
+     joue le serveur Drive (liste, creation, reecriture, lecture, et un 401). On eprouve
+     ce que la page en fait : un seul fichier, cree puis reecrit ; rien d'envoye deux
+     fois pour rien ; une restauration qui remplace la base ; un jeton perime jete. */
+  grp("La sauvegarde Google Drive");
+  neuf();
+  await (async ()=>{
+    const serveur = {fichiers:{}, appels:[], jetonValide:"j1", suivant:1};
+    const rep = (code, obj) => ({ok: code < 300, status: code, json: async ()=>obj, text: async ()=>JSON.stringify(obj)});
+    const vraiFetch = F.fetch;
+    F.fetch = async (url, o)=>{
+      o = o || {};
+      const auth = (o.headers || {}).Authorization || "";
+      serveur.appels.push((o.method || "GET") + " " + url.replace("https://www.googleapis.com/", "").split("?")[0]);
+      if(auth !== "Bearer " + serveur.jetonValide) return rep(401, {error:"jeton"});
+      if(/^https:\/\/www\.googleapis\.com\/drive\/v3\/files\?/.test(url)){
+        const liste = Object.keys(serveur.fichiers).map(id=>({id, name:"tonnup.json", modifiedTime:serveur.fichiers[id].date, size:String(serveur.fichiers[id].json.length)}));
+        return rep(200, {files:liste});
+      }
+      let m;
+      if((m = url.match(/drive\/v3\/files\/([^?]+)\?alt=media/))){
+        const f = serveur.fichiers[m[1]]; return f ? rep(200, JSON.parse(f.json)) : rep(404, {});
+      }
+      if(/upload\/drive\/v3\/files\?uploadType=multipart/.test(url)){
+        const id = "f" + (serveur.suivant++);
+        const json = o.body.split("\r\n\r\n")[2].split("\r\n--")[0];
+        serveur.fichiers[id] = {json, date:new Date().toISOString()};
+        return rep(200, {id});
+      }
+      if((m = url.match(/upload\/drive\/v3\/files\/([^?]+)\?uploadType=media/))){
+        if(!serveur.fichiers[m[1]]) return rep(404, {});
+        serveur.fichiers[m[1]] = {json:o.body, date:new Date().toISOString()};
+        return rep(200, {id:m[1]});
+      }
+      return rep(404, {});
+    };
+    F.__drive = {autoriser: async ()=>({jeton:"j1", refuse:false})};
+    F.__dbOrig = DB;                 /* la restauration remplace l'objet db : on le remettra */
+    F.eval("drivePont = window.__drive; driveJeton = null; driveJetonFin = 0; driveDernierEnvoi = ''");
+    delete DB.drive;
+
+    /* 1. connecter sur un telephone qui a des donnees : la copie part tout de suite */
+    DB.history = [seance(30, [{exId:id("Squat"), sets:[serie(80,8)]}])];
+    const ok = await F.driveConnecter();
+    vrai("Connecter écrit la première copie", ok === true && Object.keys(serveur.fichiers).length === 1, serveur.appels.join(" | "));
+    vrai("…et retient le fichier", DB.drive && DB.drive.actif && DB.drive.fichierId === "f1");
+    vrai("…par une création multipart dans appDataFolder", serveur.appels.some(a=>/POST upload\/drive\/v3\/files$/.test(a)));
+    vrai("La copie contient bien l'historique", JSON.parse(serveur.fichiers.f1.json).history.length === 1);
+
+    /* 2. sauvegarder a nouveau : reecriture du MEME fichier, pas un second */
+    serveur.appels.length = 0;
+    DB.history.push(seance(2, [{exId:id("Squat"), sets:[serie(82,8)]}]));
+    vrai("Une nouvelle sauvegarde réécrit le même fichier", await F.driveSauver(false) === true
+      && Object.keys(serveur.fichiers).length === 1 && serveur.appels.some(a=>/PATCH upload\/drive\/v3\/files\/f1$/.test(a)), serveur.appels.join(" | "));
+    eq("…avec les deux séances", JSON.parse(serveur.fichiers.f1.json).history.length, 2);
+
+    /* 3. rien n'a change : le delai n'envoie rien */
+    serveur.appels.length = 0;
+    vrai("Sans changement, l'empreinte est la même", F.driveEmpreinte() === F.eval("driveDernierEnvoi"));
+
+    /* 4. jeton perime : 401, le jeton est jete, un nouveau est demande, ca repart */
+    serveur.jetonValide = "j2";
+    F.__drive.autoriser = async ()=>({jeton:"j2", refuse:false});
+    DB.history.push(seance(1, [{exId:id("Squat"), sets:[serie(84,8)]}]));
+    const ok1 = await F.driveSauver(false);          /* echoue : j1 n'est plus bon */
+    vrai("Un jeton périmé fait échouer l'envoi et jette le jeton", ok1 === false && F.eval("driveJeton") === null);
+    vrai("…et l'envoi suivant repart avec un jeton neuf", await F.driveSauver(false) === true
+      && JSON.parse(serveur.fichiers.f1.json).history.length === 3);
+
+    /* 5. restaurer sur un telephone vide : proposition, puis remplacement */
+    const copie = serveur.fichiers.f1.json;
+    neuf(); delete DB.drive; F.eval("driveJeton = null; driveJetonFin = 0; driveDernierEnvoi = ''");
+    eq("Le nouveau téléphone est vide", DB.history.length, 0);
+    const vraiAsk = F.askConfirm; let demande = null;
+    F.askConfirm = (t, m, ok, danger, cb)=>{ demande = {t, m}; cb(); };
+    await F.driveConnecter();
+    vrai("Sur un téléphone vide, une copie existante est proposée", !!demande && /Drive/.test(demande.t), demande && demande.t);
+    const DB2 = F.eval("db");
+    eq("…et la restauration ramène les trois séances", DB2.history.length, 3);
+    vrai("…en gardant Drive connecté au même fichier", DB2.drive.actif && DB2.drive.fichierId === "f1");
+    vrai("…et la copie sur Drive n'a pas été écrasée par le vide", serveur.fichiers.f1.json === copie);
+    F.askConfirm = vraiAsk;
+
+    /* 6. refus du consentement : rien ne casse */
+    F.__drive.autoriser = async ()=>({jeton:"", refuse:true});
+    F.eval("driveJeton = null; driveJetonFin = 0");
+    vrai("Un refus Google est une simple annulation", await F.driveSauver(true) === false && /annulée/.test(F.eval("driveErreur")));
+
+    /* on range */
+    F.fetch = vraiFetch;
+    F.eval("drivePont = null; driveJeton = null; driveJetonFin = 0; driveDernierEnvoi = ''; driveErreur = ''");
+    F.eval("db = window.__dbOrig");  /* les groupes suivants parlent a DB : c'est de nouveau lui */
+    delete F.__drive; delete F.__dbOrig;
+    neuf(); delete DB.drive;
+  })();
+  neuf();
+
   /* --------------------------------------- l'essai de 7 jours */
   /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
      la premiere seance. Au huitieme jour le voile revient — et pas avant. */
