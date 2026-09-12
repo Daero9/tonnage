@@ -463,6 +463,11 @@
   .ad-l .t{font-size:15px; font-weight:800; line-height:1.25;}
   .ad-l .s{font-size:13px; line-height:1.45; color:var(--ink-mute); margin-top:3px;}
   /* le ressenti de fin de séance : trois cases, aucune obligation */
+  /* les trois tuiles du recap, chacune avec son signe — le meme que sur la carte de
+     la semaine, pour qu'on retrouve les memes chiffres sous le meme dessin */
+  .fin-tiles .tile .ic{display:flex; width:30px; height:30px; border-radius:50%; margin-bottom:8px;
+    background:rgba(245,130,32,.13); color:var(--accent); align-items:center; justify-content:center;}
+  .fin-tiles .tile .ic svg{width:17px; height:17px;}
   .fin-feel{background:var(--surface2); border-radius:16px; padding:13px; margin-bottom:12px;}
   .fin-feel .t{font-size:13.5px; font-weight:800; text-align:center; margin-bottom:9px;}
   .fin-feel .ch{display:grid; grid-template-columns:repeat(3,1fr); gap:7px;}
@@ -3664,10 +3669,9 @@ const TRAD = {en:{
   "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
   "Pourquoi cette séance":"Why this session",
-  "Comment tu l'as sentie ?":"How did it feel?",
-  "Facile":"Easy",
-  "Correct":"Just right",
-  "Dur":"Hard",
+  "Comment te sens-tu ?":"How do you feel?",
+  "Bien":"Good",
+  "Très fatigué":"Wiped out",
   "Ta forme":"Your shape",
   "Ta zone sensible":"Your sensitive area",
   "intensité {}":"{} sensitivity",
@@ -3676,8 +3680,8 @@ const TRAD = {en:{
   "muscle le moins prioritaire aujourd'hui":"lowest-priority muscle today",
   "ce muscle récupère encore":"this muscle is still recovering",
   "exercice sensible pour toi":"exercise you flagged as sensitive",
-  "tes dernières séances t'ont paru faciles":"your recent sessions felt easy",
-  "tes dernières séances t'ont paru dures":"your recent sessions felt hard",
+  "tu te sentais bien après tes dernières séances":"you felt good after your recent sessions",
+  "tu sortais très fatigué de tes dernières séances":"you came out of your recent sessions wiped out",
   "Tu pourrais charger, mais tu as signalé « {z} » sur ce mouvement. On garde {c} : la progression se fera en répétitions tant que ça tire.":"You could add load, but you flagged « {z} » on this movement. We keep {c}: progress comes from reps while it still pulls.",
   "Garde {c} et gagne une répétition — {z} sensible.":"Keep {c} and win a rep — {z} is sensitive.",
   "faible":"low","moyenne":"medium","élevée":"high",
@@ -3689,8 +3693,8 @@ const TRAD = {en:{
   "Si une douleur dure ou revient, on te recommande d'aller voir un professionnel de santé.":"If pain lasts or keeps coming back, we recommend seeing a health professional.",
   "Tes zones sensibles":"Your sensitive areas",
   "Les exercices à risque pour {} sont écartés dès qu'une alternative existe.":"Exercises that are risky for your {} are set aside whenever there is an alternative.",
-  "Tes deux dernières séances t'ont paru dures. On allège un peu.":"Your last two sessions felt hard. We ease off a little.",
-  "Tes deux dernières séances t'ont paru faciles. On en remet une couche.":"Your last two sessions felt easy. We add a bit more.",
+  "Tu sortais très fatigué de tes deux dernières séances. On allège un peu.":"You came out of your last two sessions wiped out. We ease off a little.",
+  "Tu te sentais bien après tes deux dernières séances. On en remet une couche.":"You felt good after your last two sessions. We add a bit more.",
   "Tu forces dessus sans que ça monte. On lève le pied cette semaine.":"You are grinding on it with nothing to show. We ease off this week.",
   "Pas encore récupéré. On l'épargne aujourd'hui.":"Not recovered yet. We go easy on it today.",
   "Jamais travaillé pour l'instant. On commence par lui.":"Never trained so far. We start with it.",
@@ -7540,7 +7544,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "13 septembre 2026 01h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 01h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12785,9 +12789,9 @@ function raisonsSeance(type){
         .replace("{}", bobos.map(l=>TR(l).toLowerCase()).join(", "))]);
   const humeur = tendanceRessenti();
   if(humeur === "dur")
-    out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru dures. On allège un peu.")]);
+    out.push([TR("Ta forme"), TR("Tu sortais très fatigué de tes deux dernières séances. On allège un peu.")]);
   if(humeur === "facile")
-    out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru faciles. On en remet une couche.")]);
+    out.push([TR("Ta forme"), TR("Tu te sentais bien après tes deux dernières séances. On en remet une couche.")]);
   out.push(phrase(b[0]));
   if(b.length > 1) out.push(phrase(b[1]));
   /* le dernier de la liste n'est intéressant que s'il est vraiment écarté */
@@ -13042,11 +13046,15 @@ function genererAdaptative(type, evites){
          des exercices — on la préfère à rien, on ne la met pas en avant. */
       if(choisi.risque >= 2) moins("exercice sensible pour toi");
       /* et ce que TU as ressenti sur les deux dernières séances : une série de plus sur
-         l'exercice de tête si elles t'ont paru faciles, une de moins sur le dernier si
-         elles t'ont paru dures. Jamais les deux, jamais plus d'une. */
-      if(k === 0 && humeur === "facile" && rang === 0) plus("tes dernières séances t'ont paru faciles");
+         l'exercice de tête si tu en sortais bien, une de moins sur le dernier si tu en
+         sortais très fatigué. Jamais les deux, jamais plus d'une. La question posée en
+         fin de séance est « Comment te sens-tu ? » (bien / fatigué / très fatigué), pas
+         « c'était dur ? » : Nico a remarqué qu'une séance intense n'est pas forcément
+         « dure », alors que la fatigue, elle, se sent sans ambiguïté. Les valeurs
+         internes gardent leurs noms (facile / correct / dur). */
+      if(k === 0 && humeur === "facile" && rang === 0) plus("tu te sentais bien après tes dernières séances");
       if(k === 0 && humeur === "dur" && rang >= parts.length - 1 && parts.length > 2)
-        moins("tes dernières séances t'ont paru dures");
+        moins("tu sortais très fatigué de tes dernières séances");
       const ecartSeries = series - d.s;
       items.push({nom:choisi.nom, sets:series, reps:repsTenue(choisi.nom, reps),
                   rest:reposTenue(choisi.nom, repos),
@@ -14770,10 +14778,10 @@ function openFinSeance(r){
       <div style="font-size:13.5px; color:var(--ink-soft);">${esc(r.nom)} ${TR("— c'est dans la boîte.")}</div>
     </div>
   </div>
-  <div class="tiles" style="margin:16px 0 14px;">
-    <div class="tile"><div class="v">${mn}<span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
-    <div class="tile"><div class="v">${r.volume>=1000 && !estImperial()? (r.volume/1000).toLocaleString(loc(),{maximumFractionDigits:1})+" t" : pds(r.volume)}</div><div class="u">${TR("soulevés")}</div></div>
-    <div class="tile"><div class="v" style="color:var(--accent);">${r.kcal}</div><div class="u">${TR("kcal brûlées")}</div></div>
+  <div class="tiles fin-tiles" style="margin:16px 0 14px;">
+    <div class="tile"><span class="ic">${IC_CHRONO}</span><div class="v">${mn}<span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
+    <div class="tile"><span class="ic">${ICONS.seance}</span><div class="v">${r.volume>=1000 && !estImperial()? (r.volume/1000).toLocaleString(loc(),{maximumFractionDigits:1})+" t" : pds(r.volume)}</div><div class="u">${TR("soulevés")}</div></div>
+    <div class="tile"><span class="ic">${icoM("flamme", 18)}</span><div class="v" style="color:var(--accent);">${r.kcal}</div><div class="u">${TR("kcal brûlées")}</div></div>
   </div>
   <div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin-bottom:14px;">
     ${r.series} ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} ${r.exos} ${TR(r.exos>1 ? "exercices" : "exercice")}.</div>
@@ -14784,11 +14792,11 @@ function openFinSeance(r){
         : pds(x.gain)}</b> ${x.unite==="reps" ? TR("sur ton meilleur") : TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
   </div>`:""}
   <div class="fin-feel">
-    <div class="t">${TR("Comment tu l'as sentie ?")}</div>
+    <div class="t">${TR("Comment te sens-tu ?")}</div>
     <div class="ch">
-      <button data-feel="facile">${TR("Facile")}</button>
-      <button data-feel="correct">${TR("Correct")}</button>
-      <button data-feel="dur">${TR("Dur")}</button>
+      <button data-feel="facile">${TR("Bien")}</button>
+      <button data-feel="correct">${TR("Fatigué")}</button>
+      <button data-feel="dur">${TR("Très fatigué")}</button>
     </div>
   </div>
   <button class="btn" id="fin-partager" style="width:100%; margin-bottom:8px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
