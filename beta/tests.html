@@ -5613,6 +5613,30 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- la carte a partager */
+  grp("La carte de séance à partager");
+  neuf();
+  await (async ()=>{
+    const S = (w, r) => ({w, r, done:true, warm:false});
+    const h = {id:"c1", name:"Push", date:new Date().toISOString(), start:Date.now() - 50 * 60000, end:Date.now(), entries:[
+      {exId:id("Développé couché"), sets:[{w:40, r:12, done:true, warm:true}, S(70, 8), S(72.5, 7)]},
+      {exId:id("Dips"), sets:[S(0, 10), S(0, 9)]},
+      {exId:id("Curl barre"), sets:[]}]};
+    const cv = F.dessinerCarteSeance(h, {records:[{nom:"Développé couché", gain:2.5, unite:"kg"}]});
+    vrai("La carte est une image 1080 × 1350 (le 4:5 des réseaux)", cv && cv.width === 1080 && cv.height === 1350);
+    const m = F.meilleureSerie(h.entries[0]);
+    vrai("La meilleure série ignore l'échauffement et prend la plus lourde", m && m.w === 72.5 && m.r === 7);
+    vrai("Un exercice au poids du corps a aussi sa meilleure série", F.meilleureSerie(h.entries[1]).r === 10);
+    vrai("Un exercice sans série faite n'en a pas", F.meilleureSerie(h.entries[2]) === null);
+    /* huit exercices et des records : rien ne deborde, on tronque avec « …et N de plus » */
+    const gros = {id:"c2", name:"Une séance au nom vraiment très long pour voir", date:new Date().toISOString(), start:Date.now() - 5e6, end:Date.now(),
+      entries:Array.from({length:8}, (_, i)=>({exId:F.eval("LIB")[i].id, sets:[S(20 + i, 10)]}))};
+    let ok = true;
+    try{ F.dessinerCarteSeance(gros, {records:[{nom:"a"}, {nom:"b"}, {nom:"c"}, {nom:"d"}]}); }catch(e){ ok = false; }
+    vrai("Huit exercices, quatre records et un nom trop long se dessinent sans erreur", ok);
+  })();
+  neuf();
+
   /* --------------------------------------- l'essai de 7 jours */
   /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
      la premiere seance. Au huitieme jour le voile revient — et pas avant. */
