@@ -7503,7 +7503,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 03h53";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 15h27";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -15133,7 +15133,11 @@ async function driveAutoriser(interactif){
   if(p){
     try{
       const r = await p.autoriser();
-      if(!r || r.refuse || !r.jeton){ driveErreur = TR("Connexion Google annulée."); return null; }
+      if(!r || r.refuse || !r.jeton){
+        /* la raison de Google, quand il y en a une : un refus de la personne n'en a pas */
+        driveErreur = TR("Connexion Google annulée.") + (r && r.raison ? " · " + String(r.raison).slice(0, 220) : "");
+        return null;
+      }
       driveJeton = r.jeton; driveJetonFin = Date.now() + 50 * 60e3; driveErreur = "";
       return driveJeton;
     }catch(e){ driveErreur = String((e && e.message) || e).slice(0, 80); return null; }
