@@ -1007,6 +1007,10 @@
   .hist-c{position:relative; flex:0 0 108px; height:112px; border-radius:12px; overflow:hidden;
     background:var(--hero); color:#fff; text-align:left;}
   .hist-c .ph{position:absolute; inset:0; background-size:cover; background-position:center;}
+  /* le bouton de partage de la derniere seance, dans le coin */
+  .hist-c .pg{position:absolute; top:6px; right:6px; z-index:3; width:26px; height:26px; border-radius:50%;
+    background:rgba(0,0,0,.5); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .hist-c .pg svg{width:14px; height:14px; vertical-align:0;}
   .hist-c .ph::after{content:""; position:absolute; inset:0;
     background:linear-gradient(180deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.72) 100%);}
   .hist-c .in{position:absolute; inset:0; padding:8px 9px; display:flex; flex-direction:column; justify-content:flex-end;}
@@ -7536,7 +7540,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "13 septembre 2026 01h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 01h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12212,6 +12216,7 @@ function renderSeance(app){
   if(!passees.length){
     hs.innerHTML = `<div class="card empty" style="flex:1; padding:16px;">${TR("Aucune séance enregistrée pour l'instant.")}</div>`;
   } else {
+    let premiereMuscu = true;
     hs.innerHTML = passees.map(it=>{
       if(it.t === "c"){
         const c = it.o;
@@ -12231,8 +12236,13 @@ function renderSeance(app){
       const kc = liftKcal(h);
       const mn = Math.round(((h.end||0)-(h.start||0))/60000);
       const t = db.templates.find(x=>x.id===h.templateId);
+      /* la derniere seance porte le bouton de partage : de retour au menu, un appui et
+         la carte part — sans rouvrir la seance */
+      const partage = premiereMuscu ? `<span class="pg" role="button" data-partage="${h.id}" aria-label="${TR("Partager la séance")}">${IC_PARTAGE}</span>` : "";
+      premiereMuscu = false;
       return `<button class="hist-c" data-hist="${h.id}">
         <div class="ph" style="background-image:url('${photoUrl(photoSeance(t || {name:h.name, items:h.entries.map(e=>({exId:e.exId}))}))}');"></div>
+        ${partage}
         <div class="dt">◷ ${fmtDateShort(h.date)}</div>
         <div class="in">
           <div class="nm">${esc(h.name)}</div>
@@ -12243,6 +12253,11 @@ function renderSeance(app){
       <div class="in" style="align-items:center; justify-content:center; text-align:center;">
         <div style="font-size:12px; font-weight:700; line-height:1.3;">${TR("Voir")}<br>${TR("tout")}</div></div></button>`;
     hs.querySelectorAll("[data-hist]").forEach(b=>b.onclick=()=>openHistDetail(b.dataset.hist));
+    hs.querySelectorAll("[data-partage]").forEach(b=>b.onclick=(e)=>{
+      e.stopPropagation();
+      const h = db.history.find(x=>x.id === b.dataset.partage);
+      if(h) partagerSeance(h);
+    });
     hs.querySelectorAll("[data-hcardio]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.hcardio));
     const all = document.getElementById("hist-all");
     if(all) all.onclick=()=>{ curTab="hist"; render(); };
