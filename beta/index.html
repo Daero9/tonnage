@@ -7536,7 +7536,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "13 septembre 2026 01h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 01h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14888,7 +14888,10 @@ async function dessinerCarteSeance(h, extra){
   let dateTxt = "";
   try{ dateTxt = d.toLocaleDateString(loc(), {weekday:"short", day:"numeric", month:"short"}); }catch(e){ dateTxt = d.toDateString(); }
   dateTxt = dateTxt.charAt(0).toUpperCase() + dateTxt.slice(1);
-  texte(tronque(dateTxt, 380, 30, 600), W - 64, 116, 30, 600, GRIS, "right");
+  /* la date dans une pastille arrondie, a droite du logo */
+  const dt = tronque(dateTxt, 380, 28, 700), dw = largeur(dt, 28, 700) + 56;
+  arrondi(W - 64 - dw, 74, dw, 56, 28, CARTE2);
+  texte(dt, W - 64 - dw / 2, 112, 28, 700, BLANC, "center");
   /* la seance : etiquette, nom, muscles */
   texte(TR("Séance").toUpperCase(), 64, 232, 24, 800, ORANGE);
   texte(tronque(h.name || TR("Séance libre"), W - 128, 88, 800), 64, 320, 88, 800, BLANC);
