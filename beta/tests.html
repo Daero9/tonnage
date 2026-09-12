@@ -5547,6 +5547,21 @@ async function lancer(){
     vrai("…et la copie sur Drive n'a pas été écrasée par le vide", serveur.fichiers.f1.json === copie);
     F.askConfirm = vraiAsk;
 
+    /* 5b. sur le web, jeton perime : l'envoi attend le prochain geste, puis part */
+    F.eval("drivePont = null; driveJeton = null; driveJetonFin = 0");
+    const DBw = F.eval("db");
+    DBw.history.push(seance(0.5, [{exId:id("Squat"), sets:[serie(86,8)]}]));
+    vrai("Sans jeton et sans natif, l'envoi silencieux échoue", await F.driveSauver(false) === false);
+    F.driveAuProchainGeste();
+    vrai("…et un geste est attendu", F.eval("driveGesteArme") === true);
+    /* le geste : on simule un jeton rendu par la fenetre Google */
+    F.__drive.autoriser = async ()=>({jeton:"j2", refuse:false});
+    F.eval("drivePont = window.__drive");
+    F.document.dispatchEvent(new F.PointerEvent("pointerdown", {bubbles:true}));
+    await attendre(()=>JSON.parse(serveur.fichiers.f1.json).history.length === 4, 3000);
+    eq("Au geste suivant, la copie part", JSON.parse(serveur.fichiers.f1.json).history.length, 4);
+    vrai("…et le geste n'est plus attendu", F.eval("driveGesteArme") === false);
+
     /* 6. refus du consentement : rien ne casse */
     F.__drive.autoriser = async ()=>({jeton:"", refuse:true});
     F.eval("driveJeton = null; driveJetonFin = 0");
