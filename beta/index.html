@@ -1625,7 +1625,12 @@
   /* Le bandeau de l'objectif : ce qu'on vise à gauche, d'où l'on part à droite. Deux
      lignes de texte gris disaient la même chose et personne ne les lisait. */
   .obj-b{display:flex; align-items:stretch; border-radius:15px; overflow:hidden;
-    margin-bottom:11px;}
+    margin-bottom:11px; position:relative;}
+  /* la croix qui replie l'objectif : discrete, dans le coin */
+  .obj-b .obj-x{position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-mute); z-index:2;
+    background:transparent;}
+  .obj-b .obj-x svg{width:11px; height:11px;}
   .obj-b .g{display:flex; align-items:center; gap:9px; padding:10px;
     flex:1 1 58%; min-width:0; background:rgba(245,130,32,.12);}
   /* un gris très clair, presque blanc : la moitié droite doit s'effacer derrière
@@ -3418,6 +3423,7 @@ const TRAD = {en:{
   "Abonné · gérer sur Google Play":"Subscribed · manage on Google Play",
   "Débloqué par code":"Unlocked with a code",
   "Abonnement :":"Subscription:",
+  "Journal du repos :":"Rest log:",
   "Google Play relié":"Google Play connected",
   "abonnement actif":"active subscription",
   "aucun abonnement":"no subscription",
@@ -4528,6 +4534,7 @@ const TRAD = {en:{
   "Tirage vertical prise neutre":"Neutral-grip lat pulldown",
   "Rowing machine":"Machine row",
   "Pull-over poulie":"Cable pullover",
+  "Pull-over haltère":"Dumbbell pullover",
   "Haussements d'épaules":"Shrugs",
   "Élévations latérales poulie":"Cable lateral raise",
   "Développé machine épaules":"Machine shoulder press",
@@ -4760,7 +4767,10 @@ const LIB = [
      rattache l historique de chacun au voisin. C est arrive une fois, ca suffit. */
   ["Jambes","Swing kettlebell","Kettlebell","deadlift"],["Épaules","Développé kettlebell","Kettlebell","ohp"],
   ["Dos","Rowing TRX","Sangles","row"],["Pectoraux","Pompes TRX","Sangles","pushup"],
-  ["Abdos","Crunch sur ballon","Ballon","crunch"],["Jambes","Leg curl sur ballon","Ballon","legcurl"]
+  ["Abdos","Crunch sur ballon","Ballon","crunch"],["Jambes","Leg curl sur ballon","Ballon","legcurl"],
+  /* ajoute le 12 septembre 2026, apres le dessin de Nico : couche sur un banc, un
+     haltere a deux mains, le mouvement de la poulie mais en travers du banc */
+  ["Dos","Pull-over haltère","Haltères","pullover"]
 ].map((e,i)=>({
   id:"lib"+i, icon:e[3],
   /* les champs "Fr" sont les clés : elles ne changent jamais de langue.
@@ -4815,6 +4825,7 @@ const MAT_EXOS = {
   "Développé couché":["barre","banc"], "Développé incliné barre":["barre","banc"],
   "Développé couché haltères":["halteres","banc"], "Développé incliné haltères":["halteres","banc"],
   "Écartés haltères":["halteres","banc"], "Curl incliné haltères":["halteres","banc"],
+  "Pull-over haltère":["halteres","banc"],
   "Curl pupitre":["barre","banc"], "Curl concentration":["halteres",SURELEVE],
   "Dips":["dips"], "Fentes bulgares":["halteres",SURELEVE],
   "Montées sur banc":["halteres",SURELEVE], "Hip thrust":["barre",SURELEVE],
@@ -4985,7 +4996,8 @@ const ALTS = {
   "Développé couché à la Smith":["Développé couché","Développé machine","Développé couché haltères"],
   "Tirage vertical prise neutre":["Tirage vertical","Tractions","Rowing machine"],
   "Rowing machine":["Rowing haltère","Tirage horizontal","Rowing barre"],
-  "Pull-over poulie":["Tirage vertical","Tractions"],
+  "Pull-over poulie":["Pull-over haltère","Tirage vertical"],
+  "Pull-over haltère":["Pull-over poulie","Tirage vertical"],
   "Haussements d'épaules":["Face pull","Rowing barre"],
   "Élévations latérales poulie":["Élévations latérales","Oiseau"],
   "Développé machine épaules":["Développé militaire haltères","Développé militaire"],
@@ -5147,6 +5159,7 @@ const MUSCLE_WORK = {
   "Tirage vertical prise neutre":[["Grand dorsal",3],["Biceps",2]],
   "Rowing machine":[["Grand dorsal",3],["Biceps",2]],
   "Pull-over poulie":[["Grand dorsal",3],["Triceps",1]],
+  "Pull-over haltère":[["Grand dorsal",3],["Pectoraux",1],["Triceps",1]],
   "Haussements d'épaules":[["Trapèzes",3],["Avant-bras",2]],
   "Développé militaire":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Abdos",1]],
   "Développé militaire haltères":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2]],
@@ -5341,6 +5354,8 @@ Object.assign(EXO_INFO_EN, {
     steps:["Set the seat so your chest rests on the pad.","Grab the handles with straight arms.","Pull back, elbows close to your body.","Squeeze your shoulder blades for a second.","Return without letting the weights touch down."]},
   "Pull-over poulie":{tip:"Arms almost straight throughout: the moment you bend your elbows, your triceps take over.",
     steps:["Stand facing the high pulley, bar or rope in hand.","Step back, torso leaning slightly forward.","Bring your straight arms down toward your thighs.","Feel the lat stretch at the end of the range.","Return slowly without bending your elbows."]},
+  "Pull-over haltère":{tip:"Go only as far back as your shoulders allow: the stretch should be felt in the lats and chest, never in the shoulder joint.",
+    steps:["Lie across or along a bench, one dumbbell held with both hands above your chest.","Elbows slightly bent and locked at that angle.","Lower the dumbbell in an arc behind your head.","Stop when you feel the stretch, without arching your back.","Bring it back above your chest along the same arc."]},
   "Haussements d'épaules":{tip:"Lift your shoulders straight toward your ears: rolling them adds nothing and strains the neck.",
     steps:["Standing, a dumbbell in each hand by your sides.","Arms straight, shoulders relaxed.","Lift your shoulders as high as you can.","Hold for a second at the top.","Lower slowly, under control."]},
   "Développé militaire":{tip:"Squeeze your glutes and abs: without that lock, you'll compensate by arching your lower back.",
@@ -5581,6 +5596,8 @@ const EXO_INFO = {
  steps:["Règle le siège pour que la poitrine repose sur le coussin.","Attrape les poignées bras tendus.","Tire vers l'arrière, coudes le long du corps.","Serre les omoplates une seconde.","Reviens sans laisser les poids toucher."]},
 "Pull-over poulie":{tip:"Bras quasi tendus tout du long : dès que tu plies les coudes, ce sont les triceps qui travaillent.",
  steps:["Debout face à la poulie haute, barre ou corde en main.","Recule d'un pas, buste légèrement penché.","Descends les bras tendus vers les cuisses.","Sens l'étirement des dorsaux en fin de course.","Remonte lentement sans plier les coudes."]},
+"Pull-over haltère":{tip:"Ne descends que jusqu'où tes épaules le permettent : l'étirement se sent dans les dorsaux et les pectoraux, jamais dans l'articulation.",
+ steps:["Allongé sur un banc, un haltère tenu à deux mains au-dessus de la poitrine.","Coudes légèrement fléchis, bloqués dans cet angle.","Descends l'haltère en arc de cercle derrière la tête.","Arrête-toi quand tu sens l'étirement, sans cambrer.","Ramène-le au-dessus de la poitrine par le même chemin."]},
 "Haussements d'épaules":{tip:"Monte les épaules vers les oreilles à la verticale : les faire tourner n'apporte rien et fragilise le cou.",
  steps:["Debout, un haltère dans chaque main le long du corps.","Bras tendus, épaules relâchées.","Monte les épaules le plus haut possible.","Bloque une seconde en haut.","Redescends lentement en contrôlant."]}
 };
@@ -7447,7 +7464,7 @@ const EXO_PHOTO = {
   "Rowing sous la table":"tirage-sous-la-table", "Tirage vertical":"tirage-vertical",
   "Tirage vertical prise neutre":"tirage-prise-neutre",
   "Tirage élastique vertical":"tirage-vertical-elastique", "Tirage horizontal":"tirage-horizontal",
-  "Tirage élastique horizontal":"tirage-horizontal-elastique", "Pull-over poulie":"pull-over",
+  "Tirage élastique horizontal":"tirage-horizontal-elastique", "Pull-over poulie":"pull-over-poulie", "Pull-over haltère":"pull-over",
   "Haussements d'épaules":"haussement", "Soulevé de terre":"souleve-de-terre",
   "Soulevé de terre roumain":"souleve-de-terre-roumain",
   "Soulevé de terre sumo":"souleve-de-terre-sumo",
@@ -7503,7 +7520,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 03h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 19h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9097,7 +9114,8 @@ async function poserAlarmeRepos(){
     alarmePosee = true;
     autoriserNotifs();                                          /* pour l'affichage, pas pour le décompte */
     if(db.settings.son !== false) poserCanalRepos();             /* le canal porte le bip */
-    if(await demarrerServiceRepos(dans / 1000)) return;
+    if(await demarrerServiceRepos(dans / 1000)){ noterRepos("service posé " + Math.round(dans / 1000) + " s"); return; }
+    noterRepos("service REFUSÉ");
     alarmePosee = false;                                         /* refusé : on retombe sur l'ancien chemin */
   }
 
@@ -9179,6 +9197,7 @@ async function verifierAlarmeExacte(){
   setTimeout(()=>{ if(document.visibilityState === "visible") ficheAlarmeExacte(); }, 700);
 }
 async function retirerAlarmeRepos(){
+  noterRepos("alarme retirée à " + (rest.end ? Math.round((rest.end - Date.now()) / 100) / 10 + " s de la fin" : "?") + (document.visibilityState === "visible" ? "" : " (page cachée)"));
   alarmePosee = false;
   arreterServiceRepos();          /* le décompte natif s'arrête avec le repos */
   const n = pluginNotifs();
@@ -9449,8 +9468,18 @@ function majIconePause(){
   const t = rest.paused ? TR("Reprendre") : TR("Mettre en pause");
   b.setAttribute("aria-label", t); b.setAttribute("title", t);
 }
+/* Le journal du repos : les douze derniers evenements, lisibles dans les reglages.
+   Un repos qui ne sonne pas ne laisse aucune trace ; avec ca, on sait au moins ce qui
+   s'est passe — pose, retire, fini a l'ecran ou en veille, bip joue ou non. */
+const journalRepos = [];
+function noterRepos(quoi){
+  const h = new Date();
+  journalRepos.push(String(h.getHours()).padStart(2, "0") + ":" + String(h.getMinutes()).padStart(2, "0") + ":" + String(h.getSeconds()).padStart(2, "0") + " " + quoi);
+  if(journalRepos.length > 12) journalRepos.shift();
+}
 function startRest(sec){
   if(!sec || sec<=0) return;
+  noterRepos("départ " + Math.round(sec) + " s" + (rest.int ? " (remplace un repos en cours)" : ""));
   /* remise à zéro complète : rien de la minuterie précédente ne doit survivre */
   if(rest.int) clearInterval(rest.int);
   if(rest.hideTo) clearTimeout(rest.hideTo);
@@ -9542,6 +9571,7 @@ function tickRest(){
     restbar.classList.add("ending");
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
+    noterRepos("fin (" + Math.round(left * 10) / 10 + " s, " + (document.visibilityState === "visible" ? "à l'écran" : "page cachée") + ", " + (left > -2 ? "bip page" : "pas de bip page") + (db.settings.son === false ? ", son coupé" : "") + ")");
     if(left > -2) bipRepos();
     vibrer([200,100,200]);
     /* un gainage en cours enchaîne sur l'étape suivante au lieu de s'arrêter là */
@@ -11960,12 +11990,17 @@ const INSTALL = {
   "Roue": 15
 };
 const INSTALL_DEFAUT = 40;
+/* Et entre deux exercices : rejoindre le poste suivant, attendre qu'il se libere,
+   decharger la barre, ranger les halteres. Nico a chronometre ses seances : « 45 min »
+   annoncees, une heure reelle — deux minutes par exercice comblent l'ecart. Estimation
+   de terrain, pas une mesure ; mais la sienne, sur plusieurs seances. */
+const TRANSITION = 120;
 function dureeItem(exId, sets, reps, repos){
   const ex = getEx(exId), r = parseReps(reps);
   const combien = r ? (r.lo + r.hi) / 2 : 10;
   /* pour un gainage, la « répétition » EST une durée : on ne la multiplie pas */
   const parSerie = estIsometrique(ex) ? combien : combien * TEMPO_REP;
-  let t = INSTALL[equipCanon(ex)] || INSTALL_DEFAUT;
+  let t = (INSTALL[equipCanon(ex)] || INSTALL_DEFAUT) + TRANSITION;
   const n = Math.max(1, sets || 1);
   for(let i = 0; i < n; i++){
     t += MISE_EN_PLACE + parSerie * (1 + FATIGUE_SERIE * i);
@@ -12195,7 +12230,7 @@ const RESERVOIRS = {
   triceps:   ["Extension poulie (barre)","Extension poulie (corde)","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie","Dips sur banc","Extension triceps élastique"],
   dosVert:   ["Tractions","Tirage vertical","Tirage vertical prise neutre","Tractions supination","Tirage élastique vertical"],
   dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Rowing TRX","Tractions australiennes","Tirage élastique horizontal","Rowing sous la table"],
-  dosComp:   ["Pull-over poulie","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
+  dosComp:   ["Pull-over poulie","Pull-over haltère","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
   arriere:   ["Face pull","Oiseau","Rowing menton","Oiseau élastique"],
   biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination","Curl auto-résisté"],
   quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses","Squat au poids du corps","Squat élastique","Chaise contre le mur"],
@@ -12382,6 +12417,7 @@ const SCHEMA = {
   "Tractions supination":"tirageV",
   "Tirage élastique vertical":"tirageV",
   "Pull-over poulie":"tirageV",
+  "Pull-over haltère":"tirageV",
   "Rowing barre":"tirageH",
   "Rowing haltère":"tirageH",
   "Tirage horizontal":"tirageH",
@@ -13906,7 +13942,17 @@ function allerAuProchainExo(){
     ? document.querySelector('.ex-card[data-ei="' + i + '"]')
     : document.getElementById("finish-w");     /* plus rien a faire : le bouton de fin */
   if(!cible) return;
-  try{ cible.scrollIntoView({block:"start", behavior:"smooth"}); }catch(e){ cible.scrollIntoView(); }
+  /* pas tout en haut : la barre d'etat, et la barre de repos quand elle est placee en
+     haut, masqueraient le nom de l'exercice. On laisse la marge qu'il faut. */
+  let marge = 14;
+  try{
+    const pad = parseFloat(getComputedStyle(document.getElementById("app")).paddingTop) || 16;
+    marge += Math.max(0, pad - 16);                                   /* la barre d'etat */
+    if(restbar.classList.contains("haut") && restbar.classList.contains("show"))
+      marge = Math.max(marge, restbar.getBoundingClientRect().bottom + 12);
+  }catch(e){}
+  const y = cible.getBoundingClientRect().top + window.scrollY - marge;
+  try{ window.scrollTo({top: Math.max(0, y), behavior:"smooth"}); }catch(e){ window.scrollTo(0, Math.max(0, y)); }
 }
 function renderActive(app){
   const a = db.active;
@@ -14026,9 +14072,10 @@ function renderActive(app){
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
       ${(()=>{ const o = objectifDuJour(en.exId, en.target);
-        if(!o || (!o.poids && !o.reps)) return "";
+        if(!o || (!o.poids && !o.reps) || en.objMasque) return "";
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
         return `<div class="obj-b">
+          <button class="obj-x" data-obj-x="${ei}" aria-label="${TR("Masquer")}">${IC_CROIX}</button>
           <div class="g">${o.pourquoi ? `<button class="obj-i"
               data-pourquoi="${esc(TR(o.pourquoi))}"
               aria-label="${TR("Pourquoi ce poids ?")}">i</button>` : ""}<span class="ic">${IC_CIBLE}</span>
@@ -14534,6 +14581,10 @@ function renderActive(app){
     });
     const hx = card.querySelector("[data-hist-ex]");
     if(hx) hx.onclick = (e)=>{ e.stopPropagation(); openHistoExo(parseInt(hx.dataset.histEx)); };
+    /* l'objectif prend de la place : on peut le replier pour cet exercice, le temps
+       de la seance — la fiche ⓘ et l'historique restent la pour le retrouver */
+    const ox = card.querySelector("[data-obj-x]");
+    if(ox) ox.onclick = (e)=>{ e.stopPropagation(); en.objMasque = true; save(); renderSurPlace(); };
     const bl = card.querySelector("[data-injinfo]");
     if(bl) bl.onclick = (e)=>{ e.stopPropagation(); openBlessureExo(parseInt(bl.dataset.injinfo)); };
     card.querySelector('[data-act="swap"]').onclick=()=>openSwap(ei);
@@ -15133,7 +15184,11 @@ async function driveAutoriser(interactif){
   if(p){
     try{
       const r = await p.autoriser();
-      if(!r || r.refuse || !r.jeton){ driveErreur = TR("Connexion Google annulée."); return null; }
+      if(!r || r.refuse || !r.jeton){
+        /* la raison de Google, quand il y en a une : un refus de la personne n'en a pas */
+        driveErreur = TR("Connexion Google annulée.") + (r && r.raison ? " · " + String(r.raison).slice(0, 220) : "");
+        return null;
+      }
       driveJeton = r.jeton; driveJetonFin = Date.now() + 50 * 60e3; driveErreur = "";
       return driveJeton;
     }catch(e){ driveErreur = String((e && e.message) || e).slice(0, 80); return null; }
@@ -15824,6 +15879,7 @@ function openSettings(){
         + (autoFile.err ? " · " + esc(autoFile.err) : "")}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute);" id="st-repos">${TR("Minuteur natif :")} ${esc(reposEtat)}</div>
+    ${journalRepos.length ? `<div style="color:var(--ink-mute); font-size:11.5px; line-height:1.5; margin-top:4px;">${TR("Journal du repos :")}<br>${journalRepos.map(esc).join("<br>")}</div>` : ""}
     <div style="color:var(--ink-mute);">${TR("Abonnement :")} ${esc(
       !pluginAbo() ? TR("hors de l'app Android")
       : !aboEtat.dispo ? TR("Google Play ne répond pas.") + (aboEtat.panne ? " · ⚠ " + String(aboEtat.panne).slice(0, 70) : "")
@@ -16453,7 +16509,7 @@ const STRENGTH_REF = {
   "Squat":1.25, "Presse à cuisses":2.2, "Fentes":0.4, "Leg curl":0.55, "Leg extension":0.65, "Soulevé de terre roumain":1.1, "Hip thrust":1.3, "Mollets debout":1.0,
   "Crunch câble":0.35, "Écartés poulie":0.35,
   "Butterfly (pec deck)":0.55, "Développé machine":0.9, "Écartés poulie haute":0.35, "Écartés poulie basse":0.35, "Développé couché à la Smith":0.95,
-  "Tirage vertical prise neutre":0.75, "Rowing machine":0.8, "Pull-over poulie":0.4, "Haussements d'épaules":0.5,
+  "Tirage vertical prise neutre":0.75, "Rowing machine":0.8, "Pull-over poulie":0.4, "Pull-over haltère":0.3, "Haussements d'épaules":0.5,
   "Élévations latérales poulie":0.1, "Développé machine épaules":0.55, "Élévations frontales":0.12,
   "Curl poulie basse":0.4, "Curl incliné haltères":0.14,
   "Extension poulie (corde)":0.4, "Extension triceps machine":0.5, "Kickback poulie":0.12,

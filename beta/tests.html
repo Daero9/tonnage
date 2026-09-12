@@ -205,7 +205,7 @@ async function lancer(){
   const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
-  eq("Les 115 exercices sont là", LIBEN.length, 115);
+  eq("Les 116 exercices sont là", LIBEN.length, 116);   /* 115 + le pull-over haltère du 12 septembre */
   /* L'identifiant d'un exercice est sa POSITION dans la liste. Insérer une ligne au
      milieu décale tous les suivants et rattache l'historique de chacun à son voisin —
      c'est arrivé le 8 septembre 2026, sur 49 exercices. Ces repères le rendraient
@@ -4480,8 +4480,11 @@ async function lancer(){
        vérifie en le comparant aux mêmes chiffres lus comme des répétitions. */
     const iso = F.dureeItem(id("Gainage"), 3, "60", 60);
     const commeDesReps = F.dureeItem(id("Curl barre"), 3, "60", 60);
+    /* on compare hors installation et transition, communes aux deux */
+    const socleIso = F.dureeItem(id("Gainage"), 1, "1", 0) - (12 + 1);
+    const socleReps = F.dureeItem(id("Curl barre"), 1, "1", 0) - (12 + 3);
     vrai("Une tenue de 60 s compte une minute, pas trois",
-      iso < commeDesReps / 2,
+      (iso - socleIso) < (commeDesReps - socleReps) / 2,
       Math.round(iso) + " s contre " + Math.round(commeDesReps) + " s");
 
     /* l'installation dépend du matériel : charger une barre prend plus de temps
@@ -4491,8 +4494,11 @@ async function lancer(){
 
     /* pas de repos après la dernière série : c'est l'exercice suivant qui enchaîne */
     const une = F.dureeItem(id("Développé couché"), 1, "10", 600);
-    vrai("Le repos qui suit la dernière série n'est pas compté", une < 200,
+    vrai("Le repos qui suit la dernière série n'est pas compté", une === F.dureeItem(id("Développé couché"), 1, "10", 0),
       Math.round(une) + " s");
+    /* deux minutes de transition par exercice : Nico a mesuré 60 min réelles pour 45 annoncées */
+    vrai("Chaque exercice compte deux minutes de transition", F.dureeItem(id("Curl haltères"), 1, "10", 0) >= 120 + 35 + 12 + 30,
+      Math.round(F.dureeItem(id("Curl haltères"), 1, "10", 0)) + " s");
 
     /* les séries se ralentissent en approchant de l'échec */
     const s1 = F.dureeItem(id("Curl barre"), 1, "10", 0);
