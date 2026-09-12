@@ -5552,6 +5552,9 @@ async function lancer(){
     const DBw = F.eval("db");
     DBw.history.push(seance(0.5, [{exId:id("Squat"), sets:[serie(86,8)]}]));
     vrai("Sans jeton et sans natif, l'envoi silencieux échoue", await F.driveSauver(false) === false);
+    vrai("Une copie du jour ne justifie pas de fenêtre Google", F.driveCopieTropVieille() === false);
+    DBw.drive.derniere = Date.now() - 25 * 3600e3;
+    vrai("…une copie d'hier, si", F.driveCopieTropVieille() === true);
     F.driveAuProchainGeste();
     vrai("…et un geste est attendu", F.eval("driveGesteArme") === true);
     /* le geste : on simule un jeton rendu par la fenetre Google */
