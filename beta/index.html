@@ -3383,6 +3383,12 @@ const TRAD = {en:{
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
   "Partager la séance":"Share workout",
+  "Durée":"Duration",
+  "Poids soulevé":"Weight lifted",
+  "Exercice":"Exercise",
+  "Poids × reps":"Weight × reps",
+  "Volume":"Volume",
+  "rep":"rep",
   "Impossible de créer l'image.":"Couldn't create the image.",
   "Ma séance Tonnup":"My Tonnup workout",
   "Appuie longuement sur l'image pour l'enregistrer ou la partager.":"Long-press the image to save or share it.",
@@ -7530,7 +7536,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "13 septembre 2026 01h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 01h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14805,106 +14811,175 @@ function meilleureSerie(en){
     return a > b ? st : m;
   });
 }
-function dessinerCarteSeance(h, extra){
+/* le logo texte (TONN blanc, UP orange), charge une fois ; sans lui, le nom en lettres */
+let logoCarte = null;
+function chargerLogoCarte(){
+  if(logoCarte) return Promise.resolve(logoCarte);
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{ logoCarte = im; res(im); };
+    im.onerror = ()=>res(null);
+    im.src = "img/logo-texte.png";
+  });
+}
+function musclesDeSeance(h){
+  const vus = [];
+  h.entries.forEach(en=>{ const ex = getEx(en.exId); if(ex && ex.muscle && !vus.includes(ex.muscle)) vus.push(ex.muscle); });
+  return vus;
+}
+function volumeExo(en){
+  const f = facteurCharge(en.exId);
+  return en.sets.reduce((a, st)=>a + ((st.done !== false && !st.warm) ? volSerie(st) * f : 0), 0);
+}
+async function dessinerCarteSeance(h, extra){
   const o = extra || {};
+  const logo = await chargerLogoCarte();
   const W = 1080, H = 1350;
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   const c = cv.getContext("2d");
-  const ORANGE = "#F58220", FOND = "#141416", BLANC = "#FFFFFF", GRIS = "#A9A7A3", CARTE = "#1E1E21";
+  const ORANGE = "#F58220", FOND = "#131315", BLANC = "#FFFFFF", GRIS = "#A9A7A3", CARTE = "#1D1D20", CARTE2 = "#26262A";
   const police = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   const texte = (t, x, y, taille, poids, coul, align)=>{
     c.font = `${poids || 700} ${taille}px ${police}`; c.fillStyle = coul || BLANC;
     c.textAlign = align || "left"; c.textBaseline = "alphabetic";
     c.fillText(t, x, y);
   };
+  const largeur = (t, taille, poids)=>{ c.font = `${poids || 700} ${taille}px ${police}`; return c.measureText(t).width; };
   const arrondi = (x, y, w, hh, r, coul)=>{
     c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + hh, r); c.arcTo(x + w, y + hh, x, y + hh, r);
     c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); c.fillStyle = coul; c.fill();
   };
+  const rond = (x, y, r, coul)=>{ c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = coul; c.fill(); };
   const tronque = (t, max, taille, poids)=>{
-    c.font = `${poids || 700} ${taille}px ${police}`;
-    if(c.measureText(t).width <= max) return t;
+    if(largeur(t, taille, poids) <= max) return t;
     let s2 = t;
-    while(s2.length > 1 && c.measureText(s2 + "…").width > max) s2 = s2.slice(0, -1);
+    while(s2.length > 1 && largeur(s2 + "…", taille, poids) > max) s2 = s2.slice(0, -1);
     return s2 + "…";
   };
-  /* fond : sombre, avec une lueur orange en haut a droite */
+  /* les trois icones des tuiles, tracees a la main */
+  const icoChrono = (x, y, coul)=>{
+    c.strokeStyle = coul; c.lineWidth = 5; c.lineCap = "round";
+    c.beginPath(); c.arc(x, y + 3, 19, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.moveTo(x, y + 3); c.lineTo(x, y - 9); c.moveTo(x, y + 3); c.lineTo(x + 9, y + 8); c.stroke();
+    c.beginPath(); c.moveTo(x - 7, y - 21); c.lineTo(x + 7, y - 21); c.stroke();
+  };
+  const icoHaltere = (x, y, coul)=>{
+    c.fillStyle = coul;
+    arrondi(x - 6, y - 4, 12, 8, 3, coul);
+    arrondi(x - 20, y - 14, 10, 28, 3, coul); arrondi(x + 10, y - 14, 10, 28, 3, coul);
+    arrondi(x - 29, y - 9, 7, 18, 2, coul); arrondi(x + 22, y - 9, 7, 18, 2, coul);
+  };
+  const icoBarres = (x, y, coul)=>{
+    arrondi(x - 20, y + 2, 10, 16, 2, coul); arrondi(x - 5, y - 8, 10, 26, 2, coul); arrondi(x + 10, y - 18, 10, 36, 2, coul);
+  };
+  /* fond : sombre, lueur orange en haut a droite, liseret */
   c.fillStyle = FOND; c.fillRect(0, 0, W, H);
-  const g = c.createRadialGradient(W - 120, -60, 40, W - 120, -60, 760);
-  g.addColorStop(0, "rgba(245,130,32,.42)"); g.addColorStop(1, "rgba(245,130,32,0)");
+  const g = c.createRadialGradient(W - 100, -80, 40, W - 100, -80, 760);
+  g.addColorStop(0, "rgba(245,130,32,.40)"); g.addColorStop(1, "rgba(245,130,32,0)");
   c.fillStyle = g; c.fillRect(0, 0, W, H);
-  /* le trait orange en haut, comme le liseret des cartes */
-  c.fillStyle = ORANGE; c.fillRect(0, 0, W, 14);
-  /* en-tete : logo + marque, date a droite */
-  arrondi(72, 78, 64, 64, 18, ORANGE);
-  c.fillStyle = BLANC;
-  arrondi(84, 114, 10, 18, 3, BLANC); arrondi(99, 102, 10, 30, 3, BLANC); arrondi(114, 90, 10, 42, 3, BLANC);
-  texte("Tonnup", 154, 128, 44, 800, BLANC);
+  c.fillStyle = ORANGE; c.fillRect(0, 0, W, 12);
+  /* en-tete : le logo texte, la date */
+  if(logo){
+    const lh = 88, lw = Math.round(logo.width * lh / logo.height);
+    c.drawImage(logo, 64, 58, lw, lh);
+  } else texte("TONNUP", 64, 126, 64, 900, BLANC);
   const d = new Date(h.date || h.start || Date.now());
   let dateTxt = "";
   try{ dateTxt = d.toLocaleDateString(loc(), {weekday:"short", day:"numeric", month:"short"}); }catch(e){ dateTxt = d.toDateString(); }
   dateTxt = dateTxt.charAt(0).toUpperCase() + dateTxt.slice(1);
-  texte(tronque(dateTxt, 420, 30, 600), W - 72, 124, 30, 600, GRIS, "right");
-  /* le nom de la seance */
-  texte(TR("Séance").toUpperCase(), 72, 250, 26, 800, ORANGE);
-  const nom = tronque(h.name || TR("Séance libre"), W - 144, 96, 800);
-  texte(nom, 72, 350, 96, 800, BLANC);
-  /* les trois chiffres */
+  texte(tronque(dateTxt, 380, 30, 600), W - 64, 116, 30, 600, GRIS, "right");
+  /* la seance : etiquette, nom, muscles */
+  texte(TR("Séance").toUpperCase(), 64, 232, 24, 800, ORANGE);
+  texte(tronque(h.name || TR("Séance libre"), W - 128, 88, 800), 64, 320, 88, 800, BLANC);
+  const muscles = musclesDeSeance(h);
+  if(muscles.length) texte(tronque(muscles.join("  •  "), W - 128, 30, 600), 64, 372, 30, 600, GRIS);
+  /* les trois tuiles, la tonne au milieu en orange */
   const mn = Math.max(1, Math.round(((h.end||0) - (h.start||0)) / 60000)) || 0;
   const vol = Math.round(sessionVolume(h));
   const series = h.entries.reduce((a, en)=>a + en.sets.filter(st=>st.done !== false && !st.warm).length, 0);
   const volTxt = vol >= 1000 && !estImperial() ? (vol / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + " t" : pds(vol);
-  const tuiles = [[String(mn), TR("min")], [volTxt, TR("soulevés")], [String(series), TR(series > 1 ? "séries" : "série")]];
-  const tw = (W - 144 - 2 * 24) / 3;
+  const tuiles = [
+    {v:String(mn), u:TR("min"), l:TR("Durée"), ico:icoChrono},
+    {v:volTxt, u:"", l:TR("Poids soulevé"), ico:icoHaltere, fort:true},
+    {v:String(series), u:"", l:TR(series > 1 ? "Séries" : "Série"), ico:icoBarres}
+  ];
+  const tw = (W - 128 - 2 * 20) / 3, ty = 412, th = 150;
   tuiles.forEach((t, i)=>{
-    const x = 72 + i * (tw + 24);
-    arrondi(x, 400, tw, 150, 28, CARTE);
-    texte(t[0], x + tw / 2, 482, 60, 800, i === 1 ? ORANGE : BLANC, "center");
-    texte(t[1].toUpperCase(), x + tw / 2, 524, 21, 700, GRIS, "center");
+    const x = 64 + i * (tw + 20);
+    arrondi(x, ty, tw, th, 26, t.fort ? ORANGE : CARTE);
+    rond(x + 52, ty + th / 2, 34, t.fort ? "rgba(0,0,0,.28)" : CARTE2);
+    t.ico(x + 52, ty + th / 2, t.fort ? BLANC : ORANGE);
+    const coulV = t.fort ? BLANC : BLANC;
+    texte(t.v, x + 104, ty + 74, 54, 800, coulV);
+    if(t.u) texte(t.u, x + 104 + largeur(t.v, 54, 800) + 8, ty + 74, 26, 600, t.fort ? "rgba(255,255,255,.85)" : GRIS);
+    texte(t.l, x + 104, ty + 112, 24, 600, t.fort ? "rgba(255,255,255,.85)" : GRIS);
   });
-  /* les exercices : nom + meilleure serie. Autant qu'il en tient au-dessus du pied,
-     une fois la place des records reservee — jamais de debordement. */
+  /* le tableau : en-tete puis les lignes, autant qu'il en tient */
   const exos = h.entries.filter(en=>meilleureSerie(en));
   const recs = (o.records || []).slice(0, 3);
-  const LIGNE = 90, Y0 = 622, BAS = H - 96;
-  const hauteurRecords = recs.length ? 24 + 44 + recs.length * 34 : 0;
-  const max = Math.max(3, Math.floor((BAS - Y0 - hauteurRecords) / LIGNE));
-  /* trop d'exercices : on en montre un de moins et la ligne « …et N de plus » */
-  const montres = exos.length > max ? exos.slice(0, Math.max(3, max - 1)) : exos;
-  let y = Y0 + 40;
-  montres.forEach((en)=>{
+  const Y0 = 606, LIGNE = 96, BAS = H - 40;
+  const hauteurRecords = recs.length ? 14 + 60 + recs.length * 34 : 0;
+  const place = BAS - Y0 - 22 - hauteurRecords;
+  let max = Math.max(3, Math.floor(place / LIGNE));
+  /* trop d'exercices : la ligne « …et N de plus » prend 46 px, on recompte avec */
+  if(exos.length > max) max = Math.max(3, Math.floor((place - 46) / LIGNE));
+  const montres = exos.length > max ? exos.slice(0, max) : exos;
+  texte("#", 92, Y0, 21, 600, GRIS, "center");
+  texte(TR("Exercice"), 130, Y0, 21, 600, GRIS);
+  texte(TR("Poids × reps"), W - 350, Y0, 21, 600, GRIS, "right");
+  texte(TR("Volume"), W - 96, Y0, 21, 600, GRIS, "right");
+  let y = Y0 + 22;
+  montres.forEach((en, i)=>{
     const ex = getEx(en.exId); if(!ex) return;
     const m = meilleureSerie(en);
     const nbSer = en.sets.filter(st=>st.done !== false && !st.warm).length;
-    arrondi(72, y - 40, W - 144, 80, 20, CARTE);
-    c.fillStyle = ORANGE; c.beginPath(); c.arc(110, y, 8, 0, Math.PI * 2); c.fill();
-    texte(tronque(ex.name, 540, 32, 700), 138, y + 11, 32, 700, BLANC);
-    const perf = (Number(m.w) > 0 ? pds(m.w) + " × " : "") + (m.r || 0) + (Number(m.w) > 0 ? "" : " " + TR("reps"));
-    texte(perf, W - 98, y + 4, 32, 800, ORANGE, "right");
-    texte(nbSer + " " + TR(nbSer > 1 ? "séries" : "série"), W - 98, y + 30, 20, 600, GRIS, "right");
+    arrondi(64, y, W - 128, LIGNE - 12, 22, CARTE);
+    rond(96, y + (LIGNE - 12) / 2, 20, CARTE2);
+    texte(String(i + 1), 96, y + (LIGNE - 12) / 2 + 9, 24, 800, BLANC, "center");
+    texte(tronque(ex.name, 470, 30, 700), 130, y + 36, 30, 700, BLANC);
+    texte(tronque(ex.muscle || "", 470, 22, 500), 130, y + 66, 22, 500, GRIS);
+    const aPoids = Number(m.w) > 0;
+    texte(aPoids ? pds(m.w) : String(m.r || 0), W - 350, y + 40, 34, 800, ORANGE, "right");
+    texte(aPoids ? "× " + (m.r || 0) + " " + TR("reps") : TR("reps"), W - 350, y + 68, 22, 600, BLANC, "right");
+    c.fillStyle = "rgba(255,255,255,.10)"; c.fillRect(W - 320, y + 18, 2, LIGNE - 48);
+    const ve = Math.round(volumeExo(en));
+    texte(ve > 0 ? pds(ve) : "—", W - 96, y + 40, 26, 700, BLANC, "right");
+    texte(nbSer + " " + TR(nbSer > 1 ? "séries" : "série"), W - 96, y + 68, 22, 500, GRIS, "right");
     y += LIGNE;
   });
-  if(exos.length > montres.length){ texte(TR("…et {} de plus").replace("{}", exos.length - montres.length), 72, y - 6, 26, 600, GRIS); y += LIGNE - 30; }
-  /* les records, s'il y en a */
+  if(exos.length > montres.length){ texte(TR("…et {} de plus").replace("{}", exos.length - montres.length), 64, y + 20, 24, 600, GRIS); y += 46; }
+  /* les records */
   if(recs.length){
-    y -= 16;
-    arrondi(72, y, W - 144, 44 + recs.length * 34 + 8, 20, "rgba(245,130,32,.16)");
-    texte("🏆 " + TR(recs.length > 1 ? "Nouveaux records" : "Nouveau record"), 100, y + 34, 28, 800, ORANGE);
+    y += 14;
+    const hr = 60 + recs.length * 34;
+    arrondi(64, y, W - 128, hr, 24, "rgba(245,130,32,.14)");
+    c.strokeStyle = "rgba(245,130,32,.45)"; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(64 + 24, y); c.arcTo(64 + W - 128, y, 64 + W - 128, y + hr, 24); c.arcTo(64 + W - 128, y + hr, 64, y + hr, 24);
+    c.arcTo(64, y + hr, 64, y, 24); c.arcTo(64, y, 64 + W - 128, y, 24); c.closePath(); c.stroke();
+    rond(128, y + hr / 2, 38, ORANGE);
+    /* une coupe, tracee a la main : l'emoji se dessine mal dans un canvas */
+    (()=>{ const cx = 128, cy = y + hr / 2; c.fillStyle = BLANC; c.strokeStyle = BLANC; c.lineWidth = 4; c.lineCap = "round";
+      c.beginPath(); c.moveTo(cx - 14, cy - 18); c.lineTo(cx + 14, cy - 18); c.lineTo(cx + 11, cy + 2);
+      c.quadraticCurveTo(cx, cy + 12, cx - 11, cy + 2); c.closePath(); c.fill();
+      c.beginPath(); c.arc(cx - 16, cy - 10, 7, Math.PI * 0.5, Math.PI * 1.5); c.stroke();
+      c.beginPath(); c.arc(cx + 16, cy - 10, 7, -Math.PI * 0.5, Math.PI * 0.5); c.stroke();
+      c.fillRect(cx - 3, cy + 8, 6, 8); arrondi(cx - 11, cy + 15, 22, 5, 2, BLANC); })();
+    texte(TR(recs.length > 1 ? "Nouveaux records" : "Nouveau record"), 196, y + 42, 30, 800, ORANGE);
     recs.forEach((r, i)=>{
-      const gain = r.gain ? (r.unite === "reps" ? "+" + r.gain + " " + TR("reps") : "+" + pds(r.gain)) : "";
-      texte(tronque(r.nom, 620, 26, 600) + (gain ? "  " + gain : ""), 100, y + 70 + i * 34, 26, 600, BLANC);
+      const gain = r.gain ? (r.unite === "reps" ? "+ " + r.gain + " " + TR(r.gain > 1 ? "reps" : "rep") : "+ " + pds(r.gain)) : "";
+      const nom = tronque(r.nom, 520, 26, 600);
+      texte(nom, 196, y + 78 + i * 34, 26, 600, GRIS);
+      if(gain) texte(gain, 196 + largeur(nom, 26, 600) + 22, y + 78 + i * 34, 26, 800, BLANC);
     });
   }
-  /* pied : la promesse de l'app */
-  texte("Tonnup · " + TR("Muscu & nutrition"), W / 2, H - 44, 24, 700, GRIS, "center");
   return cv;
 }
 /* Partager : la feuille du telephone quand elle accepte une image (Android, iPhone),
    sinon l'image dans une fiche, a enregistrer d'un appui long. */
 async function partagerSeance(h, extra){
   vibrer(14);
-  const cv = dessinerCarteSeance(h, extra);
+  const cv = await dessinerCarteSeance(h, extra);
   const blob = await new Promise(res=>cv.toBlob(res, "image/png"));
   if(!blob){ toast(TR("Impossible de créer l'image.")); return; }
   const fichier = new File([blob], "tonnup-seance.png", {type:"image/png"});
