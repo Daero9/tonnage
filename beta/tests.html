@@ -5585,6 +5585,34 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- « +15 » après la fin */
+  /* Nico : « le minuteur ne sonne pas et ne clignote pas », apres avoir « spamme le
+     bouton ». Appuyer sur +15 une fois le repos FINI ajoutait quinze secondes a un
+     compteur mort : la barre affichait 0:15 et ne bougeait plus. */
+  grp("« +15 » après la fin relance un vrai repos");
+  neuf();
+  await (async ()=>{
+    const R = F.eval("rest");
+    F.eval("reposPont = null");
+    F.startRest(1);
+    vrai("Un repos d'une seconde démarre", !!R.int);
+    R.end = Date.now() - 100;                     /* on le fait finir tout de suite */
+    F.tickRest();
+    vrai("…et se termine : plus de compteur", R.int === null);
+    F.document.getElementById("rest-plus").click();
+    vrai("« +15 » après la fin relance un compteur vivant", !!R.int && R.total === 15, R.total);
+    vrai("…qui se termine dans quinze secondes", R.end - Date.now() > 14000 && R.end - Date.now() <= 15000);
+    F.document.getElementById("rest-skip").click();
+    vrai("Passer l'arrête proprement", R.int === null);
+    /* et la page ne coupe le service qu'elle peut sonner elle-meme */
+    F.eval("audioCtx = null");
+    vrai("Sans contexte audio, la page ne prétend pas pouvoir sonner", F.audioPret() === false);
+    F.eval("audioCtx = {state:'running', resume(){}}");
+    vrai("…avec un contexte en marche, si", F.audioPret() === true);
+    F.eval("audioCtx = null");
+  })();
+  neuf();
+
   /* --------------------------------------- l'essai de 7 jours */
   /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
      la premiere seance. Au huitieme jour le voile revient — et pas avant. */

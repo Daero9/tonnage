@@ -7520,7 +7520,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 19h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 22h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8930,7 +8930,9 @@ function askConfirm(title, msg, okLabel, danger, cb){
 /* ================= REST TIMER ================= */
 let rest = {end:0, total:0, int:null, paused:false, remaining:0, hideTo:null};
 let audioCtx = null;
-function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); }catch(e){} }
+function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state!=="running") audioCtx.resume(); }catch(e){} }
+/* la page peut-elle emettre un son maintenant ? (contexte cree ET en marche) */
+function audioPret(){ return !!audioCtx && audioCtx.state === "running"; }
 /* Les trois notes du bip durent trois quarts de seconde. On garde la main dessus :
    terminer une seance pendant qu elles sonnent doit les couper net, pas les laisser
    finir dans le vide. */
@@ -9513,6 +9515,7 @@ function startRest(sec){
 }
 function togglePauseRest(){
   if(!restbar.classList.contains("show")) return;
+  ensureAudio();
   if(rest.paused){
     rest.end = Date.now() + rest.remaining;
     rest.paused = false;
@@ -9543,7 +9546,10 @@ function tickRest(){
   /* L'app est sous les yeux et la fin approche : c'est le bip de la page qui sonnera,
      on retire l'alarme système avant qu'elle ne double la mise. Si l'écran s'éteint
      dans cette dernière seconde, tant pis — la page serait gelée de toute façon. */
-  if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible")
+  /* …et seulement si la page PEUT sonner : un contexte audio endormi (appel recu,
+     autre appli qui a pris le son) ne jouerait rien. Dans ce cas on laisse le
+     service sonner, lui n'a pas cette faiblesse. */
+  if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible" && audioPret())
     retirerAlarmeRepos();
   /* meme regle pour une etape de gainage : sous les yeux, c'est la page qui sonne, et
      l'etape suivante reposera la suite au service. Si l'ecran s'eteint dans cette
@@ -9572,7 +9578,9 @@ function tickRest(){
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
     noterRepos("fin (" + Math.round(left * 10) / 10 + " s, " + (document.visibilityState === "visible" ? "à l'écran" : "page cachée") + ", " + (left > -2 ? "bip page" : "pas de bip page") + (db.settings.son === false ? ", son coupé" : "") + ")");
-    if(left > -2) bipRepos();
+    /* si le service est encore arme (audio de la page indisponible), c'est lui qui
+       sonne : on ne double pas */
+    if(left > -2 && !alarmePosee) bipRepos();
     vibrer([200,100,200]);
     /* un gainage en cours enchaîne sur l'étape suivante au lieu de s'arrêter là */
     if(seqIso){ avancerIso(); return; }
@@ -9609,7 +9617,16 @@ document.getElementById("rest-skip").onclick=()=>{
 /* Changer la durée déplace l'heure de fin : l'alarme déjà posée sonnerait au mauvais
    moment. On la repose sur la nouvelle heure — programmer le même identifiant remplace
    l'ancienne, il n'y a pas à l'annuler d'abord. */
-document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; poserAlarmeRepos(); tickRest(); } };
+document.getElementById("rest-plus").onclick=()=>{
+  ensureAudio();                              /* un geste : on en profite pour reveiller l'audio */
+  if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); return; }
+  /* Le repos est deja fini (ou jamais parti) : « +15 » ajoutait quinze secondes a un
+     compteur mort — la barre affichait 0:15 sans plus jamais avancer, ni sonner, ni
+     clignoter. C'est ce qui arrive quand on appuie juste apres la fin. On relance un
+     vrai repos de quinze secondes. */
+  if(!rest.int){ startRest(15); return; }
+  rest.end+=15000; rest.total+=15; poserAlarmeRepos(); tickRest();
+};
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; poserAlarmeRepos(); tickRest(); } };
 document.getElementById("rest-son").onclick=e=>{
   e.stopPropagation();
