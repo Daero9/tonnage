@@ -3382,6 +3382,16 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Partager la séance":"Share workout",
+  "Impossible de créer l'image.":"Couldn't create the image.",
+  "Ma séance Tonnup":"My Tonnup workout",
+  "Appuie longuement sur l'image pour l'enregistrer ou la partager.":"Long-press the image to save or share it.",
+  "Enregistrer l'image":"Save image",
+  "soulevés":"lifted",
+  "Nouveau record":"New record",
+  "Nouveaux records":"New records",
+  "…et {} de plus":"…and {} more",
+  "Muscu & nutrition":"Strength & nutrition",
   "Google Drive":"Google Drive",
   "Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.":"A copy of your data in a private folder of your Drive, kept up to date on its own. To get Tonnup back on a new phone.",
   "Connecter Google Drive":"Connect Google Drive",
@@ -7520,7 +7530,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 22h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 01h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13339,11 +13349,13 @@ function openHistDetail(id){
     <div style="max-height:52dvh; overflow-y:auto; margin-bottom:14px;">${h.entries.map(en=>`
       <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
       <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)}×${d.r}`).join("")}`).join(" · ")}</div></div>`).join("")}</div>
+    <button class="btn" id="hd-partager" style="width:100%; margin-bottom:8px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
     <div class="row">
       <button class="btn grow" id="hd-edit">✎ Modifier</button>
       <button class="btn grow" id="hd-del" style="color:var(--bad);">${TR("Supprimer")}</button>
     </div>`);
   document.getElementById("hd-edit").onclick=()=>openHistEdit(id);
+  document.getElementById("hd-partager").onclick=()=>partagerSeance(h);
   document.getElementById("hd-del").onclick=()=>{
     askConfirm(TR("Supprimer cette séance ?"), TR("{n} du {d} sera retirée de l'historique et des courbes.").replace("{n}", h.name).replace("{d}", fmtDateShort(h.date)), TR("Supprimer"), true, ()=>{
       db.history = db.history.filter(x=>x.id!==h.id); save(); render();
@@ -14758,7 +14770,12 @@ function openFinSeance(r){
       <button data-feel="dur">${TR("Dur")}</button>
     </div>
   </div>
+  <button class="btn" id="fin-partager" style="width:100%; margin-bottom:8px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
   <button class="btn btn-accent" id="fin-ok" style="width:100%;">${TR("Terminé")}</button>`);
+  document.getElementById("fin-partager").onclick = ()=>{
+    const h = (db.history || []).find(x=>x.id === r.id);
+    if(h) partagerSeance(h, {records: r.records});
+  };
   /* Facultatif : ne rien répondre vaut « correct ». Un bouton qu'on peut ignorer sans
      conséquence finit par servir ; une question obligatoire reçoit n'importe quoi. */
   document.querySelectorAll("[data-feel]").forEach(b=>b.onclick=()=>{
@@ -14775,6 +14792,132 @@ function openFinSeance(r){
   if(cv) setTimeout(()=>confettis(cv, 2600), 60);
 }
 
+/* ================================================================== la carte a partager
+   Une image, pas un texte : c'est ce qu'on montre sur Instagram ou dans un groupe
+   WhatsApp. 1080 x 1350 (le 4:5 des reseaux), fond sombre, orange, les chiffres qui
+   comptent et la liste des exercices avec la meilleure serie de chacun. Dessinee au
+   canvas, sans bibliotheque, dans la charte de l'app. */
+function meilleureSerie(en){
+  const faites = en.sets.filter(st=>st.done !== false && !st.warm);
+  if(!faites.length) return null;
+  return faites.reduce((m, st)=>{
+    const a = (Number(st.w)||0) * 1000 + (Number(st.r)||0), b = (Number(m.w)||0) * 1000 + (Number(m.r)||0);
+    return a > b ? st : m;
+  });
+}
+function dessinerCarteSeance(h, extra){
+  const o = extra || {};
+  const W = 1080, H = 1350;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  const ORANGE = "#F58220", FOND = "#141416", BLANC = "#FFFFFF", GRIS = "#A9A7A3", CARTE = "#1E1E21";
+  const police = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const texte = (t, x, y, taille, poids, coul, align)=>{
+    c.font = `${poids || 700} ${taille}px ${police}`; c.fillStyle = coul || BLANC;
+    c.textAlign = align || "left"; c.textBaseline = "alphabetic";
+    c.fillText(t, x, y);
+  };
+  const arrondi = (x, y, w, hh, r, coul)=>{
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + hh, r); c.arcTo(x + w, y + hh, x, y + hh, r);
+    c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); c.fillStyle = coul; c.fill();
+  };
+  const tronque = (t, max, taille, poids)=>{
+    c.font = `${poids || 700} ${taille}px ${police}`;
+    if(c.measureText(t).width <= max) return t;
+    let s2 = t;
+    while(s2.length > 1 && c.measureText(s2 + "…").width > max) s2 = s2.slice(0, -1);
+    return s2 + "…";
+  };
+  /* fond : sombre, avec une lueur orange en haut a droite */
+  c.fillStyle = FOND; c.fillRect(0, 0, W, H);
+  const g = c.createRadialGradient(W - 120, -60, 40, W - 120, -60, 760);
+  g.addColorStop(0, "rgba(245,130,32,.42)"); g.addColorStop(1, "rgba(245,130,32,0)");
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  /* le trait orange en haut, comme le liseret des cartes */
+  c.fillStyle = ORANGE; c.fillRect(0, 0, W, 14);
+  /* en-tete : logo + marque, date a droite */
+  arrondi(72, 78, 64, 64, 18, ORANGE);
+  c.fillStyle = BLANC;
+  arrondi(84, 114, 10, 18, 3, BLANC); arrondi(99, 102, 10, 30, 3, BLANC); arrondi(114, 90, 10, 42, 3, BLANC);
+  texte("Tonnup", 154, 128, 44, 800, BLANC);
+  const d = new Date(h.date || h.start || Date.now());
+  let dateTxt = "";
+  try{ dateTxt = d.toLocaleDateString(loc(), {weekday:"short", day:"numeric", month:"short"}); }catch(e){ dateTxt = d.toDateString(); }
+  dateTxt = dateTxt.charAt(0).toUpperCase() + dateTxt.slice(1);
+  texte(tronque(dateTxt, 420, 30, 600), W - 72, 124, 30, 600, GRIS, "right");
+  /* le nom de la seance */
+  texte(TR("Séance").toUpperCase(), 72, 250, 26, 800, ORANGE);
+  const nom = tronque(h.name || TR("Séance libre"), W - 144, 96, 800);
+  texte(nom, 72, 350, 96, 800, BLANC);
+  /* les trois chiffres */
+  const mn = Math.max(1, Math.round(((h.end||0) - (h.start||0)) / 60000)) || 0;
+  const vol = Math.round(sessionVolume(h));
+  const series = h.entries.reduce((a, en)=>a + en.sets.filter(st=>st.done !== false && !st.warm).length, 0);
+  const volTxt = vol >= 1000 && !estImperial() ? (vol / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + " t" : pds(vol);
+  const tuiles = [[String(mn), TR("min")], [volTxt, TR("soulevés")], [String(series), TR(series > 1 ? "séries" : "série")]];
+  const tw = (W - 144 - 2 * 24) / 3;
+  tuiles.forEach((t, i)=>{
+    const x = 72 + i * (tw + 24);
+    arrondi(x, 400, tw, 150, 28, CARTE);
+    texte(t[0], x + tw / 2, 482, 60, 800, i === 1 ? ORANGE : BLANC, "center");
+    texte(t[1].toUpperCase(), x + tw / 2, 524, 21, 700, GRIS, "center");
+  });
+  /* les exercices : nom + meilleure serie. Autant qu'il en tient au-dessus du pied,
+     une fois la place des records reservee — jamais de debordement. */
+  const exos = h.entries.filter(en=>meilleureSerie(en));
+  const recs = (o.records || []).slice(0, 3);
+  const LIGNE = 90, Y0 = 622, BAS = H - 96;
+  const hauteurRecords = recs.length ? 24 + 44 + recs.length * 34 : 0;
+  const max = Math.max(3, Math.floor((BAS - Y0 - hauteurRecords) / LIGNE));
+  /* trop d'exercices : on en montre un de moins et la ligne « …et N de plus » */
+  const montres = exos.length > max ? exos.slice(0, Math.max(3, max - 1)) : exos;
+  let y = Y0 + 40;
+  montres.forEach((en)=>{
+    const ex = getEx(en.exId); if(!ex) return;
+    const m = meilleureSerie(en);
+    const nbSer = en.sets.filter(st=>st.done !== false && !st.warm).length;
+    arrondi(72, y - 40, W - 144, 80, 20, CARTE);
+    c.fillStyle = ORANGE; c.beginPath(); c.arc(110, y, 8, 0, Math.PI * 2); c.fill();
+    texte(tronque(ex.name, 540, 32, 700), 138, y + 11, 32, 700, BLANC);
+    const perf = (Number(m.w) > 0 ? pds(m.w) + " × " : "") + (m.r || 0) + (Number(m.w) > 0 ? "" : " " + TR("reps"));
+    texte(perf, W - 98, y + 4, 32, 800, ORANGE, "right");
+    texte(nbSer + " " + TR(nbSer > 1 ? "séries" : "série"), W - 98, y + 30, 20, 600, GRIS, "right");
+    y += LIGNE;
+  });
+  if(exos.length > montres.length){ texte(TR("…et {} de plus").replace("{}", exos.length - montres.length), 72, y - 6, 26, 600, GRIS); y += LIGNE - 30; }
+  /* les records, s'il y en a */
+  if(recs.length){
+    y -= 16;
+    arrondi(72, y, W - 144, 44 + recs.length * 34 + 8, 20, "rgba(245,130,32,.16)");
+    texte("🏆 " + TR(recs.length > 1 ? "Nouveaux records" : "Nouveau record"), 100, y + 34, 28, 800, ORANGE);
+    recs.forEach((r, i)=>{
+      const gain = r.gain ? (r.unite === "reps" ? "+" + r.gain + " " + TR("reps") : "+" + pds(r.gain)) : "";
+      texte(tronque(r.nom, 620, 26, 600) + (gain ? "  " + gain : ""), 100, y + 70 + i * 34, 26, 600, BLANC);
+    });
+  }
+  /* pied : la promesse de l'app */
+  texte("Tonnup · " + TR("Muscu & nutrition"), W / 2, H - 44, 24, 700, GRIS, "center");
+  return cv;
+}
+/* Partager : la feuille du telephone quand elle accepte une image (Android, iPhone),
+   sinon l'image dans une fiche, a enregistrer d'un appui long. */
+async function partagerSeance(h, extra){
+  vibrer(14);
+  const cv = dessinerCarteSeance(h, extra);
+  const blob = await new Promise(res=>cv.toBlob(res, "image/png"));
+  if(!blob){ toast(TR("Impossible de créer l'image.")); return; }
+  const fichier = new File([blob], "tonnup-seance.png", {type:"image/png"});
+  if(navigator.canShare && navigator.canShare({files:[fichier]})){
+    try{ await navigator.share({files:[fichier], title: TR("Ma séance Tonnup")}); return; }
+    catch(e){ if(e && e.name === "AbortError") return; }
+  }
+  const url = URL.createObjectURL(blob);
+  openSheet(`<h3>${TR("Partager la séance")}</h3>
+    <img src="${url}" alt="" style="display:block; width:100%; border-radius:16px; margin-bottom:12px;">
+    <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">${TR("Appuie longuement sur l'image pour l'enregistrer ou la partager.")}</p>
+    <a class="btn btn-accent" href="${url}" download="tonnup-seance.png" style="display:block; text-align:center;">${TR("Enregistrer l'image")}</a>`);
+}
 /* remplacer un exercice pendant la séance (machine prise, matériel manquant, blessure) */
 function openSwap(ei, fromInjury){
   const en = db.active.entries[ei];
@@ -15501,6 +15644,7 @@ function prixParMois(){
   const a = PRIX_ABO.annuel.montant;
   return a > 0 ? (a / 12).toFixed(2).replace(".", langue() === "en" ? "." : ",") + (PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") ? " " + PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") : "") : "";
 }
+const IC_PARTAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
 const IC_ABO_LOGO = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>';
 const IC_ABO_ASSIETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v7a2.5 2.5 0 0 0 5 0V3"/><path d="M9.5 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v3h3v10"/></svg>';
 const IC_ABO_COURBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
