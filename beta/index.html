@@ -7503,7 +7503,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 02h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "12 septembre 2026 03h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -15215,7 +15215,25 @@ async function driveSauver(interactif){
 function driveSchedule(){
   if(!driveActif()) return;
   if(driveTo) clearTimeout(driveTo);
-  driveTo = setTimeout(()=>{ if(driveEmpreinte() !== driveDernierEnvoi) driveSauver(false); }, 20000);
+  driveTo = setTimeout(async ()=>{
+    if(driveEmpreinte() === driveDernierEnvoi) return;
+    if(await driveSauver(false)) return;
+    /* Sur le web, le jeton vit une heure et Google n'en rend un nouveau que dans un
+       geste de l'utilisateur. On attend donc son prochain appui, n'importe ou : la
+       fenetre Google s'ouvre et se referme d'elle-meme (il a deja consenti). */
+    if(!pluginDrive() && !driveJeton) driveAuProchainGeste();
+  }, 20000);
+}
+let driveGesteArme = false;
+function driveAuProchainGeste(){
+  if(driveGesteArme) return;
+  driveGesteArme = true;
+  const h = ()=>{
+    document.removeEventListener("pointerdown", h, true);
+    driveGesteArme = false;
+    if(driveActif() && driveEmpreinte() !== driveDernierEnvoi) driveSauver(true);
+  };
+  document.addEventListener("pointerdown", h, true);
 }
 async function driveLire(){
   const f = await driveTrouver();
