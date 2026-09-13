@@ -463,6 +463,11 @@
   .ad-l .t{font-size:15px; font-weight:800; line-height:1.25;}
   .ad-l .s{font-size:13px; line-height:1.45; color:var(--ink-mute); margin-top:3px;}
   /* le ressenti de fin de séance : trois cases, aucune obligation */
+  /* les trois tuiles du recap, chacune avec son signe — le meme que sur la carte de
+     la semaine, pour qu'on retrouve les memes chiffres sous le meme dessin */
+  .fin-tiles .tile .ic{display:flex; width:30px; height:30px; border-radius:50%; margin-bottom:8px;
+    background:rgba(245,130,32,.13); color:var(--accent); align-items:center; justify-content:center;}
+  .fin-tiles .tile .ic svg{width:17px; height:17px;}
   .fin-feel{background:var(--surface2); border-radius:16px; padding:13px; margin-bottom:12px;}
   .fin-feel .t{font-size:13.5px; font-weight:800; text-align:center; margin-bottom:9px;}
   .fin-feel .ch{display:grid; grid-template-columns:repeat(3,1fr); gap:7px;}
@@ -1007,6 +1012,10 @@
   .hist-c{position:relative; flex:0 0 108px; height:112px; border-radius:12px; overflow:hidden;
     background:var(--hero); color:#fff; text-align:left;}
   .hist-c .ph{position:absolute; inset:0; background-size:cover; background-position:center;}
+  /* le bouton de partage de la derniere seance, dans le coin */
+  .hist-c .pg{position:absolute; top:6px; right:6px; z-index:3; width:26px; height:26px; border-radius:50%;
+    background:rgba(0,0,0,.5); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .hist-c .pg svg{width:14px; height:14px; vertical-align:0;}
   .hist-c .ph::after{content:""; position:absolute; inset:0;
     background:linear-gradient(180deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.72) 100%);}
   .hist-c .in{position:absolute; inset:0; padding:8px 9px; display:flex; flex-direction:column; justify-content:flex-end;}
@@ -1625,7 +1634,12 @@
   /* Le bandeau de l'objectif : ce qu'on vise à gauche, d'où l'on part à droite. Deux
      lignes de texte gris disaient la même chose et personne ne les lisait. */
   .obj-b{display:flex; align-items:stretch; border-radius:15px; overflow:hidden;
-    margin-bottom:11px;}
+    margin-bottom:11px; position:relative;}
+  /* la croix qui replie l'objectif : discrete, dans le coin */
+  .obj-b .obj-x{position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-mute); z-index:2;
+    background:transparent;}
+  .obj-b .obj-x svg{width:11px; height:11px;}
   .obj-b .g{display:flex; align-items:center; gap:9px; padding:10px;
     flex:1 1 58%; min-width:0; background:rgba(245,130,32,.12);}
   /* un gris très clair, presque blanc : la moitié droite doit s'effacer derrière
@@ -3377,6 +3391,23 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Partager la séance":"Share workout",
+  "Partager":"Share",
+  "Durée":"Duration",
+  "Poids soulevé":"Weight lifted",
+  "Exercice":"Exercise",
+  "Poids × reps":"Weight × reps",
+  "Volume":"Volume",
+  "rep":"rep",
+  "Impossible de créer l'image.":"Couldn't create the image.",
+  "Ma séance Tonnup":"My Tonnup workout",
+  "Appuie longuement sur l'image pour l'enregistrer ou la partager.":"Long-press the image to save or share it.",
+  "Enregistrer l'image":"Save image",
+  "soulevés":"lifted",
+  "Nouveau record":"New record",
+  "Nouveaux records":"New records",
+  "…et {} de plus":"…and {} more",
+  "Muscu & nutrition":"Strength & nutrition",
   "Google Drive":"Google Drive",
   "Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.":"A copy of your data in a private folder of your Drive, kept up to date on its own. To get Tonnup back on a new phone.",
   "Connecter Google Drive":"Connect Google Drive",
@@ -3418,6 +3449,7 @@ const TRAD = {en:{
   "Abonné · gérer sur Google Play":"Subscribed · manage on Google Play",
   "Débloqué par code":"Unlocked with a code",
   "Abonnement :":"Subscription:",
+  "Journal du repos :":"Rest log:",
   "Google Play relié":"Google Play connected",
   "abonnement actif":"active subscription",
   "aucun abonnement":"no subscription",
@@ -3638,10 +3670,9 @@ const TRAD = {en:{
   "Jamais deux gros mouvements du même type dans une séance : pas deux soulevés de terre, pas deux rowings.":"Never two big movements of the same kind in one session: no two deadlifts, no two rows.",
   "À retenir":"Worth remembering",
   "Pourquoi cette séance":"Why this session",
-  "Comment tu l'as sentie ?":"How did it feel?",
-  "Facile":"Easy",
-  "Correct":"Just right",
-  "Dur":"Hard",
+  "Comment te sens-tu ?":"How do you feel?",
+  "Bien":"Good",
+  "Très fatigué":"Wiped out",
   "Ta forme":"Your shape",
   "Ta zone sensible":"Your sensitive area",
   "intensité {}":"{} sensitivity",
@@ -3650,8 +3681,8 @@ const TRAD = {en:{
   "muscle le moins prioritaire aujourd'hui":"lowest-priority muscle today",
   "ce muscle récupère encore":"this muscle is still recovering",
   "exercice sensible pour toi":"exercise you flagged as sensitive",
-  "tes dernières séances t'ont paru faciles":"your recent sessions felt easy",
-  "tes dernières séances t'ont paru dures":"your recent sessions felt hard",
+  "tu te sentais bien après tes dernières séances":"you felt good after your recent sessions",
+  "tu sortais très fatigué de tes dernières séances":"you came out of your recent sessions wiped out",
   "Tu pourrais charger, mais tu as signalé « {z} » sur ce mouvement. On garde {c} : la progression se fera en répétitions tant que ça tire.":"You could add load, but you flagged « {z} » on this movement. We keep {c}: progress comes from reps while it still pulls.",
   "Garde {c} et gagne une répétition — {z} sensible.":"Keep {c} and win a rep — {z} is sensitive.",
   "faible":"low","moyenne":"medium","élevée":"high",
@@ -3663,8 +3694,8 @@ const TRAD = {en:{
   "Si une douleur dure ou revient, on te recommande d'aller voir un professionnel de santé.":"If pain lasts or keeps coming back, we recommend seeing a health professional.",
   "Tes zones sensibles":"Your sensitive areas",
   "Les exercices à risque pour {} sont écartés dès qu'une alternative existe.":"Exercises that are risky for your {} are set aside whenever there is an alternative.",
-  "Tes deux dernières séances t'ont paru dures. On allège un peu.":"Your last two sessions felt hard. We ease off a little.",
-  "Tes deux dernières séances t'ont paru faciles. On en remet une couche.":"Your last two sessions felt easy. We add a bit more.",
+  "Tu sortais très fatigué de tes deux dernières séances. On allège un peu.":"You came out of your last two sessions wiped out. We ease off a little.",
+  "Tu te sentais bien après tes deux dernières séances. On en remet une couche.":"You felt good after your last two sessions. We add a bit more.",
   "Tu forces dessus sans que ça monte. On lève le pied cette semaine.":"You are grinding on it with nothing to show. We ease off this week.",
   "Pas encore récupéré. On l'épargne aujourd'hui.":"Not recovered yet. We go easy on it today.",
   "Jamais travaillé pour l'instant. On commence par lui.":"Never trained so far. We start with it.",
@@ -4528,6 +4559,7 @@ const TRAD = {en:{
   "Tirage vertical prise neutre":"Neutral-grip lat pulldown",
   "Rowing machine":"Machine row",
   "Pull-over poulie":"Cable pullover",
+  "Pull-over haltère":"Dumbbell pullover",
   "Haussements d'épaules":"Shrugs",
   "Élévations latérales poulie":"Cable lateral raise",
   "Développé machine épaules":"Machine shoulder press",
@@ -4760,7 +4792,10 @@ const LIB = [
      rattache l historique de chacun au voisin. C est arrive une fois, ca suffit. */
   ["Jambes","Swing kettlebell","Kettlebell","deadlift"],["Épaules","Développé kettlebell","Kettlebell","ohp"],
   ["Dos","Rowing TRX","Sangles","row"],["Pectoraux","Pompes TRX","Sangles","pushup"],
-  ["Abdos","Crunch sur ballon","Ballon","crunch"],["Jambes","Leg curl sur ballon","Ballon","legcurl"]
+  ["Abdos","Crunch sur ballon","Ballon","crunch"],["Jambes","Leg curl sur ballon","Ballon","legcurl"],
+  /* ajoute le 12 septembre 2026, apres le dessin de Nico : couche sur un banc, un
+     haltere a deux mains, le mouvement de la poulie mais en travers du banc */
+  ["Dos","Pull-over haltère","Haltères","pullover"]
 ].map((e,i)=>({
   id:"lib"+i, icon:e[3],
   /* les champs "Fr" sont les clés : elles ne changent jamais de langue.
@@ -4815,6 +4850,7 @@ const MAT_EXOS = {
   "Développé couché":["barre","banc"], "Développé incliné barre":["barre","banc"],
   "Développé couché haltères":["halteres","banc"], "Développé incliné haltères":["halteres","banc"],
   "Écartés haltères":["halteres","banc"], "Curl incliné haltères":["halteres","banc"],
+  "Pull-over haltère":["halteres","banc"],
   "Curl pupitre":["barre","banc"], "Curl concentration":["halteres",SURELEVE],
   "Dips":["dips"], "Fentes bulgares":["halteres",SURELEVE],
   "Montées sur banc":["halteres",SURELEVE], "Hip thrust":["barre",SURELEVE],
@@ -4985,7 +5021,8 @@ const ALTS = {
   "Développé couché à la Smith":["Développé couché","Développé machine","Développé couché haltères"],
   "Tirage vertical prise neutre":["Tirage vertical","Tractions","Rowing machine"],
   "Rowing machine":["Rowing haltère","Tirage horizontal","Rowing barre"],
-  "Pull-over poulie":["Tirage vertical","Tractions"],
+  "Pull-over poulie":["Pull-over haltère","Tirage vertical"],
+  "Pull-over haltère":["Pull-over poulie","Tirage vertical"],
   "Haussements d'épaules":["Face pull","Rowing barre"],
   "Élévations latérales poulie":["Élévations latérales","Oiseau"],
   "Développé machine épaules":["Développé militaire haltères","Développé militaire"],
@@ -5147,6 +5184,7 @@ const MUSCLE_WORK = {
   "Tirage vertical prise neutre":[["Grand dorsal",3],["Biceps",2]],
   "Rowing machine":[["Grand dorsal",3],["Biceps",2]],
   "Pull-over poulie":[["Grand dorsal",3],["Triceps",1]],
+  "Pull-over haltère":[["Grand dorsal",3],["Pectoraux",1],["Triceps",1]],
   "Haussements d'épaules":[["Trapèzes",3],["Avant-bras",2]],
   "Développé militaire":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2],["Abdos",1]],
   "Développé militaire haltères":[["Deltoïdes (antérieur)",3],["Deltoïdes (latéral)",2],["Triceps",2]],
@@ -5341,6 +5379,8 @@ Object.assign(EXO_INFO_EN, {
     steps:["Set the seat so your chest rests on the pad.","Grab the handles with straight arms.","Pull back, elbows close to your body.","Squeeze your shoulder blades for a second.","Return without letting the weights touch down."]},
   "Pull-over poulie":{tip:"Arms almost straight throughout: the moment you bend your elbows, your triceps take over.",
     steps:["Stand facing the high pulley, bar or rope in hand.","Step back, torso leaning slightly forward.","Bring your straight arms down toward your thighs.","Feel the lat stretch at the end of the range.","Return slowly without bending your elbows."]},
+  "Pull-over haltère":{tip:"Go only as far back as your shoulders allow: the stretch should be felt in the lats and chest, never in the shoulder joint.",
+    steps:["Lie across or along a bench, one dumbbell held with both hands above your chest.","Elbows slightly bent and locked at that angle.","Lower the dumbbell in an arc behind your head.","Stop when you feel the stretch, without arching your back.","Bring it back above your chest along the same arc."]},
   "Haussements d'épaules":{tip:"Lift your shoulders straight toward your ears: rolling them adds nothing and strains the neck.",
     steps:["Standing, a dumbbell in each hand by your sides.","Arms straight, shoulders relaxed.","Lift your shoulders as high as you can.","Hold for a second at the top.","Lower slowly, under control."]},
   "Développé militaire":{tip:"Squeeze your glutes and abs: without that lock, you'll compensate by arching your lower back.",
@@ -5581,6 +5621,8 @@ const EXO_INFO = {
  steps:["Règle le siège pour que la poitrine repose sur le coussin.","Attrape les poignées bras tendus.","Tire vers l'arrière, coudes le long du corps.","Serre les omoplates une seconde.","Reviens sans laisser les poids toucher."]},
 "Pull-over poulie":{tip:"Bras quasi tendus tout du long : dès que tu plies les coudes, ce sont les triceps qui travaillent.",
  steps:["Debout face à la poulie haute, barre ou corde en main.","Recule d'un pas, buste légèrement penché.","Descends les bras tendus vers les cuisses.","Sens l'étirement des dorsaux en fin de course.","Remonte lentement sans plier les coudes."]},
+"Pull-over haltère":{tip:"Ne descends que jusqu'où tes épaules le permettent : l'étirement se sent dans les dorsaux et les pectoraux, jamais dans l'articulation.",
+ steps:["Allongé sur un banc, un haltère tenu à deux mains au-dessus de la poitrine.","Coudes légèrement fléchis, bloqués dans cet angle.","Descends l'haltère en arc de cercle derrière la tête.","Arrête-toi quand tu sens l'étirement, sans cambrer.","Ramène-le au-dessus de la poitrine par le même chemin."]},
 "Haussements d'épaules":{tip:"Monte les épaules vers les oreilles à la verticale : les faire tourner n'apporte rien et fragilise le cou.",
  steps:["Debout, un haltère dans chaque main le long du corps.","Bras tendus, épaules relâchées.","Monte les épaules le plus haut possible.","Bloque une seconde en haut.","Redescends lentement en contrôlant."]}
 };
@@ -7447,7 +7489,7 @@ const EXO_PHOTO = {
   "Rowing sous la table":"tirage-sous-la-table", "Tirage vertical":"tirage-vertical",
   "Tirage vertical prise neutre":"tirage-prise-neutre",
   "Tirage élastique vertical":"tirage-vertical-elastique", "Tirage horizontal":"tirage-horizontal",
-  "Tirage élastique horizontal":"tirage-horizontal-elastique", "Pull-over poulie":"pull-over",
+  "Tirage élastique horizontal":"tirage-horizontal-elastique", "Pull-over poulie":"pull-over-poulie", "Pull-over haltère":"pull-over",
   "Haussements d'épaules":"haussement", "Soulevé de terre":"souleve-de-terre",
   "Soulevé de terre roumain":"souleve-de-terre-roumain",
   "Soulevé de terre sumo":"souleve-de-terre-sumo",
@@ -7503,7 +7545,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "12 septembre 2026 15h27";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 02h05";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8256,7 +8298,7 @@ function suggestFor(exId, target){
 /* ================= TABS ================= */
 const ICONS = {
   seance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 5v14M17.5 5v14M3 9v6M21 9v6M6.5 12h11"/></svg>',
-  eat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 12.5V21"/><path d="M17 3c-1.6 1.2-2.5 3-2.5 5s.9 3.2 2.5 3.4V21"/></svg>',
+  eat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3v6.5a3 3 0 0 0 6 0V3M8.5 3v6.5M8.5 12.5V21"/><path d="M17 3c-1.6 1.2-2.5 3-2.5 5s.9 3.2 2.5 3.4V21"/></svg>',
   prg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M7 15l3.5-4 2.5 2.5L17 9"/></svg>'
 };
 const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]];
@@ -8913,7 +8955,9 @@ function askConfirm(title, msg, okLabel, danger, cb){
 /* ================= REST TIMER ================= */
 let rest = {end:0, total:0, int:null, paused:false, remaining:0, hideTo:null};
 let audioCtx = null;
-function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); }catch(e){} }
+function ensureAudio(){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state!=="running") audioCtx.resume(); }catch(e){} }
+/* la page peut-elle emettre un son maintenant ? (contexte cree ET en marche) */
+function audioPret(){ return !!audioCtx && audioCtx.state === "running"; }
 /* Les trois notes du bip durent trois quarts de seconde. On garde la main dessus :
    terminer une seance pendant qu elles sonnent doit les couper net, pas les laisser
    finir dans le vide. */
@@ -9097,7 +9141,8 @@ async function poserAlarmeRepos(){
     alarmePosee = true;
     autoriserNotifs();                                          /* pour l'affichage, pas pour le décompte */
     if(db.settings.son !== false) poserCanalRepos();             /* le canal porte le bip */
-    if(await demarrerServiceRepos(dans / 1000)) return;
+    if(await demarrerServiceRepos(dans / 1000)){ noterRepos("service posé " + Math.round(dans / 1000) + " s"); return; }
+    noterRepos("service REFUSÉ");
     alarmePosee = false;                                         /* refusé : on retombe sur l'ancien chemin */
   }
 
@@ -9179,6 +9224,7 @@ async function verifierAlarmeExacte(){
   setTimeout(()=>{ if(document.visibilityState === "visible") ficheAlarmeExacte(); }, 700);
 }
 async function retirerAlarmeRepos(){
+  noterRepos("alarme retirée à " + (rest.end ? Math.round((rest.end - Date.now()) / 100) / 10 + " s de la fin" : "?") + (document.visibilityState === "visible" ? "" : " (page cachée)"));
   alarmePosee = false;
   arreterServiceRepos();          /* le décompte natif s'arrête avec le repos */
   const n = pluginNotifs();
@@ -9449,8 +9495,18 @@ function majIconePause(){
   const t = rest.paused ? TR("Reprendre") : TR("Mettre en pause");
   b.setAttribute("aria-label", t); b.setAttribute("title", t);
 }
+/* Le journal du repos : les douze derniers evenements, lisibles dans les reglages.
+   Un repos qui ne sonne pas ne laisse aucune trace ; avec ca, on sait au moins ce qui
+   s'est passe — pose, retire, fini a l'ecran ou en veille, bip joue ou non. */
+const journalRepos = [];
+function noterRepos(quoi){
+  const h = new Date();
+  journalRepos.push(String(h.getHours()).padStart(2, "0") + ":" + String(h.getMinutes()).padStart(2, "0") + ":" + String(h.getSeconds()).padStart(2, "0") + " " + quoi);
+  if(journalRepos.length > 12) journalRepos.shift();
+}
 function startRest(sec){
   if(!sec || sec<=0) return;
+  noterRepos("départ " + Math.round(sec) + " s" + (rest.int ? " (remplace un repos en cours)" : ""));
   /* remise à zéro complète : rien de la minuterie précédente ne doit survivre */
   if(rest.int) clearInterval(rest.int);
   if(rest.hideTo) clearTimeout(rest.hideTo);
@@ -9484,6 +9540,7 @@ function startRest(sec){
 }
 function togglePauseRest(){
   if(!restbar.classList.contains("show")) return;
+  ensureAudio();
   if(rest.paused){
     rest.end = Date.now() + rest.remaining;
     rest.paused = false;
@@ -9514,7 +9571,10 @@ function tickRest(){
   /* L'app est sous les yeux et la fin approche : c'est le bip de la page qui sonnera,
      on retire l'alarme système avant qu'elle ne double la mise. Si l'écran s'éteint
      dans cette dernière seconde, tant pis — la page serait gelée de toute façon. */
-  if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible")
+  /* …et seulement si la page PEUT sonner : un contexte audio endormi (appel recu,
+     autre appli qui a pris le son) ne jouerait rien. Dans ce cas on laisse le
+     service sonner, lui n'a pas cette faiblesse. */
+  if(alarmePosee && left > 0 && left <= AVANT_FIN && document.visibilityState === "visible" && audioPret())
     retirerAlarmeRepos();
   /* meme regle pour une etape de gainage : sous les yeux, c'est la page qui sonne, et
      l'etape suivante reposera la suite au service. Si l'ecran s'eteint dans cette
@@ -9542,7 +9602,10 @@ function tickRest(){
     restbar.classList.add("ending");
     /* on ne sonne que si le zéro vient d'être atteint : au retour d'une veille,
        le repos est fini depuis longtemps et une sonnerie n'aurait plus de sens */
-    if(left > -2) bipRepos();
+    noterRepos("fin (" + Math.round(left * 10) / 10 + " s, " + (document.visibilityState === "visible" ? "à l'écran" : "page cachée") + ", " + (left > -2 ? "bip page" : "pas de bip page") + (db.settings.son === false ? ", son coupé" : "") + ")");
+    /* si le service est encore arme (audio de la page indisponible), c'est lui qui
+       sonne : on ne double pas */
+    if(left > -2 && !alarmePosee) bipRepos();
     vibrer([200,100,200]);
     /* un gainage en cours enchaîne sur l'étape suivante au lieu de s'arrêter là */
     if(seqIso){ avancerIso(); return; }
@@ -9579,7 +9642,16 @@ document.getElementById("rest-skip").onclick=()=>{
 /* Changer la durée déplace l'heure de fin : l'alarme déjà posée sonnerait au mauvais
    moment. On la repose sur la nouvelle heure — programmer le même identifiant remplace
    l'ancienne, il n'y a pas à l'annuler d'abord. */
-document.getElementById("rest-plus").onclick=()=>{ if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end+=15000; rest.total+=15; poserAlarmeRepos(); tickRest(); } };
+document.getElementById("rest-plus").onclick=()=>{
+  ensureAudio();                              /* un geste : on en profite pour reveiller l'audio */
+  if(rest.paused){ rest.remaining+=15000; rest.total+=15; document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); return; }
+  /* Le repos est deja fini (ou jamais parti) : « +15 » ajoutait quinze secondes a un
+     compteur mort — la barre affichait 0:15 sans plus jamais avancer, ni sonner, ni
+     clignoter. C'est ce qui arrive quand on appuie juste apres la fin. On relance un
+     vrai repos de quinze secondes. */
+  if(!rest.int){ startRest(15); return; }
+  rest.end+=15000; rest.total+=15; poserAlarmeRepos(); tickRest();
+};
 document.getElementById("rest-minus").onclick=()=>{ if(rest.paused){ rest.remaining=Math.max(0,rest.remaining-15000); document.getElementById("rest-t").textContent=mmss(rest.remaining/1000); } else { rest.end-=15000; poserAlarmeRepos(); tickRest(); } };
 document.getElementById("rest-son").onclick=e=>{
   e.stopPropagation();
@@ -11960,12 +12032,17 @@ const INSTALL = {
   "Roue": 15
 };
 const INSTALL_DEFAUT = 40;
+/* Et entre deux exercices : rejoindre le poste suivant, attendre qu'il se libere,
+   decharger la barre, ranger les halteres. Nico a chronometre ses seances : « 45 min »
+   annoncees, une heure reelle — deux minutes par exercice comblent l'ecart. Estimation
+   de terrain, pas une mesure ; mais la sienne, sur plusieurs seances. */
+const TRANSITION = 120;
 function dureeItem(exId, sets, reps, repos){
   const ex = getEx(exId), r = parseReps(reps);
   const combien = r ? (r.lo + r.hi) / 2 : 10;
   /* pour un gainage, la « répétition » EST une durée : on ne la multiplie pas */
   const parSerie = estIsometrique(ex) ? combien : combien * TEMPO_REP;
-  let t = INSTALL[equipCanon(ex)] || INSTALL_DEFAUT;
+  let t = (INSTALL[equipCanon(ex)] || INSTALL_DEFAUT) + TRANSITION;
   const n = Math.max(1, sets || 1);
   for(let i = 0; i < n; i++){
     t += MISE_EN_PLACE + parSerie * (1 + FATIGUE_SERIE * i);
@@ -12144,6 +12221,7 @@ function renderSeance(app){
   if(!passees.length){
     hs.innerHTML = `<div class="card empty" style="flex:1; padding:16px;">${TR("Aucune séance enregistrée pour l'instant.")}</div>`;
   } else {
+    let premiereMuscu = true;
     hs.innerHTML = passees.map(it=>{
       if(it.t === "c"){
         const c = it.o;
@@ -12163,8 +12241,13 @@ function renderSeance(app){
       const kc = liftKcal(h);
       const mn = Math.round(((h.end||0)-(h.start||0))/60000);
       const t = db.templates.find(x=>x.id===h.templateId);
+      /* la derniere seance porte le bouton de partage : de retour au menu, un appui et
+         la carte part — sans rouvrir la seance */
+      const partage = premiereMuscu ? `<span class="pg" role="button" data-partage="${h.id}" aria-label="${TR("Partager la séance")}">${IC_PARTAGE}</span>` : "";
+      premiereMuscu = false;
       return `<button class="hist-c" data-hist="${h.id}">
         <div class="ph" style="background-image:url('${photoUrl(photoSeance(t || {name:h.name, items:h.entries.map(e=>({exId:e.exId}))}))}');"></div>
+        ${partage}
         <div class="dt">◷ ${fmtDateShort(h.date)}</div>
         <div class="in">
           <div class="nm">${esc(h.name)}</div>
@@ -12175,6 +12258,11 @@ function renderSeance(app){
       <div class="in" style="align-items:center; justify-content:center; text-align:center;">
         <div style="font-size:12px; font-weight:700; line-height:1.3;">${TR("Voir")}<br>${TR("tout")}</div></div></button>`;
     hs.querySelectorAll("[data-hist]").forEach(b=>b.onclick=()=>openHistDetail(b.dataset.hist));
+    hs.querySelectorAll("[data-partage]").forEach(b=>b.onclick=(e)=>{
+      e.stopPropagation();
+      const h = db.history.find(x=>x.id === b.dataset.partage);
+      if(h) partagerSeance(h);
+    });
     hs.querySelectorAll("[data-hcardio]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.hcardio));
     const all = document.getElementById("hist-all");
     if(all) all.onclick=()=>{ curTab="hist"; render(); };
@@ -12195,7 +12283,7 @@ const RESERVOIRS = {
   triceps:   ["Extension poulie (barre)","Extension poulie (corde)","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie","Dips sur banc","Extension triceps élastique"],
   dosVert:   ["Tractions","Tirage vertical","Tirage vertical prise neutre","Tractions supination","Tirage élastique vertical"],
   dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Rowing TRX","Tractions australiennes","Tirage élastique horizontal","Rowing sous la table"],
-  dosComp:   ["Pull-over poulie","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
+  dosComp:   ["Pull-over poulie","Pull-over haltère","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
   arriere:   ["Face pull","Oiseau","Rowing menton","Oiseau élastique"],
   biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination","Curl auto-résisté"],
   quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses","Squat au poids du corps","Squat élastique","Chaise contre le mur"],
@@ -12382,6 +12470,7 @@ const SCHEMA = {
   "Tractions supination":"tirageV",
   "Tirage élastique vertical":"tirageV",
   "Pull-over poulie":"tirageV",
+  "Pull-over haltère":"tirageV",
   "Rowing barre":"tirageH",
   "Rowing haltère":"tirageH",
   "Tirage horizontal":"tirageH",
@@ -12701,9 +12790,9 @@ function raisonsSeance(type){
         .replace("{}", bobos.map(l=>TR(l).toLowerCase()).join(", "))]);
   const humeur = tendanceRessenti();
   if(humeur === "dur")
-    out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru dures. On allège un peu.")]);
+    out.push([TR("Ta forme"), TR("Tu sortais très fatigué de tes deux dernières séances. On allège un peu.")]);
   if(humeur === "facile")
-    out.push([TR("Ta forme"), TR("Tes deux dernières séances t'ont paru faciles. On en remet une couche.")]);
+    out.push([TR("Ta forme"), TR("Tu te sentais bien après tes deux dernières séances. On en remet une couche.")]);
   out.push(phrase(b[0]));
   if(b.length > 1) out.push(phrase(b[1]));
   /* le dernier de la liste n'est intéressant que s'il est vraiment écarté */
@@ -12958,11 +13047,15 @@ function genererAdaptative(type, evites){
          des exercices — on la préfère à rien, on ne la met pas en avant. */
       if(choisi.risque >= 2) moins("exercice sensible pour toi");
       /* et ce que TU as ressenti sur les deux dernières séances : une série de plus sur
-         l'exercice de tête si elles t'ont paru faciles, une de moins sur le dernier si
-         elles t'ont paru dures. Jamais les deux, jamais plus d'une. */
-      if(k === 0 && humeur === "facile" && rang === 0) plus("tes dernières séances t'ont paru faciles");
+         l'exercice de tête si tu en sortais bien, une de moins sur le dernier si tu en
+         sortais très fatigué. Jamais les deux, jamais plus d'une. La question posée en
+         fin de séance est « Comment te sens-tu ? » (bien / fatigué / très fatigué), pas
+         « c'était dur ? » : Nico a remarqué qu'une séance intense n'est pas forcément
+         « dure », alors que la fatigue, elle, se sent sans ambiguïté. Les valeurs
+         internes gardent leurs noms (facile / correct / dur). */
+      if(k === 0 && humeur === "facile" && rang === 0) plus("tu te sentais bien après tes dernières séances");
       if(k === 0 && humeur === "dur" && rang >= parts.length - 1 && parts.length > 2)
-        moins("tes dernières séances t'ont paru dures");
+        moins("tu sortais très fatigué de tes dernières séances");
       const ecartSeries = series - d.s;
       items.push({nom:choisi.nom, sets:series, reps:repsTenue(choisi.nom, reps),
                   rest:reposTenue(choisi.nom, repos),
@@ -13286,11 +13379,13 @@ function openHistDetail(id){
     <div style="max-height:52dvh; overflow-y:auto; margin-bottom:14px;">${h.entries.map(en=>`
       <div class="hist-ex"><div class="n">${esc(getEx(en.exId).name)}</div>
       <div class="s">${en.sets.map(st=>`${fmtKg(st.w)}×${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)}×${d.r}`).join("")}`).join(" · ")}</div></div>`).join("")}</div>
+    <button class="btn" id="hd-partager" style="width:100%; margin-bottom:8px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
     <div class="row">
       <button class="btn grow" id="hd-edit">✎ Modifier</button>
       <button class="btn grow" id="hd-del" style="color:var(--bad);">${TR("Supprimer")}</button>
     </div>`);
   document.getElementById("hd-edit").onclick=()=>openHistEdit(id);
+  document.getElementById("hd-partager").onclick=()=>partagerSeance(h);
   document.getElementById("hd-del").onclick=()=>{
     askConfirm(TR("Supprimer cette séance ?"), TR("{n} du {d} sera retirée de l'historique et des courbes.").replace("{n}", h.name).replace("{d}", fmtDateShort(h.date)), TR("Supprimer"), true, ()=>{
       db.history = db.history.filter(x=>x.id!==h.id); save(); render();
@@ -13906,7 +14001,17 @@ function allerAuProchainExo(){
     ? document.querySelector('.ex-card[data-ei="' + i + '"]')
     : document.getElementById("finish-w");     /* plus rien a faire : le bouton de fin */
   if(!cible) return;
-  try{ cible.scrollIntoView({block:"start", behavior:"smooth"}); }catch(e){ cible.scrollIntoView(); }
+  /* pas tout en haut : la barre d'etat, et la barre de repos quand elle est placee en
+     haut, masqueraient le nom de l'exercice. On laisse la marge qu'il faut. */
+  let marge = 14;
+  try{
+    const pad = parseFloat(getComputedStyle(document.getElementById("app")).paddingTop) || 16;
+    marge += Math.max(0, pad - 16);                                   /* la barre d'etat */
+    if(restbar.classList.contains("haut") && restbar.classList.contains("show"))
+      marge = Math.max(marge, restbar.getBoundingClientRect().bottom + 12);
+  }catch(e){}
+  const y = cible.getBoundingClientRect().top + window.scrollY - marge;
+  try{ window.scrollTo({top: Math.max(0, y), behavior:"smooth"}); }catch(e){ window.scrollTo(0, Math.max(0, y)); }
 }
 function renderActive(app){
   const a = db.active;
@@ -14026,9 +14131,10 @@ function renderActive(app){
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">ⓘ</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
       ${(()=>{ const o = objectifDuJour(en.exId, en.target);
-        if(!o || (!o.poids && !o.reps)) return "";
+        if(!o || (!o.poids && !o.reps) || en.objMasque) return "";
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
         return `<div class="obj-b">
+          <button class="obj-x" data-obj-x="${ei}" aria-label="${TR("Masquer")}">${IC_CROIX}</button>
           <div class="g">${o.pourquoi ? `<button class="obj-i"
               data-pourquoi="${esc(TR(o.pourquoi))}"
               aria-label="${TR("Pourquoi ce poids ?")}">i</button>` : ""}<span class="ic">${IC_CIBLE}</span>
@@ -14534,6 +14640,10 @@ function renderActive(app){
     });
     const hx = card.querySelector("[data-hist-ex]");
     if(hx) hx.onclick = (e)=>{ e.stopPropagation(); openHistoExo(parseInt(hx.dataset.histEx)); };
+    /* l'objectif prend de la place : on peut le replier pour cet exercice, le temps
+       de la seance — la fiche ⓘ et l'historique restent la pour le retrouver */
+    const ox = card.querySelector("[data-obj-x]");
+    if(ox) ox.onclick = (e)=>{ e.stopPropagation(); en.objMasque = true; save(); renderSurPlace(); };
     const bl = card.querySelector("[data-injinfo]");
     if(bl) bl.onclick = (e)=>{ e.stopPropagation(); openBlessureExo(parseInt(bl.dataset.injinfo)); };
     card.querySelector('[data-act="swap"]').onclick=()=>openSwap(ei);
@@ -14669,10 +14779,10 @@ function openFinSeance(r){
       <div style="font-size:13.5px; color:var(--ink-soft);">${esc(r.nom)} ${TR("— c'est dans la boîte.")}</div>
     </div>
   </div>
-  <div class="tiles" style="margin:16px 0 14px;">
-    <div class="tile"><div class="v">${mn}<span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
-    <div class="tile"><div class="v">${r.volume>=1000 && !estImperial()? (r.volume/1000).toLocaleString(loc(),{maximumFractionDigits:1})+" t" : pds(r.volume)}</div><div class="u">${TR("soulevés")}</div></div>
-    <div class="tile"><div class="v" style="color:var(--accent);">${r.kcal}</div><div class="u">${TR("kcal brûlées")}</div></div>
+  <div class="tiles fin-tiles" style="margin:16px 0 14px;">
+    <div class="tile"><span class="ic">${IC_CHRONO}</span><div class="v">${mn}<span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
+    <div class="tile"><span class="ic">${ICONS.seance}</span><div class="v">${r.volume>=1000 && !estImperial()? (r.volume/1000).toLocaleString(loc(),{maximumFractionDigits:1})+" t" : pds(r.volume)}</div><div class="u">${TR("soulevés")}</div></div>
+    <div class="tile"><span class="ic">${icoM("flamme", 18)}</span><div class="v" style="color:var(--accent);">${r.kcal}</div><div class="u">${TR("kcal brûlées")}</div></div>
   </div>
   <div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin-bottom:14px;">
     ${r.series} ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} ${r.exos} ${TR(r.exos>1 ? "exercices" : "exercice")}.</div>
@@ -14683,14 +14793,19 @@ function openFinSeance(r){
         : pds(x.gain)}</b> ${x.unite==="reps" ? TR("sur ton meilleur") : TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
   </div>`:""}
   <div class="fin-feel">
-    <div class="t">${TR("Comment tu l'as sentie ?")}</div>
+    <div class="t">${TR("Comment te sens-tu ?")}</div>
     <div class="ch">
-      <button data-feel="facile">${TR("Facile")}</button>
-      <button data-feel="correct">${TR("Correct")}</button>
-      <button data-feel="dur">${TR("Dur")}</button>
+      <button data-feel="facile">${TR("Bien")}</button>
+      <button data-feel="correct">${TR("Fatigué")}</button>
+      <button data-feel="dur">${TR("Très fatigué")}</button>
     </div>
   </div>
+  <button class="btn" id="fin-partager" style="width:100%; margin-bottom:8px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
   <button class="btn btn-accent" id="fin-ok" style="width:100%;">${TR("Terminé")}</button>`);
+  document.getElementById("fin-partager").onclick = ()=>{
+    const h = (db.history || []).find(x=>x.id === r.id);
+    if(h) partagerSeance(h, {records: r.records});
+  };
   /* Facultatif : ne rien répondre vaut « correct ». Un bouton qu'on peut ignorer sans
      conséquence finit par servir ; une question obligatoire reçoit n'importe quoi. */
   document.querySelectorAll("[data-feel]").forEach(b=>b.onclick=()=>{
@@ -14707,6 +14822,211 @@ function openFinSeance(r){
   if(cv) setTimeout(()=>confettis(cv, 2600), 60);
 }
 
+/* ================================================================== la carte a partager
+   Une image, pas un texte : c'est ce qu'on montre sur Instagram ou dans un groupe
+   WhatsApp. 1080 x 1350 (le 4:5 des reseaux), fond sombre, orange, les chiffres qui
+   comptent et la liste des exercices avec la meilleure serie de chacun. Dessinee au
+   canvas, sans bibliotheque, dans la charte de l'app. */
+function meilleureSerie(en){
+  const faites = en.sets.filter(st=>st.done !== false && !st.warm);
+  if(!faites.length) return null;
+  return faites.reduce((m, st)=>{
+    const a = (Number(st.w)||0) * 1000 + (Number(st.r)||0), b = (Number(m.w)||0) * 1000 + (Number(m.r)||0);
+    return a > b ? st : m;
+  });
+}
+/* le logo texte (TONN blanc, UP orange), charge une fois ; sans lui, le nom en lettres */
+let logoCarte = null;
+function chargerLogoCarte(){
+  if(logoCarte) return Promise.resolve(logoCarte);
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{ logoCarte = im; res(im); };
+    im.onerror = ()=>res(null);
+    im.src = "img/logo-texte.png";
+  });
+}
+function musclesDeSeance(h){
+  const vus = [];
+  h.entries.forEach(en=>{ const ex = getEx(en.exId); if(ex && ex.muscle && !vus.includes(ex.muscle)) vus.push(ex.muscle); });
+  return vus;
+}
+function volumeExo(en){
+  const f = facteurCharge(en.exId);
+  return en.sets.reduce((a, st)=>a + ((st.done !== false && !st.warm) ? volSerie(st) * f : 0), 0);
+}
+async function dessinerCarteSeance(h, extra){
+  const o = extra || {};
+  const logo = await chargerLogoCarte();
+  const W = 1080, H = 1350;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  const ORANGE = "#F58220", FOND = "#131315", BLANC = "#FFFFFF", GRIS = "#A9A7A3", CARTE = "#1D1D20", CARTE2 = "#26262A";
+  const police = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const texte = (t, x, y, taille, poids, coul, align)=>{
+    c.font = `${poids || 700} ${taille}px ${police}`; c.fillStyle = coul || BLANC;
+    c.textAlign = align || "left"; c.textBaseline = "alphabetic";
+    c.fillText(t, x, y);
+  };
+  const largeur = (t, taille, poids)=>{ c.font = `${poids || 700} ${taille}px ${police}`; return c.measureText(t).width; };
+  const arrondi = (x, y, w, hh, r, coul)=>{
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + hh, r); c.arcTo(x + w, y + hh, x, y + hh, r);
+    c.arcTo(x, y + hh, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); c.fillStyle = coul; c.fill();
+  };
+  const rond = (x, y, r, coul)=>{ c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = coul; c.fill(); };
+  const tronque = (t, max, taille, poids)=>{
+    if(largeur(t, taille, poids) <= max) return t;
+    let s2 = t;
+    while(s2.length > 1 && largeur(s2 + "…", taille, poids) > max) s2 = s2.slice(0, -1);
+    return s2 + "…";
+  };
+  /* les trois icones des tuiles, tracees a la main */
+  const icoChrono = (x, y, coul)=>{
+    c.strokeStyle = coul; c.lineWidth = 5; c.lineCap = "round";
+    c.beginPath(); c.arc(x, y + 3, 19, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.moveTo(x, y + 3); c.lineTo(x, y - 9); c.moveTo(x, y + 3); c.lineTo(x + 9, y + 8); c.stroke();
+    c.beginPath(); c.moveTo(x - 7, y - 21); c.lineTo(x + 7, y - 21); c.stroke();
+  };
+  const icoHaltere = (x, y, coul)=>{
+    c.fillStyle = coul;
+    arrondi(x - 6, y - 4, 12, 8, 3, coul);
+    arrondi(x - 20, y - 14, 10, 28, 3, coul); arrondi(x + 10, y - 14, 10, 28, 3, coul);
+    arrondi(x - 29, y - 9, 7, 18, 2, coul); arrondi(x + 22, y - 9, 7, 18, 2, coul);
+  };
+  const icoBarres = (x, y, coul)=>{
+    arrondi(x - 20, y + 2, 10, 16, 2, coul); arrondi(x - 5, y - 8, 10, 26, 2, coul); arrondi(x + 10, y - 18, 10, 36, 2, coul);
+  };
+  /* fond : sombre, lueur orange en haut a droite, liseret */
+  c.fillStyle = FOND; c.fillRect(0, 0, W, H);
+  const g = c.createRadialGradient(W - 100, -80, 40, W - 100, -80, 760);
+  g.addColorStop(0, "rgba(245,130,32,.40)"); g.addColorStop(1, "rgba(245,130,32,0)");
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = ORANGE; c.fillRect(0, 0, W, 12);
+  /* en-tete : le logo texte, la date */
+  if(logo){
+    const lh = 88, lw = Math.round(logo.width * lh / logo.height);
+    c.drawImage(logo, 64, 58, lw, lh);
+  } else texte("TONNUP", 64, 126, 64, 900, BLANC);
+  const d = new Date(h.date || h.start || Date.now());
+  let dateTxt = "";
+  try{ dateTxt = d.toLocaleDateString(loc(), {weekday:"short", day:"numeric", month:"short"}); }catch(e){ dateTxt = d.toDateString(); }
+  dateTxt = dateTxt.charAt(0).toUpperCase() + dateTxt.slice(1);
+  /* la date dans une pastille arrondie, a droite du logo */
+  const dt = tronque(dateTxt, 380, 28, 700), dw = largeur(dt, 28, 700) + 56;
+  arrondi(W - 64 - dw, 74, dw, 56, 28, CARTE2);
+  texte(dt, W - 64 - dw / 2, 112, 28, 700, BLANC, "center");
+  /* la seance : etiquette, nom, muscles */
+  texte(TR("Séance").toUpperCase(), 64, 232, 24, 800, ORANGE);
+  texte(tronque(h.name || TR("Séance libre"), W - 128, 88, 800), 64, 320, 88, 800, BLANC);
+  const muscles = musclesDeSeance(h);
+  if(muscles.length) texte(tronque(muscles.join("  •  "), W - 128, 30, 600), 64, 372, 30, 600, GRIS);
+  /* les trois tuiles, la tonne au milieu en orange */
+  const mn = Math.max(1, Math.round(((h.end||0) - (h.start||0)) / 60000)) || 0;
+  const vol = Math.round(sessionVolume(h));
+  const series = h.entries.reduce((a, en)=>a + en.sets.filter(st=>st.done !== false && !st.warm).length, 0);
+  const volTxt = vol >= 1000 && !estImperial() ? (vol / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + " t" : pds(vol);
+  const tuiles = [
+    {v:String(mn), u:TR("min"), l:TR("Durée"), ico:icoChrono},
+    {v:volTxt, u:"", l:TR("Poids soulevé"), ico:icoHaltere, fort:true},
+    {v:String(series), u:"", l:TR(series > 1 ? "Séries" : "Série"), ico:icoBarres}
+  ];
+  const tw = (W - 128 - 2 * 20) / 3, ty = 412, th = 150;
+  tuiles.forEach((t, i)=>{
+    const x = 64 + i * (tw + 20);
+    arrondi(x, ty, tw, th, 26, t.fort ? ORANGE : CARTE);
+    rond(x + 52, ty + th / 2, 34, t.fort ? "rgba(0,0,0,.28)" : CARTE2);
+    t.ico(x + 52, ty + th / 2, t.fort ? BLANC : ORANGE);
+    const coulV = t.fort ? BLANC : BLANC;
+    texte(t.v, x + 104, ty + 74, 54, 800, coulV);
+    if(t.u) texte(t.u, x + 104 + largeur(t.v, 54, 800) + 8, ty + 74, 26, 600, t.fort ? "rgba(255,255,255,.85)" : GRIS);
+    texte(t.l, x + 104, ty + 112, 24, 600, t.fort ? "rgba(255,255,255,.85)" : GRIS);
+  });
+  /* le tableau : en-tete puis les lignes, autant qu'il en tient */
+  const exos = h.entries.filter(en=>meilleureSerie(en));
+  const recs = (o.records || []).slice(0, 3);
+  const Y0 = 606, LIGNE = 96, BAS = H - 40;
+  const hauteurRecords = recs.length ? 14 + 60 + recs.length * 34 : 0;
+  const place = BAS - Y0 - 22 - hauteurRecords;
+  let max = Math.max(3, Math.floor(place / LIGNE));
+  /* trop d'exercices : la ligne « …et N de plus » prend 46 px, on recompte avec */
+  if(exos.length > max) max = Math.max(3, Math.floor((place - 46) / LIGNE));
+  const montres = exos.length > max ? exos.slice(0, max) : exos;
+  texte("#", 92, Y0, 21, 600, GRIS, "center");
+  texte(TR("Exercice"), 130, Y0, 21, 600, GRIS);
+  texte(TR("Poids × reps"), W - 350, Y0, 21, 600, GRIS, "right");
+  texte(TR("Volume"), W - 96, Y0, 21, 600, GRIS, "right");
+  let y = Y0 + 22;
+  montres.forEach((en, i)=>{
+    const ex = getEx(en.exId); if(!ex) return;
+    const m = meilleureSerie(en);
+    const nbSer = en.sets.filter(st=>st.done !== false && !st.warm).length;
+    arrondi(64, y, W - 128, LIGNE - 12, 22, CARTE);
+    rond(96, y + (LIGNE - 12) / 2, 20, CARTE2);
+    texte(String(i + 1), 96, y + (LIGNE - 12) / 2 + 9, 24, 800, BLANC, "center");
+    texte(tronque(ex.name, 470, 30, 700), 130, y + 36, 30, 700, BLANC);
+    texte(tronque(ex.muscle || "", 470, 22, 500), 130, y + 66, 22, 500, GRIS);
+    const aPoids = Number(m.w) > 0;
+    texte(aPoids ? pds(m.w) : String(m.r || 0), W - 350, y + 40, 34, 800, ORANGE, "right");
+    texte(aPoids ? "× " + (m.r || 0) + " " + TR("reps") : TR("reps"), W - 350, y + 68, 22, 600, BLANC, "right");
+    c.fillStyle = "rgba(255,255,255,.10)"; c.fillRect(W - 320, y + 18, 2, LIGNE - 48);
+    const ve = Math.round(volumeExo(en));
+    texte(ve > 0 ? pds(ve) : "—", W - 96, y + 40, 26, 700, BLANC, "right");
+    texte(nbSer + " " + TR(nbSer > 1 ? "séries" : "série"), W - 96, y + 68, 22, 500, GRIS, "right");
+    y += LIGNE;
+  });
+  if(exos.length > montres.length){ texte(TR("…et {} de plus").replace("{}", exos.length - montres.length), 64, y + 20, 24, 600, GRIS); y += 46; }
+  /* les records */
+  if(recs.length){
+    y += 14;
+    const hr = 60 + recs.length * 34;
+    arrondi(64, y, W - 128, hr, 24, "rgba(245,130,32,.14)");
+    c.strokeStyle = "rgba(245,130,32,.45)"; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(64 + 24, y); c.arcTo(64 + W - 128, y, 64 + W - 128, y + hr, 24); c.arcTo(64 + W - 128, y + hr, 64, y + hr, 24);
+    c.arcTo(64, y + hr, 64, y, 24); c.arcTo(64, y, 64 + W - 128, y, 24); c.closePath(); c.stroke();
+    rond(128, y + hr / 2, 38, ORANGE);
+    /* une coupe, tracee a la main : l'emoji se dessine mal dans un canvas */
+    (()=>{ const cx = 128, cy = y + hr / 2; c.fillStyle = BLANC; c.strokeStyle = BLANC; c.lineWidth = 4; c.lineCap = "round";
+      c.beginPath(); c.moveTo(cx - 14, cy - 18); c.lineTo(cx + 14, cy - 18); c.lineTo(cx + 11, cy + 2);
+      c.quadraticCurveTo(cx, cy + 12, cx - 11, cy + 2); c.closePath(); c.fill();
+      c.beginPath(); c.arc(cx - 16, cy - 10, 7, Math.PI * 0.5, Math.PI * 1.5); c.stroke();
+      c.beginPath(); c.arc(cx + 16, cy - 10, 7, -Math.PI * 0.5, Math.PI * 0.5); c.stroke();
+      c.fillRect(cx - 3, cy + 8, 6, 8); arrondi(cx - 11, cy + 15, 22, 5, 2, BLANC); })();
+    texte(TR(recs.length > 1 ? "Nouveaux records" : "Nouveau record"), 196, y + 42, 30, 800, ORANGE);
+    recs.forEach((r, i)=>{
+      const gain = r.gain ? (r.unite === "reps" ? "+ " + r.gain + " " + TR(r.gain > 1 ? "reps" : "rep") : "+ " + pds(r.gain)) : "";
+      const nom = tronque(r.nom, 520, 26, 600);
+      texte(nom, 196, y + 78 + i * 34, 26, 600, GRIS);
+      if(gain) texte(gain, 196 + largeur(nom, 26, 600) + 22, y + 78 + i * 34, 26, 800, BLANC);
+    });
+  }
+  return cv;
+}
+/* Partager : la feuille du telephone quand elle accepte une image (Android, iPhone),
+   sinon l'image dans une fiche, a enregistrer d'un appui long. */
+async function partagerSeance(h, extra){
+  vibrer(14);
+  const cv = await dessinerCarteSeance(h, extra);
+  const blob = await new Promise(res=>cv.toBlob(res, "image/png"));
+  if(!blob){ toast(TR("Impossible de créer l'image.")); return; }
+  const fichier = new File([blob], "tonnup-seance.png", {type:"image/png"});
+  const url = URL.createObjectURL(blob);
+  /* On montre d'abord la carte : on sait ce qu'on envoie avant de l'envoyer. Le bouton
+     Partager ouvre la feuille du telephone quand elle accepte une image ; sinon
+     l'image s'enregistre, ou se garde d'un appui long. */
+  const peutPartager = !!(navigator.canShare && navigator.canShare({files:[fichier]}));
+  openSheet(`<h3>${TR("Partager la séance")}</h3>
+    <img src="${url}" alt="" style="display:block; width:100%; border-radius:16px; margin-bottom:12px; box-shadow:0 10px 30px rgba(0,0,0,.25);">
+    ${peutPartager
+      ? `<button class="btn btn-accent" id="pg-go" style="width:100%;">${IC_PARTAGE} ${TR("Partager")}</button>`
+      : `<p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft); text-align:center;">${TR("Appuie longuement sur l'image pour l'enregistrer ou la partager.")}</p>
+         <a class="btn btn-accent" href="${url}" download="tonnup-seance.png" style="display:block; text-align:center;">${TR("Enregistrer l'image")}</a>`}`);
+  const go = document.getElementById("pg-go");
+  if(go) go.onclick = async ()=>{
+    try{ await navigator.share({files:[fichier], title: TR("Ma séance Tonnup")}); }
+    catch(e){ if(!(e && e.name === "AbortError")) toast(TR("Impossible de créer l'image.")); }
+  };
+}
 /* remplacer un exercice pendant la séance (machine prise, matériel manquant, blessure) */
 function openSwap(ei, fromInjury){
   const en = db.active.entries[ei];
@@ -15433,8 +15753,9 @@ function prixParMois(){
   const a = PRIX_ABO.annuel.montant;
   return a > 0 ? (a / 12).toFixed(2).replace(".", langue() === "en" ? "." : ",") + (PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") ? " " + PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") : "") : "";
 }
+const IC_PARTAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
 const IC_ABO_LOGO = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>';
-const IC_ABO_ASSIETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v7a2.5 2.5 0 0 0 5 0V3"/><path d="M9.5 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v3h3v10"/></svg>';
+const IC_ABO_ASSIETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3v6.5a3 3 0 0 0 6 0V3"/><path d="M9.5 3v6.5M9.5 12.5V21"/><path d="M17 3c-1.7 0-3 2.2-3 5v3h3v10"/></svg>';
 const IC_ABO_COURBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
 const IC_ABO_BOUCLIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>';
 const IC_ABO_RENOUV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.7 3v3.6h-3.6"/><path d="M6.3 21v-3.6h3.6"/></svg>';
@@ -15828,6 +16149,7 @@ function openSettings(){
         + (autoFile.err ? " · " + esc(autoFile.err) : "")}</div>
     <div style="color:var(--ink-mute);">${TR("Écran maintenu allumé :")} ${esc(wakeEtat)}</div>
     <div style="color:var(--ink-mute);" id="st-repos">${TR("Minuteur natif :")} ${esc(reposEtat)}</div>
+    ${journalRepos.length ? `<div style="color:var(--ink-mute); font-size:11.5px; line-height:1.5; margin-top:4px;">${TR("Journal du repos :")}<br>${journalRepos.map(esc).join("<br>")}</div>` : ""}
     <div style="color:var(--ink-mute);">${TR("Abonnement :")} ${esc(
       !pluginAbo() ? TR("hors de l'app Android")
       : !aboEtat.dispo ? TR("Google Play ne répond pas.") + (aboEtat.panne ? " · ⚠ " + String(aboEtat.panne).slice(0, 70) : "")
@@ -16457,7 +16779,7 @@ const STRENGTH_REF = {
   "Squat":1.25, "Presse à cuisses":2.2, "Fentes":0.4, "Leg curl":0.55, "Leg extension":0.65, "Soulevé de terre roumain":1.1, "Hip thrust":1.3, "Mollets debout":1.0,
   "Crunch câble":0.35, "Écartés poulie":0.35,
   "Butterfly (pec deck)":0.55, "Développé machine":0.9, "Écartés poulie haute":0.35, "Écartés poulie basse":0.35, "Développé couché à la Smith":0.95,
-  "Tirage vertical prise neutre":0.75, "Rowing machine":0.8, "Pull-over poulie":0.4, "Haussements d'épaules":0.5,
+  "Tirage vertical prise neutre":0.75, "Rowing machine":0.8, "Pull-over poulie":0.4, "Pull-over haltère":0.3, "Haussements d'épaules":0.5,
   "Élévations latérales poulie":0.1, "Développé machine épaules":0.55, "Élévations frontales":0.12,
   "Curl poulie basse":0.4, "Curl incliné haltères":0.14,
   "Extension poulie (corde)":0.4, "Extension triceps machine":0.5, "Kickback poulie":0.12,
