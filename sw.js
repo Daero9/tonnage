@@ -1,5 +1,5 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-v10-20260912-1527";
+const CACHE = "tonnup-v10-20260913-0205";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentialite.html", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
   "./img/exos/abducteurs.png",
   "./img/exos/abduction-hanche.png",
@@ -82,6 +82,7 @@ const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentiali
   "./img/exos/pont-une-jambe.png",
   "./img/exos/pont.png",
   "./img/exos/presse-a-cuisses.png",
+  "./img/exos/pull-over-poulie.png",
   "./img/exos/pull-over.png",
   "./img/exos/releves-de-jambes.png",
   "./img/exos/roulette-abdos.png",
@@ -112,7 +113,8 @@ const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentiali
   "./img/exos/traction.png",
   "./img/exos/triceps-poulie.png",
   "./img/push.jpg", "./img/pull.jpg", "./img/jambes.jpg", "./img/abdos.jpg", "./img/cardio.jpg", "./img/modif.png",
-  "./img/abonnement.webp", "./img/onb-seances.jpg", "./img/onb-aliments.jpg", "./img/onb-charge.jpg", "./img/onb-progression.jpg", 
+  "./img/abonnement.webp",
+  "./img/logo-texte.png", "./img/onb-seances.jpg", "./img/onb-aliments.jpg", "./img/onb-charge.jpg", "./img/onb-progression.jpg", 
   "./img/muscles/back-avant-bras.png", "./img/muscles/back-base.png", "./img/muscles/back-deltoides.png", "./img/muscles/back-fessiers.png", "./img/muscles/back-grand-dorsal.png", "./img/muscles/back-ischio-jambiers.png", "./img/muscles/back-ligne.png", "./img/muscles/back-lombaires.png", "./img/muscles/back-mollets.png", "./img/muscles/back-trapezes.png", "./img/muscles/back-triceps.png", "./img/muscles/front-abdos.png", "./img/muscles/front-avant-bras.png", "./img/muscles/front-base.png", "./img/muscles/front-biceps.png", "./img/muscles/front-deltoides.png", "./img/muscles/front-ligne.png", "./img/muscles/front-mollets.png", "./img/muscles/front-pectoraux.png", "./img/muscles/front-quadriceps.png", "./img/muscles/front-trapezes.png"];
 
 self.addEventListener("install", e => {
