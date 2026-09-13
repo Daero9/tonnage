@@ -3391,6 +3391,7 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Choisir un autre exercice…":"Pick any other exercise…",
   "Partager la séance":"Share workout",
   "Partager":"Share",
   "Durée":"Duration",
@@ -4740,6 +4741,12 @@ function affTaille(cm){
 
 "use strict";
 /* ================= DATA ================= */
+/* « Développé couché » -> « x-developpe-couche » : lettres et chiffres ASCII, le reste en
+   tirets. Deux exercices n'ont jamais le meme nom, donc jamais le meme identifiant. */
+function idExoDe(nomFr){
+  return "x-" + String(nomFr).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
 const LIB = [
   ["Pectoraux","Développé couché","Barre","bench"],["Pectoraux","Développé incliné haltères","Haltères","bench"],["Pectoraux","Développé couché haltères","Haltères","bench"],["Pectoraux","Écartés poulie","Poulie","cablefly"],["Pectoraux","Dips","Poids du corps","dips"],["Pectoraux","Pompes","Poids du corps","pushup"],
   ["Dos","Tractions","Barre fixe","pullup"],["Dos","Rowing barre","Barre","row"],["Dos","Tirage vertical","Poulie","latpulldown"],["Dos","Rowing haltère","Haltères","row"],["Dos","Tirage horizontal","Poulie","seatedrow"],["Dos","Soulevé de terre","Barre","deadlift"],
@@ -4797,7 +4804,12 @@ const LIB = [
      haltere a deux mains, le mouvement de la poulie mais en travers du banc */
   ["Dos","Pull-over haltère","Haltères","pullover"]
 ].map((e,i)=>({
-  id:"lib"+i, icon:e[3],
+  /* L'identifiant est derive du NOM francais, plus du rang : inserer un exercice
+     n'importe ou ne decale plus rien. (Les anciens « libN » sont convertis une fois
+     au chargement — voir libV4 — sur la base de l'ordre ci-dessus : ne JAMAIS
+     reordonner les 116 premieres lignes, c'est leur rang d'origine qui sert de cle
+     de conversion.) */
+  id:idExoDe(e[1]), rang:i, icon:e[3],
   /* les champs "Fr" sont les clés : elles ne changent jamais de langue.
      Les accesseurs sont ce qui s'affiche, se trie et se cherche. */
   nameFr:e[1], muscleFr:e[0], equipFr:e[2],
@@ -7545,7 +7557,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "13 septembre 2026 02h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "13 septembre 2026 16h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7624,6 +7636,45 @@ function applyDefaults(){
       (h.entries || []).forEach(en=>{ en.exId = recale(en.exId, t); });
     });
     db.libV3 = 1;
+  }
+  /* 13 septembre 2026 : les identifiants ne sont plus des rangs (« lib21 ») mais des
+     noms (« x-extension-poulie-barre »). Tout ce qui designait un exercice par son rang
+     est converti une fois, sur l'ordre de la liste tel qu'il etait ce jour-la — les
+     seances, les seances types, la seance en cours, les charges bloquees, les
+     exercices faits par cote. Apres ca, ajouter un exercice n'importe ou dans la
+     liste ne deplace plus jamais l'historique de personne : c'est ce qui a mis un
+     exercice de jambes dans une seance de bras. */
+  if(!db.libV4){
+    const parRang = LIB.slice().sort((a, b)=>a.rang - b.rang);
+    const conv = id => {
+      const m = /^lib([0-9]+)$/.exec(id || "");
+      if(!m) return id;
+      const e = parRang[parseInt(m[1], 10)];
+      return e ? e.id : id;
+    };
+    const convCle = obj => {
+      if(!obj) return obj;
+      const n = {};
+      Object.keys(obj).forEach(k=>{
+        const m = /^(libre:)?(lib[0-9]+)$/.exec(k);
+        n[m ? (m[1] || "") + conv(m[2]) : k] = obj[k];
+      });
+      return n;
+    };
+    (db.history || []).forEach(h=>{
+      (h.entries || []).forEach(en=>{ en.exId = conv(en.exId); });
+      if(Array.isArray(h.sautes)) h.sautes = h.sautes.map(conv);
+    });
+    (db.templates || []).forEach(t=>(t.items || []).forEach(it=>{ it.exId = conv(it.exId); }));
+    if(db.active){
+      (db.active.entries || []).forEach(en=>{
+        en.exId = conv(en.exId);
+        if(en.target) en.target.exId = conv(en.target.exId);
+      });
+    }
+    db.plafond = convCle(db.plafond);
+    db.unilat = convCle(db.unilat);
+    db.libV4 = 1;
   }
   if(!db.plafond) db.plafond = {};     /* exercices où la charge ne peut plus monter */
   if(!db.unilat) db.unilat = {};       /* exercices faits un bras / une jambe à la fois */
@@ -15048,10 +15099,14 @@ function openSwap(ei, fromInjury){
         <div class="eq">${esc(e.equip||"")}${n2? ` · ⚠️ ${esc(TR(n2.injury))}`:""}</div>${musclesHtml(nomCanon(e),3)}</div>
         <span style="color:var(--accent); font-weight:800;">⇄</span></div>`;
     }).join("")}</div>
-    <button class="btn" id="sw-cancel" style="width:100%; margin-top:12px;">${TR("Annuler")}</button>`);
+    <button class="btn" id="sw-autre" style="width:100%; margin-top:12px;">${TR("Choisir un autre exercice…")}</button>
+    <button class="btn" id="sw-cancel" style="width:100%; margin-top:8px; background:transparent;">${TR("Annuler")}</button>`);
   document.getElementById("sw-cancel").onclick=closeSheet;
-  document.querySelectorAll("[data-swap]").forEach(r=>r.onclick=()=>{
-    const newId = r.dataset.swap;
+  /* Les alternatives ci-dessus travaillent les memes muscles. Mais si c'est l'exercice
+     lui-meme qui n'a rien a faire la (une erreur de generation, un changement d'avis),
+     on doit pouvoir mettre N'IMPORTE QUOI a sa place : toute la bibliotheque, par
+     famille et par recherche. */
+  const remplacerPar = newId => {
     const last = lastPerf(newId);
     en.exId = newId;
     en.sets.forEach((s,i)=>{
@@ -15067,7 +15122,9 @@ function openSwap(ei, fromInjury){
     });
     save(); closeSheet(); render();
     toast(TR("Remplacé par {}").replace("{}", getEx(newId).name));
-  });
+  };
+  document.querySelectorAll("[data-swap]").forEach(r=>r.onclick=()=>remplacerPar(r.dataset.swap));
+  document.getElementById("sw-autre").onclick = ()=>openPicker(newId=>{ if(newId !== en.exId) remplacerPar(newId); });
 }
 
 /* ================= EXERCISE PICKER ================= */
