@@ -1502,8 +1502,10 @@
   .fin-bandeau{display:none; margin-top:16px; padding:12px 14px; border-radius:16px;
     background:rgba(52,168,83,.12); border:1.5px solid rgba(52,168,83,.4);}
   .fin-bandeau.show{display:block; animation:ficheIn .4s cubic-bezier(.22,1,.36,1) backwards;}
-  /* le bandeau porte deja « Ajouter » : le bouton du dessus ferait doublon */
-  #app:has(.fin-bandeau.show) #add-ex{display:none;}
+  /* le bandeau porte deja « Ajouter » et « Terminer » : en dessous, il ne reste
+     qu'Annuler, qui prend toute la largeur */
+  #app:has(.fin-bandeau.show) #add-ex, #app:has(.fin-bandeau.show) #finish-w{display:none;}
+  #app:has(.fin-bandeau.show) #cancel-w{flex:1 1 auto !important;}
   .fin-bandeau .ic{font-size:24px;}
   .fin-bandeau b{display:block; font-size:14px;}
   .fin-bandeau span{font-size:12.5px; color:var(--ink-soft);}
@@ -7619,7 +7621,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 01h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 01h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14206,7 +14208,7 @@ function proposerFin(){
   const b = document.getElementById("fin-bandeau");
   if(b) b.classList.add("show");
   vibrer([14, 40, 14]);
-  const btn = document.getElementById("finish-w");
+  const btn = document.getElementById("fin-terminer") || document.getElementById("finish-w");
   if(btn) setTimeout(()=>{ try{ btn.scrollIntoView({block:"center", behavior:"smooth"}); }catch(e){} }, 200);
 }
 const SEANCE_OUBLIEE_H = 4;
@@ -14245,7 +14247,7 @@ function allerAuProchainExo(){
   const i = a.entries.findIndex(en=>!en.replie && en.sets.some(s=>!s.done && !s.warm));
   const cible = (i >= 0)
     ? document.querySelector('.ex-card[data-ei="' + i + '"]')
-    : document.getElementById("finish-w");     /* plus rien a faire : le bouton de fin */
+    : (document.getElementById("fin-terminer") || document.getElementById("finish-w"));   /* plus rien a faire : le bouton de fin */
   if(!cible) return;
   /* pas tout en haut : la barre d'etat, et la barre de repos quand elle est placee en
      haut, masqueraient le nom de l'exercice. On laisse la marge qu'il faut. */
