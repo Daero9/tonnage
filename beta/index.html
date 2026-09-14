@@ -2277,12 +2277,14 @@
   /* Les tuiles se replient d elles-memes : cote a cote quand la place le permet, le
      signe au-dessus du chiffre sinon. Trois colonnes sur un telephone, c est etroit. */
   .pn-tuiles{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:12px;}
-  .pn-t{background:var(--surface); border-radius:15px; padding:12px 8px;
-    display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:9px; text-align:center;}
-  .pn-t .ic{flex:0 0 auto; width:38px; height:38px; border-radius:50%;
+  /* l'icone a gauche, les chiffres a droite — sans retour a la ligne, sinon la tuile
+     « series au total » devenait un gros carre avec l'icone au-dessus */
+  .pn-t{background:var(--surface); border-radius:15px; padding:10px 8px;
+    display:flex; flex-wrap:nowrap; align-items:center; justify-content:flex-start; gap:8px; text-align:left;}
+  .pn-t .ic{flex:0 0 auto; width:32px; height:32px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     background:rgba(245,130,32,.13); color:var(--accent);}
-  .pn-t .ic svg{width:22px; height:22px;}
+  .pn-t .ic svg{width:18px; height:18px;}
   .pn-t .co{min-width:0;}
   .pn-t .l{font-size:11.5px; color:var(--ink-soft); line-height:1.2;}
   .pn-t .v{font-size:21px; font-weight:800; line-height:1.15; font-variant-numeric:tabular-nums;}
@@ -3411,6 +3413,11 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Ajouter un exercice / cardio":"Add an exercise / cardio",
+  "Un exercice":"An exercise",
+  "Depuis la bibliothèque":"From the library",
+  "Une sortie cardio":"A cardio outing",
+  "En fin de séance, avec un objectif du jour":"At the end of the session, with a target for today",
   "Ajouter une sortie cardio":"Add a cardio outing",
   "Sortie cardio en fin de séance":"Cardio outing at the end of the session",
   "Retirer la sortie":"Remove the outing",
@@ -3420,7 +3427,7 @@ const TRAD = {en:{
   "Sortie à faire":"Outing to do",
   "pente":"incline",
   "Séance courte":"Short session",
-  "Pas le temps ? On garde les exercices qui rapportent le plus — les mouvements lourds et ceux qui travaillent plusieurs muscles — et on met les autres de côté pour aujourd'hui.":"Short on time? We keep the exercises that pay off most — the heavy lifts and those working several muscles — and set the others aside for today.",
+  "Pas le temps ? On garde les exercices les plus efficaces.":"Short on time? We keep the most effective exercises.",
   "Mis de côté aujourd'hui : {}":"Set aside today: {}",
   "Lancer la séance courte":"Start the short session",
   "Choisir un autre exercice…":"Pick any other exercise…",
@@ -7594,7 +7601,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 01h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 01h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13736,12 +13743,12 @@ function openPreview(tplId, lieuFait){
                       : TR("Chez toi, 1 exercice sera remplacé par son équivalent.")).replace("{n}", aRemplacer)}</p>`:""}
     ${t.items.length > 3 ? `<button class="pv-courte ${seanceCourte ? "on" : ""}" id="pv-courte" aria-pressed="${seanceCourte}">
       <span class="ic">${IC_ECLAIR}</span>
-      <span class="tx"><b>${TR("Séance courte")}</b><span>${TR("Pas le temps ? On garde les exercices qui rapportent le plus — les mouvements lourds et ceux qui travaillent plusieurs muscles — et on met les autres de côté pour aujourd'hui.")}</span></span>
+      <span class="tx"><b>${TR("Séance courte")}</b><span>${TR("Pas le temps ? On garde les exercices les plus efficaces.")}</span></span>
       <span class="sw"><i></i></span>
     </button>` : ""}
     <div class="pn-tuiles" style="margin-top:14px;">
       ${tuile(ICONS.seance, items.length, TR(items.length>1? "exercices":"exercice"))}
-      ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries au total":"série au total"))}
+      ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries":"série"))}
       ${tuile(IC_CHRONO, "~"+mins, TR("minutes"))}
     </div>
     <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
@@ -14224,7 +14231,7 @@ function renderActive(app){
       </div>`,
       {photo, icones:false, classe:"hero-en-cours", plat:true})}
     <div class="stack" id="ex-list"></div>
-    <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ ${TR("Ajouter un exercice")}</button>
+    <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ ${TR(a.cardio ? "Ajouter un exercice" : "Ajouter un exercice / cardio")}</button>
     <div class="row" style="margin-top:20px;">
       <button class="btn" id="cancel-w" style="flex:0 0 auto; padding-inline:18px; background:var(--hero); color:#fff; border-color:var(--hero);">${TR("Annuler")}</button>
       <button class="btn grow" id="finish-w" style="background:var(--good); color:#fff; border-color:var(--good);">${TR("Terminer la séance")}</button>
@@ -14867,7 +14874,7 @@ function renderActive(app){
 
   majSerieActive();                            /* état correct dès le premier affichage */
   requestAnimationFrame(majSerieActive);       /* affiné une fois la mise en page mesurée */
-  document.getElementById("add-ex").onclick=()=>openPicker(exId=>{
+  const ajouterExo = ()=>openPicker(exId=>{
     const last = lastPerf(exId);
     const ls = last? last.sets[0] : null;
     const cible = cibleParDefaut(exId);
@@ -14875,6 +14882,32 @@ function renderActive(app){
       sets:[{w: ls? ls.w:"", r: ls? ls.r : repsDepart(parseReps(cible.reps)), done:false}]});
     save(); closeSheet(); render();
   });
+  /* une sortie cardio s'ajoute aussi en cours de seance : on choisit l'activite, et
+     l'objectif du jour se calcule sur la derniere sortie du meme type */
+  const ajouterCardio = ()=>{
+    openSheet(`<div class="pr-tete"><h3>${TR("Ajouter une sortie cardio")}</h3><p>${TR("Activité")}</p></div>
+      <div class="cd-grille">${MACHINES.map(([id2, lab, ic])=>
+        `<button data-amach="${id2}"><span class="ic">${ic}</span>${TR(lab)}</button>`).join("")}</div>`);
+    document.querySelectorAll("[data-amach]").forEach(b=>b.onclick=()=>{
+      const plan = {machine:b.dataset.amach, min:30, km:0, pente:0};
+      const o = objectifCardio(plan);
+      a.cardio = {machine:plan.machine, min:o.min, km:o.km, pente:o.pente, fait:false,
+        derniere: o.base ? texteSortie(o.base) : ""};
+      save(); closeSheet(); render();
+      setTimeout(()=>{ const cc = document.querySelector(".ex-card.cardio"); if(cc) cc.scrollIntoView({block:"center", behavior:"smooth"}); }, 300);
+    });
+  };
+  document.getElementById("add-ex").onclick=()=>{
+    if(a.cardio){ ajouterExo(); return; }          /* une seule sortie par seance */
+    const ligne = (id2, ic, titre, sous) => `<button class="aj-l" id="${id2}">
+      <span class="ic">${ic}</span><span class="tx"><span class="t">${titre}</span><span class="s">${sous}</span></span>
+      <span class="fl">${IC_CHEVRON}</span></button>`;
+    openSheet(`<div class="pr-tete"><h3>${TR("Ajouter")}</h3></div>
+      ${ligne("ae-exo", IC_PLUS, TR("Un exercice"), TR("Depuis la bibliothèque"))}
+      ${ligne("ae-cardio", icoM("course", 22), TR("Une sortie cardio"), TR("En fin de séance, avec un objectif du jour"))}`);
+    document.getElementById("ae-exo").onclick = ()=>{ closeSheet(); setTimeout(ajouterExo, 260); };
+    document.getElementById("ae-cardio").onclick = ()=>{ closeSheet(); setTimeout(ajouterCardio, 260); };
+  };
   document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),TR("Oui, annuler"),true,()=>{ db.active=null; arreterChronos(); save(); render(); });
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
