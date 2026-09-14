@@ -7601,7 +7601,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 01h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 01h26 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -7735,7 +7735,7 @@ function applyDefaults(){
 applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
-setTimeout(()=>{ sonderAbo(); chargerForfaits(); }, 0);
+setTimeout(()=>{ sonderAbo(); chargerForfaits(); driveRattrapage(); }, 0);
 /* un profil deja cree avant l'essai : ses 7 jours commencent aujourd'hui */
 if(db.profile && !db.profile.skipped && !db.essaiDebut) setTimeout(()=>demarrerEssai(), 0);
 /* Les libellés de la barre de repos sont du HTML statique : on les traduit
@@ -15840,6 +15840,25 @@ function driveSchedule(){
 const DRIVE_JOUR = 24 * 3600e3;
 function driveCopieTropVieille(){
   return !(db.drive && db.drive.derniere) || Date.now() - db.drive.derniere > DRIVE_JOUR;
+}
+/* Deux trous que Nico a vus (« dernière copie : il y a 2 jours » alors qu'il s'entraînait) :
+   1. on quitte l'app dans les 20 s qui suivent un changement — le délai meurt avec la
+      page, la copie ne part jamais ;
+   2. à l'ouverture suivante, rien ne rattrape : la page ne se souvient pas qu'il restait
+      quelque chose à envoyer.
+   Donc : quand la page se cache, on envoie TOUT DE SUITE ce qui attendait ; et à
+   l'ouverture, si la dernière copie a plus de 12 h, on en refait une (sur Android en
+   silence ; sur le web, au prochain geste si elle date de plus d'un jour). */
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState !== "hidden" || !driveActif()) return;
+  if(driveTo){ clearTimeout(driveTo); driveTo = null; }
+  if(driveEmpreinte() !== driveDernierEnvoi) driveSauver(false);
+});
+function driveRattrapage(){
+  if(!driveActif()) return;
+  const derniere = (db.drive && db.drive.derniere) || 0;
+  if(Date.now() - derniere < 12 * 3600e3) return;
+  driveSauver(false).then(ok=>{ if(!ok && !pluginDrive() && driveCopieTropVieille()) driveAuProchainGeste(); });
 }
 let driveGesteArme = false;
 function driveAuProchainGeste(){

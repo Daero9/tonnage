@@ -5594,6 +5594,29 @@ async function lancer(){
     eq("Au geste suivant, la copie part", JSON.parse(serveur.fichiers.f1.json).history.length, 4);
     vrai("…et le geste n'est plus attendu", F.eval("driveGesteArme") === false);
 
+    /* 5c. on quitte l'app dans les 20 s : la copie part tout de suite, sans attendre */
+    F.eval("drivePont = window.__drive; driveJeton = 'j2'; driveJetonFin = Date.now() + 3e6");
+    DBw.history.push(seance(0.2, [{exId:id("Squat"), sets:[serie(88,8)]}]));
+    F.save();                                                  /* programme l'envoi dans 20 s */
+    vrai("Un changement programme un envoi différé", F.eval("driveTo") !== null);
+    Object.defineProperty(F.document, "visibilityState", {value:"hidden", configurable:true});
+    F.document.dispatchEvent(new F.Event("visibilitychange"));
+    await attendre(()=>JSON.parse(serveur.fichiers.f1.json).history.length === 5, 3000);
+    eq("La page se cache : la copie part immédiatement", JSON.parse(serveur.fichiers.f1.json).history.length, 5);
+    Object.defineProperty(F.document, "visibilityState", {value:"visible", configurable:true});
+    /* 5d. a l'ouverture, une copie vieille de plus de 12 h se refait toute seule */
+    DBw.drive.derniere = Date.now() - 13 * 3600e3;
+    DBw.history.push(seance(0.1, [{exId:id("Squat"), sets:[serie(90,8)]}]));
+    F.eval("driveDernierEnvoi = ''");
+    F.driveRattrapage();
+    await attendre(()=>JSON.parse(serveur.fichiers.f1.json).history.length === 6, 3000);
+    eq("À l'ouverture, le rattrapage envoie ce qui manquait", JSON.parse(serveur.fichiers.f1.json).history.length, 6);
+    DBw.drive.derniere = Date.now();
+    const avant = serveur.appels.length;
+    F.driveRattrapage();
+    await new Promise(r=>setTimeout(r, 150));
+    eq("…mais une copie récente ne déclenche rien", serveur.appels.length, avant);
+
     /* 6. refus du consentement : rien ne casse */
     F.__drive.autoriser = async ()=>({jeton:"", refuse:true});
     F.eval("driveJeton = null; driveJetonFin = 0");
