@@ -5739,6 +5739,27 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- la fin qu'on oublie */
+  grp("La fin de séance qu'on n'oublie plus");
+  neuf();
+  (()=>{
+    const S = (done) => ({w:50, r:10, done, warm:false});
+    const a = {name:"x", start:Date.now(), entries:[{exId:id("Squat"), sets:[S(true), S(false)]}]};
+    vrai("Une série restante : rien à proposer", !F.toutEstFait(a));
+    a.entries[0].sets[1].done = true;
+    vrai("Toutes les séries faites : tout est fait", F.toutEstFait(a));
+    a.cardio = {machine:"course", min:20, km:0, pente:0, fait:false};
+    vrai("…sauf si la sortie cardio reste à faire", !F.toutEstFait(a));
+    a.cardio.fait = true;
+    vrai("…et de nouveau quand elle est faite", F.toutEstFait(a));
+    vrai("Rien de validé : on ne propose pas de terminer une séance vide",
+      !F.toutEstFait({name:"x", start:Date.now(), entries:[{exId:id("Squat"), sets:[]}]}));
+    /* la sortie faite compte dans les calories de la seance */
+    vrai("La sortie faite ajoute ses calories", F.kcalSortieActive({cardio:{machine:"course", min:20, km:3.2, pente:1, fait:true}}) > 100);
+    eq("…mais pas tant qu'elle n'est pas faite", F.kcalSortieActive({cardio:{machine:"course", min:20, km:3.2, fait:false}}), 0);
+  })();
+  neuf();
+
   /* --------------------------------------- l'essai de 7 jours */
   /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
      la premiere seance. Au huitieme jour le voile revient — et pas avant. */

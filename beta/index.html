@@ -1493,8 +1493,18 @@
      Il est droit : sans l'arc, le titre, le compte des séries et le chrono se calent
      sur la même ligne de base, en bas du panneau. Le panneau est raccourci d'autant —
      l'arc laissait passer la page dessous, plus maintenant. */
-  .hero-en-cours .hero-bg{aspect-ratio:1210/700;}
-  .hero-en-cours .hero-in{padding-bottom:34px;}
+  /* Le bandeau de la seance en cours grandit avec son texte : avec une grande police
+     systeme ou un nom sur deux lignes, « Temps de seance » passait sous la premiere
+     carte. Fond et contenu partagent la meme cellule ; le plus haut des deux gagne. */
+  .hero-en-cours{display:grid; aspect-ratio:1210/700;}
+  .hero-en-cours .hero-bg{grid-area:1/1; height:100%; aspect-ratio:auto;}
+  .hero-en-cours .hero-in{grid-area:1/1; position:static; padding-bottom:34px;}
+  .fin-bandeau{display:none; align-items:center; gap:12px; margin-top:16px; padding:12px 14px; border-radius:16px;
+    background:rgba(52,168,83,.12); border:1.5px solid rgba(52,168,83,.4);}
+  .fin-bandeau.show{display:flex; animation:ficheIn .4s cubic-bezier(.22,1,.36,1) backwards;}
+  .fin-bandeau .ic{font-size:24px;}
+  .fin-bandeau b{display:block; font-size:14px;}
+  .fin-bandeau span{font-size:12.5px; color:var(--ink-soft);}
   .hero-en-cours .hero-h{position:static; margin-top:auto; text-align:left; display:flex;
     align-items:flex-end; gap:14px;}
   .hero-en-cours .hero-h .grow{min-width:0;}
@@ -3413,6 +3423,12 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Modifier":"Edit",
+  "Tout est fait !":"All done!",
+  "Termine la séance pour l'enregistrer.":"Finish the session to save it.",
+  "Séance ouverte depuis {} h":"Session open for {} h",
+  "Tu l'as sûrement oubliée. On l'enregistre avec ce qui a été fait, ou on l'annule ?":"You probably forgot it. Save it with what was done, or drop it?",
+  "Annuler la séance":"Drop the session",
   "Ajouter un exercice / cardio":"Add an exercise / cardio",
   "Un exercice":"An exercise",
   "Depuis la bibliothèque":"From the library",
@@ -7601,7 +7617,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 01h26 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 01h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13785,7 +13801,7 @@ function openPreview(tplId, lieuFait){
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
         <span class="num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
-          <div class="nm">${esc(machineNom(t.cardio))}</div>
+          <div class="nm">${esc(TR(machineOf(t.cardio)[1]))}</div>
           <div class="meta"><b>${esc(texteSortie(objCardio))}</b>${objCardio.base ? ` · ${TR("Dernière fois : {}").replace("{}", esc(texteSortie(objCardio.base)))}` : ""}</div>
         </div></div>` : ""}
     <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR(seanceCourte ? "Lancer la séance courte" : "Lancer cette séance")}</button>
@@ -14165,6 +14181,51 @@ window.addEventListener("scroll", ()=>{
   majSerieTimer = requestAnimationFrame(()=>{ majSerieTimer = null; majSerieActive(); });
 }, {passive:true});
 /* le nom de l'exercice s'affiche un instant, puis la carte se replie */
+/* les calories de la sortie faite pendant la seance, pour le bandeau et le recap */
+function kcalSortieActive(a){
+  const c = a && a.cardio;
+  if(!c || !c.fait || !(c.min > 0 || c.km > 0)) return 0;
+  return Math.round(sortieKcal(Object.assign({intensite:"modere"}, c), currentWeight() || 75));
+}
+/* ---- la fin qu'on oublie ----------------------------------------------------------
+   Beaucoup ne terminent pas leur seance : la derniere serie validee, on range le
+   telephone. Deux filets : quand il ne reste plus rien a faire, un bandeau le dit et
+   propose de terminer ; et une seance ouverte depuis des heures se voit proposer, a
+   la reouverture, d'etre enregistree telle quelle ou abandonnee. */
+function toutEstFait(a){
+  if(!a || !a.entries.length) return false;
+  const restant = a.entries.some(en=>en.sets.some(s=>!s.done && !s.warm));
+  const cardioReste = !!(a.cardio && !a.cardio.fait);
+  const auMoinsUne = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait);
+  return !restant && !cardioReste && !!auMoinsUne;
+}
+function proposerFin(){
+  const a = db.active; if(!a || !toutEstFait(a)) return;
+  const b = document.getElementById("fin-bandeau");
+  if(b) b.classList.add("show");
+  vibrer([14, 40, 14]);
+  const btn = document.getElementById("finish-w");
+  if(btn) setTimeout(()=>{ try{ btn.scrollIntoView({block:"center", behavior:"smooth"}); }catch(e){} }, 200);
+}
+const SEANCE_OUBLIEE_H = 4;
+function verifierSeanceOubliee(){
+  const a = db.active; if(!a) return;
+  const derniere = Math.max(a.start || 0, ...a.entries.flatMap(en=>en.sets.map(s=>s.t || 0)));
+  const h = (Date.now() - derniere) / 3600e3;
+  if(h < SEANCE_OUBLIEE_H || a.oubliDemande) return;
+  a.oubliDemande = true; save();
+  const faite = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait);
+  askConfirm(TR("Séance ouverte depuis {} h").replace("{}", Math.round(h)),
+    TR("Tu l'as sûrement oubliée. On l'enregistre avec ce qui a été fait, ou on l'annule ?"),
+    faite ? TR("Enregistrer") : TR("Annuler la séance"), !faite, ()=>{
+      if(faite){
+        /* on ferme a l'heure de la derniere serie, pas maintenant : la duree serait fausse */
+        a.finForcee = derniere;
+        /* la confirmation de fin s'ouvre apres que celle-ci s'est refermee */
+        setTimeout(()=>{ const btn = document.getElementById("finish-w"); if(btn) btn.click(); }, 320);
+      } else { db.active = null; arreterChronos(); save(); render(); }
+    });
+}
 function exerciceFini(card, nom, apres){
   const v = document.createElement("div");
   v.className = "ex-fini";
@@ -14198,6 +14259,7 @@ function allerAuProchainExo(){
 }
 function renderActive(app){
   const a = db.active;
+  setTimeout(verifierSeanceOubliee, 800);
   /* la photo du bandeau suit les exercices de la séance, comme sur la carte du programme */
   const tpl = a.templateId ? db.templates.find(t=>t.id===a.templateId) : null;
   const photo = photoSeance({photo: tpl && tpl.photo, name: a.name, items: a.entries.map(e=>({exId:e.exId}))});
@@ -14232,6 +14294,8 @@ function renderActive(app){
       {photo, icones:false, classe:"hero-en-cours", plat:true})}
     <div class="stack" id="ex-list"></div>
     <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ ${TR(a.cardio ? "Ajouter un exercice" : "Ajouter un exercice / cardio")}</button>
+    <div class="fin-bandeau ${toutEstFait(a) ? "show" : ""}" id="fin-bandeau">
+      <span class="ic">🎉</span><div><b>${TR("Tout est fait !")}</b><span>${TR("Termine la séance pour l'enregistrer.")}</span></div></div>
     <div class="row" style="margin-top:20px;">
       <button class="btn" id="cancel-w" style="flex:0 0 auto; padding-inline:18px; background:var(--hero); color:#fff; border-color:var(--hero);">${TR("Annuler")}</button>
       <button class="btn grow" id="finish-w" style="background:var(--good); color:#fff; border-color:var(--good);">${TR("Terminer la séance")}</button>
@@ -14248,7 +14312,7 @@ function renderActive(app){
     const bv = document.getElementById("hs-vol");
     if(bv) bv.textContent = volPds(Math.round(sessionVolume(a)));
     const bk = document.getElementById("hs-kcal");
-    if(bk) bk.textContent = liftKcal(a) + " kcal";
+    if(bk) bk.textContent = (liftKcal(a) + kcalSortieActive(a)) + " kcal";
   };
   tick(); chronoInt = setInterval(tick, 1000);
   const chr = document.getElementById("chrono");
@@ -14498,6 +14562,7 @@ function renderActive(app){
         if(st.done){
           /* plus rien à faire après ? inutile de lancer un repos */
           const resteDuTravail = a.entries.some(e2=>e2.sets.some(s2=>!s2.done && !s2.warm));
+          if(!resteDuTravail) setTimeout(proposerFin, 1500);   /* le temps de replier la carte */
           const rs = (en.target && en.target.rest) || db.settings.rest;
           if(resteDuTravail) startRest(rs);
           else { restbar.classList.remove("show"); if(rest.int){ clearInterval(rest.int); rest.int=null; } }
@@ -14841,10 +14906,18 @@ function renderActive(app){
     const c = a.cardio;
     const cc = document.createElement("div");
     cc.className = "ex-card cardio" + (c.fait ? " fini" : "");
-    cc.innerHTML = `
+    /* faite : une ligne repliee, comme un exercice termine — on peut la rouvrir */
+    if(c.fait && !c.ouverte) cc.innerHTML = `
+      <div class="ex-head" style="align-items:center; gap:10px;">
+        <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--good);">${icoM("course", 24)}</span>
+        <div class="grow"><div class="ex-name">✓ ${esc(TR(machineOf(c)[1]))}</div>
+          <div style="font-size:12px; color:var(--ink-mute);">${esc(texteSortie(c))} · ${Math.round(sortieKcal(Object.assign({intensite:"modere"}, c), currentWeight() || 75))} kcal</div></div>
+        <button class="icon-btn" id="ca-ouvrir" style="width:auto; padding:0 10px; font-size:12.5px;">${TR("Modifier")}</button>
+      </div>`;
+    else cc.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">
         <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--accent);">${icoM("course", 26)}</span>
-        <div class="grow"><div class="ex-name">${esc(machineNom(c))}</div>
+        <div class="grow"><div class="ex-name">${esc(TR(machineOf(c)[1]))}</div>
           <div style="font-size:12px; color:var(--ink-mute);">${c.fait ? TR("Sortie faite") : TR("Sortie à faire")}${c.derniere ? " · " + TR("Dernière fois : {}").replace("{}", esc(c.derniere)) : ""}</div></div>
       </div>
       ${c.derniere && !c.fait ? `<div class="obj-b"><div class="g"><span class="ic">${IC_CIBLE}</span>
@@ -14856,19 +14929,33 @@ function renderActive(app){
         <label><span class="f-lab">${TR("Distance")} (${uDist()})</span><input type="number" inputmode="decimal" step="0.1" min="0" id="ca-km" value="${c.km ? affDist(c.km).replace(",", ".") : ""}" placeholder="5"></label>
         <label><span class="f-lab">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" id="ca-pente" value="${c.pente || ""}" placeholder="0"></label>
       </div>
-      <button class="btn ${c.fait ? "" : "btn-accent"}" id="ca-fait" style="width:100%; margin-top:10px;">${c.fait ? "✓ " + TR("Sortie faite") : TR("Sortie faite")}</button>`;
+      <div class="row" style="gap:8px; margin-top:10px;">
+        <button class="btn" id="ca-retirer" style="flex:0 0 auto; padding-inline:14px; color:var(--bad);">${TR("Retirer")}</button>
+        <button class="btn ${c.fait ? "" : "btn-accent"} grow" id="ca-fait">${c.fait ? "✓ " + TR("Sortie faite") : TR("Sortie faite")}</button>
+      </div>`;
     const lire = ()=>{
-      c.min = parseFloat(cc.querySelector("#ca-min").value) || 0;
-      c.km = versKm(parseFloat(cc.querySelector("#ca-km").value) || 0);
-      c.pente = parseFloat(cc.querySelector("#ca-pente").value) || 0;
+      const q = sel => cc.querySelector(sel);
+      if(!q("#ca-min")) return;
+      c.min = parseFloat(q("#ca-min").value) || 0;
+      c.km = versKm(parseFloat(q("#ca-km").value) || 0);
+      c.pente = parseFloat(q("#ca-pente").value) || 0;
     };
     cc.querySelectorAll("input").forEach(i=>i.oninput = ()=>{ lire(); save(); });
-    cc.querySelector("#ca-fait").onclick = ()=>{
+    const bFait = cc.querySelector("#ca-fait");
+    if(bFait) bFait.onclick = ()=>{
       lire();
       c.fait = !c.fait;
+      c.ouverte = false;
       if(c.fait) vibrer(26);
       save(); renderSurPlace();
+      /* les calories du bandeau suivent tout de suite ; et si c'etait la derniere
+         chose a faire, on propose de terminer */
+      if(c.fait) setTimeout(proposerFin, 400);
     };
+    const bRetirer = cc.querySelector("#ca-retirer");
+    if(bRetirer) bRetirer.onclick = ()=>{ delete a.cardio; save(); renderSurPlace(); };
+    const bOuvrir = cc.querySelector("#ca-ouvrir");
+    if(bOuvrir) bOuvrir.onclick = ()=>{ c.ouverte = true; save(); renderSurPlace(); };
     list.appendChild(cc);
   }
 
@@ -14931,12 +15018,12 @@ function renderActive(app){
           machine:c.machine || "course", intensite:"modere", seanceId:recap.id};
         db.cardio.push(sortie);
         db.cardio.sort((x, y)=> new Date(x.date) - new Date(y.date));
-        recap.kcal = kcal + Math.round(sortieKcal(sortie, currentWeight() || 75));
+        recap.kcal = kcal + kcalSortieActive(a);
         recap.cardio = texteSortie(sortie);
       }
       db.history.push({
         id:recap.id, date:new Date().toISOString(), name:a.name, templateId:a.templateId,
-        start:a.start, end:a.start + dureeSeance2(a),
+        start:a.start, end:a.finForcee || (a.start + dureeSeance2(a)),
         cardio: cardioFait ? {machine:a.cardio.machine || "course", min:a.cardio.min || 0, km:a.cardio.km || 0, pente:a.cardio.pente || 0} : undefined,
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), t:(s.t || undefined), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length),
         /* Ce qui etait AU PLAN et n a pas ete fait. Sans cette ligne, une seance ou l on
