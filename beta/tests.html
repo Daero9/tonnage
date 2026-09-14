@@ -1872,7 +1872,7 @@ async function lancer(){
     vrai("Chacune porte son signe",
       [...D2.querySelectorAll(".pn-t .ic")].every(e=>!!e.querySelector("svg")));
     eq("Les trois chiffres",
-      [...D2.querySelectorAll(".pn-t .v")].map(e=>e.textContent).join("|"), "2|6|~15");
+      [...D2.querySelectorAll(".pn-t .v")].map(e=>e.textContent).join("|"), "2|6|~20");   /* la même formule que partout, transitions comprises */
     eq("Les trois intitulés",
       [...D2.querySelectorAll(".pn-t .l")].map(e=>e.textContent).join("|"),
       "exercices|séries au total|minutes");
@@ -5657,6 +5657,62 @@ async function lancer(){
     let ok = true;
     try{ await F.dessinerCarteSeance(gros, {records:[{nom:"a"}, {nom:"b"}, {nom:"c"}, {nom:"d"}]}); }catch(e){ ok = false; }
     vrai("Huit exercices, quatre records et un nom trop long se dessinent sans erreur", ok);
+  })();
+  neuf();
+
+  /* --------------------------------------- la seance courte et la sortie cardio */
+  grp("La séance courte garde ce qui rapporte");
+  neuf();
+  (()=>{
+    const it = (n, sets) => ({exId:id(n), sets, reps:"8-12", rest:90});
+    const items = [it("Développé couché", 4), it("Développé militaire", 3), it("Écartés poulie", 3), it("Élévations latérales", 3), it("Extension poulie (barre)", 3)];
+    const g = F.indicesSeanceCourte(items);
+    eq("Cinq exercices : on en garde trois", g.length, 3);
+    vrai("Les mouvements lourds passent devant les isolations", g.includes(0) && g.includes(1), g.join(","));
+    vrai("…et l'ordre d'origine est conservé", g.every((v, i)=>i === 0 || v > g[i - 1]));
+    eq("Trois exercices ou moins : on garde tout", F.indicesSeanceCourte(items.slice(0, 3)).length, 3);
+    eq("Dix exercices : six", F.indicesSeanceCourte(items.concat(items)).length, 6);
+  })();
+  neuf();
+
+  grp("La sortie cardio dans la séance");
+  neuf();
+  await (async ()=>{
+    DB.cardio = [];
+    let o = F.objectifCardio({machine:"course", min:30, km:0, pente:0});
+    vrai("Sans sortie passée, l'objectif est le plan", o.min === 30 && o.base === null);
+    DB.cardio = [{id:"c1", date:new Date(Date.now() - 4 * 864e5).toISOString(), km:4, min:24, pente:1, machine:"course", intensite:"modere"},
+                 {id:"c2", date:new Date(Date.now() - 2 * 864e5).toISOString(), km:10, min:30, pente:0, machine:"velo", intensite:"modere"}];
+    o = F.objectifCardio({machine:"course", min:30, km:0, pente:0});
+    eq("Avec une sortie passée du même type : +5 % de distance", o.km, 4.2);
+    eq("…le temps ne bouge pas", o.min, 24);
+    eq("…ni la pente", o.pente, 1);
+    vrai("…et c'est bien la course qui sert de base, pas le vélo", o.base && o.base.id === "c1");
+    o = F.objectifCardio({machine:"rameur", min:15, km:0, pente:0});
+    vrai("Un type jamais fait repart du plan", o.base === null && o.min === 15);
+    DB.cardio = [{id:"c3", date:new Date().toISOString(), km:0, min:20, pente:0, machine:"stepper", intensite:"modere"}];
+    eq("Sans distance mesurée : +2 minutes", F.objectifCardio({machine:"stepper", min:20}).min, 22);
+    /* la sortie faite pendant la seance devient une sortie a part entiere */
+    DB.cardio = []; DB.history = [];
+    DB.active = {name:"Push", templateId:null, start:Date.now() - 3e6,
+      entries:[{exId:id("Développé couché"), target:{sets:1, reps:"8-12", rest:90}, sets:[{w:60, r:10, done:true, rir:1}]}],
+      cardio:{machine:"course", min:20, km:3.2, pente:1, fait:true, derniere:""}};
+    F.eval("curTab='seance'; render()");
+    await attendre(()=>!!F.document.getElementById("finish-w"), 2000);
+    const vraiAsk = F.askConfirm; F.askConfirm = (t, m, ok, danger, cb)=>cb();
+    F.document.getElementById("finish-w").click();
+    await attendre(()=>DB.history.length === 1, 2000);
+    F.askConfirm = vraiAsk;
+    eq("La séance est enregistrée", DB.history.length, 1);
+    eq("…avec sa sortie", DB.history[0].cardio && DB.history[0].cardio.km, 3.2);
+    eq("…et la sortie existe aussi dans le cardio", DB.cardio.length, 1);
+    vrai("…rattachée à la séance", DB.cardio[0].seanceId === DB.history[0].id && DB.cardio[0].machine === "course");
+    /* le récapitulatif s'ouvre en différé : on l'attend avant de le fermer, sinon il
+       s'ouvrirait au milieu du groupe suivant */
+    await attendre(()=>!!F.document.getElementById("fin-ok"), 2000);
+    vrai("Le récapitulatif mentionne la sortie", /3,2 km/.test(F.document.querySelector(".sheet").textContent), F.document.querySelector(".sheet").textContent.slice(0, 200));
+    F.closeSheet(); await attendre(()=>!F.document.getElementById("fin-ok"), 2000);
+    DB.cardio = []; DB.history = []; DB.active = null;
   })();
   neuf();
 
