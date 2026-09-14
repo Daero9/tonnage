@@ -1499,9 +1499,11 @@
   .hero-en-cours{display:grid; aspect-ratio:1210/700;}
   .hero-en-cours .hero-bg{grid-area:1/1; height:100%; aspect-ratio:auto;}
   .hero-en-cours .hero-in{grid-area:1/1; position:static; padding-bottom:34px;}
-  .fin-bandeau{display:none; align-items:center; gap:12px; margin-top:16px; padding:12px 14px; border-radius:16px;
+  .fin-bandeau{display:none; margin-top:16px; padding:12px 14px; border-radius:16px;
     background:rgba(52,168,83,.12); border:1.5px solid rgba(52,168,83,.4);}
-  .fin-bandeau.show{display:flex; animation:ficheIn .4s cubic-bezier(.22,1,.36,1) backwards;}
+  .fin-bandeau.show{display:block; animation:ficheIn .4s cubic-bezier(.22,1,.36,1) backwards;}
+  /* le bandeau porte deja « Ajouter » : le bouton du dessus ferait doublon */
+  #app:has(.fin-bandeau.show) #add-ex{display:none;}
   .fin-bandeau .ic{font-size:24px;}
   .fin-bandeau b{display:block; font-size:14px;}
   .fin-bandeau span{font-size:12.5px; color:var(--ink-soft);}
@@ -7617,7 +7619,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 01h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 01h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14295,7 +14297,11 @@ function renderActive(app){
     <div class="stack" id="ex-list"></div>
     <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ ${TR(a.cardio ? "Ajouter un exercice" : "Ajouter un exercice / cardio")}</button>
     <div class="fin-bandeau ${toutEstFait(a) ? "show" : ""}" id="fin-bandeau">
-      <span class="ic">🎉</span><div><b>${TR("Tout est fait !")}</b><span>${TR("Termine la séance pour l'enregistrer.")}</span></div></div>
+      <div class="row" style="align-items:center; gap:12px;"><span class="ic">🎉</span><div><b>${TR("Tout est fait !")}</b><span>${TR("Termine la séance pour l'enregistrer.")}</span></div></div>
+      <div class="row" style="gap:8px; margin-top:10px;">
+        <button class="btn grow" id="fin-ajouter" style="background:var(--surface);">＋ ${TR("Ajouter un exercice / cardio")}</button>
+        <button class="btn btn-accent grow" id="fin-terminer" style="background:var(--good); border-color:var(--good);">${TR("Terminer la séance")}</button>
+      </div></div>
     <div class="row" style="margin-top:20px;">
       <button class="btn" id="cancel-w" style="flex:0 0 auto; padding-inline:18px; background:var(--hero); color:#fff; border-color:var(--hero);">${TR("Annuler")}</button>
       <button class="btn grow" id="finish-w" style="background:var(--good); color:#fff; border-color:var(--good);">${TR("Terminer la séance")}</button>
@@ -14944,13 +14950,12 @@ function renderActive(app){
     const bFait = cc.querySelector("#ca-fait");
     if(bFait) bFait.onclick = ()=>{
       lire();
-      c.fait = !c.fait;
-      c.ouverte = false;
-      if(c.fait) vibrer(26);
-      save(); renderSurPlace();
-      /* les calories du bandeau suivent tout de suite ; et si c'etait la derniere
-         chose a faire, on propose de terminer */
-      if(c.fait) setTimeout(proposerFin, 400);
+      if(c.fait){ c.fait = false; c.ouverte = false; save(); renderSurPlace(); return; }
+      c.fait = true; c.ouverte = false; save();
+      /* la meme fete que pour un exercice termine : la coche, puis la carte se replie ;
+         les calories du bandeau suivent, et si c'etait la derniere chose a faire, on
+         propose de terminer */
+      exerciceFini(cc, TR(machineOf(c)[1]), ()=>{ renderSurPlace(); setTimeout(proposerFin, 300); });
     };
     const bRetirer = cc.querySelector("#ca-retirer");
     if(bRetirer) bRetirer.onclick = ()=>{ delete a.cardio; save(); renderSurPlace(); };
@@ -14984,6 +14989,10 @@ function renderActive(app){
       setTimeout(()=>{ const cc = document.querySelector(".ex-card.cardio"); if(cc) cc.scrollIntoView({block:"center", behavior:"smooth"}); }, 300);
     });
   };
+  const fa = document.getElementById("fin-ajouter");
+  if(fa) fa.onclick = ()=>document.getElementById("add-ex").click();
+  const ft = document.getElementById("fin-terminer");
+  if(ft) ft.onclick = ()=>document.getElementById("finish-w").click();
   document.getElementById("add-ex").onclick=()=>{
     if(a.cardio){ ajouterExo(); return; }          /* une seule sortie par seance */
     const ligne = (id2, ic, titre, sous) => `<button class="aj-l" id="${id2}">
