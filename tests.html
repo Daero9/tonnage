@@ -5759,6 +5759,18 @@ async function lancer(){
       F.document.querySelector(".cam [data-non]").click();
       eq("…la croix rend null", await pr1b, null);
       vrai("…et l'écran a disparu", !F.document.querySelector(".cam"));
+      /* plus de photo : encadre rouge et declencheur inerte */
+      DB.photos = {jour:F.dayKey(), n:6};
+      const prQ = F.ouvrirCamera("plat", "Test");
+      await attendre(()=>!!F.document.querySelector(".cam"), 1000);
+      vrai("À zéro photo, l'écran le dit dans un encadré rouge et gèle le déclencheur",
+        F.document.querySelector(".cam .quota").classList.contains("zero") && F.document.querySelector(".cam").classList.contains("epuise")
+        && /demain/.test(F.document.querySelector(".cam .quota").textContent));
+      DB.photos = {jour:F.dayKey(), n:5};
+      F.document.querySelector(".cam [data-mode='code']").click(); F.document.querySelector(".cam [data-mode='plat']").click();
+      vrai("…à une photo restante, la pastille dit « Dernière photo »", !F.document.querySelector(".cam .quota").classList.contains("zero") && /Dernière/.test(F.document.querySelector(".cam .quota").textContent));
+      F.document.querySelector(".cam [data-non]").click(); await prQ;
+      delete DB.photos;
       const pr2 = F.ouvrirCamera("code", "Test");
       await attendre(()=>!!F.document.querySelector(".cam"), 1000);
       F.document.querySelector(".cam [data-non]").click();

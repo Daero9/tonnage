@@ -2171,6 +2171,12 @@
   @keyframes camLigne{0%,100%{top:22%;} 50%{top:78%;}}
   /* le basculement : le cadre s'ouvre et s'efface, le declencheur se remplit, la pilule glisse */
   .cam.plat .cadre{opacity:0; transform:scale(1.12); pointer-events:none;}
+  /* le carre de l'assiette : ce qui est dedans part, le reste non */
+  .cam .carre{position:absolute; left:50%; top:44%; width:min(84vw, 46vh); aspect-ratio:1; transform:translate(-50%,-50%);
+    border:3px solid #fff; border-radius:24px; box-shadow:0 0 0 9999px rgba(0,0,0,.35);
+    transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
+  .cam.code .carre{opacity:0; transform:translate(-50%,-50%) scale(.9); pointer-events:none;}
+  .cam.sans-flux .carre{display:none;}
   .cam .t{transition:opacity .2s ease;}
   .cam .haut{position:absolute; top:calc(12px + env(safe-area-inset-top)); left:12px; right:12px; display:flex; align-items:center; gap:10px;}
   .cam .haut .titre{flex:1; text-align:center; font-size:14px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.6);}
@@ -7843,7 +7849,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 06h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 06h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10590,7 +10596,7 @@ function ouvrirCamera(mode, titre){
     const boite = document.createElement("div");
     boite.className = "cam " + mode;
     boite.innerHTML = `<video playsinline muted autoplay></video>
-      <div class="voile"></div><div class="cadre"><i></i></div>
+      <div class="voile"></div><div class="cadre"><i></i></div><div class="carre"></div>
       <div class="haut">
         <button class="rond" data-non aria-label="${TR("Fermer")}">✕</button>
         <div class="titre">${esc(titre || "")}</div>
@@ -10686,10 +10692,20 @@ function ouvrirCamera(mode, titre){
     q("[data-prendre]").onclick = ()=>{
       if(!flux || video.readyState < 2){ fich.click(); return; }
       if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
-      const max = 1000, r = Math.min(1, max / Math.max(video.videoWidth, video.videoHeight));
+      /* On n'envoie que le carre de visee. La video est affichee en « cover » : on
+         retrouve la zone du capteur qui correspond au carre a l'ecran, et on la decoupe.
+         Moins de table, de mains et de verres autour — et un peu moins de pixels. */
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const B = boite.getBoundingClientRect(), C = q(".carre").getBoundingClientRect();
+      const ech = Math.max(B.width / vw, B.height / vh);
+      const ox = (B.width - vw * ech) / 2, oy = (B.height - vh * ech) / 2;
+      let sx = (C.left - B.left - ox) / ech, sy = (C.top - B.top - oy) / ech, sw = C.width / ech, sh = C.height / ech;
+      sx = Math.max(0, sx); sy = Math.max(0, sy); sw = Math.min(sw, vw - sx); sh = Math.min(sh, vh - sy);
+      if(!(sw > 50 && sh > 50)){ sx = 0; sy = 0; sw = vw; sh = vh; }   /* mesure impossible : toute l'image */
+      const cote = Math.min(1000, Math.round(Math.max(sw, sh)));
       const cv = document.createElement("canvas");
-      cv.width = Math.round(video.videoWidth * r); cv.height = Math.round(video.videoHeight * r);
-      cv.getContext("2d").drawImage(video, 0, 0, cv.width, cv.height);
+      cv.width = Math.round(cote * sw / Math.max(sw, sh)); cv.height = Math.round(cote * sh / Math.max(sw, sh));
+      cv.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
       const dataUrl = cv.toDataURL("image/jpeg", 0.72);
       vibrer(20);
       boite.classList.add("flash");
