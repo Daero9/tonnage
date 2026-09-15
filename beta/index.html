@@ -3427,6 +3427,8 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Muscu terminée — comment te sens-tu ?":"Lifting done — how do you feel?",
+  "Réponds avant le cardio : c'est la muscu qu'on règle avec ça.":"Answer before the cardio: this is what tunes your lifting.",
   "Modifier":"Edit",
   "Tout est fait !":"All done!",
   "Termine la séance pour l'enregistrer.":"Finish the session to save it.",
@@ -7621,7 +7623,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 01h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 02h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14910,6 +14912,27 @@ function renderActive(app){
     };
     list.appendChild(card);
   });
+  /* Muscu finie, cardio encore a faire : on pose la question du ressenti MAINTENANT,
+     avant la sortie — sinon elle repondrait a la course autant qu'aux barres, et une
+     muscu facile suivie d'un cardio intense ferait alleger la muscu pour rien. */
+  const musculationFinie = a.entries.length && !a.entries.some(en=>en.sets.some(s=>!s.done && !s.warm))
+    && a.entries.some(en=>en.sets.some(s=>s.done && !s.warm));
+  if(a.cardio && !a.cardio.fait && musculationFinie && a.feel === undefined){
+    const q = document.createElement("div");
+    q.className = "fin-feel";
+    q.style.marginTop = "4px";
+    q.innerHTML = `<div class="t">${TR("Muscu terminée — comment te sens-tu ?")}</div>
+      <div class="ch">
+        <button data-feel="facile">${TR("Bien")}</button>
+        <button data-feel="correct">${TR("Fatigué")}</button>
+        <button data-feel="dur">${TR("Très fatigué")}</button>
+      </div>
+      <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; margin-top:8px;">${TR("Réponds avant le cardio : c'est la muscu qu'on règle avec ça.")}</div>`;
+    q.querySelectorAll("[data-feel]").forEach(b=>b.onclick=()=>{
+      a.feel = b.dataset.feel; a.feelMuscu = true; save(); vibrer(8); renderSurPlace();
+    });
+    list.appendChild(q);
+  }
   if(a.cardio){
     const c = a.cardio;
     const cc = document.createElement("div");
@@ -15021,6 +15044,7 @@ function renderActive(app){
         records: nouveauxRecords(a)
       };
       recap.id = uid();
+      recap.feel = a.feel; recap.feelMuscu = !!a.feelMuscu;
       /* la sortie faite pendant la seance est une sortie comme les autres : elle compte
          dans les kilometres de la semaine et dans les calories du jour */
       if(cardioFait){
@@ -15036,6 +15060,8 @@ function renderActive(app){
         id:recap.id, date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         start:a.start, end:a.finForcee || (a.start + dureeSeance2(a)),
         cardio: cardioFait ? {machine:a.cardio.machine || "course", min:a.cardio.min || 0, km:a.cardio.km || 0, pente:a.cardio.pente || 0} : undefined,
+        feel: (a.feel && a.feel !== "correct") ? a.feel : undefined,
+        feelMuscu: a.feelMuscu ? true : undefined,
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), t:(s.t || undefined), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length),
         /* Ce qui etait AU PLAN et n a pas ete fait. Sans cette ligne, une seance ou l on
            abandonne apres deux exercices sur cinq s enregistre comme une seance de deux
@@ -15147,14 +15173,14 @@ function openFinSeance(r){
         ? TR("{} reps").replace("{}", x.gain)
         : pds(x.gain)}</b> ${x.unite==="reps" ? TR("sur ton meilleur") : TR("sur ton max estimé")}`:" — "+TR("première performance enregistrée")}</div>`).join("")}
   </div>`:""}
-  <div class="fin-feel">
+  ${r.feelMuscu ? "" : `<div class="fin-feel">
     <div class="t">${TR("Comment te sens-tu ?")}</div>
     <div class="ch">
       <button data-feel="facile">${TR("Bien")}</button>
       <button data-feel="correct">${TR("Fatigué")}</button>
       <button data-feel="dur">${TR("Très fatigué")}</button>
     </div>
-  </div>
+  </div>`}
   <button class="btn" id="fin-partager" style="width:100%; margin-bottom:8px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
   <button class="btn btn-accent" id="fin-ok" style="width:100%;">${TR("Terminé")}</button>`);
   document.getElementById("fin-partager").onclick = ()=>{
@@ -17243,7 +17269,11 @@ function facteurRessenti(sess){
 /* Deux séances de suite dans le même sens : ce n'est plus un mauvais jour, c'est une
    tendance. Une seule ne décide de rien. */
 function tendanceRessenti(){
-  const avis = (db.history || []).slice().sort((a, b)=>new Date(b.date) - new Date(a.date))
+  /* Une seance qui contenait une sortie cardio ne compte que si le ressenti a ete
+     donne AVANT la sortie (feelMuscu) : sinon « comment te sens-tu ? » repond a la
+     course autant qu'aux barres, et une muscu facile suivie d'un cardio intense ferait
+     alleger la muscu pour rien. */
+  const avis = (db.history || []).filter(h=>!h.cardio || h.feelMuscu).sort((a, b)=>new Date(b.date) - new Date(a.date))
     .slice(0, 2).map(h=>h.feel || "correct");
   if(avis.length < 2) return null;
   if(avis[0] === "dur" && avis[1] === "dur") return "dur";

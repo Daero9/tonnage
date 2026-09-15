@@ -5760,6 +5760,25 @@ async function lancer(){
   })();
   neuf();
 
+  /* --------------------------------------- le cardio ne regle pas la muscu */
+  grp("Le ressenti d'une séance avec cardio ne règle pas la muscu");
+  neuf();
+  (()=>{
+    const S = (j, feel, cardio) => ({id:"f" + j, date:new Date(Date.now() - j * 864e5).toISOString(), name:"x", templateId:"x",
+      start:0, end:0, feel, cardio, entries:[{exId:id("Squat"), sets:[serie(60, 8)]}]});
+    DB.history = [S(1, "dur"), S(3, "dur")];
+    eq("Deux séances dures sans cardio : on allège", F.tendanceRessenti(), "dur");
+    DB.history = [S(1, "dur", {machine:"course", min:30, km:5, pente:0}), S(3, "dur")];
+    eq("La séance avec cardio est écartée : une seule séance sans cardio ne suffit pas", F.tendanceRessenti(), null);
+    DB.history = [S(1, "dur", {machine:"course", min:30, km:5, pente:0}), S(3, "dur"), S(5, "dur")];
+    eq("…et deux séances dures sans cardio suffisent, même séparées par une avec", F.tendanceRessenti(), "dur");
+    /* le ressenti donne AVANT la sortie parle bien de la muscu : il compte */
+    DB.history = [Object.assign(S(1, "dur", {machine:"course", min:30, km:5, pente:0}), {feelMuscu:true}), S(3, "dur")];
+    eq("Un ressenti donné avant le cardio compte", F.tendanceRessenti(), "dur");
+    DB.history = [];
+  })();
+  neuf();
+
   /* --------------------------------------- l'essai de 7 jours */
   /* Sans Google, sans carte : sept jours comptes dans l'app, a partir du profil ou de
      la premiere seance. Au huitieme jour le voile revient — et pas avant. */
