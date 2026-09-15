@@ -2099,9 +2099,9 @@ async function lancer(){
 
     /* le raccourci du scan */
     const scan = F.document.getElementById("ot-scan");
-    /* deux cartes cote a cote depuis le 15 septembre : code-barres en noir, photo en orange */
-    vrai("Le scan et la photo sont deux cartes côte à côte", scan.classList.contains("ot-carte")
-      && F.document.getElementById("ot-photo").classList.contains("ot-carte"));
+    /* une seule carte depuis le 15 septembre : code-barres ou photo, c'est le meme ecran */
+    vrai("« Scanner mon repas » est une seule carte orange", scan.classList.contains("ot-carte") && scan.classList.contains("orange")
+      && !F.document.getElementById("ot-photo"));
     vrai("…et un code-barres plus grand",
       parseFloat(F.getComputedStyle(scan.querySelector("svg")).width) >= 24);
 
@@ -5699,6 +5699,28 @@ async function lancer(){
     eq("Dix exercices : six", F.indicesSeanceCourte(items.concat(items)).length, 6);
   })();
   neuf();
+
+  grp("L'écran caméra");
+  neuf();
+  await (async ()=>{
+    /* l'ecran camera : il s'ouvre dans le mode demande, la pilule change de mode, la croix rend null */
+    {
+      const pr = F.ouvrirCamera("plat", "Test");
+      await attendre(()=>!!F.document.querySelector(".cam"), 1000);
+      const cam = F.document.querySelector(".cam");
+      vrai("L'écran caméra s'ouvre en mode plat", cam.classList.contains("plat") && cam.querySelector("[data-mode='plat']").classList.contains("on"));
+      cam.querySelector("[data-mode='code']").click();
+      vrai("…la pilule bascule en mode code-barres", cam.classList.contains("code") && DB.camMode === "code");
+      vrai("…le déclencheur n'est pas cliquable en mode code", F.getComputedStyle(cam.querySelector("[data-prendre]")).pointerEvents === "none");
+      cam.querySelector("[data-non]").click();
+      eq("…la croix rend null", await pr, null);
+      vrai("…et l'écran a disparu", !F.document.querySelector(".cam"));
+      const pr2 = F.ouvrirCamera("code", "Test");
+      await attendre(()=>!!F.document.querySelector(".cam"), 1000);
+      F.document.querySelector(".cam [data-non]").click();
+      eq("Un second écran se ferme aussi proprement", await pr2, null);
+    }
+  })();
 
   grp("La sortie cardio dans la séance");
   neuf();

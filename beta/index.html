@@ -2157,20 +2157,49 @@
   /* ---- liste d'aliments cherchable ---- */
   /* ---- scanner de code-barres ----
      Plein écran par-dessus tout : on vise un produit, on ne lit rien d'autre. */
-  .scan{position:fixed; inset:0; z-index:200; background:#000; display:flex;
-    flex-direction:column; align-items:center; justify-content:center;}
-  .scan video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
-  .scan .voile{position:absolute; inset:0; background:rgba(0,0,0,.45);}
-  /* la fenêtre de visée : un rectangle clair, aux proportions d'un code-barres */
-  .scan .cadre{position:relative; width:78%; max-width:330px; aspect-ratio:2/1;
-    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
-  .scan .t{position:absolute; top:calc(50% - 150px); left:0; right:0; text-align:center;
-    color:#fff; font-size:14.5px; font-weight:700; padding:0 24px; line-height:1.5;}
-  .scan .bas{position:absolute; left:0; right:0; bottom:calc(28px + env(safe-area-inset-bottom));
-    display:flex; flex-direction:column; gap:9px; padding:0 22px;}
-  .scan .bas button{padding:13px; border-radius:12px; font-weight:800; font-size:14.5px;}
-  .scan .bas .b1{background:#fff; color:#17181a;}
-  .scan .bas .b2{background:rgba(255,255,255,.16); color:#fff;}
+  /* ---- l'ecran camera : un flux, deux modes ---- */
+  .cam{position:fixed; inset:0; z-index:200; background:#000; color:#fff; overflow:hidden;}
+  .cam video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .cam .voile{position:absolute; inset:0; background:rgba(0,0,0,.18); pointer-events:none;}
+  .cam.flash .voile{background:#fff; transition:background .1s;}
+  /* la fenetre de visee du code-barres, avec sa ligne orange */
+  .cam .cadre{position:absolute; left:11%; right:11%; top:calc(50% - 150px); aspect-ratio:2/1; max-width:330px; margin:0 auto;
+    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.45);}
+  .cam .cadre i{position:absolute; left:8%; right:8%; top:50%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent);}
+  .cam.plat .cadre{display:none;}
+  .cam .haut{position:absolute; top:calc(12px + env(safe-area-inset-top)); left:12px; right:12px; display:flex; align-items:center; gap:10px;}
+  .cam .haut .titre{flex:1; text-align:center; font-size:14px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.6);}
+  .cam .rond{width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.18); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; backdrop-filter:blur(6px);}
+  .cam .rond svg{width:20px; height:20px;}
+  .cam .rond.on{background:#fff; color:#17181a;}
+  .cam .rond.vide{background:none;}
+  .cam .quota{position:absolute; top:calc(62px + env(safe-area-inset-top)); left:0; right:0; text-align:center; font-size:11.5px;}
+  .cam .quota:not(:empty){display:inline-block; left:50%; right:auto; transform:translateX(-50%); background:rgba(0,0,0,.55); border-radius:99px; padding:5px 11px;}
+  .cam .t{position:absolute; left:0; right:0; top:calc(50% + 40px); text-align:center; font-size:14.5px; font-weight:700;
+    padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
+  .cam.plat .t{top:auto; bottom:calc(178px + env(safe-area-inset-bottom));}
+  .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:16px; align-items:center;}
+  .cam .modes{display:flex; background:rgba(0,0,0,.55); border-radius:99px; padding:4px; width:min(78%, 300px); backdrop-filter:blur(6px);}
+  .cam .modes button{flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 0; border-radius:99px; color:#ccc; font-size:13px; font-weight:700;}
+  .cam .modes button svg{width:17px; height:17px;}
+  .cam .modes button.on{background:#fff; color:#17181a;}
+  .cam .ligne{display:flex; align-items:center; justify-content:center; gap:28px; width:100%;}
+  .cam .declencheur{width:66px; height:66px; border-radius:50%; border:4px solid #fff; display:flex; align-items:center; justify-content:center; background:none;}
+  .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:var(--accent);}
+  .cam.code .declencheur{border-color:rgba(255,255,255,.3);}
+  .cam.code .declencheur span{background:none;}
+  .cam.code .declencheur{pointer-events:none;}
+  .cam.code [data-galerie], .cam.plat [data-main]{display:none;}
+  .cam.sans-flux.code [data-galerie]{display:flex;}
+  /* la carte qui remonte quand un code-barres passe devant l'objectif en mode plat */
+  .cam .repere{position:absolute; left:12px; right:12px; bottom:calc(178px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:10px;
+    background:#fff; color:#17181a; border-radius:14px; padding:10px 12px; animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards;}
+  .cam [hidden]{display:none !important;}
+  .cam .repere > svg{width:24px; height:24px; flex:0 0 auto;}
+  .cam .repere .tx{flex:1; font-size:12px; line-height:1.35;}
+  .cam .repere .tx b{display:block;}
+  .cam .repere .tx span{color:#666;}
+  .cam .repere button{background:#17181a; color:#fff; border-radius:99px; padding:8px 13px; font-size:12px; font-weight:800;}
   /* Un filet ferme la liste : sans lui, on ne voyait pas ou s arretait la zone qui
      defile, et les dernieres pastilles semblaient couper la fiche en deux. */
   .al-liste{max-height:38dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
@@ -2588,6 +2617,12 @@
   .ot-carte .ic svg{width:26px; height:26px;}
   .ot-carte b{font-size:13.5px; line-height:1.2;}
   .ot-carte i{font-style:normal; font-size:11px; opacity:.85;}
+  .ot-carte.solo{flex-direction:row; text-align:left; gap:12px; padding:14px 14px 14px 16px; width:100%;}
+  .ot-carte.solo .ic{width:auto; height:auto; margin:0; gap:2px;}
+  .ot-carte.solo .ic svg{width:24px; height:24px;}
+  .ot-carte.solo .tx{flex:1; display:flex; flex-direction:column; gap:2px;}
+  .ot-carte.solo b{font-size:14.5px;}
+  .ot-carte.solo > svg{width:18px; height:18px; opacity:.8;}
   /* la fiche « Voici ce que je vois » */
   .ph-bandeau{position:relative; margin:-18px -16px 12px; height:210px; overflow:hidden; border-radius:20px 20px 0 0;}
   .ph-bandeau img{width:100%; height:100%; object-fit:cover; display:block;}
@@ -3486,6 +3521,24 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Scanner mon repas":"Scan my meal",
+  "Code-barres d'un produit, ou photo de l'assiette":"A product's barcode, or a photo of the plate",
+  "Ajouter — {}":"Add — {}",
+  "Lampe":"Torch",
+  "Produit emballé repéré":"Packaged product spotted",
+  "Scanner plutôt ? Valeurs exactes, gratuit.":"Scan it instead? Exact values, free.",
+  "Scanner":"Scan",
+  "Code-barres":"Barcode",
+  "Plat":"Plate",
+  "Choisir dans la galerie":"Pick from the gallery",
+  "Prendre la photo":"Take the photo",
+  "Vise le code-barres, ça se valide tout seul":"Aim at the barcode, it validates on its own",
+  "Lecteur en cours de chargement…":"Loading the reader…",
+  "Cadre toute l'assiette, puis appuie":"Frame the whole plate, then tap",
+  "{} photos restantes aujourd'hui":"{} photos left today",
+  "Ouverture de l'appareil photo…":"Opening the camera…",
+  "Pas d'accès à l'appareil photo. Prends le code-barres en photo, ou saisis les chiffres.":"No camera access. Take a picture of the barcode, or type the digits.",
+  "Pas d'accès à l'appareil photo. Prends l'assiette en photo avec l'appareil du téléphone.":"No camera access. Take a picture of the plate with the phone's camera app.",
   "Dis-moi ce qui change, sinon l'analyse sera la même.":"Tell me what's different, or the analysis will be the same.",
   "Produit emballé":"Packaged product",
   "Analyse automatique":"Automatic analysis",
@@ -7710,7 +7763,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 04h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 04h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8635,6 +8688,8 @@ const CHEV_MP = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="curre
 const IC_INFO_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.4" stroke-linecap="round"/><circle cx="12" cy="7.9" r="1.05" fill="currentColor" stroke="none"/></svg>';
 const IC_COTILLON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.1 20.9 8.6 8.4l7 7-12.5 5.5Z"/><path d="M8.6 8.4 15.6 15.4"/><path d="M15.2 3.4v2.2M19.4 4.9l-1.5 1.6M20.8 9.2h-2.2M19.8 13.6l-1.9-1.1"/></svg>';
 const IC_ALERTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6 1.8 20.4h20.4L12 3.6Z"/><path d="M12 9.8v4.6"/><circle cx="12" cy="17.6" r="1.05" fill="currentColor" stroke="none"/></svg>';
+const IC_CLAVIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>';
+const IC_GALERIE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 8"/></svg>';
 const IC_ECLAIR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.4 2 4.9 13.1c-.3.4 0 1 .5 1h5.1l-1.9 7.6c-.1.6.6.9 1 .4l8.5-11.1c.3-.4 0-1-.5-1h-5.1l1.9-7.6c.1-.6-.6-.9-1-.4Z"/></svg>';
 const IC_MAISON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 10.4 12 3.6l8.4 6.8"/><path d="M5.6 12v8.4h12.8V12"/><path d="M9.8 20.4v-5.2h4.4v5.2"/></svg>';
 const IC_CLOCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8.4a6 6 0 1 0-12 0c0 5.2-2.1 6.6-2.1 6.6h16.2S18 13.6 18 8.4Z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg>';
@@ -8796,7 +8851,7 @@ const GUIDES = {
      tout seul, la liste sert au reste. Et la quantite est la seule chose qu'on doive
      vraiment saisir a la main — c'est elle qui decide des chiffres du jour. */
   ajoutAliment: [
-    ["#ot-scan", "Le plus rapide : le code-barres", "Sur un produit emballé, les protéines et les calories se remplissent toutes seules."],
+    ["#ot-scan", "Le plus rapide : scanner", "Le code-barres d'un produit emballé remplit tout seul ; une photo de l'assiette donne une estimation."],
     ["#ot-liste", "Sinon, choisis dans la liste", "Cherche par nom, ou filtre par famille juste au-dessus : viande, poisson, légume…"],
     ["#ot-gwrap", "Dis combien tu en as mangé", "Tout se recalcule sur ce poids. Les valeurs s'affichent en dessous avant d'enregistrer."]
   ],
@@ -10425,82 +10480,183 @@ async function lireCodeSurPhoto(fichier){
   }
   return null;
 }
-/* Rend le code lu, ou null si on abandonne. */
-function scannerCodeBarres(){
+/* ---- l'ecran camera -------------------------------------------------------------
+   Un seul ecran pour deux gestes : lire un code-barres, ou photographier l'assiette.
+   Le flux video est le meme, seul le mode change (la pilule en bas). En mode
+   code-barres, la lecture est continue et se valide seule ; en mode plat, un
+   declencheur prend l'image du flux — plus besoin de passer par l'appareil photo du
+   systeme, et la photo part au relais comme avant.
+
+   Sur iPhone, aucun navigateur n'a BarcodeDetector : on decode alors des images du
+   flux avec zbar (Wasm), a cadence plus lente. Et en mode plat, le lecteur continue
+   de tourner discretement : un code-barres qui passe devant l'objectif fait remonter
+   une carte « Produit emballe repere » — le scan est exact et gratuit, la photo est
+   une estimation payante.
+
+   Rend { type:"code", code } ou { type:"photo", b64, apercu }, ou null si on renonce. */
+const CAM_CODE_MS = 250, CAM_CODE_ZBAR_MS = 350, CAM_PLAT_MS = 1000;
+function ouvrirCamera(mode, titre){
+  mode = mode === "plat" ? "plat" : "code";
   return new Promise(resolve=>{
     const boite = document.createElement("div");
-    boite.className = "scan";
-    boite.innerHTML = `<video playsinline muted autoplay></video><div class="voile"></div>
-      <div class="cadre"></div>
-      <div class="t">${TR("Vise le code-barres du produit")}</div>
-      <div class="bas">
-        ${scanDispo()? "" : `<button class="b1" data-photo>${TR("Prendre une photo du code-barres")}</button>`}
-        <button class="${scanDispo()? "b1" : "b2"}" data-main>${TR("Saisir le code à la main")}</button>
-        <button class="b2" data-non>${TR("Annuler")}</button>
+    boite.className = "cam " + mode;
+    boite.innerHTML = `<video playsinline muted autoplay></video>
+      <div class="voile"></div><div class="cadre"><i></i></div>
+      <div class="haut">
+        <button class="rond" data-non aria-label="${TR("Fermer")}">✕</button>
+        <div class="titre">${esc(titre || "")}</div>
+        <button class="rond" data-lampe aria-label="${TR("Lampe")}" hidden>${IC_ECLAIR}</button>
       </div>
-      <input type="file" accept="image/*" capture="environment" data-fichier style="display:none;">`;
+      <div class="quota"></div>
+      <div class="t"></div>
+      <div class="repere" hidden>${IC_CODEBARRE}<div class="tx"><b>${TR("Produit emballé repéré")}</b><span>${TR("Scanner plutôt ? Valeurs exactes, gratuit.")}</span></div>
+        <button data-scanner>${TR("Scanner")}</button></div>
+      <div class="bas">
+        <div class="modes"><button data-mode="code" class="${mode === "code" ? "on" : ""}">${IC_CODEBARRE}${TR("Code-barres")}</button>
+          <button data-mode="plat" class="${mode === "plat" ? "on" : ""}">${IC_PHOTO}${TR("Plat")}</button></div>
+        <div class="ligne">
+          <button class="rond" data-main aria-label="${TR("Saisir le code à la main")}">${IC_CLAVIER}</button>
+          <button class="rond" data-galerie aria-label="${TR("Choisir dans la galerie")}">${IC_GALERIE}</button>
+          <button class="declencheur" data-prendre aria-label="${TR("Prendre la photo")}"><span></span></button>
+          <span class="rond vide"></span>
+        </div>
+      </div>
+      <input type="file" accept="image/*" data-fichier style="display:none;">`;
     document.body.appendChild(boite);
-    let flux = null, boucle = null, fini = false;
-    const finir = code=>{
+    const q = sel => boite.querySelector(sel);
+    const video = q("video"), texte = q(".t"), fich = q("[data-fichier]");
+    let flux = null, piste = null, boucle = null, fini = false, lecteur = null, zbar = null;
+    let codeRepere = null, occupe = false;
+    const finir = r=>{
       if(fini) return; fini = true;
       if(boucle) clearInterval(boucle);
       if(flux) try{ flux.getTracks().forEach(t=>t.stop()); }catch(e){}
       boite.remove();
-      resolve(code || null);
+      resolve(r || null);
     };
-    boite.querySelector("[data-non]").onclick = ()=>finir(null);
-    boite.querySelector("[data-main]").onclick = ()=>{
+    const consigne = ()=>{
+      if(!flux){ return; }
+      if(mode === "code") texte.textContent = scanDispo() || zbar ? TR("Vise le code-barres, ça se valide tout seul") : TR("Lecteur en cours de chargement…");
+      else texte.textContent = TR("Cadre toute l'assiette, puis appuie");
+      const restantes = photosRestantes();
+      q(".quota").textContent = mode === "plat" ? TR("{} photos restantes aujourd'hui").replace("{}", Math.max(0, restantes)) : "";
+    };
+    const changerMode = m=>{
+      if(m === mode) return;
+      mode = m; boite.className = "cam " + mode;
+      boite.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("on", b.dataset.mode === m));
+      q(".repere").hidden = true; texte.hidden = false; codeRepere = null;
+      db.camMode = m; save();
+      consigne(); relancerBoucle();
+    };
+    boite.querySelectorAll("[data-mode]").forEach(b=>b.onclick = ()=>changerMode(b.dataset.mode));
+    q("[data-non]").onclick = ()=>finir(null);
+    q("[data-main]").onclick = ()=>{
       const c = prompt(TR("Code-barres (les chiffres sous les barres)"));
       const ok = c && /^[0-9]{6,14}$/.test(c.trim());
       if(ok) vibrer(30);
-      finir(ok ? c.trim() : null);
+      if(ok) finir({type:"code", code:c.trim()});
     };
-    if(!scanDispo()){
-      /* pas de lecteur en direct : on prend une photo et on la décode ici même */
-      const titre = boite.querySelector(".t");
-      const fich = boite.querySelector("[data-fichier]");
-      titre.textContent = TR("Prends le code-barres en photo, bien à plat et bien éclairé.");
-      boite.querySelector("[data-photo]").onclick = ()=>fich.click();
-      fich.onchange = async ()=>{
-        const f = fich.files && fich.files[0];
-        fich.value = "";
-        if(!f) return;
-        titre.textContent = TR("Lecture de la photo…");
+    q("[data-scanner]").onclick = ()=>{ if(codeRepere){ vibrer(30); finir({type:"code", code:codeRepere}); } };
+    /* la galerie, ou l'appareil du systeme quand la camera en direct manque */
+    q("[data-galerie]").onclick = ()=>fich.click();
+    fich.onchange = async ()=>{
+      const f = fich.files && fich.files[0]; fich.value = "";
+      if(!f) return;
+      if(mode === "code" && !flux){
+        /* pas de flux : on lit le code sur la photo, comme avant */
+        texte.textContent = TR("Lecture de la photo…");
         try{
           const code = await lireCodeSurPhoto(f);
-          /* Le lecteur EN DIRECT vibrait, celui de la photo non : sur un telephone ou
-             BarcodeDetector manque, on ne sentait jamais rien. Meme reussite, meme
-             signal — c'est le code trouve qu'on annonce, pas la technique employee. */
-          if(code){ vibrer(30); return finir(code); }
-          titre.textContent = TR("Code illisible. Réessaie de plus près, ou saisis les chiffres.");
-        }catch(e){
-          titre.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main.");
+          if(code){ vibrer(30); return finir({type:"code", code}); }
+          texte.textContent = TR("Code illisible. Réessaie de plus près, ou saisis les chiffres.");
+        }catch(e){ texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); }
+        return;
+      }
+      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+      try{ const img = await reduirePhoto(f); finir({type:"photo", b64:img.b64, apercu:img.apercu}); }
+      catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); }
+    };
+    /* le declencheur : l'image du flux, reduite comme une photo de fichier */
+    q("[data-prendre]").onclick = ()=>{
+      if(!flux || video.readyState < 2){ fich.click(); return; }
+      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+      const max = 1000, r = Math.min(1, max / Math.max(video.videoWidth, video.videoHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(video.videoWidth * r); cv.height = Math.round(video.videoHeight * r);
+      cv.getContext("2d").drawImage(video, 0, 0, cv.width, cv.height);
+      const dataUrl = cv.toDataURL("image/jpeg", 0.72);
+      vibrer(20);
+      boite.classList.add("flash");
+      setTimeout(()=>finir({type:"photo", b64:dataUrl.split(",")[1], apercu:dataUrl}), 120);
+    };
+    /* une image du flux pour zbar : 800 px suffisent, et c'est vingt fois moins de travail */
+    const imageDuFlux = ()=>{
+      const r = Math.min(1, 800 / Math.max(video.videoWidth, video.videoHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(video.videoWidth * r); cv.height = Math.round(video.videoHeight * r);
+      const cx = cv.getContext("2d", {willReadFrequently:true});
+      cx.drawImage(video, 0, 0, cv.width, cv.height);
+      return cx.getImageData(0, 0, cv.width, cv.height);
+    };
+    const codeVu = code=>{
+      if(!/^[0-9]{6,14}$/.test(code)) return;
+      if(mode === "code"){ vibrer(30); finir({type:"code", code}); return; }
+      /* mode plat : on le signale, on ne decide rien a la place de l'utilisateur */
+      if(codeRepere !== code){ codeRepere = code; q(".repere").hidden = false; texte.hidden = true; vibrer(12); }
+    };
+    const lire = async ()=>{
+      if(fini || occupe || !flux || video.readyState < 2) return;
+      occupe = true;
+      try{
+        if(lecteur){
+          const vus = await lecteur.detect(video);
+          if(vus && vus.length) codeVu(vus[0].rawValue);
+        } else if(zbar){
+          const vus = await zbar.scanImageData(imageDuFlux());
+          if(vus && vus.length) codeVu(vus[0].decode());
         }
-      };
-      return;
-    }
-    const video = boite.querySelector("video");
-    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})
+      }catch(e){}
+      occupe = false;
+    };
+    const relancerBoucle = ()=>{
+      if(boucle) clearInterval(boucle);
+      const ms = mode === "plat" ? CAM_PLAT_MS : (lecteur ? CAM_CODE_MS : CAM_CODE_ZBAR_MS);
+      boucle = setInterval(lire, ms);
+    };
+    const lampe = q("[data-lampe]");
+    let lampeOn = false;
+    lampe.onclick = ()=>{
+      if(!piste) return;
+      lampeOn = !lampeOn;
+      piste.applyConstraints({advanced:[{torch:lampeOn}]}).then(()=>lampe.classList.toggle("on", lampeOn)).catch(()=>{ lampeOn = false; });
+    };
+    texte.textContent = TR("Ouverture de l'appareil photo…");
+    const md = navigator.mediaDevices;
+    (md && md.getUserMedia ? md.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}}) : Promise.reject(new Error("pas de camera")))
       .then(async st=>{
         if(fini){ st.getTracks().forEach(t=>t.stop()); return; }
         flux = st; video.srcObject = st;
+        piste = st.getVideoTracks()[0] || null;
         try{ await video.play(); }catch(e){}
-        const lecteur = new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
-        boucle = setInterval(async ()=>{
-          if(fini || video.readyState < 2) return;
-          try{
-            const vus = await lecteur.detect(video);
-            if(vus && vus.length){
-              vibrer(30);
-              finir(vus[0].rawValue);
-            }
-          }catch(e){}
-        }, 250);
+        try{ if(piste && piste.getCapabilities && piste.getCapabilities().torch) lampe.hidden = false; }catch(e){}
+        if(scanDispo()) lecteur = new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
+        else chargerZbar().then(z=>{ zbar = z; consigne(); relancerBoucle(); }).catch(()=>{ if(mode === "code") texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); });
+        consigne(); relancerBoucle();
       })
       .catch(()=>{
-        boite.querySelector(".t").textContent = TR("Accès à l'appareil photo refusé. Saisis les chiffres à la main.");
+        /* sans camera en direct : la galerie ouvre l'appareil du systeme, et fait le reste */
+        boite.classList.add("sans-flux");
+        fich.setAttribute("capture", "environment");
+        texte.textContent = mode === "code" ? TR("Pas d'accès à l'appareil photo. Prends le code-barres en photo, ou saisis les chiffres.")
+                                            : TR("Pas d'accès à l'appareil photo. Prends l'assiette en photo avec l'appareil du téléphone.");
       });
   });
+}
+/* Pour ce qui appelle encore l'ancien nom : le code lu, ou null. */
+async function scannerCodeBarres(){
+  const r = await ouvrirCamera("code");
+  return r && r.type === "code" ? r.code : null;
 }
 /* Interroge Open Food Facts. Base ouverte, sans clé ni compte : le code-barres suffit.
    On ne demande que les cinq champs utiles — 1,7 Ko au lieu de la fiche entière. */
@@ -10795,12 +10951,17 @@ function openProduitScanne(meal, p){
 }
 /* Scanner puis ouvrir la fiche du produit. Partagé par le bouton de la fiche d'ajout
    et par « Scanner un autre produit ». */
-async function lancerScan(meal){
-  const code = await scannerCodeBarres();
-  if(!code) return;
+async function lancerScan(meal, mode){
+  const r = await ouvrirCamera(mode || db.camMode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
+  if(!r) return;
+  if(r.type === "photo"){
+    photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
+    lancerAnalysePhoto("");
+    return;
+  }
   toast(TR("Recherche du produit…"));
   try{
-    const p = await chercherProduit(code);
+    const p = await chercherProduit(r.code);
     if(!p){ toast(TR("Produit inconnu — saisis-le à la main.")); return; }
     openProduitScanne(meal, p);
   }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion.")); }
@@ -10921,19 +11082,7 @@ function par100DeTable(it){
   return null;                                   /* a la piece sans poids : on ne sait pas */
 }
 let photoEnCours = null;                         /* {meal, b64, apercu} pendant une analyse */
-function photographierRepas(meal){
-  if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
-  const inp = document.createElement("input");
-  inp.type = "file"; inp.accept = "image/*"; inp.capture = "environment";
-  inp.onchange = async ()=>{
-    const f = inp.files && inp.files[0]; if(!f) return;
-    let img;
-    try{ img = await reduirePhoto(f); }catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); return; }
-    photoEnCours = {meal, b64:img.b64, apercu:img.apercu, corrections:0};
-    lancerAnalysePhoto("");
-  };
-  inp.click();
-}
+function photographierRepas(meal){ lancerScan(meal, "plat"); }
 async function lancerAnalysePhoto(indice){
   const p = photoEnCours; if(!p) return;
   openSheet(`<div class="ph-attente"><img src="${p.apercu}" alt=""><div class="spin"></div>
@@ -11059,12 +11208,8 @@ function openAjoutAliment(meal){
   let garder = false;              /* « ajouter aux favoris » : l etoile porte l etat */
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
-      <div class="ot-duo">
-        <button class="ot-carte noir" id="ot-scan"><span class="ic">${IC_CODEBARRE}</span>
-          <b>${TR("Scanner un code-barres")}</b><i>${TR("Produit emballé")}</i></button>
-        <button class="ot-carte orange" id="ot-photo"><span class="ic">${IC_PHOTO}</span>
-          <b>${TR("Photographier mon assiette")}</b><i>${TR("Analyse automatique")}</i></button>
-      </div>
+      <button class="ot-carte orange solo" id="ot-scan"><span class="ic">${IC_CODEBARRE}${IC_PHOTO}</span>
+        <span class="tx"><b>${TR("Scanner mon repas")}</b><i>${TR("Code-barres d'un produit, ou photo de l'assiette")}</i></span>${IC_CHEVRON}</button>
       <div class="et-h"><span class="n">1</span><span class="t">${TR("Rechercher un aliment")}</span></div>
       <div>
       <div class="ch-champ">
@@ -11103,7 +11248,6 @@ function openAjoutAliment(meal){
       ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? TR("Restaurer les {} propositions retirées").replace("{}", nbMasques()) : TR("Restaurer la proposition retirée")}</button>`:""}
       <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;">${TR("Astuce : appui long sur une proposition pour la modifier.")}</p>
     </div>`);
-  document.getElementById("ot-photo").onclick = ()=>photographierRepas(meal);
   const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
   const trouver = val => {
     const [grp, idx] = val.split("|");
