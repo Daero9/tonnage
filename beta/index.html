@@ -2164,9 +2164,14 @@
   .cam.flash .voile{background:#fff; transition:background .1s;}
   /* la fenetre de visee du code-barres, avec sa ligne orange */
   .cam .cadre{position:absolute; left:11%; right:11%; top:calc(50% - 150px); aspect-ratio:2/1; max-width:330px; margin:0 auto;
-    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.45);}
-  .cam .cadre i{position:absolute; left:8%; right:8%; top:50%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent);}
-  .cam.plat .cadre{display:none;}
+    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.45);
+    transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
+  .cam .cadre i{position:absolute; left:8%; right:8%; top:50%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent);
+    animation:camLigne 2.2s ease-in-out infinite;}
+  @keyframes camLigne{0%,100%{top:22%;} 50%{top:78%;}}
+  /* le basculement : le cadre s'ouvre et s'efface, le declencheur se remplit, la pilule glisse */
+  .cam.plat .cadre{opacity:0; transform:scale(1.12); pointer-events:none;}
+  .cam .t{transition:opacity .2s ease;}
   .cam .haut{position:absolute; top:calc(12px + env(safe-area-inset-top)); left:12px; right:12px; display:flex; align-items:center; gap:10px;}
   .cam .haut .titre{flex:1; text-align:center; font-size:14px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.6);}
   .cam .rond{width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.18); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; backdrop-filter:blur(6px);}
@@ -2179,18 +2184,28 @@
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
   .cam.plat .t{top:auto; bottom:calc(178px + env(safe-area-inset-bottom));}
   .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:16px; align-items:center;}
-  .cam .modes{display:flex; background:rgba(0,0,0,.55); border-radius:99px; padding:4px; width:min(78%, 300px); backdrop-filter:blur(6px);}
-  .cam .modes button{flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 0; border-radius:99px; color:#ccc; font-size:13px; font-weight:700;}
+  .cam .modes{position:relative; display:flex; background:rgba(0,0,0,.55); border-radius:99px; padding:4px; width:min(78%, 300px); backdrop-filter:blur(6px);}
+  .cam .modes .curseur{position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 4px); border-radius:99px; background:#fff;
+    transition:transform .32s cubic-bezier(.22,1,.36,1);}
+  .cam.plat .modes .curseur{transform:translateX(100%);}
+  .cam .modes button{position:relative; flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 0; border-radius:99px; color:#ccc; font-size:13px; font-weight:700;
+    transition:color .25s ease;}
   .cam .modes button svg{width:17px; height:17px;}
-  .cam .modes button.on{background:#fff; color:#17181a;}
+  .cam .modes button.on{color:#17181a;}
   .cam .ligne{display:flex; align-items:center; justify-content:center; gap:28px; width:100%;}
-  .cam .declencheur{width:66px; height:66px; border-radius:50%; border:4px solid #fff; display:flex; align-items:center; justify-content:center; background:none;}
-  .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:var(--accent);}
-  .cam.code .declencheur{border-color:rgba(255,255,255,.3);}
-  .cam.code .declencheur span{background:none;}
-  .cam.code .declencheur{pointer-events:none;}
-  .cam.code [data-galerie], .cam.plat [data-main]{display:none;}
-  .cam.sans-flux.code [data-galerie]{display:flex;}
+  .cam .declencheur{width:66px; height:66px; border-radius:50%; border:4px solid #fff; display:flex; align-items:center; justify-content:center; background:none;
+    transition:border-color .3s ease;}
+  .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:var(--accent);
+    transition:transform .34s cubic-bezier(.34,1.4,.64,1);}
+  .cam.code .declencheur{border-color:rgba(255,255,255,.3); pointer-events:none;}
+  .cam.code .declencheur span{transform:scale(0);}
+  /* les deux petits boutons de gauche occupent la meme place : l'un fond dans l'autre */
+  .cam .ligne{position:relative;}
+  .cam [data-main], .cam [data-galerie]{transition:opacity .22s ease, transform .3s ease;}
+  .cam.code [data-galerie], .cam.plat [data-main]{opacity:0; transform:scale(.6); pointer-events:none; position:absolute; left:calc(50% - 101px);}
+  /* sans flux en mode code : la photo du code ET la saisie a la main, cote a cote */
+  .cam.sans-flux.code [data-galerie], .cam.sans-flux.code [data-main]{opacity:1; transform:none; pointer-events:auto; position:static;}
+  .cam.sans-flux.code .vide{display:none;}
   /* la carte qui remonte quand un code-barres passe devant l'objectif en mode plat */
   .cam .repere{position:absolute; left:12px; right:12px; bottom:calc(178px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:10px;
     background:#fff; color:#17181a; border-radius:14px; padding:10px 12px; animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards;}
@@ -7763,7 +7778,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 04h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 04h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10512,7 +10527,7 @@ function ouvrirCamera(mode, titre){
       <div class="repere" hidden>${IC_CODEBARRE}<div class="tx"><b>${TR("Produit emballé repéré")}</b><span>${TR("Scanner plutôt ? Valeurs exactes, gratuit.")}</span></div>
         <button data-scanner>${TR("Scanner")}</button></div>
       <div class="bas">
-        <div class="modes"><button data-mode="code" class="${mode === "code" ? "on" : ""}">${IC_CODEBARRE}${TR("Code-barres")}</button>
+        <div class="modes"><span class="curseur"></span><button data-mode="code" class="${mode === "code" ? "on" : ""}">${IC_CODEBARRE}${TR("Code-barres")}</button>
           <button data-mode="plat" class="${mode === "plat" ? "on" : ""}">${IC_PHOTO}${TR("Plat")}</button></div>
         <div class="ligne">
           <button class="rond" data-main aria-label="${TR("Saisir le code à la main")}">${IC_CLAVIER}</button>
@@ -10546,7 +10561,6 @@ function ouvrirCamera(mode, titre){
       mode = m; boite.className = "cam " + mode;
       boite.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("on", b.dataset.mode === m));
       q(".repere").hidden = true; texte.hidden = false; codeRepere = null;
-      db.camMode = m; save();
       consigne(); relancerBoucle();
     };
     boite.querySelectorAll("[data-mode]").forEach(b=>b.onclick = ()=>changerMode(b.dataset.mode));
@@ -10952,7 +10966,9 @@ function openProduitScanne(meal, p){
 /* Scanner puis ouvrir la fiche du produit. Partagé par le bouton de la fiche d'ajout
    et par « Scanner un autre produit ». */
 async function lancerScan(meal, mode){
-  const r = await ouvrirCamera(mode || db.camMode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
+  /* toujours le code-barres d'abord : c'est le geste exact et gratuit ; le plat est
+     a un glissement de la */
+  const r = await ouvrirCamera(mode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
   if(!r) return;
   if(r.type === "photo"){
     photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
@@ -11117,6 +11133,9 @@ function openResultatPhoto(meal, res){
       <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
       <div class="l">${lab}</div></div>`;
     const composants = lignes.map(l=>l.nom.toLowerCase()).join(", ");
+    /* on redessine tout a chaque − / + : la fiche doit rester la ou elle etait,
+       pas remonter en haut a chaque geste */
+    const yAvant = sheet.scrollTop;
     openSheet(`<div class="ph-bandeau">
         <img src="${p.apercu}" alt="">
         <div class="ph-plat"><span class="ic">${IC_ASSIETTE}</span>
@@ -11163,6 +11182,7 @@ function openResultatPhoto(meal, res){
         </div>
         <button class="btn btn-ghost" id="ph-non">${TR("Annuler")}</button>
       </div>`);
+    sheet.scrollTop = yAvant;
     document.querySelectorAll("[data-moins]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.moins]; l.g = Math.max(10, l.g - 10); vibrer(6); dessiner(); });
     document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.plus]; l.g += 10; vibrer(6); dessiner(); });
     document.querySelectorAll("[data-g]").forEach(inp=>inp.onchange=()=>{ const l = lignes[+inp.dataset.g]; l.g = Math.max(0, parseFloat(inp.value) || 0); dessiner(); });
