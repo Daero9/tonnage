@@ -3565,6 +3565,9 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Tu l'as sûrement oubliée. On l'enregistre avec ce qui a été fait, ou tu continues ?":"You probably forgot it. Save it with what was done, or keep going?",
+  "Rien n'y a été noté. On l'annule, ou tu la reprends ?":"Nothing was logged in it. Drop it, or pick it back up?",
+  "Reprendre":"Resume",
   "Toute l'assiette dans le cadre, vue un peu en diagonale — puis appuie":"The whole plate in frame, seen slightly from an angle — then tap",
   "Plus de photo aujourd'hui — on reprend demain. Tu peux ajouter à la main.":"No photos left today — back tomorrow. You can add by hand.",
   "Dernière photo aujourd'hui":"Last photo today",
@@ -7849,7 +7852,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 06h19";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 12h09";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9302,9 +9305,9 @@ window.addEventListener("popstate", ()=>{
   }
   if(curTab !== "seance"){ curTab = "seance"; render(); }
 });
-function askConfirm(title, msg, okLabel, danger, cb){
+function askConfirm(title, msg, okLabel, danger, cb, nonLabel){
   openSheet(`<h3>${esc(title)}</h3><p style="color:var(--ink-soft); margin:0 0 18px; font-size:14.5px;">${esc(msg)}</p>
-    <div class="row"><button class="btn grow" id="cf-no">${TR("Annuler")}</button>
+    <div class="row"><button class="btn grow" id="cf-no">${esc(nonLabel || TR("Annuler"))}</button>
     <button class="btn grow ${danger?'':'btn-accent'}" id="cf-yes" style="${danger?'background:var(--bad); color:#fff; border-color:var(--bad);':''}">${esc(okLabel)}</button></div>`);
   document.getElementById("cf-no").onclick=closeSheet;
   document.getElementById("cf-yes").onclick=()=>{ closeSheet(); cb(); };
@@ -14873,8 +14876,11 @@ function verifierSeanceOubliee(){
   if(h < SEANCE_OUBLIEE_H || a.oubliDemande) return;
   a.oubliDemande = true; save();
   const faite = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait);
+  /* deux boutons qui disent chacun ce qu'ils font : « Annuler » en face de
+     « Annuler la séance », c'etait la meme phrase pour deux gestes opposes */
   askConfirm(TR("Séance ouverte depuis {} h").replace("{}", Math.round(h)),
-    TR("Tu l'as sûrement oubliée. On l'enregistre avec ce qui a été fait, ou on l'annule ?"),
+    faite ? TR("Tu l'as sûrement oubliée. On l'enregistre avec ce qui a été fait, ou tu continues ?")
+          : TR("Rien n'y a été noté. On l'annule, ou tu la reprends ?"),
     faite ? TR("Enregistrer") : TR("Annuler la séance"), !faite, ()=>{
       if(faite){
         /* on ferme a l'heure de la derniere serie, pas maintenant : la duree serait fausse */
@@ -14882,7 +14888,7 @@ function verifierSeanceOubliee(){
         /* la confirmation de fin s'ouvre apres que celle-ci s'est refermee */
         setTimeout(()=>{ const btn = document.getElementById("finish-w"); if(btn) btn.click(); }, 320);
       } else { db.active = null; arreterChronos(); save(); render(); }
-    });
+    }, faite ? TR("Continuer") : TR("Reprendre"));
 }
 function exerciceFini(card, nom, apres){
   const v = document.createElement("div");
