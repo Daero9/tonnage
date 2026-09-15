@@ -2206,6 +2206,16 @@
   /* sans flux en mode code : la photo du code ET la saisie a la main, cote a cote */
   .cam.sans-flux.code [data-galerie], .cam.sans-flux.code [data-main]{opacity:1; transform:none; pointer-events:auto; position:static;}
   .cam.sans-flux.code .vide{display:none;}
+  /* la saisie du code a la main, dans l'ecran */
+  .cam .saisie{position:absolute; left:16px; right:16px; top:calc(50% - 150px); background:#fff; color:#17181a; border-radius:18px; padding:16px;
+    animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards; z-index:2;}
+  .cam .saisie .tx{font-size:13px; font-weight:700; margin-bottom:10px;}
+  .cam .saisie input{width:100%; font-size:22px; font-weight:800; letter-spacing:2px; text-align:center; padding:10px; border-radius:12px; border:1.5px solid #ddd; background:#f6f6f6; color:#17181a;}
+  .cam .saisie input.ko{border-color:var(--bad); animation:secouer .4s;}
+  @keyframes secouer{20%,60%{transform:translateX(-6px);} 40%,80%{transform:translateX(6px);}}
+  .cam .saisie .ligne2{display:flex; gap:8px; margin-top:12px;}
+  .cam .saisie .ligne2 button{flex:1; padding:12px; border-radius:99px; font-weight:800; font-size:14px; background:#eee; color:#17181a;}
+  .cam .saisie .ligne2 button.ok{background:var(--accent); color:#fff;}
   /* la carte qui remonte quand un code-barres passe devant l'objectif en mode plat */
   .cam .repere{position:absolute; left:12px; right:12px; bottom:calc(178px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:10px;
     background:#fff; color:#17181a; border-radius:14px; padding:10px 12px; animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards;}
@@ -7778,7 +7788,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 04h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 05h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10524,6 +10534,9 @@ function ouvrirCamera(mode, titre){
       </div>
       <div class="quota"></div>
       <div class="t"></div>
+      <div class="saisie" hidden><div class="tx">${TR("Code-barres (les chiffres sous les barres)")}</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="14" placeholder="3017620422003">
+        <div class="ligne2"><button data-saisie-non>${TR("Annuler")}</button><button class="ok" data-saisie-ok>${TR("Valider")}</button></div></div>
       <div class="repere" hidden>${IC_CODEBARRE}<div class="tx"><b>${TR("Produit emballé repéré")}</b><span>${TR("Scanner plutôt ? Valeurs exactes, gratuit.")}</span></div>
         <button data-scanner>${TR("Scanner")}</button></div>
       <div class="bas">
@@ -10565,12 +10578,19 @@ function ouvrirCamera(mode, titre){
     };
     boite.querySelectorAll("[data-mode]").forEach(b=>b.onclick = ()=>changerMode(b.dataset.mode));
     q("[data-non]").onclick = ()=>finir(null);
-    q("[data-main]").onclick = ()=>{
-      const c = prompt(TR("Code-barres (les chiffres sous les barres)"));
-      const ok = c && /^[0-9]{6,14}$/.test(c.trim());
-      if(ok) vibrer(30);
-      if(ok) finir({type:"code", code:c.trim()});
+    /* la saisie a la main se fait dans l'ecran : la boite native prompt() figeait
+       le flux video a sa fermeture sur Android */
+    const saisie = q(".saisie"), champ = q(".saisie input");
+    q("[data-main]").onclick = ()=>{ saisie.hidden = false; champ.value = ""; setTimeout(()=>champ.focus(), 50); };
+    const fermerSaisie = ()=>{ saisie.hidden = true; champ.blur(); if(flux) try{ video.play(); }catch(e){} };
+    q("[data-saisie-non]").onclick = fermerSaisie;
+    const validerSaisie = ()=>{
+      const c = champ.value.trim();
+      if(!/^[0-9]{6,14}$/.test(c)){ champ.classList.add("ko"); setTimeout(()=>champ.classList.remove("ko"), 500); return; }
+      vibrer(30); finir({type:"code", code:c});
     };
+    q("[data-saisie-ok]").onclick = validerSaisie;
+    champ.onkeydown = e=>{ if(e.key === "Enter") validerSaisie(); if(e.key === "Escape") fermerSaisie(); };
     q("[data-scanner]").onclick = ()=>{ if(codeRepere){ vibrer(30); finir({type:"code", code:codeRepere}); } };
     /* la galerie, ou l'appareil du systeme quand la camera en direct manque */
     q("[data-galerie]").onclick = ()=>fich.click();
