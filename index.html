@@ -2159,7 +2159,14 @@
      Plein écran par-dessus tout : on vise un produit, on ne lit rien d'autre. */
   /* ---- l'ecran camera : un flux, deux modes ---- */
   .cam{position:fixed; inset:0; z-index:200; background:#000; color:#fff; overflow:hidden;}
-  .cam video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  /* la video reste invisible tant qu'elle n'a rien a montrer : sans ca, Android
+     affiche son gabarit gris avec un bouton « lecture » etire le temps que la
+     camera s'ouvre */
+  .cam video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .35s ease;}
+  .cam.pret video{opacity:1;}
+  .cam .attente{position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); width:34px; height:34px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.25); border-top-color:#fff; animation:phspin .8s linear infinite;}
+  .cam.pret .attente, .cam.sans-flux .attente{display:none;}
   .cam .voile{position:absolute; inset:0; background:rgba(0,0,0,.18); pointer-events:none;}
   .cam.flash .voile{background:#fff; transition:background .1s;}
   /* la fenetre de visee du code-barres, avec sa ligne orange */
@@ -7852,7 +7859,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 12h09";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 12h47";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10598,7 +10605,7 @@ function ouvrirCamera(mode, titre){
   return new Promise(resolve=>{
     const boite = document.createElement("div");
     boite.className = "cam " + mode;
-    boite.innerHTML = `<video playsinline muted autoplay></video>
+    boite.innerHTML = `<video playsinline muted autoplay disablepictureinpicture></video><div class="attente"></div>
       <div class="voile"></div><div class="cadre"><i></i></div><div class="carre"></div>
       <div class="haut">
         <button class="rond" data-non aria-label="${TR("Fermer")}">✕</button>
@@ -10764,7 +10771,9 @@ function ouvrirCamera(mode, titre){
       if(flux && flux !== st) try{ flux.getTracks().forEach(t=>t.stop()); }catch(e){}
       flux = st; video.srcObject = st;
       piste = st.getVideoTracks()[0] || null;
+      video.onplaying = ()=>boite.classList.add("pret");
       try{ await video.play(); }catch(e){}
+      if(video.readyState >= 2) boite.classList.add("pret");
       try{ if(piste && piste.getCapabilities && piste.getCapabilities().torch) lampe.hidden = false; }catch(e){}
     };
     /* Sur iPhone, le flux s'arrete parfois tout seul apres le clavier ou un passage en
