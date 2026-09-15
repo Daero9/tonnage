@@ -2766,6 +2766,8 @@
   .abo-gages span em{display:block; font-style:normal; font-weight:500; color:var(--ink-mute);}
   .abo-restaurer{display:block; width:100%; text-align:center; padding:14px 0 4px; color:var(--accent);
     font-weight:800; font-size:14px; text-decoration:underline; text-underline-offset:3px;}
+  .abo-legal{margin:8px 0 0; text-align:center; font-size:11px; color:var(--ink-mute); line-height:1.5;}
+  .abo-legal a{color:var(--ink-mute); text-decoration:underline;}
   .abo-code-lien{display:block; width:100%; text-align:center; padding:6px 0 2px; color:var(--ink-mute);
     font-size:12.5px; text-decoration:underline; text-underline-offset:3px;}
   .abo-code{display:flex; gap:8px; margin-top:10px;}
@@ -3554,6 +3556,10 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Conditions d'utilisation et d'abonnement":"Terms of use and subscription",
+  "Renouvellement automatique, résiliable à tout moment dans Google Play.":"Renews automatically, cancel anytime in Google Play.",
+  "Conditions":"Terms",
+  "Confidentialité":"Privacy",
   "Scanner mon repas":"Scan my meal",
   "Code-barres d'un produit, ou photo de l'assiette":"A product's barcode, or a photo of the plate",
   "Ajouter — {}":"Add — {}",
@@ -7801,7 +7807,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 05h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 05h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -16264,6 +16270,7 @@ const EDITEUR = {
   age: 16
 };
 const URL_CONF = "confidentialite.html";
+const URL_CGU = "conditions.html";
 function openLegal(){
   openSheet(`<h3>${TR("Aide &amp; légal")}</h3>
     <div class="stack">
@@ -16332,8 +16339,10 @@ function openConfidentialite(){
     ${b("Ce que ça implique", "Si tu désinstalles l'app, effaces les données du navigateur ou changes de téléphone, tout disparaît — sauf sauvegarde Drive active, ou fichier de sauvegarde enregistré depuis les réglages.")}
     ${b("Tout effacer", "Réglages → Détails de sauvegarde → Tout effacer. La suppression est immédiate et définitive.")}
     <button class="btn" id="cf-web" style="width:100%; margin-bottom:8px;">${TR("Lire la politique complète")}</button>
+    <button class="btn" id="cf-cgu" style="width:100%; margin-bottom:8px;">${TR("Conditions d'utilisation et d'abonnement")}</button>
     <button class="btn btn-accent" id="cf-ok" style="width:100%;">${TR("Compris")}</button>`);
   document.getElementById("cf-web").onclick = ()=>window.open(URL_CONF, "_blank");
+  document.getElementById("cf-cgu").onclick = ()=>window.open(URL_CGU, "_blank");
   document.getElementById("cf-ok").onclick = closeSheet;
 }
 function openMentions(){
@@ -16818,6 +16827,7 @@ function openAbonnement(){
       TR("Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.")}</p>
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
     <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
+    <p class="abo-legal">${TR("Renouvellement automatique, résiliable à tout moment dans Google Play.")} <a href="${URL_CGU}" target="_blank" rel="noopener">${TR("Conditions")}</a> · <a href="${URL_CONF}" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>
     <form class="abo-code" id="abo-code" hidden>
       <input type="text" id="abo-code-in" autocomplete="off" autocapitalize="characters" spellcheck="false"
         placeholder="${TR("Ton code")}" aria-label="${TR("Ton code")}">
