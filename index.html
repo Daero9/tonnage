@@ -10660,7 +10660,9 @@ function ouvrirCamera(mode, titre){
     };
     const changerMode = m=>{
       if(m === mode) return;
-      mode = m; boite.className = "cam " + mode;
+      /* on ne reecrit pas className : « pret », « sans-flux », « epuise » doivent survivre
+         au changement de mode — sinon la video redevenait invisible et l'anneau tournait */
+      mode = m; boite.classList.remove("code", "plat"); boite.classList.add(mode);
       boite.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("on", b.dataset.mode === m));
       q(".repere").hidden = true; texte.hidden = false; codeRepere = null;
       consigne(); relancerBoucle();

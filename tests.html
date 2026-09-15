@@ -5759,8 +5759,10 @@ async function lancer(){
       await attendre(()=>!!F.document.querySelector(".cam"), 1000);
       const cam = F.document.querySelector(".cam");
       vrai("L'écran caméra s'ouvre en mode plat", cam.classList.contains("plat") && cam.querySelector("[data-mode='plat']").classList.contains("on"));
+      cam.classList.add("pret");                     /* comme quand la video joue */
       cam.querySelector("[data-mode='code']").click();
-      vrai("…la pilule bascule en mode code-barres", cam.classList.contains("code"));
+      vrai("…la pilule bascule en mode code-barres", cam.classList.contains("code") && !cam.classList.contains("plat"));
+      vrai("…et la vidéo reste visible après le changement de mode", cam.classList.contains("pret"));
       vrai("…le déclencheur n'est pas cliquable en mode code", F.getComputedStyle(cam.querySelector("[data-prendre]")).pointerEvents === "none");
       cam.querySelector("[data-main]").click();
       vrai("La saisie à la main s'ouvre dans l'écran, sans boîte native", !cam.querySelector(".saisie").hidden);
