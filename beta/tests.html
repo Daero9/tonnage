@@ -5708,6 +5708,26 @@ async function lancer(){
   })();
   neuf();
 
+  grp("La séance adaptative ne dépend pas de la langue");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType));
+    DB.materiel = null; DB.history = [];
+    const compte = lang => {
+      DB.settings.lang = lang; DB.templates = [];
+      F.addCoachProgram("masse");
+      DB.templates.forEach(t=>F.regenererAdaptative(t));
+      return DB.templates.map(t=>t.items.length).join("/");
+    };
+    const fr = compte("fr"), en = compte("en");
+    DB.settings.lang = "fr";
+    vrai("Les séances Push / Pull / Legs ont autant d'exercices en anglais qu'en français (" + fr + " vs " + en + ")", fr === en && /^[3-9]/.test(fr));
+    DB.settings.lang = "en";
+    vrai("Les exercices d'un muscle se trouvent aussi en anglais", F.exosPourMuscle("Pectoraux", true).length >= 5);
+    DB.settings.lang = "fr";
+    DB.templates = [];
+  }
+
   grp("Des journées bien trop basses");
   neuf();
   {
