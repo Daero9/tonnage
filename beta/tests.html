@@ -2104,6 +2104,14 @@ async function lancer(){
       && !F.document.getElementById("ot-photo"));
     vrai("…et un code-barres plus grand",
       parseFloat(F.getComputedStyle(scan.querySelector("svg")).width) >= 24);
+    /* la fiche s'ouvre courte et se deplie quand on touche au champ */
+    {
+      const st = F.document.getElementById("ot-stack");
+      const visible = id => F.getComputedStyle(F.document.getElementById(id)).display !== "none";
+      vrai("La fiche s'ouvre repliée : ni familles ni quantité", st.classList.contains("ot-replie") && !visible("ot-cats") && !visible("ot-gwrap"));
+      F.document.getElementById("ot-q").dispatchEvent(new F.Event("focus"));
+      vrai("…et se déplie dès qu'on touche au champ de recherche", !st.classList.contains("ot-replie") && visible("ot-cats") && visible("ot-gwrap"));
+    }
 
     /* Les favoris : l'étoile EST le bouton. La case à cocher demandait de viser un
        carré de vingt pixels à côté d'une étoile qui, elle, ne servait à rien. */

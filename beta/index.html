@@ -2643,6 +2643,12 @@
   .ot-carte .ic svg{width:26px; height:26px;}
   .ot-carte b{font-size:13.5px; line-height:1.2;}
   .ot-carte i{font-style:normal; font-size:11px; opacity:.85;}
+  /* la fiche d'ajout repliee : tout ce qui suit le champ de recherche attend */
+  .ot-replie > :nth-child(n+4), .ot-replie #ot-cats, .ot-replie > div > .et-h, .ot-replie #ot-liste{display:none;}
+  .ot-deplie > :nth-child(n+4), .ot-deplie #ot-cats, .ot-deplie > div > .et-h, .ot-deplie #ot-liste{animation:otDeplie .38s cubic-bezier(.22,1,.36,1) backwards;}
+  .ot-deplie #ot-cats{animation-delay:.02s;} .ot-deplie #ot-liste{animation-delay:.06s;}
+  .ot-deplie > :nth-child(n+4){animation-delay:.1s;}
+  @keyframes otDeplie{from{opacity:0; transform:translateY(-8px);}}
   .ot-carte.solo{flex-direction:row; text-align:left; gap:12px; padding:14px 14px 14px 16px; width:100%;}
   .ot-carte.solo .ic{width:auto; height:auto; margin:0; gap:2px;}
   .ot-carte.solo .ic svg{width:24px; height:24px;}
@@ -7789,7 +7795,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 05h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 05h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11272,7 +11278,7 @@ function openResultatPhoto(meal, res){
 function openAjoutAliment(meal){
   let garder = false;              /* « ajouter aux favoris » : l etoile porte l etat */
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
-    <div class="stack">
+    <div class="stack ot-replie" id="ot-stack">
       <button class="ot-carte orange solo" id="ot-scan"><span class="ic">${IC_CODEBARRE}${IC_PHOTO}</span>
         <span class="tx"><b>${TR("Scanner mon repas")}</b><i>${TR("Code-barres d'un produit, ou photo de l'assiette")}</i></span>${IC_CHEVRON}</button>
       <div class="et-h"><span class="n">1</span><span class="t">${TR("Rechercher un aliment")}</span></div>
@@ -11441,8 +11447,18 @@ function openAjoutAliment(meal){
     vibrer(8);
   };
   dessinerListe();
+  /* La fiche s'ouvre courte : le scan et le champ de recherche. Le reste (familles,
+     liste, quantite, favoris) se deplie des qu'on touche au champ — on ne montre
+     trois etapes qu'a celui qui a choisi de chercher a la main. */
+  const stackEl = document.getElementById("ot-stack");
+  const deplier = ()=>{
+    if(!stackEl.classList.contains("ot-replie")) return;
+    stackEl.classList.remove("ot-replie"); stackEl.classList.add("ot-deplie");
+  };
+  qEl.addEventListener("focus", deplier);
+  qEl.addEventListener("input", deplier);
   /* la visite se joue une fois, la liste une fois remplie : elle en est une des etapes */
-  setTimeout(()=>{ if(sheetOpen) lancerGuide("ajoutAliment", true); }, 420);
+  setTimeout(()=>{ if(sheetOpen && !dejaVu("guide-ajoutAliment")){ deplier(); setTimeout(()=>lancerGuide("ajoutAliment", true), 380); } }, 420);
   const resto = document.getElementById("ot-restore");
   if(resto) resto.onclick = ()=>{ db.hbMasque = {}; save(); closeSheet(); render(); };
   document.getElementById("ot-ok").onclick = ()=>{
