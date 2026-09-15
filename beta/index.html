@@ -2566,6 +2566,34 @@
   #app.verrou .card > :not(:first-child), #app.verrou .card > .row:first-child > :not(:first-child),
   #app.verrou .card > :first-child:not(.row):not(.card-t), #app.verrou .card-sub{filter:blur(6px);}
   #app.verrou .eat-fab, #app.verrou .fab{display:none;}
+  /* la photo du repas */
+  .ph-attente{text-align:center; padding:10px 0 6px;}
+  .ph-attente img{width:140px; height:140px; object-fit:cover; border-radius:18px; display:block; margin:0 auto 14px;}
+  .ph-attente .spin{width:28px; height:28px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--accent); margin:0 auto 10px; animation:phspin .8s linear infinite;}
+  @keyframes phspin{to{transform:rotate(360deg);}}
+  .ph-attente .t{font-weight:800; font-size:15px;}
+  .ph-attente .s{font-size:12px; color:var(--ink-mute); margin-top:4px;}
+  .ph-tete{display:flex; gap:12px; align-items:center; margin-bottom:12px;}
+  .ph-tete img{width:72px; height:72px; object-fit:cover; border-radius:14px; flex:0 0 auto;}
+  .ph-tete .plat{font-weight:700; font-size:13.5px; color:var(--accent); margin-top:2px;}
+  .ph-tete .s{font-size:11.5px; color:var(--ink-mute); margin-top:3px; line-height:1.35;}
+  .ph-liste{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
+  .ph-l{display:flex; align-items:center; gap:10px; background:var(--surface2); border-radius:14px; padding:10px 10px 10px 12px;}
+  .ph-l .n{font-weight:700; font-size:14px; line-height:1.3;}
+  .ph-l .badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; background:rgba(245,130,32,.14); color:var(--accent); vertical-align:1px;}
+  .ph-l .badge.est{background:var(--surface); color:var(--ink-mute); border:1px solid var(--border);}
+  .ph-l .note{font-size:11.5px; color:var(--ink-mute); margin-top:1px;}
+  .ph-l .q{display:flex; align-items:center; gap:8px; margin-top:6px;}
+  .ph-l .q button{width:30px; height:30px; border-radius:50%; background:var(--surface); border:1px solid var(--border); font-size:18px; font-weight:800; line-height:1;}
+  .ph-l .q b{min-width:52px; text-align:center; font-variant-numeric:tabular-nums;}
+  .ph-l .v{text-align:right; font-size:12.5px; color:var(--ink-soft); line-height:1.35; flex:0 0 auto;}
+  .ph-l .v b{font-size:15px; color:var(--ink);}
+  .ph-l .sup{width:26px; height:26px; border-radius:50%; color:var(--ink-mute); font-size:13px; flex:0 0 auto;}
+  .ph-total{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; padding:10px 12px; border-radius:14px; background:rgba(245,130,32,.10); margin-bottom:10px; font-size:14px;}
+  .ph-total b{font-size:18px;}
+  .ph-total .petit{font-size:12px; color:var(--ink-mute); flex-basis:100%;}
+  .ph-rem{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-soft); line-height:1.45; margin-bottom:12px;}
+  .ph-rem svg{width:16px; height:16px; flex:0 0 auto; color:var(--accent); margin-top:2px;}
   .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
     z-index:39; display:flex; align-items:center; justify-content:center;
     /* la carte reste sous la barre d'etat (heure, batterie) : sans ca la croix passe
@@ -3427,6 +3455,23 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Photographier mon assiette":"Photograph my plate",
+  "Analyse de la photo…":"Analysing the photo…",
+  "Voici ce que je vois":"Here's what I see",
+  "Estimation d'après la photo — ajuste les portions si besoin.":"Estimated from the photo — adjust the portions if needed.",
+  "portion incertaine":"portion uncertain",
+  "valeurs estimées":"estimated values",
+  "Ajouter au repas":"Add to the meal",
+  "Préciser":"Clarify",
+  "Reprendre une photo":"Retake a photo",
+  "Une précision pour l'analyse (ex. « c'est de la dinde », « sauce légère »)":"A hint for the analysis (e.g. “it's turkey”, “light sauce”)",
+  "Relancer":"Run again",
+  "Je ne vois pas de nourriture sur cette photo.":"I can't see any food in this photo.",
+  "L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.":"The analysis didn't go through. Try again, or add by hand.",
+  "Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.":"Lots of photos today — back tomorrow. You can still add by hand.",
+  "La photo part chez Anthropic pour l'analyse, sans être conservée.":"The photo goes to Anthropic for analysis and isn't kept.",
+  "{} aliments ajoutés":"{} foods added",
+  "1 aliment ajouté":"1 food added",
   "Muscu terminée — comment te sens-tu ?":"Lifting done — how do you feel?",
   "Réponds avant le cardio : c'est la muscu qu'on règle avec ça.":"Answer before the cardio: this is what tunes your lifting.",
   "Modifier":"Edit",
@@ -3669,7 +3714,7 @@ const TRAD = {en:{
   "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.":"This is the only feature that leaves your phone, and only when you tap the button. It sends <b>the barcode digits and nothing else</b> to Open Food Facts, an open food database, which returns the product name and its values. Not your name, not your weight, not what you eat, no identifier.",
   "L'appareil photo":"The camera",
   "Il sert <b>uniquement à lire un code-barres</b>, pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.":"It is used <b>only to read a barcode</b>, while the scan screen is open. On Android the picture is analysed live and nothing is saved. On iPhone, where no browser can read a barcode live, the app takes a photo and decodes it <b>on your phone</b>: it never joins your gallery and is sent to no one. You can decline the permission and type the digits by hand.",
-  "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.":"Only what the app actually uses: <b>the camera</b>, for scanning; <b>notifications</b>, to tell you a rest is over with the phone in your pocket; <b>a foreground service</b> (the “rest running” notification), so that rest rings on time even with the screen off; <b>keeping the screen on</b> during a workout; <b>haptic feedback</b>; <b>Google Play</b>, for the subscription — payment happens at Google, the app never sees your card details. Nothing else: no location, no contacts, no microphone, no access to your files.",
+  "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Et si tu photographies une assiette, <b>la photo est envoyée à Anthropic</b> (le fournisseur du modèle qui la lit) pour être analysée, puis n'est conservée nulle part — ni par l'app, ni par le relais, ni par Anthropic au-delà du traitement. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.":"Only what the app actually uses: <b>the camera</b>, for scanning; <b>notifications</b>, to tell you a rest is over with the phone in your pocket; <b>a foreground service</b> (the “rest running” notification), so that rest rings on time even with the screen off; <b>keeping the screen on</b> during a workout; <b>haptic feedback</b>; <b>Google Play</b>, for the subscription — payment happens at Google, the app never sees your card details. And if you photograph a plate, <b>the photo is sent to Anthropic</b> (the provider of the model that reads it) to be analysed, then kept nowhere — not by the app, not by the relay, not by Anthropic beyond processing. Nothing else: no location, no contacts, no microphone, no access to your files.",
   "En dehors du scan, l'application installée depuis le Play Store fonctionne entièrement hors ligne. La version ouverte dans un navigateur va en plus chercher ses mises à jour chez son hébergeur, sans jamais envoyer la moindre donnée personnelle.":"Apart from scanning, the app installed from the Play Store works entirely offline. The version opened in a browser also fetches its updates from its host, without ever sending any personal data.",
   "séries au total":"sets in total",
   "série au total":"set in total",
@@ -7623,7 +7668,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 02h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 03h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10723,12 +10768,208 @@ function tuileNut(ic, couleur, val, unite, libelle){
   return `<div class="n-c"><span class="ic" style="color:${couleur};">${ic}</span>
     <b>${val}${unite? `<span>${unite}</span>`:""}</b><i>${libelle}</i></div>`;
 }
+/* ================================================================== la photo du repas
+   Une photo de l'assiette -> le relais (relais/worker.js, sur Cloudflare) -> Claude en
+   vision -> une liste d'aliments avec des grammes estimes. L'app chiffre ensuite :
+   d'abord avec sa propre table (FOOD_100G), sinon avec les valeurs de reference pour
+   100 g rendues par le modele, marquees « valeurs estimees ». Les portions restent
+   reglables : une photo n'a pas d'echelle, l'estimation est un point de depart, pas
+   une mesure. La photo part chez Anthropic pour l'analyse et n'est pas conservee.
+   Dix photos par jour et par appareil ; au-dela, on ajoute a la main. */
+const RELAIS_PHOTO = "https://tonnup-relais.inncopproject.workers.dev/";
+const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
+const PHOTOS_PAR_JOUR = 10;
+const IC_PHOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function idAppareil(){
+  if(!db.appareilId){ db.appareilId = "a" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); save(); }
+  return db.appareilId;
+}
+function photosRestantes(){
+  const p = db.photos || {};
+  return PHOTOS_PAR_JOUR - (p.jour === dayKey() ? (p.n || 0) : 0);
+}
+function compterPhoto(){
+  const k = dayKey();
+  if(!db.photos || db.photos.jour !== k) db.photos = {jour:k, n:0};
+  db.photos.n++; save();
+}
+/* le fichier de l'appareil photo, reduit a 1 000 px et compresse : une photo de
+   telephone fait 3 a 5 Mo, on n'en envoie que 60 a 150 Ko */
+function reduirePhoto(fichier){
+  return new Promise((res, rej)=>{
+    const url = URL.createObjectURL(fichier);
+    const im = new Image();
+    im.onload = ()=>{
+      const max = 1000, r = Math.min(1, max / Math.max(im.width, im.height));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(im.width * r); cv.height = Math.round(im.height * r);
+      cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      const dataUrl = cv.toDataURL("image/jpeg", 0.72);
+      res({b64: dataUrl.split(",")[1], apercu: dataUrl});
+    };
+    im.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error("image illisible")); };
+    im.src = url;
+  });
+}
+async function analyserPhoto(b64, indice){
+  const r = await fetch(RELAIS_PHOTO, {
+    method:"POST",
+    headers:{"Content-Type":"application/json", "X-Tonnup":RELAIS_JETON},
+    body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || ""})
+  });
+  const d = await r.json().catch(()=>null);
+  if(!r.ok || !d || d.erreur) throw new Error((d && d.erreur) || ("relais " + r.status));
+  return d;
+}
+/* Retrouver un aliment du modele dans NOTRE table : sans accents, au singulier, en
+   ignorant « cuit ». Un nom de table dont tous les mots sont dans le nom du modele,
+   ou l'inverse ; le plus court gagne. */
+function normaliserNomAliment(t){
+  return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\(.*?\)/g, " ").replace(/[^a-z0-9 ]+/g, " ")
+    .split(/\s+/).filter(m=>m && !["cuit","cuite","cuits","cuites","de","d","du","des","la","le","les","a","au","aux","en"].includes(m))
+    .map(m=>m.replace(/(s|x)$/, "")).join(" ").trim();
+}
+/* les mots qui precisent sans changer l'aliment : « riz basmati » reste du riz */
+const QUALIFICATIFS = ["basmati","complet","blanc","brun","grille","grillee","saute","sautee","roti","rotie","vapeur","frai","nature","entier","poele","poelee","bouilli","bouillie","cuisse","filet","escalope","maison","frit","frite","mijote","mijotee","braise"];
+/* ce que le modele nomme autrement que la table */
+const SYNONYMES_ALIM = {"pomme terre":"Patate", "pomme terre cuite":"Patate", "frite":"Frites (portion 150 g)", "puree":"Patate",
+  "boeuf hache":"Bœuf haché 5 %", "steak hache":"Bœuf haché 5 %", "poulet":"Poulet (blanc)", "escalope poulet":"Poulet (blanc)",
+  "cuisse poulet":"Poulet (blanc)", "dinde":"Dinde (escalope)", "poisson blanc":"Cabillaud", "oeuf":"Œuf", "oeuf dur":"Œuf", "oeuf plat":"Œuf",
+  "pate":"Pâtes cuites", "spaghetti":"Pâtes cuites", "penne":"Pâtes cuites", "tagliatelle":"Pâtes cuites", "haricot vert":"Haricots verts",
+  "haricot rouge":"Haricots rouges cuits", "pois chiche":"Pois chiches cuits", "lentille":"Lentilles cuites", "champignon":"Champignons",
+  "emmental":"Comté / emmental", "comte":"Comté / emmental", "gruyere":"Comté / emmental", "yaourt":"Yaourt nature (125 g)", "pizza":"Part de pizza (1/8)"};
+function alimentDeTable(nom){
+  const cible = normaliserNomAliment(nom);
+  if(!cible) return null;
+  const syn = SYNONYMES_ALIM[cible];
+  if(syn){ let t = null; FOOD_100G.forEach(([g, items])=>items.forEach(it=>{ if(it[0] === syn) t = it; })); if(t) return t; }
+  const motsC = cible.split(" ");
+  let meilleur = null, score = 0;
+  FOOD_100G.forEach(([grp, items])=>items.forEach(it=>{
+    const n = normaliserNomAliment(it[0]); if(!n) return;
+    const mots = n.split(" ");
+    /* le nom de table est contenu dans celui du modele, et ce qui deborde n'est
+       qu'une precision (« riz basmati ») — jamais un autre aliment (« pomme de terre ») */
+    const tousDansCible = mots.every(m=>motsC.includes(m)) && motsC.every(m=>mots.includes(m) || QUALIFICATIFS.includes(m));
+    const tousDansTable = motsC.every(m=>mots.includes(m));
+    if(!tousDansCible && !tousDansTable) return;
+    const sc = (tousDansCible && tousDansTable ? 3 : 2) + 1 / (1 + Math.abs(mots.length - motsC.length));
+    if(sc > score){ score = sc; meilleur = it; }
+  }));
+  return meilleur;
+}
+/* les valeurs pour 100 g d'une entree de table, quand la table sait les donner */
+function par100DeTable(it){
+  const [nom, prot, kcal, unite] = it;
+  if(unite === "100g" || unite === "cl") return {prot100:prot, kcal100:kcal};
+  const m = nom.match(/\((\d+)\s*g/);
+  if(m){ const g = parseFloat(m[1]); if(g > 0) return {prot100:prot * 100 / g, kcal100:kcal * 100 / g}; }
+  return null;                                   /* a la piece sans poids : on ne sait pas */
+}
+let photoEnCours = null;                         /* {meal, b64, apercu} pendant une analyse */
+function photographierRepas(meal){
+  if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.capture = "environment";
+  inp.onchange = async ()=>{
+    const f = inp.files && inp.files[0]; if(!f) return;
+    let img;
+    try{ img = await reduirePhoto(f); }catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); return; }
+    photoEnCours = {meal, b64:img.b64, apercu:img.apercu};
+    lancerAnalysePhoto("");
+  };
+  inp.click();
+}
+async function lancerAnalysePhoto(indice){
+  const p = photoEnCours; if(!p) return;
+  openSheet(`<div class="ph-attente"><img src="${p.apercu}" alt=""><div class="spin"></div>
+    <div class="t">${TR("Analyse de la photo…")}</div>
+    <div class="s">${TR("La photo part chez Anthropic pour l'analyse, sans être conservée.")}</div></div>`);
+  let res;
+  try{ res = await analyserPhoto(p.b64, indice); compterPhoto(); }
+  catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); openAjoutAliment(p.meal); return; }
+  if(!res.aliments.length){ toast(res.remarque || TR("Je ne vois pas de nourriture sur cette photo.")); openAjoutAliment(p.meal); return; }
+  openResultatPhoto(p.meal, res);
+}
+function openResultatPhoto(meal, res){
+  const p = photoEnCours;
+  /* chaque ligne : le nom du modele, ses grammes, et d'ou viennent les valeurs */
+  const lignes = res.aliments.map(a=>{
+    const it = alimentDeTable(a.nom);
+    const t = it ? par100DeTable(it) : null;
+    /* le nom du modele reste celui qu'on affiche (« pomme de terre », pas « Patate ») :
+       la table ne sert qu'aux valeurs */
+    const nom = majuscule(a.nom);
+    return {nom, g:a.grammes || 100, confiance:a.confiance, note:a.note,
+      prot100: t ? t.prot100 : a.prot100, kcal100: t ? t.kcal100 : a.kcal100,
+      gluc100: a.gluc100, lip100: a.lip100, source: t ? "table" : "estimation"};
+  });
+  const dessiner = ()=>{
+    const tot = lignes.reduce((o, l)=>{ const f = l.g / 100; o.kcal += l.kcal100 * f; o.prot += l.prot100 * f; o.gluc += (l.gluc100 || 0) * f; o.lip += (l.lip100 || 0) * f; return o; }, {kcal:0, prot:0, gluc:0, lip:0});
+    openSheet(`<div class="ph-tete"><img src="${p.apercu}" alt="">
+      <div><h3 style="margin:0; text-align:left;">${TR("Voici ce que je vois")}</h3>
+        ${res.plat ? `<div class="plat">${esc(majuscule(res.plat))}</div>` : ""}
+        <div class="s">${TR("Estimation d'après la photo — ajuste les portions si besoin.")}</div></div></div>
+      <div class="ph-liste">${lignes.map((l, i)=>`<div class="ph-l" data-i="${i}">
+        <div class="grow" style="min-width:0;">
+          <div class="n">${esc(l.nom)}${l.confiance === "basse" ? ` <span class="badge">${TR("portion incertaine")}</span>` : ""}${l.source === "estimation" ? ` <span class="badge est">≈ ${TR("valeurs estimées")}</span>` : ""}</div>
+          ${l.note ? `<div class="note">${esc(l.note)}</div>` : ""}
+          <div class="q"><button data-moins="${i}" aria-label="−10 g">−</button><b>${Math.round(l.g)} g</b><button data-plus="${i}" aria-label="+10 g">+</button></div>
+        </div>
+        <div class="v"><b>${Math.round(l.kcal100 * l.g / 100)}</b> kcal<br><span>${Math.round(l.prot100 * l.g / 100)} g ${TR("prot.")}</span></div>
+        <button class="sup" data-sup="${i}" aria-label="${TR("Retirer")}">✕</button>
+      </div>`).join("")}</div>
+      <div class="ph-total"><div><b>${Math.round(tot.kcal)}</b> kcal</div><div><b>${Math.round(tot.prot)} g</b> ${TR("protéines")}</div>
+        <div class="petit">${Math.round(tot.gluc)} g ${TR("glucides")} · ${Math.round(tot.lip)} g ${TR("lipides")}</div></div>
+      ${res.remarque ? `<div class="ph-rem">${IC_AMPOULE} ${esc(res.remarque)}</div>` : ""}
+      <button class="btn btn-accent" id="ph-ok" style="width:100%;" ${lignes.length ? "" : "disabled"}>${TR("Ajouter au repas")}</button>
+      <div class="row" style="gap:8px; margin-top:8px;">
+        <button class="btn grow" id="ph-preciser">${TR("Préciser")}</button>
+        <button class="btn grow" id="ph-refaire">${TR("Reprendre une photo")}</button>
+      </div>`);
+    document.querySelectorAll("[data-moins]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.moins]; l.g = Math.max(10, l.g - 10); vibrer(6); dessiner(); });
+    document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.plus]; l.g += 10; vibrer(6); dessiner(); });
+    document.querySelectorAll("[data-sup]").forEach(b=>b.onclick=()=>{ lignes.splice(+b.dataset.sup, 1); dessiner(); });
+    document.getElementById("ph-refaire").onclick = ()=>photographierRepas(meal);
+    document.getElementById("ph-preciser").onclick = ()=>{
+      openSheet(`<h3>${TR("Préciser")}</h3>
+        <textarea id="ph-indice" rows="3" placeholder="${TR("Une précision pour l'analyse (ex. « c'est de la dinde », « sauce légère »)")}"></textarea>
+        <button class="btn btn-accent" id="ph-relancer" style="width:100%; margin-top:12px;">${TR("Relancer")}</button>`);
+      document.getElementById("ph-relancer").onclick = ()=>{
+        if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+        lancerAnalysePhoto(document.getElementById("ph-indice").value.trim());
+      };
+    };
+    document.getElementById("ph-ok").onclick = ()=>{
+      const k = jourAlim();
+      if(!db.habitSel[k]) db.habitSel[k] = {};
+      if(!db.macros) db.macros = {};
+      const labels = lignes.map(l=>{
+        const prot = Math.round(l.prot100 * l.g / 100), kcal = Math.round(l.kcal100 * l.g / 100);
+        const label = `${l.nom} ${Math.round(l.g)} g (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
+        if(l.gluc100 || l.lip100) db.macros[label] = [Math.round(l.gluc100 * l.g / 100 * 10) / 10, Math.round(l.lip100 * l.g / 100 * 10) / 10];
+        return label;
+      });
+      db.habitSel[k][meal] = (db.habitSel[k][meal] || []).concat(labels);
+      if(db.dayFix[k]) delete db.dayFix[k];
+      photoEnCours = null;
+      save(); closeSheet(); render(); vibrer(20);
+      toast(labels.length > 1 ? TR("{} aliments ajoutés").replace("{}", labels.length) : TR("1 aliment ajouté"));
+    };
+  };
+  dessiner();
+}
 function openAjoutAliment(meal){
   let garder = false;              /* « ajouter aux favoris » : l etoile porte l etat */
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack">
       <button class="btn" id="ot-scan" style="background:var(--hero); color:#fff; border-color:var(--hero);">
         ${IC_CODEBARRE}<span>${TR("Scanner un code-barres")}</span>
+        <span class="fl">${IC_CHEVRON}</span></button>
+      <button class="btn" id="ot-photo" style="background:var(--accent); color:#fff; border-color:var(--accent);">
+        ${IC_PHOTO}<span>${TR("Photographier mon assiette")}</span>
         <span class="fl">${IC_CHEVRON}</span></button>
       <div class="et-h"><span class="n">1</span><span class="t">${TR("Rechercher un aliment")}</span></div>
       <div>
@@ -10768,6 +11009,7 @@ function openAjoutAliment(meal){
       ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? TR("Restaurer les {} propositions retirées").replace("{}", nbMasques()) : TR("Restaurer la proposition retirée")}</button>`:""}
       <p style="margin:-2px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;">${TR("Astuce : appui long sur une proposition pour la modifier.")}</p>
     </div>`);
+  document.getElementById("ot-photo").onclick = ()=>photographierRepas(meal);
   const foodEl = document.getElementById("ot-food"), gEl = document.getElementById("ot-g"), liveEl = document.getElementById("ot-live");
   const trouver = val => {
     const [grp, idx] = val.split("|");
@@ -15748,7 +15990,7 @@ function openConfidentialite(){
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience. L'application ne contient aucun outil d'analyse d'un autre éditeur.")}
     ${b("Le scan de code-barres", "C'est la seule fonction qui sort du téléphone, et seulement quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.")}
     ${b("L'appareil photo", "Il sert <b>uniquement à lire un code-barres</b>, pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.")}
-    ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
+    ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Et si tu photographies une assiette, <b>la photo est envoyée à Anthropic</b> (le fournisseur du modèle qui la lit) pour être analysée, puis n'est conservée nulle part — ni par l'app, ni par le relais, ni par Anthropic au-delà du traitement. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
     ${b("Réseau", "En dehors du scan, l'application installée depuis le Play Store fonctionne entièrement hors ligne. La version ouverte dans un navigateur va en plus chercher ses mises à jour chez son hébergeur, sans jamais envoyer la moindre donnée personnelle.")}
     ${b("Ce que Google sait, lui", "Si tu as installé l'app depuis le Play Store, Google enregistre de son côté l'installation et, le cas échéant, l'achat d'un abonnement. Ces données relèvent de la politique de confidentialité de Google, pas de la nôtre : l'éditeur n'y a pas accès, hormis des statistiques anonymes de téléchargement.")}
     ${b("Ce que ça implique", "Si tu désinstalles l'app, effaces les données du navigateur ou changes de téléphone, tout disparaît. Pense à enregistrer un fichier de sauvegarde depuis les réglages.")}
