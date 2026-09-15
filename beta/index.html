@@ -2180,6 +2180,9 @@
   .cam .rond.vide{background:none;}
   .cam .quota{position:absolute; top:calc(62px + env(safe-area-inset-top)); left:0; right:0; text-align:center; font-size:11.5px;}
   .cam .quota:not(:empty){display:inline-block; left:50%; right:auto; transform:translateX(-50%); background:rgba(0,0,0,.55); border-radius:99px; padding:5px 11px;}
+  /* plus de photo : un encadre rouge, lisible, a la place de la pastille */
+  .cam .quota.zero{background:rgba(214,48,49,.92); border:1.5px solid #ff8a8a; border-radius:12px; padding:9px 14px; font-weight:700; font-size:12.5px; max-width:82%; line-height:1.4;}
+  .cam.epuise .declencheur{opacity:.35; pointer-events:none;}
   .cam .t{position:absolute; left:0; right:0; top:calc(50% + 40px); text-align:center; font-size:14.5px; font-weight:700;
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
   .cam.plat .t{top:auto; bottom:calc(178px + env(safe-area-inset-bottom));}
@@ -3556,6 +3559,9 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Toute l'assiette dans le cadre, vue un peu en diagonale — puis appuie":"The whole plate in frame, seen slightly from an angle — then tap",
+  "Plus de photo aujourd'hui — on reprend demain. Tu peux ajouter à la main.":"No photos left today — back tomorrow. You can add by hand.",
+  "Dernière photo aujourd'hui":"Last photo today",
   "Le plus rapide : scanner":"Fastest: scan",
   "Le code-barres d'un produit emballé remplit tout seul ; une photo de l'assiette donne une estimation.":"A packaged product's barcode fills everything in by itself; a photo of the plate gives an estimate.",
   "Lent":"Slow",
@@ -7837,7 +7843,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 06h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 06h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10621,11 +10627,17 @@ function ouvrirCamera(mode, titre){
       resolve(r || null);
     };
     const consigne = ()=>{
-      if(!flux){ return; }
+      /* le quota se lit meme sans flux : il vaut pour la galerie aussi */
+      const restantes = Math.max(0, photosRestantes());
+      const quota = q(".quota");
+      quota.classList.toggle("zero", mode === "plat" && restantes === 0);
+      boite.classList.toggle("epuise", mode === "plat" && restantes === 0);
+      quota.textContent = mode !== "plat" ? "" : restantes === 0
+        ? TR("Plus de photo aujourd'hui — on reprend demain. Tu peux ajouter à la main.")
+        : (restantes === 1 ? TR("Dernière photo aujourd'hui") : TR("{} photos restantes aujourd'hui").replace("{}", restantes));
+      if(!flux) return;
       if(mode === "code") texte.textContent = scanDispo() || zbar ? TR("Vise le code-barres, ça se valide tout seul") : TR("Lecteur en cours de chargement…");
-      else texte.textContent = TR("Cadre toute l'assiette, puis appuie");
-      const restantes = photosRestantes();
-      q(".quota").textContent = mode === "plat" ? TR("{} photos restantes aujourd'hui").replace("{}", Math.max(0, restantes)) : "";
+      else texte.textContent = TR("Toute l'assiette dans le cadre, vue un peu en diagonale — puis appuie");
     };
     const changerMode = m=>{
       if(m === mode) return;
@@ -10725,6 +10737,7 @@ function ouvrirCamera(mode, titre){
       piste.applyConstraints({advanced:[{torch:lampeOn}]}).then(()=>lampe.classList.toggle("on", lampeOn)).catch(()=>{ lampeOn = false; });
     };
     texte.textContent = TR("Ouverture de l'appareil photo…");
+    consigne();
     const md = navigator.mediaDevices;
     const demanderFlux = ()=> md && md.getUserMedia ? md.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}}) : Promise.reject(new Error("pas de camera"));
     const brancher = async st=>{
