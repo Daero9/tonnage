@@ -3574,6 +3574,7 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "L'appareil photo ne répond pas. Prends la photo avec l'appareil du téléphone, ou saisis les chiffres.":"The camera isn't responding. Take the picture with the phone's camera app, or type the digits.",
   "Tu l'as sûrement oubliée. On l'enregistre avec ce qui a été fait, ou tu continues ?":"You probably forgot it. Save it with what was done, or keep going?",
   "Rien n'y a été noté. On l'annule, ou tu la reprends ?":"Nothing was logged in it. Drop it, or pick it back up?",
   "Reprendre":"Resume",
@@ -7861,7 +7862,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 12h55";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 13h01";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10773,9 +10774,13 @@ function ouvrirCamera(mode, titre){
       if(flux && flux !== st) try{ flux.getTracks().forEach(t=>t.stop()); }catch(e){}
       flux = st; video.srcObject = st;
       piste = st.getVideoTracks()[0] || null;
-      video.onplaying = ()=>boite.classList.add("pret");
+      /* trois signaux differents selon les navigateurs, plus un delai de secours :
+         l'anneau ne doit jamais tourner devant une camera qui marche */
+      const pret = ()=>boite.classList.add("pret");
+      video.onplaying = pret; video.onloadeddata = pret; video.ontimeupdate = ()=>{ pret(); video.ontimeupdate = null; };
       try{ await video.play(); }catch(e){}
-      if(video.readyState >= 2) boite.classList.add("pret");
+      if(video.readyState >= 2) pret();
+      setTimeout(()=>{ if(!fini && flux) pret(); }, 2500);
       try{ if(piste && piste.getCapabilities && piste.getCapabilities().torch) lampe.hidden = false; }catch(e){}
     };
     /* Sur iPhone, le flux s'arrete parfois tout seul apres le clavier ou un passage en
@@ -10795,8 +10800,18 @@ function ouvrirCamera(mode, titre){
       if(fini){ document.removeEventListener("visibilitychange", surRetour); return; }
       if(document.visibilityState === "visible") reveiller();
     });
+    /* une camera qui ne repond jamais (prise par une autre appli, autorisation en
+       suspens) : au bout de huit secondes on bascule sur l'appareil du systeme */
+    const sansReponse = setTimeout(()=>{
+      if(fini || flux) return;
+      boite.classList.add("sans-flux");
+      fich.setAttribute("capture", "environment");
+      texte.textContent = TR("L'appareil photo ne répond pas. Prends la photo avec l'appareil du téléphone, ou saisis les chiffres.");
+    }, 8000);
     demanderFlux()
       .then(async st=>{
+        clearTimeout(sansReponse);
+        if(boite.classList.contains("sans-flux")){ st.getTracks().forEach(t=>t.stop()); return; }
         await brancher(st);
         if(fini) return;
         if(scanDispo()) lecteur = new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
@@ -10804,6 +10819,7 @@ function ouvrirCamera(mode, titre){
         consigne(); relancerBoucle();
       })
       .catch(()=>{
+        clearTimeout(sansReponse);
         /* sans camera en direct : la galerie ouvre l'appareil du systeme, et fait le reste */
         boite.classList.add("sans-flux");
         fich.setAttribute("capture", "environment");
@@ -11186,12 +11202,19 @@ function reduirePhoto(fichier){
     im.src = url;
   });
 }
+const ANALYSE_MAX_MS = 45000;                    /* au-dela, on rend la main : rien ne doit tourner sans fin */
 async function analyserPhoto(b64, indice){
-  const r = await fetch(RELAIS_PHOTO, {
-    method:"POST",
-    headers:{"Content-Type":"application/json", "X-Tonnup":RELAIS_JETON},
-    body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || ""})
-  });
+  const ctrl = new AbortController();
+  const garde = setTimeout(()=>ctrl.abort(), ANALYSE_MAX_MS);
+  let r;
+  try{
+    r = await fetch(RELAIS_PHOTO, {
+      method:"POST",
+      headers:{"Content-Type":"application/json", "X-Tonnup":RELAIS_JETON},
+      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || ""}),
+      signal: ctrl.signal
+    });
+  } finally { clearTimeout(garde); }
   const d = await r.json().catch(()=>null);
   if(!r.ok || !d || d.erreur) throw new Error((d && d.erreur) || ("relais " + r.status));
   return d;
