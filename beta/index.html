@@ -3486,6 +3486,7 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Dis-moi ce qui change, sinon l'analyse sera la même.":"Tell me what's different, or the analysis will be the same.",
   "Produit emballé":"Packaged product",
   "Analyse automatique":"Automatic analysis",
   "Changer la photo":"Change photo",
@@ -7709,7 +7710,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 04h22 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 04h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10820,10 +10821,14 @@ function tuileNut(ic, couleur, val, unite, libelle){
    100 g rendues par le modele, marquees « valeurs estimees ». Les portions restent
    reglables : une photo n'a pas d'echelle, l'estimation est un point de depart, pas
    une mesure. La photo part chez Anthropic pour l'analyse et n'est pas conservee.
-   Dix photos par jour et par appareil ; au-dela, on ajoute a la main. */
+   Six photos par jour et par appareil ; au-dela, on ajoute a la main. Corriger une
+   analyse (« c'est du poisson, pas du cordon bleu ») renvoie la MEME photo : ca ne
+   compte pas comme une photo de plus — deux corrections au plus, pour que ca ne
+   tourne pas en boucle. */
 const RELAIS_PHOTO = "https://tonnup-relais.inncopproject.workers.dev/";
 const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
-const PHOTOS_PAR_JOUR = 10;
+const PHOTOS_PAR_JOUR = 6;
+const CORRECTIONS_PAR_PHOTO = 2;
 const IC_PHOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function idAppareil(){
   if(!db.appareilId){ db.appareilId = "a" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); save(); }
@@ -10924,7 +10929,7 @@ function photographierRepas(meal){
     const f = inp.files && inp.files[0]; if(!f) return;
     let img;
     try{ img = await reduirePhoto(f); }catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); return; }
-    photoEnCours = {meal, b64:img.b64, apercu:img.apercu};
+    photoEnCours = {meal, b64:img.b64, apercu:img.apercu, corrections:0};
     lancerAnalysePhoto("");
   };
   inp.click();
@@ -10934,8 +10939,11 @@ async function lancerAnalysePhoto(indice){
   openSheet(`<div class="ph-attente"><img src="${p.apercu}" alt=""><div class="spin"></div>
     <div class="t">${TR("Analyse de la photo…")}</div>
     <div class="s">${TR("La photo part chez Anthropic pour l'analyse, sans être conservée.")}</div></div>`);
+  /* une correction de la meme photo est gratuite pour le quota (dans la limite) */
+  const correction = !!indice && (p.corrections || 0) < CORRECTIONS_PAR_PHOTO;
+  if(correction) p.corrections = (p.corrections || 0) + 1;
   let res;
-  try{ res = await analyserPhoto(p.b64, indice); compterPhoto(); }
+  try{ res = await analyserPhoto(p.b64, indice); if(!correction) compterPhoto(); }
   catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); openAjoutAliment(p.meal); return; }
   if(!res.aliments.length){ toast(res.remarque || TR("Je ne vois pas de nourriture sur cette photo.")); openAjoutAliment(p.meal); return; }
   openResultatPhoto(p.meal, res);
@@ -11020,9 +11028,12 @@ function openResultatPhoto(meal, res){
         <textarea id="ph-indice" rows="3" placeholder="${TR("Une précision pour l'analyse (ex. « c'est de la dinde », « sauce légère »)")}"></textarea>
         <button class="btn btn-accent" id="ph-relancer" style="width:100%; margin-top:12px;">${TR("Relancer")}</button>`);
       document.getElementById("ph-relancer").onclick = ()=>{
-        if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+        const indice = document.getElementById("ph-indice").value.trim();
+        if(!indice){ toast(TR("Dis-moi ce qui change, sinon l'analyse sera la même.")); return; }
+        const gratuite = (photoEnCours.corrections || 0) < CORRECTIONS_PAR_PHOTO;
+        if(!gratuite && photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
         pileFiches = [];   /* on relance : l'ancienne fiche du plat n'a plus lieu d'etre */
-        lancerAnalysePhoto(document.getElementById("ph-indice").value.trim());
+        lancerAnalysePhoto(indice);
       };
     });
     document.getElementById("ph-ok").onclick = ()=>{
