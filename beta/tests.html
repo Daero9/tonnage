@@ -5798,6 +5798,8 @@ async function lancer(){
     const p100 = F.par100DeTable(F.alimentDeTable("blanc de poulet"));
     vrai("Un filet de 130 g donne ses valeurs pour 100 g", p100 && Math.round(p100.prot100) === 31 && Math.round(p100.kcal100) === 165, JSON.stringify(p100));
     vrai("Un œuf à la pièce, sans poids, ne prétend rien pour 100 g", F.par100DeTable(F.alimentDeTable("oeuf")) === null);
+    const pf = F.par100DeTable(F.alimentDeTable("frites"));
+    vrai("Une portion de frites de 150 g donne ses valeurs pour 100 g", pf && Math.round(pf.kcal100) === 307, JSON.stringify(pf));
     /* le quota du jour */
     delete DB.photos;
     eq("Dix photos par jour au départ", F.photosRestantes(), 10);
@@ -5813,7 +5815,7 @@ async function lancer(){
       {nom:"cordon bleu", grammes:150, confiance:"moyenne", note:"", kcal100:220, prot100:15, gluc100:12, lip100:12}]});
     await attendre(()=>!!F.document.getElementById("ph-ok"), 2000);
     F.document.querySelector("[data-plus='0']").click();          /* 200 -> 210 g */
-    await attendre(()=>/210 g/.test(F.document.querySelector(".ph-liste").textContent), 2000);
+    await attendre(()=>{ const i = F.document.querySelector("[data-g='0']"); return i && i.value === "210"; }, 2000);
     F.document.getElementById("ph-ok").click();
     await attendre(()=>(DB.habitSel[k] || {}).midi, 2000);
     const labels = DB.habitSel[k].midi;

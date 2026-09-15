@@ -2577,21 +2577,12 @@
   .ph-tete img{width:72px; height:72px; object-fit:cover; border-radius:14px; flex:0 0 auto;}
   .ph-tete .plat{font-weight:700; font-size:13.5px; color:var(--accent); margin-top:2px;}
   .ph-tete .s{font-size:11.5px; color:var(--ink-mute); margin-top:3px; line-height:1.35;}
-  .ph-liste{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
-  .ph-l{display:flex; align-items:center; gap:10px; background:var(--surface2); border-radius:14px; padding:10px 10px 10px 12px;}
-  .ph-l .n{font-weight:700; font-size:14px; line-height:1.3;}
-  .ph-l .badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; background:rgba(245,130,32,.14); color:var(--accent); vertical-align:1px;}
-  .ph-l .badge.est{background:var(--surface); color:var(--ink-mute); border:1px solid var(--border);}
-  .ph-l .note{font-size:11.5px; color:var(--ink-mute); margin-top:1px;}
-  .ph-l .q{display:flex; align-items:center; gap:8px; margin-top:6px;}
-  .ph-l .q button{width:30px; height:30px; border-radius:50%; background:var(--surface); border:1px solid var(--border); font-size:18px; font-weight:800; line-height:1;}
-  .ph-l .q b{min-width:52px; text-align:center; font-variant-numeric:tabular-nums;}
-  .ph-l .v{text-align:right; font-size:12.5px; color:var(--ink-soft); line-height:1.35; flex:0 0 auto;}
-  .ph-l .v b{font-size:15px; color:var(--ink);}
-  .ph-l .sup{width:26px; height:26px; border-radius:50%; color:var(--ink-mute); font-size:13px; flex:0 0 auto;}
-  .ph-total{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; padding:10px 12px; border-radius:14px; background:rgba(245,130,32,.10); margin-bottom:10px; font-size:14px;}
-  .ph-total b{font-size:18px;}
-  .ph-total .petit{font-size:12px; color:var(--ink-mute); flex-basis:100%;}
+  .ph-bloc .label{display:inline; margin:0;}
+  .ph-badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; background:rgba(245,130,32,.14); color:var(--accent); vertical-align:1px; text-transform:none; letter-spacing:0;}
+  .ph-badge.est{background:var(--surface); color:var(--ink-mute); border:1px solid var(--border);}
+  .ph-sup{width:26px; height:26px; border-radius:50%; color:var(--ink-mute); font-size:13px; flex:0 0 auto; background:var(--surface); border:1px solid var(--border);}
+  .ph-note{font-size:11.5px; color:var(--ink-mute); margin:-2px 0 6px;}
+  .ps-photo img{width:100%; height:100%; object-fit:cover; border-radius:14px;}
   .ph-rem{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--ink-soft); line-height:1.45; margin-bottom:12px;}
   .ph-rem svg{width:16px; height:16px; flex:0 0 auto; color:var(--accent); margin-top:2px;}
   .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
@@ -3455,6 +3446,7 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Photo":"Photo",
   "Photographier mon assiette":"Photograph my plate",
   "Analyse de la photo…":"Analysing the photo…",
   "Voici ce que je vois":"Here's what I see",
@@ -7668,7 +7660,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 03h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 03h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10864,8 +10856,10 @@ function alimentDeTable(nom){
 function par100DeTable(it){
   const [nom, prot, kcal, unite] = it;
   if(unite === "100g" || unite === "cl") return {prot100:prot, kcal100:kcal};
-  const m = nom.match(/\((\d+)\s*g/);
-  if(m){ const g = parseFloat(m[1]); if(g > 0) return {prot100:prot * 100 / g, kcal100:kcal * 100 / g}; }
+  /* « (130 g cuit) », « (portion 150 g) », « (95 g égoutté) » : le poids est dans la parenthèse */
+  const m = nom.match(/\(([^)]*?)\)/);
+  const mg = m && m[1].match(/(\d+)\s*g(?![a-z])/);
+  if(mg){ const g = parseFloat(mg[1]); if(g > 0) return {prot100:prot * 100 / g, kcal100:kcal * 100 / g}; }
   return null;                                   /* a la piece sans poids : on ne sait pas */
 }
 let photoEnCours = null;                         /* {meal, b64, apercu} pendant une analyse */
@@ -10908,31 +10902,61 @@ function openResultatPhoto(meal, res){
   });
   const dessiner = ()=>{
     const tot = lignes.reduce((o, l)=>{ const f = l.g / 100; o.kcal += l.kcal100 * f; o.prot += l.prot100 * f; o.gluc += (l.gluc100 || 0) * f; o.lip += (l.lip100 || 0) * f; return o; }, {kcal:0, prot:0, gluc:0, lip:0});
-    openSheet(`<div class="ph-tete"><img src="${p.apercu}" alt="">
-      <div><h3 style="margin:0; text-align:left;">${TR("Voici ce que je vois")}</h3>
-        ${res.plat ? `<div class="plat">${esc(majuscule(res.plat))}</div>` : ""}
-        <div class="s">${TR("Estimation d'après la photo — ajuste les portions si besoin.")}</div></div></div>
-      <div class="ph-liste">${lignes.map((l, i)=>`<div class="ph-l" data-i="${i}">
-        <div class="grow" style="min-width:0;">
-          <div class="n">${esc(l.nom)}${l.confiance === "basse" ? ` <span class="badge">${TR("portion incertaine")}</span>` : ""}${l.source === "estimation" ? ` <span class="badge est">≈ ${TR("valeurs estimées")}</span>` : ""}</div>
-          ${l.note ? `<div class="note">${esc(l.note)}</div>` : ""}
-          <div class="q"><button data-moins="${i}" aria-label="−10 g">−</button><b>${Math.round(l.g)} g</b><button data-plus="${i}" aria-label="+10 g">+</button></div>
+    const tuile = (ic, val, u, lab) => `<div class="tu"><span class="ic">${ic}</span>
+      <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
+      <div class="l">${lab}</div></div>`;
+    openSheet(`<div class="ps-tete">
+        <div class="ps-photo"><img src="${p.apercu}" alt=""></div>
+        <div class="ps-titre">
+          <h3 class="ps-nom">${TR("Voici ce que je vois")}</h3>
+          <div class="ps-marque">${res.plat ? esc(majuscule(res.plat)) + " " : ""}<span class="ps-type">${IC_PHOTO}${TR("Photo")}</span></div>
+          <div class="ps-tuiles">
+            ${tuile(icoM("flamme", 20),  Math.round(tot.kcal), "",  "kcal")}
+            ${tuile(icoM("muscle", 20),  Math.round(tot.prot), "g", TR("protéines"))}
+            ${tuile(icoM("cereale", 20), Math.round(tot.gluc), "g", TR("glucides"))}
+            ${tuile(IC_GOUTTE,           Math.round(tot.lip),  "g", TR("lipides"))}
+          </div>
+          <div class="ps-ref">${TR("Estimation d'après la photo — ajuste les portions si besoin.")}</div>
         </div>
-        <div class="v"><b>${Math.round(l.kcal100 * l.g / 100)}</b> kcal<br><span>${Math.round(l.prot100 * l.g / 100)} g ${TR("prot.")}</span></div>
-        <button class="sup" data-sup="${i}" aria-label="${TR("Retirer")}">✕</button>
-      </div>`).join("")}</div>
-      <div class="ph-total"><div><b>${Math.round(tot.kcal)}</b> kcal</div><div><b>${Math.round(tot.prot)} g</b> ${TR("protéines")}</div>
-        <div class="petit">${Math.round(tot.gluc)} g ${TR("glucides")} · ${Math.round(tot.lip)} g ${TR("lipides")}</div></div>
-      ${res.remarque ? `<div class="ph-rem">${IC_AMPOULE} ${esc(res.remarque)}</div>` : ""}
-      <button class="btn btn-accent" id="ph-ok" style="width:100%;" ${lignes.length ? "" : "disabled"}>${TR("Ajouter au repas")}</button>
-      <div class="row" style="gap:8px; margin-top:8px;">
-        <button class="btn grow" id="ph-preciser">${TR("Préciser")}</button>
-        <button class="btn grow" id="ph-refaire">${TR("Reprendre une photo")}</button>
+      </div>
+      <div class="stack">
+        ${lignes.map((l, i)=>`<div class="ps-bloc ph-bloc" data-i="${i}">
+          <div class="ps-qh">
+            <span class="label">${esc(l.nom)}${l.confiance === "basse" ? ` <span class="ph-badge">${TR("portion incertaine")}</span>` : ""}${l.source === "estimation" ? ` <span class="ph-badge est">≈ ${TR("valeurs estimées")}</span>` : ""}</span>
+            <button type="button" class="ph-sup" data-sup="${i}" aria-label="${TR("Retirer")}">✕</button>
+          </div>
+          ${l.note ? `<div class="ph-note">${esc(l.note)}</div>` : ""}
+          <div class="ps-qrow">
+            <div class="ps-qg"><div class="ps-step">
+              <button type="button" data-moins="${i}" aria-label="${TR("Moins")}">−</button>
+              <div class="ch"><input type="number" inputmode="decimal" min="0" step="10" value="${Math.round(l.g)}" data-g="${i}"><span class="u">g</span></div>
+              <button type="button" data-plus="${i}" aria-label="${TR("Plus")}">＋</button>
+            </div></div>
+            <div class="ps-live"><div class="tete">
+              <span class="ic">${IC_ASSIETTE}</span>
+              <div class="grow"><div class="kc"><b>${Math.round(l.kcal100 * l.g / 100)}</b> kcal</div>
+                <i>${Math.round(l.prot100 * l.g / 100)} g ${TR("prot.")} · ${Math.round((l.gluc100 || 0) * l.g / 100)} g ${TR("gluc.")} · ${Math.round((l.lip100 || 0) * l.g / 100)} g ${TR("lip.")}</i></div>
+            </div></div>
+          </div>
+        </div>`).join("")}
+        ${res.remarque ? `<div class="ph-rem">${IC_AMPOULE} ${esc(res.remarque)}</div>` : ""}
+        <div class="ps-actions">
+          <button type="button" class="ps-opts" id="ph-preciser"><span class="et">${IC_AMPOULE}</span><span class="tx">${TR("Préciser")}</span></button>
+          <button type="button" class="ps-opts" id="ph-refaire"><span class="et">${IC_PHOTO}</span><span class="tx">${TR("Reprendre une photo")}</span></button>
+        </div>
+        <button class="btn btn-accent" id="ph-ok" ${lignes.length ? "" : "disabled"}>${IC_CHECK}${TR("Ajouter à ce repas")}</button>
+        <button class="btn btn-ghost" id="ph-non">${TR("Annuler")}</button>
       </div>`);
-    document.querySelectorAll("[data-moins]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.moins]; l.g = Math.max(10, l.g - 10); vibrer(6); dessiner(); });
-    document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.plus]; l.g += 10; vibrer(6); dessiner(); });
+    const majLigne = i => {
+      /* on redessine tout : les totaux du haut suivent chaque portion */
+      dessiner();
+    };
+    document.querySelectorAll("[data-moins]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.moins]; l.g = Math.max(10, l.g - 10); vibrer(6); majLigne(); });
+    document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.plus]; l.g += 10; vibrer(6); majLigne(); });
+    document.querySelectorAll("[data-g]").forEach(inp=>inp.onchange=()=>{ const l = lignes[+inp.dataset.g]; l.g = Math.max(0, parseFloat(inp.value) || 0); majLigne(); });
     document.querySelectorAll("[data-sup]").forEach(b=>b.onclick=()=>{ lignes.splice(+b.dataset.sup, 1); dessiner(); });
     document.getElementById("ph-refaire").onclick = ()=>photographierRepas(meal);
+    document.getElementById("ph-non").onclick = ()=>{ photoEnCours = null; closeSheet(); };
     document.getElementById("ph-preciser").onclick = ()=>{
       openSheet(`<h3>${TR("Préciser")}</h3>
         <textarea id="ph-indice" rows="3" placeholder="${TR("Une précision pour l'analyse (ex. « c'est de la dinde », « sauce légère »)")}"></textarea>
@@ -10946,7 +10970,7 @@ function openResultatPhoto(meal, res){
       const k = jourAlim();
       if(!db.habitSel[k]) db.habitSel[k] = {};
       if(!db.macros) db.macros = {};
-      const labels = lignes.map(l=>{
+      const labels = lignes.filter(l=>l.g > 0).map(l=>{
         const prot = Math.round(l.prot100 * l.g / 100), kcal = Math.round(l.kcal100 * l.g / 100);
         const label = `${l.nom} ${Math.round(l.g)} g (~${prot} ${TR("g prot.")} · ${kcal} kcal)`;
         if(l.gluc100 || l.lip100) db.macros[label] = [Math.round(l.gluc100 * l.g / 100 * 10) / 10, Math.round(l.lip100 * l.g / 100 * 10) / 10];
