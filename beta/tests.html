@@ -5708,6 +5708,28 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Des journées bien trop basses");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType));
+    DB.settings.goal = DB.profile.goalWeight || 75;
+    const pl = F.planFor(DB.profile);
+    vrai("Le plan a un métabolisme de base", pl && pl.bmr > 1000);
+    /* cinq jours renseignés a la moitie du metabolisme de base : l'alerte sort en premier */
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); DB.habitSel[k] = {midi:["Riz (200 g cuit)"]}; DB.dayFix[k] = {kcal: Math.round(pl.bmr * 0.5)}; }
+    let b = F.computeBilan();
+    vrai("Cinq jours bien sous le métabolisme de base : le bilan le dit en priorité", b.prios[0] && /trop basses/.test(b.prios[0][0]), JSON.stringify(b.prios.map(p=>p[0])));
+    /* des journees normales : pas d'alerte */
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); DB.dayFix[k] = {kcal: Math.round(pl.bmr * 1.4)}; }
+    b = F.computeBilan();
+    vrai("…et se tait quand les journées sont normales", !b.prios.some(p=>/trop basses/.test(p[0])));
+    /* trois jours seulement : pas assez pour juger */
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); DB.dayFix[k] = {kcal: i < 3 ? Math.round(pl.bmr * 0.5) : 0}; delete DB.habitSel[k]; }
+    b = F.computeBilan();
+    vrai("…et ne juge pas sur trois jours", !b.prios.some(p=>/trop basses/.test(p[0])));
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); delete DB.dayFix[k]; delete DB.habitSel[k]; }
+  }
+
   grp("L'écran caméra");
   neuf();
   await (async ()=>{
