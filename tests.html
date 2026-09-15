@@ -2099,9 +2099,19 @@ async function lancer(){
 
     /* le raccourci du scan */
     const scan = F.document.getElementById("ot-scan");
-    vrai("Le bouton de scan porte un chevron", !!scan.querySelector(".fl svg"));
+    /* une seule carte depuis le 15 septembre : code-barres ou photo, c'est le meme ecran */
+    vrai("« Scanner mon repas » est une seule carte orange", scan.classList.contains("ot-carte") && scan.classList.contains("orange")
+      && !F.document.getElementById("ot-photo"));
     vrai("…et un code-barres plus grand",
       parseFloat(F.getComputedStyle(scan.querySelector("svg")).width) >= 24);
+    /* la fiche s'ouvre courte et se deplie quand on touche au champ */
+    {
+      const st = F.document.getElementById("ot-stack");
+      const visible = id => F.getComputedStyle(F.document.getElementById(id)).display !== "none";
+      vrai("La fiche s'ouvre repliée : ni familles ni quantité", st.classList.contains("ot-replie") && !visible("ot-cats") && !visible("ot-gwrap"));
+      F.document.getElementById("ot-q").dispatchEvent(new F.Event("focus"));
+      vrai("…et se déplie dès qu'on touche au champ de recherche", !st.classList.contains("ot-replie") && visible("ot-cats") && visible("ot-gwrap"));
+    }
 
     /* Les favoris : l'étoile EST le bouton. La case à cocher demandait de viser un
        carré de vingt pixels à côté d'une étoile qui, elle, ne servait à rien. */
@@ -5698,6 +5708,64 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Des journées bien trop basses");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType));
+    DB.settings.goal = DB.profile.goalWeight || 75;
+    const pl = F.planFor(DB.profile);
+    vrai("Le plan a un métabolisme de base", pl && pl.bmr > 1000);
+    /* cinq jours renseignés a la moitie du metabolisme de base : l'alerte sort en premier */
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); DB.habitSel[k] = {midi:["Riz (200 g cuit)"]}; DB.dayFix[k] = {kcal: Math.round(pl.bmr * 0.5)}; }
+    let b = F.computeBilan();
+    vrai("Cinq jours bien sous le métabolisme de base : le bilan le dit en priorité", b.prios[0] && /trop basses/.test(b.prios[0][0]), JSON.stringify(b.prios.map(p=>p[0])));
+    /* des journees normales : pas d'alerte */
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); DB.dayFix[k] = {kcal: Math.round(pl.bmr * 1.4)}; }
+    b = F.computeBilan();
+    vrai("…et se tait quand les journées sont normales", !b.prios.some(p=>/trop basses/.test(p[0])));
+    /* trois jours seulement : pas assez pour juger */
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); DB.dayFix[k] = {kcal: i < 3 ? Math.round(pl.bmr * 0.5) : 0}; delete DB.habitSel[k]; }
+    b = F.computeBilan();
+    vrai("…et ne juge pas sur trois jours", !b.prios.some(p=>/trop basses/.test(p[0])));
+    for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); delete DB.dayFix[k]; delete DB.habitSel[k]; }
+  }
+
+  grp("L'écran caméra");
+  neuf();
+  await (async ()=>{
+    /* l'ecran camera : il s'ouvre dans le mode demande, la pilule change de mode, la croix rend null */
+    {
+      const pr = F.ouvrirCamera("plat", "Test");
+      await attendre(()=>!!F.document.querySelector(".cam"), 1000);
+      const cam = F.document.querySelector(".cam");
+      vrai("L'écran caméra s'ouvre en mode plat", cam.classList.contains("plat") && cam.querySelector("[data-mode='plat']").classList.contains("on"));
+      cam.querySelector("[data-mode='code']").click();
+      vrai("…la pilule bascule en mode code-barres", cam.classList.contains("code"));
+      vrai("…le déclencheur n'est pas cliquable en mode code", F.getComputedStyle(cam.querySelector("[data-prendre]")).pointerEvents === "none");
+      cam.querySelector("[data-main]").click();
+      vrai("La saisie à la main s'ouvre dans l'écran, sans boîte native", !cam.querySelector(".saisie").hidden);
+      cam.querySelector(".saisie input").value = "12ab";
+      cam.querySelector("[data-saisie-ok]").click();
+      vrai("…un code qui n'est pas des chiffres est refusé sur place", !!cam.querySelector(".cam, .saisie") && !cam.querySelector(".saisie").hidden);
+      cam.querySelector("[data-saisie-non]").click();
+      vrai("…Annuler referme la saisie et garde l'écran", cam.querySelector(".saisie").hidden && !!F.document.querySelector(".cam"));
+      cam.querySelector("[data-main]").click();
+      cam.querySelector(".saisie input").value = "3017620422003";
+      cam.querySelector("[data-saisie-ok]").click();
+      const r1 = await pr;
+      eq("…un code valide est rendu", r1 && r1.code, "3017620422003");
+      const pr1b = F.ouvrirCamera("code", "Test");
+      await attendre(()=>!!F.document.querySelector(".cam"), 1000);
+      F.document.querySelector(".cam [data-non]").click();
+      eq("…la croix rend null", await pr1b, null);
+      vrai("…et l'écran a disparu", !F.document.querySelector(".cam"));
+      const pr2 = F.ouvrirCamera("code", "Test");
+      await attendre(()=>!!F.document.querySelector(".cam"), 1000);
+      F.document.querySelector(".cam [data-non]").click();
+      eq("Un second écran se ferme aussi proprement", await pr2, null);
+    }
+  })();
+
   grp("La sortie cardio dans la séance");
   neuf();
   await (async ()=>{
@@ -5776,6 +5844,67 @@ async function lancer(){
     DB.history = [Object.assign(S(1, "dur", {machine:"course", min:30, km:5, pente:0}), {feelMuscu:true}), S(3, "dur")];
     eq("Un ressenti donné avant le cardio compte", F.tendanceRessenti(), "dur");
     DB.history = [];
+  })();
+  neuf();
+
+  /* --------------------------------------- la photo du repas */
+  /* Le relais et Claude ne tournent pas ici : on eprouve ce que la page fait de la
+     reponse — retrouver l'aliment dans SA table, chiffrer, ajouter au repas, compter
+     les photos du jour. */
+  grp("La photo du repas");
+  neuf();
+  await (async ()=>{
+    const t = n => { const it = F.alimentDeTable(n); return it ? it[0] : null; };
+    eq("« riz cuit » retrouve le riz de la table", t("riz cuit"), "Riz cuit");
+    eq("« riz basmati » aussi : basmati n'est qu'une précision", t("riz basmati"), "Riz cuit");
+    eq("« pomme de terre cuite » n'est PAS une pomme", t("pomme de terre cuite"), "Patate");
+    eq("« pomme » reste une pomme", t("pomme"), "Pomme");
+    eq("« frite » trouve les frites", t("frite"), "Frites (portion 150 g)");
+    eq("« blanc de poulet » trouve le filet", t("blanc de poulet"), "Blanc de poulet (130 g cuit)");
+    vrai("« cordon bleu » n'est pas dans la table : on prendra l'estimation du modèle", t("cordon bleu") === null);
+    /* les valeurs pour 100 g d'une entree a la piece avec son poids */
+    const p100 = F.par100DeTable(F.alimentDeTable("blanc de poulet"));
+    vrai("Un filet de 130 g donne ses valeurs pour 100 g", p100 && Math.round(p100.prot100) === 31 && Math.round(p100.kcal100) === 165, JSON.stringify(p100));
+    vrai("Un œuf à la pièce, sans poids, ne prétend rien pour 100 g", F.par100DeTable(F.alimentDeTable("oeuf")) === null);
+    const pf = F.par100DeTable(F.alimentDeTable("frites"));
+    vrai("Une portion de frites de 150 g donne ses valeurs pour 100 g", pf && Math.round(pf.kcal100) === 307, JSON.stringify(pf));
+    /* le quota du jour */
+    delete DB.photos;
+    eq("Six photos par jour au départ", F.photosRestantes(), 6);
+    F.compterPhoto(); F.compterPhoto();
+    eq("…deux de prises, quatre restent", F.photosRestantes(), 4);
+    DB.photos.jour = "2000-01-01";
+    eq("…et un autre jour remet le compteur", F.photosRestantes(), 6);
+    /* corriger la meme photo (« c'est du poisson ») ne compte pas comme une photo de plus */
+    delete DB.photos;
+    F.eval("window.__vraiAnalyser = analyserPhoto; analyserPhoto = async ()=>({plat:'', remarque:'', aliments:[{nom:'riz cuit', grammes:100, confiance:'haute', note:'', kcal100:130, prot100:2.7, gluc100:28, lip100:0.3}]})");
+    F.eval("photoEnCours = {meal:'midi', b64:'x', apercu:'', corrections:0}");
+    await F.lancerAnalysePhoto("");
+    eq("La première analyse compte pour une photo", F.photosRestantes(), 5);
+    await F.lancerAnalysePhoto("c'est du poisson");
+    await F.lancerAnalysePhoto("avec de la sauce");
+    eq("…deux corrections de la même photo sont gratuites", F.photosRestantes(), 5);
+    await F.lancerAnalysePhoto("encore autre chose");
+    eq("…la troisième compte, pour ne pas tourner en boucle", F.photosRestantes(), 4);
+    F.eval("analyserPhoto = window.__vraiAnalyser");
+    F.closeSheet(); await attendre(()=>!F.document.getElementById("ph-ok"), 2000);
+    /* l'ajout au repas : des libelles comme ceux de la fiche manuelle, chiffres par la table */
+    const k = F.jourAlim(); DB.habitSel = {}; DB.macros = {};
+    F.eval("photoEnCours = {meal:'midi', b64:'', apercu:''}");
+    F.openResultatPhoto("midi", {plat:"", remarque:"", aliments:[
+      {nom:"riz cuit", grammes:200, confiance:"haute", note:"", kcal100:999, prot100:99, gluc100:28, lip100:0.3},
+      {nom:"cordon bleu", grammes:150, confiance:"moyenne", note:"", kcal100:220, prot100:15, gluc100:12, lip100:12}]});
+    await attendre(()=>!!F.document.getElementById("ph-ok"), 2000);
+    F.document.querySelector("[data-plus='0']").click();          /* 200 -> 210 g */
+    await attendre(()=>{ const i = F.document.querySelector("[data-g='0']"); return i && i.value === "210"; }, 2000);
+    F.document.getElementById("ph-ok").click();
+    await attendre(()=>(DB.habitSel[k] || {}).midi, 2000);
+    const labels = DB.habitSel[k].midi;
+    eq("Deux aliments ajoutés au repas de midi", labels.length, 2);
+    vrai("Le riz est chiffré par la table, pas par le modèle (130 kcal/100 g, pas 999)", /Riz cuit 210 g \(~6 g prot\. · 273 kcal\)/.test(labels[0]), labels[0]);
+    vrai("Le cordon bleu, absent de la table, prend l'estimation du modèle", /Cordon bleu 150 g \(~23 g prot\. · 330 kcal\)/.test(labels[1]), labels[1]);
+    vrai("…et ses glucides et lipides sont retenus", DB.macros[labels[1]] && DB.macros[labels[1]][0] === 18 && DB.macros[labels[1]][1] === 18, JSON.stringify(DB.macros[labels[1]]));
+    DB.habitSel = {}; DB.macros = {};
   })();
   neuf();
 

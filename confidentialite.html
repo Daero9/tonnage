@@ -34,21 +34,24 @@
 <main>
   <a class="retour" href="./" id="retour">← Retour à Tonnup</a>
   <h1>Politique de confidentialité</h1>
-  <div class="maj">Application Tonnup — dernière mise à jour : 5 septembre 2026</div>
+  <div class="maj">Application Tonnup — dernière mise à jour : 15 septembre 2026</div>
 
   <div class="card">
     <p><strong>En une phrase : Tonnup ne collecte aucune donnée personnelle.</strong> Tout ce que tu saisis
     reste dans la mémoire de ton téléphone. Aucun serveur ne reçoit tes séances, ton poids ni tes repas.</p>
-    <p>Une seule chose sort de l'appareil, et seulement si tu le demandes : <strong>le code-barres que tu
-    scannes</strong>, envoyé à une base de données alimentaire pour retrouver le produit. C'est détaillé
-    plus bas.</p>
+    <p>Trois choses peuvent sortir de l'appareil, chacune <strong>seulement si tu le demandes</strong> :
+    <strong>le code-barres que tu scannes</strong>, envoyé à une base de données alimentaire ;
+    <strong>la photo d'une assiette</strong>, envoyée à Anthropic pour être analysée ; et, si tu actives la
+    sauvegarde, <strong>une copie de tes données</strong> déposée dans ton propre Google Drive. Tout est
+    détaillé plus bas.</p>
   </div>
 
   <h2>Qui est responsable</h2>
   <p>Le responsable du traitement est <strong>Nicolas Poncin</strong>, entrepreneur individuel exerçant sous
   le nom <strong>Inncop Project</strong>, 229 rue Saint-Honoré, 75001 Paris, France — SIREN 831 467 907.
   Contact : <a href="mailto:inncopproject@gmail.com">inncopproject@gmail.com</a>.</p>
-  <p>En pratique, il n'a accès à aucune de tes données : elles ne quittent jamais ton téléphone.</p>
+  <p>En pratique, il n'a accès à aucune de tes données : elles restent sur ton téléphone, ou dans ton propre
+  Google Drive si tu l'as demandé — un espace auquel lui non plus n'a pas accès.</p>
 
   <h2>Quelles données l'application manipule</h2>
   <p>Tonnup enregistre, uniquement sur ton appareil : ton prénom, ton sexe, ton âge, ta taille, ton poids et
@@ -59,10 +62,34 @@
 
   <h2>Où elles sont stockées</h2>
   <p>Dans le stockage local de ton navigateur (<em>localStorage</em> et <em>IndexedDB</em>), sur ton téléphone.
-  Elles ne sont ni transmises, ni sauvegardées à distance, ni synchronisées entre appareils.</p>
+  Par défaut, elles ne sont ni transmises, ni sauvegardées à distance, ni synchronisées entre appareils.</p>
   <p><strong>Conséquence importante :</strong> si tu désinstalles l'application, effaces les données de ton
-  navigateur ou changes de téléphone, ces informations disparaissent. Utilise
-  <em>Réglages → Détails de sauvegarde → Enregistrer un fichier</em> pour en conserver une copie.</p>
+  navigateur ou changes de téléphone, ces informations disparaissent — sauf si tu as activé la sauvegarde
+  Google Drive décrite ci-dessous, ou enregistré un fichier de sauvegarde depuis
+  <em>Réglages → Détails de sauvegarde</em>.</p>
+
+  <h2>La sauvegarde Google Drive (facultative)</h2>
+  <p>Depuis les réglages, tu peux demander à Tonnup de garder une copie de tes données dans
+  <strong>ton propre Google Drive</strong>. Rien n'est activé sans ton geste : il faut te connecter avec ton
+  compte Google et accepter l'autorisation demandée.</p>
+  <ul>
+    <li><strong>Ce qui est envoyé :</strong> un seul fichier, contenant l'ensemble de tes données Tonnup
+    (profil, séances, pesées, repas, réglages). Il est mis à jour après chaque modification, quelques secondes
+    plus tard.</li>
+    <li><strong>Où il va :</strong> dans l'espace <em>réservé à l'application</em> de ton Drive
+    (« appDataFolder »). Cet espace est invisible dans ton Drive habituel, ne compte que pour toi, et
+    <strong>l'éditeur ne peut pas y accéder</strong> : seule l'application, depuis ton téléphone et avec ton
+    autorisation, peut y lire et y écrire.</li>
+    <li><strong>Ce que l'application demande à Google :</strong> uniquement l'autorisation
+    <em>drive.appdata</em>, limitée à cet espace. Elle ne voit ni tes autres fichiers, ni tes contacts, ni tes
+    e-mails, et ne lit pas ton adresse e-mail. L'usage des données obtenues via les API Google respecte la
+    <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank"
+    rel="noopener">Google API Services User Data Policy</a>, y compris ses exigences d'usage limité
+    (<em>Limited Use</em>).</li>
+    <li><strong>Pour arrêter :</strong> désactive la sauvegarde dans les réglages ; tu peux aussi retirer
+    l'accès de Tonnup depuis ton compte Google (<em>Sécurité → Applications tierces</em>), ce qui supprime le
+    fichier. Ce fichier relève par ailleurs de la politique de confidentialité de Google.</li>
+  </ul>
 
   <h2>Le scan de code-barres</h2>
   <p>Depuis l'écran <em>Alimentation</em>, tu peux scanner le code-barres d'un produit pour remplir
@@ -89,17 +116,41 @@
     <p><strong>Si tu ne scannes jamais :</strong> aucune requête n'est faite, et rien ne sort de l'appareil.</p>
   </div>
 
+  <h2>La photo d'une assiette (facultative)</h2>
+  <p>Depuis l'écran « Scanner mon repas », tu peux photographier ton assiette pour obtenir une
+  <strong>estimation</strong> de ce qu'elle contient. Cette fonction n'existe que si tu appuies sur le
+  déclencheur : rien n'est envoyé sans ton geste.</p>
+  <ul>
+    <li><strong>Ce qui est envoyé :</strong> la photo, réduite (1 000 pixels au plus), et, si tu en as écrit
+    une, ta précision (« c'est du poisson »). Ni ton nom, ni ton poids, ni ton historique — la photo voyage
+    seule.</li>
+    <li><strong>Par où elle passe :</strong> par un relais de l'éditeur (hébergé chez Cloudflare), qui ne
+    fait que la transmettre et <strong>ne conserve ni la photo, ni la réponse</strong>. Le relais reçoit un
+    identifiant d'appareil aléatoire, créé par l'application et sans lien avec ton identité, uniquement pour
+    limiter le nombre d'analyses par minute.</li>
+    <li><strong>Qui l'analyse :</strong> <strong>Anthropic</strong> (Anthropic, PBC, San Francisco,
+    États-Unis), éditeur du modèle qui reconnaît les aliments. Selon les conditions de son API, Anthropic
+    n'utilise pas ce qui lui est envoyé pour entraîner ses modèles, et peut le conserver pendant une durée
+    limitée (au plus trente jours) pour la sécurité de son service, avant suppression. Ce transfert hors de
+    l'Union européenne est encadré par les clauses contractuelles types de la Commission européenne.</li>
+    <li><strong>Ce qui reste chez toi :</strong> la photo n'est ni enregistrée par l'application, ni ajoutée à
+    ta galerie ; seuls les aliments que tu valides sont notés dans ton journal, comme si tu les avais saisis
+    à la main.</li>
+    <li><strong>Limite :</strong> six photos par jour et par appareil.</li>
+  </ul>
+
   <h2>L'appareil photo</h2>
-  <p>L'appareil photo sert <strong>uniquement à lire un code-barres</strong>, et uniquement pendant que
-  l'écran de scan est ouvert.</p>
+  <p>L'appareil photo sert à <strong>lire un code-barres</strong> et, si tu le décides, à
+  <strong>photographier une assiette</strong> — uniquement pendant que l'écran de scan est ouvert.</p>
   <ul>
     <li>Sur Android, l'image de la caméra est analysée <strong>en direct sur le téléphone</strong>. Rien
     n'est enregistré : aucune image n'est écrite sur l'appareil, ni transmise.</li>
     <li>Sur iPhone, aucun navigateur ne sait lire un code-barres en direct — ils utilisent tous le moteur de
-    Safari. L'application te propose alors de <strong>prendre une photo</strong> du code. Cette photo est
-    décodée <strong>sur ton téléphone</strong> par un lecteur embarqué dans l'application. Elle n'est pas
-    ajoutée à ta galerie, n'est conservée nulle part et n'est envoyée à personne. Seuls les chiffres lus
-    servent ensuite à la recherche.</li>
+    Safari. L'application décode alors des images de la caméra <strong>sur ton téléphone</strong>, avec un
+    lecteur embarqué. Rien n'est ajouté à ta galerie, rien n'est conservé, rien n'est envoyé. Seuls les
+    chiffres lus servent ensuite à la recherche.</li>
+    <li>La photo d'une assiette, elle, est envoyée pour analyse — voir la section précédente. C'est le seul
+    cas où une image quitte le téléphone.</li>
   </ul>
   <p>L'autorisation d'accès à l'appareil photo est demandée au moment du premier scan. Tu peux la refuser :
   l'application propose alors de saisir les chiffres du code à la main, et tout le reste continue de
@@ -110,29 +161,35 @@
     <li>Aucun compte à créer, aucune adresse e-mail demandée.</li>
     <li>Aucune publicité, aucun traceur, aucun outil de mesure d'audience.</li>
     <li><strong>Aucune bibliothèque d'analyse d'un autre éditeur</strong> n'est incluse dans l'application.</li>
-    <li>Aucune de tes données personnelles n'est partagée avec un tiers. La seule information transmise est
-    un code-barres, qui ne dit rien de toi.</li>
-    <li>Aucun accès à tes contacts, à ta position, à ton micro ni à tes fichiers.</li>
-    <li>Aucune photo enregistrée, aucun enregistrement vidéo ou audio.</li>
+    <li>Aucune de tes données personnelles n'est vendue ni partagée à des fins publicitaires. Les seuls
+    tiers qui reçoivent quelque chose sont ceux décrits ici, à ta demande : Open Food Facts (un code-barres),
+    Anthropic (une photo d'assiette), Google Drive (ta sauvegarde, dans ton propre compte).</li>
+    <li>Aucun accès à tes contacts, à ta position, à ton micro ni à tes fichiers — hormis, si tu la choisis,
+    une image de ta galerie pour l'analyse d'une assiette.</li>
+    <li>Aucune photo enregistrée par l'application, aucun enregistrement vidéo ou audio.</li>
   </ul>
 
   <h2>Autorisations demandées sur Android</h2>
   <p>L'application ne demande que ce dont elle se sert réellement :</p>
   <ul>
-    <li><strong>Appareil photo</strong> — pour lire un code-barres, et rien d'autre. Demandée au premier
-    scan, refusable, et l'application reste utilisable sans.</li>
+    <li><strong>Appareil photo</strong> — pour lire un code-barres ou photographier une assiette. Demandée au
+    premier scan, refusable, et l'application reste utilisable sans.</li>
     <li><strong>Notifications</strong> — pour te prévenir de la fin d'un temps de repos, téléphone rangé.
     Ces notifications sont créées <em>sur ton téléphone</em> : elles ne passent par aucun serveur, et personne
     ne peut t'en envoyer à distance.</li>
     <li><strong>Empêcher la mise en veille de l'écran</strong> — pendant une séance, si tu actives l'option.</li>
     <li><strong>Vibreur</strong> — pour le retour tactile.</li>
-    <li><strong>Facturation Google Play</strong> — uniquement si un abonnement est proposé un jour.</li>
+    <li><strong>Facturation Google Play</strong> — pour l'abonnement « Tonnup Analyse ». Le paiement se fait
+    chez Google ; l'application ne voit jamais tes coordonnées bancaires.</li>
+    <li><strong>Compte Google</strong> — uniquement si tu actives la sauvegarde Drive, pour obtenir
+    l'autorisation décrite plus haut.</li>
   </ul>
 
   <h2>Deux versions, deux fonctionnements</h2>
   <p><strong>Installée depuis le Play Store</strong>, l'application contient tous ses fichiers : elle
-  fonctionne entièrement hors ligne. Elle ne contacte le réseau que dans un seul cas — quand tu scannes un
-  code-barres — et uniquement pour interroger Open Food Facts.</p>
+  fonctionne entièrement hors ligne. Elle ne contacte le réseau que pour les fonctions décrites ici, à ta
+  demande : le scan (Open Food Facts), la photo d'une assiette (relais puis Anthropic) et la sauvegarde
+  Google Drive.</p>
   <p><strong>Ouverte dans un navigateur</strong>, elle va en plus chercher ses mises à jour chez son
   hébergeur (GitHub Pages) au lancement. Aucune donnée personnelle n'est envoyée lors de cette requête, et une
   fois chargée elle fonctionne également hors ligne.</p>
@@ -148,10 +205,21 @@
   vendeur : il encaisse le paiement, gère la TVA et transmet à l'éditeur le montant dû, sans coordonnées
   bancaires.</p>
 
-  <h2>Supprimer tes données</h2>
+  <h2 id="supprimer">Supprimer tes données</h2>
+  <p><strong>Pour demander la suppression de tes données Tonnup</strong>, tu n'as rien à demander à personne :
+  l'éditeur ne détient aucune donnée te concernant, et la suppression se fait par toi, immédiatement.</p>
   <p>Depuis l'application : <em>Réglages → Détails de sauvegarde → Tout effacer</em>. La suppression est
   immédiate et définitive. Tu peux aussi désinstaller l'application ou effacer les données du site depuis les
   réglages de ton navigateur : le résultat est le même.</p>
+  <p>Si la sauvegarde Google Drive était active, « Tout effacer » supprime aussi la copie dans ton Drive.
+  Tu peux par ailleurs retirer l'accès de Tonnup depuis ton compte Google à tout moment
+  (<em>Compte Google → Sécurité → Connexions à des applications tierces</em>).</p>
+  <p><strong>Ce qui est supprimé :</strong> tout — profil, séances, pesées, repas, réglages, et la copie Drive.
+  <strong>Ce qui est conservé :</strong> rien. Aucune durée de conservation supplémentaire : il n'existe
+  aucune copie chez l'éditeur. Une photo d'assiette déjà envoyée à Anthropic suit la règle décrite plus haut
+  (au plus trente jours, puis suppression).</p>
+  <p>Pour toute question, écris à <a href="mailto:inncopproject@gmail.com">inncopproject@gmail.com</a> en
+  indiquant « Tonnup — suppression de données ».</p>
 
   <h2>Âge minimum</h2>
   <p>Tonnup est réservée aux personnes de <strong>16 ans ou plus</strong>. Les calculs de besoins caloriques
@@ -166,10 +234,15 @@
   <p>Les valeurs nutritionnelles issues d'Open Food Facts sont renseignées par la communauté et par les
   marques : elles peuvent comporter des erreurs. Vérifie l'emballage en cas de doute, en particulier pour un
   allergène.</p>
+  <p>L'analyse d'une photo d'assiette est une <strong>estimation automatique</strong> : les aliments
+  reconnus, leurs quantités et leurs valeurs sont des ordres de grandeur, toujours signalés comme tels dans
+  l'application, et modifiables avant enregistrement. Elle ne détecte ni les allergènes, ni les huiles de
+  cuisson invisibles, ni ce qui est hors du cadre.</p>
 
   <h2>Évolutions</h2>
-  <p>Si une future version introduit des comptes utilisateurs ou une synchronisation, cette page sera mise à
-  jour avant la mise en service, et le changement te sera signalé dans l'application.</p>
+  <p>Chaque fonction qui fait sortir une donnée du téléphone est décrite ici avant sa mise en service. Si une
+  future version en introduit une autre, cette page sera mise à jour, et le changement te sera signalé dans
+  l'application.</p>
 
   <h2>Contact</h2>
   <p>Une question, une demande ou un problème :
@@ -189,6 +262,11 @@
   publiées par leurs contributeurs sous licence <em>Creative Commons Attribution — Partage dans les
   mêmes conditions 3.0</em> (<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.fr"
   target="_blank" rel="noopener">CC BY-SA 3.0</a>) et restent la propriété de leurs auteurs.</p>
+  <p><strong>Analyse des photos d'assiette :</strong> Anthropic, PBC, 548 Market St, San Francisco, CA 94104,
+  États-Unis — via un relais de l'éditeur hébergé par Cloudflare, Inc., 101 Townsend St, San Francisco,
+  CA 94107, États-Unis, qui ne conserve rien.</p>
+  <p><strong>Sauvegarde :</strong> Google Drive — Google Ireland Limited, Gordon House, Barrow Street,
+  Dublin 4, Irlande, dans le compte de l'utilisateur.</p>
   <p><strong>Distribution :</strong> Google Play — Google Ireland Limited, Gordon House, Barrow Street,
   Dublin 4, Irlande.</p>
   <p><strong>Propriété :</strong> le code, les textes, les illustrations et le nom Tonnup appartiennent à
