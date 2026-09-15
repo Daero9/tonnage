@@ -7788,7 +7788,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "15 septembre 2026 05h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "15 septembre 2026 05h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10581,8 +10581,9 @@ function ouvrirCamera(mode, titre){
     /* la saisie a la main se fait dans l'ecran : la boite native prompt() figeait
        le flux video a sa fermeture sur Android */
     const saisie = q(".saisie"), champ = q(".saisie input");
+    let reveiller = ()=>{};                    /* defini plus bas, une fois le flux la */
     q("[data-main]").onclick = ()=>{ saisie.hidden = false; champ.value = ""; setTimeout(()=>champ.focus(), 50); };
-    const fermerSaisie = ()=>{ saisie.hidden = true; champ.blur(); if(flux) try{ video.play(); }catch(e){} };
+    const fermerSaisie = ()=>{ saisie.hidden = true; champ.blur(); setTimeout(reveiller, 150); };
     q("[data-saisie-non]").onclick = fermerSaisie;
     const validerSaisie = ()=>{
       const c = champ.value.trim();
@@ -10667,13 +10668,36 @@ function ouvrirCamera(mode, titre){
     };
     texte.textContent = TR("Ouverture de l'appareil photo…");
     const md = navigator.mediaDevices;
-    (md && md.getUserMedia ? md.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}}) : Promise.reject(new Error("pas de camera")))
+    const demanderFlux = ()=> md && md.getUserMedia ? md.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}}) : Promise.reject(new Error("pas de camera"));
+    const brancher = async st=>{
+      if(fini){ st.getTracks().forEach(t=>t.stop()); return; }
+      if(flux && flux !== st) try{ flux.getTracks().forEach(t=>t.stop()); }catch(e){}
+      flux = st; video.srcObject = st;
+      piste = st.getVideoTracks()[0] || null;
+      try{ await video.play(); }catch(e){}
+      try{ if(piste && piste.getCapabilities && piste.getCapabilities().torch) lampe.hidden = false; }catch(e){}
+    };
+    /* Sur iPhone, le flux s'arrete parfois tout seul apres le clavier ou un passage en
+       arriere-plan : l'image reste figee sur la derniere vue. On le verifie a chaque
+       retour (la piste n'est plus « live », ou la video ne bouge plus) et on le
+       redemande — c'est la seule facon de repartir, Safari ne le relance pas. */
+    reveiller = ()=>{
+      if(fini || !flux) return;
+      const mort = !piste || piste.readyState !== "live" || piste.muted;
+      const t0 = video.currentTime;
+      const relancer = ()=>demanderFlux().then(brancher).catch(()=>{});
+      if(mort){ relancer(); return; }
+      if(video.paused) try{ video.play(); }catch(e){}
+      setTimeout(()=>{ if(!fini && video.currentTime === t0) relancer(); }, 400);
+    };
+    document.addEventListener("visibilitychange", function surRetour(){
+      if(fini){ document.removeEventListener("visibilitychange", surRetour); return; }
+      if(document.visibilityState === "visible") reveiller();
+    });
+    demanderFlux()
       .then(async st=>{
-        if(fini){ st.getTracks().forEach(t=>t.stop()); return; }
-        flux = st; video.srcObject = st;
-        piste = st.getVideoTracks()[0] || null;
-        try{ await video.play(); }catch(e){}
-        try{ if(piste && piste.getCapabilities && piste.getCapabilities().torch) lampe.hidden = false; }catch(e){}
+        await brancher(st);
+        if(fini) return;
         if(scanDispo()) lecteur = new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
         else chargerZbar().then(z=>{ zbar = z; consigne(); relancerBoucle(); }).catch(()=>{ if(mode === "code") texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); });
         consigne(); relancerBoucle();
