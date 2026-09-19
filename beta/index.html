@@ -2681,12 +2681,14 @@
   .rg-stats .rg-tel .rgi svg{width:18px; height:18px;}
   .rg-stats .rg-tel em{display:block; font-style:normal; font-size:12px; color:var(--ink-mute); margin-top:1px;}
   /* la page de sauvegarde */
-  .sv-hero{display:flex; gap:10px; align-items:flex-start; padding:16px; border-radius:18px; background:linear-gradient(135deg, rgba(245,130,32,.12), rgba(245,130,32,.03)); margin:14px 0 18px; overflow:hidden;}
-  .sv-hero .sv-txt{flex:1; min-width:0;}
+  .sv-hero{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; padding:16px; border-radius:18px; background:linear-gradient(135deg, rgba(245,130,32,.12), rgba(245,130,32,.03)); margin:14px 0 18px; overflow:hidden;}
+  .sv-hero .sv-txt{flex:1 1 200px; min-width:0;}
+  .sv-hero .sv-3{flex:1 1 100%;}
   .sv-hero b{display:block; font-size:18px; letter-spacing:-.01em; margin-bottom:4px;}
   .sv-hero p{margin:0 0 12px; font-size:13px; line-height:1.5; color:var(--ink-soft);}
-  .sv-3{display:flex; gap:8px; flex-wrap:wrap;}
-  .sv-3 > div{display:flex; align-items:center; gap:7px; font-size:11.5px; line-height:1.25; color:var(--ink-soft); max-width:105px;}
+  .sv-3{display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;}
+  .sv-3 > div{display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; padding:8px 4px; border-radius:12px;
+    background:var(--surface); border:1px solid var(--border); font-size:11px; line-height:1.25; color:var(--ink-soft);}
   .sv-b{flex:0 0 auto; width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center;}
   .sv-b svg{width:17px; height:17px;}
   .sv-b.o{background:#fdebd9; color:var(--accent);} .sv-b.g{background:#e8e9ef; color:#3a3c55;} .sv-b.v{background:#e3f4e8; color:#2e9e4f;}
@@ -8226,7 +8228,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "19 septembre 2026 23h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "19 septembre 2026 23h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9366,6 +9368,12 @@ function lancerGuide(onglet, surFiche){
     window.removeEventListener("scroll", placer, {capture:true});
     window.removeEventListener("resize", placer);
     voile.remove(); bulle.remove(); guideEnCours = false;
+    /* la derniere etape de la seance designe « Terminer », tout en bas : on ne laisse
+       pas l'utilisateur la-dessus, on le ramene au premier exercice */
+    if(onglet === "seanceActive"){
+      const premier = document.querySelector(".ex-card");
+      setTimeout(()=>{ try{ (premier || document.body).scrollIntoView({block:"start", behavior:"smooth"}); if(!premier) window.scrollTo({top:0, behavior:"smooth"}); }catch(e){ window.scrollTo(0, 0); } }, 60);
+    }
   };
   /* Le trou et la bulle sont en position fixe, la page ne l'est pas : au moindre
      défilement — le nôtre comme celui d'un doigt égaré — l'encadré se retrouverait à
@@ -17593,7 +17601,6 @@ function openSettings(){
         <span class="rg-seg" id="st-theme">
           <button data-theme="clair" class="${(db.settings.theme||"clair")==="clair"?"on":""}">${IC_SOLEIL}${TR("Clair")}</button>
           <button data-theme="sombre" class="${db.settings.theme==="sombre"?"on":""}">${IC_LUNE}${TR("Sombre")}</button>
-          <button data-theme="auto" class="${db.settings.theme==="auto"?"on":""}">${IC_MONITEUR}${TR("Auto")}</button>
         </span>
       </div>
       <button class="rg-l" id="st-hints">
@@ -17704,13 +17711,13 @@ function openSauvegarde(){
       <div class="sv-txt">
         <b>${TR("Tes données sont en sécurité")}</b>
         <p>${TR("Sauvegarde automatiquement tes séances, tes pesées et tes repas sur ton téléphone.")}</p>
-        <div class="sv-3">
-          <div><span class="sv-b o">${IC_TELEPHONE}</span><span>${TR("Stockées sur cet appareil")}</span></div>
-          <div><span class="sv-b g">${IC_OEIL_BARRE}</span><span>${TR("Fichier privé et illisible")}</span></div>
-          <div><span class="sv-b v">${IC_BOUCLIER_OK}</span><span>${TR("Aucun partage sans ton accord")}</span></div>
-        </div>
       </div>
       <div class="sv-illu"><span class="sv-tel"><i></i><i></i><i></i></span><span class="sv-nuage">${IC_UPLOAD}</span></div>
+      <div class="sv-3">
+        <div><span class="sv-b o">${IC_TELEPHONE}</span><span>${TR("Stockées sur cet appareil")}</span></div>
+        <div><span class="sv-b g">${IC_OEIL_BARRE}</span><span>${TR("Fichier privé et illisible")}</span></div>
+        <div><span class="sv-b v">${IC_BOUCLIER_OK}</span><span>${TR("Aucun partage sans ton accord")}</span></div>
+      </div>
     </div>
 
     <div class="sv-h">${TR("Sauvegarder sur un autre appareil")}<em>${TR("Fais une copie de tes données pour les retrouver sur un nouveau téléphone.")}</em></div>
