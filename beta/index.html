@@ -8228,7 +8228,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "19 septembre 2026 23h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 00h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8364,7 +8364,64 @@ applyDefaults();
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
 setTimeout(()=>{ sonderAbo(); chargerForfaits(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
-setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours) proposerDrive(); }, 2600);
+setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
+/* ---- les raccourcis de l'icone ------------------------------------------------------
+   « Scanner mon repas » ouvre la camera sur le repas de l'heure ; « Demarrer ma seance »
+   ouvre l'apercu de la seance que l'app propose (ou reprend celle en cours). L'action
+   arrive par l'adresse (?action=scan sur le web) ou par le greffon natif (tonnup://scan). */
+let raccourciRecu = false;
+function executerRaccourci(action){
+  if(!action || !db.profile || db.profile.skipped || onbEl) return false;
+  raccourciRecu = true;
+  if(action === "scan"){
+    curTab = "eat"; render();
+    if(verrouille("eat")){ setTimeout(openAbonnement, 300); return true; }
+    setTimeout(()=>lancerScan(mealParHeure()), 250);
+    return true;
+  }
+  if(action === "seance"){
+    curTab = "seance"; render();
+    if(db.active){ setTimeout(()=>{ const c = document.querySelector(".ex-card"); if(c) c.scrollIntoView({block:"start", behavior:"smooth"}); }, 300); return true; }
+    const t = suggestedTemplate();
+    setTimeout(()=>{ if(t) openPreview(t.id); else openPropose(); }, 250);
+    return true;
+  }
+  return false;
+}
+function raccourciDepuisAdresse(){
+  try{
+    const u = new URL(location.href);
+    const a = u.searchParams.get("action");
+    if(!a) return null;
+    u.searchParams.delete("action");
+    history.replaceState(history.state, "", u.pathname + (u.search || "") + u.hash);   /* un rechargement ne le rejoue pas */
+    return a;
+  }catch(e){ return null; }
+}
+let raccourciPont = null;
+function pluginRaccourci(){
+  if(raccourciPont) return raccourciPont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Raccourci) raccourciPont = c.Plugins.Raccourci;
+  else if(c && typeof c.registerPlugin === "function" && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ raccourciPont = c.registerPlugin("Raccourci"); }catch(e){ raccourciPont = null; }
+  }
+  return raccourciPont;
+}
+async function lireRaccourciNatif(){
+  const pl = pluginRaccourci(); if(!pl) return;
+  try{ const r = await pl.lire(); if(r && r.action) executerRaccourci(r.action); }catch(e){}
+}
+setTimeout(()=>{
+  const a = raccourciDepuisAdresse();
+  if(a) executerRaccourci(a); else lireRaccourciNatif();
+  const pl = pluginRaccourci();
+  if(pl && typeof pl.addListener === "function"){
+    try{ pl.addListener("raccourci", ev=>{ if(ev && ev.action) executerRaccourci(ev.action); }); }catch(e){}
+  }
+  /* si l'evenement n'a pas ete recu (page endormie), on relit au retour au premier plan */
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible") lireRaccourciNatif(); });
+}, 400);
 /* un profil deja cree avant l'essai : ses 7 jours commencent aujourd'hui */
 if(db.profile && !db.profile.skipped && !db.essaiDebut) setTimeout(()=>demarrerEssai(), 0);
 /* Les libellés de la barre de repos sont du HTML statique : on les traduit
