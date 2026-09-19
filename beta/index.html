@@ -2680,12 +2680,22 @@
   .rg-stats .rg-tel .rgi{flex:0 0 auto; width:34px; height:34px; border-radius:10px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink-soft);}
   .rg-stats .rg-tel .rgi svg{width:18px; height:18px;}
   .rg-stats .rg-tel em{display:block; font-style:normal; font-size:12px; color:var(--ink-mute); margin-top:1px;}
-  /* la fiche des notifications */
-  .nt-l{align-items:flex-start;}
-  .nt-sw{flex:0 0 auto; padding:0; background:none; margin-top:8px; display:block;}
-  .nt-quand{display:flex; gap:6px; margin-top:8px; align-items:center;}
-  .nt-quand.off{opacity:.4; pointer-events:none;}
-  .nt-quand select, .nt-quand input{border:1px solid var(--border); background:var(--surface2); color:var(--ink); border-radius:10px; padding:7px 9px; font-size:13.5px; font-weight:700; font-family:inherit;}
+  /* la fiche des notifications (maquette du 20 septembre) */
+  .nt-liste{display:flex; flex-direction:column; gap:10px; transition:opacity .2s;}
+  .nt-liste.off{opacity:.45; pointer-events:none;}
+  .nt-carte{background:var(--surface); border-radius:16px; padding:14px;}
+  .nt-carte.off .nt-heure, .nt-carte.off .nt-jours{opacity:.4; pointer-events:none;}
+  .nt-tete{display:flex; align-items:center; gap:12px;}
+  .nt-tete .rgi{flex:0 0 auto; width:38px; height:38px; border-radius:12px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .nt-tete b{display:block; font-size:15px;} .nt-tete em{display:block; font-style:normal; font-size:12px; color:var(--ink-mute); line-height:1.4; margin-top:2px;}
+  .nt-sw{flex:0 0 auto; padding:0; background:none; display:block;}
+  .nt-heure{position:relative; display:flex; align-items:center; gap:8px; margin:12px 0 10px; padding:10px 12px; border-radius:12px; background:var(--surface2); font-size:12.5px; color:var(--ink-mute); cursor:pointer;}
+  .nt-heure .ic{display:flex;} .nt-heure .ic svg{width:16px; height:16px;}
+  .nt-heure b{font-size:15px; color:var(--ink);} .nt-heure > svg{width:16px; height:16px;}
+  .nt-heure input{position:absolute; inset:0; opacity:0; width:100%; height:100%;}   /* le champ natif, invisible, couvre la ligne */
+  .nt-jours{display:flex; gap:6px; flex-wrap:wrap;}
+  .nt-jours button{flex:1 1 0; min-width:40px; padding:7px 0; border-radius:99px; font-size:12px; font-weight:800; background:var(--surface2); color:var(--ink-mute); border:1px solid var(--border);}
+  .nt-jours button.on{background:rgba(245,130,32,.16); color:var(--accent); border-color:transparent;}
   /* la page de sauvegarde */
   .sv-hero{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; padding:16px; border-radius:18px; background:linear-gradient(135deg, rgba(245,130,32,.12), rgba(245,130,32,.03)); margin:14px 0 18px; overflow:hidden;}
   .sv-hero .sv-txt{flex:1 1 200px; min-width:0;}
@@ -3685,6 +3695,9 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Des rappels pour garder le cap.":"Set reminders to stay on track.",
+  "Heure du rappel":"Reminder time",
+  "Lun":"Mon", "Mar":"Tue", "Mer":"Wed", "Jeu":"Thu", "Ven":"Fri", "Sam":"Sat", "Dim":"Sun",
   "Pesée":"Weigh-in", "Bilan de la semaine":"Weekly review",
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
@@ -7337,6 +7350,8 @@ function openOnboarding(first, brouillon, depart){
     save();
     if(demarrerEssai()) setTimeout(()=>toast(TR("7 jours d'Analyse offerts — les séances restent gratuites, toujours.")), 900);
     fermerOnb(); render(); showPlan(true);
+    /* premiere fois, dans l'app Android : la fiche des rappels s'ouvre d'elle-meme apres le plan */
+    if(notifsPossibles() && !dejaVu("notifs-proposees")){ marquerVu("notifs-proposees"); onSheetClose = ()=>{ onSheetClose = null; setTimeout(openNotifs, 400); }; }
   }
 
   function dessiner(){
@@ -8286,7 +8301,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 01h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 01h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9939,18 +9954,22 @@ async function poserCanalRepos(){
    et a chaque passage en arriere-plan : une semaine sans ouvrir l'app, et le silence
    revient de lui-meme. Android seulement (le web n'a pas de notification programmee). */
 const NOTIF_TYPES = [
-  ["seance",    "Séance",        "18:00", null],
-  ["repas",     "Scanner mon repas", "12:30", null],
-  ["collation", "Collation",     "16:00", null],
-  ["pesee",     "Pesée",         "09:00", 6],       /* le samedi */
-  ["bilan",     "Bilan de la semaine", "19:00", 0]  /* le dimanche */
+  ["seance",    "Séance",        "18:00", [1,2,3,4,5,6,0]],
+  ["repas",     "Scanner mon repas", "12:30", [1,2,3,4,5,6,0]],
+  ["collation", "Collation",     "16:00", [1,2,3,4,5]],
+  ["pesee",     "Pesée",         "09:00", [6]],       /* le samedi */
+  ["bilan",     "Bilan de la semaine", "19:00", [0]]  /* le dimanche */
 ];
+const NOTIF_ICONES = {seance:"muscle", repas:"midi", collation:"tasse", pesee:"cible", bilan:"etoile"};
 const NOTIF_ID = 7000, NOTIF_JOURS = 7, NOTIF_MIN_H = 9, NOTIF_MAX_H = 21;
 const CANAL_RAPPELS = "rappels1";
 function notifsReglage(){
   if(!db.notifs) db.notifs = {actif:true, types:{}};
-  NOTIF_TYPES.forEach(([k, , h, jour])=>{
-    if(!db.notifs.types[k]) db.notifs.types[k] = {on: k === "seance", h, jour};
+  NOTIF_TYPES.forEach(([k, , h, jours])=>{
+    if(!db.notifs.types[k]) db.notifs.types[k] = {on: k === "seance", h, jours: jours.slice()};
+    /* ancien reglage (un seul jour) : on le convertit */
+    const c = db.notifs.types[k];
+    if(!Array.isArray(c.jours)) c.jours = (c.jour === null || c.jour === undefined) ? jours.slice() : [c.jour];
   });
   return db.notifs;
 }
@@ -9992,14 +10011,13 @@ function notifsAPlanifier(maintenant){
   const now = maintenant ? new Date(maintenant) : new Date();
   const ouvertApresMidi = now.getHours() >= 12;
   const out = [];
-  NOTIF_TYPES.forEach(([type, , , jourDefaut], ti)=>{
-    const c = r.types[type]; if(!c || !c.on) return;
+  NOTIF_TYPES.forEach(([type], ti)=>{
+    const c = r.types[type]; if(!c || !c.on || !c.jours.length) return;
     const [hh, mm] = notifHeure(c.h);
     for(let d = 0; d < NOTIF_JOURS; d++){
       const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d, hh, mm, 0, 0);
       if(at <= now) continue;                                 /* deja passe aujourd'hui */
-      const jourVoulu = (c.jour === null || c.jour === undefined) ? jourDefaut : c.jour;
-      if(jourVoulu !== null && jourVoulu !== undefined && at.getDay() !== jourVoulu) continue;
+      if(!c.jours.includes(at.getDay())) continue;
       if(type === "seance" && d === 0 && ouvertApresMidi) continue;   /* la personne est la */
       const txt = notifTexte(type, at);
       if(!txt) continue;
@@ -10050,35 +10068,50 @@ function notifsPossibles(){ return dansLApp() && !!pluginNotifs(); }
 function openNotifs(){
   const r = notifsReglage();
   const sw = on => `<span class="rg-sw ${on ? "on" : ""}"><i></i></span>`;
-  const jours = [TR("dimanche"), TR("lundi"), TR("mardi"), TR("mercredi"), TR("jeudi"), TR("vendredi"), TR("samedi")];
+  const JOURS = [[1,"Lun"],[2,"Mar"],[3,"Mer"],[4,"Jeu"],[5,"Ven"],[6,"Sam"],[0,"Dim"]];
   const desc = {seance:TR("Les jours où une séance t'attend, jamais quand elle est déjà faite."), repas:TR("Un rappel pour scanner ou photographier ton repas."),
                 collation:TR("Un mot au moment de la collation."), pesee:TR("Une fois par semaine, le jour de ton choix."), bilan:TR("Quand le bilan de la semaine est prêt.")};
   openSheet(`<h3 class="rg-h">${TR("Notifications")}</h3>
-    <div class="rg-sous">${TR("Une par type, à l'heure que tu choisis. Jamais avant 9 h ni après 21 h.")}</div>
+    <div class="rg-sous">${TR("Des rappels pour garder le cap.")}</div>
     ${notifsPossibles() ? "" : `<div class="sv-note"><div>${TR("Les rappels programmés existent dans l'application Android. Sur le web, ce réglage est enregistré mais rien ne sonnera.")}</div></div>`}
     <div class="rg-c" style="margin-top:12px;">
       <button class="rg-l" id="nt-actif"><span class="rgi">${IC_CLOCHE}</span><span class="grow">${TR("Activer les rappels")}<em>${TR("L'interrupteur général : coupé, plus rien ne part.")}</em></span>${sw(r.actif)}</button>
     </div>
     <div class="rg-t">${TR("Chaque rappel")}</div>
-    <div class="rg-c" id="nt-liste">${NOTIF_TYPES.map(([k, lab, , jourDefaut])=>{
+    <div class="nt-liste ${r.actif ? "" : "off"}" id="nt-liste">${NOTIF_TYPES.map(([k, lab])=>{
       const c = r.types[k];
-      return `<div class="rg-l nt-l" data-type="${k}">
-        <button class="nt-sw" data-sw="${k}" aria-label="${TR(lab)}">${sw(c.on)}</button>
-        <span class="grow">${TR(lab)}<em>${desc[k]}</em>
-          <span class="nt-quand ${c.on ? "" : "off"}">${jourDefaut !== null ? `<select data-jour="${k}">${jours.map((j, i)=>`<option value="${i}" ${(c.jour === null || c.jour === undefined ? jourDefaut : c.jour) === i ? "selected" : ""}>${j}</option>`).join("")}</select>` : ""}
-          <input type="time" data-h="${k}" value="${c.h}" min="09:00" max="21:00"></span></span>
+      return `<div class="nt-carte ${c.on ? "" : "off"}" data-type="${k}">
+        <div class="nt-tete">
+          <span class="rgi">${icoM(NOTIF_ICONES[k], 20)}</span>
+          <span class="grow"><b>${TR(lab)}</b><em>${desc[k]}</em></span>
+          <button class="nt-sw" data-sw="${k}" aria-label="${TR(lab)}">${sw(c.on)}</button>
+        </div>
+        <label class="nt-heure"><span class="ic">${IC_CHRONO}</span><span class="grow">${TR("Heure du rappel")}</span><input type="time" data-h="${k}" value="${c.h}" min="09:00" max="21:00"><b>${c.h}</b>${IC_CHEVRON}</label>
+        <div class="nt-jours">${JOURS.map(([n, nom])=>`<button data-jour="${k}" data-n="${n}" class="${c.jours.includes(n) ? "on" : ""}">${TR(nom)}</button>`).join("")}</div>
       </div>`; }).join("")}</div>
     <button class="btn btn-accent" id="nt-ok" style="width:100%;">${TR("Fermer")}</button>`);
   const maj = ()=>{ save(); planifierNotifs(); };
-  document.getElementById("nt-actif").onclick = e=>{ r.actif = !r.actif; e.currentTarget.querySelector(".rg-sw").classList.toggle("on", r.actif); maj(); if(r.actif) autoriserNotifs(); };
+  document.getElementById("nt-actif").onclick = e=>{
+    r.actif = !r.actif; e.currentTarget.querySelector(".rg-sw").classList.toggle("on", r.actif);
+    document.getElementById("nt-liste").classList.toggle("off", !r.actif);
+    maj(); if(r.actif) autoriserNotifs();
+  };
   document.querySelectorAll("[data-sw]").forEach(b=>b.onclick = ()=>{
     const c = r.types[b.dataset.sw]; c.on = !c.on;
     b.querySelector(".rg-sw").classList.toggle("on", c.on);
-    b.closest(".nt-l").querySelector(".nt-quand").classList.toggle("off", !c.on);
+    b.closest(".nt-carte").classList.toggle("off", !c.on);
     maj(); if(c.on) autoriserNotifs();
   });
-  document.querySelectorAll("[data-h]").forEach(i=>i.onchange = ()=>{ const [hh, mm] = notifHeure(i.value); r.types[i.dataset.h].h = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`; i.value = r.types[i.dataset.h].h; maj(); });
-  document.querySelectorAll("[data-jour]").forEach(sel=>sel.onchange = ()=>{ r.types[sel.dataset.jour].jour = parseInt(sel.value, 10); maj(); });
+  document.querySelectorAll("[data-h]").forEach(i=>i.onchange = ()=>{
+    const [hh, mm] = notifHeure(i.value); const c = r.types[i.dataset.h];
+    c.h = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`; i.value = c.h;
+    i.parentElement.querySelector("b").textContent = c.h; maj();
+  });
+  document.querySelectorAll("[data-jour]").forEach(b=>b.onclick = ()=>{
+    const c = r.types[b.dataset.jour], n = parseInt(b.dataset.n, 10);
+    c.jours = c.jours.includes(n) ? c.jours.filter(x=>x !== n) : c.jours.concat(n);
+    b.classList.toggle("on", c.jours.includes(n)); maj();
+  });
   document.getElementById("nt-ok").onclick = closeSheet;
 }
 /* apres la premiere seance terminee : on propose le rappel, une fois */
