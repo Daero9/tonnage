@@ -390,6 +390,24 @@ async function lancer(){
   eq("Dépense saisie à la main : elle prime", pl.tdee, 2200);
   eq("…et la source est signalée", pl.tdeeSource, "manuel");
   neuf();
+  /* le recalage sur le journal : credible seulement si le journal l'est */
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); delete DB.profile.tdeeManuel;
+    const formule = F.planFor(DB.profile).tdee;
+    const jourK = i => F.dayKey(Date.now() - i*864e5);
+    const remplir = kcal => { DB.habitSel = {}; DB.dayFix = {}; for(let i = 0; i < 21; i++){ DB.habitSel[jourK(i)] = {midi:["Riz (200 g cuit)"]}; DB.dayFix[jourK(i)] = {kcal}; } };
+    DB.weights = [{date:new Date(Date.now() - 19*864e5).toISOString(), kg:DB.profile.weight}, {date:new Date().toISOString(), kg:DB.profile.weight}];
+    remplir(Math.round(formule * 0.92));
+    pl = F.planFor(DB.profile);
+    eq("Journal complet et proche de la formule : le recalage s'applique", pl.tdeeSource, "mesure");
+    pres("…à la valeur du journal", pl.tdee, Math.round(formule * 0.92), 30);
+    remplir(Math.round(formule * 0.65));                     /* un journal a trous : 35 % sous la formule */
+    pl = F.planFor(DB.profile);
+    eq("Journal 35 % sous la formule : on garde la formule", pl.tdeeSource, "formule");
+    vrai("…et l'écart est signalé, pas caché", !!pl.mesureEcartee && pl.mesureEcartee.tdee < formule * 0.8);
+    pres("…l'objectif ne s'effondre pas", pl.tdee, formule, 5);
+    DB.habitSel = {}; DB.dayFix = {}; DB.weights = [];
+  }
 
   /* ---------------------------------------------------------- garde-fous santé */
   grp("Garde-fous santé");

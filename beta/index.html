@@ -3679,6 +3679,7 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Calculée par formule. Ton journal donnerait {k} kcal, trop loin pour être crédible — il manque sûrement des repas (huile, sauces, extras). Complète-le, ou fixe la valeur toi-même.":"Worked out by formula. Your log would give {k} kcal, too far off to be credible — meals are probably missing (oil, sauces, extras). Fill it in, or set the value yourself.",
   "Prendre {}":"Gain {}",
   "Un seul fichier, invisible dans ton Drive":"A single file, invisible in your Drive",
   "Perdre {}":"Lose {}",
@@ -7088,13 +7089,20 @@ const PACE_RATE = {masse:1, seche:1, force:1};   /* objectifs où un rythme se c
 function aimOf(id){ return AIMS.find(a=>a.id===id) || AIMS[0]; }
 /* Recalage : compare ce que tu as réellement mangé avec l'évolution réelle du poids.
    7 700 kcal ≈ 1 kg. Si le poids ne bouge pas, ta dépense = ce que tu manges. */
-function tdeeMesure(){
-  const jours = Object.keys(db.habitSel||{}).filter(k=>dayKcal(k) > 800).sort();
+/* Le recalage suppose un journal COMPLET. Un journal a moitie rempli donne une depense a
+   moitie fausse : on ne garde que les journees plausibles (au-dessus de 80 % du
+   metabolisme de base — en dessous, c'est un oubli, pas un jeune), on exige quatre
+   jours sur cinq renseignes, et planFor() refuse un ecart de plus de 15 % avec la
+   formule. Un utilisateur qui coche a moitie garde ainsi un objectif sense. */
+const RECALAGE_MAX = 0.15;
+function tdeeMesure(plancher){
+  const mini = Math.max(800, (plancher || 0) * 0.8);
+  const jours = Object.keys(db.habitSel||{}).filter(k=>dayKcal(k) > mini).sort();
   if(jours.length < 10) return null;                       /* pas assez de jours renseignés */
   const debut = jours[0], fin = jours[jours.length-1];
   const nJours = Math.round((new Date(fin) - new Date(debut))/864e5) + 1;
   if(nJours < 14) return null;                             /* il faut au moins deux semaines */
-  if(jours.length < nJours*0.6) return null;               /* trop de trous dans le suivi */
+  if(jours.length < nJours*0.8) return null;               /* trop de trous dans le suivi */
   const moyKcal = jours.reduce((a,k)=>a+dayKcal(k),0)/jours.length;
   const pesees = (db.weights||[]).map(w=>({t:new Date(w.date), kg:w.kg}))
                    .filter(w=>w.t >= new Date(debut) && w.t <= new Date(fin+"T23:59:59"))
@@ -7112,10 +7120,11 @@ function planFor(p){
             + (p.sex==="f" ? -161 : (p.sex==="n" ? -78 : 5));   /* "n" : moyenne des deux */
   let tdee = bmr * (ACTIVITY[p.days]||1.55) * (METAB_ADJ[p.metab]||1);
   /* correction manuelle (réglages) puis mesure réelle : le vécu prime sur la formule */
-  const mesure = (typeof tdeeMesure === "function") ? tdeeMesure() : null;
-  let tdeeSource = "formule";
+  const mesure = (typeof tdeeMesure === "function") ? tdeeMesure(bmr) : null;
+  let tdeeSource = "formule", mesureEcartee = null;
   if(p.tdeeManuel > 0){ tdee = p.tdeeManuel; tdeeSource = "manuel"; }
-  else if(mesure){ tdee = mesure.tdee; tdeeSource = "mesure"; }
+  else if(mesure && Math.abs(mesure.tdee - tdee) <= tdee * RECALAGE_MAX){ tdee = mesure.tdee; tdeeSource = "mesure"; }
+  else if(mesure){ mesureEcartee = mesure; }               /* trop loin de la formule : journal incomplet, on n'y touche pas */
   const diff = p.goalWeight - p.weight;
   const aimId = p.aim || (diff > 1 ? "masse" : (diff < -1 ? "seche" : "recomp"));
   const aim = aimOf(aimId);
@@ -7138,7 +7147,7 @@ function planFor(p){
   const kcalMin = Math.round(kcal*0.95/10)*10;
   const kcalMax = Math.round(kcal*1.05/10)*10;
   return {
-    bmr: Math.round(bmr), tdee: Math.round(tdee), tdeeSource, mesure,
+    bmr: Math.round(bmr), tdee: Math.round(tdee), tdeeSource, mesure: tdeeSource === "mesure" ? mesure : null, mesureEcartee,
     kcal: Math.round(kcal/10)*10, kcalMin, kcalMax, prot: Math.round(prot), perKg,
     aim: aim.id, aimLabel: aim.label, pace, rythme, semaines,
     diff: Math.round(diff*10)/10, delta: Math.round(deltaReel), plafonne,
@@ -8003,6 +8012,7 @@ function showPlan(justCreated){
         <div class="d">${
           pl.tdeeSource==="manuel" ? TR("Valeur que tu as saisie toi-même.")
           : pl.tdeeSource==="mesure" ? TR("Recalculée sur tes {j} jours suivis : {k} kcal en moyenne pour {d} en {n} jours.").replace("{j}", pl.mesure.jours).replace("{k}", pl.mesure.moyKcal).replace("{d}", (pl.mesure.dKg>=0?"+":"−")+pds(Math.abs(pl.mesure.dKg))).replace("{n}", pl.mesure.dJours)
+          : pl.mesureEcartee ? TR("Calculée par formule. Ton journal donnerait {k} kcal, trop loin pour être crédible — il manque sûrement des repas (huile, sauces, extras). Complète-le, ou fixe la valeur toi-même.").replace("{k}", pl.mesureEcartee.tdee)
           : TR("Calculée par formule (taille, poids, âge, séances). Elle se corrigera d'elle-même quand tu auras deux semaines de suivi.")}</div>
       </div>
     </div>
@@ -8236,7 +8246,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 00h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 01h03 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
