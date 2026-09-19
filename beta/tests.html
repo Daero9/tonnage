@@ -2671,7 +2671,8 @@ async function lancer(){
        échappatoire */
     /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
     /* neuf lignes depuis le 19 septembre : l'abonnement est une carte a part, au-dessus */
-    vrai("Neuf réglages", lignes.length === 9, String(lignes.length));
+    /* dix avec la ligne Notifications du 20 septembre */
+    vrai("Dix réglages", lignes.length === 10, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
     vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-abo") && D2.querySelector("#sheet .rg-abo").id === "st-abo");
     vrai("Chacun porte son signe",
@@ -5777,6 +5778,52 @@ async function lancer(){
     b = F.computeBilan();
     vrai("…et ne juge pas sur trois jours", !b.prios.some(p=>/trop basses/.test(p[0])));
     for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); delete DB.dayFix[k]; delete DB.habitSel[k]; }
+  }
+
+  grp("Les rappels");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); DB.history = []; DB.active = null; DB.templates = []; delete DB.notifs;
+    F.addCoachProgram("masse");
+    const r = F.notifsReglage();
+    vrai("Par défaut : seul le rappel de séance, à 18 h", r.actif && r.types.seance.on && r.types.seance.h === "18:00" && !r.types.repas.on && !r.types.collation.on);
+    /* un mardi 10 h : la seance du jour est encore a venir */
+    const mardi10 = new Date(2026, 8, 22, 10, 0, 0);
+    let l = F.notifsAPlanifier(mardi10);
+    eq("Sept jours de séance posés, un par jour", l.length, 7);
+    vrai("…le premier aujourd'hui à 18 h", l[0].at.getDate() === 22 && l[0].at.getHours() === 18);
+    vrai("…qui nomme la séance proposée", /t'attend/.test(l[0].titre) && /exercices/.test(l[0].corps));
+    /* ouverte a 14 h : la personne est la, pas de rappel ce jour */
+    l = F.notifsAPlanifier(new Date(2026, 8, 22, 14, 0, 0));
+    eq("Ouverte l'après-midi : pas de rappel aujourd'hui", l.filter(x=>x.at.getDate() === 22).length, 0);
+    /* une seance faite aujourd'hui : silence ce jour, meme le matin */
+    DB.history = [{date:new Date(2026, 8, 22, 9, 0).toISOString(), entries:[]}];
+    l = F.notifsAPlanifier(mardi10);
+    eq("Séance déjà faite : silence ce jour", l.filter(x=>x.at.getDate() === 22).length, 0);
+    DB.history = [];
+    /* heures bornees */
+    r.types.seance.h = "06:30"; l = F.notifsAPlanifier(mardi10);
+    vrai("Jamais avant 9 h : 6 h 30 devient 9 h", l.every(x=>x.at.getHours() === 9));
+    r.types.seance.h = "23:00"; l = F.notifsAPlanifier(mardi10);
+    vrai("Jamais après 21 h", l.every(x=>x.at.getHours() === 21));
+    r.types.seance.h = "18:00";
+    /* la pesee hebdo, le samedi */
+    r.types.pesee.on = true;
+    l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "pesee");
+    vrai("La pesée tombe une fois, le samedi", l.length === 1 && l[0].at.getDay() === 6);
+    /* interrupteur general */
+    r.actif = false;
+    eq("Interrupteur général coupé : rien", F.notifsAPlanifier(mardi10).length, 0);
+    r.actif = true; r.types.pesee.on = false;
+    /* le repas, avec son action de raccourci */
+    r.types.repas.on = true;
+    l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan");
+    vrai("Le rappel de repas ouvre le scan", l.length === 7 && l[0].at.getHours() === 12 && l[0].at.getMinutes() === 30);
+    delete DB.notifs; DB.templates = [];
+    /* la fiche de reglage */
+    F.openNotifs();
+    vrai("La fiche des notifications liste les cinq rappels", F.document.querySelectorAll("#nt-liste .nt-l").length === 5);
+    F.hideSheet();
   }
 
   grp("Les raccourcis de l'icône");
