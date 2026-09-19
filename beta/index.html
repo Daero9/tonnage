@@ -1812,8 +1812,13 @@
   .dr-b{width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
   .dr-b svg{width:26px; height:26px;}
   .dr-b.o{background:#fdf1e6; color:var(--accent);} .dr-b.v{background:#e8f6ec; color:#2e9e4f;} .dr-b.b{background:#e6f0fb; color:#2f7de1;}
-  .dr-go{width:100%; display:flex; align-items:center; justify-content:center; gap:12px; padding:16px; font-size:16.5px; border-radius:18px;}
-  .dr-go img{width:26px; height:auto;} .dr-go svg{width:22px; height:22px; margin-left:auto;}
+  /* le bouton Google Drive : bleu Google, exception voulue dans une app orange ; logo et
+     texte centres, la fleche a droite sans peser sur le centrage */
+  .dr-go{position:relative; width:100%; display:flex; align-items:center; justify-content:center; gap:12px; padding:16px 44px; font-size:16.5px; border-radius:18px;
+    background:#1a73e8; color:#fff; border-color:#1a73e8; font-weight:800;}
+  .dr-go:active{background:#1765cc;}
+  .dr-go img{width:26px; height:auto;} .dr-go svg{position:absolute; right:16px; top:50%; transform:translateY(-50%); width:22px; height:22px;}
+  .dr-go.compact{padding:13px 40px; font-size:15px; border-radius:14px;}
   .dr-tard{width:100%; margin-top:10px; padding:15px; font-size:16px; border-radius:18px; color:var(--ink-soft);}
   .dr-jamais{display:block; width:100%; margin-top:12px; padding:6px; font-size:13.5px; color:var(--ink-mute); text-decoration:underline; background:none;}
   :root[data-theme="dark"] .dr-rond, :root[data-theme="dark"] .dr-b.o{background:rgba(245,130,32,.16);}
@@ -8120,7 +8125,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "19 septembre 2026 22h43 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "19 septembre 2026 22h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -16902,7 +16907,7 @@ function proposerDrive(){
         <div><span class="dr-b v">${IC_PERSONNES}</span><b>${TR("Sans partage")}</b><span>${TR("Aucun accès à tes autres fichiers ni à ton e-mail")}</span></div>
         <div><span class="dr-b b">${IC_DEBRANCHE}</span><b>${TR("Toujours disponible")}</b><span>${TR("Déconnectable à tout moment depuis les réglages")}</span></div>
       </div>
-      <button class="btn btn-accent dr-go" id="dr-prop-ok"><img src="img/drive-blanc.png" alt=""><span>${TR("Connecter Google Drive")}</span>${IC_FLECHE}</button>
+      <button class="btn dr-go" id="dr-prop-ok"><img src="img/drive-blanc.png" alt=""><span>${TR("Connecter Google Drive")}</span>${IC_FLECHE}</button>
       <button class="btn dr-tard" id="dr-prop-tard">${TR("Plus tard")}</button>
       <button class="dr-jamais" id="dr-prop-jamais">${TR("Ne plus me le proposer")}</button>
     </div>`);
@@ -17671,7 +17676,7 @@ function openSettings(){
         <div style="font-weight:800; font-size:13.5px;">${TR("Google Drive")}</div>
         <div style="font-size:12px; color:var(--ink-mute); line-height:1.5; margin:4px 0 8px;">${TR("Une copie de tes données dans un dossier privé de ton Drive, mise à jour toute seule. Pour retrouver Tonnup sur un nouveau téléphone.")}${
           pluginDrive() ? "" : " " + TR("Sur le web, il faut être en ligne et autoriser la fenêtre Google.")}</div>
-        <button class="btn btn-accent" id="dr-connect" style="width:100%;">${TR("Connecter Google Drive")}</button>
+        <button class="btn dr-go compact" id="dr-connect"><img src="img/drive-blanc.png" alt=""><span>${TR("Connecter Google Drive")}</span></button>
         ${driveErreur ? `<div style="font-size:12px; color:var(--bad); margin-top:6px;">${esc(driveErreur)}</div>` : ""}</div>`;
       document.getElementById("dr-connect").onclick = async ()=>{ await driveConnecter(); dessinerDrive(); };
     }else{
