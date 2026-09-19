@@ -8317,7 +8317,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 01h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 01h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -17930,7 +17930,7 @@ function openSettings(){
         <span class="rgi">${IC_CLOCHE}</span>
         <span class="grow">${TR("Notifications")}
           <em>${TR("Séance, repas, collation, pesée, bilan : chacun à son heure.")}</em></span>
-        <span class="val">${notifsReglage().actif && Object.values(notifsReglage().types).some(c=>c.on) ? TR("Oui") : TR("Non")}</span>
+        <span class="rg-sw ${notifsReglage().actif ? "on" : ""}" id="st-notifs-sw"><i></i></span>
       </button>
       <div class="rg-l">
         <span class="rgi">${IC_CHRONO}</span>
@@ -18027,7 +18027,14 @@ function openSettings(){
   }
   /* la page de sauvegarde s'ouvre PAR-DESSUS : la croix ramene ici */
   document.getElementById("st-bk").onclick = ()=>ouvrirParDessus(openSettings, openSauvegarde);
+  /* l'interrupteur allume ou coupe tout ; le reste de la ligne ouvre la page */
   document.getElementById("st-notifs").onclick = ()=>ouvrirParDessus(openSettings, openNotifs);
+  document.getElementById("st-notifs-sw").onclick = e=>{
+    e.stopPropagation();
+    const r = notifsReglage(); r.actif = !r.actif; save();
+    e.currentTarget.classList.toggle("on", r.actif);
+    planifierNotifs(); if(r.actif) autoriserNotifs();
+  };
   /* enregistrement au fil de la saisie : rien n'est perdu si la fiche est fermée d'un geste */
   const applySettings = ()=>{
     const el = id => document.getElementById(id);
