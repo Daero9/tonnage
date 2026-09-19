@@ -5761,6 +5761,27 @@ async function lancer(){
     for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); delete DB.dayFix[k]; delete DB.habitSel[k]; }
   }
 
+  grp("Les raccourcis de l'icône");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); DB.active = null; DB.templates = [];
+    F.addCoachProgram("masse");
+    vrai("« Démarrer ma séance » ouvre l'onglet Séance et l'aperçu de la séance proposée", F.executerRaccourci("seance") === true && F.eval("curTab") === "seance");
+    await attendre(()=>!!F.document.getElementById("pv-courte") || !!F.document.querySelector("#sheet h3"), 2000);
+    vrai("…une fiche s'est ouverte", !!F.document.querySelector("#sheet h3"));
+    F.hideSheet(); await attendre(()=>!F.document.querySelector(".cam"), 500);
+    DB.abo = true;
+    vrai("« Scanner mon repas » ouvre l'onglet Alimentation", F.executerRaccourci("scan") === true && F.eval("curTab") === "eat");
+    await attendre(()=>!!F.document.querySelector(".cam"), 2000);
+    vrai("…et la caméra", !!F.document.querySelector(".cam"));
+    const cam = F.document.querySelector(".cam"); if(cam) cam.querySelector("[data-non]").click();
+    await attendre(()=>!F.document.querySelector(".cam"), 1000);
+    vrai("Une action inconnue ne fait rien", F.executerRaccourci("x") === false);
+    /* on laisse retomber les ouvertures differees, puis on range tout */
+    await new Promise(r=>setTimeout(r, 700)); F.hideSheet(); await new Promise(r=>setTimeout(r, 350));
+    DB.templates = []; F.eval("curTab = 'seance'; raccourciRecu = false"); F.render();
+  }
+
   grp("La proposition de sauvegarde Drive");
   neuf();
   {
