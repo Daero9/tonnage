@@ -3679,6 +3679,9 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "Prendre {}":"Gain {}",
+  "Un seul fichier, invisible dans ton Drive":"A single file, invisible in your Drive",
+  "Perdre {}":"Lose {}",
   "Personnalise ton expérience sur Tonnup.":"Make Tonnup yours.",
   "Abonné":"Subscribed",
   "Essai · {} jours":"Trial · {} days",
@@ -7340,17 +7343,19 @@ function openOnboarding(first, brouillon, depart){
     if(etape === "intro"){
       /* Le titre tient en deux lignes : la seconde passe en orange, c'est elle qui
          porte la promesse. La phrase du dessous dit ce que la vue montre. */
+      /* les cartes existent dans les deux langues : le texte dans l'image change */
+      const img = n => "img/" + n + (langue() === "en" ? "-en" : "") + ".jpg";
       const vues = [
-        {v:"img/onb-seances.jpg",
+        {v:img("onb-seances"),
          titre:TR("Des séances sur mesure,<br><span class=\"hl\">prêtes à démarrer</span>"),
          sous:TR("Des entraînements adaptés à ton niveau et à tes objectifs, avec des exercices clairs et un suivi de tes performances.")},
-        {v:"img/onb-aliments.jpg",
+        {v:img("onb-aliments"),
          titre:TR("Suis ton alimentation<br><span class=\"hl\">en quelques clics</span>"),
          sous:TR("Scanne tes aliments, ajoute tes repas et garde un œil sur tes apports en calories et en macronutriments.")},
-        {v:"img/onb-charge.jpg",
+        {v:img("onb-charge"),
          titre:TR("Adapte la charge<br><span class=\"hl\">à tes capacités</span>"),
          sous:TR("L'app t'aide à trouver le bon poids à chaque série, pour progresser efficacement sans te prendre la tête.")},
-        {v:"img/onb-progression.jpg",
+        {v:img("onb-progression"),
          titre:TR("Suis ta progression<br><span class=\"hl\">et tes points faibles</span>"),
          sous:TR("Chaque séance nourrit tes courbes : tu vois ce qui monte, ce qui stagne et ce qu'il reste à travailler.")}
       ];
@@ -7598,7 +7603,7 @@ function openOnboarding(first, brouillon, depart){
         const diff = Math.round((d.goalWeight - d.weight)*10)/10;
         corps.querySelector("#reg-lab").textContent =
           Math.abs(diff) < 0.4 ? TR("Maintenir mon poids")
-                               : (diff > 0 ? `Prendre ${pds(diff)}` : `Perdre ${pds(-diff)}`);
+                               : (diff > 0 ? TR("Prendre {}").replace("{}", pds(diff)) : TR("Perdre {}").replace("{}", pds(-diff)));
         corps.querySelector("#reg-val").textContent = pds(d.goalWeight);
         const a = alerteObjectif(d), w = aimWarning(d.aim, d.weight, d.goalWeight);
         const rouge = a && a.niveau === "danger";
@@ -7861,7 +7866,7 @@ function openOnboarding(first, brouillon, depart){
         });
       };
       dess(true);
-      suivant("Créer mon programme", enregistrer);
+      suivant(TR("Créer mon programme"), enregistrer);
       return;
     }
   }
@@ -8228,7 +8233,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 00h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 00h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
