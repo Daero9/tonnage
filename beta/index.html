@@ -8317,7 +8317,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 01h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 01h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8454,6 +8454,34 @@ applyDefaults();
 setTimeout(()=>{ sonderAbo(); chargerForfaits(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
 setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
+/* ---- le widget de l'ecran d'accueil (Android) -----------------------------------------
+   Calories et proteines du jour, avec leur cible, et le bouton de scan. La page pousse
+   les chiffres a chaque enregistrement (avec un petit delai pour ne pas le faire a
+   chaque frappe), a l'ouverture et au passage en arriere-plan. */
+let widgetPont = null, widgetDelai = null;
+function pluginWidget(){
+  if(widgetPont) return widgetPont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Widget) widgetPont = c.Plugins.Widget;
+  else if(c && typeof c.registerPlugin === "function" && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ widgetPont = c.registerPlugin("Widget"); }catch(e){ widgetPont = null; }
+  }
+  return widgetPont;
+}
+function donneesWidget(){
+  const k = dayKey();
+  const pl = planFor(db.profile);
+  return {jour:k, kcal:Math.round(dayKcal(k) || 0), prot:Math.round(dayProt(k) || 0),
+          kcalCible: pl ? pl.kcal : 0, protCible: proteinTarget() || 0,
+          uniteKcal:"kcal", libProt:TR("prot.")};
+}
+function majWidget(){
+  const w = pluginWidget(); if(!w || !dansLApp()) return;
+  try{ w.maj(donneesWidget()).catch(()=>{}); }catch(e){}
+}
+function majWidgetBientot(){ clearTimeout(widgetDelai); widgetDelai = setTimeout(majWidget, 1500); }
+setTimeout(majWidget, 1200);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") majWidget(); });
 /* les rappels : reposes a chaque ouverture et a chaque passage en arriere-plan */
 setTimeout(()=>{ brancherNotifs(); planifierNotifs(); }, 1800);
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") planifierNotifs(); });
@@ -8695,6 +8723,7 @@ function save(){
   idbSet(json);
   autoFileSchedule();
   driveSchedule();
+  if(typeof majWidgetBientot === "function") majWidgetBientot();
 }
 /* ---- la zone que le clavier laisse voir -------------------------------------
    visualViewport donne la portion d ecran reellement visible, clavier deduit. C est
