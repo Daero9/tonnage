@@ -2652,14 +2652,25 @@ async function lancer(){
        pas la vibration — et quelqu'un qui s'entraîne à côté de gens n'avait aucune
        échappatoire */
     /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
-    vrai("Dix réglages", lignes.length === 10, String(lignes.length));
+    /* neuf lignes depuis le 19 septembre : l'abonnement est une carte a part, au-dessus */
+    vrai("Neuf réglages", lignes.length === 9, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
-    vrai("…et l'abonnement en première ligne", lignes[0].id === "st-abo");
+    vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-abo") && D2.querySelector("#sheet .rg-abo").id === "st-abo");
     vrai("Chacun porte son signe",
-      lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
-      lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
+      lignes.every(l => !!l.querySelector(":scope > .rgi svg, :scope > .rgi img")),
+      lignes.filter(l => !l.querySelector(".rgi svg, .rgi img")).length + " sans icône");
+    vrai("L'écran et la vibration ont un interrupteur", !!D2.querySelector("#st-ecran .rg-sw") && !!D2.querySelector("#st-vibr .rg-sw"));
+    vrai("La langue et les unités sont des menus", D2.querySelector("#st-lang").tagName === "SELECT" && D2.querySelector("#st-units").tagName === "SELECT");
+    vrai("Le thème a trois positions", D2.querySelectorAll("#st-theme [data-theme]").length === 3);
+    vrai("Mes données affiche ses trois chiffres", D2.querySelectorAll(".rg-stats b").length === 3);
     vrai("Le signe vient avant le texte",
       lignes.every(l => l.firstElementChild.classList.contains("rgi")));
+    /* la page « Sauvegarde et transfert », ouverte par-dessus : la croix ramene aux reglages */
+    D2.getElementById("st-bk").click();
+    vrai("« Sauvegarde et transfert » ouvre sa page", !!D2.getElementById("st-drive") && !!D2.getElementById("st-file") && !!D2.getElementById("st-export"));
+    vrai("…avec le bouton Google Drive bleu", !!D2.getElementById("dr-connect"));
+    F.closeSheet();
+    vrai("…et la croix ramène aux réglages", !!D2.getElementById("st-bk") && !D2.getElementById("st-file"));
     F.hideSheet();
   })();
   neuf();
