@@ -2692,18 +2692,20 @@
   .nt-heure{position:relative; display:flex; align-items:center; gap:8px; margin:12px 0 10px; padding:10px 12px; border-radius:12px; background:var(--surface2); font-size:12.5px; color:var(--ink-mute); cursor:pointer;}
   .nt-heure .ic{display:flex;} .nt-heure .ic svg{width:16px; height:16px;}
   .nt-heure b{font-size:15px; color:var(--ink);} .nt-heure > svg{width:16px; height:16px;}
-  .nt-heure input{position:absolute; inset:0; opacity:0; width:100%; height:100%;}   /* le champ natif, invisible, couvre la ligne */
+  .nt-heure input{position:absolute; inset:0; opacity:0; width:100%; height:100%; font-size:16px;}   /* le champ natif, invisible, couvre la ligne */
   /* les repas en colonnes : le nom, l'heure dessous ; on touche le nom pour allumer */
   .nt-repas{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:12px;}
   /* une seule case par repas : le nom en haut, l'heure dessous */
-  .nt-rep{display:flex; flex-direction:column; align-items:stretch; border-radius:12px; background:var(--surface2); border:1px solid var(--border); overflow:hidden;}
+  /* pas d'overflow:hidden ici : au focus du champ d'heure, le navigateur faisait defiler
+     la case pour montrer le champ invisible, et le nom du repas sortait du cadre */
+  .nt-rep{display:flex; flex-direction:column; align-items:stretch; border-radius:12px; background:var(--surface2); border:1px solid var(--border);}
   .nt-rep.on{background:rgba(245,130,32,.12); border-color:rgba(245,130,32,.35);}
   .nt-rep .nom{padding:8px 4px 4px; font-size:12px; font-weight:800; background:none; color:var(--ink-mute); border:0;}
   .nt-rep.on .nom{color:var(--accent);}
   .nt-rep .h{position:relative; display:flex; justify-content:center; padding:2px 4px 9px; cursor:pointer; opacity:.4;}
   .nt-rep.on .h{opacity:1;}
   .nt-rep .h b{font-size:14px; color:var(--ink);}
-  .nt-rep .h input{position:absolute; inset:0; opacity:0; width:100%; height:100%;}
+  .nt-rep .h input{position:absolute; inset:0; opacity:0; width:100%; height:100%; font-size:16px;}   /* 16 px : iOS ne zoome pas */
   .nt-jours{display:flex; gap:6px; flex-wrap:wrap;}
   .nt-jours button{flex:1 1 0; min-width:40px; padding:7px 0; border-radius:99px; font-size:12px; font-weight:800; background:var(--surface2); color:var(--ink-mute); border:1px solid var(--border);}
   .nt-jours button.on{background:rgba(245,130,32,.16); color:var(--accent); border-color:transparent;}
@@ -8315,7 +8317,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 01h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 01h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
