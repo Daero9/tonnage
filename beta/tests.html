@@ -5786,7 +5786,7 @@ async function lancer(){
     DB.profile = JSON.parse(JSON.stringify(profilType)); DB.history = []; DB.active = null; DB.templates = []; delete DB.notifs;
     F.addCoachProgram("masse");
     const r = F.notifsReglage();
-    vrai("Par défaut : seul le rappel de séance, à 18 h", r.actif && r.types.seance.on && r.types.seance.h === "18:00" && !r.types.repas.on && !r.types.collation.on);
+    vrai("Par défaut : seul le rappel de séance, à 18 h", r.actif && r.types.seance.on && r.types.seance.h === "18:00" && !r.types.repas.on);
     /* un mardi 10 h : la seance du jour est encore a venir */
     const mardi10 = new Date(2026, 8, 22, 10, 0, 0);
     let l = F.notifsAPlanifier(mardi10);
@@ -5802,8 +5802,8 @@ async function lancer(){
     eq("Séance déjà faite : silence ce jour", l.filter(x=>x.at.getDate() === 22).length, 0);
     DB.history = [];
     /* heures bornees */
-    r.types.seance.h = "06:30"; l = F.notifsAPlanifier(mardi10);
-    vrai("Jamais avant 9 h : 6 h 30 devient 9 h", l.every(x=>x.at.getHours() === 9));
+    r.types.seance.h = "05:30"; l = F.notifsAPlanifier(mardi10);
+    vrai("Jamais avant 7 h : 5 h 30 devient 7 h", l.every(x=>x.at.getHours() === 7));
     r.types.seance.h = "23:00"; l = F.notifsAPlanifier(mardi10);
     vrai("Jamais après 21 h", l.every(x=>x.at.getHours() === 21));
     r.types.seance.h = "18:00";
@@ -5819,11 +5819,15 @@ async function lancer(){
     /* le repas, avec son action de raccourci */
     r.types.repas.on = true;
     l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan");
-    vrai("Le rappel de repas ouvre le scan", l.length === 7 && l[0].at.getHours() === 12 && l[0].at.getMinutes() === 30);
+    vrai("Le rappel de repas : midi et soir par défaut, tous les jours, et il ouvre le scan", l.length === 14 && l.some(x=>x.at.getHours() === 12 && x.at.getMinutes() === 30) && l.some(x=>x.at.getHours() === 19));
+    vrai("…et il nomme le repas", l.some(x=>/déjeuner/.test(x.titre)) && l.some(x=>/dîner/.test(x.titre)));
+    r.types.repas.repas.matin.on = true;
+    vrai("Le petit-déj de plus : six rappels de plus (celui d'aujourd'hui, 8 h 30, est passé)", F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan").length === 20);
     delete DB.notifs; DB.templates = [];
     /* la fiche de reglage */
     F.openNotifs();
-    vrai("La fiche des notifications liste les cinq rappels", F.document.querySelectorAll("#nt-liste .nt-carte").length === 5);
+    vrai("La fiche des notifications liste les quatre rappels", F.document.querySelectorAll("#nt-liste .nt-carte").length === 4);
+    vrai("…le repas en quatre colonnes, sans jours", F.document.querySelectorAll("#nt-liste .nt-carte[data-type='repas'] .nt-rep").length === 4 && !F.document.querySelector("#nt-liste .nt-carte[data-type='repas'] .nt-jours"));
     vrai("…chacun avec ses sept jours", F.document.querySelectorAll("#nt-liste .nt-carte:first-child .nt-jours button").length === 7);
     F.document.getElementById("nt-actif").click();
     vrai("Interrupteur général coupé : la liste se grise", F.document.getElementById("nt-liste").classList.contains("off"));
