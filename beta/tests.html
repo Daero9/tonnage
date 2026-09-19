@@ -5809,6 +5809,7 @@ async function lancer(){
     r.types.seance.h = "18:00";
     /* la pesee hebdo, le samedi */
     r.types.pesee.on = true;
+    vrai("La pesée est réglée sur le samedi seul", r.types.pesee.jours.length === 1 && r.types.pesee.jours[0] === 6);
     l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "pesee");
     vrai("La pesée tombe une fois, le samedi", l.length === 1 && l[0].at.getDay() === 6);
     /* interrupteur general */
@@ -5822,7 +5823,16 @@ async function lancer(){
     delete DB.notifs; DB.templates = [];
     /* la fiche de reglage */
     F.openNotifs();
-    vrai("La fiche des notifications liste les cinq rappels", F.document.querySelectorAll("#nt-liste .nt-l").length === 5);
+    vrai("La fiche des notifications liste les cinq rappels", F.document.querySelectorAll("#nt-liste .nt-carte").length === 5);
+    vrai("…chacun avec ses sept jours", F.document.querySelectorAll("#nt-liste .nt-carte:first-child .nt-jours button").length === 7);
+    F.document.getElementById("nt-actif").click();
+    vrai("Interrupteur général coupé : la liste se grise", F.document.getElementById("nt-liste").classList.contains("off"));
+    F.document.getElementById("nt-actif").click();
+    /* retirer le lundi de la seance : plus de rappel le lundi */
+    const lun = F.document.querySelector("#nt-liste .nt-carte[data-type='seance'] [data-n='1']"); lun.click();
+    const l2 = F.notifsAPlanifier(new Date(2026, 8, 22, 10, 0, 0));
+    vrai("Un jour décoché ne reçoit plus de rappel", !l2.some(x=>x.at.getDay() === 1) && l2.length === 6);
+    lun.click();
     F.hideSheet();
   }
 
