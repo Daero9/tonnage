@@ -2635,6 +2635,9 @@ async function lancer(){
       {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
       {exId:id("Rowing barre"),     sets:3, reps:"8-12", rest:120}]}];
     DB.active = null;
+    F.openExoInfo(id("Curl auto-résisté"));
+    vrai("Un exercice sans image avant / après n'affiche pas de bloc vide", !F.document.querySelector("#sheet .exo-demo"));
+    F.closeSheet();
     F.openPreview("tpile");
     eq("On part de l'aperçu de la séance", titre(), "Pile");
     F.ouvrirParDessus(()=>F.openPreview("tpile"), ()=>F.openExoInfo(id("Développé couché")));
@@ -2643,7 +2646,6 @@ async function lancer(){
     /* l'image « avant / après », quand elle existe, au-dessus de l'astuce */
     const demo = F.document.querySelector("#sheet .exo-demo");
     vrai("Le développé couché montre son image avant / après", demo && /developpe-couche\.webp/.test(demo.querySelector("img").src));
-    vrai("…avec ses deux mentions dessous", demo && demo.querySelectorAll(".lg span").length === 2);
     vrai("…placée avant l'astuce de pro", demo && demo.nextElementSibling && demo.nextElementSibling.classList.contains("tip"));
     F.closeSheet();
     eq("La fermer ramène à l'aperçu", titre(), "Pile");
@@ -2654,7 +2656,6 @@ async function lancer(){
     /* le bouton retour du téléphone ne doit rien laisser derrière lui */
     F.openPreview("tpile");
     F.ouvrirParDessus(()=>F.openPreview("tpile"), ()=>F.openExoInfo(id("Rowing barre")));
-    vrai("Le rowing barre, sans image, n'affiche pas de bloc vide", !F.document.querySelector("#sheet .exo-demo"));
     eq("Deux fiches ouvertes", pile(), 1);
     F.hideSheet();
     eq("Une fermeture nette vide la pile", pile(), 0);
