@@ -1799,6 +1799,7 @@
   .dr-scene{position:relative; height:150px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center;}
   .dr-rond{position:relative; width:136px; height:136px; border-radius:50%; background:#fdf1e6; display:flex; align-items:center; justify-content:center;}
   .dr-rond img{width:74px; height:auto;}
+  .dr-cloche{display:flex; color:var(--accent);} .dr-cloche svg{width:56px; height:56px;}
   .dr-sync{position:absolute; right:-6px; bottom:6px; width:38px; height:38px; border-radius:12px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(245,130,32,.35);}
   .dr-sync svg{width:20px; height:20px;}
   .dr-nuage{position:absolute; top:52px; width:64px; height:30px; border-radius:30px; background:#ececec;}
@@ -3709,6 +3710,12 @@ const TRAD = {en:{
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
   "Des rappels pour garder le cap.":"Set reminders to stay on track.",
+  "Des rappels ?":"Reminders?",
+  "Tonnup peut te prévenir quand une séance t'attend, ou te rappeler de noter un repas — à l'heure que tu choisis, jamais plus d'une fois par rappel et par jour.":"Tonnup can tell you when a workout is waiting, or remind you to log a meal — at the time you choose, never more than once per reminder per day.",
+  "Chaque rappel a son interrupteur et son heure":"Each reminder has its own switch and time",
+  "Rien le jour où ta séance est déjà faite":"Nothing on a day your workout is already done",
+  "Modifiable à tout moment dans Réglages → Notifications":"Adjustable anytime in Settings → Notifications",
+  "Configurer":"Set up",
   "Heure du rappel":"Reminder time",
   "Petit-déj":"Breakfast",
   "Ton petit-déj":"Your breakfast", "Ton déjeuner":"Your lunch", "Ta collation":"Your snack", "Ton dîner":"Your dinner",
@@ -7367,7 +7374,7 @@ function openOnboarding(first, brouillon, depart){
     if(demarrerEssai()) setTimeout(()=>toast(TR("7 jours d'Analyse offerts — les séances restent gratuites, toujours.")), 900);
     fermerOnb(); render(); showPlan(true);
     /* premiere fois, dans l'app Android : la fiche des rappels s'ouvre d'elle-meme apres le plan */
-    if(notifsPossibles() && !dejaVu("notifs-proposees")){ marquerVu("notifs-proposees"); onSheetClose = ()=>{ onSheetClose = null; setTimeout(openNotifs, 400); }; }
+    if(notifsPossibles() && !dejaVu("notifs-proposees")){ marquerVu("notifs-proposees"); onSheetClose = ()=>{ onSheetClose = null; setTimeout(proposerNotifsPage, 400); }; }
   }
 
   function dessiner(){
@@ -8317,7 +8324,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 02h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 02h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10185,6 +10192,24 @@ function openNotifs(){
     b.classList.toggle("on", c.jours.includes(n)); maj();
   });
   document.getElementById("nt-ok").onclick = closeSheet;
+}
+/* La page qui precede le reglage : on demande avant d'imposer une liste de reglages.
+   « Configurer » ouvre la fiche complete, « Plus tard » la laisse dans les reglages. */
+function proposerNotifsPage(){
+  openSheet(`<div class="dr-prop">
+      <div class="dr-scene"><div class="dr-rond"><span class="dr-cloche">${IC_CLOCHE}</span></div></div>
+      <h3>${TR("Des rappels ?")}</h3>
+      <p>${TR("Tonnup peut te prévenir quand une séance t'attend, ou te rappeler de noter un repas — à l'heure que tu choisis, jamais plus d'une fois par rappel et par jour.")}</p>
+      <ul class="dr-pts">
+        <li>${IC_CHECK}${TR("Chaque rappel a son interrupteur et son heure")}</li>
+        <li>${IC_CHECK}${TR("Rien le jour où ta séance est déjà faite")}</li>
+        <li>${IC_CHECK}${TR("Modifiable à tout moment dans Réglages → Notifications")}</li>
+      </ul>
+      <button class="btn btn-accent" id="nt-prop-ok" style="width:100%;">${TR("Configurer")}</button>
+      <button class="btn dr-tard" id="nt-prop-tard">${TR("Plus tard")}</button>
+    </div>`);
+  document.getElementById("nt-prop-ok").onclick = ()=>{ openNotifs(); };
+  document.getElementById("nt-prop-tard").onclick = ()=>closeSheet();
 }
 /* apres la premiere seance terminee : on propose le rappel, une fois */
 function proposerNotifs(){
