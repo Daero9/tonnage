@@ -2694,96 +2694,38 @@ async function lancer(){
   })();
   neuf();
 
-  grp("L'alarme du minuteur");
+  grp("La permission des notifications au premier repos");
   neuf();
-  /* Depuis Android 13, « Alarmes et rappels » est refusée par défaut, et le greffon se
-     rabat SILENCIEUSEMENT sur une alarme approximative. On la demande donc une fois, au
-     premier repos, pendant que l'application est encore à l'écran. */
+  /* Plus de demande d'« alarme exacte » : le repos est un service de premier plan et la
+     permission a ete retiree du manifeste — la page systeme s'ouvrait sur un interrupteur
+     grise. Reste la permission des notifications, demandee pendant qu'on est a l'ecran. */
   await (async ()=>{
-    const gardeSeen = DB.seen.alarmeExacte, gardeSon = DB.settings.son;
+    const gardeSon = DB.settings.son;
     const appels = {check:0, change:0, perm:0};
-    let etat = "denied";
-    /* faux greffon : les tests tournent dans un navigateur, où Capacitor n'existe pas */
     F.window.Capacitor = {isNativePlatform:()=>true, Plugins:{LocalNotifications:{
       checkPermissions: async ()=>({display:"prompt"}),
       requestPermissions: async ()=>{ appels.perm++; return {display:"granted"}; },
-      checkExactNotificationSetting: async ()=>{ appels.check++; return {exact_alarm:etat}; },
-      changeExactNotificationSetting: async ()=>{ appels.change++; etat = "granted";
-        return {exact_alarm:etat}; },
+      checkExactNotificationSetting: async ()=>{ appels.check++; return {exact_alarm:"denied"}; },
+      changeExactNotificationSetting: async ()=>{ appels.change++; return {exact_alarm:"granted"}; },
       schedule: async ()=>({}), cancel: async ()=>({})
     }}};
-
-    /* Toute cette fonction se tait quand la page n'est pas à l'écran — c'est voulu :
-       on ne réclame pas une autorisation à quelqu'un qui regarde ailleurs. Mais la
-       suite de tests, elle, tourne souvent dans une fenêtre passée en arrière-plan,
-       et le navigateur déclare alors la page « hidden ». On force donc l'état visible
-       le temps du groupe, exactement comme on remplace Capacitor par un faux greffon.
-       Sans ça, ces essais échouaient selon que Nico avait la fenêtre devant lui. */
     const vraiEtat = Object.getOwnPropertyDescriptor(F.Document.prototype, "visibilityState");
     const vraiCache = Object.getOwnPropertyDescriptor(F.Document.prototype, "hidden");
-    Object.defineProperty(F.Document.prototype, "visibilityState",
-      {get:()=>"visible", configurable:true});
+    Object.defineProperty(F.Document.prototype, "visibilityState", {get:()=>"visible", configurable:true});
     Object.defineProperty(F.Document.prototype, "hidden", {get:()=>false, configurable:true});
-    /* et on attend que la chose arrive plutôt qu'un délai fixe : en arrière-plan le
-       navigateur étire les minuteurs, un « attendre 800 ms » devenait un pile ou face */
-    const jusqua = async (cond, max) => { const t0 = Date.now();
-      while(Date.now() - t0 < (max || 4000)){ if(cond()) return true;
-        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
-
-    delete DB.seen.alarmeExacte;
-    DB.settings.son = true;
+    DB.settings.son = true; F.eval("notifsOk = null");
     await F.verifierAlarmeExacte();
-    vrai("L'état est lu auprès du système", appels.check === 1, appels.check);
-    vrai("Le refus est retenu pour ne plus jamais redemander", !!DB.seen.alarmeExacte);
-    await jusqua(()=>!!F.document.getElementById("alm-ok"));
-    vrai("La fiche explique à quoi sert l'autorisation",
-      !!F.document.getElementById("alm-ok"));
-    eq("Deux promesses, pas une", F.document.querySelectorAll("#sheet .alm-note").length, 2);
-    vrai("…et l'une dit qu'elle ne sert qu'aux séances",
-      [...F.document.querySelectorAll("#sheet .alm-note .s")]
-        .some(e=>/entraînement|séance/i.test(e.textContent)));
-    /* les gens ne lisent pas : la fiche doit tenir en quelques lignes */
-    vrai("La fiche reste courte",
-      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length < 330,
-      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length + " caractères");
-
-    /* « Autoriser » ouvre la page système ; au retour l'état est relu, pas supposé */
-    const bouton = F.document.getElementById("alm-ok");
-    if(bouton) bouton.click();
-    await jusqua(()=>appels.change === 1, 1000);
-    vrai("« Autoriser » ouvre le réglage système", appels.change === 1, appels.change);
-    /* le réglage revient du système, il est relu ensuite : deux temps, pas un */
-    await jusqua(()=>F.eval("alarmeExacte") === "granted", 1000);
-    eq("…et l'état est relu", F.eval("alarmeExacte"), "granted");
-    F.hideSheet();
-
-    /* on ne repose jamais la question */
-    const avant = appels.check;
+    vrai("La permission des notifications est demandée pendant qu'on la voit", appels.perm === 1, appels.perm);
+    await new Promise(r=>setTimeout(r, 900));
+    vrai("…et la page « Alarmes et rappels » n'est jamais ouverte", appels.change === 0 && !F.document.getElementById("alm-ok"));
+    DB.settings.son = false; F.eval("notifsOk = null");
     await F.verifierAlarmeExacte();
-    vrai("On ne redemande pas une deuxième fois", appels.check === avant + 0 || !!DB.seen.alarmeExacte);
-
-    /* son coupé : il n'y a rien à autoriser */
-    delete DB.seen.alarmeExacte;
-    DB.settings.son = false;
-    const avant2 = appels.check;
-    await F.verifierAlarmeExacte();
-    eq("Son coupé, on ne demande rien", appels.check, avant2);
-    vrai("…et rien n'est retenu", !DB.seen.alarmeExacte);
-
-    /* la permission des notifications se demande À L'ÉCRAN, pas une fois l'app cachée */
-    DB.settings.son = true;
-    delete DB.seen.alarmeExacte;
-    F.eval("notifsOk = null");
-    await F.verifierAlarmeExacte();
-    vrai("La permission des notifications est demandée pendant qu'on la voit",
-      appels.perm >= 1, appels.perm);
-
+    eq("Son coupé, on ne demande rien", appels.perm, 1);
     delete F.window.Capacitor;
     if(vraiEtat) Object.defineProperty(F.Document.prototype, "visibilityState", vraiEtat);
     if(vraiCache) Object.defineProperty(F.Document.prototype, "hidden", vraiCache);
     F.eval("alarmeExacte = null; notifsOk = null");
-    DB.seen.alarmeExacte = gardeSeen; DB.settings.son = gardeSon;
-    if(gardeSeen === undefined) delete DB.seen.alarmeExacte;
+    DB.settings.son = gardeSon;
   })();
   neuf();
 
