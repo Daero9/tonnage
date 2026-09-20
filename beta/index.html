@@ -3722,6 +3722,8 @@ const TRAD = {en:{
   "Tonnup Analyse":"Tonnup Analyse",
   "Alimentation, progression et bilan.":"Nutrition, progress and weekly review.",
   "Voir les forfaits":"See plans",
+  "soulevés cette semaine":"lifted this week",
+  "calories brûlées cette semaine":"calories burned this week",
   "Des rappels pour garder le cap.":"Set reminders to stay on track.",
   "Des rappels ?":"Reminders?",
   "Tonnup peut te prévenir quand une séance t'attend ou te rappeler de noter un repas.":"Tonnup can tell you when a workout is waiting, or remind you to log a meal.",
@@ -8337,7 +8339,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 02h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 02h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8493,22 +8495,22 @@ function donneesWidget(){
   const pl = planFor(db.profile);
   /* le bilan : les sept derniers jours (du plus ancien a aujourd'hui), le tonnage et
      les calories brulees sur ces sept jours, seances et sorties comprises */
-  const noms = langue() === "en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"];
-  let bJours = "", bFaits = "", bKg = 0, bKcal = 0;
+  const noms = langue() === "en" ? ["SUN","MON","TUE","WED","THU","FRI","SAT"] : ["DIM","LUN","MAR","MER","JEU","VEN","SAM"];
+  const bJoursL = []; let bFaits = "", bKg = 0, bKcal = 0;
   const poids = currentWeight() || 75;
   for(let i = 6; i >= 0; i--){
     const d = new Date(Date.now() - i * 864e5), kd = dayKey(d);
     const seances = (db.history || []).filter(h=>dayKey(h.date) === kd);
     const sorties = (db.cardio || []).filter(c=>dayKey(c.date) === kd);
-    bJours += noms[d.getDay()]; bFaits += (seances.length || sorties.length) ? "1" : "0";
+    bJoursL.push(noms[d.getDay()]); bFaits += (seances.length || sorties.length) ? "1" : "0";
     seances.forEach(h=>{ bKg += sessionVolume(h); bKcal += (h.kcal || liftKcal(h)); });
     sorties.forEach(c=>{ bKcal += sortieKcal(c, poids); });
   }
   return {jour:k, kcal:Math.round(dayKcal(k) || 0), prot:Math.round(dayProt(k) || 0),
           kcalCible: pl ? pl.kcal : 0, protCible: proteinTarget() || 0,
           uniteKcal:"kcal", libProt:TR("prot."), libScan:TR("Scanner"),
-          bJours, bFaits, bKg: Math.round(estImperial() ? bKg * PAR_LB : bKg), bKcal: Math.round(bKcal),
-          bUniteKg: uPoids(), bLibKg: TR("soulevés"), bLibKcal: TR("kcal brûlées")};
+          bJours: bJoursL.join(","), bFaits, bKg: Math.round(estImperial() ? bKg * PAR_LB : bKg), bKcal: Math.round(bKcal),
+          bUniteKg: uPoids(), bLibKg: TR("soulevés cette semaine"), bLibKcal: TR("calories brûlées cette semaine")};
 }
 function majWidget(){
   const w = pluginWidget(); if(!w || !dansLApp()) return;
