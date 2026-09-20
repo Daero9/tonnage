@@ -2134,7 +2134,7 @@
   .mp-val.dehors{color:var(--ink-soft); padding-left:8px;}
   .mp-nodata{font-size:12px; color:var(--ink-mute); padding:0 9px; line-height:22px;}
   .mp-bodies{display:flex; justify-content:center; gap:14px; margin:10px 0 16px; border-radius:12px;}
-  
+
   .mp-fig{position:relative; width:46%; max-width:160px;}
   /* base blanche > muscles colorés > lignes : la base reste blanche dans les deux thèmes */
   .mp-fig .mp-base{width:100%; display:block;}
@@ -2943,6 +2943,10 @@
   :root[data-theme="dark"] .abo-populaire{background:#5a3512; color:#ffb476;}
   .exo-c{background:var(--surface); border-radius:16px; padding:16px 15px; margin-bottom:12px;}
   .exo-c.tip{border:1.5px solid var(--ink);}   /* le conseil est encadré : on ne le rate pas */
+  /* l'image « avant / après » : sur une plaque blanche dans les deux thèmes, comme les
+     vignettes — l'image a son propre fond blanc, elle ne se recolore pas */
+  .exo-demo{background:#fff; border-radius:16px; padding:8px; margin-bottom:12px; border:1px solid var(--border);}
+  .exo-demo img{display:block; width:100%; height:auto; border-radius:10px;}
   .exo-t{font-size:16px; font-weight:800; letter-spacing:-.01em; margin-bottom:13px;}
   .exo-txt{font-size:13.5px; line-height:1.6; color:var(--ink-soft);}
   .exo-etape{display:flex; gap:14px; align-items:flex-start; padding:11px 0;
@@ -3743,7 +3747,46 @@ const TRAD = {en:{
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
   "Ta séance {} t'attend":"Your {} workout is waiting",
   "{n} exercices · ~{m} min":"{n} exercises · ~{m} min",
-  "Code-barres ou photo de l'assiette : cinq secondes, et ta journée est à jour.":"Barcode or a photo of the plate: five seconds, and your day is up to date.",
+  "Une photo de l'assiette, et ta journée est à jour.":"A photo of your plate, and your day is up to date.",
+  "Bon matin{p} ☀️":"Good morning{p} ☀️",
+  "Scanne ton petit-déj, la journée est lancée.":"Scan your breakfast, the day is on.",
+  "Petit-déj des champions":"Breakfast of champions",
+  "Une photo, et il est noté.":"One photo, and it's logged.",
+  "Réveille tes muscles":"Wake up your muscles",
+  "Ton petit-déj mérite d'être compté.":"Your breakfast deserves to count.",
+  "Bonjour{p} 👋":"Hello{p} 👋",
+  "Deux secondes pour scanner ton petit-déj.":"Two seconds to scan your breakfast.",
+  "Le premier repas compte":"The first meal counts",
+  "Une photo, et on est partis.":"One photo, and we're off.",
+  "C'est l'heure de recharger":"Time to refuel",
+  "Scanne ton déjeuner avant de repartir.":"Scan your lunch before you head back.",
+  "Bon appétit{p} !":"Enjoy your lunch{p}!",
+  "Une photo de l'assiette, et c'est noté.":"One photo of the plate, and it's logged.",
+  "Alors, ce déjeuner ?":"So, how was lunch?",
+  "Montre-moi ton assiette.":"Show me your plate.",
+  "Pause déj bien méritée":"Well-earned lunch break",
+  "Scanne-le, tes muscles diront merci.":"Scan it, your muscles will thank you.",
+  "Ton déjeuner, en une photo":"Your lunch, in one photo",
+  "Cinq secondes, et tu sais où tu en es.":"Five seconds, and you know where you stand.",
+  "Un petit creux{p} ?":"Feeling peckish{p}?",
+  "Note ta collation, elle compte aussi.":"Log your snack, it counts too.",
+  "L'heure du goûter":"Snack time",
+  "Une photo, et il est dans la boîte.":"One photo, and it's in the bag.",
+  "Tes muscles ont faim":"Your muscles are hungry",
+  "Scanne ton encas.":"Scan your snack.",
+  "Petite pause":"Quick break",
+  "Ton encas mérite sa photo.":"Your snack deserves its photo.",
+  "Le coup de pouce de l'après-midi":"Your afternoon boost",
+  "Scanne-le avant de l'oublier.":"Scan it before you forget.",
+  "Le dernier repas de la journée":"Last meal of the day",
+  "Scanne ton dîner et boucle ta journée.":"Scan your dinner and wrap up the day.",
+  "Bon dîner{p} !":"Enjoy your dinner{p}!",
+  "Une photo, et le bilan est complet.":"One photo, and the tally is complete.",
+  "Alors, ce dîner ?":"So, how was dinner?",
+  "Ce soir, on mange bien":"Tonight, we eat well",
+  "Scanne-le, et à demain.":"Scan it, and see you tomorrow.",
+  "Bonsoir{p}":"Good evening{p}",
+  "Dernier repas à noter. Bravo d'avoir tenu.":"Last meal to log. Well done for sticking with it.",
   "L'heure de la collation":"Snack time",
   "Un shaker, un yaourt, une poignée d'amandes — tes protéines de la journée se jouent aussi là.":"A shake, a yogurt, a handful of almonds — your day's protein is decided here too.",
   "La dernière : {p}, il y a {j} jours.":"Last one: {p}, {j} days ago.",
@@ -5383,7 +5426,6 @@ const TRAD = {en:{
   "Curl marteau élastique":"Band hammer curl",
   "Dips sur banc":"Bench dips",
   "Extension triceps élastique":"Band triceps extension",
-  "Curl auto-résisté":"Self-resisted curl",
   "Rowing sous la table":"Table row"
 }};   /* rempli plus bas, zone par zone */
 
@@ -5507,6 +5549,7 @@ function idExoDe(nomFr){
   return "x-" + String(nomFr).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
+const EXOS_RETIRES = new Set(["Curl auto-résisté"]);
 const LIB = [
   ["Pectoraux","Développé couché","Barre","bench"],["Pectoraux","Développé incliné haltères","Haltères","bench"],["Pectoraux","Développé couché haltères","Haltères","bench"],["Pectoraux","Écartés poulie","Poulie","cablefly"],["Pectoraux","Dips","Poids du corps","dips"],["Pectoraux","Pompes","Poids du corps","pushup"],
   ["Dos","Tractions","Barre fixe","pullup"],["Dos","Rowing barre","Barre","row"],["Dos","Tirage vertical","Poulie","latpulldown"],["Dos","Rowing haltère","Haltères","row"],["Dos","Tirage horizontal","Poulie","seatedrow"],["Dos","Soulevé de terre","Barre","deadlift"],
@@ -5576,7 +5619,10 @@ const LIB = [
   get name(){ return TR(this.nameFr); },
   get muscle(){ return TR(this.muscleFr); },
   get equip(){ return TR(this.equipFr); }
-}));
+})).filter(e=>!EXOS_RETIRES.has(e.nameFr));
+/* Retiré de la bibliothèque le 20 septembre 2026 (« ça manque de sérieux »). La ligne
+   reste dans la liste ci-dessus pour que le rang des suivants ne bouge pas — c'est la
+   clé de conversion des anciens « libN » — mais l'exercice n'existe plus pour l'app. */
 /* Nom canonique d'un exercice : le français pour la bibliothèque, le nom tel
    quel pour un exercice que la personne a créé elle-même. */
 const nomCanon = ex => (ex && ex.nameFr) || (ex && ex.name) || "";
@@ -5918,7 +5964,6 @@ const MUSCLE_WORK = {
   "Curl marteau élastique":[["Biceps",3],["Avant-bras",2]],
   "Dips sur banc":[["Triceps",3],["Deltoïdes (antérieur)",1],["Pectoraux",1]],
   "Extension triceps élastique":[["Triceps",3]],
-  "Curl auto-résisté":[["Biceps",3],["Avant-bras",1]],
   "Rowing sous la table":[["Grand dorsal",3],["Biceps",2],["Trapèzes",2]],
   "Développé incliné barre":[["Pectoraux (haut)",3],["Deltoïdes (antérieur)",2],["Triceps",2]],
   "Écartés haltères":[["Pectoraux",3],["Deltoïdes (antérieur)",1]],
@@ -6069,8 +6114,6 @@ Object.assign(EXO_INFO_EN, {
     steps:["Stand on the band, one handle in each hand.","Arms by your sides, palms facing forward.","Elbows tight against your ribs, still.","Curl your hands toward your shoulders, squeezing.","Lower slowly to full extension."]},
   "Curl marteau élastique":{tip:"Palms facing each other from start to finish: that grip works the brachialis and thickens the arm.",
     steps:["Stand on the band, handles in a neutral grip.","Arms by your sides, thumbs up.","Elbows fixed against your ribs.","Curl toward your shoulders without rotating your wrists.","Lower slowly, keeping the tension."]},
-  "Curl auto-résisté":{tip:"The braking hand is what makes this work: the harder you resist on the way down, the more the set counts.",
-    steps:["Stand with one palm up, the other hand resting on it.","Keep the working elbow pinned to your side.","Curl up against the resistance of the other hand.","Pause at the top.","Resist hard through a five-second descent."]},
   "Dips sur banc":{tip:"Keep your hips grazing the bench on the way down: the further you drift, the more the shoulder is strained for nothing.",
     steps:["Hands on the edge of a bench, fingers forward.","Hips off the bench, legs straight or knees bent.","Lower by bending your elbows straight back.","Stop when your arms make a right angle.","Press through your palms to extension, without locking out."]},
   "Extension triceps élastique":{tip:"Only your forearms move: your elbows stay high and fixed, like two hinges.",
@@ -6314,8 +6357,6 @@ const EXO_INFO = {
     steps:["Debout sur l'élastique, une poignée dans chaque main.","Bras le long du corps, paumes vers l'avant.","Coudes serrés contre les côtes, immobiles.","Monte les mains vers les épaules en contractant.","Redescends lentement jusqu'à extension complète."]},
   "Curl marteau élastique":{tip:"Paumes face à face du début à la fin : c'est cette prise qui met le brachial au travail et épaissit le bras.",
     steps:["Debout sur l'élastique, poignées en prise neutre.","Bras le long du corps, pouces vers le haut.","Coudes fixes contre les côtes.","Monte les mains vers les épaules sans tourner les poignets.","Redescends lentement en gardant la tension."]},
-  "Curl auto-résisté":{tip:"C'est la main qui freine qui fait l'exercice : plus tu résistes à la descente, plus la série compte.",
-    steps:["Debout, une main paume vers le haut, l'autre posée dessus.","Colle au corps le coude du bras qui travaille.","Monte en poussant contre la résistance de l'autre main.","Marque un temps d'arrêt en haut.","Résiste fort pendant les cinq secondes de descente."]},
   "Dips sur banc":{tip:"Garde les fesses au ras du banc pendant la descente : plus tu t'en éloignes, plus l'épaule est mise en tension inutilement.",
     steps:["Mains sur le bord d'un banc, doigts vers l'avant.","Fessiers décollés, jambes tendues ou genoux fléchis.","Descends en pliant les coudes vers l'arrière.","Arrête-toi quand les bras forment un angle droit.","Pousse dans les paumes jusqu'à extension, sans verrouiller."]},
   "Extension triceps élastique":{tip:"Seuls les avant-bras bougent : les coudes restent hauts et fixes, comme deux charnières.",
@@ -6541,6 +6582,8 @@ function openExoInfo(exId){
     ${/* La blessure ne se dit plus ici : elle a son bouton ⚠ dans la séance, et le
          même avertissement à deux endroits finit par ne plus être lu nulle part.
          La fiche parle de l'exercice, l'attention parle de toi. */""}
+    ${EXO_DEMO[nomCanon(ex)]? `<div class="exo-demo">
+        <img src="img/demo/${EXO_DEMO[nomCanon(ex)]}.webp" alt="" loading="lazy"></div>`:""}
     ${info? `<div class="exo-c tip">
         <div class="exo-t">${TR("Astuce de Pro ✨")}</div>
         <div class="exo-txt">${esc(info.tip)}</div></div>`:""}
@@ -6669,7 +6712,7 @@ const INJURY_FAMILLES = {
     {centres:["Triceps"], sauf:["Extension triceps machine","Extension poulie (corde)"],
      tip:"L'extension du coude sous charge est exactement le geste qui tire sur le tendon. Va lentement et allège.",
      alts:["Extension triceps machine","Développé couché haltères"]},
-    {centres:["Biceps"], sauf:["Curl marteau","Curl marteau élastique","Curl auto-résisté"],
+    {centres:["Biceps"], sauf:["Curl marteau","Curl marteau élastique"],
      tip:"La barre droite verrouille l'avant-bras. Préfère une prise marteau, plus douce pour le coude.",
      alts:["Curl marteau","Curl marteau élastique"]}
   ],
@@ -8266,6 +8309,123 @@ function coachDesc(goal){
    La cle est le nom francais de l'exercice, pas son icone : une icone couvre toute
    une famille (les cinq developpes couches partagent la meme), alors qu'un dessin
    montre un mouvement precis. Un exercice sans dessin garde son icone dessinee. */
+/* Les images « avant / après » de la fiche d'information : deux poses côte à côte
+   (ou l'une sur l'autre pour les mouvements allongés — même fichier, rien à dire à l'app),
+   nommées comme dans la bibliothèque. Table réécrite par C:\Projets\outils\demo.py
+   à partir du dossier « Avant après » — l'app ne demande jamais un fichier absent. */
+const EXO_DEMO = {
+  "Abducteurs machine":"abducteurs-machine",
+  "Abduction hanche élastique":"abduction-hanche-elastique",
+  "Adducteurs machine":"adducteurs-machine",
+  "Arnold press":"arnold-press",
+  "Barre au front":"barre-au-front",
+  "Butterfly (pec deck)":"butterfly-pec-deck",
+  "Butterfly arrière":"butterfly-arriere",
+  "Chaise contre le mur":"chaise-contre-le-mur",
+  "Crunch":"crunch",
+  "Crunch câble":"crunch-cable",
+  "Crunch sur ballon":"crunch-sur-ballon",
+  "Curl barre":"curl-barre",
+  "Curl concentration":"curl-concentration",
+  "Curl haltères":"curl-halteres",
+  "Curl incliné haltères":"curl-incline-halteres",
+  "Curl marteau":"curl-marteau",
+  "Curl poulie basse":"curl-poulie-basse",
+  "Curl pupitre":"curl-pupitre",
+  "Curl élastique":"curl-elastique",
+  "Dips":"dips",
+  "Dips sur banc":"dips-sur-banc",
+  "Développé couché":"developpe-couche",
+  "Développé couché haltères":"developpe-couche-halteres",
+  "Développé couché à la Smith":"developpe-couche-a-la-smith",
+  "Développé couché élastique":"developpe-couche-elastique",
+  "Développé incliné barre":"developpe-incline-barre",
+  "Développé incliné haltères":"developpe-incline-halteres",
+  "Développé kettlebell":"developpe-kettlebell",
+  "Développé machine":"developpe-machine",
+  "Développé machine épaules":"developpe-machine-epaules",
+  "Développé militaire":"developpe-militaire",
+  "Développé militaire haltères":"developpe-militaire-halteres",
+  "Développé militaire élastique":"developpe-militaire-elastique",
+  "Extension nuque haltère":"extension-nuque-haltere",
+  "Extension poulie (barre)":"extension-poulie-barre",
+  "Extension poulie (corde)":"extension-poulie-corde",
+  "Extension triceps élastique":"extension-triceps-elastique",
+  "Face pull":"face-pull",
+  "Fentes":"fentes",
+  "Fentes avant":"fentes-avant",
+  "Fentes bulgares":"fentes-bulgares",
+  "Fentes latérales":"fentes-laterales",
+  "Front squat":"front-squat",
+  "Gainage":"gainage",
+  "Goblet squat":"goblet-squat",
+  "Good morning":"good-morning",
+  "Hack squat":"hack-squat",
+  "Haussements d'épaules":"haussements-d-epaules",
+  "Hip thrust":"hip-thrust",
+  "Kickback fessier poulie":"kickback-fessier-poulie",
+  "Leg curl":"leg-curl",
+  "Leg curl sur ballon":"leg-curl-sur-ballon",
+  "Leg extension":"leg-extension",
+  "Mollets assis":"mollets-assis",
+  "Mollets debout":"mollets-debout",
+  "Mollets debout au poids du corps":"mollets-debout-au-poids-du-corps",
+  "Mollets sur marche":"mollets-sur-marche",
+  "Montées sur banc":"montees-sur-banc",
+  "Montées sur step":"montees-sur-step",
+  "Mountain climber":"mountain-climber",
+  "Oiseau":"oiseau",
+  "Oiseau élastique":"oiseau-elastique",
+  "Planche latérale":"planche-laterale",
+  "Pompes":"pompes",
+  "Pompes TRX":"pompes-trx",
+  "Pompes diamant":"pompes-diamant",
+  "Pompes déclinées":"pompes-declinees",
+  "Pompes inclinées":"pompes-inclinees",
+  "Pompes piquées":"pompes-piquees",
+  "Pompes piquées surélevées":"pompes-piquees-surelevees",
+  "Pont fessier":"pont-fessier",
+  "Pont fessier une jambe":"pont-fessier-une-jambe",
+  "Presse à cuisses":"presse-a-cuisses",
+  "Pull-over haltère":"pull-over-haltere",
+  "Pull-over poulie":"pull-over-poulie",
+  "Relevés de jambes":"releves-de-jambes",
+  "Roulette abdominale":"roulette-abdominale",
+  "Rowing T-bar":"rowing-t-bar",
+  "Rowing TRX":"rowing-trx",
+  "Rowing barre":"rowing-barre",
+  "Rowing haltère":"rowing-haltere",
+  "Rowing machine":"rowing-machine",
+  "Rowing menton":"rowing-menton",
+  "Rowing sous la table":"rowing-sous-la-table",
+  "Russian twist":"russian-twist",
+  "Soulevé de terre":"souleve-de-terre",
+  "Soulevé de terre roumain":"souleve-de-terre-roumain",
+  "Soulevé de terre sumo":"souleve-de-terre-sumo",
+  "Squat":"squat",
+  "Squat au poids du corps":"squat-au-poids-du-corps",
+  "Squat bulgare au poids du corps":"squat-bulgare-au-poids-du-corps",
+  "Squat élastique":"squat-elastique",
+  "Superman":"superman",
+  "Swing kettlebell":"swing-kettlebell",
+  "Tirage horizontal":"tirage-horizontal",
+  "Tirage vertical":"tirage-vertical",
+  "Tirage vertical prise neutre":"tirage-vertical-prise-neutre",
+  "Tirage élastique horizontal":"tirage-elastique-horizontal",
+  "Tirage élastique vertical":"tirage-elastique-vertical",
+  "Tractions":"tractions",
+  "Tractions australiennes":"tractions-australiennes",
+  "Tractions supination":"tractions-supination",
+  "Écartés haltères":"ecartes-halteres",
+  "Écartés poulie":"ecartes-poulie",
+  "Écartés poulie basse":"ecartes-poulie-basse",
+  "Écartés poulie haute":"ecartes-poulie-haute",
+  "Écartés élastique":"ecartes-elastique",
+  "Élévations frontales":"elevations-frontales",
+  "Élévations latérales":"elevations-laterales",
+  "Élévations latérales poulie":"elevations-laterales-poulie",
+  "Élévations latérales élastique":"elevations-laterales-elastique"
+};
 const EXO_PHOTO = {
   "Développé couché":"developpe-couche", "Développé incliné haltères":"developpe-incline-halteres",
   "Développé couché haltères":"developpe-couche-halteres",
@@ -8304,7 +8464,7 @@ const EXO_PHOTO = {
   "Curl haltères":"curl-halteres", "Curl marteau":"curl-marteau", "Curl pupitre":"curl-pupitre",
   "Curl poulie basse":"curl-poulie-basse", "Curl incliné haltères":"curl-incline",
   "Curl concentration":"curl-concentre", "Curl élastique":"curl-elastique",
-  "Curl marteau élastique":"curl-marteau-elastique", "Curl auto-résisté":"curl-auto-resiste",
+  "Curl marteau élastique":"curl-marteau-elastique",
   "Extension poulie (barre)":"extension-triceps-poulie-barre",
   "Extension poulie (corde)":"extension-triceps-poulie-corde",
   "Extension triceps machine":"triceps-poulie",
@@ -8339,7 +8499,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 03h10";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 20h21";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8427,11 +8587,10 @@ function applyDefaults(){
      liste ne deplace plus jamais l'historique de personne : c'est ce qui a mis un
      exercice de jambes dans une seance de bras. */
   if(!db.libV4){
-    const parRang = LIB.slice().sort((a, b)=>a.rang - b.rang);
     const conv = id => {
       const m = /^lib([0-9]+)$/.exec(id || "");
       if(!m) return id;
-      const e = parRang[parseInt(m[1], 10)];
+      const e = LIB.find(x=>x.rang === parseInt(m[1], 10));   /* par le rang, pas la position : un retiré laisse un trou */
       return e ? e.id : id;
     };
     const convCle = obj => {
@@ -10069,6 +10228,30 @@ function notifHeure(h){
   return [hh, mm];
 }
 /* Le texte d'un type, ou null si ce jour-la il n'y a rien a dire. */
+/* Les rappels de repas : cinq variantes par repas, en tournant. [titre, corps] ;
+   « {p} » reçoit « Nico » ou rien. */
+const NOTIF_REPAS_TEXTES = {
+  matin:[["Bon matin{p} ☀️", "Scanne ton petit-déj, la journée est lancée."],
+         ["Petit-déj des champions", "Une photo, et il est noté."],
+         ["Réveille tes muscles", "Ton petit-déj mérite d'être compté."],
+         ["Bonjour{p} 👋", "Deux secondes pour scanner ton petit-déj."],
+         ["Le premier repas compte", "Une photo, et on est partis."]],
+  midi:[["C'est l'heure de recharger", "Scanne ton déjeuner avant de repartir."],
+         ["Bon appétit{p} !", "Une photo de l'assiette, et c'est noté."],
+         ["Alors, ce déjeuner ?", "Montre-moi ton assiette."],
+         ["Pause déj bien méritée", "Scanne-le, tes muscles diront merci."],
+         ["Ton déjeuner, en une photo", "Cinq secondes, et tu sais où tu en es."]],
+  collation:[["Un petit creux{p} ?", "Note ta collation, elle compte aussi."],
+         ["L'heure du goûter", "Une photo, et il est dans la boîte."],
+         ["Tes muscles ont faim", "Scanne ton encas."],
+         ["Petite pause", "Ton encas mérite sa photo."],
+         ["Le coup de pouce de l'après-midi", "Scanne-le avant de l'oublier."]],
+  soir:[["Le dernier repas de la journée", "Scanne ton dîner et boucle ta journée."],
+         ["Bon dîner{p} !", "Une photo, et le bilan est complet."],
+         ["Alors, ce dîner ?", "Montre-moi ton assiette."],
+         ["Ce soir, on mange bien", "Scanne-le, et à demain."],
+         ["Bonsoir{p}", "Dernier repas à noter. Bravo d'avoir tenu."]]
+};
 function notifTexte(type, jour){
   const k = dayKey(jour);
   if(type === "seance"){
@@ -10081,8 +10264,13 @@ function notifTexte(type, jour){
             corps:TR("{n} exercices · ~{m} min").replace("{n}", t.items.length).replace("{m}", dureeSeance(t))};
   }
   if(type === "repas"){
-    const noms = {matin:TR("Ton petit-déj"), midi:TR("Ton déjeuner"), collation:TR("Ta collation"), soir:TR("Ton dîner")};
-    return {titre:noms[jour.repas] || TR("Scanner mon repas"), corps:TR("Code-barres ou photo de l'assiette : cinq secondes, et ta journée est à jour.")};
+    /* Un message différent chaque jour, chaleureux plutôt que technique : « code-barres
+       ou photo, cinq secondes » lassait dès le troisième jour. Le prénom quand on l'a. */
+    const v = NOTIF_REPAS_TEXTES[jour.repas];
+    if(!v) return {titre:TR("Scanner mon repas"), corps:TR("Une photo de l'assiette, et ta journée est à jour.")};
+    const i = (Math.floor(jour / 864e5) + NOTIF_REPAS.findIndex(x=>x[0] === jour.repas)) % v.length;
+    const p = (db.settings && db.settings.name) ? " " + db.settings.name : "";
+    return {titre:TR(v[i][0]).replace("{p}", p), corps:TR(v[i][1])};
   }
   if(type === "pesee"){
     const w = (db.weights || []).slice().sort((a, b)=>new Date(b.date) - new Date(a.date))[0];
@@ -13951,7 +14139,7 @@ const RESERVOIRS = {
   dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Rowing TRX","Tractions australiennes","Tirage élastique horizontal","Rowing sous la table"],
   dosComp:   ["Pull-over poulie","Pull-over haltère","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
   arriere:   ["Face pull","Oiseau","Rowing menton","Oiseau élastique"],
-  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination","Curl auto-résisté"],
+  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination"],
   quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses","Squat au poids du corps","Squat élastique","Chaise contre le mur"],
   posterieur:["Soulevé de terre roumain","Soulevé de terre","Good morning","Hip thrust","Soulevé de terre sumo","Swing kettlebell","Pont fessier","Soulevé de terre élastique"],
   uniJambe:  ["Fentes","Fentes bulgares","Montées sur banc","Presse à cuisses","Leg extension","Fentes avant","Fentes latérales","Squat bulgare au poids du corps","Montées sur step"],
