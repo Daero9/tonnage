@@ -3743,10 +3743,21 @@ const TRAD = {en:{
   "Pesée":"Weigh-in", "Bilan de la semaine":"Weekly review",
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
-  "Prêt à t'entraîner ?":"Ready to train?",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "Ta séance {} t'attend":"Your {} workout is waiting",
+  "Ta séance {s} t'attend":"Your {s} workout is waiting",
   "{n} exercices · ~{m} min":"{n} exercises · ~{m} min",
+  "C'est l'heure{p} 💪":"It's time{p} 💪", "{s} : {n} exercices, ~{m} min. On y va ?":"{s}: {n} exercises, ~{m} min. Let's go?",
+  "Tes muscles sont prêts":"Your muscles are ready", "Séance {s} ce soir — {m} min bien investies.":"{s} tonight — {m} min well spent.",
+  "On ne saute pas ce soir":"No skipping tonight", "{s}, {n} exercices. Tu te remercieras après.":"{s}, {n} exercises. You'll thank yourself after.",
+  "Un peu de fer{p} ?":"Some iron{p}?", "{s} t'attend : ~{m} min.":"{s} is waiting: ~{m} min.",
+  "Envie de bouger{p} ?":"Feel like moving{p}?", "C'est l'heure de la séance":"Workout time", "Choisis-la, et on y va.":"Pick one, and let's go.",
+  "Une séance ce soir, et tu dors mieux.":"A workout tonight, and you'll sleep better.",
+  "Sur la balance{p} ?":"On the scale{p}?", "Même heure, mêmes conditions : c'est là que le plan se lit.":"Same time, same conditions: that's where the plan shows.",
+  "Un chiffre, et on avance":"One number, and we move on", "Note ton poids de la semaine.":"Log this week's weight.",
+  "La balance, vite fait":"Quick weigh-in", "Trente secondes, une fois par semaine.":"Thirty seconds, once a week.",
+  "Alors, cette semaine{p} ?":"So, how was this week{p}?", "Ton bilan t'attend.":"Your review is waiting.",
+  "Le point de la semaine":"This week's recap", "Séances, kilos, assiettes : tout est là.":"Workouts, kilos, plates: it's all there.",
+  "Une semaine de plus dans les jambes":"One more week in the bank", "Regarde ce que ça a donné.":"See what it added up to.",
   "Une photo de l'assiette, et ta journée est à jour.":"A photo of your plate, and your day is up to date.",
   "Bon matin{p} ☀️":"Good morning{p} ☀️",
   "Scanne ton petit-déj, la journée est lancée.":"Scan your breakfast, the day is on.",
@@ -3790,7 +3801,6 @@ const TRAD = {en:{
   "L'heure de la collation":"Snack time",
   "Un shaker, un yaourt, une poignée d'amandes — tes protéines de la journée se jouent aussi là.":"A shake, a yogurt, a handful of almonds — your day's protein is decided here too.",
   "La dernière : {p}, il y a {j} jours.":"Last one: {p}, {j} days ago.",
-  "Même heure, mêmes conditions : c'est la balance qui dit si le plan marche.":"Same time, same conditions: the scale says whether the plan works.",
   "Ta pesée de la semaine":"Your weekly weigh-in",
   "Ton bilan de la semaine est prêt":"Your weekly review is ready",
   "Ce qui a marché, ce qu'il faut changer — en trente secondes.":"What worked, what to change — in thirty seconds.",
@@ -8499,7 +8509,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 20h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 01h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10252,6 +10262,38 @@ const NOTIF_REPAS_TEXTES = {
          ["Ce soir, on mange bien", "Scanne-le, et à demain."],
          ["Bonsoir{p}", "Dernier repas à noter. Bravo d'avoir tenu."]]
 };
+/* Les autres rappels, sur le même principe : court, chaleureux, en tournant.
+   « {s} » est le nom de la séance, « {n} » et « {m} » ses exercices et minutes. */
+const NOTIF_SEANCE_TEXTES = [
+  ["Ta séance {s} t'attend", "{n} exercices · ~{m} min"],
+  ["C'est l'heure{p} 💪", "{s} : {n} exercices, ~{m} min. On y va ?"],
+  ["Tes muscles sont prêts", "Séance {s} ce soir — {m} min bien investies."],
+  ["On ne saute pas ce soir", "{s}, {n} exercices. Tu te remercieras après."],
+  ["Un peu de fer{p} ?", "{s} t'attend : ~{m} min."]
+];
+const NOTIF_SEANCE_LIBRE = [
+  ["Envie de bouger{p} ?", "Ta séance du jour t'attend."],
+  ["C'est l'heure de la séance", "Choisis-la, et on y va."],
+  ["Tes muscles sont prêts", "Une séance ce soir, et tu dors mieux."]
+];
+const NOTIF_PESEE_TEXTES = [
+  ["Ta pesée de la semaine", ""],                       /* corps : la dernière pesée, calculé */
+  ["Sur la balance{p} ?", "Même heure, mêmes conditions : c'est là que le plan se lit."],
+  ["Un chiffre, et on avance", "Note ton poids de la semaine."],
+  ["La balance, vite fait", "Trente secondes, une fois par semaine."]
+];
+const NOTIF_BILAN_TEXTES = [
+  ["Ton bilan de la semaine est prêt", "Ce qui a marché, ce qu'il faut changer — en trente secondes."],
+  ["Alors, cette semaine{p} ?", "Ton bilan t'attend."],
+  ["Le point de la semaine", "Séances, kilos, assiettes : tout est là."],
+  ["Une semaine de plus dans les jambes", "Regarde ce que ça a donné."]
+];
+/* La variante du jour : le jour décale d'un cran, le prénom se glisse dans « {p} ». */
+function notifVariante(liste, jour, decalage){
+  const v = liste[(Math.floor(jour / 864e5) + (decalage || 0)) % liste.length];
+  const p = (db.settings && db.settings.name) ? " " + db.settings.name : "";
+  return {titre:TR(v[0]).replace("{p}", p), corps:v[1] ? TR(v[1]).replace("{p}", p) : ""};
+}
 function notifTexte(type, jour){
   const k = dayKey(jour);
   if(type === "seance"){
@@ -10259,26 +10301,27 @@ function notifTexte(type, jour){
     if(faite) return null;
     const t = suggestedTemplate();
     if(db.active) return {titre:TR("Une séance est en cours"), corps:TR("Reprends-la où tu l'as laissée, ou termine-la.")};
-    if(!t) return {titre:TR("Prêt à t'entraîner ?"), corps:TR("Ta séance du jour t'attend.")};
-    return {titre:TR("Ta séance {} t'attend").replace("{}", TR(t.name)),
-            corps:TR("{n} exercices · ~{m} min").replace("{n}", t.items.length).replace("{m}", dureeSeance(t))};
+    const v = t ? NOTIF_SEANCE_TEXTES : NOTIF_SEANCE_LIBRE;
+    const m = notifVariante(v, jour);
+    if(!t) return m;
+    const mots = x => x.replace("{s}", TR(t.name)).replace("{n}", t.items.length).replace("{m}", dureeSeance(t));
+    return {titre:mots(m.titre), corps:mots(m.corps)};
   }
   if(type === "repas"){
     /* Un message différent chaque jour, chaleureux plutôt que technique : « code-barres
        ou photo, cinq secondes » lassait dès le troisième jour. Le prénom quand on l'a. */
     const v = NOTIF_REPAS_TEXTES[jour.repas];
     if(!v) return {titre:TR("Scanner mon repas"), corps:TR("Une photo de l'assiette, et ta journée est à jour.")};
-    const i = (Math.floor(jour / 864e5) + NOTIF_REPAS.findIndex(x=>x[0] === jour.repas)) % v.length;
-    const p = (db.settings && db.settings.name) ? " " + db.settings.name : "";
-    return {titre:TR(v[i][0]).replace("{p}", p), corps:TR(v[i][1])};
+    return notifVariante(v, jour, NOTIF_REPAS.findIndex(x=>x[0] === jour.repas));
   }
   if(type === "pesee"){
     const w = (db.weights || []).slice().sort((a, b)=>new Date(b.date) - new Date(a.date))[0];
-    const corps = w ? TR("La dernière : {p}, il y a {j} jours.").replace("{p}", pds(w.kg)).replace("{j}", Math.max(1, Math.round((jour - new Date(w.date)) / 864e5)))
-                    : TR("Même heure, mêmes conditions : c'est la balance qui dit si le plan marche.");
-    return {titre:TR("Ta pesée de la semaine"), corps};
+    const m = notifVariante(NOTIF_PESEE_TEXTES, jour);
+    if(!m.corps) m.corps = w ? TR("La dernière : {p}, il y a {j} jours.").replace("{p}", pds(w.kg)).replace("{j}", Math.max(1, Math.round((jour - new Date(w.date)) / 864e5)))
+                             : TR("Même heure, mêmes conditions : c'est là que le plan se lit.");
+    return m;
   }
-  if(type === "bilan") return {titre:TR("Ton bilan de la semaine est prêt"), corps:TR("Ce qui a marché, ce qu'il faut changer — en trente secondes.")};
+  if(type === "bilan") return notifVariante(NOTIF_BILAN_TEXTES, jour);
   return null;
 }
 /* Tout ce qu'il y a a poser pour les 7 prochains jours, a partir de « maintenant ».
