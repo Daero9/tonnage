@@ -2166,6 +2166,7 @@
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(78px + env(safe-area-inset-bottom)); z-index:80;
     background:var(--good); color:#0d1a12; font-weight:700; font-size:14px; padding:11px 18px; border-radius:12px;
     box-shadow:0 8px 26px rgba(0,0,0,.5); transition:opacity .4s; max-width:88%; text-align:center;}
+  .toast.erreur{background:#d63031; color:#fff;}
   .empty{text-align:center; color:var(--ink-mute); padding:34px 18px; font-size:14.5px;}
   .empty .big{font-size:34px; margin-bottom:8px;}
 
@@ -2913,9 +2914,9 @@
   .abo-f .droite{flex:1 1 40%; min-width:0; font-size:13px; font-weight:700; line-height:1.3;}
   .abo-f .go{width:40px; height:40px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
     background:#fff; color:var(--accent); box-shadow:0 2px 8px rgba(0,0,0,.15);}
-  .abo-f.annuel .go{color:var(--ink);}
+  .abo-f.annuel .go{color:#1b1b1d;}
   .abo-f .go svg{width:18px; height:18px;}
-  .abo-f .eco{display:inline-block; background:var(--ink); color:#fff; border-radius:99px; padding:3px 9px;
+  .abo-f .eco{display:inline-block; background:#1b1b1d; color:#fff; border-radius:99px; padding:3px 9px;
     font-size:12px; font-weight:800; margin-left:8px; vertical-align:middle; letter-spacing:0;}
   .abo-populaire{position:absolute; top:-11px; left:14px; background:#FDE0C8; color:var(--accent);
     border-radius:99px; padding:4px 11px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;}
@@ -3699,6 +3700,7 @@ const TRAD = {en:{
   "Son de fin de repos activé":"Rest-over sound on",
   "Ce que tu soulèves, ce que tu manges, où ça te mène.":"What you lift, what you eat, where it takes you.",
   "Analyse ton alimentation":"Analyse your nutrition",
+  "Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour.":"Calories, protein, what you really eat. Plate photo: 10 a day.",
   "Calories, protéines, ce que tu manges vraiment.":"Calories, protein, what you really eat.",
   "Suis tes progrès":"Track your progress",
   "Tes courbes de charge, exercice par exercice.":"Your load curves, exercise by exercise.",
@@ -8335,7 +8337,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 02h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 02h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8489,9 +8491,24 @@ function pluginWidget(){
 function donneesWidget(){
   const k = dayKey();
   const pl = planFor(db.profile);
+  /* le bilan : les sept derniers jours (du plus ancien a aujourd'hui), le tonnage et
+     les calories brulees sur ces sept jours, seances et sorties comprises */
+  const noms = langue() === "en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"];
+  let bJours = "", bFaits = "", bKg = 0, bKcal = 0;
+  const poids = currentWeight() || 75;
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(Date.now() - i * 864e5), kd = dayKey(d);
+    const seances = (db.history || []).filter(h=>dayKey(h.date) === kd);
+    const sorties = (db.cardio || []).filter(c=>dayKey(c.date) === kd);
+    bJours += noms[d.getDay()]; bFaits += (seances.length || sorties.length) ? "1" : "0";
+    seances.forEach(h=>{ bKg += sessionVolume(h); bKcal += (h.kcal || liftKcal(h)); });
+    sorties.forEach(c=>{ bKcal += sortieKcal(c, poids); });
+  }
   return {jour:k, kcal:Math.round(dayKcal(k) || 0), prot:Math.round(dayProt(k) || 0),
           kcalCible: pl ? pl.kcal : 0, protCible: proteinTarget() || 0,
-          uniteKcal:"kcal", libProt:TR("prot."), libScan:TR("Scanner")};
+          uniteKcal:"kcal", libProt:TR("prot."), libScan:TR("Scanner"),
+          bJours, bFaits, bKg: Math.round(estImperial() ? bKg * PAR_LB : bKg), bKcal: Math.round(bKcal),
+          bUniteKg: uPoids(), bLibKg: TR("soulevés"), bLibKcal: TR("kcal brûlées")};
 }
 function majWidget(){
   const w = pluginWidget(); if(!w || !dansLApp()) return;
@@ -8832,9 +8849,10 @@ function wireHints(root){
     if(box) box.remove();
   });
 }
-function toast(msg){
+/* type « erreur » : rouge — un refus ne doit jamais s'afficher dans le vert du succes */
+function toast(msg, type){
   const t = document.createElement("div");
-  t.className = "toast"; t.textContent = msg;
+  t.className = "toast" + (type === "erreur" ? " erreur" : ""); t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(()=>{ t.style.opacity="0"; setTimeout(()=>t.remove(), 400); }, 2400);
 }
@@ -11503,14 +11521,14 @@ function ouvrirCamera(mode, titre){
         }catch(e){ texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); }
         return;
       }
-      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
       try{ const img = await reduirePhoto(f); finir({type:"photo", b64:img.b64, apercu:img.apercu}); }
-      catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); }
+      catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur"); }
     };
     /* le declencheur : l'image du flux, reduite comme une photo de fichier */
     q("[data-prendre]").onclick = ()=>{
       if(!flux || video.readyState < 2){ fich.click(); return; }
-      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
       /* On n'envoie que le carre de visee. La video est affichee en « cover » : on
          retrouve la zone du capteur qui correspond au carre a l'ecran, et on la decoupe.
          Moins de table, de mains et de verres autour — et un peu moins de pixels. */
@@ -11945,9 +11963,9 @@ async function lancerScan(meal, mode){
   toast(TR("Recherche du produit…"));
   try{
     const p = await chercherProduit(r.code);
-    if(!p){ toast(TR("Produit inconnu — saisis-le à la main.")); return; }
+    if(!p){ toast(TR("Produit inconnu — saisis-le à la main."), "erreur"); return; }
     openProduitScanne(meal, p);
-  }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion.")); }
+  }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion."), "erreur"); }
 }
 
 /* fiche « Ajouter un aliment » : liste d'aliments, quantité, garder dans les propositions */
@@ -11971,7 +11989,7 @@ function tuileNut(ic, couleur, val, unite, libelle){
    tourne pas en boucle. */
 const RELAIS_PHOTO = "https://tonnup-relais.inncopproject.workers.dev/";
 const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
-const PHOTOS_PAR_JOUR = 6;
+const PHOTOS_PAR_JOUR = 10;
 const PHOTOS_PAR_JOUR_TESTEUR = 10;              /* debloque par code : les testeurs, qui essaient a la chaine */
 function quotaPhotos(){ return db.aboVia === "code" ? PHOTOS_PAR_JOUR_TESTEUR : PHOTOS_PAR_JOUR; }
 const CORRECTIONS_PAR_PHOTO = 2;
@@ -12085,7 +12103,7 @@ async function lancerAnalysePhoto(indice){
   if(correction) p.corrections = (p.corrections || 0) + 1;
   let res;
   try{ res = await analyserPhoto(p.b64, indice); if(!correction) compterPhoto(); }
-  catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main.")); openAjoutAliment(p.meal); return; }
+  catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur"); openAjoutAliment(p.meal); return; }
   if(!res.aliments.length){ toast(res.remarque || TR("Je ne vois pas de nourriture sur cette photo.")); openAjoutAliment(p.meal); return; }
   openResultatPhoto(p.meal, res);
 }
@@ -12176,7 +12194,7 @@ function openResultatPhoto(meal, res){
         const indice = document.getElementById("ph-indice").value.trim();
         if(!indice){ toast(TR("Dis-moi ce qui change, sinon l'analyse sera la même.")); return; }
         const gratuite = (photoEnCours.corrections || 0) < CORRECTIONS_PAR_PHOTO;
-        if(!gratuite && photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main.")); return; }
+        if(!gratuite && photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
         pileFiches = [];   /* on relance : l'ancienne fiche du plat n'a plus lieu d'etre */
         lancerAnalysePhoto(indice);
       };
@@ -17630,7 +17648,7 @@ function dateLisible(iso){
 /* Connecter : jeton, puis regarde ce qu'il y a deja. Un telephone vide devant une
    copie existante, c'est presque toujours un nouveau telephone : on propose. */
 async function driveConnecter(){
-  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée.")); return false; }
+  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée."), "erreur"); return false; }
   let existante = null;
   try{ existante = await driveLire(); }catch(e){ /* fichier absent ou illisible : on ecrira le notre */ }
   db.drive = Object.assign({}, db.drive, {actif:true, fichierId: existante ? existante.fichier.id : null});
@@ -17643,15 +17661,15 @@ async function driveConnecter(){
     return true;
   }
   const ok = await driveSauver(true);
-  toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")));
+  toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")), ok ? "" : "erreur");
   return ok;
 }
 async function driveRestaurer(){
-  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée.")); return; }
+  if(!(await driveAutoriser(true))){ toast(driveErreur || TR("Connexion Google annulée."), "erreur"); return; }
   let r = null;
   try{ r = await driveLire(); }
   catch(e){ toast(String((e && e.message) || e).slice(0, 100)); return; }
-  if(!r){ toast(TR("Aucune sauvegarde Tonnup sur ce Drive.")); return; }
+  if(!r){ toast(TR("Aucune sauvegarde Tonnup sur ce Drive."), "erreur"); return; }
   askConfirm(TR("Restaurer la sauvegarde Drive ?"),
     TR("Copie du {}. Elle remplacera toutes les données de ce téléphone.").replace("{}", dateLisible(r.fichier.modifiedTime)),
     TR("Restaurer"), true, ()=>driveAppliquer(r.donnees, r.fichier));
@@ -17820,7 +17838,7 @@ function openAbonnement(){
           <p class="abo-accroche">${TR("Ce que tu soulèves, ce que tu manges, où ça te mène.")}</p></div></div>
       <ul class="abo-promesses">
         <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Analyse ton alimentation")}</b>
-          <span>${TR("Calories, protéines, ce que tu manges vraiment.")}</span></div></li>
+          <span>${TR("Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour.")}</span></div></li>
         <li><span class="ic">${IC_ABO_COURBE}</span><div><b>${TR("Suis tes progrès")}</b>
           <span>${TR("Tes courbes de charge, exercice par exercice.")}</span></div></li>
         <li><span class="ic"><span class="icm icm-muscle" style="width:17px; height:17px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
@@ -18263,7 +18281,7 @@ function openSauvegarde(){
         <button id="dr-off" style="margin-top:8px; font-size:12.5px; color:var(--ink-mute); text-decoration:underline;">${TR("Déconnecter")}</button></div>`;
       document.getElementById("dr-now").onclick = async ()=>{
         const ok = await driveSauver(true);
-        toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")));
+        toast(ok ? TR("Sauvegardé sur Google Drive ✓") : (driveErreur || TR("Google Drive ne répond pas.")), ok ? "" : "erreur");
         dessinerDrive();
       };
       document.getElementById("dr-restore").onclick = ()=>driveRestaurer();
@@ -18294,10 +18312,10 @@ function openSauvegarde(){
     /* « Fichier illisible » couvrait quatre pannes très différentes : fichier vide,
        fichier coupé en route, mauvais fichier, ou fichier valide au mauvais format.
        On ne peut rien y faire tant qu'on ne sait pas laquelle. */
-    fr.onerror = ()=>toast(TR("Impossible de lire ce fichier."));
+    fr.onerror = ()=>toast(TR("Impossible de lire ce fichier."), "erreur");
     fr.onload = ()=>{
       const txt = String(fr.result || "").trim();
-      if(!txt){ toast(TR("Ce fichier est vide.")); return; }
+      if(!txt){ toast(TR("Ce fichier est vide."), "erreur"); return; }
       let d = null;
       try{ d = JSON.parse(txt); }
       catch(e){
@@ -18308,7 +18326,7 @@ function openSauvegarde(){
         return;
       }
       if(!d || !Array.isArray(d.history)){
-        toast(TR("Ce n'est pas un fichier de sauvegarde Tonnup."));
+        toast(TR("Ce n'est pas un fichier de sauvegarde Tonnup."), "erreur");
         return;
       }
       db = d; applyDefaults(); save(); closeSheet(); render();
