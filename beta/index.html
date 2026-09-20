@@ -1799,7 +1799,15 @@
   .dr-scene{position:relative; height:150px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center;}
   .dr-rond{position:relative; width:136px; height:136px; border-radius:50%; background:#fdf1e6; display:flex; align-items:center; justify-content:center;}
   .dr-rond img{width:74px; height:auto;}
-  .dr-cloche{display:flex; color:var(--accent);} .dr-cloche svg{width:56px; height:56px;}
+  .dr-rond-cloche{width:150px; height:150px;}
+  .dr-cloche{position:relative; display:flex; color:var(--accent);} .dr-cloche svg{width:60px; height:60px; stroke-width:2.2;}
+  .dr-cloche i{position:absolute; width:4px; border-radius:2px; background:var(--accent);}
+  .dr-cloche .r1{height:16px; right:-14px; top:-10px; transform:rotate(25deg);} .dr-cloche .r2{height:4px; width:14px; right:-24px; top:6px; transform:rotate(-20deg);}
+  .dr-pts-v li{align-items:center; font-size:15px; color:var(--ink); margin-bottom:14px;}
+  .dr-pts-v .ok{flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:#e3f4e8; display:flex; align-items:center; justify-content:center; margin-right:6px;}
+  .dr-pts-v .ok svg{width:16px; height:16px; color:#2e9e4f; margin:0;}
+  .dr-go-orange{position:relative; width:100%; padding:16px 40px; font-size:17px; border-radius:18px;}
+  .dr-go-orange svg{position:absolute; right:16px; top:50%; transform:translateY(-50%); width:20px; height:20px;}
   .dr-pts{list-style:none; padding:0; margin:0 0 18px; text-align:left;}
   .dr-pts li{display:flex; gap:9px; align-items:flex-start; font-size:13.5px; color:var(--ink-soft); margin-bottom:8px; line-height:1.4;}
   .dr-pts li svg{width:17px; height:17px; flex:0 0 auto; color:var(--good); margin-top:2px;}
@@ -3714,10 +3722,10 @@ const TRAD = {en:{
   "Voir les forfaits":"See plans",
   "Des rappels pour garder le cap.":"Set reminders to stay on track.",
   "Des rappels ?":"Reminders?",
-  "Tonnup peut te prévenir quand une séance t'attend, ou te rappeler de noter un repas — à l'heure que tu choisis, jamais plus d'une fois par rappel et par jour.":"Tonnup can tell you when a workout is waiting, or remind you to log a meal — at the time you choose, never more than once per reminder per day.",
-  "Chaque rappel a son interrupteur et son heure":"Each reminder has its own switch and time",
-  "Rien le jour où ta séance est déjà faite":"Nothing on a day your workout is already done",
-  "Modifiable à tout moment dans Réglages → Notifications":"Adjustable anytime in Settings → Notifications",
+  "Tonnup peut te prévenir quand une séance t'attend ou te rappeler de noter un repas.":"Tonnup can tell you when a workout is waiting, or remind you to log a meal.",
+  "Un rappel par type, à l'heure de ton choix":"One reminder per type, at the time you choose",
+  "Jamais si la séance est déjà faite":"Never if the workout is already done",
+  "Modifiable dans Réglages → Notifications":"Adjustable in Settings → Notifications",
   "Configurer":"Set up",
   "Heure du rappel":"Reminder time",
   "Petit-déj":"Breakfast",
@@ -8327,7 +8335,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 02h26 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 02h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10200,15 +10208,15 @@ function openNotifs(){
    « Configurer » ouvre la fiche complete, « Plus tard » la laisse dans les reglages. */
 function proposerNotifsPage(){
   openSheet(`<div class="dr-prop">
-      <div class="dr-scene"><div class="dr-rond"><span class="dr-cloche">${IC_CLOCHE}</span></div></div>
+      <div class="dr-scene"><div class="dr-rond dr-rond-cloche"><span class="dr-cloche">${IC_CLOCHE}<i class="r1"></i><i class="r2"></i></span></div></div>
       <h3>${TR("Des rappels ?")}</h3>
-      <p>${TR("Tonnup peut te prévenir quand une séance t'attend, ou te rappeler de noter un repas — à l'heure que tu choisis, jamais plus d'une fois par rappel et par jour.")}</p>
-      <ul class="dr-pts">
-        <li>${IC_CHECK}${TR("Chaque rappel a son interrupteur et son heure")}</li>
-        <li>${IC_CHECK}${TR("Rien le jour où ta séance est déjà faite")}</li>
-        <li>${IC_CHECK}${TR("Modifiable à tout moment dans Réglages → Notifications")}</li>
+      <p>${TR("Tonnup peut te prévenir quand une séance t'attend ou te rappeler de noter un repas.")}</p>
+      <ul class="dr-pts dr-pts-v">
+        <li><span class="ok">${IC_CHECK}</span>${TR("Un rappel par type, à l'heure de ton choix")}</li>
+        <li><span class="ok">${IC_CHECK}</span>${TR("Jamais si la séance est déjà faite")}</li>
+        <li><span class="ok">${IC_CHECK}</span>${TR("Modifiable dans Réglages → Notifications")}</li>
       </ul>
-      <button class="btn btn-accent" id="nt-prop-ok" style="width:100%;">${TR("Configurer")}</button>
+      <button class="btn btn-accent dr-go-orange" id="nt-prop-ok">${TR("Configurer")}${IC_CHEVRON}</button>
       <button class="btn dr-tard" id="nt-prop-tard">${TR("Plus tard")}</button>
     </div>`);
   document.getElementById("nt-prop-ok").onclick = ()=>{ openNotifs(); };
