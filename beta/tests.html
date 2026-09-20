@@ -5769,7 +5769,14 @@ async function lancer(){
     r.types.repas.on = true;
     l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan");
     vrai("Le rappel de repas : midi et soir par défaut, tous les jours, et il ouvre le scan", l.length === 14 && l.some(x=>x.at.getHours() === 12 && x.at.getMinutes() === 30) && l.some(x=>x.at.getHours() === 19));
-    vrai("…et il nomme le repas", l.some(x=>/déjeuner/.test(x.titre)) && l.some(x=>/dîner/.test(x.titre)));
+    /* les textes tournent d'un jour à l'autre, et le prénom s'y glisse quand on l'a */
+    const midis = l.filter(x=>x.at.getHours() === 12), soirs = l.filter(x=>x.at.getHours() === 19);
+    vrai("Sept midis, sept messages qui ne se répètent pas deux jours de suite", midis.every((x, i)=>i === 0 || x.titre !== midis[i - 1].titre) && new Set(midis.map(x=>x.titre)).size >= 5);
+    vrai("…et le soir ne dit pas la même chose que le midi", soirs.every(x=>!midis.some(m=>m.titre === x.titre)));
+    vrai("…jamais de « {p} » qui traîne", l.every(x=>!/\{p\}/.test(x.titre)));
+    DB.settings.name = "Nico";
+    vrai("Le prénom se glisse dans certains titres", F.notifsAPlanifier(mardi10).some(x=>x.action === "scan" && /Nico/.test(x.titre)));
+    delete DB.settings.name;
     r.types.repas.repas.matin.on = true;
     vrai("Le petit-déj de plus : six rappels de plus (celui d'aujourd'hui, 8 h 30, est passé)", F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan").length === 20);
     delete DB.notifs; DB.templates = [];

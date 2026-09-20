@@ -3747,7 +3747,27 @@ const TRAD = {en:{
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
   "Ta séance {} t'attend":"Your {} workout is waiting",
   "{n} exercices · ~{m} min":"{n} exercises · ~{m} min",
-  "Code-barres ou photo de l'assiette : cinq secondes, et ta journée est à jour.":"Barcode or a photo of the plate: five seconds, and your day is up to date.",
+  "Une photo de l'assiette, et ta journée est à jour.":"A photo of your plate, and your day is up to date.",
+  "Bon matin{p} ☀️":"Good morning{p} ☀️", "Un vrai petit-déj, et la journée démarre du bon pied. Tu me montres ?":"A real breakfast, and the day starts right. Show me?",
+  "Le premier repas compte double":"The first meal counts double", "Ton corps sort de dix heures sans manger : donne-lui de quoi construire.":"Your body just went ten hours without food: give it something to build with.",
+  "Petit-déj des champions":"Breakfast of champions", "Des protéines dès le matin, c'est ce qui nourrit tes muscles après la nuit.":"Protein first thing is what feeds your muscles after the night.",
+  "Réveille tes muscles":"Wake up your muscles", "Un petit-déj noté, c'est un objectif protéines bien lancé.":"A logged breakfast is a protein target off to a good start.",
+  "Bonjour{p} 👋":"Hello{p} 👋", "Deux secondes pour noter ton petit-déj, et le reste de la journée suivra.":"Two seconds to log your breakfast, and the rest of the day will follow.",
+  "C'est l'heure de recharger":"Time to refuel", "Un déjeuner solide, et l'après-midi tient tout seul. Une photo, et c'est noté.":"A solid lunch, and the afternoon takes care of itself. One photo and it's logged.",
+  "Bon appétit{p} !":"Enjoy your lunch{p}!", "Ce que tu manges maintenant, c'est ta séance de demain qui en profite.":"What you eat now is what tomorrow's workout runs on.",
+  "Ton déjeuner, en une photo":"Your lunch, in one photo", "Cinq secondes, et tu sais exactement où tu en es pour la journée.":"Five seconds, and you know exactly where your day stands.",
+  "Pause déj bien méritée":"Well-earned lunch break", "Pense aux protéines : elles font la moitié du travail après l'entraînement.":"Think protein: it does half the work after training.",
+  "Alors, ce déjeuner ?":"So, how was lunch?", "Un repas noté aujourd'hui vaut mieux que trois oubliés. Tu me montres ton assiette ?":"One meal logged today beats three forgotten. Show me your plate?",
+  "Un petit creux{p} ?":"Feeling peckish{p}?", "Une collation maligne maintenant, et pas de fringale ce soir.":"A smart snack now, and no cravings tonight.",
+  "Le coup de pouce de l'après-midi":"Your afternoon boost", "Yaourt, fruit, poignée d'amandes : de quoi tenir jusqu'au dîner sans craquer.":"Yogurt, fruit, a handful of almonds: enough to make it to dinner without caving.",
+  "Tes muscles ont faim":"Your muscles are hungry", "Une collation avec des protéines, et ta prochaine séance sera plus facile.":"A snack with protein, and your next workout will feel easier.",
+  "L'heure du goûter":"Snack time", "Le goûter n'est pas réservé aux enfants. Note-le, il compte aussi.":"Snacks aren't just for kids. Log it, it counts too.",
+  "Petite pause":"Quick break", "Un encas noté, c'est ton objectif du jour qui se rapproche.":"A logged snack brings today's target closer.",
+  "Le dernier repas de la journée":"Last meal of the day", "Ton dîner boucle ta journée. Une photo, et tu vois le bilan.":"Dinner wraps up your day. One photo, and you see the tally.",
+  "Bon dîner{p} !":"Enjoy your dinner{p}!", "C'est cette nuit que les muscles se construisent : donne-leur des protéines pour ça.":"Tonight is when muscle gets built: give it the protein to do so.",
+  "Comment s'est passée ta journée ?":"How was your day?", "Note ton dîner et regarde où tu en es : souvent plus près du but que tu ne crois.":"Log dinner and see where you stand: often closer to the goal than you think.",
+  "Ce soir, on mange bien":"Tonight, we eat well", "Un dîner équilibré, une bonne nuit, et demain tu es en forme.":"A balanced dinner, a good night, and tomorrow you're in top shape.",
+  "Bonsoir{p}":"Good evening{p}", "Dernier repas à noter, et la journée est complète. Bravo d'avoir tenu.":"Last meal to log, and the day is complete. Well done for sticking with it.",
   "L'heure de la collation":"Snack time",
   "Un shaker, un yaourt, une poignée d'amandes — tes protéines de la journée se jouent aussi là.":"A shake, a yogurt, a handful of almonds — your day's protein is decided here too.",
   "La dernière : {p}, il y a {j} jours.":"Last one: {p}, {j} days ago.",
@@ -8369,7 +8389,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 11h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 16h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10099,6 +10119,30 @@ function notifHeure(h){
   return [hh, mm];
 }
 /* Le texte d'un type, ou null si ce jour-la il n'y a rien a dire. */
+/* Les rappels de repas : cinq variantes par repas, en tournant. [titre, corps] ;
+   « {p} » reçoit « Nico » ou rien. */
+const NOTIF_REPAS_TEXTES = {
+  matin:[["Bon matin{p} ☀️", "Un vrai petit-déj, et la journée démarre du bon pied. Tu me montres ?"],
+         ["Le premier repas compte double", "Ton corps sort de dix heures sans manger : donne-lui de quoi construire."],
+         ["Petit-déj des champions", "Des protéines dès le matin, c'est ce qui nourrit tes muscles après la nuit."],
+         ["Réveille tes muscles", "Un petit-déj noté, c'est un objectif protéines bien lancé."],
+         ["Bonjour{p} 👋", "Deux secondes pour noter ton petit-déj, et le reste de la journée suivra."]],
+  midi: [["C'est l'heure de recharger", "Un déjeuner solide, et l'après-midi tient tout seul. Une photo, et c'est noté."],
+         ["Bon appétit{p} !", "Ce que tu manges maintenant, c'est ta séance de demain qui en profite."],
+         ["Ton déjeuner, en une photo", "Cinq secondes, et tu sais exactement où tu en es pour la journée."],
+         ["Pause déj bien méritée", "Pense aux protéines : elles font la moitié du travail après l'entraînement."],
+         ["Alors, ce déjeuner ?", "Un repas noté aujourd'hui vaut mieux que trois oubliés. Tu me montres ton assiette ?"]],
+  collation:[["Un petit creux{p} ?", "Une collation maligne maintenant, et pas de fringale ce soir."],
+         ["Le coup de pouce de l'après-midi", "Yaourt, fruit, poignée d'amandes : de quoi tenir jusqu'au dîner sans craquer."],
+         ["Tes muscles ont faim", "Une collation avec des protéines, et ta prochaine séance sera plus facile."],
+         ["L'heure du goûter", "Le goûter n'est pas réservé aux enfants. Note-le, il compte aussi."],
+         ["Petite pause", "Un encas noté, c'est ton objectif du jour qui se rapproche."]],
+  soir: [["Le dernier repas de la journée", "Ton dîner boucle ta journée. Une photo, et tu vois le bilan."],
+         ["Bon dîner{p} !", "C'est cette nuit que les muscles se construisent : donne-leur des protéines pour ça."],
+         ["Comment s'est passée ta journée ?", "Note ton dîner et regarde où tu en es : souvent plus près du but que tu ne crois."],
+         ["Ce soir, on mange bien", "Un dîner équilibré, une bonne nuit, et demain tu es en forme."],
+         ["Bonsoir{p}", "Dernier repas à noter, et la journée est complète. Bravo d'avoir tenu."]]
+};
 function notifTexte(type, jour){
   const k = dayKey(jour);
   if(type === "seance"){
@@ -10111,8 +10155,13 @@ function notifTexte(type, jour){
             corps:TR("{n} exercices · ~{m} min").replace("{n}", t.items.length).replace("{m}", dureeSeance(t))};
   }
   if(type === "repas"){
-    const noms = {matin:TR("Ton petit-déj"), midi:TR("Ton déjeuner"), collation:TR("Ta collation"), soir:TR("Ton dîner")};
-    return {titre:noms[jour.repas] || TR("Scanner mon repas"), corps:TR("Code-barres ou photo de l'assiette : cinq secondes, et ta journée est à jour.")};
+    /* Un message différent chaque jour, chaleureux plutôt que technique : « code-barres
+       ou photo, cinq secondes » lassait dès le troisième jour. Le prénom quand on l'a. */
+    const v = NOTIF_REPAS_TEXTES[jour.repas];
+    if(!v) return {titre:TR("Scanner mon repas"), corps:TR("Une photo de l'assiette, et ta journée est à jour.")};
+    const i = (Math.floor(jour / 864e5) + NOTIF_REPAS.findIndex(x=>x[0] === jour.repas)) % v.length;
+    const p = (db.settings && db.settings.name) ? " " + db.settings.name : "";
+    return {titre:TR(v[i][0]).replace("{p}", p), corps:TR(v[i][1])};
   }
   if(type === "pesee"){
     const w = (db.weights || []).slice().sort((a, b)=>new Date(b.date) - new Date(a.date))[0];
