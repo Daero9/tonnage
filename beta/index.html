@@ -8335,7 +8335,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 02h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 02h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10121,6 +10121,10 @@ async function planifierNotifs(){
     await poserCanalRappels();
     await n.schedule({notifications: liste.map(x=>({
       id: x.id, title: x.titre, body: x.corps, channelId: CANAL_RAPPELS,
+      /* inexact : a quelques minutes pres, c'est assez pour un rappel — et surtout pas
+         d'alarme exacte, dont la permission a ete retiree du manifeste (Play la juge
+         sensible) : le greffon ouvrirait une page systeme a l'interrupteur grise */
+      isExactNotification: false,
       schedule: {at: x.at, allowWhileIdle: true}, extra: {action: x.action}, smallIcon: "ic_stat_repos"
     }))});
     return true;
@@ -10387,10 +10391,9 @@ async function verifierAlarmeExacte(){
   if(db.settings.son === false) return;                /* pas de sonnerie : rien à autoriser */
   if(document.visibilityState !== "visible") return;   /* une fiche invisible ne se lit pas */
   await autoriserNotifs();                             /* la boîte système, tant qu'on la voit */
-  if(db.seen.alarmeExacte) return;                     /* on ne demande qu'une fois */
-  if(await lireAlarmeExacte() !== "denied") return;    /* accordée, ou téléphone non concerné */
-  db.seen.alarmeExacte = 1; save();
-  setTimeout(()=>{ if(document.visibilityState === "visible") ficheAlarmeExacte(); }, 700);
+  /* Plus de demande d'alarme exacte : le repos est un service de premier plan, il
+     n'en a pas besoin, et la permission n'est plus dans le manifeste — la page
+     systeme s'ouvrait sur un interrupteur grise. */
 }
 async function retirerAlarmeRepos(){
   noterRepos("alarme retirée à " + (rest.end ? Math.round((rest.end - Date.now()) / 100) / 10 + " s de la fin" : "?") + (document.visibilityState === "visible" ? "" : " (page cachée)"));
@@ -17985,12 +17988,7 @@ function openSettings(){
           <em>${TR("Une vibration à chaque appui, et à la fin d'un repos.")}</em></span>
         ${sw(db.settings.vibrer !== false)}
       </button>
-      ${pluginNotifs()? `<button class="rg-l" id="st-alarme">
-        <span class="rgi">${IC_CLOCHE}</span>
-        <span class="grow">${TR("Alarme du minuteur")}
-          <em>${TR("Sonner à l'heure exacte quand l'écran est éteint.")}</em></span>
-        <span class="val" id="st-alarme-val">…</span>
-      </button>`:""}
+      ${""}
       <button class="rg-l" id="st-notifs">
         <span class="rgi">${IC_CLOCHE}</span>
         <span class="grow">${TR("Notifications")}
