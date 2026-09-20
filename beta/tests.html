@@ -5745,7 +5745,9 @@ async function lancer(){
     let l = F.notifsAPlanifier(mardi10);
     eq("Sept jours de séance posés, un par jour", l.length, 7);
     vrai("…le premier aujourd'hui à 18 h", l[0].at.getDate() === 22 && l[0].at.getHours() === 18);
-    vrai("…qui nomme la séance proposée", /t'attend/.test(l[0].titre) && /exercices/.test(l[0].corps));
+    const nomSeance = F.suggestedTemplate().name;
+    vrai("…qui nomme la séance proposée, chaque jour", l.every(x=>(x.titre + " " + x.corps).includes(nomSeance)));
+    vrai("…avec des titres qui changent d'un jour à l'autre", new Set(l.map(x=>x.titre)).size >= 4);
     /* ouverte a 14 h : la personne est la, pas de rappel ce jour */
     l = F.notifsAPlanifier(new Date(2026, 8, 22, 14, 0, 0));
     eq("Ouverte l'après-midi : pas de rappel aujourd'hui", l.filter(x=>x.at.getDate() === 22).length, 0);
