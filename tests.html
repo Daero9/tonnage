@@ -390,6 +390,24 @@ async function lancer(){
   eq("Dépense saisie à la main : elle prime", pl.tdee, 2200);
   eq("…et la source est signalée", pl.tdeeSource, "manuel");
   neuf();
+  /* le recalage sur le journal : credible seulement si le journal l'est */
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); delete DB.profile.tdeeManuel;
+    const formule = F.planFor(DB.profile).tdee;
+    const jourK = i => F.dayKey(Date.now() - i*864e5);
+    const remplir = kcal => { DB.habitSel = {}; DB.dayFix = {}; for(let i = 0; i < 21; i++){ DB.habitSel[jourK(i)] = {midi:["Riz (200 g cuit)"]}; DB.dayFix[jourK(i)] = {kcal}; } };
+    DB.weights = [{date:new Date(Date.now() - 19*864e5).toISOString(), kg:DB.profile.weight}, {date:new Date().toISOString(), kg:DB.profile.weight}];
+    remplir(Math.round(formule * 0.92));
+    pl = F.planFor(DB.profile);
+    eq("Journal complet et proche de la formule : le recalage s'applique", pl.tdeeSource, "mesure");
+    pres("…à la valeur du journal", pl.tdee, Math.round(formule * 0.92), 30);
+    remplir(Math.round(formule * 0.65));                     /* un journal a trous : 35 % sous la formule */
+    pl = F.planFor(DB.profile);
+    eq("Journal 35 % sous la formule : on garde la formule", pl.tdeeSource, "formule");
+    vrai("…et l'écart est signalé, pas caché", !!pl.mesureEcartee && pl.mesureEcartee.tdee < formule * 0.8);
+    pres("…l'objectif ne s'effondre pas", pl.tdee, formule, 5);
+    DB.habitSel = {}; DB.dayFix = {}; DB.weights = [];
+  }
 
   /* ---------------------------------------------------------- garde-fous santé */
   grp("Garde-fous santé");
@@ -514,11 +532,11 @@ async function lancer(){
   const FOODS = F.eval("FOOD_100G"), TT = F.eval("TR");
   const tousNoms = FOODS.reduce((a, g) => a.concat(g[1].map(x => x[0])), []);
 
-  eq("Les 94 aliments sont là", tousNoms.length, 94);
+  eq("Les 309 aliments sont là", tousNoms.length, 309);
   eq("Chaque aliment a sa traduction",
      tousNoms.filter(n => TT(n) === n &&
-       !/^(Skyr|Tofu|Mozzarella|Burger|Kebab|Croissant|Ratatouille|Pain au chocolat)$/.test(n)).length, 0);
-  /* ces huit-là s'écrivent pareil dans les deux langues : c'est voulu, pas un oubli */
+       !/^(Skyr|Tofu|Mozzarella|Burger|Kebab|Croissant|Ratatouille|Pain au chocolat|Orange|Kiwi|Nectarine|Tempeh|Baguette|Muesli|Gnocchi|Lardons|Merguez|Chipolata|Omelette|Surimi|Feta|Camembert|Brie|Parmesan|Cheddar|Roquefort|Fromage blanc 3 %|Crème fraîche 30 %|Mayonnaise|Ketchup|Vinaigrette|Quiche lorraine|Chili con carne|Cordon bleu \(100 g\)|Croque-monsieur \(150 g\)|Falafel \(100 g\)|Cookie|Madeleine|Brioche|Soda \(cola\)|Sushi \/ maki|Melon|Wrap \/ tortilla)$/.test(n)).length, 0);
+  /* ceux-là s'écrivent pareil dans les deux langues : c'est voulu, pas un oubli */
   eq("Chaque famille a sa traduction",
      FOODS.filter(g => TT(g[0]) === g[0]).length, 0);
   eq("Un aliment s'affiche en anglais", TT("Blanc de poulet (130 g cuit)"), "Chicken breast (130 g cooked)");
@@ -2652,108 +2670,62 @@ async function lancer(){
        pas la vibration — et quelqu'un qui s'entraîne à côté de gens n'avait aucune
        échappatoire */
     /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
+    /* neuf lignes depuis le 19 septembre : l'abonnement est une carte a part, au-dessus */
+    /* dix avec la ligne Notifications du 20 septembre */
     vrai("Dix réglages", lignes.length === 10, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
-    vrai("…et l'abonnement en première ligne", lignes[0].id === "st-abo");
+    vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-abo") && D2.querySelector("#sheet .rg-abo").id === "st-abo");
     vrai("Chacun porte son signe",
-      lignes.every(l => !!l.querySelector(":scope > .rgi svg")),
-      lignes.filter(l => !l.querySelector(".rgi svg")).length + " sans icône");
+      lignes.every(l => !!l.querySelector(":scope > .rgi svg, :scope > .rgi img")),
+      lignes.filter(l => !l.querySelector(".rgi svg, .rgi img")).length + " sans icône");
+    vrai("L'écran et la vibration ont un interrupteur", !!D2.querySelector("#st-ecran .rg-sw") && !!D2.querySelector("#st-vibr .rg-sw"));
+    vrai("La langue et les unités sont des menus", D2.querySelector("#st-lang").tagName === "SELECT" && D2.querySelector("#st-units").tagName === "SELECT");
+    vrai("Le thème a deux positions, clair ou sombre", D2.querySelectorAll("#st-theme [data-theme]").length === 2);
+    vrai("Mes données affiche ses trois chiffres", D2.querySelectorAll(".rg-stats b").length === 3);
     vrai("Le signe vient avant le texte",
       lignes.every(l => l.firstElementChild.classList.contains("rgi")));
+    /* la page « Sauvegarde et transfert », ouverte par-dessus : la croix ramene aux reglages */
+    D2.getElementById("st-bk").click();
+    vrai("« Sauvegarde et transfert » ouvre sa page", !!D2.getElementById("st-drive") && !!D2.getElementById("st-file") && !!D2.getElementById("st-export"));
+    vrai("…avec le bouton Google Drive bleu", !!D2.getElementById("dr-connect"));
+    F.closeSheet();
+    vrai("…et la croix ramène aux réglages", !!D2.getElementById("st-bk") && !D2.getElementById("st-file"));
     F.hideSheet();
   })();
   neuf();
 
-  grp("L'alarme du minuteur");
+  grp("La permission des notifications au premier repos");
   neuf();
-  /* Depuis Android 13, « Alarmes et rappels » est refusée par défaut, et le greffon se
-     rabat SILENCIEUSEMENT sur une alarme approximative. On la demande donc une fois, au
-     premier repos, pendant que l'application est encore à l'écran. */
+  /* Plus de demande d'« alarme exacte » : le repos est un service de premier plan et la
+     permission a ete retiree du manifeste — la page systeme s'ouvrait sur un interrupteur
+     grise. Reste la permission des notifications, demandee pendant qu'on est a l'ecran. */
   await (async ()=>{
-    const gardeSeen = DB.seen.alarmeExacte, gardeSon = DB.settings.son;
+    const gardeSon = DB.settings.son;
     const appels = {check:0, change:0, perm:0};
-    let etat = "denied";
-    /* faux greffon : les tests tournent dans un navigateur, où Capacitor n'existe pas */
     F.window.Capacitor = {isNativePlatform:()=>true, Plugins:{LocalNotifications:{
       checkPermissions: async ()=>({display:"prompt"}),
       requestPermissions: async ()=>{ appels.perm++; return {display:"granted"}; },
-      checkExactNotificationSetting: async ()=>{ appels.check++; return {exact_alarm:etat}; },
-      changeExactNotificationSetting: async ()=>{ appels.change++; etat = "granted";
-        return {exact_alarm:etat}; },
+      checkExactNotificationSetting: async ()=>{ appels.check++; return {exact_alarm:"denied"}; },
+      changeExactNotificationSetting: async ()=>{ appels.change++; return {exact_alarm:"granted"}; },
       schedule: async ()=>({}), cancel: async ()=>({})
     }}};
-
-    /* Toute cette fonction se tait quand la page n'est pas à l'écran — c'est voulu :
-       on ne réclame pas une autorisation à quelqu'un qui regarde ailleurs. Mais la
-       suite de tests, elle, tourne souvent dans une fenêtre passée en arrière-plan,
-       et le navigateur déclare alors la page « hidden ». On force donc l'état visible
-       le temps du groupe, exactement comme on remplace Capacitor par un faux greffon.
-       Sans ça, ces essais échouaient selon que Nico avait la fenêtre devant lui. */
     const vraiEtat = Object.getOwnPropertyDescriptor(F.Document.prototype, "visibilityState");
     const vraiCache = Object.getOwnPropertyDescriptor(F.Document.prototype, "hidden");
-    Object.defineProperty(F.Document.prototype, "visibilityState",
-      {get:()=>"visible", configurable:true});
+    Object.defineProperty(F.Document.prototype, "visibilityState", {get:()=>"visible", configurable:true});
     Object.defineProperty(F.Document.prototype, "hidden", {get:()=>false, configurable:true});
-    /* et on attend que la chose arrive plutôt qu'un délai fixe : en arrière-plan le
-       navigateur étire les minuteurs, un « attendre 800 ms » devenait un pile ou face */
-    const jusqua = async (cond, max) => { const t0 = Date.now();
-      while(Date.now() - t0 < (max || 4000)){ if(cond()) return true;
-        await new Promise(r=>setTimeout(r, 40)); } return cond(); };
-
-    delete DB.seen.alarmeExacte;
-    DB.settings.son = true;
+    DB.settings.son = true; F.eval("notifsOk = null");
     await F.verifierAlarmeExacte();
-    vrai("L'état est lu auprès du système", appels.check === 1, appels.check);
-    vrai("Le refus est retenu pour ne plus jamais redemander", !!DB.seen.alarmeExacte);
-    await jusqua(()=>!!F.document.getElementById("alm-ok"));
-    vrai("La fiche explique à quoi sert l'autorisation",
-      !!F.document.getElementById("alm-ok"));
-    eq("Deux promesses, pas une", F.document.querySelectorAll("#sheet .alm-note").length, 2);
-    vrai("…et l'une dit qu'elle ne sert qu'aux séances",
-      [...F.document.querySelectorAll("#sheet .alm-note .s")]
-        .some(e=>/entraînement|séance/i.test(e.textContent)));
-    /* les gens ne lisent pas : la fiche doit tenir en quelques lignes */
-    vrai("La fiche reste courte",
-      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length < 330,
-      F.document.getElementById("sheet").textContent.replace(/\s+/g, " ").trim().length + " caractères");
-
-    /* « Autoriser » ouvre la page système ; au retour l'état est relu, pas supposé */
-    const bouton = F.document.getElementById("alm-ok");
-    if(bouton) bouton.click();
-    await jusqua(()=>appels.change === 1, 1000);
-    vrai("« Autoriser » ouvre le réglage système", appels.change === 1, appels.change);
-    /* le réglage revient du système, il est relu ensuite : deux temps, pas un */
-    await jusqua(()=>F.eval("alarmeExacte") === "granted", 1000);
-    eq("…et l'état est relu", F.eval("alarmeExacte"), "granted");
-    F.hideSheet();
-
-    /* on ne repose jamais la question */
-    const avant = appels.check;
+    vrai("La permission des notifications est demandée pendant qu'on la voit", appels.perm === 1, appels.perm);
+    await new Promise(r=>setTimeout(r, 900));
+    vrai("…et la page « Alarmes et rappels » n'est jamais ouverte", appels.change === 0 && !F.document.getElementById("alm-ok"));
+    DB.settings.son = false; F.eval("notifsOk = null");
     await F.verifierAlarmeExacte();
-    vrai("On ne redemande pas une deuxième fois", appels.check === avant + 0 || !!DB.seen.alarmeExacte);
-
-    /* son coupé : il n'y a rien à autoriser */
-    delete DB.seen.alarmeExacte;
-    DB.settings.son = false;
-    const avant2 = appels.check;
-    await F.verifierAlarmeExacte();
-    eq("Son coupé, on ne demande rien", appels.check, avant2);
-    vrai("…et rien n'est retenu", !DB.seen.alarmeExacte);
-
-    /* la permission des notifications se demande À L'ÉCRAN, pas une fois l'app cachée */
-    DB.settings.son = true;
-    delete DB.seen.alarmeExacte;
-    F.eval("notifsOk = null");
-    await F.verifierAlarmeExacte();
-    vrai("La permission des notifications est demandée pendant qu'on la voit",
-      appels.perm >= 1, appels.perm);
-
+    eq("Son coupé, on ne demande rien", appels.perm, 1);
     delete F.window.Capacitor;
     if(vraiEtat) Object.defineProperty(F.Document.prototype, "visibilityState", vraiEtat);
     if(vraiCache) Object.defineProperty(F.Document.prototype, "hidden", vraiCache);
     F.eval("alarmeExacte = null; notifsOk = null");
-    DB.seen.alarmeExacte = gardeSeen; DB.settings.son = gardeSon;
-    if(gardeSeen === undefined) delete DB.seen.alarmeExacte;
+    DB.settings.son = gardeSon;
   })();
   neuf();
 
@@ -5750,6 +5722,126 @@ async function lancer(){
     for(let i = 0; i < 5; i++){ const k = F.dayKey(Date.now() - i*864e5); delete DB.dayFix[k]; delete DB.habitSel[k]; }
   }
 
+  grp("Les rappels");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); DB.history = []; DB.active = null; DB.templates = []; delete DB.notifs;
+    F.addCoachProgram("masse");
+    const r = F.notifsReglage();
+    vrai("Par défaut : seul le rappel de séance, à 18 h", r.actif && r.types.seance.on && r.types.seance.h === "18:00" && !r.types.repas.on);
+    /* un mardi 10 h : la seance du jour est encore a venir */
+    const mardi10 = new Date(2026, 8, 22, 10, 0, 0);
+    let l = F.notifsAPlanifier(mardi10);
+    eq("Sept jours de séance posés, un par jour", l.length, 7);
+    vrai("…le premier aujourd'hui à 18 h", l[0].at.getDate() === 22 && l[0].at.getHours() === 18);
+    vrai("…qui nomme la séance proposée", /t'attend/.test(l[0].titre) && /exercices/.test(l[0].corps));
+    /* ouverte a 14 h : la personne est la, pas de rappel ce jour */
+    l = F.notifsAPlanifier(new Date(2026, 8, 22, 14, 0, 0));
+    eq("Ouverte l'après-midi : pas de rappel aujourd'hui", l.filter(x=>x.at.getDate() === 22).length, 0);
+    /* une seance faite aujourd'hui : silence ce jour, meme le matin */
+    DB.history = [{date:new Date(2026, 8, 22, 9, 0).toISOString(), entries:[]}];
+    l = F.notifsAPlanifier(mardi10);
+    eq("Séance déjà faite : silence ce jour", l.filter(x=>x.at.getDate() === 22).length, 0);
+    DB.history = [];
+    /* heures bornees */
+    r.types.seance.h = "05:30"; l = F.notifsAPlanifier(mardi10);
+    vrai("Jamais avant 7 h : 5 h 30 devient 7 h", l.every(x=>x.at.getHours() === 7));
+    r.types.seance.h = "23:00"; l = F.notifsAPlanifier(mardi10);
+    vrai("Jamais après 21 h", l.every(x=>x.at.getHours() === 21));
+    r.types.seance.h = "18:00";
+    /* la pesee hebdo, le samedi */
+    r.types.pesee.on = true;
+    vrai("La pesée est réglée sur le samedi seul", r.types.pesee.jours.length === 1 && r.types.pesee.jours[0] === 6);
+    l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "pesee");
+    vrai("La pesée tombe une fois, le samedi", l.length === 1 && l[0].at.getDay() === 6);
+    /* interrupteur general */
+    r.actif = false;
+    eq("Interrupteur général coupé : rien", F.notifsAPlanifier(mardi10).length, 0);
+    r.actif = true; r.types.pesee.on = false;
+    /* le repas, avec son action de raccourci */
+    r.types.repas.on = true;
+    l = F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan");
+    vrai("Le rappel de repas : midi et soir par défaut, tous les jours, et il ouvre le scan", l.length === 14 && l.some(x=>x.at.getHours() === 12 && x.at.getMinutes() === 30) && l.some(x=>x.at.getHours() === 19));
+    vrai("…et il nomme le repas", l.some(x=>/déjeuner/.test(x.titre)) && l.some(x=>/dîner/.test(x.titre)));
+    r.types.repas.repas.matin.on = true;
+    vrai("Le petit-déj de plus : six rappels de plus (celui d'aujourd'hui, 8 h 30, est passé)", F.notifsAPlanifier(mardi10).filter(x=>x.action === "scan").length === 20);
+    delete DB.notifs; DB.templates = [];
+    /* la fiche de reglage */
+    F.openNotifs();
+    vrai("La fiche des notifications liste les quatre rappels", F.document.querySelectorAll("#nt-liste .nt-carte").length === 4);
+    vrai("…le repas en quatre colonnes, sans jours", F.document.querySelectorAll("#nt-liste .nt-carte[data-type='repas'] .nt-rep").length === 4 && !F.document.querySelector("#nt-liste .nt-carte[data-type='repas'] .nt-jours"));
+    vrai("…chacun avec ses sept jours", F.document.querySelectorAll("#nt-liste .nt-carte:first-child .nt-jours button").length === 7);
+    F.document.getElementById("nt-actif").click();
+    vrai("Interrupteur général coupé : la liste se grise", F.document.getElementById("nt-liste").classList.contains("off"));
+    F.document.getElementById("nt-actif").click();
+    /* retirer le lundi de la seance : plus de rappel le lundi */
+    const lun = F.document.querySelector("#nt-liste .nt-carte[data-type='seance'] [data-n='1']"); lun.click();
+    const l2 = F.notifsAPlanifier(new Date(2026, 8, 22, 10, 0, 0));
+    vrai("Un jour décoché ne reçoit plus de rappel", !l2.some(x=>x.at.getDay() === 1) && l2.length === 6);
+    lun.click();
+    F.hideSheet();
+  }
+
+  grp("Le widget");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); delete DB.profile.tdeeManuel;
+    const k = F.dayKey(); DB.habitSel[k] = {midi:["Poulet (150 g cuit)","Riz (200 g cuit)"]}; delete DB.dayFix[k];
+    const d = F.donneesWidget();
+    vrai("Le widget reçoit les chiffres du jour", d.jour === k && d.kcal === 510 && d.prot === 51);
+    vrai("…et les cibles du plan", d.kcalCible > 1500 && d.protCible > 100);
+    delete DB.habitSel[k];
+  }
+
+  grp("Les raccourcis de l'icône");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); DB.active = null; DB.templates = [];
+    F.addCoachProgram("masse");
+    vrai("« Démarrer ma séance » ouvre l'onglet Séance et l'aperçu de la séance proposée", F.executerRaccourci("seance") === true && F.eval("curTab") === "seance");
+    await attendre(()=>!!F.document.getElementById("pv-courte") || !!F.document.querySelector("#sheet h3"), 2000);
+    vrai("…une fiche s'est ouverte", !!F.document.querySelector("#sheet h3"));
+    F.hideSheet(); await attendre(()=>!F.document.querySelector(".cam"), 500);
+    DB.abo = true;
+    vrai("« Scanner mon repas » ouvre l'onglet Alimentation", F.executerRaccourci("scan") === true && F.eval("curTab") === "eat");
+    await attendre(()=>!!F.document.querySelector(".cam"), 2000);
+    vrai("…et la caméra", !!F.document.querySelector(".cam"));
+    const cam = F.document.querySelector(".cam"); if(cam) cam.querySelector("[data-non]").click();
+    await attendre(()=>!F.document.querySelector(".cam"), 1000);
+    vrai("Une action inconnue ne fait rien", F.executerRaccourci("x") === false);
+    /* on laisse retomber les ouvertures differees, puis on range tout */
+    await new Promise(r=>setTimeout(r, 700)); F.hideSheet(); await new Promise(r=>setTimeout(r, 350));
+    DB.templates = []; F.eval("curTab = 'seance'; raccourciRecu = false"); F.render();
+  }
+
+  grp("La proposition de sauvegarde Drive");
+  neuf();
+  {
+    DB.profile = JSON.parse(JSON.stringify(profilType)); DB.history = []; DB.habitSel = {}; DB.drive = null; delete DB.driveRelance;
+    const seenAvant = Object.assign({}, DB.seen || {}); delete DB.seen["drive-jamais"];
+    vrai("Rien à perdre : pas de proposition", !F.driveAProposer());
+    DB.history = [{date:new Date().toISOString(), entries:[]}, {date:new Date().toISOString(), entries:[]}, {date:new Date().toISOString(), entries:[]}];
+    vrai("Trois séances : on propose", F.driveAProposer());
+    DB.active = {entries:[], start:Date.now()};
+    vrai("…mais jamais pendant une séance", !F.driveAProposer());
+    DB.active = null;
+    DB.drive = {actif:true};
+    vrai("…ni quand Drive est déjà connecté", !F.driveAProposer());
+    DB.drive = null;
+    vrai("La fiche s'ouvre", F.proposerDrive() && !!F.document.getElementById("dr-prop-tard"));
+    F.document.getElementById("dr-prop-tard").click();
+    await attendre(()=>!F.document.getElementById("dr-prop-tard"), 2000);
+    vrai("« Plus tard » : pas avant quinze jours", !F.driveAProposer() && DB.driveRelance > 0);
+    DB.driveRelance = Date.now() - 15 * 864e5;
+    vrai("…et quinze jours plus tard, elle revient", F.driveAProposer());
+    F.proposerDrive(); await attendre(()=>!!F.document.getElementById("dr-prop-jamais"), 2000);
+    F.document.getElementById("dr-prop-jamais").click();
+    await attendre(()=>!F.document.getElementById("dr-prop-jamais"), 2000);
+    DB.driveRelance = 0;
+    vrai("« Ne plus proposer » : plus jamais", !F.driveAProposer() && DB.seen["drive-jamais"] === true);
+    DB.seen = seenAvant; DB.history = []; delete DB.driveRelance;
+  }
+
   grp("L'écran caméra");
   neuf();
   await (async ()=>{
@@ -5782,13 +5874,13 @@ async function lancer(){
       eq("…la croix rend null", await pr1b, null);
       vrai("…et l'écran a disparu", !F.document.querySelector(".cam"));
       /* plus de photo : encadre rouge et declencheur inerte */
-      DB.photos = {jour:F.dayKey(), n:6};
+      DB.photos = {jour:F.dayKey(), n:10};
       const prQ = F.ouvrirCamera("plat", "Test");
       await attendre(()=>!!F.document.querySelector(".cam"), 1000);
       vrai("À zéro photo, l'écran le dit dans un encadré rouge et gèle le déclencheur",
         F.document.querySelector(".cam .quota").classList.contains("zero") && F.document.querySelector(".cam").classList.contains("epuise")
         && /demain/.test(F.document.querySelector(".cam .quota").textContent));
-      DB.photos = {jour:F.dayKey(), n:5};
+      DB.photos = {jour:F.dayKey(), n:9};
       F.document.querySelector(".cam [data-mode='code']").click(); F.document.querySelector(".cam [data-mode='plat']").click();
       vrai("…à une photo restante, la pastille dit « Dernière photo »", !F.document.querySelector(".cam .quota").classList.contains("zero") && /Dernière/.test(F.document.querySelector(".cam .quota").textContent));
       F.document.querySelector(".cam [data-non]").click(); await prQ;
@@ -5890,12 +5982,12 @@ async function lancer(){
   await (async ()=>{
     const t = n => { const it = F.alimentDeTable(n); return it ? it[0] : null; };
     eq("« riz cuit » retrouve le riz de la table", t("riz cuit"), "Riz cuit");
-    eq("« riz basmati » aussi : basmati n'est qu'une précision", t("riz basmati"), "Riz cuit");
+    eq("« riz basmati » trouve le basmati de la table", t("riz basmati"), "Riz basmati cuit");
     eq("« pomme de terre cuite » n'est PAS une pomme", t("pomme de terre cuite"), "Patate");
     eq("« pomme » reste une pomme", t("pomme"), "Pomme");
     eq("« frite » trouve les frites", t("frite"), "Frites (portion 150 g)");
     eq("« blanc de poulet » trouve le filet", t("blanc de poulet"), "Blanc de poulet (130 g cuit)");
-    vrai("« cordon bleu » n'est pas dans la table : on prendra l'estimation du modèle", t("cordon bleu") === null);
+    vrai("« paella » n'est pas dans la table : on prendra l'estimation du modèle", t("paella") === null);
     /* les valeurs pour 100 g d'une entree a la piece avec son poids */
     const p100 = F.par100DeTable(F.alimentDeTable("blanc de poulet"));
     vrai("Un filet de 130 g donne ses valeurs pour 100 g", p100 && Math.round(p100.prot100) === 31 && Math.round(p100.kcal100) === 165, JSON.stringify(p100));
@@ -5904,23 +5996,23 @@ async function lancer(){
     vrai("Une portion de frites de 150 g donne ses valeurs pour 100 g", pf && Math.round(pf.kcal100) === 307, JSON.stringify(pf));
     /* le quota du jour */
     delete DB.photos;
-    eq("Six photos par jour au départ", F.photosRestantes(), 6);
+    eq("Dix photos par jour au départ", F.photosRestantes(), 10);
     F.compterPhoto(); F.compterPhoto();
-    eq("…deux de prises, quatre restent", F.photosRestantes(), 4);
+    eq("…deux de prises, huit restent", F.photosRestantes(), 8);
     DB.photos.jour = "2000-01-01";
-    eq("…et un autre jour remet le compteur", F.photosRestantes(), 6);
+    eq("…et un autre jour remet le compteur", F.photosRestantes(), 10);
     DB.aboVia = "code"; eq("Un testeur débloqué par code en a dix", F.photosRestantes(), 10); delete DB.aboVia;
     /* corriger la meme photo (« c'est du poisson ») ne compte pas comme une photo de plus */
     delete DB.photos;
     F.eval("window.__vraiAnalyser = analyserPhoto; analyserPhoto = async ()=>({plat:'', remarque:'', aliments:[{nom:'riz cuit', grammes:100, confiance:'haute', note:'', kcal100:130, prot100:2.7, gluc100:28, lip100:0.3}]})");
     F.eval("photoEnCours = {meal:'midi', b64:'x', apercu:'', corrections:0}");
     await F.lancerAnalysePhoto("");
-    eq("La première analyse compte pour une photo", F.photosRestantes(), 5);
+    eq("La première analyse compte pour une photo", F.photosRestantes(), 9);
     await F.lancerAnalysePhoto("c'est du poisson");
     await F.lancerAnalysePhoto("avec de la sauce");
-    eq("…deux corrections de la même photo sont gratuites", F.photosRestantes(), 5);
+    eq("…deux corrections de la même photo sont gratuites", F.photosRestantes(), 9);
     await F.lancerAnalysePhoto("encore autre chose");
-    eq("…la troisième compte, pour ne pas tourner en boucle", F.photosRestantes(), 4);
+    eq("…la troisième compte, pour ne pas tourner en boucle", F.photosRestantes(), 8);
     F.eval("analyserPhoto = window.__vraiAnalyser");
     F.closeSheet(); await attendre(()=>!F.document.getElementById("ph-ok"), 2000);
     /* l'ajout au repas : des libelles comme ceux de la fiche manuelle, chiffres par la table */
@@ -5928,7 +6020,7 @@ async function lancer(){
     F.eval("photoEnCours = {meal:'midi', b64:'', apercu:''}");
     F.openResultatPhoto("midi", {plat:"", remarque:"", aliments:[
       {nom:"riz cuit", grammes:200, confiance:"haute", note:"", kcal100:999, prot100:99, gluc100:28, lip100:0.3},
-      {nom:"cordon bleu", grammes:150, confiance:"moyenne", note:"", kcal100:220, prot100:15, gluc100:12, lip100:12}]});
+      {nom:"paella", grammes:150, confiance:"moyenne", note:"", kcal100:220, prot100:15, gluc100:12, lip100:12}]});
     await attendre(()=>!!F.document.getElementById("ph-ok"), 2000);
     F.document.querySelector("[data-plus='0']").click();          /* 200 -> 210 g */
     await attendre(()=>{ const i = F.document.querySelector("[data-g='0']"); return i && i.value === "210"; }, 2000);
@@ -5937,7 +6029,7 @@ async function lancer(){
     const labels = DB.habitSel[k].midi;
     eq("Deux aliments ajoutés au repas de midi", labels.length, 2);
     vrai("Le riz est chiffré par la table, pas par le modèle (130 kcal/100 g, pas 999)", /Riz cuit 210 g \(~6 g prot\. · 273 kcal\)/.test(labels[0]), labels[0]);
-    vrai("Le cordon bleu, absent de la table, prend l'estimation du modèle", /Cordon bleu 150 g \(~23 g prot\. · 330 kcal\)/.test(labels[1]), labels[1]);
+    vrai("La paella, absente de la table, prend l'estimation du modèle", /Paella 150 g \(~23 g prot\. · 330 kcal\)/.test(labels[1]), labels[1]);
     vrai("…et ses glucides et lipides sont retenus", DB.macros[labels[1]] && DB.macros[labels[1]][0] === 18 && DB.macros[labels[1]][1] === 18, JSON.stringify(DB.macros[labels[1]]));
     DB.habitSel = {}; DB.macros = {};
   })();
