@@ -5995,24 +5995,25 @@ async function lancer(){
     const pf = F.par100DeTable(F.alimentDeTable("frites"));
     vrai("Une portion de frites de 150 g donne ses valeurs pour 100 g", pf && Math.round(pf.kcal100) === 307, JSON.stringify(pf));
     /* le quota du jour */
-    delete DB.photos;
-    eq("Dix photos par jour au départ", F.photosRestantes(), 10);
+    delete DB.photos; const aboAvant = DB.abo; DB.abo = false;
+    eq("Cinq photos par jour pendant l'essai", F.photosRestantes(), 5);
     F.compterPhoto(); F.compterPhoto();
-    eq("…deux de prises, huit restent", F.photosRestantes(), 8);
+    eq("…deux de prises, trois restent", F.photosRestantes(), 3);
     DB.photos.jour = "2000-01-01";
-    eq("…et un autre jour remet le compteur", F.photosRestantes(), 10);
-    DB.aboVia = "code"; eq("Un testeur débloqué par code en a dix", F.photosRestantes(), 10); delete DB.aboVia;
+    eq("…et un autre jour remet le compteur", F.photosRestantes(), 5);
+    DB.abo = true; eq("Dix par jour avec Tonnup Analyse (abonné ou code)", F.photosRestantes(), 10);
     /* corriger la meme photo (« c'est du poisson ») ne compte pas comme une photo de plus */
     delete DB.photos;
     F.eval("window.__vraiAnalyser = analyserPhoto; analyserPhoto = async ()=>({plat:'', remarque:'', aliments:[{nom:'riz cuit', grammes:100, confiance:'haute', note:'', kcal100:130, prot100:2.7, gluc100:28, lip100:0.3}]})");
     F.eval("photoEnCours = {meal:'midi', b64:'x', apercu:'', corrections:0}");
     await F.lancerAnalysePhoto("");
-    eq("La première analyse compte pour une photo", F.photosRestantes(), 9);
+    eq("La première analyse compte pour une photo (abonné : dix)", F.photosRestantes(), 9);
     await F.lancerAnalysePhoto("c'est du poisson");
     await F.lancerAnalysePhoto("avec de la sauce");
     eq("…deux corrections de la même photo sont gratuites", F.photosRestantes(), 9);
     await F.lancerAnalysePhoto("encore autre chose");
     eq("…la troisième compte, pour ne pas tourner en boucle", F.photosRestantes(), 8);
+    DB.abo = aboAvant;
     F.eval("analyserPhoto = window.__vraiAnalyser");
     F.closeSheet(); await attendre(()=>!F.document.getElementById("ph-ok"), 2000);
     /* l'ajout au repas : des libelles comme ceux de la fiche manuelle, chiffres par la table */

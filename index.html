@@ -3700,7 +3700,7 @@ const TRAD = {en:{
   "Son de fin de repos activé":"Rest-over sound on",
   "Ce que tu soulèves, ce que tu manges, où ça te mène.":"What you lift, what you eat, where it takes you.",
   "Analyse ton alimentation":"Analyse your nutrition",
-  "Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour.":"Calories, protein, what you really eat. Plate photo: 10 a day.",
+  "Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour (5 pendant l'essai).":"Calories, protein, what you really eat. Plate photo: 10 a day (5 during the trial).",
   "Calories, protéines, ce que tu manges vraiment.":"Calories, protein, what you really eat.",
   "Suis tes progrès":"Track your progress",
   "Tes courbes de charge, exercice par exercice.":"Your load curves, exercise by exercise.",
@@ -4146,7 +4146,7 @@ const TRAD = {en:{
   "La sauvegarde Google Drive":"Google Drive backup",
   "Facultative, activée depuis les réglages avec ton compte Google. Un seul fichier, dans l'espace réservé à l'application de <b>ton</b> Drive : invisible dans tes dossiers, inaccessible à l'éditeur. L'app ne demande que cette autorisation — pas tes fichiers, pas tes contacts, pas ton e-mail.":"Optional, enabled from the settings with your Google account. A single file, in the app-reserved space of <b>your</b> Drive: invisible among your folders, inaccessible to the publisher. The app asks for that permission only — not your files, not your contacts, not your e-mail.",
   "La photo d'une assiette":"A photo of a plate",
-  "Seulement si tu appuies sur le déclencheur. La photo, réduite, passe par un relais de l'éditeur qui ne garde rien, puis chez <b>Anthropic</b> qui reconnaît les aliments. Rien d'autre ne l'accompagne — ni ton nom, ni ton poids, ni ton journal. Six par jour au plus, et le résultat est une estimation que tu corriges avant d'enregistrer.":"Only when you press the shutter. The photo, scaled down, goes through a relay of the publisher that keeps nothing, then to <b>Anthropic</b>, which recognises the food. Nothing else travels with it — not your name, your weight or your log. Six a day at most, and the result is an estimate you correct before saving.",
+  "Seulement si tu appuies sur le déclencheur. La photo, réduite, passe par un relais de l'éditeur qui ne garde rien, puis chez <b>Anthropic</b> qui reconnaît les aliments. Rien d'autre ne l'accompagne — ni ton nom, ni ton poids, ni ton journal. Dix par jour au plus (cinq pendant l'essai), et le résultat est une estimation que tu corriges avant d'enregistrer.":"Only when you press the shutter. The photo, scaled down, goes through a relay of the publisher that keeps nothing, then to <b>Anthropic</b>, which recognises the food. Ten a day at most (five during the trial), and the result is an estimate you correct before saving.",
   "Il ne sort du téléphone que quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.":"It only leaves your phone when you tap the button. It sends <b>the barcode digits and nothing else</b> to Open Food Facts, an open food database, which returns the product name and its values. Not your name, not your weight, not what you eat, no identifier.",
   "L'appareil photo":"The camera",
   "Il sert à lire un code-barres ou, si tu le décides, à photographier une assiette — pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.":"It reads a barcode or, if you choose to, photographs a plate — while the scan screen is open. On Android the picture is analysed live and nothing is saved. On iPhone, where no browser can read a barcode live, the app takes a photo and decodes it <b>on your phone</b>: it never joins your gallery and is sent to no one. You can decline the permission and type the digits by hand.",
@@ -8339,7 +8339,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 03h06";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 03h10";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11985,15 +11985,16 @@ function tuileNut(ic, couleur, val, unite, libelle){
    100 g rendues par le modele, marquees « valeurs estimees ». Les portions restent
    reglables : une photo n'a pas d'echelle, l'estimation est un point de depart, pas
    une mesure. La photo part chez Anthropic pour l'analyse et n'est pas conservee.
-   Six photos par jour et par appareil ; au-dela, on ajoute a la main. Corriger une
+   Cinq photos par jour et par appareil pendant l'essai, dix avec Tonnup Analyse (abonne
+   ou code) ; au-dela, on ajoute a la main. Corriger une
    analyse (« c'est du poisson, pas du cordon bleu ») renvoie la MEME photo : ca ne
    compte pas comme une photo de plus — deux corrections au plus, pour que ca ne
    tourne pas en boucle. */
 const RELAIS_PHOTO = "https://tonnup-relais.inncopproject.workers.dev/";
 const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
-const PHOTOS_PAR_JOUR = 10;
-const PHOTOS_PAR_JOUR_TESTEUR = 10;              /* debloque par code : les testeurs, qui essaient a la chaine */
-function quotaPhotos(){ return db.aboVia === "code" ? PHOTOS_PAR_JOUR_TESTEUR : PHOTOS_PAR_JOUR; }
+const PHOTOS_PAR_JOUR = 5;                       /* pendant l'essai */
+const PHOTOS_PAR_JOUR_ABONNE = 10;               /* Tonnup Analyse : abonne ou debloque par code */
+function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : PHOTOS_PAR_JOUR; }
 const CORRECTIONS_PAR_PHOTO = 2;
 const IC_PHOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function idAppareil(){
@@ -17326,7 +17327,7 @@ function openConfidentialite(){
       <div style="font-size:14px; line-height:1.6;"><b>${TR("Tonnup ne collecte rien.")}</b> ${TR("Tout ce que tu saisis reste dans la mémoire de ton téléphone : aucun serveur ne reçoit tes séances, ton poids ni tes repas.")} ${TR("Trois choses peuvent sortir de l'appareil, chacune seulement si tu le demandes : le code-barres que tu scannes, la photo d'une assiette, et ta sauvegarde vers ton propre Google Drive.")}</div></div>
     ${b("Pas de compte, pas de pub", "Aucune adresse e-mail demandée, aucune publicité, aucun traceur, aucune mesure d'audience. L'application ne contient aucun outil d'analyse d'un autre éditeur.")}
     ${b("La sauvegarde Google Drive", "Facultative, activée depuis les réglages avec ton compte Google. Un seul fichier, dans l'espace réservé à l'application de <b>ton</b> Drive : invisible dans tes dossiers, inaccessible à l'éditeur. L'app ne demande que cette autorisation — pas tes fichiers, pas tes contacts, pas ton e-mail.")}
-    ${b("La photo d'une assiette", "Seulement si tu appuies sur le déclencheur. La photo, réduite, passe par un relais de l'éditeur qui ne garde rien, puis chez <b>Anthropic</b> qui reconnaît les aliments. Rien d'autre ne l'accompagne — ni ton nom, ni ton poids, ni ton journal. Six par jour au plus, et le résultat est une estimation que tu corriges avant d'enregistrer.")}
+    ${b("La photo d'une assiette", "Seulement si tu appuies sur le déclencheur. La photo, réduite, passe par un relais de l'éditeur qui ne garde rien, puis chez <b>Anthropic</b> qui reconnaît les aliments. Rien d'autre ne l'accompagne — ni ton nom, ni ton poids, ni ton journal. Dix par jour au plus (cinq pendant l'essai), et le résultat est une estimation que tu corriges avant d'enregistrer.")}
     ${b("Le scan de code-barres", "Il ne sort du téléphone que quand tu appuies sur le bouton. Elle envoie <b>uniquement les chiffres du code-barres</b> à Open Food Facts, une base alimentaire ouverte, qui renvoie le nom du produit et ses valeurs. Ni ton nom, ni ton poids, ni ce que tu manges, ni aucun identifiant.")}
     ${b("L'appareil photo", "Il sert à lire un code-barres ou, si tu le décides, à photographier une assiette — pendant que l'écran de scan est ouvert. Sur Android l'image est analysée en direct, rien n'est enregistré. Sur iPhone, où aucun navigateur ne sait lire un code en direct, l'app prend une photo qu'elle décode <b>sur ton téléphone</b> : elle ne rejoint pas ta galerie et n'est envoyée à personne. Tu peux refuser l'autorisation et saisir les chiffres à la main.")}
     ${b("Les autorisations demandées", "Uniquement ce dont l'app se sert : <b>l'appareil photo</b>, pour le scan ; <b>les notifications</b>, pour te prévenir de la fin d'un temps de repos ; <b>un service en avant-plan</b> (la notification « repos en cours »), pour que ce repos sonne juste même écran éteint ; <b>garder l'écran allumé</b> pendant une séance ; <b>le retour vibrant</b> ; <b>Google Play</b>, pour l'abonnement — le paiement se fait chez Google, l'app ne voit jamais tes coordonnées bancaires. Et si tu photographies une assiette, <b>la photo est envoyée à Anthropic</b> (le fournisseur du modèle qui la lit) pour être analysée, et n'est gardée ni par l'app ni par le relais ; Anthropic ne s'en sert pas pour entraîner ses modèles et peut la conserver au plus trente jours pour la sécurité de son service. Rien d'autre : ni position, ni contacts, ni micro, ni accès à tes fichiers.")}
@@ -17840,7 +17841,7 @@ function openAbonnement(){
           <p class="abo-accroche">${TR("Ce que tu soulèves, ce que tu manges, où ça te mène.")}</p></div></div>
       <ul class="abo-promesses">
         <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Analyse ton alimentation")}</b>
-          <span>${TR("Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour.")}</span></div></li>
+          <span>${TR("Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour (5 pendant l'essai).")}</span></div></li>
         <li><span class="ic">${IC_ABO_COURBE}</span><div><b>${TR("Suis tes progrès")}</b>
           <span>${TR("Tes courbes de charge, exercice par exercice.")}</span></div></li>
         <li><span class="ic"><span class="icm icm-muscle" style="width:17px; height:17px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
