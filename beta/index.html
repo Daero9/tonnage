@@ -5426,7 +5426,6 @@ const TRAD = {en:{
   "Curl marteau élastique":"Band hammer curl",
   "Dips sur banc":"Bench dips",
   "Extension triceps élastique":"Band triceps extension",
-  "Curl auto-résisté":"Self-resisted curl",
   "Rowing sous la table":"Table row"
 }};   /* rempli plus bas, zone par zone */
 
@@ -5550,6 +5549,7 @@ function idExoDe(nomFr){
   return "x-" + String(nomFr).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
+const EXOS_RETIRES = new Set(["Curl auto-résisté"]);
 const LIB = [
   ["Pectoraux","Développé couché","Barre","bench"],["Pectoraux","Développé incliné haltères","Haltères","bench"],["Pectoraux","Développé couché haltères","Haltères","bench"],["Pectoraux","Écartés poulie","Poulie","cablefly"],["Pectoraux","Dips","Poids du corps","dips"],["Pectoraux","Pompes","Poids du corps","pushup"],
   ["Dos","Tractions","Barre fixe","pullup"],["Dos","Rowing barre","Barre","row"],["Dos","Tirage vertical","Poulie","latpulldown"],["Dos","Rowing haltère","Haltères","row"],["Dos","Tirage horizontal","Poulie","seatedrow"],["Dos","Soulevé de terre","Barre","deadlift"],
@@ -5619,7 +5619,10 @@ const LIB = [
   get name(){ return TR(this.nameFr); },
   get muscle(){ return TR(this.muscleFr); },
   get equip(){ return TR(this.equipFr); }
-}));
+})).filter(e=>!EXOS_RETIRES.has(e.nameFr));
+/* Retiré de la bibliothèque le 20 septembre 2026 (« ça manque de sérieux »). La ligne
+   reste dans la liste ci-dessus pour que le rang des suivants ne bouge pas — c'est la
+   clé de conversion des anciens « libN » — mais l'exercice n'existe plus pour l'app. */
 /* Nom canonique d'un exercice : le français pour la bibliothèque, le nom tel
    quel pour un exercice que la personne a créé elle-même. */
 const nomCanon = ex => (ex && ex.nameFr) || (ex && ex.name) || "";
@@ -5961,7 +5964,6 @@ const MUSCLE_WORK = {
   "Curl marteau élastique":[["Biceps",3],["Avant-bras",2]],
   "Dips sur banc":[["Triceps",3],["Deltoïdes (antérieur)",1],["Pectoraux",1]],
   "Extension triceps élastique":[["Triceps",3]],
-  "Curl auto-résisté":[["Biceps",3],["Avant-bras",1]],
   "Rowing sous la table":[["Grand dorsal",3],["Biceps",2],["Trapèzes",2]],
   "Développé incliné barre":[["Pectoraux (haut)",3],["Deltoïdes (antérieur)",2],["Triceps",2]],
   "Écartés haltères":[["Pectoraux",3],["Deltoïdes (antérieur)",1]],
@@ -6112,8 +6114,6 @@ Object.assign(EXO_INFO_EN, {
     steps:["Stand on the band, one handle in each hand.","Arms by your sides, palms facing forward.","Elbows tight against your ribs, still.","Curl your hands toward your shoulders, squeezing.","Lower slowly to full extension."]},
   "Curl marteau élastique":{tip:"Palms facing each other from start to finish: that grip works the brachialis and thickens the arm.",
     steps:["Stand on the band, handles in a neutral grip.","Arms by your sides, thumbs up.","Elbows fixed against your ribs.","Curl toward your shoulders without rotating your wrists.","Lower slowly, keeping the tension."]},
-  "Curl auto-résisté":{tip:"The braking hand is what makes this work: the harder you resist on the way down, the more the set counts.",
-    steps:["Stand with one palm up, the other hand resting on it.","Keep the working elbow pinned to your side.","Curl up against the resistance of the other hand.","Pause at the top.","Resist hard through a five-second descent."]},
   "Dips sur banc":{tip:"Keep your hips grazing the bench on the way down: the further you drift, the more the shoulder is strained for nothing.",
     steps:["Hands on the edge of a bench, fingers forward.","Hips off the bench, legs straight or knees bent.","Lower by bending your elbows straight back.","Stop when your arms make a right angle.","Press through your palms to extension, without locking out."]},
   "Extension triceps élastique":{tip:"Only your forearms move: your elbows stay high and fixed, like two hinges.",
@@ -6357,8 +6357,6 @@ const EXO_INFO = {
     steps:["Debout sur l'élastique, une poignée dans chaque main.","Bras le long du corps, paumes vers l'avant.","Coudes serrés contre les côtes, immobiles.","Monte les mains vers les épaules en contractant.","Redescends lentement jusqu'à extension complète."]},
   "Curl marteau élastique":{tip:"Paumes face à face du début à la fin : c'est cette prise qui met le brachial au travail et épaissit le bras.",
     steps:["Debout sur l'élastique, poignées en prise neutre.","Bras le long du corps, pouces vers le haut.","Coudes fixes contre les côtes.","Monte les mains vers les épaules sans tourner les poignets.","Redescends lentement en gardant la tension."]},
-  "Curl auto-résisté":{tip:"C'est la main qui freine qui fait l'exercice : plus tu résistes à la descente, plus la série compte.",
-    steps:["Debout, une main paume vers le haut, l'autre posée dessus.","Colle au corps le coude du bras qui travaille.","Monte en poussant contre la résistance de l'autre main.","Marque un temps d'arrêt en haut.","Résiste fort pendant les cinq secondes de descente."]},
   "Dips sur banc":{tip:"Garde les fesses au ras du banc pendant la descente : plus tu t'en éloignes, plus l'épaule est mise en tension inutilement.",
     steps:["Mains sur le bord d'un banc, doigts vers l'avant.","Fessiers décollés, jambes tendues ou genoux fléchis.","Descends en pliant les coudes vers l'arrière.","Arrête-toi quand les bras forment un angle droit.","Pousse dans les paumes jusqu'à extension, sans verrouiller."]},
   "Extension triceps élastique":{tip:"Seuls les avant-bras bougent : les coudes restent hauts et fixes, comme deux charnières.",
@@ -6714,7 +6712,7 @@ const INJURY_FAMILLES = {
     {centres:["Triceps"], sauf:["Extension triceps machine","Extension poulie (corde)"],
      tip:"L'extension du coude sous charge est exactement le geste qui tire sur le tendon. Va lentement et allège.",
      alts:["Extension triceps machine","Développé couché haltères"]},
-    {centres:["Biceps"], sauf:["Curl marteau","Curl marteau élastique","Curl auto-résisté"],
+    {centres:["Biceps"], sauf:["Curl marteau","Curl marteau élastique"],
      tip:"La barre droite verrouille l'avant-bras. Préfère une prise marteau, plus douce pour le coude.",
      alts:["Curl marteau","Curl marteau élastique"]}
   ],
@@ -8373,7 +8371,7 @@ const EXO_PHOTO = {
   "Curl haltères":"curl-halteres", "Curl marteau":"curl-marteau", "Curl pupitre":"curl-pupitre",
   "Curl poulie basse":"curl-poulie-basse", "Curl incliné haltères":"curl-incline",
   "Curl concentration":"curl-concentre", "Curl élastique":"curl-elastique",
-  "Curl marteau élastique":"curl-marteau-elastique", "Curl auto-résisté":"curl-auto-resiste",
+  "Curl marteau élastique":"curl-marteau-elastique",
   "Extension poulie (barre)":"extension-triceps-poulie-barre",
   "Extension poulie (corde)":"extension-triceps-poulie-corde",
   "Extension triceps machine":"triceps-poulie",
@@ -8408,7 +8406,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 16h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "20 septembre 2026 18h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8496,11 +8494,10 @@ function applyDefaults(){
      liste ne deplace plus jamais l'historique de personne : c'est ce qui a mis un
      exercice de jambes dans une seance de bras. */
   if(!db.libV4){
-    const parRang = LIB.slice().sort((a, b)=>a.rang - b.rang);
     const conv = id => {
       const m = /^lib([0-9]+)$/.exec(id || "");
       if(!m) return id;
-      const e = parRang[parseInt(m[1], 10)];
+      const e = LIB.find(x=>x.rang === parseInt(m[1], 10));   /* par le rang, pas la position : un retiré laisse un trou */
       return e ? e.id : id;
     };
     const convCle = obj => {
@@ -14049,7 +14046,7 @@ const RESERVOIRS = {
   dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Rowing TRX","Tractions australiennes","Tirage élastique horizontal","Rowing sous la table"],
   dosComp:   ["Pull-over poulie","Pull-over haltère","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
   arriere:   ["Face pull","Oiseau","Rowing menton","Oiseau élastique"],
-  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination","Curl auto-résisté"],
+  biceps:    ["Curl barre","Curl haltères","Curl marteau","Curl pupitre","Curl poulie basse","Curl incliné haltères","Curl concentration","Curl élastique","Curl marteau élastique","Tractions supination"],
   quadLourd: ["Squat","Front squat","Goblet squat","Hack squat","Presse à cuisses","Squat au poids du corps","Squat élastique","Chaise contre le mur"],
   posterieur:["Soulevé de terre roumain","Soulevé de terre","Good morning","Hip thrust","Soulevé de terre sumo","Swing kettlebell","Pont fessier","Soulevé de terre élastique"],
   uniJambe:  ["Fentes","Fentes bulgares","Montées sur banc","Presse à cuisses","Leg extension","Fentes avant","Fentes latérales","Squat bulgare au poids du corps","Montées sur step"],
