@@ -205,7 +205,8 @@ async function lancer(){
   const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
-  eq("Les 116 exercices sont là", LIBEN.length, 116);   /* 115 + le pull-over haltère du 12 septembre */
+  eq("Les 115 exercices sont là", LIBEN.length, 115);   /* 116 moins le curl auto-résisté, retiré le 20 septembre */
+  vrai("Le curl auto-résisté n'existe plus", !LIBEN.some(e=>e.nameFr === "Curl auto-résisté"));
   /* L'identifiant d'un exercice est sa POSITION dans la liste. Insérer une ligne au
      milieu décale tous les suivants et rattache l'historique de chacun à son voisin —
      c'est arrivé le 8 septembre 2026, sur 49 exercices. Ces repères le rendraient
@@ -223,7 +224,8 @@ async function lancer(){
   /* le rang d'origine reste porte par chaque exercice : c'est la cle de conversion des anciens « libN » */
   vrai("Le rang d'origine des 116 premiers ne bouge pas",
     LIBEN.find(e=>e.rang === 0).nameFr === "Développé couché" && LIBEN.find(e=>e.rang === 22).nameFr === "Extension poulie (barre)"
-    && LIBEN.find(e=>e.rang === 108).nameFr === "Rowing sous la table");
+    && LIBEN.find(e=>e.rang === 108).nameFr === "Rowing sous la table"
+    && !LIBEN.some(e=>e.rang === 107));   /* le rang du retiré reste un trou, jamais réattribué */
   eq("Un nom s'affiche en anglais", LIBEN[0].name, "Bench press");
   eq("…mais sa clé reste le français", LIBEN[0].nameFr, "Développé couché");
   eq("Les 108 noms sont traduits",
@@ -1048,8 +1050,10 @@ async function lancer(){
     F.exoDispo(ex("Squat bulgare au poids du corps"), ["step"])
     && F.exoDispo(ex("Squat bulgare au poids du corps"), ["banc"])
     && !F.exoDispo(ex("Squat bulgare au poids du corps"), []));
+  /* les biceps n'ont plus d'exercice ciblé sans rien (le curl auto-résisté est parti le
+     20 septembre) : ils travaillent dans le rowing sous la table, à la maison */
   vrai("Chaque groupe musculaire a du répondant sans matériel", (()=>{
-    const groupes = ["Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos"];
+    const groupes = ["Pectoraux","Dos","Épaules","Triceps","Jambes","Abdos"];
     return groupes.every(g => F.eval("LIB").some(e=>e.muscle===g && F.exoDispo(e, [])));
   })());
 
@@ -1079,7 +1083,7 @@ async function lancer(){
   DB.materiel = null;
   const replis = ["Développé couché élastique","Pompes","Pompes inclinées","Tirage élastique vertical",
     "Tirage élastique horizontal","Squat élastique","Chaise contre le mur","Développé militaire élastique",
-    "Élévations latérales élastique","Rowing sous la table","Curl auto-résisté"];
+    "Élévations latérales élastique","Rowing sous la table"];
   const tires = [];
   for(let i=0;i<80;i++) F.typesProposables().forEach(t=>F.genererSeance(t).items.forEach(it=>tires.push(it.nom)));
   vrai("En salle, aucun exercice de dernier recours n'est proposé",
@@ -2635,7 +2639,7 @@ async function lancer(){
       {exId:id("Développé couché"), sets:3, reps:"8-12", rest:120},
       {exId:id("Rowing barre"),     sets:3, reps:"8-12", rest:120}]}];
     DB.active = null;
-    F.openExoInfo(id("Curl auto-résisté"));
+    F.openExoInfo(id("Curl élastique"));
     vrai("Un exercice sans image avant / après n'affiche pas de bloc vide", !F.document.querySelector("#sheet .exo-demo"));
     F.closeSheet();
     F.openPreview("tpile");
