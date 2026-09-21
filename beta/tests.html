@@ -1380,9 +1380,11 @@ async function lancer(){
         && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "serviette")));
       vrai("La chaîne en or (4 semaines d'affilée) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
       /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
-      DB.cardio = [1,2,3,4,5].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
-      eq("Cinq séances et cinq sorties font dix activités", F.nActivites(), 10);
+      DB.cardio = [8,9,10,11,12].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
+      eq("Cinq séances et cinq sorties, des jours différents : dix activités", F.nActivites(), 10);
       vrai("…et la serviette (dix) est gagnée grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "serviette")));
+      DB.cardio = [1,2,3].map(k=>({id:"cy"+k, date:sem(k), type:"course", min:30}));
+      eq("Une sortie le jour d'une séance ne compte pas deux fois", F.nActivites(), 5);
       DB.cardio = [];
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@repos']"));
