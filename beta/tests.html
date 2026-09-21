@@ -1384,7 +1384,14 @@ async function lancer(){
       eq("La meilleure série jamais tenue : trois semaines", F.meilleureSerieSemaines(), 3);
       vrai("Le bandeau noir est acquis d'office, les gants à cinq séances, pas encore la serviette (dix)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
         && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "serviette")));
-      vrai("La chaîne en or (4 semaines d'affilée) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      vrai("La chaîne en or (flamme de 10) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      /* la meilleure flamme : la plus longue suite d'activites sans trou de plus de 3 jours */
+      eq("Une séance par semaine : la flamme ne dépasse jamais 1", F.meilleureFlamme(), 1);
+      const hist1 = DB.history;
+      DB.history = [0,2,4,6,8,10,12,14,16,18, 30,32].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      eq("Dix activités tous les deux jours, puis un trou : meilleure flamme 10", F.meilleureFlamme(), 10);
+      vrai("…la chaîne en or est gagnée", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      DB.history = hist1;
       /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
       DB.cardio = [8,9,10,11,12].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
       eq("Cinq séances et cinq sorties, des jours différents : dix activités", F.nActivites(), 10);
@@ -1399,8 +1406,10 @@ async function lancer(){
       eq("Sans rien, il dort", F.poussinEtat().pose, "repos");
       DB.history = [seance(1, new Date().toISOString())];
       eq("La toute première séance débloque le bandeau : c'est la fête", F.poussinEtat().pose, F.eval("POUSSIN").fete ? "fete" : "en-forme");
-      DB.history = [seance(1, new Date(Date.now() - J).toISOString()), seance(2, new Date().toISOString())];
-      eq("Deux séances, rien de débloqué aujourd'hui : en forme", F.poussinEtat().pose, "en-forme");
+      DB.history = [seance(1, new Date(Date.now() - J).toISOString()), seance(2, new Date(Date.now() - 2*36e5).toISOString())];
+      eq("Deux séances, la dernière il y a deux heures, rien de débloqué : en forme", F.poussinEtat().pose, "en-forme");
+      DB.history = [seance(1, new Date(Date.now() - J).toISOString()), seance(2, new Date(Date.now() - 20*60000).toISOString())];
+      eq("…et vingt minutes après la séance, il souffle", F.poussinEtat().pose, F.eval("POUSSIN").seance ? "seance" : "en-forme");
       DB.history = [1,3,5].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       eq("Trois activités sur sept jours", F.activites7j(), 3);
       eq("…c'est la pose musclée, si le dessin existe", F.poussinEtat().pose, F.eval("POUSSIN").muscle ? "muscle" : "en-forme");

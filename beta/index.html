@@ -1685,7 +1685,10 @@
   .vs-compte{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 18px;}
   .vs-c{display:flex; align-items:center; gap:12px; padding:14px; border-radius:16px; background:var(--surface2);}
   .vs-c .ic{flex:none; width:50px; height:50px; border-radius:50%; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
-  .vs-c .ic.etoile{background:rgba(253,170,22,.18); color:#f5a623;} .vs-c .ic svg, .vs-c .ic .icm{width:30px !important; height:30px !important; fill:currentColor;}
+  .vs-c .ic.etoile{background:rgba(253,170,22,.18); color:#f5a623; position:relative;} .vs-c .ic svg, .vs-c .ic .icm{width:30px !important; height:30px !important; fill:currentColor;}
+  /* l'etoile pleine, un peu plus grande, avec une petite flamme blanche au coeur : le record de la flamme */
+  .vs-c .ic.etoile svg{width:38px !important; height:38px !important; fill:#f5a623; stroke:#f5a623;}
+  .vs-c .ic.etoile .icm{position:absolute; left:50%; top:52%; transform:translate(-50%,-50%); width:14px !important; height:14px !important; background:#fff;}
   .vs-c b{display:block; font-size:24px; font-weight:800; line-height:1;} .vs-c small{display:block; font-size:12.5px; color:var(--ink-soft); margin-top:3px; line-height:1.2;}
   .vs-c small i{display:block; font-style:normal; font-size:11px; color:var(--ink-mute);}
   .vs-titre{display:flex; align-items:center; gap:8px; margin:6px 0 10px;}
@@ -4289,7 +4292,8 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Record !":"Record!", "puis":"then", "Continuer comme ça !":"Keep it up!",
+  "version du":"build of", "Flamme de {}":"Flame of {}", "meilleure flamme":"best flame", "jamais perdue":"never lost",
+  "Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.":"For consistency: your best flame, i.e. the longest run of activities without ever letting more than 3 days go by. It is never lost.", "Record !":"Record!", "puis":"then", "Continuer comme ça !":"Keep it up!",
   "<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>, tu étais bloqué. Aujourd'hui tu as monté à <b>{b}</b>.":"<b>{ex}</b>: your last two sessions were at <b>{a}</b>, you were stuck. Today you moved up to <b>{b}</b>.",
   "<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>. Aujourd'hui tu as monté à <b>{b}</b>.":"<b>{ex}</b>: your last two sessions were at <b>{a}</b>. Today you moved up to <b>{b}</b>.",
   "<b>+{g}</b> de charge de travail : c'est un vrai palier, pas un kilo de plus.":"<b>+{g}</b> of working load: a real step up, not just one more kilo.", "Une semaine compte dès qu'elle contient une séance ou une sortie.":"A week counts as soon as it holds a workout or a run.",
@@ -9073,12 +9077,27 @@ const ACCESSOIRES = [
   {id:"ceinture",      nom:"Ceinture de force", seances:50},
   {id:"debardeur",     nom:"Débardeur Tonnup",  seances:75},
   {id:"cape",          nom:"Cape",              seances:100},
-  {id:"chaine",        nom:"Chaîne en or",      serie:4,  rare:true},
-  {id:"bandeau-or",    nom:"Bandeau doré",      serie:8,  rare:true},
-  {id:"couronne",      nom:"Couronne",          serie:12, rare:true},
-  {id:"ailes",         nom:"Ailes",             serie:26, rare:true}
+  {id:"chaine",        nom:"Chaîne en or",      flamme:10, rare:true},
+  {id:"bandeau-or",    nom:"Bandeau doré",      flamme:20, rare:true},
+  {id:"couronne",      nom:"Couronne",          flamme:40, rare:true},
+  {id:"ailes",         nom:"Ailes",             flamme:80, rare:true}
 ];
 /* la meilleure serie de semaines jamais tenue, sur tout l'historique */
+/* La meilleure flamme jamais tenue : la plus longue suite de jours d'activite ou deux
+   activites ne sont jamais separees de plus de 3 jours (la regle de la flamme). Jamais
+   perdue : c'est le record, l'etoile du vestiaire. Les rares se gagnent avec elle. */
+function meilleureFlamme(){
+  const jours = [...new Set((db.history || []).concat(db.cardio || []).map(x=>{
+    const d = new Date(x.date); if(!(d > 0) || d > Date.now()) return null;
+    d.setHours(0,0,0,0); return d.getTime();
+  }).filter(t=>t !== null))].sort((a, b)=>a - b);
+  let best = 0, n = 0;
+  for(let i = 0; i < jours.length; i++){
+    n = (i > 0 && jours[i] - jours[i - 1] <= 3 * 864e5) ? n + 1 : 1;
+    best = Math.max(best, n);
+  }
+  return best;
+}
 function meilleureSerieSemaines(){
   const sem = new Set();
   (db.history || []).concat(db.cardio || []).forEach(x=>{
@@ -9099,7 +9118,7 @@ function nActivites(){
   return jours.size;
 }
 function accessoireGagne(a){
-  if(a.serie) return meilleureSerieSemaines() >= a.serie;
+  if(a.flamme) return meilleureFlamme() >= a.flamme;
   return nActivites() >= (a.seances || 0);
 }
 /* ce qu'il porte : le choix de la personne, filtre par ce qu'elle a gagne et par ce qui
@@ -9143,8 +9162,8 @@ function recordSignificatif(){
    serie de semaines vient d'atteindre celui d'un rare */
 function accessoireDuJour(){
   if(serieJours().depuis !== 0) return null;
-  const n = nActivites(), sem = serieSemaines();
-  return ACCESSOIRES.find(a=>a.serie ? (sem.enCours && sem.n === a.serie && activites7j() === 1) : a.seances === n) || null;
+  const n = nActivites(), fl = serieJours().n;
+  return ACCESSOIRES.find(a=>a.flamme ? fl === a.flamme : a.seances === n) || null;
 }
 /* La pose du poussin, par priorite. Chaque pose ne s'active que si son dessin existe
    dans POUSSIN ; sinon on passe a la suivante. Ni le poids ni le profil n'y entrent.
@@ -9179,7 +9198,7 @@ function poussinEtat(poseForcee){
 function openVestiaire(){
   /* dans le vestiaire, il pose toujours « en forme » : la pose du moment (endormi, vautre)
      cacherait ce qu'on est en train de lui mettre */
-  const e = poussinEtat("en-forme"), nSeances = nActivites(), best = meilleureSerieSemaines();
+  const e = poussinEtat("en-forme"), nSeances = nActivites(), best = meilleureFlamme();
   const porte = new Set(e.acc);
   /* d'apres la maquette du 21 septembre : le poussin en grand, deux compteurs en tuiles
      (flamme / etoile), les accessoires en cartes avec un cadenas et une jauge de
@@ -9187,8 +9206,8 @@ function openVestiaire(){
      accessoires en restant regulier » */
   const tuile = a=>{
     const gagne = accessoireGagne(a), dessin = POUSSIN.repos && POUSSIN.repos.acc.includes(a.id);
-    const reste = a.serie ? TR("{} semaines d'affilée").replace("{}", a.serie) : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances);
-    const avance = a.serie ? Math.min(1, best / a.serie) : Math.min(1, nSeances / Math.max(1, a.seances));
+    const reste = a.flamme ? TR("Flamme de {}").replace("{}", a.flamme) : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances);
+    const avance = a.flamme ? Math.min(1, best / a.flamme) : Math.min(1, nSeances / Math.max(1, a.seances));
     return `<button class="vs-t ${gagne ? "ok" : "verrou"} ${porte.has(a.id) ? "on" : ""} ${dessin ? "" : "sans"}" data-acc="${a.id}" ${gagne && dessin ? "" : "disabled"}>
       ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
       <span class="vs-img">${dessin ? `<img src="img/poussin/ico-${a.id}.webp" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
@@ -9203,7 +9222,7 @@ function openVestiaire(){
     <div class="vs-apercu">${poussinHtml("vs-poussin", "en-forme")}</div>
     <div class="vs-compte">
       <div class="vs-c"><span class="ic">${icoM("flamme", 22)}</span><span><b>${nSeances}</b><small>${TR(nSeances > 1 ? "activités" : "activité")}</small></span></div>
-      <div class="vs-c"><span class="ic etoile">${IC_ETOILE}</span><span><b>${best}</b><small>${TR("semaines d'affilée")}<i>${TR("au mieux")}</i></small></span></div>
+      <div class="vs-c"><span class="ic etoile">${IC_ETOILE}${icoM("flamme", 14)}</span><span><b>${best}</b><small>${TR("meilleure flamme")}<i>${TR("jamais perdue")}</i></small></span></div>
     </div>
     <div class="vs-titre"><img class="em" src="img/vs-sac.png" alt=""><b>${TR("Accessoires")}</b><button class="card-i" data-vsinfo="acc" aria-label="${TR("À quoi ça sert ?")}">i</button></div>
     <div class="vs-grille">${courants.map(tuile).join("")}</div>
@@ -9215,7 +9234,7 @@ function openVestiaire(){
     const rare = b.dataset.vsinfo === "rare";
     ouvrirParDessus(openVestiaire, ()=>openSheet(`<h3>${rare ? TR("Rares") : TR("Accessoires")}</h3>
       <p style="margin:0 0 16px; font-size:14.5px; line-height:1.55; color:var(--ink-soft);">${rare
-        ? TR("Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.") + " " + TR("Une semaine compte dès qu'elle contient une séance ou une sortie.")
+        ? TR("Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.")
         : TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.") + " " + TR("Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.")}</p>
       <button class="btn btn-accent" id="vsi-ok" style="width:100%;">${TR("Compris")}</button>`));
     document.getElementById("vsi-ok").onclick = closeSheet;
@@ -9326,7 +9345,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 00h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 01h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
