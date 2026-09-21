@@ -1650,7 +1650,7 @@
   .hero-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;}
   /* le poussin en forme est debout, donc plus haut que large : on le resserre pour qu'il
      depasse de la carte a peu pres autant que celui qui dort */
-  .hero-poussin[data-pose="en-forme"]{width:88px; right:22px;}
+  .hero-poussin[data-pose="en-forme"], .hero-poussin[data-pose="muscle"]{width:88px; right:22px;}
   /* la flamme animee de Nico, posee sur le bord de la carte sous le poussin, le chiffre
      dans son coeur clair ; elle rapetisse et palit quand les jours sans seance passent */
   .hero-flamme{position:absolute; right:30px; top:-30px; z-index:4; width:40px; height:50px; transform-origin:50% 100%;
@@ -9086,10 +9086,18 @@ function accessoireGagne(a){
 }
 /* ce qu'il porte : le choix de la personne, filtre par ce qu'elle a gagne et par ce qui
    existe en dessin pour la pose */
-/* la pose suit la flamme : en forme quand on s'est entraine aujourd'hui ou hier, au
-   repos (il dort) des que ca fait deux jours ou plus */
+/* activites (jours avec une seance ou une sortie) sur les 7 derniers jours */
+function activites7j(){
+  const jours = new Set(), depuis = Date.now() - 7 * 864e5;
+  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= Date.now()) jours.add(dayKey(d)); });
+  return jours.size;
+}
+/* la pose recompense la regularite : muscle a partir de 3 activites sur 7 jours (le
+   seuil du bilan), en forme quand on s'est entraine aujourd'hui ou hier, au repos (il
+   dort) des que ca fait deux jours ou plus. Ni le poids ni le profil n'y entrent. */
 function poussinEtat(){
-  const pose = (POUSSIN["en-forme"] && serieJours().force === "pleine") ? "en-forme" : "repos";
+  const pose = (POUSSIN["muscle"] && activites7j() >= 3) ? "muscle"
+    : ((POUSSIN["en-forme"] && serieJours().force === "pleine") ? "en-forme" : "repos");
   const choix = (db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"];
   const dispo = POUSSIN[pose] ? POUSSIN[pose].acc : [];
   return {pose, acc:choix.filter(id=>dispo.includes(id) && ACCESSOIRES.some(a=>a.id === id && accessoireGagne(a)))};
@@ -9224,7 +9232,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 21h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 21h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
