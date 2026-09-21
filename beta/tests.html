@@ -1782,7 +1782,7 @@ async function lancer(){
     vrai("Le bandeau de séance n'a plus l'arc",
       !/A1021/.test(D2.querySelector(".hero-en-cours .hero-bg").innerHTML));
     /* ce que pèse la séance, en un coup d'œil */
-    const meta = D2.querySelector(".hero-meta span").textContent;
+    const meta = [...D2.querySelectorAll(".hero-meta span")].map(x=>x.textContent).join(" · ");
     const travail = DB.active.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
     eq("L'échauffement ne compte pas comme une série", travail, 6);
     eq("Le bandeau dit ce que pèse la séance",
@@ -1823,10 +1823,10 @@ async function lancer(){
     eq("…et l'exemple en gras", deg.querySelector("b").textContent, "6 × 12 kg, puis 4 × 10 kg.");
     /* le bas de carte : un seul geste encadré, les autres sont des mots */
     const bas = D2.querySelector(".ex-bas");
-    vrai("« + série » garde son cadre",
-      bas.querySelector('[data-act="addset"]').classList.contains("btn-ghost"));
-    vrai("« Remplacer » est un mot, pas un bouton",
-      bas.querySelector('[data-act="swap"]').classList.contains("ex-lien"));
+    vrai("« + 1 série » est un bouton avec son signe",
+      bas.querySelector('[data-act="addset"]').classList.contains("ex-btn") && !!bas.querySelector('[data-act="addset"] svg'));
+    vrai("« Remplacer » aussi",
+      bas.querySelector('[data-act="swap"]').classList.contains("ex-btn"));
     vrai("« Retirer » aussi, en rouge",
       bas.querySelector('[data-act="delex"]').classList.contains("danger"));
     DB.active = null; DB.templates = [];

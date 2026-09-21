@@ -1077,21 +1077,36 @@
   /* ---- bandeau historique ---- */
   .hist-strip{display:flex; gap:8px; overflow-x:auto; margin:0 -16px; padding:2px 16px 14px;}
   .hist-strip::-webkit-scrollbar{display:none;}
-  .hist-c{position:relative; flex:0 0 108px; height:112px; border-radius:12px; overflow:hidden;
+  /* ---- l'historique, d'apres la maquette du 21 septembre ---- */
+  .hist-tete{display:flex; align-items:center; gap:10px; margin:22px 0 10px;}
+  .hist-ic{width:40px; height:40px; border-radius:12px;} .hist-ic svg{width:22px; height:22px;}
+  .hist-t{flex:1; font-size:22px; font-weight:800; letter-spacing:-.02em;}
+  .hist-tout{display:flex; align-items:center; gap:4px; padding:9px 12px 9px 14px; border-radius:99px; background:var(--surface2); color:var(--ink-soft); font-size:13.5px; font-weight:700;}
+  .hist-tout .chev{width:14px; height:14px; margin:0;}
+  .hist-c{position:relative; flex:0 0 176px; height:152px; border-radius:16px; overflow:hidden;
     background:var(--hero); color:#fff; text-align:left;}
+  .hist-c.now{box-shadow:inset 0 0 0 2.5px var(--accent);}
+  .hist-c .tp{position:absolute; top:10px; right:10px; z-index:2; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.16); color:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center;}
+  .hist-c.now .tp{background:rgba(245,130,32,.28); color:#ffb056;}
+  .hist-c .st{display:flex; align-items:center; gap:6px;}
+  .hist-c .st b{font-size:13.5px; font-weight:800; color:#fff;}
+  .hist-c .st .ic{flex:none; width:16px; height:16px; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#fff;}
+  .hist-c .st .ic svg{width:11px; height:11px;}
+  .hist-c .st .ic.v{background:#6e50e6;} .hist-c .st .ic.o{background:var(--accent);} .hist-c .st .ic.g{background:#52b43a;} .hist-c .st .ic.b{background:#2f7de1;}
   .hist-c .ph{position:absolute; inset:0; background-size:cover; background-position:center;}
   /* le bouton de partage de la derniere seance, dans le coin */
-  .hist-c .pg{position:absolute; top:6px; right:6px; z-index:3; width:26px; height:26px; border-radius:50%;
+  .hist-c .pg{position:absolute; bottom:10px; right:10px; z-index:3; width:26px; height:26px; border-radius:50%;
     background:rgba(0,0,0,.5); color:#fff; display:flex; align-items:center; justify-content:center;}
   .hist-c .pg svg{width:14px; height:14px; vertical-align:0;}
   .hist-c .ph::after{content:""; position:absolute; inset:0;
     background:linear-gradient(180deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.72) 100%);}
-  .hist-c .in{position:absolute; inset:0; padding:8px 9px; display:flex; flex-direction:column; justify-content:flex-end;}
-  .hist-c .dt{position:absolute; top:7px; left:50%; transform:translateX(-50%); z-index:2;
-    background:rgba(255,255,255,.9); color:#1b1b1d; font-size:9.5px; font-weight:800;
-    border-radius:99px; padding:2px 7px; white-space:nowrap;}
-  .hist-c .nm{font-size:15px; font-weight:800; line-height:1.1;}
-  .hist-c .st{font-size:10px; font-weight:600; line-height:1.4; color:rgba(255,255,255,.9); margin-top:3px;}
+  .hist-c .in{position:absolute; inset:0; padding:10px 12px; display:flex; flex-direction:column; justify-content:flex-end;}
+  .hist-c .dt{position:absolute; top:10px; left:10px; z-index:2; display:flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,.92); color:#1b1b1d; font-size:11.5px; font-weight:800;
+    border-radius:99px; padding:5px 9px; white-space:nowrap;}
+  .hist-c .dt svg{width:13px; height:13px; color:var(--accent);}
+  .hist-c .nm{font-size:19px; font-weight:800; line-height:1.1; margin-bottom:5px;}
+  .hist-c .st{font-size:11.5px; font-weight:600; line-height:1.3; color:rgba(255,255,255,.88); margin-top:4px;}
 
   /* ---- signes dessines ----
      Des PNG blancs poses en MASQUE, et non en image : c est la couleur du texte qui
@@ -1647,9 +1662,20 @@
   /* Le bandeau de la seance en cours grandit avec son texte : avec une grande police
      systeme ou un nom sur deux lignes, « Temps de seance » passait sous la premiere
      carte. Fond et contenu partagent la meme cellule ; le plus haut des deux gagne. */
-  .hero-en-cours{display:grid; aspect-ratio:1210/700;}
-  .hero-en-cours .hero-bg{grid-area:1/1; height:100%; aspect-ratio:auto;}
-  .hero-en-cours .hero-in{grid-area:1/1; position:static; padding-bottom:34px;}
+  .hero-en-cours{display:grid; aspect-ratio:auto; min-height:250px;}
+  .hero-en-cours .hero-bg{grid-area:1/1; height:100%; aspect-ratio:auto; object-fit:cover;}
+  .hero-en-cours .hero-in{grid-area:1/1; position:static; padding-bottom:14px; display:flex; flex-direction:column;}
+  .hero-en-cours .hero-meta{gap:16px; margin-top:12px; flex-wrap:wrap;}
+  .hero-en-cours .hero-meta span{display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13.5px;}
+  .hero-en-cours .hero-meta svg, .hero-en-cours .hero-meta .icm{width:17px; height:17px;}
+  /* la carte sombre du bas : tonnage, calories, chrono, chacun avec son signe dans un rond */
+  .hero-en-cours .hero-stats{display:flex; align-items:center; justify-content:space-between; gap:6px; margin:14px 0 0;
+    padding:13px 14px; border-radius:18px; background:rgba(22,22,24,.9); text-shadow:none;}
+  .hero-en-cours .hero-stats .hs, .hero-en-cours .chrono-bloc{display:flex; flex-direction:row; align-items:center; gap:9px; flex:0 1 auto; min-width:0;}
+  .hero-en-cours .hero-stats .ic{flex:none; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.10); color:#fff; display:flex; align-items:center; justify-content:center; font-style:normal;}
+  .hero-en-cours .hero-stats .ic svg{width:18px; height:18px;} .hero-en-cours .hero-stats .hs:nth-child(2) .ic{color:var(--accent);}
+  .hero-en-cours .hero-stats .hs b, .hero-en-cours .hero-stats .chrono{display:block; width:auto; font-size:16px; font-weight:800; color:#fff; background:none; border:0; padding:0; line-height:1.1; box-shadow:none; white-space:nowrap;}
+  .hero-en-cours .hero-stats .hs > span > i, .hero-en-cours .hero-stats .lab{display:block; font-style:normal; font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.6); margin-top:3px; white-space:nowrap;}
   .fin-bandeau{display:none; margin-top:16px; padding:12px 14px; border-radius:16px;
     background:rgba(52,168,83,.12); border:1.5px solid rgba(52,168,83,.4);}
   .fin-bandeau.show{display:block; animation:ficheIn .4s cubic-bezier(.22,1,.36,1) backwards;}
@@ -1774,6 +1800,12 @@
   .ex-bas .ex-lien{flex:0 0 auto; font-size:13px; font-weight:700; color:var(--ink-soft);
     background:none; border:none; padding:6px 2px; white-space:nowrap;}
   .ex-bas .ex-lien.danger{color:var(--bad);}
+  .ex-bas{gap:8px; flex-wrap:nowrap;}
+  .ex-bas .ex-btn{flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px; height:42px; border-radius:12px;
+    background:var(--surface); box-shadow:0 1px 6px rgba(0,0,0,.07); color:var(--ink); font-size:13.5px; font-weight:800; white-space:nowrap; padding:0 6px;}
+  .ex-bas .ex-btn svg{width:17px; height:17px; flex:none;}
+  .ex-bas .ex-btn.danger{color:var(--bad);}
+  .ex-bas .ex-x{width:34px; height:42px; border:0; box-shadow:0 1px 6px rgba(0,0,0,.07);}
   .ex-plier{width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
     padding:10px 0 0; margin-top:6px; color:var(--ink-mute); font-size:12px; font-weight:700;}
   .ex-plier svg{width:18px; height:12px; transform:rotate(180deg);}
@@ -4149,7 +4181,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of",
+  "version du":"build of", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
   "Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui.":"Holding your weight while training is recomposition: the scale barely moves, your shape does.",
@@ -9069,7 +9101,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 18h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 18h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10020,6 +10052,7 @@ const IC_COUCHES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
   + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
   + '<path d="M12 2.8 21.2 7.4 12 12 2.8 7.4z"/><path d="M2.8 12.6 12 17.2l9.2-4.6"/>'
   + '<path d="M2.8 17.2 12 21.8l9.2-4.6"/></svg>';
+const IC_SAC = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 8V7a4 4 0 0 1 8 0v1h2.2a1 1 0 0 1 1 .9l1 11a1 1 0 0 1-1 1.1H4.8a1 1 0 0 1-1-1.1l1-11a1 1 0 0 1 1-.9H8zm2 0h4V7a2 2 0 0 0-4 0v1z"/></svg>';
 const IC_CHRONO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"'
   + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
   + '<circle cx="12" cy="13.8" r="7.8"/><path d="M12 10.4v3.4l2.3 1.6"/>'
@@ -10057,6 +10090,7 @@ const IC_ASSIETTE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="t
   + '<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2zm0 5.3a4.3 4.3 0 1 1 0 8.6 4.3 4.3 0 0 1 0-8.6z"/></svg>';
 const IC_CHECK = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6"'
   + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.6 12.4 9.6 17.4 19.4 6.6"/></svg>';
+const IC_POUBELLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const IC_ECHANGE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
   + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
   + '<path d="M3.5 8h14l-3.2-3.2M20.5 16h-14l3.2 3.2"/></svg>';
@@ -13679,7 +13713,12 @@ function openCardioAdd(idExistant){
       <div class="cd-aide">${TR("Facultatif, mais plus fiable que l'estimation : les kcal de ta montre sont reprises telles quelles, sinon la FC moyenne sert au calcul.")}</div>
     </div>
     <button class="btn btn-accent cd-ok" id="cd-ok">${TR(c? "Enregistrer les modifications" : "Enregistrer")}</button>
-    ${c? `<button class="btn btn-ghost" id="cd-cancel">${TR("Annuler")}</button>`:""}`);
+    ${c? `<button class="btn btn-ghost" id="cd-cancel">${TR("Annuler")}</button>
+    <button class="btn btn-ghost" id="cd-suppr" style="color:var(--bad);">${TR("Supprimer cette sortie")}</button>`:""}`);
+  const suppr = document.getElementById("cd-suppr");
+  if(suppr) suppr.onclick = ()=>askConfirm(TR("Supprimer cette sortie ?"),
+    TR("{d} du {j} sera retirée de ton historique.").replace("{d}", c.km ? dist(c.km) : (Math.round(c.min) + " min")).replace("{j}", fmtDateShort(c.date)),
+    TR("Supprimer"), true, ()=>{ db.cardio = db.cardio.filter(x=>x.id!==c.id); save(); closeSheet(); render(); });
   const annul = document.getElementById("cd-cancel");
   if(annul) annul.onclick = openCardioList;
   let cMach = (c && c.machine) || "course";
@@ -14786,8 +14825,10 @@ function renderSeance(app){
     </button>`:""}
     <div class="car-wrap"><div class="car" id="car"></div></div>
     <div class="fab-row"><button class="fab" id="fab" aria-label="Ajouter">＋</button></div>
-    <div class="section-t" style="margin-top:14px;"><i>▤</i>${TR("Historique")}</div>
+    <div class="hist-tete"><span class="pt-ic hist-ic">${IC_CALENDRIER}</span><span class="hist-t">${TR("Historique")}</span>
+      <button class="hist-tout" id="hist-all">${TR("Voir tout")}${CHEV_MP}</button></div>
     <div class="hist-strip" id="hist-strip"></div>`;
+  document.getElementById("hist-all").onclick = ()=>{ curTab="hist"; render(); };
   wireTopbar();
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
@@ -14894,12 +14935,15 @@ function renderSeance(app){
         const c = it.o;
         const machine = c.machine && c.machine !== "course";
         const mnC = Math.round(c.min);
-        return `<button class="hist-c" data-hcardio="${c.id}">
+        return `<button class="hist-c ${it === passees[0] ? "now" : ""}" data-hcardio="${c.id}">
           <div class="ph" style="background-image:url('${photoUrl("cardio")}');"></div>
-          <div class="dt">◷ ${fmtDateShort(c.date)}</div>
+          <div class="dt">${IC_CALENDRIER}${fmtDateShort(c.date)}</div>
+          <span class="tp">${icoM("course", 16)}</span>
           <div class="in">
             <div class="nm">${machine? esc(machineNom(c)) : esc(CARDIO_NOM[cardioType(c)])}</div>
-            <div class="st">${c.km? dist(c.km) + "<br>" : ""}${Math.round(sortieKcal(c, kgStrip))} ${TR("Kcal brûlés")}<br>${mnC>=60? Math.floor(mnC/60)+"H"+String(mnC%60).padStart(2,"0") : mnC+" min"}</div>
+            ${c.km? `<div class="st"><span class="ic b">${icoM("course", 11)}</span><b>${dist(c.km)}</b></div>` : ""}
+            <div class="st"><span class="ic o">${icoM("flamme", 11)}</span><b>${Math.round(sortieKcal(c, kgStrip))}</b> ${TR("kcal brûlés")}</div>
+            <div class="st"><span class="ic g">${IC_CHRONO}</span><b>${mnC>=60? Math.floor(mnC/60)+"H"+String(mnC%60).padStart(2,"0") : mnC}</b>${mnC>=60 ? "" : " min"}</div>
           </div>
         </button>`;
       }
@@ -14912,18 +14956,19 @@ function renderSeance(app){
          la carte part — sans rouvrir la seance */
       const partage = premiereMuscu ? `<span class="pg" role="button" data-partage="${h.id}" aria-label="${TR("Partager la séance")}">${IC_PARTAGE}</span>` : "";
       premiereMuscu = false;
-      return `<button class="hist-c" data-hist="${h.id}">
+      return `<button class="hist-c ${it === passees[0] ? "now" : ""}" data-hist="${h.id}">
         <div class="ph" style="background-image:url('${photoUrl(photoSeance(t || {name:h.name, items:h.entries.map(e=>({exId:e.exId}))}))}');"></div>
         ${partage}
-        <div class="dt">◷ ${fmtDateShort(h.date)}</div>
+        <div class="dt">${IC_CALENDRIER}${fmtDateShort(h.date)}</div>
+        <span class="tp">${icoM("muscle", 16)}</span>
         <div class="in">
           <div class="nm">${esc(h.name)}</div>
-          <div class="st">${volPds(vol)} ${TR("soulevés")}<br>${kc} ${TR("Kcal brûlés")}<br>${mn>=60? Math.floor(mn/60)+"H"+String(mn%60).padStart(2,"0") : mn+" min"}</div>
+          <div class="st"><span class="ic v">${icoM("poids", 11)}</span><b>${volNb(vol)}</b> ${uPoids()} ${TR("soulevés")}</div>
+          <div class="st"><span class="ic o">${icoM("flamme", 11)}</span><b>${kc}</b> ${TR("kcal brûlés")}</div>
+          <div class="st"><span class="ic g">${IC_CHRONO}</span><b>${mn>=60? Math.floor(mn/60)+"H"+String(mn%60).padStart(2,"0") : mn}</b>${mn>=60 ? "" : " min"}</div>
         </div>
       </button>`;
-    }).join("") + `<button class="hist-c" id="hist-all" style="flex:0 0 76px; background:var(--surface2); color:var(--ink-soft);">
-      <div class="in" style="align-items:center; justify-content:center; text-align:center;">
-        <div style="font-size:12px; font-weight:700; line-height:1.3;">${TR("Voir")}<br>${TR("tout")}</div></div></button>`;
+    }).join("");
     hs.querySelectorAll("[data-hist]").forEach(b=>b.onclick=()=>openHistDetail(b.dataset.hist));
     hs.querySelectorAll("[data-partage]").forEach(b=>b.onclick=(e)=>{
       e.stopPropagation();
@@ -14931,8 +14976,6 @@ function renderSeance(app){
       if(h) partagerSeance(h);
     });
     hs.querySelectorAll("[data-hcardio]").forEach(b=>b.onclick=()=>openCardioAdd(b.dataset.hcardio));
-    const all = document.getElementById("hist-all");
-    if(all) all.onclick=()=>{ curTab="hist"; render(); };
   }
 }
 
@@ -16847,18 +16890,17 @@ function renderActive(app){
     ${hero(`<div class="grow">
         <div class="hero-kicker">${TR("Séance en cours")}</div>
         <h1 class="hero-seance" style="--t:${tailleTitre}px">${esc(a.name)}</h1>
-        <div class="hero-meta">${ICONS.seance}<span>${TR("{n} exercices · {s} séries · ~{m} min")
-          .replace("{n}", nbEx).replace("{s}", nbSeries).replace("{m}", minSeance)}</span></div>
-        <div class="hero-stats">
-          <span class="hs"><b id="hs-vol">—</b><i>${TR("Soulevés")}</i></span>
-          <span class="hs"><b id="hs-kcal">—</b><i>${TR("Brûlées")}</i></span>
-        </div>
-      </div>
-      <div class="chrono-bloc">
-        <button class="chrono" id="chrono" aria-label="${TR("Mettre le chrono en pause")}"><span id="chrono-t"></span></button>
-        <span class="lab">${TR("Temps de séance")}</span>
+        ${/* d'apres la maquette du 21 septembre : trois reperes avec leur signe, puis une
+              carte sombre en bas du bandeau avec le tonnage, les calories et le chrono */""}
+        <div class="hero-meta"><span>${ICONS.seance}${TR("{n} exercices").replace("{n}", nbEx)}</span><span>${IC_COUCHES}${TR("{s} séries").replace("{s}", nbSeries)}</span><span>${IC_HORLOGE}~${minSeance} min</span></div>
       </div>`,
-      {photo, icones:false, classe:"hero-en-cours", plat:true})}
+      {photo, icones:false, classe:"hero-en-cours", plat:true, apres:`<div class="hero-stats">
+          <span class="hs"><i class="ic">${IC_SAC}</i><span><b id="hs-vol">—</b><i>${TR("Soulevés")}</i></span></span>
+          <span class="hs"><i class="ic">${icoM("flamme", 18)}</i><span><b id="hs-kcal">—</b><i>${TR("Brûlées")}</i></span></span>
+          <span class="chrono-bloc"><i class="ic">${IC_CHRONO}</i><span>
+            <button class="chrono" id="chrono" aria-label="${TR("Mettre le chrono en pause")}"><span id="chrono-t"></span></button>
+            <span class="lab">${TR("Temps de séance")}</span></span></span>
+        </div>`})}
     <div class="stack" id="ex-list"></div>
     <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink);">＋ ${TR(a.cardio ? "Ajouter un exercice" : "Ajouter un exercice / cardio")}</button>
     <div class="fin-bandeau ${toutEstFait(a) ? "show" : ""}" id="fin-bandeau">
@@ -17000,12 +17042,13 @@ function renderActive(app){
       <div class="sets"></div>
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">Série dégressive</span>Tu continues la même série avec moins de charge :<br><b>6 × 12 kg, puis 4 × 10 kg.</b><br>Ça reste une seule série, et tout compte dans ton tonnage."), IC_BAISSE) : ""}
       <div class="ex-bas">
-        <button class="btn btn-sm btn-ghost grow" data-act="addset" style="white-space:nowrap; min-width:96px;">＋ ${TR("série")}</button>
+        ${/* d'apres la maquette du 21 septembre : trois boutons de meme poids, chacun avec son signe */""}
+        <button class="ex-btn" data-act="addset">${IC_PLUS}${TR("1 série")}</button>
         ${en.sets.filter(x=>!x.warm).length > 1
           ? `<button class="ex-x" data-act="delset" title="${TR("Supprimer la dernière série")}" aria-label="${TR("Supprimer la dernière série")}">✕</button>`
           : ""}
-        <button class="ex-lien" data-act="swap">⇄ ${TR("Remplacer")}</button>
-        <button class="ex-lien danger" data-act="delex">${TR("Retirer")}</button>
+        <button class="ex-btn" data-act="swap">${IC_ECHANGE}${TR("Remplacer")}</button>
+        <button class="ex-btn danger" data-act="delex">${IC_POUBELLE}${TR("Retirer")}</button>
       </div>
       <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
     const btnIso = card.querySelector("[data-iso]");
