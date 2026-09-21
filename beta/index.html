@@ -9108,7 +9108,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 19h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 19h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -17044,9 +17044,8 @@ function renderActive(app){
       </div>`; })()
       : (ei === iEch ? hintBox("echauffement", TR("<span class=\"ht\"><i>Éch.</i> = échauffement</span>Une série légère pour préparer le muscle, remplie à la moitié de ta charge. Elle ne compte pas dans ton tonnage, ni dans tes records."), icoM("flamme", 30)) : "")}
       ${iso ? bandeRepos : ""}
-      <div class="set-cols"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
-        : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
-        iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
+      ${/* les titres des colonnes vivent dans le cadre noir, sur la serie en cours : pas de
+            doublon au-dessus du tableau */""}
       <div class="sets"></div>
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">Série dégressive</span>Tu continues la même série avec moins de charge :<br><b>6 × 12 kg, puis 4 × 10 kg.</b><br>Ça reste une seule série, et tout compte dans ton tonnage."), IC_BAISSE) : ""}
       <div class="ex-bas">
@@ -17090,7 +17089,9 @@ function renderActive(app){
       row.dataset.si = si;                     /* repère fiable : les dégressifs décalent les index DOM */
       const num = st.warm ? TR("Éch.") : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
       /* dans le cadre noir, la premiere ligne porte ses titres en blanc (maquette du 21 septembre) */
-      row.innerHTML = `<div class="bn-tete"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")" : TR("poids")+" ("+uPoids()+")"}</span><span>${iso? TR("durée") : TR("répétitions")}</span><span></span><span></span></div>
+      row.innerHTML = `<div class="bn-tete"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
+          : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
+          iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
         <div class="n">${num}</div>
         <input type="number" inputmode="decimal" step="${stepPoids()}" min="0" placeholder="${estPoidsDuCorps(ex)? "0" : uPoids()}" value="${saisiePoids(st.w)}">
         <div class="rc"><input type="number" inputmode="numeric" min="0" placeholder="${iso? "sec" : "reps"}" value="${st.r!==""?st.r:""}">
