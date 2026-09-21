@@ -9137,7 +9137,7 @@ function accessoireDuJour(){
    dans POUSSIN ; sinon on passe a la suivante. Ni le poids ni le profil n'y entrent.
      1. en-fete         un accessoire debloque aujourd'hui (jusqu'a minuit)
      2. record          un vrai record (+5 kg), les 10 minutes qui suivent la seance
-     3. apres-la-seance les 3 heures qui suivent une seance ou une sortie
+     3. apres-la-seance l'heure qui suit une seance ou une sortie
      4. fatigue         recuperation du corps entier sous 50 %
      5. en-danger       3 jours sans activite : demain la flamme s'eteint
      6. muscle          au moins 3 activites sur les 7 derniers jours (la regularite)
@@ -9148,7 +9148,7 @@ function poussinPose(){
   const sj = serieJours(), fin = finDerniereActivite(), depuis = Date.now() - fin;
   if(a("en-fete") && accessoireDuJour()) return "en-fete";
   if(a("record") && fin && depuis < 10 * 60000 && recordSignificatif()) return "record";
-  if(a("apres-la-seance") && fin && depuis < 3 * 3600e3) return "apres-la-seance";
+  if(a("apres-la-seance") && fin && depuis < 3600e3) return "apres-la-seance";
   if(a("fatigue") && (db.history || []).length && recuperation().global < 50) return "fatigue";
   if(a("en-danger") && sj.depuis === 3) return "en-danger";
   if(a("muscle") && activites7j() >= 3) return "muscle";
@@ -9311,7 +9311,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 21h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 22h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
