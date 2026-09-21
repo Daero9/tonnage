@@ -1,5 +1,5 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-v10-20260920-2021";
+const CACHE = "tonnup-v10-20260921-0352";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
   "./img/exos/abducteurs.png",
   "./img/exos/abduction-hanche.png",
@@ -113,7 +113,7 @@ const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentiali
   "./img/exos/triceps-poulie.png",
   "./img/push.jpg", "./img/pull.jpg", "./img/jambes.jpg", "./img/abdos.jpg", "./img/cardio.jpg", "./img/modif.png",
   "./img/abonnement.webp",
-  "./img/logo-texte.png", "./img/drive.png", "./img/drive-blanc.png", "./img/onb-seances.jpg", "./img/onb-aliments.jpg", "./img/onb-charge.jpg", "./img/onb-progression.jpg", "./img/onb-seances-en.jpg", "./img/onb-aliments-en.jpg", "./img/onb-charge-en.jpg", "./img/onb-progression-en.jpg", 
+  "./img/logo-texte.png", "./img/couronne.png", "./img/play.png", "./img/photos.png", "./img/drive.png", "./img/drive-blanc.png", "./img/onb-seances.jpg", "./img/onb-aliments.jpg", "./img/onb-charge.jpg", "./img/onb-progression.jpg", "./img/onb-seances-en.jpg", "./img/onb-aliments-en.jpg", "./img/onb-charge-en.jpg", "./img/onb-progression-en.jpg", 
   "./img/muscles/back-avant-bras.png", "./img/muscles/back-base.png", "./img/muscles/back-deltoides.png", "./img/muscles/back-fessiers.png", "./img/muscles/back-grand-dorsal.png", "./img/muscles/back-ischio-jambiers.png", "./img/muscles/back-ligne.png", "./img/muscles/back-lombaires.png", "./img/muscles/back-mollets.png", "./img/muscles/back-trapezes.png", "./img/muscles/back-triceps.png", "./img/muscles/front-abdos.png", "./img/muscles/front-avant-bras.png", "./img/muscles/front-base.png", "./img/muscles/front-biceps.png", "./img/muscles/front-deltoides.png", "./img/muscles/front-ligne.png", "./img/muscles/front-mollets.png", "./img/muscles/front-pectoraux.png", "./img/muscles/front-quadriceps.png", "./img/muscles/front-trapezes.png"];
 
 self.addEventListener("install", e => {

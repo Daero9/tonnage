@@ -313,6 +313,11 @@
   .wk-day.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
   .wk-day.today{border-color:var(--accent); color:var(--accent);}
   .wk-day.on.today{color:var(--accent-ink);}
+  /* la série, sous les jours : discrète tant qu'elle tient, un ton plus chaud quand
+     la semaine n'a pas encore sa séance */
+  .wk-serie{font-size:12px; color:var(--ink-soft); margin:-3px 0 10px; line-height:1.3;}
+  .wk-serie b{color:var(--ink);}
+  .wk-serie.risque{color:var(--accent);} .wk-serie.risque b{color:var(--accent);}
   .wk-sep{height:1px; background:var(--border); margin:0 -4px 9px;}
   .wk-nums{display:flex; align-items:center; justify-content:space-between; position:relative;}
   /* Le bouton Bilan est centre EN ABSOLU au-dessus de la ligne : sans reserve,
@@ -2240,11 +2245,15 @@
   .cam .quota:not(:empty){display:inline-block; left:50%; right:auto; transform:translateX(-50%); background:rgba(0,0,0,.55); border-radius:99px; padding:5px 11px;}
   /* plus de photo : un encadre rouge, lisible, a la place de la pastille */
   .cam .quota.zero{background:rgba(214,48,49,.92); border:1.5px solid #ff8a8a; border-radius:12px; padding:9px 14px; font-weight:700; font-size:12.5px; max-width:82%; line-height:1.4;}
-  .cam.epuise .declencheur{opacity:.35; pointer-events:none;}
+  /* a zero, le declencheur s'eteint a moitie mais reste touchable : il mene a la fiche
+     des photos (pack, abonnement, saisie a la main) — un bouton mort ne dit rien */
+  .cam.epuise .declencheur{opacity:.55;}
   .cam .t{position:absolute; left:0; right:0; top:calc(50% + 40px); text-align:center; font-size:14.5px; font-weight:700;
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
   .cam.plat .t{top:auto; bottom:calc(178px + env(safe-area-inset-bottom));}
-  .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:16px; align-items:center;}
+  /* le declencheur au-dessus de la pilule des modes, comme sur un appareil photo : l'inversion
+     se fait en CSS, la pilule reste ecrite en premier */
+  .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column-reverse; gap:18px; align-items:center;}
   .cam .modes{position:relative; display:flex; background:rgba(0,0,0,.55); border-radius:99px; padding:4px; width:min(78%, 300px); backdrop-filter:blur(6px);}
   .cam .modes .curseur{position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 4px); border-radius:99px; background:#fff;
     transition:transform .32s cubic-bezier(.22,1,.36,1);}
@@ -2256,7 +2265,7 @@
   .cam .ligne{display:flex; align-items:center; justify-content:center; gap:28px; width:100%;}
   .cam .declencheur{width:66px; height:66px; border-radius:50%; border:4px solid #fff; display:flex; align-items:center; justify-content:center; background:none;
     transition:border-color .3s ease;}
-  .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:var(--accent);
+  .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:#fff;   /* blanc, comme un vrai declencheur */
     transition:transform .34s cubic-bezier(.34,1.4,.64,1);}
   .cam.code .declencheur{border-color:rgba(255,255,255,.3); pointer-events:none;}
   .cam.code .declencheur span{transform:scale(0);}
@@ -2786,6 +2795,9 @@
   #app.verrou .card > :not(:first-child), #app.verrou .card > .row:first-child > :not(:first-child),
   #app.verrou .card > :first-child:not(.row):not(.card-t), #app.verrou .card-sub{filter:blur(6px);}
   #app.verrou .eat-fab, #app.verrou .fab{display:none;}
+  /* la fenetre d'abonnement peut s'ouvrir sur l'onglet Alimentation (depuis la camera) :
+     le bouton « + » passe dessous, comme tout le reste */
+  body:has(.abo-fenetre) #app > .eat-fab{display:none;}
   /* la photo du repas */
   .ph-attente{text-align:center; padding:10px 0 6px;}
   .ph-attente img{width:140px; height:140px; object-fit:cover; border-radius:18px; display:block; margin:0 auto 14px;}
@@ -2903,8 +2915,13 @@
   .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
   .abo-f{position:relative; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
     border-radius:18px; padding:13px 14px 13px 18px; border:1.5px solid transparent;}
-  .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px;}
-  .abo-f.annuel{background:var(--surface2); color:var(--ink); border-color:var(--border);}
+  .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px;}   /* pas d'overflow:hidden : la pastille « populaire » dépasse en haut */
+  .abo-f.mensuel .sous{opacity:.9; white-space:nowrap; font-size:11px; margin-top:4px;}
+  .abo-f.mensuel .gauche{flex:1 1 auto;}
+  .abo-f.mensuel .sep{margin-left:14px;}   /* le trait et la couronne, decales vers la droite : le prix respire */
+  .abo-f .filigrane{flex:0 0 56px; display:flex; align-items:center; justify-content:center; margin-right:2px;}
+  .abo-f .filigrane img{width:48px; height:auto; opacity:.22;}
+  .abo-f.annuel{background:var(--surface); color:var(--ink); border-color:var(--border);}
   .abo-f .prix{font-size:22px; font-weight:900; letter-spacing:-.02em; line-height:1; white-space:nowrap;}
   .abo-f .prix small{font-size:15px; font-weight:800; letter-spacing:0;}
   .abo-f .sous{font-size:12.5px; font-weight:600; margin-top:5px; opacity:.85;}
@@ -2916,19 +2933,70 @@
     background:#fff; color:var(--accent); box-shadow:0 2px 8px rgba(0,0,0,.15);}
   .abo-f.annuel .go{color:#1b1b1d;}
   .abo-f .go svg{width:18px; height:18px;}
-  .abo-f .eco{display:inline-block; background:#1b1b1d; color:#fff; border-radius:99px; padding:3px 9px;
+  .abo-f .eco{display:inline-block; background:#DDF3E4; color:#1f7a3f; border-radius:99px; padding:3px 9px;
     font-size:12px; font-weight:800; margin-left:8px; vertical-align:middle; letter-spacing:0;}
   .abo-populaire{position:absolute; top:-11px; left:14px; background:#FDE0C8; color:var(--accent);
-    border-radius:99px; padding:4px 11px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;}
+    border-radius:99px; padding:4px 11px 4px 9px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:5px;}
+  .abo-populaire svg{width:13px; height:13px;}
   /* trois gages en colonnes : a 375 px, icone et deux lignes cote a cote ne tiennent pas */
   .abo-gages{display:flex; justify-content:space-between; gap:6px; margin:18px 0 0; padding-bottom:14px; border-bottom:1px solid var(--border);}
   /* ce qui ne sera jamais payant, dit noir sur blanc sous les forfaits */
-  .abo-gratuit{margin:12px 2px 0; font-size:12.5px; line-height:1.45; color:var(--ink-soft); text-align:center;}
+  .abo-gratuit{display:flex; align-items:flex-start; gap:12px; margin:14px 0 0; padding:14px; border-radius:16px;
+    background:rgba(245,130,32,.08); border:1px solid rgba(245,130,32,.22); text-align:left;}
+  .abo-gratuit .ic{flex:none; width:40px; height:40px; border-radius:50%; background:rgba(245,130,32,.16); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .abo-gratuit .ic svg{width:20px; height:20px;}
+  .abo-gratuit p{margin:0; font-size:12.5px; line-height:1.45; color:var(--ink-soft);}
+  .abo-gratuit p b{display:block; color:var(--ink); font-size:14px; margin-bottom:3px;}
+  /* ---- la fiche des photos (plus de photo, ou pas le droit) ---- */
+  .sc-h{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:4px;}
+  .sc-h h3{margin-bottom:0;}
+  .sc-ic{position:relative; width:64px; height:64px; border-radius:18px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center; margin:8px 0 4px;}
+  .sc-ic svg{width:30px; height:30px;}
+  /* quatre petits traits qui rayonnent, comme sur la maquette */
+  .sc-ic i{position:absolute; width:4px; height:14px; border-radius:2px; background:var(--accent);}
+  .sc-ic i:nth-child(1){left:-22px; top:2px; transform:rotate(35deg);}
+  .sc-ic i:nth-child(2){left:-28px; top:24px; transform:rotate(70deg);}
+  .sc-ic i:nth-child(3){right:-22px; top:2px; transform:rotate(-35deg);}
+  .sc-ic i:nth-child(4){right:-28px; top:24px; transform:rotate(-70deg);}
+  .sc-sous{font-size:13.5px; line-height:1.5; color:var(--ink-soft); text-align:center; margin:8px 4px 16px;}
+  .sc-reserve{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:12px 0 0;}
+  .sc-main{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:16px; padding:15px 12px; border-radius:16px;
+    background:var(--accent); color:var(--accent-ink); font-weight:800; font-size:15.5px;}
+  .sc-main svg{width:20px; height:20px;}
   .abo-gratuit b{color:var(--ink);}
   .abo-gages div{display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; flex:1 1 0; min-width:0;}
-  .abo-gages svg{width:24px; height:24px; flex:none; color:var(--ink);}
+  /* chaque gage dans un rond clair, comme sur la maquette ; le logo Play n'est pas rogne */
+  .abo-gages .rond{flex:none; width:44px; height:44px; border-radius:50%; background:rgba(245,130,32,.12); display:flex; align-items:center; justify-content:center; color:var(--accent);}
+  .abo-gages .rond svg{width:22px; height:22px;}
+  .abo-gages .rond img.play{width:20px; height:auto; display:block;}
   .abo-gages span{font-size:10.5px; line-height:1.3; color:var(--ink); font-weight:700;}
   .abo-gages span em{display:block; font-style:normal; font-weight:500; color:var(--ink-mute);}
+  /* les packs, sous la promesse gratuite : en contour et plus petits que les forfaits —
+     presents, pas concurrents */
+  .abo-packs{margin-top:16px;}
+  .abo-packs-t{text-align:center; font-size:13px; color:var(--ink-soft); margin-bottom:12px;}
+  .pk-row{display:flex; gap:10px;}
+  .pk{position:relative; flex:1; display:flex; flex-direction:column; align-items:center; padding:16px 8px 14px; border-radius:16px;
+    background:var(--surface); border:1.5px solid var(--border); color:var(--ink); line-height:1.1;}
+  .pk-ic{display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
+  .pk-ic img{width:44px; height:auto; filter:drop-shadow(0 3px 5px rgba(120,60,0,.18));}   /* une ombre douce, l'icone se decolle */
+  .pk b{font-size:26px; font-weight:900;} .pk i{font-style:normal; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-mute); margin-top:3px;}
+  .pk em{font-style:normal; font-size:16px; font-weight:800; margin-top:10px;}
+  .pk s{font-size:12px; color:var(--ink-mute); margin-top:3px;} .pk s:empty{display:none;}
+  .pk.mis{border:1.5px solid var(--accent); background:linear-gradient(180deg, rgba(245,130,32,.10), rgba(245,130,32,.03));}
+  .abo-fenetre .pk:not(.mis){background:var(--surface);}
+  .pk-badge{position:absolute; top:-9px; right:10px; padding:2px 7px; border-radius:99px; background:var(--accent); color:var(--accent-ink); font-size:10px; font-weight:900;}
+  /* en grand : deux cartes hautes, le pack remise en orange, son ancien prix barre */
+  .pk-row.grand{gap:12px; align-items:stretch;}
+  .pk-row.grand .pk{padding:22px 10px 20px; border-radius:18px; justify-content:flex-start;}
+  .pk-row.grand .pk-ic{display:none;}
+  .pk-row.grand .pk b{font-size:38px;} .pk-row.grand .pk i{font-size:12px; margin-top:4px;}
+  .pk-row.grand .pk em{font-size:22px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); width:70%;}
+  .pk-row.grand .pk s{font-size:13px; margin-top:4px;}
+  .pk-row.grand .pk.mis{border-width:2px;}
+  .pk-row.grand .pk.mis em{color:var(--accent);}
+  .pk-row.grand .pk-badge{top:-11px; right:14px; font-size:12px; padding:3px 10px;}
   .abo-restaurer{display:block; width:100%; text-align:center; padding:14px 0 4px; color:var(--accent);
     font-weight:800; font-size:14px; text-decoration:underline; text-underline-offset:3px;}
   .abo-legal{margin:8px 0 0; text-align:center; font-size:11px; color:var(--ink-mute); line-height:1.5;}
@@ -2936,6 +3004,7 @@
   .abo-code-lien{display:block; width:100%; text-align:center; padding:6px 0 2px; color:var(--ink-mute);
     font-size:12.5px; text-decoration:underline; text-underline-offset:3px;}
   .abo-code{display:flex; gap:8px; margin-top:10px;}
+  .abo-code[hidden]{display:none;}   /* « display:flex » l'emportait sur l'attribut : le champ du code s'affichait toujours */
   .abo-code input{flex:1; min-width:0; padding:10px 12px; border-radius:12px; border:1.5px solid var(--border);
     background:var(--surface); color:var(--ink); font:inherit; font-size:15px; letter-spacing:.06em; text-transform:uppercase;}
   .abo-code .btn{flex:none; padding:10px 14px;}
@@ -3743,10 +3812,35 @@ const TRAD = {en:{
   "Pesée":"Weigh-in", "Bilan de la semaine":"Weekly review",
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
-  "Prêt à t'entraîner ?":"Ready to train?",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "Ta séance {} t'attend":"Your {} workout is waiting",
+  "La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.":"Plate photos are part of Tonnup Analyse — or a 20-photo pack.",
+  "Tes {} photos du jour sont passées. Appuie pour en ajouter.":"Your {} photos for today are used up. Tap to add more.",
+  "{j} aujourd'hui + {r} en réserve":"{j} today + {r} in reserve",
+  "Photographie ton assiette":"Photograph your plate",
+  "L'app reconnaît le plat et l'ajoute à ton journal : 10 photos par jour (5 pendant l'essai).":"The app recognises the dish and adds it to your log: 10 photos a day (5 during the trial).",
+  "Le scan des plats, la progression et le bilan sont sur abonnement. Tout le reste de l'app est gratuit, pour toujours.":"Plate scans, progress and the weekly review are subscription features. Everything else in the app is free, forever.",
+  "Juste des photos, sans abonnement ?":"Just photos, no subscription?",
+  "Sur le web, le pack s'achète dans l'app Android.":"On the web, the pack is bought in the Android app.",
+  "{} photos ajoutées à ta réserve.":"{} photos added to your reserve.",
+  "Tes {} photos du jour sont passées":"Your {} photos for today are used up",
+  "Le compteur repart demain. Pour continuer aujourd'hui, une réserve de photos : achat unique, sans date limite, utilisée après celles du jour.":"The counter resets tomorrow. To keep going today, a photo reserve: one-time purchase, no expiry, used after today's.",
+  "photos":"photos",
+  "En réserve : {} photos":"In reserve: {} photos", "Ajouter à la main, c'est gratuit":"Add by hand, it's free",
+  "Photo de l'assiette, progression et bilan.":"Plate photos, progress and review.", "{} photos en réserve":"{} photos in reserve",
+  "Ta séance {s} t'attend":"Your {s} workout is waiting",
   "{n} exercices · ~{m} min":"{n} exercises · ~{m} min",
+  "C'est l'heure{p} 💪":"It's time{p} 💪", "{s} : {n} exercices, ~{m} min. On y va ?":"{s}: {n} exercises, ~{m} min. Let's go?",
+  "Tes muscles sont prêts":"Your muscles are ready", "Séance {s} ce soir — {m} min bien investies.":"{s} tonight — {m} min well spent.",
+  "On ne saute pas ce soir":"No skipping tonight", "{s}, {n} exercices. Tu te remercieras après.":"{s}, {n} exercises. You'll thank yourself after.",
+  "Un peu de fer{p} ?":"Some iron{p}?", "{s} t'attend : ~{m} min.":"{s} is waiting: ~{m} min.",
+  "Envie de bouger{p} ?":"Feel like moving{p}?", "C'est l'heure de la séance":"Workout time", "Choisis-la, et on y va.":"Pick one, and let's go.",
+  "Une séance ce soir, et tu dors mieux.":"A workout tonight, and you'll sleep better.",
+  "Sur la balance{p} ?":"On the scale{p}?", "Même heure, mêmes conditions : c'est là que le plan se lit.":"Same time, same conditions: that's where the plan shows.",
+  "Un chiffre, et on avance":"One number, and we move on", "Note ton poids de la semaine.":"Log this week's weight.",
+  "La balance, vite fait":"Quick weigh-in", "Trente secondes, une fois par semaine.":"Thirty seconds, once a week.",
+  "Alors, cette semaine{p} ?":"So, how was this week{p}?", "Ton bilan t'attend.":"Your review is waiting.",
+  "Le point de la semaine":"This week's recap", "Séances, kilos, assiettes : tout est là.":"Workouts, kilos, plates: it's all there.",
+  "Une semaine de plus dans les jambes":"One more week in the bank", "Regarde ce que ça a donné.":"See what it added up to.",
   "Une photo de l'assiette, et ta journée est à jour.":"A photo of your plate, and your day is up to date.",
   "Bon matin{p} ☀️":"Good morning{p} ☀️",
   "Scanne ton petit-déj, la journée est lancée.":"Scan your breakfast, the day is on.",
@@ -3790,7 +3884,6 @@ const TRAD = {en:{
   "L'heure de la collation":"Snack time",
   "Un shaker, un yaourt, une poignée d'amandes — tes protéines de la journée se jouent aussi là.":"A shake, a yogurt, a handful of almonds — your day's protein is decided here too.",
   "La dernière : {p}, il y a {j} jours.":"Last one: {p}, {j} days ago.",
-  "Même heure, mêmes conditions : c'est la balance qui dit si le plan marche.":"Same time, same conditions: the scale says whether the plan works.",
   "Ta pesée de la semaine":"Your weekly weigh-in",
   "Ton bilan de la semaine est prêt":"Your weekly review is ready",
   "Ce qui a marché, ce qu'il faut changer — en trente secondes.":"What worked, what to change — in thirty seconds.",
@@ -4026,6 +4119,7 @@ const TRAD = {en:{
   "Abonnement retrouvé.":"Subscription restored.",
   "Aucun abonnement actif sur ce compte Google.":"No active subscription on this Google account.",
   "Google Play ne répond pas.":"Google Play isn't responding.",
+  "{} jours gratuits":"{} days free", "Résiliable à tout moment":"Cancel anytime",
   "{} jours<br>gratuits":"{} days<br>free",
   "Abonné · gérer sur Google Play":"Subscribed · manage on Google Play",
   "Débloqué par code":"Unlocked with a code",
@@ -4886,6 +4980,7 @@ const TRAD = {en:{
 
   /* --- accueil, progression, infobulles --- */
   "Soulevés":"Lifted", "Brûlées":"Burned",
+  "{} semaines d'affilée":"{} weeks in a row", "à tenir cette semaine":"keep it up this week",
   "Conseillé aujourd'hui":"Suggested today", "dernière":"latest",
   "Depuis la 1re pesée":"Since your first weigh-in",
   "Analyse de ton profil":"Your profile breakdown",
@@ -8499,7 +8594,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "20 septembre 2026 20h21";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 03h52";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8632,7 +8727,7 @@ function applyDefaults(){
 applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
-setTimeout(()=>{ sonderAbo(); chargerForfaits(); driveRattrapage(); }, 0);
+setTimeout(()=>{ sonderAbo(); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
 setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
 /* ---- le widget de l'ecran d'accueil (Android) -----------------------------------------
@@ -10252,6 +10347,38 @@ const NOTIF_REPAS_TEXTES = {
          ["Ce soir, on mange bien", "Scanne-le, et à demain."],
          ["Bonsoir{p}", "Dernier repas à noter. Bravo d'avoir tenu."]]
 };
+/* Les autres rappels, sur le même principe : court, chaleureux, en tournant.
+   « {s} » est le nom de la séance, « {n} » et « {m} » ses exercices et minutes. */
+const NOTIF_SEANCE_TEXTES = [
+  ["Ta séance {s} t'attend", "{n} exercices · ~{m} min"],
+  ["C'est l'heure{p} 💪", "{s} : {n} exercices, ~{m} min. On y va ?"],
+  ["Tes muscles sont prêts", "Séance {s} ce soir — {m} min bien investies."],
+  ["On ne saute pas ce soir", "{s}, {n} exercices. Tu te remercieras après."],
+  ["Un peu de fer{p} ?", "{s} t'attend : ~{m} min."]
+];
+const NOTIF_SEANCE_LIBRE = [
+  ["Envie de bouger{p} ?", "Ta séance du jour t'attend."],
+  ["C'est l'heure de la séance", "Choisis-la, et on y va."],
+  ["Tes muscles sont prêts", "Une séance ce soir, et tu dors mieux."]
+];
+const NOTIF_PESEE_TEXTES = [
+  ["Ta pesée de la semaine", ""],                       /* corps : la dernière pesée, calculé */
+  ["Sur la balance{p} ?", "Même heure, mêmes conditions : c'est là que le plan se lit."],
+  ["Un chiffre, et on avance", "Note ton poids de la semaine."],
+  ["La balance, vite fait", "Trente secondes, une fois par semaine."]
+];
+const NOTIF_BILAN_TEXTES = [
+  ["Ton bilan de la semaine est prêt", "Ce qui a marché, ce qu'il faut changer — en trente secondes."],
+  ["Alors, cette semaine{p} ?", "Ton bilan t'attend."],
+  ["Le point de la semaine", "Séances, kilos, assiettes : tout est là."],
+  ["Une semaine de plus dans les jambes", "Regarde ce que ça a donné."]
+];
+/* La variante du jour : le jour décale d'un cran, le prénom se glisse dans « {p} ». */
+function notifVariante(liste, jour, decalage){
+  const v = liste[(Math.floor(jour / 864e5) + (decalage || 0)) % liste.length];
+  const p = (db.settings && db.settings.name) ? " " + db.settings.name : "";
+  return {titre:TR(v[0]).replace("{p}", p), corps:v[1] ? TR(v[1]).replace("{p}", p) : ""};
+}
 function notifTexte(type, jour){
   const k = dayKey(jour);
   if(type === "seance"){
@@ -10259,26 +10386,27 @@ function notifTexte(type, jour){
     if(faite) return null;
     const t = suggestedTemplate();
     if(db.active) return {titre:TR("Une séance est en cours"), corps:TR("Reprends-la où tu l'as laissée, ou termine-la.")};
-    if(!t) return {titre:TR("Prêt à t'entraîner ?"), corps:TR("Ta séance du jour t'attend.")};
-    return {titre:TR("Ta séance {} t'attend").replace("{}", TR(t.name)),
-            corps:TR("{n} exercices · ~{m} min").replace("{n}", t.items.length).replace("{m}", dureeSeance(t))};
+    const v = t ? NOTIF_SEANCE_TEXTES : NOTIF_SEANCE_LIBRE;
+    const m = notifVariante(v, jour);
+    if(!t) return m;
+    const mots = x => x.replace("{s}", TR(t.name)).replace("{n}", t.items.length).replace("{m}", dureeSeance(t));
+    return {titre:mots(m.titre), corps:mots(m.corps)};
   }
   if(type === "repas"){
     /* Un message différent chaque jour, chaleureux plutôt que technique : « code-barres
        ou photo, cinq secondes » lassait dès le troisième jour. Le prénom quand on l'a. */
     const v = NOTIF_REPAS_TEXTES[jour.repas];
     if(!v) return {titre:TR("Scanner mon repas"), corps:TR("Une photo de l'assiette, et ta journée est à jour.")};
-    const i = (Math.floor(jour / 864e5) + NOTIF_REPAS.findIndex(x=>x[0] === jour.repas)) % v.length;
-    const p = (db.settings && db.settings.name) ? " " + db.settings.name : "";
-    return {titre:TR(v[i][0]).replace("{p}", p), corps:TR(v[i][1])};
+    return notifVariante(v, jour, NOTIF_REPAS.findIndex(x=>x[0] === jour.repas));
   }
   if(type === "pesee"){
     const w = (db.weights || []).slice().sort((a, b)=>new Date(b.date) - new Date(a.date))[0];
-    const corps = w ? TR("La dernière : {p}, il y a {j} jours.").replace("{p}", pds(w.kg)).replace("{j}", Math.max(1, Math.round((jour - new Date(w.date)) / 864e5)))
-                    : TR("Même heure, mêmes conditions : c'est la balance qui dit si le plan marche.");
-    return {titre:TR("Ta pesée de la semaine"), corps};
+    const m = notifVariante(NOTIF_PESEE_TEXTES, jour);
+    if(!m.corps) m.corps = w ? TR("La dernière : {p}, il y a {j} jours.").replace("{p}", pds(w.kg)).replace("{j}", Math.max(1, Math.round((jour - new Date(w.date)) / 864e5)))
+                             : TR("Même heure, mêmes conditions : c'est là que le plan se lit.");
+    return m;
   }
-  if(type === "bilan") return {titre:TR("Ton bilan de la semaine est prêt"), corps:TR("Ce qui a marché, ce qu'il faut changer — en trente secondes.")};
+  if(type === "bilan") return notifVariante(NOTIF_BILAN_TEXTES, jour);
   return null;
 }
 /* Tout ce qu'il y a a poser pour les 7 prochains jours, a partir de « maintenant ».
@@ -11663,15 +11791,22 @@ function ouvrirCamera(mode, titre){
       const quota = q(".quota");
       quota.classList.toggle("zero", mode === "plat" && restantes === 0);
       boite.classList.toggle("epuise", mode === "plat" && restantes === 0);
+      /* a zero, le texte dit pourquoi, et le declencheur ouvre la fiche des photos */
+      const reserve = scansReserve(), jour = photosJour();
       quota.textContent = mode !== "plat" ? "" : restantes === 0
-        ? TR("Plus de photo aujourd'hui — on reprend demain. Tu peux ajouter à la main.")
-        : (restantes === 1 ? TR("Dernière photo aujourd'hui") : TR("{} photos restantes aujourd'hui").replace("{}", restantes));
+        ? (quotaPhotos() === 0 ? TR("La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.")
+                               : TR("Tes {} photos du jour sont passées. Appuie pour en ajouter.").replace("{}", quotaPhotos()))
+        : reserve > 0
+          ? TR("{j} aujourd'hui + {r} en réserve").replace("{j}", jour).replace("{r}", reserve)
+          : (restantes === 1 ? TR("Dernière photo aujourd'hui") : TR("{} photos restantes aujourd'hui").replace("{}", restantes));
       if(!flux) return;
       if(mode === "code") texte.textContent = scanDispo() || zbar ? TR("Vise le code-barres, ça se valide tout seul") : TR("Lecteur en cours de chargement…");
       else texte.textContent = TR("Toute l'assiette dans le cadre, vue un peu en diagonale — puis appuie");
     };
     const changerMode = m=>{
       if(m === mode) return;
+      /* plus de photo disponible : on ne montre pas un mode mort, on propose tout de suite */
+      if(m === "plat" && photosRestantes() <= 0) return finir({type:"scans"});
       /* on ne reecrit pas className : « pret », « sans-flux », « epuise » doivent survivre
          au changement de mode — sinon la video redevenait invisible et l'anneau tournait */
       mode = m; boite.classList.remove("code", "plat"); boite.classList.add(mode);
@@ -11680,6 +11815,8 @@ function ouvrirCamera(mode, titre){
       consigne(); relancerBoucle();
     };
     boite.querySelectorAll("[data-mode]").forEach(b=>b.onclick = ()=>changerMode(b.dataset.mode));
+    /* l'encadre rouge aussi mene a la fiche : c'est lui qu'on lit, autant qu'il reponde */
+    q(".quota").onclick = ()=>{ if(mode === "plat" && photosRestantes() <= 0) finir({type:"scans"}); };
     q("[data-non]").onclick = ()=>finir(null);
     /* la saisie a la main se fait dans l'ecran : la boite native prompt() figeait
        le flux video a sa fermeture sur Android */
@@ -11711,14 +11848,14 @@ function ouvrirCamera(mode, titre){
         }catch(e){ texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); }
         return;
       }
-      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
+      if(photosRestantes() <= 0) return finir({type:"scans"});
       try{ const img = await reduirePhoto(f); finir({type:"photo", b64:img.b64, apercu:img.apercu}); }
       catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur"); }
     };
     /* le declencheur : l'image du flux, reduite comme une photo de fichier */
     q("[data-prendre]").onclick = ()=>{
+      if(photosRestantes() <= 0) return finir({type:"scans"});
       if(!flux || video.readyState < 2){ fich.click(); return; }
-      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
       /* On n'envoie que le carre de visee. La video est affichee en « cover » : on
          retrouve la zone du capteur qui correspond au carre a l'ecran, et on la decoupe.
          Moins de table, de mains et de verres autour — et un peu moins de pixels. */
@@ -12141,10 +12278,12 @@ function openProduitScanne(meal, p){
 /* Scanner puis ouvrir la fiche du produit. Partagé par le bouton de la fiche d'ajout
    et par « Scanner un autre produit ». */
 async function lancerScan(meal, mode){
+  if(mode === "plat" && photosRestantes() <= 0){ proposerPhotos(meal); return; }
   /* toujours le code-barres d'abord : c'est le geste exact et gratuit ; le plat est
      a un glissement de la */
   const r = await ouvrirCamera(mode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
   if(!r) return;
+  if(r.type === "scans"){ proposerPhotos(meal); return; }
   if(r.type === "photo"){
     photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
     lancerAnalysePhoto("");
@@ -12173,8 +12312,10 @@ function tuileNut(ic, couleur, val, unite, libelle){
    100 g rendues par le modele, marquees « valeurs estimees ». Les portions restent
    reglables : une photo n'a pas d'echelle, l'estimation est un point de depart, pas
    une mesure. La photo part chez Anthropic pour l'analyse et n'est pas conservee.
-   Cinq photos par jour et par appareil pendant l'essai, dix avec Tonnup Analyse (abonne
-   ou code) ; au-dela, on ajoute a la main. Corriger une
+   La photo est la seule partie payante du journal : cinq par jour pendant l'essai, dix
+   avec Tonnup Analyse (abonne ou code), rien sans — et une RESERVE, achetee par packs de
+   vingt, qui prend le relais quand le compteur du jour est a zero (ou qu'il n'y en a
+   pas). Le code-barres et la saisie a la main restent libres. Corriger une
    analyse (« c'est du poisson, pas du cordon bleu ») renvoie la MEME photo : ca ne
    compte pas comme une photo de plus — deux corrections au plus, pour que ca ne
    tourne pas en boucle. */
@@ -12182,21 +12323,30 @@ const RELAIS_PHOTO = "https://tonnup-relais.inncopproject.workers.dev/";
 const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
 const PHOTOS_PAR_JOUR = 5;                       /* pendant l'essai */
 const PHOTOS_PAR_JOUR_ABONNE = 10;               /* Tonnup Analyse : abonne ou debloque par code */
-function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : PHOTOS_PAR_JOUR; }
+const PACK_SCANS = 20;
+function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : (essaiRestant() > 0 ? PHOTOS_PAR_JOUR : 0); }
+/* ce qui reste du compteur du jour, et la reserve des packs — les deux se lisent separement */
+function photosJour(){
+  const p = db.photos || {};
+  return Math.max(0, quotaPhotos() - (p.jour === dayKey() ? (p.n || 0) : 0));
+}
+function scansReserve(){ return Math.max(0, Math.floor(Number(db.scansReserve) || 0)); }
+function crediterScans(n){ db.scansReserve = scansReserve() + n; save(); }
 const CORRECTIONS_PAR_PHOTO = 2;
 const IC_PHOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function idAppareil(){
   if(!db.appareilId){ db.appareilId = "a" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); save(); }
   return db.appareilId;
 }
-function photosRestantes(){
-  const p = db.photos || {};
-  return quotaPhotos() - (p.jour === dayKey() ? (p.n || 0) : 0);
-}
+function photosRestantes(){ return photosJour() + scansReserve(); }
+/* le compteur du jour d'abord, la reserve ensuite : un pack ne s'entame que quand il le faut */
 function compterPhoto(){
-  const k = dayKey();
-  if(!db.photos || db.photos.jour !== k) db.photos = {jour:k, n:0};
-  db.photos.n++; save();
+  if(photosJour() > 0){
+    const k = dayKey();
+    if(!db.photos || db.photos.jour !== k) db.photos = {jour:k, n:0};
+    db.photos.n++;
+  }else if(scansReserve() > 0) db.scansReserve = scansReserve() - 1;
+  save();
 }
 /* le fichier de l'appareil photo, reduit a 1 000 px et compresse : une photo de
    telephone fait 3 a 5 Mo, on n'en envoie que 60 a 150 Ko */
@@ -12385,7 +12535,7 @@ function openResultatPhoto(meal, res){
         const indice = document.getElementById("ph-indice").value.trim();
         if(!indice){ toast(TR("Dis-moi ce qui change, sinon l'analyse sera la même.")); return; }
         const gratuite = (photoEnCours.corrections || 0) < CORRECTIONS_PAR_PHOTO;
-        if(!gratuite && photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
+        if(!gratuite && photosRestantes() <= 0){ proposerPhotos(photoEnCours.meal); return; }
         pileFiches = [];   /* on relance : l'ancienne fiche du plat n'a plus lieu d'etre */
         lancerAnalysePhoto(indice);
       };
@@ -12825,6 +12975,24 @@ function weekStartDate(){
   const d = new Date(); d.setHours(0,0,0,0);
   d.setDate(d.getDate() - ((d.getDay()+6)%7));
   return d;
+}
+/* La série : combien de semaines de suite (lundi-dimanche) avec au moins une séance ou
+   une sortie — ce que compte aussi la rangée des jours. La semaine en cours compte si
+   elle a déjà sa séance, sinon elle ne casse rien : on a jusqu'à dimanche. Fonction
+   pure, « maintenant » se passe en paramètre pour les tests. */
+function serieSemaines(maintenant){
+  const now = maintenant ? new Date(maintenant) : new Date();
+  const lundi = new Date(now); lundi.setHours(0,0,0,0); lundi.setDate(lundi.getDate() - ((lundi.getDay()+6)%7));
+  const jours = new Set();
+  (db.history || []).concat(db.cardio || []).forEach(x=>{
+    const d = new Date(x.date); if(!(d > 0) || d > now) return;
+    d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7));
+    jours.add(d.getTime());
+  });
+  const enCours = jours.has(lundi.getTime());
+  let n = 0, t = lundi.getTime() - (enCours ? 0 : 7*864e5);
+  while(jours.has(t)){ n++; t -= 7*864e5; }
+  return {n, enCours};
 }
 function cardioWeekStats(){
   const w0 = weekStartDate();
@@ -13949,6 +14117,11 @@ function renderSeance(app){
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
+        ${(()=>{ const sr = serieSemaines(now); if(sr.n < 2) return "";
+          /* a partir de deux semaines : avant, ce n'est pas encore une serie. Sans seance
+             cette semaine, on le dit — c'est le moment ou elle se joue. */
+          return `<div class="wk-serie ${sr.enCours? "" : "risque"}">🔥 <b>${TR("{} semaines d'affilée").replace("{}", sr.n)}</b>${sr.enCours
+            ? "" : ` · ${TR("à tenir cette semaine")}`}</div>`; })()}
         <div class="wk-sep"></div>
         <div class="wk-nums">
           <div class="n"><span class="ic">${ICONS.seance}</span>
@@ -17919,6 +18092,104 @@ async function chargerForfaits(){
   if(document.getElementById("abo-fenetre")){ fermerAbonnement(); openAbonnement(); }
   return true;
 }
+/* ---- le pack de 20 photos : achat unique, consomme chez Google, garde dans la page ---- */
+/* Deux packs, cote a cote : le grand rend le petit « cher », c'est voulu — mais l'un
+   comme l'autre restent quatre a cinq fois plus chers a la photo que l'abonnement, qui
+   doit rester la bonne affaire de celui qui scanne tous les jours. Prix par defaut
+   ecrases par ceux de Google des qu'on les a. */
+const PACKS = [
+  {id:"tonnup_scans20", scans:20, texte:"1,99 €", montant:1.99},
+  {id:"tonnup_scans50", scans:50, texte:"3,99 €", montant:3.99, remise:20}
+];
+let packsCharges = false;
+async function chargerPacks(){
+  const p = pluginAbo();
+  if(!p || packsCharges || typeof p.packs !== "function") return false;
+  let r;
+  try{ r = await p.packs(); }catch(e){ return false; }
+  if(!r || !r.dispo || !Array.isArray(r.packs) || !r.packs.length) return false;
+  r.packs.forEach(f=>{
+    const k = PACKS.find(x=>x.id === f.id);
+    if(k && f.montant > 0){ k.texte = f.prix; k.montant = f.montant; }
+  });
+  /* la remise se recalcule sur les vrais prix : « −20 % » ne doit pas mentir */
+  const petit = PACKS[0], grand = PACKS[1];
+  grand.remise = Math.max(0, Math.round((1 - (grand.montant / grand.scans) / (petit.montant / petit.scans)) * 100));
+  packsCharges = true;
+  return true;
+}
+/* les deux boutons, cote a cote — memes dans la fenetre d'abonnement et dans la fiche */
+/* le prix qu'aurait le grand pack au tarif du petit : « 4,99 € » barre sous « 3,99 € » */
+function prixSansRemise(k){
+  const petit = PACKS[0];
+  if(k === petit || !(petit.montant > 0)) return "";
+  const m = k.scans * petit.montant / petit.scans;
+  const dev = petit.texte.replace(/[\d.,\s]/g, "");
+  const n = (Math.ceil(m) - 0.01).toFixed(2).replace(".", langue() === "en" ? "." : ",");   /* 4,975 -> « 4,99 » : un prix de boutique */
+  return dev ? (petit.texte.trim().startsWith(dev) ? dev + n : n + " " + dev) : n;
+}
+function boutonsPacks(classe){
+  const grand = classe === "grand";
+  return `<div class="pk-row ${classe || ""}">${PACKS.map(k=>`<button class="pk ${k.remise > 0 ? "mis" : ""}" data-pack="${k.id}">
+      ${k.remise > 0 ? `<span class="pk-badge">−${k.remise} %</span>` : ""}
+      <span class="pk-ic"><img src="img/photos.png" alt=""></span>
+      <b>${k.scans}</b><i>${TR("photos")}</i><em>${esc(k.texte)}</em>${k.remise > 0 ? `<s>${esc(prixSansRemise(k))}</s>` : ""}</button>`).join("")}</div>`;
+}
+function brancherPacks(racine, apres){
+  racine.querySelectorAll("[data-pack]").forEach(b=>b.onclick = async e=>{
+    if(await acheterPack(e.currentTarget.dataset.pack, e.currentTarget)) apres && apres();
+  });
+}
+async function acheterPack(id, bouton){
+  vibrer(20);
+  const p = pluginAbo();
+  if(!p || typeof p.acheterPack !== "function"){ toast(TR("Sur le web, le pack s'achète dans l'app Android.")); return false; }
+  if(bouton){ if(bouton.disabled) return false; bouton.disabled = true; }
+  const k = PACKS.find(x=>x.id === id) || PACKS[0];
+  try{
+    const r = await p.acheterPack({pack:k.id});
+    if(r && r.credite){
+      crediterScans(r.scans || k.scans);
+      vibrer(26);
+      toast(TR("{} photos ajoutées à ta réserve.").replace("{}", r.scans || k.scans));
+      return true;
+    }
+    if(!(r && r.raison === "annule")) toast(TR("Google Play n'a pas pu finaliser l'achat.") + (r && r.raison ? " · " + String(r.raison).slice(0, 60) : ""), "erreur");
+  }catch(e){ toast(TR("Google Play n'a pas pu finaliser l'achat."), "erreur"); }
+  finally{ if(bouton) bouton.disabled = false; }
+  return false;
+}
+/* un pack paye pendant que l'app etait fermee : on le retrouve a l'ouverture */
+async function rattraperPacks(){
+  const p = pluginAbo();
+  if(!p || typeof p.packsEnAttente !== "function") return;
+  try{
+    const r = await p.packsEnAttente();
+    if(r && r.scans > 0){ crediterScans(r.scans); toast(TR("{} photos ajoutées à ta réserve.").replace("{}", r.scans)); }
+  }catch(e){}
+}
+/* Plus de photo disponible : un abonne voit la fiche des packs (on n'a rien d'autre a
+   lui vendre) ; tous les autres — essai fini, ou essai a court de photos — voient la
+   fenetre d'abonnement, qui porte aussi les packs. Elle rend a la camera, en mode
+   code-barres, quand on la ferme. */
+function proposerPhotos(meal){
+  if(db.abo === true){ openScans(meal); return; }
+  aboRetour = {fermer:()=>{ if(meal) lancerScan(meal, "code"); },
+               achete:()=>{ if(meal) setTimeout(()=>lancerScan(meal, "plat"), 260); }};
+  openAbonnement();
+}
+let aboRetour = null;
+/* La fiche des packs, pour un abonne a court de photos du jour. */
+function openScans(meal){
+  openSheet(`<div class="sc-h"><span class="sc-ic"><i></i><i></i><i></i><i></i>${IC_PHOTO}</span><h3>${TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
+    <p class="sc-sous">${TR("Le compteur repart demain. Pour continuer aujourd'hui, une réserve de photos : achat unique, sans date limite, utilisée après celles du jour.")}</p>
+    ${boutonsPacks("grand")}
+    ${scansReserve() > 0 ? `<p class="sc-reserve">${TR("En réserve : {} photos").replace("{}", scansReserve())}</p>` : ""}
+    <button class="sc-main" id="sc-main">${IC_CRAYON}${TR("Ajouter à la main, c'est gratuit")}</button>`);
+  brancherPacks(document.getElementById("sheet"), ()=>{ hideSheet(); if(meal) setTimeout(()=>lancerScan(meal, "plat"), 260); });
+  document.getElementById("sc-main").onclick = ()=>{ hideSheet(); if(meal) setTimeout(()=>openAjoutAliment(meal), 240); };
+  chargerPacks();
+}
 /* Ou l'on gere un abonnement pris sur Google Play : chez Google, pas chez nous */
 function gererSurPlay(){
   window.open("https://play.google.com/store/account/subscriptions?sku=tonnup_analyse&package=com.inncop.tonnup", "_blank");
@@ -17945,9 +18216,10 @@ function essaiRestant(){
 }
 function essaiEnCours(){ return db.abo !== true && essaiRestant() > 0; }
 function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
-/* Ce qui est derriere l'abonnement : Alimentation, Progression et le Bilan. La seance,
-   elle, reste gratuite de bout en bout — c'est la vitrine. */
-const ONGLETS_PAYANTS = ["eat", "prg", "bilan"];
+/* Ce qui est derriere l'abonnement : la Progression et le Bilan — et, dans l'onglet
+   Alimentation, la photo de l'assiette seulement (voir quotaPhotos). La seance et le
+   journal a la main ou au code-barres restent gratuits de bout en bout : c'est la vitrine. */
+const ONGLETS_PAYANTS = ["prg", "bilan"];
 function verrouille(quoi){ return ONGLETS_PAYANTS.includes(quoi) && !estAbonne(); }
 /* Le profil de demonstration : un mois d'entrainement et de repas plausibles, pour que
    l'ecran floute ait l'air d'un vrai — chiffres, courbes, jauges remplies. Aucune
@@ -18005,6 +18277,8 @@ function prixParMois(){
   return a > 0 ? (a / 12).toFixed(2).replace(".", langue() === "en" ? "." : ",") + (PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") ? " " + PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") : "") : "";
 }
 const IC_PARTAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+const IC_ECLAIR_ABO = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>';
+const IC_CRAYON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg>';
 const IC_ABO_LOGO = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>';
 const IC_ABO_ASSIETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3v6.5a3 3 0 0 0 6 0V3"/><path d="M9.5 3v6.5M9.5 12.5V21"/><path d="M17 3c-1.7 0-3 2.2-3 5v3h3v10"/></svg>';
 const IC_ABO_COURBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
@@ -18028,8 +18302,8 @@ function openAbonnement(){
         <div><h3>Tonnup <em>Analyse</em></h3>
           <p class="abo-accroche">${TR("Ce que tu soulèves, ce que tu manges, où ça te mène.")}</p></div></div>
       <ul class="abo-promesses">
-        <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Analyse ton alimentation")}</b>
-          <span>${TR("Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour (5 pendant l'essai).")}</span></div></li>
+        <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Photographie ton assiette")}</b>
+          <span>${TR("L'app reconnaît le plat et l'ajoute à ton journal : 10 photos par jour (5 pendant l'essai).")}</span></div></li>
         <li><span class="ic">${IC_ABO_COURBE}</span><div><b>${TR("Suis tes progrès")}</b>
           <span>${TR("Tes courbes de charge, exercice par exercice.")}</span></div></li>
         <li><span class="ic"><span class="icm icm-muscle" style="width:17px; height:17px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
@@ -18038,12 +18312,13 @@ function openAbonnement(){
     </div>
     <div class="abo-forfaits">
       <button class="abo-f mensuel" id="abo-mensuel">
-        <span class="abo-populaire">${TR("Le plus populaire")}</span>
-        <div class="gauche"><div class="prix">${esc(PRIX_ABO.mensuel.texte)} <small>/ ${TR("mois")}</small></div></div>
+        <span class="abo-populaire">${IC_COURONNE}${TR("Le plus populaire")}</span>
+        <div class="gauche"><div class="prix">${esc(PRIX_ABO.mensuel.texte)} <small>/ ${TR("mois")}</small></div>
+          <div class="sous">${PRIX_ABO.mensuel.essaiJours > 0
+            ? TR("{} jours gratuits").replace("{}", PRIX_ABO.mensuel.essaiJours)
+            : TR("Résiliable à tout moment")}</div></div>
         <span class="sep"></span>
-        <div class="droite">${PRIX_ABO.mensuel.essaiJours > 0
-          ? TR("{} jours<br>gratuits").replace("{}", PRIX_ABO.mensuel.essaiJours)
-          : TR("Résiliable<br>à tout moment")}</div>
+        <span class="droite filigrane" aria-hidden="true"><img src="img/couronne.png" alt=""></span>
         <span class="go">${IC_ABO_CHEVRON}</span>
       </button>
       <button class="abo-f annuel" id="abo-annuel">
@@ -18054,12 +18329,13 @@ function openAbonnement(){
       </button>
     </div>
     <div class="abo-gages">
-      <div>${IC_ABO_BOUCLIER}<span>${TR("Paiement sécurisé")}<em>${TR("via Google Play")}</em></span></div>
-      <div>${IC_ABO_RENOUV}<span>${TR("Renouvellement")}<em>${TR("automatique")}</em></span></div>
-      <div>${IC_ABO_PLAY}<span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
+      <div><i class="rond">${IC_ABO_BOUCLIER}</i><span>${TR("Paiement sécurisé")}<em>${TR("via Google Play")}</em></span></div>
+      <div><i class="rond">${IC_ABO_RENOUV}</i><span>${TR("Renouvellement")}<em>${TR("automatique")}</em></span></div>
+      <div><i class="rond"><img class="play" src="img/play.png" alt=""></i><span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
     </div>
-    <p class="abo-gratuit">${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b> ` : ""}${
-      TR("Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.")}</p>
+    <div class="abo-gratuit"><span class="ic">${IC_ECLAIR_ABO}</span><p>${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b>` : ""}${
+      TR("Le scan des plats, la progression et le bilan sont sur abonnement. Tout le reste de l'app est gratuit, pour toujours.")}</p></div>
+    ${db.abo === true ? "" : `<div class="abo-packs"><div class="abo-packs-t">${TR("Juste des photos, sans abonnement ?")}</div>${boutonsPacks("")}</div>`}
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
     <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
     <p class="abo-legal">${TR("Renouvellement automatique, résiliable à tout moment dans Google Play.")} <a href="${URL_CGU}" target="_blank" rel="noopener">${TR("Conditions")}</a> · <a href="${URL_CONF}" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>
@@ -18072,12 +18348,19 @@ function openAbonnement(){
   document.body.appendChild(f);
   /* fermer, c'est repartir : la fenêtre ne s'ouvre que sur un onglet verrouillé, il n'y
      a rien d'autre à y faire. On revient donc à la séance. */
-  document.getElementById("abo-x").onclick = ()=>{ fermerAbonnement(); if(curTab !== "seance"){ curTab = "seance"; render(); } };
+  document.getElementById("abo-x").onclick = ()=>{
+    const r = aboRetour; aboRetour = null;
+    fermerAbonnement();
+    if(r && r.fermer) r.fermer();                          /* venue de la camera : on y retourne */
+    else if(verrouille(curTab)){ curTab = "seance"; render(); }
+  };
   f.addEventListener("click", e=>{ if(e.target === f) document.getElementById("abo-x").click(); });
   document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
   document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel");
   chargerForfaits();                 /* les vrais prix, s'ils ne sont pas encore la */
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
+  brancherPacks(f, ()=>{ const r = aboRetour; aboRetour = null; fermerAbonnement(); if(r && r.achete) r.achete(); });
+  chargerPacks();
   const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
   const champ = document.getElementById("abo-code-in");
   /* le clavier rogne la zone visible : on amene le champ sous les yeux, une fois la
@@ -18131,7 +18414,9 @@ async function acheterAbonnement(forfait){
       db.abo = true; db.aboVia = "play"; save();
       vibrer(26);
       toast(TR("Bienvenue dans Tonnup Analyse."));
+      const suite = aboRetour; aboRetour = null;
       fermerAbonnement(); render();
+      if(suite && suite.achete) suite.achete();
     }else if(!(r && r.raison === "annule")){
       toast(TR("Google Play n'a pas pu finaliser l'achat.") + (r && r.raison ? " · " + String(r.raison).slice(0, 60) : ""));
     }
@@ -18176,7 +18461,7 @@ function openSettings(){
     <div class="rg-sous">${TR("Personnalise ton expérience sur Tonnup.")}</div>
     <button class="rg-abo" id="st-abo">
       <span class="rgi">${IC_ABO_COURBE}</span>
-      <span class="grow"><b>${TR("Tonnup Analyse")}</b><em>${TR("Alimentation, progression et bilan.")}</em></span>
+      <span class="grow"><b>${TR("Tonnup Analyse")}</b><em>${TR("Photo de l'assiette, progression et bilan.")}${scansReserve() > 0 ? ` · ${TR("{} photos en réserve").replace("{}", scansReserve())}` : ""}</em></span>
       <span class="rg-pill">${IC_COURONNE}<span>${db.abo === true
           ? (db.aboVia === "play" ? TR("Abonné") : TR("Débloqué par code"))
           : essaiEnCours()
