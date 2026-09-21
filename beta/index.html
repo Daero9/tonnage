@@ -169,8 +169,10 @@
     font-size:13px; line-height:1.4;}
   .prg-verdict b{font-weight:800; color:var(--ink);}
   .prg-verdict span{font-size:11.5px; color:var(--ink-mute);}
-  .prg-verdict.haut{background:rgba(90,160,80,.14);}
-  .prg-verdict.haut b{color:var(--good);}
+  .prg-verdict.haut{background:rgba(46,158,79,.12); align-items:center; gap:12px; padding:12px 14px; border-radius:14px;}
+  .prg-verdict.haut .ic{flex:none; width:44px; height:44px; border-radius:50%; background:rgba(46,158,79,.18); display:flex; align-items:center; justify-content:center; font-size:20px;}
+  .prg-verdict.haut .grow{display:flex; flex-direction:column; gap:2px;}
+  .prg-verdict.haut b{color:#2e9e4f; font-size:15px;} .prg-verdict.haut span{font-size:13px; color:#2e9e4f;}
   .prg-verdict.bas b{color:var(--accent);}
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
@@ -2181,6 +2183,7 @@
   .pt-card{padding:16px 14px 14px;}
   .pt-tete{display:flex; align-items:flex-start; gap:12px; margin-bottom:18px;}
   .pt-ic{flex:none; width:52px; height:52px; border-radius:14px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .pt-ic > svg{width:26px; height:26px;}
   .pt-t{font-size:22px; font-weight:800; letter-spacing:-.02em; line-height:1.1;}
   .pt-obj{font-size:14px; color:var(--ink-soft); margin-top:3px; white-space:nowrap;} .pt-obj b{color:var(--accent); font-size:16px;}
   .pt-quota{flex:none; font-size:11.5px; font-weight:800; white-space:nowrap; padding:7px 10px; border-radius:99px; background:rgba(245,130,32,.14); color:var(--accent); margin-top:2px;}
@@ -4040,7 +4043,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "À débloquer":"Locked", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
+  "version du":"build of", "Suis tes progrès et dépasse tes limites !":"Track your progress and push your limits!", "Tu es à ton meilleur niveau !":"You're at your best!", "Continue comme ça !":"Keep it up!", "À débloquer":"Locked", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
   "semaines d'affilée":"weeks in a row", "au mieux":"at best", "Gagne des accessoires en restant régulier !":"Earn accessories by staying consistent!", "Encore <b>{}</b> avant ton objectif !":"<b>{}</b> to go before your goal!", "Ma photo":"My photo", "Photo illisible.":"Unreadable photo.", "En route vers mes objectifs !":"On the way to my goals!", "Discipline aujourd'hui":"Discipline today", "Résultats demain":"Results tomorrow", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
   "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
   "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
@@ -8760,7 +8763,7 @@ const EXO_DEMO = {
 /* Le poussin, la mascotte : une pose par etat, des accessoires en calques. Table
    reecrite par C:\Projets\outils\poussin.py depuis C:\Projets\APP\Avatar. */
 const POUSSIN = {
-  "repos":{ratio:0.74, acc:["bandeau"]}
+  "repos":{ratio:0.743, acc:["bandeau"]}
 };
 /* Les accessoires : ce qui se gagne, et comment. Les courants avec le nombre de
    seances (un total, jamais perdu) ; les rares avec la MEILLEURE serie de semaines
@@ -8925,7 +8928,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 17h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 18h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10355,7 +10358,14 @@ function animerChiffres(){
 }
 let gardeDefilement = false, posDefilement = 0;
 /* redessine sans faire remonter la page (cases à cocher, aliments…) */
-function renderSurPlace(){ posDefilement = window.scrollY; gardeDefilement = true; render(); }
+function renderSurPlace(){
+  posDefilement = window.scrollY || document.documentElement.scrollTop || 0;
+  gardeDefilement = true; render();
+  /* sur certains telephones la page se recale apres coup (images, graphiques) : on
+     remet la position une seconde fois, une fois la mise en page posee */
+  const y = posDefilement;
+  requestAnimationFrame(()=>window.scrollTo(0, y)); setTimeout(()=>window.scrollTo(0, y), 60);
+}
 
 /* ================= MODAL ================= */
 const overlay = document.getElementById("overlay");
@@ -19685,8 +19695,12 @@ function renderProgress(app){
 
   body.innerHTML = `
     <div class="card" style="margin-top:14px;">
-      <div class="card-t" style="margin-bottom:10px;">${icoTitre(IC_COURBE)}${
-        isoPrg? TR("Évolution de la durée") : (enReps? TR("Évolution des répétitions") : TR("Évolution des charges"))}</div>
+      <div class="pt-tete" style="margin-bottom:12px;">
+        <span class="pt-ic">${IC_COURBE}</span>
+        <div class="grow"><div class="pt-t">${
+          isoPrg? TR("Évolution de la durée") : (enReps? TR("Évolution des répétitions") : TR("Évolution des charges"))}</div>
+          <div class="pt-obj">${TR("Suis tes progrès et dépasse tes limites !")}</div></div>
+      </div>
       <select id="prg-sel" style="margin-bottom:12px;">${exIds.map(id=>`<option value="${id}" ${id===prgEx?"selected":""}>${esc(getEx(id).name)}</option>`).join("")}</select>
       ${deuxModes? `<div class="chips" style="margin-bottom:8px;">
         <button class="chip chip-sm ${mode==="avec"?"on":""}" data-lest="avec">${TR("Avec lest")}</button>
@@ -19757,7 +19771,7 @@ function renderProgress(app){
     verdict.innerHTML = pts.length < 2
       ? `<span>${TR("Une seule séance pour l'instant : la courbe démarrera à la prochaine.")}</span>`
       : (ecart <= 0
-        ? `<b>${TR("Tu es à ton meilleur niveau.")}</b>`
+        ? `<span class="ic">🏆</span><span class="grow"><b>${TR("Tu es à ton meilleur niveau !")}</b><span>${TR("Continue comme ça !")}</span></span>`
         : `<b>${TR("{e} {u} sous ton record").replace("{e}", nb(ecart)).replace("{u}", unit)}</b>${
             dateRec ? `<span>${TR("établi le {}").replace("{}", dateRec)}</span>` : ""}`);
   }
