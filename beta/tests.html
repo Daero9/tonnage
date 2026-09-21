@@ -3673,6 +3673,9 @@ async function lancer(){
     F.photoSeance({name:"Pull", items:exDe("Dos")}), "pull");
   eq("Les pectoraux donnent push", F.photoSeance({name:"Push", items:exDe("Pectoraux")}), "push");
   eq("Les jambes donnent jambes", F.photoSeance({name:"Legs", items:exDe("Jambes")}), "jambes");
+  eq("Biceps, triceps et épaules seulement : la photo « bras »", F.photoSeance({name:"Bras", items:exDe("Biceps").concat(exDe("Triceps"), exDe("Épaules"))}), "bras");
+  vrai("…mais un seul exercice de dos dedans, et c'est une séance pull", F.photoSeance({name:"Bras", items:exDe("Biceps").concat(exDe("Triceps"), exDe("Dos").slice(0,1))}) !== "bras");
+  eq("Le nom « Bras » seul, sans exercice, suffit", F.photoSeance({name:"Bras", items:[]}), "bras");
   eq("Les exercices priment sur le nom",
     F.photoSeance({name:"Pull", items:exDe("Jambes")}), "jambes");
   eq("Une photo choisie à la main est respectée",
@@ -3687,8 +3690,10 @@ async function lancer(){
   eq("Un exercice d'épaules ne renverse pas une séance de dos",
     F.photoSeance({name:"Séance A",
       items:exos(["Tractions","Rowing barre","Tirage vertical","Curl haltères","Face pull"])}), "pull");
-  eq("Le biceps compte du côté du tirage",
-    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "pull");
+  eq("Rien que des curls : c'est une séance de bras, plus une séance de tirage",
+    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "bras");
+  eq("Des curls avec un rowing : le biceps compte du côté du tirage",
+    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau","Rowing barre"])}), "pull");
   eq("La poussée est reconnue sans l'aide du nom",
     F.photoSeance({name:"Séance A",
       items:exos(["Développé couché","Développé militaire","Extension poulie (barre)"])}), "push");

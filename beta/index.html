@@ -8795,7 +8795,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 15h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 15h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14280,12 +14280,17 @@ function suggestedTemplate(){
   return best;
 }
 /* photo d'ambiance d'une séance : choisie sur le nom, sinon sur les muscles travaillés */
-const PHOTOS = ["push","pull","jambes","abdos","cardio"];
+const PHOTOS = ["push","pull","jambes","bras","abdos","cardio"];
 /* la photo suit d'abord les exercices choisis, le nom ne sert que de repli */
 function photoSeance(t){
   if(t && t.photo && PHOTOS.includes(t.photo)) return t.photo;
+  /* « bras » seulement pour une seance OU IL N'Y A QUE des bras : biceps, triceps,
+     epaules, avant-bras. Un seul exercice de dos ou de pectoraux, et c'est une seance
+     pull ou push comme les autres. */
+  const items = (t && t.items) || [];
+  if(items.length && items.every(it=>/biceps|triceps|épaul|epaul|avant-bras/.test(muscleCanon(getEx(it.exId)).toLowerCase()))) return "bras";
   const score = {push:0, pull:0, jambes:0, abdos:0};
-  ((t && t.items) || []).forEach(it=>{
+  items.forEach(it=>{
     const ex = getEx(it.exId);
     const m = muscleCanon(ex).toLowerCase();
     if(/pector|épaul|epaul|triceps/.test(m)) score.push++;
@@ -14303,6 +14308,7 @@ function photoSeance(t){
   }
   const n = ((t && t.name) || "").toLowerCase();
   if(/abdo|gainage|core|ceinture/.test(n)) return "abdos";   /* avant « dos », même piège */
+  if(/(^|[^a-zé])(bras|arms?)([^a-z]|$)/.test(n) && !items.length) return "bras";
   if(/push|poussée|pousse|pec|torse/.test(n)) return "push";
   if(/pull|tirage|\bdos\b/.test(n)) return "pull";
   if(/jambe|leg|cuisse|fessier|squat/.test(n)) return "jambes";
@@ -14416,13 +14422,13 @@ function renderSeance(app){
             ? "" : ` · ${TR("à tenir cette semaine")}`}</div>`; })()}
         <div class="wk-sep"></div>
         <div class="wk-nums">
-          <button class="n" id="wk-souleve"><span class="ic">${ICONS.seance}</span>
+          <div class="n"><span class="ic">${ICONS.seance}</span>
             <span class="tx"><div class="v">${weekVol? volNb(weekVol) : "0"} <small>${uPoids()==="lb"?"lb":"kg"}</small></div>
             <div class="u">${TR("Soulevés")}${evol!==null
-              ? ` <span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} %</span>`:""} ${IC_CHEVRON}</div></span></button>
-          <button class="n" id="wk-brule"><span class="ic">${icoM("flamme", 19)}</span>
+              ? ` <span class="ev ${evol>=0?"up":"down"}">${evol>=0?"+":""}${evol} %</span>`:""}</div></span></div>
+          <div class="n"><span class="ic">${icoM("flamme", 19)}</span>
             <span class="tx"><div class="v">${Math.round(weekKcal)} <small>kcal</small></div>
-            <div class="u">${TR("Brûlées")} ${IC_CHEVRON}</div></span></button>
+            <div class="u">${TR("Brûlées")}</div></span></div>
           <button class="wk-bilan" id="bilan-btn">${TR("Bilan")} ${IC_FLECHE_D}${bilanNeuf? '<span class="pt"></span>':""}</button>
         </div>
       </div>
@@ -14446,8 +14452,6 @@ function renderSeance(app){
     <div class="hist-strip" id="hist-strip"></div>`;
   wireTopbar();
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
-  /* les deux chiffres menent a la progression, ou ils se detaillent */
-  ["wk-souleve", "wk-brule"].forEach(id=>{ const b = document.getElementById(id); if(b) b.onclick = ()=>{ curTab = "prg"; render(); }; });
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
   if(rc) rc.onclick = openRecup;
