@@ -6013,10 +6013,11 @@ async function lancer(){
       cardio:{machine:"course", min:20, km:3.2, pente:1, fait:true, derniere:""}};
     F.eval("curTab='seance'; render()");
     await attendre(()=>!!F.document.getElementById("finish-w"), 2000);
-    const vraiAsk = F.askConfirm; F.askConfirm = (t, m, ok, danger, cb)=>cb();
+    /* « Terminer la séance ? » est une fiche à part : on appuie sur son « Enregistrer » */
     F.document.getElementById("finish-w").click();
+    await attendre(()=>!!F.document.querySelector(".tf-coche"), 2000);
+    F.document.getElementById("cf-yes").click();
     await attendre(()=>DB.history.length === 1, 2000);
-    F.askConfirm = vraiAsk;
     eq("La séance est enregistrée", DB.history.length, 1);
     eq("…avec sa sortie", DB.history[0].cardio && DB.history[0].cardio.km, 3.2);
     eq("…et la sortie existe aussi dans le cardio", DB.cardio.length, 1);
