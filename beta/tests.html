@@ -6188,6 +6188,8 @@ async function lancer(){
       b.click();
       const panneau = D2.querySelector(".cam .choix-assiette");
       vrai("Le panneau se déroule avec cinq choix", !panneau.hidden && panneau.querySelectorAll("[data-assiette]").length === 5);
+      vrai("…chacun avec son diamètre, sauf « sans assiette »", /21 cm/.test(panneau.querySelector("[data-assiette='petite']").textContent)
+        && /26 cm/.test(panneau.querySelector("[data-assiette='moyenne']").textContent) && !/cm/.test(panneau.querySelector("[data-assiette='sans']").textContent));
       panneau.querySelector("[data-assiette='petite']").click();
       vrai("Choisir « petite » referme le panneau et l'affiche sur la pilule", panneau.hidden && /Petite assiette/.test(b.textContent));
       eq("…et c'est retenu dans les réglages", DB.settings.assiette, "petite");
