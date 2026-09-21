@@ -1386,6 +1386,17 @@ async function lancer(){
       DB.cardio = [1,2,3].map(k=>({id:"cy"+k, date:sem(k), type:"course", min:30}));
       eq("Une sortie le jour d'une séance ne compte pas deux fois", F.nActivites(), 5);
       DB.cardio = [];
+      /* la pose du poussin : muscle a trois activites sur sept jours, en forme apres une
+         activite recente, repos sinon (les dessins absents retombent sur repos) */
+      const hist0 = DB.history;
+      DB.history = []; DB.cardio = [];
+      eq("Sans rien, il dort", F.poussinEtat().pose, "repos");
+      DB.history = [seance(1, new Date().toISOString())];
+      eq("Une séance aujourd'hui : en forme", F.poussinEtat().pose, "en-forme");
+      DB.history = [1,3,5].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      eq("Trois activités sur sept jours", F.activites7j(), 3);
+      eq("…c'est la pose musclée, si le dessin existe", F.poussinEtat().pose, F.eval("POUSSIN").muscle ? "muscle" : "en-forme");
+      DB.history = hist0;
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@repos']"));
       F.openProfil();
