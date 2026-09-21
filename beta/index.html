@@ -3009,6 +3009,10 @@
   .fav-box .tx{flex:1; min-width:0;}
   .fav-box b{display:block; font-size:13.5px; font-weight:700;}
   .fav-box i{display:block; font-style:normal; font-size:11.5px; color:var(--ink-mute); margin-top:1px;}
+  .ot-pas{display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:6px;}
+  .ot-pas button{flex:none; width:44px; height:40px; border-radius:11px; background:var(--surface2); font-size:22px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; justify-content:center;}
+  .ot-pas button[data-otpas="1"]{color:var(--accent);}
+  .ot-pas input{flex:1; min-width:0; border:0; background:none; text-align:center; font-size:24px; font-weight:800; color:var(--ink); padding:0; height:40px;}
 
   /* La recherche reprend la grille de la page principale : deux colonnes, une émoticône
      par aliment. On y reconnaît d'avance la pastille qu'on retrouvera dans son repas, et
@@ -9157,7 +9161,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 20h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 20h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13264,7 +13268,9 @@ function openAjoutAliment(meal){
       <div id="ot-gwrap"><div class="row" style="align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px;">
         <span class="label" id="ot-glabel">${TR("Quantité mangée (g)")}</span>
         <div class="rou-unite" id="ot-mode" hidden><button type="button" data-otm="piece">${TR("à la pièce")}</button><button type="button" data-otm="g">${TR("en grammes")}</button></div></div>
-      <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
+      <div class="ot-pas"><button type="button" data-otpas="-1" aria-label="−">−</button>
+        <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150">
+        <button type="button" data-otpas="1" aria-label="+">+</button></div></div>
       <div id="ot-mwrap" style="display:none;">
         <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
         <input id="ot-name" placeholder="${TR("Ex : plat du resto")}" style="margin-bottom:9px;">
@@ -13279,7 +13285,7 @@ function openAjoutAliment(meal){
       <div id="ot-live" style="font-size:14.5px; font-weight:700; color:var(--accent); min-height:20px;"></div>
       <button type="button" class="fav-box" id="ot-favbox" aria-pressed="false">
         <span class="et">${IC_ETOILE}</span>
-        <span class="tx"><b id="ot-favtx">${TR("Ajouter aux favoris")}</b><i>${TR("Pour le retrouver d'un geste au prochain repas")}</i></span>
+        <span class="tx"><b id="ot-favtx">${TR("Ajouter aux favoris")}</b></span>
       </button>
       <button class="btn btn-accent" id="ot-ok">${TR("Enregistrer")}</button>
       ${nbMasques()? `<button class="btn btn-ghost btn-sm" id="ot-restore">${nbMasques()>1? TR("Restaurer les {} propositions retirées").replace("{}", nbMasques()) : TR("Restaurer la proposition retirée")}</button>`:""}
@@ -13294,6 +13300,13 @@ function openAjoutAliment(meal){
   /* un fruit qu'on mange a l'unite : on compte en pieces par defaut, en grammes si on prefere */
   let otMode = "piece";
   const modeEl = document.getElementById("ot-mode");
+  /* − et + : le pas du champ (1 piece, 5 cl, 10 g), jamais en dessous de zero */
+  document.querySelectorAll("[data-otpas]").forEach(b=>b.onclick=()=>{
+    const pas = parseFloat(gEl.step) || 1;
+    const v = Math.max(0, (parseFloat(gEl.value) || 0) + pas * Number(b.dataset.otpas));
+    gEl.value = Math.round(v * 100) / 100;
+    calc(); vibrer(8);
+  });
   modeEl.querySelectorAll("[data-otm]").forEach(b=>b.onclick=()=>{ otMode = b.dataset.otm; gEl.value = ""; calc(); });
   const calc = ()=>{
     const manual = foodEl.value==="manuel";
