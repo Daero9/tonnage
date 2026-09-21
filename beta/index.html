@@ -8844,7 +8844,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 16h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 16h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11875,7 +11875,7 @@ function dessineRepas(panel){
        est bien une quantité. */
     const bas = pa.qCourt;
     return `<button class="fchip ${on?'on':''}" data-opt="${esc(on ? choisiL : socle)}"
-        data-socle="${esc(soc)}" style="${on? degradeRepas(coul, 135):""}">
+        data-socle="${esc(soc)}" style="${on? `background:${coul};`:""}">
       <span class="ic">${foodIcon(socle)}</span>
       <span class="tx"><span class="nm">${esc(pa.nom)}</span>${bas? `<span class="q">${esc(bas)}</span>`:""}</span>
       ${on ? `<span class="fst">${f > 1.001
@@ -13844,11 +13844,12 @@ function mealProt(key, meal){
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
 const MEALS = [["matin","Matin"],["midi","Midi"],["collation","Collation"],["soir","Soir"],["extra","Extra"]];
 const MEAL_C = {matin:"var(--matin)", midi:"var(--midi)", collation:"var(--collation)", soir:"var(--soir)", extra:"var(--extra)"};
-/* Le degrade d'une couleur de repas : plus clair en haut a gauche, plus dense et plus
-   sombre en bas a droite (en diagonale pour les onglets, a la verticale pour le bouton
-   « + »). La couleur plate est posee d'abord : un navigateur sans color-mix garde celle-la. */
+/* Le degrade d'une couleur de repas : un peu eclairci en haut a gauche, la couleur pleine
+   en bas a droite — jamais assombri, ca tirait vers le noir. En diagonale pour les
+   onglets, a la verticale pour le bouton « + ». La couleur plate est posee d'abord : un
+   navigateur sans color-mix garde celle-la. */
 function degradeRepas(c, angle){
-  return `background:${c}; background:linear-gradient(${angle || 135}deg, color-mix(in srgb, ${c} 82%, white) 0%, ${c} 52%, color-mix(in srgb, ${c} 80%, black) 100%);`;
+  return `background:${c}; background:linear-gradient(${angle || 135}deg, color-mix(in srgb, ${c} 74%, white) 0%, ${c} 70%, ${c} 100%);`;
 }
 /* Un signe dessine, pose en masque : il prend la couleur de ce qui l entoure. */
 function icoM(nom, taille){
