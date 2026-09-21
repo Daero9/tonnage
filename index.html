@@ -1969,7 +1969,13 @@
      garde le cubic-bezier — aucune regression possible.
      Le fond s'anime en « background », pas en « opacity » : sinon la fiche s'ouvrirait
      en fondu au lieu de glisser. */
-  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center;}
+  /* Le doigt sur une fiche faisait parfois defiler la PAGE derriere (la fiche courte
+     n'a rien a faire defiler, le geste remontait au document ; ou la fiche longue,
+     arrivee en bas, passait le relais). Trois verrous : le document ne defile plus
+     tant qu'une fiche est la, le voile n'accepte aucun geste, et la fiche garde les
+     siens pour elle. */
+  html.fiche{overflow:hidden;}
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:none; align-items:flex-end; justify-content:center; touch-action:none; overscroll-behavior:contain;}
   .overlay.show{display:flex; animation:voileIn .3s ease backwards;}
   .overlay.show > .sheet{animation:ficheIn .48s cubic-bezier(.22,1,.36,1) backwards;}
   .overlay.show > .sheet{animation-timing-function:linear(0, 0.0329, 0.1133, 0.2193, 0.3353, 0.4505, 0.5583, 0.6546, 0.7377, 0.8072, 0.8637, 0.9083, 0.9426, 0.9682, 0.9866, 0.9992, 1.0074, 1.0122, 1.0146, 1.0152, 1.0146, 1.0134, 1.0118, 1.01, 1.0083, 1.0066, 1);}
@@ -1985,7 +1991,7 @@
   @media (prefers-reduced-motion:reduce){
     .overlay.show, .overlay.show > .sheet, .overlay.part, .overlay.part > .sheet{animation:none;}
   }
-  .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
+  .sheet{background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:88dvh; overflow-y:auto; touch-action:pan-y; overscroll-behavior:contain; padding:18px 16px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
   /* ---- clavier ouvert ----
      Le clavier ne rogne pas la page : sur iOS jamais, sur Android seulement si
      l activite le demande. La fiche restait donc a sa taille, ancree au bas d un ecran
@@ -2883,12 +2889,12 @@
     padding:10px 12px; border-radius:14px; background:rgba(200,162,74,.14);}
   .ph-rem svg{width:16px; height:16px; flex:0 0 auto; color:#a67c1c; margin-top:2px;}
   .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
-    z-index:39; display:flex; align-items:center; justify-content:center;
+    z-index:39; display:flex; align-items:center; justify-content:center; touch-action:none; overscroll-behavior:contain;
     /* la carte reste sous la barre d'etat (heure, batterie) : sans ca la croix passe
        dessous et rien ne se ferme */
     padding:max(44px, calc(18px + env(safe-area-inset-top))) 22px 18px;
     background:rgba(0,0,0,.42);}
-  .abo-carte-f{position:relative; width:100%; max-width:340px; max-height:100%; overflow-y:auto;
+  .abo-carte-f{position:relative; width:100%; max-width:340px; max-height:100%; overflow-y:auto; touch-action:pan-y; overscroll-behavior:contain;
     background:var(--sheet); border-radius:22px; padding:18px 16px 14px;
     box-shadow:0 22px 60px rgba(0,0,0,.4); -webkit-overflow-scrolling:touch;}
   .abo-carte-f .sheet-x{top:10px; right:10px;}
@@ -8608,7 +8614,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 04h20";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 04h27";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10037,6 +10043,7 @@ function openSheet(html, opts){
   annulerFermeture();
   if(rejoue){ overlay.classList.remove("show"); void overlay.offsetWidth; }
   overlay.classList.add("show");
+  majVerrouPage();
   if(!sheetOpen){
     sheetOpen = true;
     onSheetClose = null;
@@ -10066,6 +10073,12 @@ function annulerFermeture(){
   if(fermetureEnCours){ clearTimeout(fermetureEnCours); fermetureEnCours = null; }
   overlay.classList.remove("part");
 }
+/* la page ne defile pas tant qu'une fiche ou la fenetre d'abonnement est devant */
+function majVerrouPage(ficheEncore){
+  const devant = (ficheEncore !== false && overlay.classList.contains("show") && !overlay.classList.contains("part"))
+    || !!document.getElementById("abo-fenetre");
+  document.documentElement.classList.toggle("fiche", devant);
+}
 function hideSheet(){
   sheet.style.transition = "";
   annulerFermeture();
@@ -10079,6 +10092,7 @@ function hideSheet(){
   } else {
     sheet.style.transform = "";
   }
+  majVerrouPage(false);
   sheetOpen = false; sheetVerrou = false;
   pileFiches = [];                    /* on ferme pour de bon : rien ne doit resurgir */
   if(onSheetClose){ const f = onSheetClose; onSheetClose = null; try{ f(); }catch(e){} }
@@ -12278,7 +12292,7 @@ function openProduitScanne(meal, p){
   };
   gEl.oninput = maj; majUnite(); maj();
   document.getElementById("ps-non").onclick = closeSheet;
-  document.getElementById("ps-autre").onclick = ()=>lancerScan(meal);
+  document.getElementById("ps-autre").onclick = ()=>scannerDepuisFiche(meal, ()=>openProduitScanne(meal, p));
   document.getElementById("ps-ok").onclick = ()=>{
     const f = part();
     if(!f){ toast(TR(liquide ? "Indique la quantité bue." : "Indique la quantité mangée.")); return; }
@@ -12320,24 +12334,37 @@ function openProduitScanne(meal, p){
 }
 /* Scanner puis ouvrir la fiche du produit. Partagé par le bouton de la fiche d'ajout
    et par « Scanner un autre produit ». */
+/* Rend false si la personne a renonce (croix de la camera) : celui qui a lance le scan
+   depuis une fiche peut alors la rouvrir. Tout autre chemin — photo, produit, proposition
+   d'achat — a ouvert sa propre fiche, ou dit pourquoi. */
 async function lancerScan(meal, mode){
-  if(mode === "plat" && photosRestantes() <= 0){ proposerPhotos(meal); return; }
+  if(mode === "plat" && photosRestantes() <= 0){ proposerPhotos(meal); return true; }
   /* toujours le code-barres d'abord : c'est le geste exact et gratuit ; le plat est
      a un glissement de la */
   const r = await ouvrirCamera(mode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
-  if(!r) return;
-  if(r.type === "scans"){ proposerPhotos(meal); return; }
+  if(!r) return false;
+  if(r.type === "scans"){ proposerPhotos(meal); return true; }
   if(r.type === "photo"){
     photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
     lancerAnalysePhoto("");
-    return;
+    return true;
   }
   toast(TR("Recherche du produit…"));
   try{
     const p = await chercherProduit(r.code);
-    if(!p){ toast(TR("Produit inconnu — saisis-le à la main."), "erreur"); return; }
+    if(!p){ toast(TR("Produit inconnu — saisis-le à la main."), "erreur"); return false; }
     openProduitScanne(meal, p);
-  }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion."), "erreur"); }
+  }catch(e){ toast(TR("Pas de réseau : le scan a besoin d'une connexion."), "erreur"); return false; }
+  return true;
+}
+/* Depuis une fiche (« Ajouter un aliment », un produit scanne) : on la ferme AVANT
+   d'ouvrir la camera, sinon elle restait derriere et pouvait ressurgir par-dessus
+   l'analyse ; si la personne renonce, on la rouvre telle quelle. */
+async function scannerDepuisFiche(meal, rouvrir){
+  hideSheet();
+  await new Promise(ok=>setTimeout(ok, 280));
+  const ok = await lancerScan(meal);
+  if(ok === false && rouvrir) rouvrir();
 }
 
 /* fiche « Ajouter un aliment » : liste d'aliments, quantité, garder dans les propositions */
@@ -12714,7 +12741,7 @@ function openAjoutAliment(meal){
   foodEl.onchange = calc; gEl.oninput = calc;
   /* on rouvre la fiche avec le produit dedans : plus simple et plus sûr que de
      rafistoler le formulaire en place, et l'utilisateur voit tout d'un coup */
-  document.getElementById("ot-scan").onclick = ()=>lancerScan(meal);
+  document.getElementById("ot-scan").onclick = ()=>scannerDepuisFiche(meal, ()=>openAjoutAliment(meal));
 
   /* la recherche : sans accent et sans casse, « pates » trouve « Pâtes cuites » */
   const qEl = document.getElementById("ot-q"), listeEl = document.getElementById("ot-liste");
@@ -18345,6 +18372,7 @@ const IC_ABO_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 function fermerAbonnement(){
   const f = document.getElementById("abo-fenetre");
   if(f) f.remove();
+  majVerrouPage();
 }
 function openAbonnement(){
   if(document.getElementById("abo-fenetre")) return;   /* deja ouverte : on la laisse en place */
@@ -18402,6 +18430,7 @@ function openAbonnement(){
     </form>
   </div>`;
   document.body.appendChild(f);
+  majVerrouPage();
   /* fermer, c'est repartir : la fenêtre ne s'ouvre que sur un onglet verrouillé, il n'y
      a rien d'autre à y faire. On revient donc à la séance. */
   document.getElementById("abo-x").onclick = ()=>{
