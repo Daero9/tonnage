@@ -8844,7 +8844,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 16h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 17h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11795,13 +11795,13 @@ function renderEat(app){
       /* « 30 g » tout seul se lit comme le poids du repas. Le mot dessous lève
          l'ambiguïté sans coûter une ligne de plus : il tient sous le chiffre. */
       return `<button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
-        style="${mealCur===id? degradeRepas(MEAL_C[id], 135):""}"><span>${TR(lab)}<b>${
+        style="${mealCur===id? degradeRepas(id, 135):""}"><span>${TR(lab)}<b>${
           g? g+" g" : "—"}</b>${g? `<u>${TR("protéines")}</u>` : ""}</span><i></i></button>`;
     }).join("")}</div>
     <div class="meal-panel" id="meal-panel"></div>
     <div style="height:34px;"></div>
     <div class="eat-fab">
-      <button class="fab" id="eat-add" style="${degradeRepas(coul, 180)}" aria-label="${TR("Ajouter un aliment")}">＋</button>
+      <button class="fab" id="eat-add" style="${degradeRepas(mealCur, 180)}" aria-label="${TR("Ajouter un aliment")}">＋</button>
       <span class="lb" style="color:${coul};">${TR("Ajouter un aliment")}</span>
     </div>`;
   wireTopbar();
@@ -11820,7 +11820,7 @@ function renderEat(app){
     document.querySelectorAll("[data-meal]").forEach(x=>{
       const actif = x.dataset.meal === mealCur;
       x.classList.toggle("on", actif);
-      x.style.background = actif ? MEAL_C[mealCur] : "";
+      if(actif) poserDegradeRepas(x, mealCur, 135); else x.style.background = "";
     });
     const pan = document.getElementById("meal-panel");
     pan.classList.remove("swap"); void pan.offsetWidth; pan.classList.add("swap");
@@ -11891,7 +11891,7 @@ function dessineRepas(panel){
   /* le bouton fixe vit hors du panneau : il prend seulement la couleur du repas courant */
   const fab = document.getElementById("eat-add");
   if(fab){
-    fab.style.background = coul;
+    poserDegradeRepas(fab, mealCur, 180);
     const lb = fab.parentElement.querySelector(".lb");
     if(lb) lb.style.color = coul;
   }
@@ -13844,12 +13844,20 @@ function mealProt(key, meal){
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
 const MEALS = [["matin","Matin"],["midi","Midi"],["collation","Collation"],["soir","Soir"],["extra","Extra"]];
 const MEAL_C = {matin:"var(--matin)", midi:"var(--midi)", collation:"var(--collation)", soir:"var(--soir)", extra:"var(--extra)"};
-/* Le degrade d'une couleur de repas : un peu eclairci en haut a gauche, la couleur pleine
-   en bas a droite — jamais assombri, ca tirait vers le noir. En diagonale pour les
-   onglets, a la verticale pour le bouton « + ». La couleur plate est posee d'abord : un
-   navigateur sans color-mix garde celle-la. */
-function degradeRepas(c, angle){
-  return `background:${c}; background:linear-gradient(${angle || 135}deg, color-mix(in srgb, ${c} 74%, white) 0%, ${c} 70%, ${c} 100%);`;
+/* Le degrade d'un repas : sa couleur en haut a gauche, et en bas a droite la meme teinte
+   poussee un cran plus loin — l'orange plus intense, le violet vers le bleu, le rose vers
+   le rouge, le bleu plus profond, le vert plus franc. Pas d'eclairci ni de noir : un
+   glissement de couleur. En diagonale pour les onglets, a la verticale pour le « + ». */
+const MEAL_C2 = {matin:"#2a86d8", midi:"#f0640c", collation:"#4a5ce6", soir:"#e8324c", extra:"#2fa04a"};
+function degradeRepas(id, angle){
+  const c = MEAL_C[id] || id, c2 = MEAL_C2[id] || c;
+  return `background:${c}; background:linear-gradient(${angle || 135}deg, ${c} 0%, ${c2} 100%);`;
+}
+/* la meme chose, pour poser en JS sur un element deja dessine */
+function poserDegradeRepas(el, id, angle){
+  const c = MEAL_C[id] || id, c2 = MEAL_C2[id] || c;
+  el.style.background = c;
+  el.style.background = `linear-gradient(${angle || 135}deg, ${c} 0%, ${c2} 100%)`;
 }
 /* Un signe dessine, pose en masque : il prend la couleur de ce qui l entoure. */
 function icoM(nom, taille){
