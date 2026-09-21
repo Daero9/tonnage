@@ -4237,7 +4237,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
+  "version du":"build of", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
   "Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui.":"Holding your weight while training is recomposition: the scale barely moves, your shape does.",
@@ -9157,7 +9157,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 20h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 20h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13261,7 +13261,9 @@ function openAjoutAliment(meal){
         <option value="manuel">${TR("Autre — je saisis les valeurs")}</option>
       </select></div>
       <div class="et-h"><span class="n">3</span><span class="t">${TR("Ajouter la quantité")}</span></div>
-      <div id="ot-gwrap"><span class="label" style="display:block; margin-bottom:5px;" id="ot-glabel">${TR("Quantité mangée (g)")}</span>
+      <div id="ot-gwrap"><div class="row" style="align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px;">
+        <span class="label" id="ot-glabel">${TR("Quantité mangée (g)")}</span>
+        <div class="rou-unite" id="ot-mode" hidden><button type="button" data-otm="piece">${TR("à la pièce")}</button><button type="button" data-otm="g">${TR("en grammes")}</button></div></div>
       <input type="number" inputmode="decimal" step="10" min="0" id="ot-g" placeholder="150"></div>
       <div id="ot-mwrap" style="display:none;">
         <span class="label" style="display:block; margin-bottom:5px;">Nom</span>
@@ -13289,6 +13291,10 @@ function openAjoutAliment(meal){
     const g = FOOD_100G.find(x=>x[0]===grp);
     return g ? g[1][parseInt(idx)] : null;
   };
+  /* un fruit qu'on mange a l'unite : on compte en pieces par defaut, en grammes si on prefere */
+  let otMode = "piece";
+  const modeEl = document.getElementById("ot-mode");
+  modeEl.querySelectorAll("[data-otm]").forEach(b=>b.onclick=()=>{ otMode = b.dataset.otm; gEl.value = ""; calc(); });
   const calc = ()=>{
     const manual = foodEl.value==="manuel";
     document.getElementById("ot-gwrap").style.display = manual? "none":"block";
@@ -13299,15 +13305,21 @@ function openAjoutAliment(meal){
     const [nom, prot100, kcal100, unite] = f;
     /* trois façons de compter : au poids, au volume (valeurs pour 100 ml), à la pièce */
     const liquide = unite === "cl";
-    const piece = unite !== "100g" && !liquide;
-    document.getElementById("ot-glabel").textContent = piece
-      ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})`
-      : TR(liquide ? "Quantité bue (cl)" : "Quantité mangée (g)");
+    const gPiece = unite === "100g" ? POIDS_PIECE[nom] : 0;      /* un fruit entier : poids moyen connu */
+    const enPieces = !!gPiece && otMode === "piece";
+    modeEl.hidden = !gPiece;
+    modeEl.querySelectorAll("[data-otm]").forEach(b=>b.classList.toggle("on", b.dataset.otm === (enPieces ? "piece" : "g")));
+    const piece = (unite !== "100g" && !liquide) || enPieces;
+    const court0 = TR(nom).replace(/\s*\(.*?\)/,"").toLowerCase();
+    document.getElementById("ot-glabel").textContent = enPieces
+      ? TR("Nombre de {}").replace("{}", court0 + (court0.endsWith("s") ? "" : "s"))
+      : (piece ? `Nombre (${unite}${unite.endsWith("s")?"":"s"})`
+      : TR(liquide ? "Quantité bue (cl)" : "Quantité mangée (g)"));
     gEl.step = piece ? 1 : (liquide ? 5 : 10);
-    gEl.placeholder = piece ? "2" : (liquide ? "20" : "150");
+    gEl.placeholder = piece ? (enPieces ? "1" : "2") : (liquide ? "20" : "150");
     const q = parseFloat(gEl.value);
     if(!q || q<=0){ liveEl.innerHTML = ""; return null; }
-    const part = piece ? q : (liquide ? q/10 : q/100);   /* combien de fois la valeur de référence */
+    const part = enPieces ? q * gPiece / 100 : (piece ? q : (liquide ? q/10 : q/100));   /* combien de fois la valeur de référence */
     const prot = Math.round(prot100*part);
     const kcal = Math.round(kcal100*part);
     /* le nom traduit, sans sa parenthèse de portion */
@@ -13326,7 +13338,9 @@ function openAjoutAliment(meal){
         ${mac ? tuileNut(icoM("cereale", 18), NUT_C.gluc, gluc, "g", TR("glucides")) : ""}
         ${mac ? tuileNut(IC_GOUTTE, NUT_C.lip, lipi, "g", TR("lipides")) : ""}
       </div>
-      <div class="nut-l">${esc(piece
+      <div class="nut-l">${esc(enPieces
+        ? TR("Pour {q} {u} (≈ {g} g)").replace("{q}", q).replace("{u}", court0 + (q > 1 && !court0.endsWith("s") ? "s" : "")).replace("{g}", Math.round(q * gPiece))
+        : piece
         ? TR("Pour {q} {u}").replace("{q}", q).replace("{u}", uni + (q > 1 ? "s" : ""))
         : TR("Pour {q} {u} de {n}").replace("{q}", q)
             .replace("{u}", liquide ? "cl" : "g").replace("{n}", court.toLowerCase()))}</div>`;
@@ -14100,6 +14114,15 @@ function alimentsFavoris(){
 /* certaines familles méritent un avertissement : on l'affiche sous leur titre */
 const FOOD_NOTE = {
   "Plats et repas complets": "Estimations à ±25 % : la taille et la garniture changent tout. Mieux vaut une estimation qu'une case vide."
+};
+/* Les fruits (et quelques legumes) qu'on mange a l'unite : poids moyen de la partie
+   mangee, arrondi, d'apres les portions usuelles. Ce n'est qu'un repere : un gros kiwi
+   pese plus, et on peut toujours passer « en grammes ». */
+const POIDS_PIECE = {
+  "Kiwi":75, "Poire":150, "Orange":150, "Clémentine / mandarine":50, "Pamplemousse":250,
+  "Mangue":250, "Abricot":45, "Pêche":130, "Nectarine":130, "Prune":40, "Figue":50, "Kaki":150,
+  "Litchi":10, "Datte":8, "Pruneau":10, "Abricot sec":8, "Fruit de la passion":18,
+  "Tomate":120, "Carotte":80, "Avocat":120, "Œuf dur":50
 };
 const FOOD_100G = [
   ["À la pièce", [
