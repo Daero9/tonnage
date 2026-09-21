@@ -9311,7 +9311,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 22h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 22h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20371,6 +20371,12 @@ function poidsFatigue(st){
   const r = (st.rir === undefined || st.rir === null) ? 1.5 : st.rir;
   let f = r <= 0 ? 1.35 : (r <= 2 ? 1 : 0.7);
   f += (st.drops || []).length * 0.35;
+  /* Le volume de la serie compte : deux repetitions ne fatiguent pas un muscle comme
+     dix. La reference est 8 reps ; en dessous le cout baisse (plancher a 0,35 pour un
+     double lourd), au-dessus il monte un peu (plafond 1,25 : une serie de 15 n'est pas
+     deux series de 8). Sans repetitions notees, on garde la reference. */
+  const reps = Number(st.r) || 0;
+  if(reps > 0) f *= Math.max(0.35, Math.min(1.25, reps / 8));
   return f;
 }
 /* La récupération ralentit avec l'âge, mais modérément : l'écart est net après
