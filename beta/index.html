@@ -1566,7 +1566,7 @@
   .vs-compte{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 18px;}
   .vs-c{display:flex; align-items:center; gap:12px; padding:14px; border-radius:16px; background:var(--surface2);}
   .vs-c .ic{flex:none; width:50px; height:50px; border-radius:50%; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
-  .vs-c .ic.etoile{background:rgba(253,170,22,.18); color:#f5a623;} .vs-c .ic svg{width:24px; height:24px; fill:currentColor;}
+  .vs-c .ic.etoile{background:rgba(253,170,22,.18); color:#f5a623;} .vs-c .ic svg, .vs-c .ic .icm{width:30px !important; height:30px !important; fill:currentColor;}
   .vs-c b{display:block; font-size:24px; font-weight:800; line-height:1;} .vs-c small{display:block; font-size:12.5px; color:var(--ink-soft); margin-top:3px; line-height:1.2;}
   .vs-c small i{display:block; font-style:normal; font-size:11px; color:var(--ink-mute);}
   .vs-titre{display:flex; align-items:center; gap:8px; margin:6px 0 10px;}
@@ -1574,8 +1574,11 @@
   .vs-titre .vs-bulle{flex:1; min-width:0; margin-left:6px; padding:8px 10px; border-radius:12px; background:var(--surface2); font-size:11px; line-height:1.35; color:var(--ink-mute);}
   .vs-grille{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:16px;}
   .vs-t{position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px 12px; border-radius:16px; background:var(--surface2); color:var(--ink); text-align:center; min-height:150px;}
-  .vs-t .vs-img{width:64px; height:64px; border-radius:14px; background:var(--surface); display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:4px;}
-  .vs-t .vs-img img{width:100%; height:100%; object-fit:cover; object-position:50% 35%; transform:scale(1.6);}
+  /* l'accessoire entier, centre, sans cadre : juste l'objet au-dessus de son nom */
+  .vs-t .vs-img{width:72px; height:64px; display:flex; align-items:center; justify-content:center; margin-bottom:4px;}
+  .vs-t .vs-img img{max-width:100%; max-height:100%; object-fit:contain;}
+  .vs-t.verrou .vs-img, .vs-t.sans .vs-img{border-radius:14px; background:var(--surface);}
+  .vs-t .vs-muet{color:var(--ink-mute); font-weight:600;}
   .vs-t .vs-img i{font-style:normal; font-size:22px; font-weight:800; color:var(--ink-mute);}
   .vs-t b{font-size:12.5px; line-height:1.15;} .vs-t em{font-style:normal; font-size:11px; color:var(--ink-mute);}
   .vs-t em.porte{display:inline-block; margin-top:4px; padding:5px 12px; border-radius:99px; background:var(--accent-grad); color:#fff; font-weight:800;}
@@ -4037,7 +4040,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
+  "version du":"build of", "À débloquer":"Locked", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
   "semaines d'affilée":"weeks in a row", "au mieux":"at best", "Gagne des accessoires en restant régulier !":"Earn accessories by staying consistent!", "Encore <b>{}</b> avant ton objectif !":"<b>{}</b> to go before your goal!", "Ma photo":"My photo", "Photo illisible.":"Unreadable photo.", "En route vers mes objectifs !":"On the way to my goals!", "Discipline aujourd'hui":"Discipline today", "Résultats demain":"Results tomorrow", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
   "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
   "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
@@ -8817,14 +8820,14 @@ function openVestiaire(){
     const avance = a.serie ? Math.min(1, best / a.serie) : Math.min(1, nSeances / Math.max(1, a.seances));
     return `<button class="vs-t ${gagne ? "ok" : "verrou"} ${porte.has(a.id) ? "on" : ""} ${dessin ? "" : "sans"}" data-acc="${a.id}" ${gagne && dessin ? "" : "disabled"}>
       ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
-      <span class="vs-img">${dessin ? `<img src="img/poussin/${a.id}@repos.png" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
-      <b>${TR(a.nom)}</b>
+      <span class="vs-img">${dessin ? `<img src="img/poussin/ico-${a.id}.png" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
+      ${gagne ? `<b>${TR(a.nom)}</b>` : `<b class="vs-muet">${TR("À débloquer")}</b>`}
       ${gagne
         ? (porte.has(a.id) ? `<em class="porte">${TR("Porté")}</em> ` : `<em>${dessin ? TR("Gagné") : TR("Bientôt")}</em>`)
         : `<em>${reste}</em><span class="vs-jauge"><i style="width:${Math.round(avance * 100)}%;"></i></span>`}</button>`;
   };
   const courants = ACCESSOIRES.filter(a=>!a.rare), rares = ACCESSOIRES.filter(a=>a.rare);
-  openSheet(`<h3>${TR("Mon avatar")}</h3>
+  openSheet(`<h3 style="font-size:22px;">${TR("Mon avatar")}</h3>
     <div class="pr-sous" style="text-align:center;">${TR("Personnalise ton compagnon d'entraînement !")}</div>
     <div class="vs-apercu">${poussinHtml("vs-poussin")}</div>
     <div class="vs-compte">
@@ -8922,7 +8925,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 17h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 17h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
