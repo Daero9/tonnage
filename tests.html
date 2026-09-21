@@ -5899,7 +5899,7 @@ async function lancer(){
       cam.querySelector("[data-mode='code']").click();
       vrai("…la pilule bascule en mode code-barres", cam.classList.contains("code") && !cam.classList.contains("plat"));
       vrai("…et la vidéo reste visible après le changement de mode", cam.classList.contains("pret"));
-      vrai("…le déclencheur n'est pas cliquable en mode code", F.getComputedStyle(cam.querySelector("[data-prendre]")).pointerEvents === "none");
+      vrai("…le déclencheur reste là en mode code : il fige une image pour y lire le code", F.getComputedStyle(cam.querySelector("[data-prendre]")).pointerEvents !== "none");
       cam.querySelector("[data-main]").click();
       vrai("La saisie à la main s'ouvre dans l'écran, sans boîte native", !cam.querySelector(".saisie").hidden);
       cam.querySelector(".saisie input").value = "12ab";
@@ -5925,6 +5925,10 @@ async function lancer(){
         F.document.querySelector(".cam .quota").classList.contains("zero") && F.document.querySelector(".cam").classList.contains("epuise")
         && /passées/.test(F.document.querySelector(".cam .quota").textContent));
       vrai("…mais il reste touchable : il mène à la fiche des photos", F.getComputedStyle(F.document.querySelector(".cam .declencheur")).pointerEvents !== "none");
+      (()=>{ const l = F.document.querySelector(".cam .ligne"), k = [...l.children];
+        vrai("Galerie à gauche, déclencheur au milieu, saisie à droite",
+          k[0].hasAttribute("data-galerie") && k[1].hasAttribute("data-prendre") && k[2].hasAttribute("data-main"));
+        vrai("…la saisie s'efface en mode plat", F.getComputedStyle(k[2]).opacity === "0"); })();
       vrai("Le déclencheur est blanc, au-dessus de la pilule des modes",
         F.getComputedStyle(F.document.querySelector(".cam .declencheur span")).backgroundColor === "rgb(255, 255, 255)"
         && F.getComputedStyle(F.document.querySelector(".cam .bas")).flexDirection === "column-reverse");
@@ -6173,6 +6177,39 @@ async function lancer(){
     eq("…et on reste sur l'onglet Alimentation", F.eval("curTab"), "eat");
     D2.querySelector(".cam [data-non]").click();
     await attendre(()=>!D2.querySelector(".cam"), 2000);
+    /* l'assiette : une pilule en mode plat, un panneau, un choix retenu, et le relais le recoit */
+    await (async ()=>{
+      delete DB.settings.assiette; DB.abo = true; delete DB.photos;
+      const pr = F.ouvrirCamera("plat", "x");
+      await attendre(()=>!!D2.querySelector(".cam .assiette"), 2000);
+      const b = D2.querySelector(".cam .assiette");
+      eq("Sans choix, l'assiette est moyenne, sans centimètres à l'écran", b.textContent.trim(), "Assiette moyenne");
+      vrai("…la pilule est au-dessus du déclencheur", b.compareDocumentPosition(D2.querySelector(".cam .ligne")) & 2);
+      b.click();
+      const panneau = D2.querySelector(".cam .choix-assiette");
+      vrai("Le panneau se déroule avec six choix", !panneau.hidden && panneau.querySelectorAll("[data-assiette]").length === 6);
+      vrai("…dont la barquette, avec sa largeur", /18 cm/.test(panneau.querySelector("[data-assiette='barquette']").textContent));
+      vrai("…chacun avec son diamètre, sauf « sans assiette »", /21 cm/.test(panneau.querySelector("[data-assiette='petite']").textContent)
+        && /26 cm/.test(panneau.querySelector("[data-assiette='moyenne']").textContent) && !/cm/.test(panneau.querySelector("[data-assiette='sans']").textContent));
+      panneau.querySelector("[data-assiette='petite']").click();
+      vrai("Choisir « petite » referme le panneau et l'affiche sur la pilule", panneau.hidden && /Petite assiette/.test(b.textContent));
+      eq("…et c'est retenu dans les réglages", DB.settings.assiette, "petite");
+      D2.querySelector(".cam [data-mode='code']").click();
+      vrai("En mode code-barres, la pilule s'efface", F.getComputedStyle(b).opacity === "0");
+      D2.querySelector(".cam [data-non]").click(); await pr;
+      /* la requete au relais porte l'assiette et son diametre */
+      const vraiFetch = F.fetch; let envoye = null;
+      F.fetch = async (url, o)=>{ envoye = JSON.parse(o.body); return {ok:true, json:async()=>({plat:"", aliments:[], remarque:""})}; };
+      await F.analyserPhoto("xx", "");
+      F.fetch = vraiFetch;
+      vrai("Le relais reçoit « petite » et 21 cm", envoye && envoye.assiette === "petite" && envoye.assietteCm === 21);
+      DB.settings.assiette = "sans";
+      F.fetch = async (url, o)=>{ envoye = JSON.parse(o.body); return {ok:true, json:async()=>({plat:"", aliments:[], remarque:""})}; };
+      await F.analyserPhoto("xx", "");
+      F.fetch = vraiFetch;
+      eq("« Sans assiette » part avec 0 cm", envoye.assietteCm, 0);
+      delete DB.settings.assiette; delete DB.abo;
+    })();
     /* la camera, en mode code : basculer sur « Plat » sans photo sort tout de suite */
     const cam = F.ouvrirCamera("code", "x");
     await attendre(()=>!!D2.querySelector(".cam"), 2000);

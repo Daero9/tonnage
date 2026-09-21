@@ -2250,10 +2250,11 @@
   .cam.epuise .declencheur{opacity:.55;}
   .cam .t{position:absolute; left:0; right:0; top:calc(50% + 40px); text-align:center; font-size:14.5px; font-weight:700;
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
-  .cam.plat .t{top:auto; bottom:calc(178px + env(safe-area-inset-bottom));}
+  .cam.plat .t{top:auto; bottom:calc(232px + env(safe-area-inset-bottom));}   /* au-dessus de la pilule de l'assiette */
   /* le declencheur au-dessus de la pilule des modes, comme sur un appareil photo : l'inversion
      se fait en CSS, la pilule reste ecrite en premier */
   .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column-reverse; gap:18px; align-items:center;}
+  .cam .bas .choix-assiette{bottom:calc(100% + 8px);}
   .cam .modes{position:relative; display:flex; background:rgba(0,0,0,.55); border-radius:99px; padding:4px; width:min(78%, 300px); backdrop-filter:blur(6px);}
   .cam .modes .curseur{position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 4px); border-radius:99px; background:#fff;
     transition:transform .32s cubic-bezier(.22,1,.36,1);}
@@ -2267,15 +2268,27 @@
     transition:border-color .3s ease;}
   .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:#fff;   /* blanc, comme un vrai declencheur */
     transition:transform .34s cubic-bezier(.34,1.4,.64,1);}
-  .cam.code .declencheur{border-color:rgba(255,255,255,.3); pointer-events:none;}
-  .cam.code .declencheur span{transform:scale(0);}
-  /* les deux petits boutons de gauche occupent la meme place : l'un fond dans l'autre */
+  /* galerie a gauche, declencheur au milieu, saisie a droite. En mode code-barres le
+     declencheur sert aussi : il fige une image du flux et y lit le code, pour les
+     codes que la lecture continue n'attrape pas. La saisie n'a pas de sens pour un
+     plat : elle s'efface, sans bouger les deux autres. */
   .cam .ligne{position:relative;}
-  .cam [data-main], .cam [data-galerie]{transition:opacity .22s ease, transform .3s ease;}
-  .cam.code [data-galerie], .cam.plat [data-main]{opacity:0; transform:scale(.6); pointer-events:none; position:absolute; left:calc(50% - 101px);}
-  /* sans flux en mode code : la photo du code ET la saisie a la main, cote a cote */
-  .cam.sans-flux.code [data-galerie], .cam.sans-flux.code [data-main]{opacity:1; transform:none; pointer-events:auto; position:static;}
-  .cam.sans-flux.code .vide{display:none;}
+  /* l'assiette : une pilule au-dessus du declencheur, qui deroule ses choix vers le haut */
+  .cam .assiette{display:inline-flex; align-items:center; gap:6px; padding:8px 12px 8px 14px; border-radius:99px;
+    background:rgba(0,0,0,.55); color:#fff; font-size:13px; font-weight:700; backdrop-filter:blur(6px);
+    transition:opacity .22s ease, transform .3s ease;}
+  .cam .assiette svg{width:16px; height:16px; opacity:.8;}
+  .cam.code .assiette{opacity:0; transform:scale(.8); pointer-events:none;}
+  .cam .choix-assiette{position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); width:min(78%, 300px);
+    background:#fff; color:#17181a; border-radius:18px; padding:6px; box-shadow:0 10px 30px rgba(0,0,0,.35); z-index:3;
+    animation:ficheIn .25s cubic-bezier(.22,1,.36,1) backwards;}
+  .cam .choix-assiette[hidden]{display:none;}
+  .cam .choix-assiette button{display:flex; align-items:center; justify-content:space-between; width:100%; text-align:left; padding:12px 14px; border-radius:12px; font-size:15px; font-weight:600; color:#17181a;}
+  .cam .choix-assiette button i{font-style:normal; font-size:12.5px; font-weight:600; color:#8a8985;}   /* le diamètre, pour se situer — dans le panneau seulement */
+  .cam .choix-assiette button.on i{color:var(--accent); opacity:.8;}
+  .cam .choix-assiette button.on{background:rgba(245,130,32,.14); color:var(--accent); font-weight:800;}
+  .cam [data-main]{transition:opacity .22s ease, transform .3s ease;}
+  .cam.plat [data-main]{opacity:0; transform:scale(.6); pointer-events:none;}
   /* la saisie du code a la main, dans l'ecran */
   .cam .saisie{position:absolute; left:16px; right:16px; top:calc(50% - 150px); background:#fff; color:#17181a; border-radius:18px; padding:16px;
     animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards; z-index:2;}
@@ -3813,6 +3826,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
+  "Petite assiette":"Small plate", "Assiette moyenne":"Medium plate", "Grande assiette":"Large plate", "Bol":"Bowl", "Barquette / boîte":"Takeaway box", "Sans assiette":"No plate",
   "La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.":"Plate photos are part of Tonnup Analyse — or a 20-photo pack.",
   "Tes {} photos du jour sont passées. Appuie pour en ajouter.":"Your {} photos for today are used up. Tap to add more.",
   "{j} aujourd'hui + {r} en réserve":"{j} today + {r} in reserve",
@@ -8594,7 +8608,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 03h52";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 04h20";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11763,14 +11777,15 @@ function ouvrirCamera(mode, titre){
       <div class="repere" hidden>${IC_CODEBARRE}<div class="tx"><b>${TR("Produit emballé repéré")}</b><span>${TR("Scanner plutôt ? Valeurs exactes, gratuit.")}</span></div>
         <button data-scanner>${TR("Scanner")}</button></div>
       <div class="bas">
+        <div class="choix-assiette" hidden>${ASSIETTES.map(a=>`<button data-assiette="${a[0]}">${TR(a[1])}${a[2] ? `<i>≈ ${a[2]} cm</i>` : ""}</button>`).join("")}</div>
         <div class="modes"><span class="curseur"></span><button data-mode="code" class="${mode === "code" ? "on" : ""}">${IC_CODEBARRE}${TR("Code-barres")}</button>
           <button data-mode="plat" class="${mode === "plat" ? "on" : ""}">${IC_PHOTO}${TR("Plat")}</button></div>
         <div class="ligne">
-          <button class="rond" data-main aria-label="${TR("Saisir le code à la main")}">${IC_CLAVIER}</button>
           <button class="rond" data-galerie aria-label="${TR("Choisir dans la galerie")}">${IC_GALERIE}</button>
           <button class="declencheur" data-prendre aria-label="${TR("Prendre la photo")}"><span></span></button>
-          <span class="rond vide"></span>
+          <button class="rond" data-main aria-label="${TR("Saisir le code à la main")}">${IC_CLAVIER}</button>
         </div>
+        <button class="assiette" data-assiette-btn><span class="tx">${TR(assietteChoisie()[1])}</span>${IC_CHEVRON_BAS}</button>
       </div>
       <input type="file" accept="image/*" data-fichier style="display:none;">`;
     document.body.appendChild(boite);
@@ -11815,6 +11830,18 @@ function ouvrirCamera(mode, titre){
       consigne(); relancerBoucle();
     };
     boite.querySelectorAll("[data-mode]").forEach(b=>b.onclick = ()=>changerMode(b.dataset.mode));
+    /* le choix de l'assiette : un panneau qui se deroule au-dessus du bouton */
+    const choix = q(".choix-assiette"), bAss = q("[data-assiette-btn]");
+    const peindreAssiette = ()=>{
+      bAss.querySelector(".tx").textContent = TR(assietteChoisie()[1]);
+      choix.querySelectorAll("[data-assiette]").forEach(b=>b.classList.toggle("on", b.dataset.assiette === assietteChoisie()[0]));
+    };
+    bAss.onclick = ()=>{ choix.hidden = !choix.hidden; peindreAssiette(); };
+    choix.querySelectorAll("[data-assiette]").forEach(b=>b.onclick = ()=>{
+      db.settings.assiette = b.dataset.assiette; save(); vibrer(12);
+      peindreAssiette(); choix.hidden = true;
+    });
+    peindreAssiette();
     /* l'encadre rouge aussi mene a la fiche : c'est lui qu'on lit, autant qu'il reponde */
     q(".quota").onclick = ()=>{ if(mode === "plat" && photosRestantes() <= 0) finir({type:"scans"}); };
     q("[data-non]").onclick = ()=>finir(null);
@@ -11838,8 +11865,8 @@ function ouvrirCamera(mode, titre){
     fich.onchange = async ()=>{
       const f = fich.files && fich.files[0]; fich.value = "";
       if(!f) return;
-      if(mode === "code" && !flux){
-        /* pas de flux : on lit le code sur la photo, comme avant */
+      if(mode === "code"){
+        /* en mode code, une photo est une photo DU CODE : on y lit les chiffres */
         texte.textContent = TR("Lecture de la photo…");
         try{
           const code = await lireCodeSurPhoto(f);
@@ -11854,6 +11881,22 @@ function ouvrirCamera(mode, titre){
     };
     /* le declencheur : l'image du flux, reduite comme une photo de fichier */
     q("[data-prendre]").onclick = ()=>{
+      if(mode === "code"){
+        if(!flux || video.readyState < 2){ fich.click(); return; }
+        const cv = document.createElement("canvas");
+        cv.width = video.videoWidth; cv.height = video.videoHeight;
+        cv.getContext("2d").drawImage(video, 0, 0);
+        vibrer(20); boite.classList.add("flash"); setTimeout(()=>boite.classList.remove("flash"), 300);
+        texte.textContent = TR("Lecture de la photo…");
+        cv.toBlob(async b=>{
+          try{
+            const code = b && await lireCodeSurPhoto(b);
+            if(code){ vibrer(30); return finir({type:"code", code}); }
+            texte.textContent = TR("Code illisible. Réessaie de plus près, ou saisis les chiffres.");
+          }catch(e){ texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); }
+        }, "image/jpeg", 0.9);
+        return;
+      }
       if(photosRestantes() <= 0) return finir({type:"scans"});
       if(!flux || video.readyState < 2){ fich.click(); return; }
       /* On n'envoie que le carre de visee. La video est affichee en « cover » : on
@@ -12324,6 +12367,19 @@ const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
 const PHOTOS_PAR_JOUR = 5;                       /* pendant l'essai */
 const PHOTOS_PAR_JOUR_ABONNE = 10;               /* Tonnup Analyse : abonne ou debloque par code */
 const PACK_SCANS = 20;
+/* L'assiette de la personne : le seul repere d'echelle fiable d'une photo. Les diametres
+   sont ceux du commerce (dessert 21, plate 26, presentation 30, bol 15) ; ils partent au
+   relais, pas a l'ecran — l'utilisateur choisit « petite / moyenne / grande », il ne
+   mesure rien. Choix garde dans les reglages, d'une photo a l'autre. */
+const ASSIETTES = [
+  ["petite",  "Petite assiette",   21],
+  ["moyenne", "Assiette moyenne",  26],
+  ["grande",  "Grande assiette",   30],
+  ["bol",     "Bol",               15],
+  ["barquette","Barquette / boîte", 18],   /* traiteur, boite repas : du riz, des pates, un plat en sauce */
+  ["sans",    "Sans assiette",      0]     /* a la piece : viennoiserie, fruit, sandwich, emballage */
+];
+function assietteChoisie(){ return ASSIETTES.find(a=>a[0] === (db.settings && db.settings.assiette)) || ASSIETTES[1]; }
 function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : (essaiRestant() > 0 ? PHOTOS_PAR_JOUR : 0); }
 /* ce qui reste du compteur du jour, et la reserve des packs — les deux se lisent separement */
 function photosJour(){
@@ -12376,7 +12432,7 @@ async function analyserPhoto(b64, indice){
     r = await fetch(RELAIS_PHOTO, {
       method:"POST",
       headers:{"Content-Type":"application/json", "X-Tonnup":RELAIS_JETON},
-      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || ""}),
+      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || "", assiette:assietteChoisie()[0], assietteCm:assietteChoisie()[2]}),
       signal: ctrl.signal
     });
   } finally { clearTimeout(garde); }
