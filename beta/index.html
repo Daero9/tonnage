@@ -9065,10 +9065,15 @@ function meilleureSerieSemaines(){
   sem.forEach(t=>{ if(sem.has(t - 7*864e5)) return; let n = 0; while(sem.has(t + n*7*864e5)) n++; best = Math.max(best, n); });
   return best;
 }
-/* une activite = une seance de muscu OU une sortie cardio enregistree seule : quelqu'un
-   qui ne fait que courir gagne ses accessoires comme les autres (la flamme compte deja
-   les deux). Une sortie faite pendant une seance est dans la seance : pas comptee deux fois. */
-function nActivites(){ return (db.history || []).length + (db.cardio || []).length; }
+/* une activite = un JOUR ou l'on a fait quelque chose : une seance de muscu, ou une
+   sortie cardio seule. Quelqu'un qui ne fait que courir gagne ses accessoires comme les
+   autres (la flamme compte deja les deux), mais une seance et une sortie le meme jour ne
+   valent qu'une activite — pas de cumul. */
+function nActivites(){
+  const jours = new Set();
+  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > 0) jours.add(dayKey(d)); });
+  return jours.size;
+}
 function accessoireGagne(a){
   if(a.serie) return meilleureSerieSemaines() >= a.serie;
   return nActivites() >= (a.seances || 0);
@@ -9201,7 +9206,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 21h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 21h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
