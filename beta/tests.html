@@ -1396,6 +1396,16 @@ async function lancer(){
       DB.history = [1,3,5].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       eq("Trois activités sur sept jours", F.activites7j(), 3);
       eq("…c'est la pose musclée, si le dessin existe", F.poussinEtat().pose, F.eval("POUSSIN").muscle ? "muscle" : "en-forme");
+      /* un vrai record : +5 kg sur la charge de travail, apres deux seances au meme poids */
+      const sq = (k, w) => ({id:"r"+k, date:new Date(Date.now() - k*J).toISOString(), name:"Bas", templateId:null, start:0, end:Date.now() - k*J,
+        entries:[{exId:id("Squat"), sets:[{w, r:8, done:true}]}]});
+      DB.history = [sq(6, 80), sq(3, 80), sq(0, 84)];
+      vrai("+4 kg n'est pas un vrai record", !F.recordSignificatif());
+      DB.history = [sq(6, 80), sq(3, 80), sq(0, 85)];
+      const rec = F.recordSignificatif();
+      vrai("+5 kg après deux séances à 80 : record, et on était bloqué", !!rec && rec.bloque && rec.ref === 80 && rec.apres === 85);
+      DB.history = [sq(3, 80), sq(0, 85)];
+      vrai("Une seule séance avant : pas de comparaison, pas de record", !F.recordSignificatif());
       DB.history = hist0;
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@repos']"));
