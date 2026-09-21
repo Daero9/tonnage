@@ -6125,54 +6125,74 @@ async function lancer(){
     const g = D2.querySelector(".abo-gratuit").textContent;
     vrai("La fenêtre rappelle que les séances et le journal restent gratuits", /séances/.test(g) && /journal/.test(g) && /gratuits/.test(g), g);
     vrai("…et que l'essai est terminé", /essai sont terminés/.test(g), g);
-    vrai("…et glisse le pack, en une ligne, sous la promesse", /20 photos/.test(D2.querySelector(".abo-pack-lien").textContent));
+    vrai("…et glisse les packs, en petit, sous la promesse", D2.querySelectorAll(".abo-packs .pk").length === 2);
     F.fermerAbonnement();
     /* un abonnement prime sur l'essai fini */
     DB.abo = true;
     vrai("Abonné après l'essai : ouvert", !F.verrouille("prg") && !F.essaiEnCours());
     F.openAbonnement();
     await attendre(()=>!!D2.querySelector(".abo-gratuit"), 2000);
-    vrai("…et la fenêtre ne lui propose plus de pack", !D2.querySelector(".abo-pack-lien"));
+    vrai("…et la fenêtre ne lui propose plus de pack", !D2.querySelector(".abo-packs"));
     F.fermerAbonnement();
     delete DB.abo;
   })();
   neuf();
 
-  /* --------------------------------------- la fiche des photos */
-  /* Quand on veut photographier sans droit, ou sans photo du jour : l'abonnement en
-     premier tant qu'on n'est pas abonne, le pack en second ; le pack seul pour un abonne. */
-  grp("La fiche des photos et le pack de 20");
+  /* --------------------------------------- les photos payantes et les packs */
+  /* Plus de photo disponible : un abonne voit la fiche des packs ; tout le monde d'autre
+     voit la fenetre d'abonnement, qui porte les deux packs en bas, en petit. Depuis la
+     camera, fermer la fenetre y ramene. */
+  grp("Les packs de photos");
   neuf();
   await (async ()=>{
     const D2 = F.document;
+    const PK = F.eval("PACKS");
+    eq("Deux packs : 20 et 50 photos", PK.map(k=>k.scans).join("/"), "20/50");
+    vrai("Le grand est remisé d'un cinquième à la photo", PK[1].remise === 20 && Math.abs(PK[1].montant / 50 - 0.8 * PK[0].montant / 20) < 0.001);
+    vrai("…et reste bien plus cher à la photo que l'abonnement", PK[1].montant / 50 > 3 * (F.eval("PRIX_ABO").mensuel.montant / 300));
+    /* essai fini, pas abonne : la fenetre d'abonnement, avec les packs en bas */
     delete DB.abo; delete DB.scansReserve; delete DB.photos;
     DB.essaiDebut = new Date(Date.now() - 9 * 864e5).toISOString();
-    F.openScans("midi");
-    await attendre(()=>!!D2.getElementById("sc-pack"), 2000);
-    vrai("Essai fini : la fiche explique que seule la photo est payante", /seule partie du journal/.test(D2.querySelector(".sc-sous").textContent));
-    vrai("…l'abonnement d'abord, le pack ensuite", D2.getElementById("sc-abo") && D2.getElementById("sc-abo").compareDocumentPosition(D2.getElementById("sc-pack")) & 4);
-    vrai("…le pack dit son prix et ses vingt photos", /20/.test(D2.getElementById("sc-pack").textContent) && /€/.test(D2.getElementById("sc-pack").textContent));
-    vrai("…et la porte gratuite reste ouverte", /gratuit/.test(D2.getElementById("sc-main").textContent));
-    F.hideSheet(); await attendre(()=>!D2.getElementById("sc-pack"), 2000);
+    F.eval("curTab='eat'; render()");
+    F.proposerPhotos("midi");
+    await attendre(()=>!!D2.getElementById("abo-fenetre"), 2000);
+    vrai("Sans droit à la photo : c'est la fenêtre d'abonnement qui s'ouvre", !!D2.getElementById("abo-fenetre"));
+    const pks = [...D2.querySelectorAll("#abo-fenetre .pk")];
+    eq("…avec les deux packs côte à côte, sous les forfaits", pks.length, 2);
+    vrai("…le 50 porte son badge, pas le 20", !pks[0].querySelector(".pk-badge") && /−20 %/.test(pks[1].querySelector(".pk-badge").textContent));
+    vrai("…les forfaits passent avant les packs", D2.querySelector("#abo-fenetre .abo-forfaits").compareDocumentPosition(D2.querySelector("#abo-fenetre .abo-packs")) & 4);
+    vrai("…et les packs sont plus discrets que les forfaits", parseFloat(F.getComputedStyle(pks[0].querySelector("b")).fontSize) < parseFloat(F.getComputedStyle(D2.querySelector("#abo-mensuel .prix")).fontSize));
+    D2.getElementById("abo-x").click();
+    await attendre(()=>!!D2.querySelector(".cam"), 2000);
+    vrai("Fermer la fenêtre ramène à la caméra, en code-barres", !!D2.querySelector(".cam.code"));
+    eq("…et on reste sur l'onglet Alimentation", F.eval("curTab"), "eat");
+    D2.querySelector(".cam [data-non]").click();
+    await attendre(()=>!D2.querySelector(".cam"), 2000);
+    /* la camera, en mode code : basculer sur « Plat » sans photo sort tout de suite */
+    const cam = F.ouvrirCamera("code", "x");
+    await attendre(()=>!!D2.querySelector(".cam"), 2000);
+    D2.querySelector(".cam [data-mode='plat']").click();
+    const r = await cam;
+    vrai("Basculer sur « Plat » sans photo quitte la caméra vers la proposition", r && r.type === "scans");
+    /* abonne a court de photos : la fiche des packs seuls */
     DB.abo = true; DB.photos = {jour:F.dayKey(), n:10};
-    F.openScans("midi");
-    await attendre(()=>!!D2.getElementById("sc-pack"), 2000);
-    vrai("Abonné à court de photos : le pack seul, pas d'abonnement à vendre", !D2.getElementById("sc-abo") && D2.getElementById("sc-pack").classList.contains("seul"));
+    F.proposerPhotos("midi");
+    await attendre(()=>!!D2.querySelector("#sheet .pk"), 2000);
+    vrai("Abonné à court de photos : pas de fenêtre d'abonnement", !D2.getElementById("abo-fenetre"));
+    eq("…la fiche des packs, les deux en grand", D2.querySelectorAll("#sheet .pk-row.grand .pk").length, 2);
     vrai("…et le titre dit que les dix du jour sont passées", /10 photos du jour/.test(D2.querySelector("#sheet h3").textContent));
-    F.hideSheet(); await attendre(()=>!D2.getElementById("sc-pack"), 2000);
+    vrai("…et la porte gratuite reste ouverte", /gratuit/.test(D2.getElementById("sc-main").textContent));
+    F.hideSheet(); await attendre(()=>!D2.querySelector("#sheet .pk"), 2000);
     DB.scansReserve = 7;
     F.openScans("midi");
-    await attendre(()=>!!D2.getElementById("sc-pack"), 2000);
+    await attendre(()=>!!D2.querySelector("#sheet .pk"), 2000);
     vrai("La réserve se lit dans la fiche", /7 photos/.test(D2.querySelector(".sc-reserve").textContent));
-    F.hideSheet(); await attendre(()=>!D2.getElementById("sc-pack"), 2000);
-    /* la camera, en mode plat, sans photo : le declencheur mene a la fiche, pas a un refus */
-    delete DB.scansReserve;
-    const cam = F.ouvrirCamera("plat", "x");
-    await attendre(()=>!!D2.querySelector(".cam .quota"), 2000);
-    vrai("La caméra dit que les photos du jour sont passées", /passées/.test(D2.querySelector(".cam .quota").textContent));
-    D2.querySelector(".cam [data-prendre]").click();
-    const r = await cam;
-    vrai("…et le déclencheur renvoie vers la fiche des photos", r && r.type === "scans");
+    F.hideSheet(); await attendre(()=>!D2.querySelector("#sheet .pk"), 2000);
+    /* la fenetre d'abonnement d'un abonne (depuis les reglages) ne vend pas de pack */
+    F.openAbonnement();
+    await attendre(()=>!!D2.getElementById("abo-fenetre"), 2000);
+    vrai("Un abonné ne voit pas de packs dans la fenêtre d'abonnement", !D2.querySelector("#abo-fenetre .pk"));
+    F.fermerAbonnement();
     /* les reglages montrent la reserve */
     DB.scansReserve = 12;
     F.openSettings();
@@ -6180,6 +6200,7 @@ async function lancer(){
     vrai("Les réglages affichent la réserve", /12 photos/.test(D2.getElementById("st-abo").textContent));
     F.hideSheet();
     delete DB.abo; delete DB.scansReserve; delete DB.photos; delete DB.essaiDebut;
+    F.eval("curTab='seance'; render()");
   })();
   neuf();
 
@@ -6226,8 +6247,9 @@ async function lancer(){
     eq("Le bon code passe, même tapé en minuscules avec des espaces", await F.verifierCodeAcces(" tonnup test 0000 "), true);
     F.openAbonnement();
     await attendre(()=>!!D2.getElementById("abo-code-lien"), 2000);
+    vrai("Le champ du code est caché tant qu'on ne le demande pas", F.getComputedStyle(D2.getElementById("abo-code")).display === "none");
     D2.getElementById("abo-code-lien").click();
-    vrai("« J'ai un code » dévoile le champ", !D2.getElementById("abo-code").hidden);
+    vrai("« J'ai un code » dévoile le champ", !D2.getElementById("abo-code").hidden && F.getComputedStyle(D2.getElementById("abo-code")).display !== "none");
     D2.getElementById("abo-code-in").value = "TONNUP-TEST-0000";
     D2.getElementById("abo-code").requestSubmit();
     await attendre(()=>DB.abo === true, 2000);
