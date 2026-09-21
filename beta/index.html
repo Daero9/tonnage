@@ -2750,6 +2750,7 @@
   .rg-l .rgi.j{background:#fbefd6; color:#c98a12; border-color:transparent;}
   .rg-l .rgi.g{background:var(--surface2); color:var(--ink-soft);}
   /* la carte de l'abonnement : teinte orange, pastille a droite */
+  .rg-version{text-align:center; font-size:11.5px; color:var(--ink-mute); margin-top:14px; letter-spacing:.02em;}
   .rg-abo{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:14px; border-radius:16px; margin-bottom:6px;
     background:linear-gradient(90deg, rgba(245,130,32,.10), rgba(245,130,32,.03)); border:1px solid rgba(245,130,32,.25); color:var(--ink);}
   .rg-abo .rgi{flex:0 0 auto; width:40px; height:40px; border-radius:12px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
@@ -3894,7 +3895,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
+  "version du":"build of", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
   "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
   "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
   "semaines d'affilée, au mieux":"weeks in a row, at best", "{} séances":"{} workouts", "Porté":"Worn", "Gagné":"Earned", "Bientôt":"Coming soon",
@@ -8765,7 +8766,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 14h26 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 14h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18824,7 +18825,8 @@ function openSettings(){
         <span class="grow">${TR("Aide, confidentialité et conditions")}</span><span class="fl">${IC_CHEVRON}</span>
       </button>
     </div>
-    <button class="btn btn-accent" id="st-ok" style="width:100%;">${TR("Fermer")}</button>`);
+    <button class="btn btn-accent" id="st-ok" style="width:100%;">${TR("Fermer")}</button>
+    <div class="rg-version">Tonnup · ${TR("version du")} ${BUILD}</div>`);
   /* l'état réel se lit auprès du système : on remplit la ligne quand la réponse arrive */
   const majLigneAlarme = ()=>{
     const v = document.getElementById("st-alarme-val");
@@ -18996,7 +18998,6 @@ function openSauvegarde(){
       !pluginAbo() ? TR("hors de l'app Android")
       : !aboEtat.dispo ? TR("Google Play ne répond pas.") + (aboEtat.panne ? " · ⚠ " + String(aboEtat.panne).slice(0, 70) : "")
       : TR("Google Play relié") + " · " + (aboEtat.abonne ? TR("abonnement actif") : TR("aucun abonnement")))}</div>
-    <div style="color:var(--ink-mute); margin-top:6px;">Version ${BUILD}</div>
     ${(!survived && !dansLApp())? `<div style="color:var(--bad); margin-top:8px; font-weight:600; line-height:1.5;">${
       /* la trace manque aussi a la PREMIERE ouverture, ou c'est normal : dans
          l'application on ne dit rien, et ailleurs on n'accuse iOS que si c'en
