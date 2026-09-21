@@ -2910,12 +2910,12 @@
   .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
   .abo-f{position:relative; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
     border-radius:18px; padding:13px 14px 13px 18px; border:1.5px solid transparent;}
-  .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px; overflow:hidden;}
-  .abo-f.mensuel .sous{opacity:.92; white-space:nowrap; font-size:12px;}
+  .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px;}   /* pas d'overflow:hidden : la pastille « populaire » dépasse en haut */
+  .abo-f.mensuel .sous{opacity:.9; white-space:nowrap; font-size:11px; margin-top:4px;}
   .abo-f.mensuel .gauche{flex:1 1 auto;}
   .abo-f .filigrane{flex:0 0 72px; display:flex; align-items:center; justify-content:center;}
-  .abo-f .filigrane img{width:60px; height:auto; opacity:.22;}
-  .abo-f.annuel{background:var(--surface2); color:var(--ink); border-color:var(--border);}
+  .abo-f .filigrane img{width:48px; height:auto; opacity:.22;}
+  .abo-f.annuel{background:var(--surface); color:var(--ink); border-color:var(--border);}
   .abo-f .prix{font-size:22px; font-weight:900; letter-spacing:-.02em; line-height:1; white-space:nowrap;}
   .abo-f .prix small{font-size:15px; font-weight:800; letter-spacing:0;}
   .abo-f .sous{font-size:12.5px; font-weight:600; margin-top:5px; opacity:.85;}
@@ -2973,8 +2973,8 @@
   .pk-row{display:flex; gap:10px;}
   .pk{position:relative; flex:1; display:flex; flex-direction:column; align-items:center; padding:16px 8px 14px; border-radius:16px;
     background:var(--surface); border:1.5px solid var(--border); color:var(--ink); line-height:1.1;}
-  .pk-ic{width:40px; height:40px; border-radius:12px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
-  .pk-ic svg{width:22px; height:22px;}
+  .pk-ic{display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
+  .pk-ic img{width:44px; height:auto;}
   .pk b{font-size:26px; font-weight:900;} .pk i{font-style:normal; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-mute); margin-top:3px;}
   .pk em{font-style:normal; font-size:16px; font-weight:800; margin-top:10px;}
   .pk s{font-size:12px; color:var(--ink-mute); margin-top:3px;} .pk s:empty{display:none;}
@@ -3812,7 +3812,7 @@ const TRAD = {en:{
   "{j} aujourd'hui + {r} en réserve":"{j} today + {r} in reserve",
   "Photographie ton assiette":"Photograph your plate",
   "L'app reconnaît le plat et l'ajoute à ton journal : 10 photos par jour (5 pendant l'essai).":"The app recognises the dish and adds it to your log: 10 photos a day (5 during the trial).",
-  "Les séances, l'adaptation des charges et le journal alimentaire (à la main ou au code-barres) restent gratuits, pour toujours. Seuls la photo de l'assiette, la progression et le bilan passent par Tonnup Analyse.":"Workouts, load adaptation and the food log (by hand or barcode) stay free, forever. Only plate photos, progress and the weekly review are part of Tonnup Analyse.",
+  "Le scan des plats, la progression et le bilan sont sur abonnement. Tout le reste de l'app est gratuit, pour toujours.":"Plate scans, progress and the weekly review are subscription features. Everything else in the app is free, forever.",
   "Juste des photos, sans abonnement ?":"Just photos, no subscription?",
   "Sur le web, le pack s'achète dans l'app Android.":"On the web, the pack is bought in the Android app.",
   "{} photos ajoutées à ta réserve.":"{} photos added to your reserve.",
@@ -8588,7 +8588,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 03h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 03h40 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18126,7 +18126,7 @@ function boutonsPacks(classe){
   const grand = classe === "grand";
   return `<div class="pk-row ${classe || ""}">${PACKS.map(k=>`<button class="pk ${k.remise > 0 ? "mis" : ""}" data-pack="${k.id}">
       ${k.remise > 0 ? `<span class="pk-badge">−${k.remise} %</span>` : ""}
-      <span class="pk-ic">${IC_PHOTOS_PILE}</span>
+      <span class="pk-ic"><img src="img/photos.png" alt=""></span>
       <b>${k.scans}</b><i>${TR("photos")}</i><em>${esc(k.texte)}</em>${k.remise > 0 ? `<s>${esc(prixSansRemise(k))}</s>` : ""}</button>`).join("")}</div>`;
 }
 function brancherPacks(racine, apres){
@@ -18271,7 +18271,6 @@ function prixParMois(){
   return a > 0 ? (a / 12).toFixed(2).replace(".", langue() === "en" ? "." : ",") + (PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") ? " " + PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") : "") : "";
 }
 const IC_PARTAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-const IC_PHOTOS_PILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="13" height="13" rx="2.5"/><path d="M4 16V6.5A2.5 2.5 0 0 1 6.5 4H16"/><path d="m7 17 3.5-3.5 2.5 2.5 2-2 5 5"/><circle cx="15.5" cy="11" r="1.3" fill="currentColor" stroke="none"/></svg>';
 const IC_ECLAIR_ABO = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>';
 const IC_CRAYON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg>';
 const IC_ABO_LOGO = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>';
@@ -18329,7 +18328,7 @@ function openAbonnement(){
       <div><img class="play" src="img/play.png" alt=""><span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
     </div>
     <div class="abo-gratuit"><span class="ic">${IC_ECLAIR_ABO}</span><p>${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b>` : ""}${
-      TR("Les séances, l'adaptation des charges et le journal alimentaire (à la main ou au code-barres) restent gratuits, pour toujours. Seuls la photo de l'assiette, la progression et le bilan passent par Tonnup Analyse.")}</p></div>
+      TR("Le scan des plats, la progression et le bilan sont sur abonnement. Tout le reste de l'app est gratuit, pour toujours.")}</p></div>
     ${db.abo === true ? "" : `<div class="abo-packs"><div class="abo-packs-t">${TR("Juste des photos, sans abonnement ?")}</div>${boutonsPacks("")}</div>`}
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
     <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
