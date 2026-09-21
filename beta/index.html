@@ -947,6 +947,8 @@
   .obj-box .v{font-size:19px; font-weight:800; margin-top:3px;} .obj-box .v.prendre{color:#2e8f1e;} .obj-box .v.perdre{color:var(--accent);}
   .obj-box .i{font-size:12.5px; color:var(--ink-mute); margin-top:3px;}
   .obj-box .c{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:9px;}
+  .obj-box.prudence .t{color:var(--accent);} .obj-box.danger .t{color:var(--bad);}
+  .obj-box .c b{color:var(--ink);}
   .regle-val{text-align:center; font-size:32px; font-weight:800; letter-spacing:-.01em;}
   .regle-lab{text-align:center; font-size:13px; color:var(--ink-soft); margin-bottom:2px;}
   .regle-box{position:relative; height:98px; overflow:hidden;
@@ -4314,7 +4316,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "D'autres arrivent":"More coming", "dans une prochaine mise à jour":"in a future update", "1er jour":"day one", "1 semaine":"1 week", "2 semaines":"2 weeks", "1 mois":"1 month", "2 mois":"2 months", "3 mois":"3 months", "6 mois":"6 months", "1 an":"1 year", "2 ans":"2 years",
+  "version du":"build of", "Objectif et choix en désaccord":"Goal and choice disagree", "D'autres arrivent":"More coming", "dans une prochaine mise à jour":"in a future update", "1er jour":"day one", "1 semaine":"1 week", "2 semaines":"2 weeks", "1 mois":"1 month", "2 mois":"2 months", "3 mois":"3 months", "6 mois":"6 months", "1 an":"1 year", "2 ans":"2 years",
   "Voici ton compagnon":"Meet your buddy", "Personnalise-le grâce à tes entraînements : chaque activité débloque des accessoires (voir ton profil).":"Customise it through your training: every activity unlocks accessories, found in your profile.", "Flamme de {}":"Flame of {}", "meilleure flamme":"best flame", "jamais perdue":"never lost",
   "Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.":"For consistency: your best flame, i.e. the longest run of activities without ever letting more than 3 days go by. It is never lost.", "Record !":"Record!", "puis":"then", "Continuer comme ça !":"Keep it up!",
   "<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>, tu étais bloqué. Aujourd'hui tu as monté à <b>{b}</b>.":"<b>{ex}</b>: your last two sessions were at <b>{a}</b>, you were stuck. Today you moved up to <b>{b}</b>.",
@@ -8402,10 +8404,11 @@ function openOnboarding(first, brouillon, depart){
           ${sens === "tenir" ? "" : `<div class="v ${sens}">${sens === "prendre" ? TR("gain") : TR("perte")} ${Math.abs(pctDiff).toLocaleString(loc())} %</div>`}
           ${imcCible ? `<div class="i">${TR("IMC cible")} ${imcCible.toFixed(1).replace(".", langue()==="en" ? "." : ",")}${zoneImc ? " · " + zoneImc : ""}</div>` : ""}
           <div class="c">${consigne}</div></div>`;
+        /* les alertes prennent le meme cadre que l'encadre du dessus : blanc, centre, ombre
+           douce ; seule la couleur du titre change (rouge = on n'accompagne pas) */
         corps.querySelector("#reg-alerte").innerHTML = a
-          ? `<div class="inj-note" style="margin:0; border-color:${rouge?"var(--bad)":"var(--accent)"};">
-               <b style="color:${rouge?"var(--bad)":"var(--accent)"};">${rouge?"⛔":"⚠️"} ${esc(a.titre)}</b><br>${a.txt}</div>`
-          : (w ? `<div class="inj-note" style="margin:0;">⚠️ ${w}</div>` : boite);
+          ? `<div class="obj-box ${rouge ? "danger" : "prudence"}"><div class="t">${rouge?"⛔":"⚠️"} ${esc(a.titre)}</div><div class="c">${a.txt}</div></div>`
+          : (w ? `<div class="obj-box prudence"><div class="t">⚠️ ${TR("Objectif et choix en désaccord")}</div><div class="c">${w}</div></div>` : boite);
       };
       let pose = false;
       /* les graduations suivent un arc de cercle : la règle se lit comme le cadran d'une balance */
@@ -9402,7 +9405,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 01h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 01h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
