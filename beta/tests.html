@@ -1339,6 +1339,30 @@ async function lancer(){
     vrai("Lundi est le jour plein", jours[0].classList.contains("on"));
     eq("Aujourd'hui est cerclé", jours.filter(j=>j.classList.contains("today")).length, 1);
     vrai("Plus de titre « cette semaine »", !D2.querySelector(".wk-top"));
+    /* la série de semaines, sous les jours */
+    (()=>{
+      const J = 864e5, sem = n => new Date(lun.getTime() - n*7*J + 2*J).toISOString();   /* le mercredi d'il y a n semaines */
+      const seance = (i, d) => ({id:"hs" + i, date:d, tplId:"tacc", name:"Pull-up", entries:[]});
+      vrai("Une seule semaine : pas encore une série", !D2.querySelector(".wk-serie") && F.serieSemaines().n === 1);
+      DB.history = [seance(0, lun.toISOString()), seance(1, sem(1)), seance(2, sem(2))];
+      F.render();
+      const sr = F.document.querySelector(".wk-serie");
+      vrai("Trois semaines de suite : « 3 semaines d'affilée »", sr && /3 semaines d'affilée/.test(sr.textContent) && !sr.classList.contains("risque"));
+      DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3))];
+      F.render();
+      const sr2 = F.document.querySelector(".wk-serie");
+      vrai("Rien cette semaine : la série tient encore, et elle le dit", sr2 && /3 semaines/.test(sr2.textContent) && sr2.classList.contains("risque") && /à tenir/.test(sr2.textContent));
+      DB.history = [seance(1, sem(1)), seance(3, sem(3)), seance(4, sem(4))];
+      eq("Un trou casse la série", F.serieSemaines().n, 1);
+      DB.cardio = [{id:"c1", date:sem(2), type:"course", min:30}];
+      eq("…mais une sortie cardio la comble", F.serieSemaines().n, 4);
+      DB.cardio = [];
+      vrai("Une séance datée de demain ne compte pas", (()=>{ DB.history = [seance(9, new Date(Date.now() + 8*J).toISOString())]; return F.serieSemaines().n === 0; })());
+      DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",
+        start:Date.now()-3.6e6, end:Date.now(),
+        entries:[{exId:id("Développé couché"), sets:[{w:60,r:10,done:true},{w:60,r:10,done:true}]}]}];
+      F.render();
+    })();
     /* la barre du bas : une carte arrondie, pleine, qui flotte */
     (()=>{
       const bar = D2.querySelector(".tabbar-in"), cs = F.getComputedStyle(bar);
