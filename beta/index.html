@@ -192,6 +192,11 @@
     box-shadow:0 6px 16px rgba(245,130,32,.35);}
   .start-step .sc-go .fl svg{width:18px; height:18px;}
   /* l'etat vide du carrousel : l'illustration, puis le titre et la consigne */
+  /* l'apercu d'une seance : la liste des exercices est bornee plus court, et les boutons
+     restent colles au bas de la fiche — on n'avait presque plus de place pour glisser,
+     et « Lancer » etait hors de portee */
+  .pv-pied{position:sticky; bottom:calc(-24px - env(safe-area-inset-bottom)); margin:14px -16px calc(-24px - env(safe-area-inset-bottom));
+    padding:10px 16px calc(14px + env(safe-area-inset-bottom)); background:var(--surface); box-shadow:0 -8px 16px -10px rgba(0,0,0,.25);}
   .vide-seance{padding:26px 18px 30px; flex:0 0 auto !important; width:calc(100% + 0px);}
   /* la carte vide prend toute la largeur : le carrousel se cale sur elle, sans les marges d'une pile */
   .car:has(.vide-seance){--cardw:100%; padding-left:16px; padding-right:16px;}
@@ -1522,6 +1527,11 @@
   .hero-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;
     filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));}
   .hero-poussin img.acc{filter:none;}
+  /* la flamme : une pastille sombre posee sur le bord de la carte, sous le poussin */
+  .hero-flamme{position:absolute; right:22px; top:-13px; z-index:4; display:inline-flex; align-items:center; gap:3px;
+    padding:3px 9px 3px 7px; border-radius:99px; background:#1b1b1d; color:#fff; font-size:13px; font-weight:800; line-height:1;
+    box-shadow:0 3px 8px rgba(0,0,0,.25); border:2px solid var(--surface);}
+  .hero-flamme.risque{background:var(--accent); color:var(--accent-ink);}
   /* ---- le vestiaire ---- */
   .vs-apercu{display:flex; justify-content:center; padding:6px 0 4px;}
   .vs-poussin{position:relative; width:150px;}
@@ -8751,7 +8761,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 12h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 12h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14339,10 +14349,14 @@ function renderSeance(app){
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
     <div class="under-hero">
       ${poussinHtml()}
+      ${(()=>{ const sr = serieSemaines(now); if(!POUSSIN.repos || sr.n < 2) return "";
+        /* la flamme, entre les pattes du poussin : la meme serie que la ligne de la carte,
+           qui ne s'affiche plus quand il est la */
+        return `<div class="hero-flamme ${sr.enCours ? "" : "risque"}" title="${TR("{} semaines d'affilée").replace("{}", sr.n)}">🔥<b>${sr.n}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
-        ${(()=>{ const sr = serieSemaines(now); if(sr.n < 2) return "";
+        ${(()=>{ const sr = serieSemaines(now); if(sr.n < 2 || POUSSIN.repos) return "";
           /* a partir de deux semaines : avant, ce n'est pas encore une serie. Sans seance
              cette semaine, on le dit — c'est le moment ou elle se joue. */
           return `<div class="wk-serie ${sr.enCours? "" : "risque"}">🔥 <b>${TR("{} semaines d'affilée").replace("{}", sr.n)}</b>${sr.enCours
@@ -15921,7 +15935,7 @@ function openPreview(tplId, lieuFait){
       seanceCourte && ecartes.length
         ? TR("Mis de côté aujourd'hui : {}").replace("{}", ecartes.map(it=>esc(getEx(it.exId).name)).join(", "))
         : (t.items.length > 1 && !seanceCourte ? TR("Glisse ⠿ pour changer l'ordre des exercices.") : "")}</p>
-    <div class="pv-liste ${seanceCourte ? "" : "trie"}" style="max-height:50dvh; overflow-y:auto; margin-inline:-2px; padding-inline:2px;">${items.map((it,k)=>{
+    <div class="pv-liste ${seanceCourte ? "" : "trie"}" style="max-height:min(34dvh, 300px); overflow-y:auto; margin-inline:-2px; padding-inline:2px;">${items.map((it,k)=>{
       const i = gardes[k];
       const ex = getEx(it.exId);
       const last = lastPerf(it.exId);
@@ -15954,8 +15968,10 @@ function openPreview(tplId, lieuFait){
           <div class="nm">${esc(TR(machineOf(t.cardio)[1]))}</div>
           <div class="meta"><b>${esc(texteSortie(objCardio))}</b>${objCardio.base ? ` · ${TR("Dernière fois : {}").replace("{}", esc(texteSortie(objCardio.base)))}` : ""}</div>
         </div></div>` : ""}
-    <button class="btn btn-accent" id="pv-start" style="width:100%; margin-top:14px;">${TR(seanceCourte ? "Lancer la séance courte" : "Lancer cette séance")}</button>
-    <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>`);
+    <div class="pv-pied">
+      <button class="btn btn-accent" id="pv-start" style="width:100%;">${TR(seanceCourte ? "Lancer la séance courte" : "Lancer cette séance")}</button>
+      <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>
+    </div>`);
   document.querySelectorAll("[data-pvlieu]").forEach(b=>b.onclick=()=>{
     if(b.dataset.pvlieu === lieuProp) return;
     lieuProp = b.dataset.pvlieu;
