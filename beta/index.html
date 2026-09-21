@@ -2043,9 +2043,11 @@
      réponses — et on ne savait plus où regarder. La question reprend elle-même, en une
      ligne, ce qui vient d'être validé : rien n'est perdu, tout est plus calme. */
   .set-row.en-question{display:none;}
-  .rir-ask .rir-fait{font-size:12.5px; font-weight:700; letter-spacing:.01em;
-    color:var(--ink-mute); margin-bottom:8px;}
-  .rir-ask.bn .rir-fait{color:rgba(255,255,255,.62);}
+  /* la serie qu'on vient de faire, avec l'haltere, puis la question en grand (maquette du 21 septembre) */
+  .rir-ask .rir-fait{display:flex; align-items:center; gap:10px; font-size:16px; font-weight:800; color:var(--ink); margin-bottom:10px;}
+  .rir-ask .rir-fait .ic{flex:none; width:38px; height:38px; border-radius:11px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .rir-ask .rir-fait .ic svg{width:22px; height:22px;}
+  .rir-ask.bn .rir-fait{color:#fff;} .rir-ask.bn .rir-fait .ic{background:rgba(255,255,255,.12); color:#ffb056;}
   /* Apparition : le bloc arrive en se posant, sans jamais bousculer ce qui l'entoure.
      Une seule courbe pour tout ce qui apparaît, pour que l'app ait un seul geste. */
   @keyframes popEntree{from{opacity:0; transform:scale(.94) translateY(8px);} to{opacity:1; transform:none;}}
@@ -2075,7 +2077,7 @@
   .rir-ask.bn .rir-rep.monte .v, .rir-ask.bn .rir-rep.baisse .v{color:#ffb15e;}
   .rir-ask.bn .rir-rep .d{color:rgba(255,255,255,.8);}
   .rir-ask{background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:2px 0 10px;}
-  .rir-ask .q{font-size:13.5px; font-weight:600; margin-bottom:8px; color:var(--ink-soft);}
+  .rir-ask .q{font-size:17px; font-weight:800; letter-spacing:-.01em; margin-bottom:10px; color:var(--ink);}
   .rir-ask .q.ok{margin:0; color:var(--accent);}
   .rir-ask .row button{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 0; font-weight:700; font-size:14px;}
   .icon-btn.inj-btn{color:var(--bad); font-size:15px;}
@@ -9109,7 +9111,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 19h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 19h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -17253,7 +17255,7 @@ function renderActive(app){
               });
             }, 1300);
           };
-          ask.innerHTML = `<div class="rir-fait">${esc(fait)}</div>
+          ask.innerHTML = `<div class="rir-fait"><span class="ic">${ICONS.seance}</span>${esc(fait)}</div>
             ${dejaVu("rir")? "" : `<div class="rir-intro">${TR("Ta réponse ajuste tout de suite la charge de la série suivante, et celle de ta prochaine séance. Réponds honnêtement, même les mauvais jours.")}</div>`}
             <div class="q">${TR("Aurais-tu pu faire plus de reps ?")}</div>
             <div class="row">
@@ -17308,7 +17310,7 @@ function renderActive(app){
               clore(6000);
             } else if(hautR < rng.lo){
               /* le seul cas ambigu : barre trop lourde, ou lourd assumé avant descente ? */
-              ask.innerHTML = `<div class="rir-fait">${esc(fait)}</div>
+              ask.innerHTML = `<div class="rir-fait"><span class="ic">${ICONS.seance}</span>${esc(fait)}</div>
                 <div class="q">${TR("{r} reps avant de descendre, au lieu de {lo} à {hi}.")
                   .replace("{r}", hautR).replace("{lo}", rng.lo).replace("{hi}", rng.hi)}</div>
                 <div class="row">
