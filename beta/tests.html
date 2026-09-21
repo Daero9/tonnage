@@ -2670,6 +2670,11 @@ async function lancer(){
     eq("On part de l'aperçu de la séance", titre(), "Pile");
     F.ouvrirParDessus(()=>F.openPreview("tpile"), ()=>F.openExoInfo(id("Développé couché")));
     eq("La fiche de l'exercice passe par-dessus", titre(), F.getEx(id("Développé couché")).name);
+    /* la page derriere ne doit pas defiler sous le doigt */
+    vrai("Une fiche ouverte verrouille le défilement de la page", F.document.documentElement.classList.contains("fiche")
+      && F.getComputedStyle(F.document.documentElement).overflow === "hidden");
+    vrai("…le voile n'accepte aucun geste, la fiche garde les siens", F.getComputedStyle(F.document.getElementById("overlay")).touchAction === "none"
+      && F.getComputedStyle(F.document.getElementById("sheet")).overscrollBehaviorY === "contain");
     eq("…et l'aperçu est mis de côté", pile(), 1);
     /* l'image « avant / après », quand elle existe, au-dessus de l'astuce */
     const demo = F.document.querySelector("#sheet .exo-demo");
@@ -2681,6 +2686,8 @@ async function lancer(){
     vrai("…sans jamais tout fermer", ouverte());
     F.closeSheet();
     vrai("Fermer l'aperçu ferme pour de bon", !encoreOuverte());
+    F.hideSheet();   /* la fermeture reelle passe par history.back(), au tour suivant ; ici on la force */
+    vrai("…et la page défile à nouveau", !F.document.documentElement.classList.contains("fiche"));
     /* le bouton retour du téléphone ne doit rien laisser derrière lui */
     F.openPreview("tpile");
     F.ouvrirParDessus(()=>F.openPreview("tpile"), ()=>F.openExoInfo(id("Rowing barre")));
@@ -6080,9 +6087,26 @@ async function lancer(){
     eq("…deux corrections de la même photo sont gratuites", F.photosRestantes(), 9);
     await F.lancerAnalysePhoto("encore autre chose");
     eq("…la troisième compte, pour ne pas tourner en boucle", F.photosRestantes(), 8);
+    /* scanner depuis « Ajouter un aliment » : la fiche se ferme avant la camera, et ne
+       ressurgit pas par-dessus le resultat ; si on renonce, elle revient */
+    F.hideSheet(); await attendre(()=>!F.document.getElementById("overlay").classList.contains("show"), 2000);
+    F.eval("window.__vraieCam = ouvrirCamera; ouvrirCamera = async ()=>({type:'photo', b64:'x', apercu:''})");
+    F.openAjoutAliment("midi");
+    await attendre(()=>!!F.document.getElementById("ot-scan"), 2000);
+    F.document.getElementById("ot-scan").click();
+    await attendre(()=>!!F.document.getElementById("ph-ok"), 3000);
+    vrai("Le résultat de la photo remplace la fiche d'ajout, sans rien derrière", !!F.document.getElementById("ph-ok") && !F.document.getElementById("ot-scan") && F.eval("pileFiches").length === 0);
+    F.hideSheet(); await attendre(()=>!F.document.getElementById("overlay").classList.contains("show"), 2000);
+    F.eval("ouvrirCamera = async ()=>null");
+    F.openAjoutAliment("midi");
+    await attendre(()=>!!F.document.getElementById("ot-scan"), 2000);
+    F.document.getElementById("ot-scan").click();
+    await attendre(()=>!F.document.getElementById("ot-scan"), 2000);
+    vrai("…on renonce dans la caméra : la fiche d'ajout revient", await attendre(()=>!!F.document.getElementById("ot-scan"), 2000) || !!F.document.getElementById("ot-scan"));
+    F.eval("ouvrirCamera = window.__vraieCam");
     DB.abo = aboAvant;
     F.eval("analyserPhoto = window.__vraiAnalyser");
-    F.closeSheet(); await attendre(()=>!F.document.getElementById("ph-ok"), 2000);
+    F.closeSheet(); await attendre(()=>!F.document.getElementById("ph-ok") && !F.document.getElementById("ot-scan"), 2000);
     /* l'ajout au repas : des libelles comme ceux de la fiche manuelle, chiffres par la table */
     const k = F.jourAlim(); DB.habitSel = {}; DB.macros = {};
     F.eval("photoEnCours = {meal:'midi', b64:'', apercu:''}");
