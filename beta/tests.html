@@ -1398,7 +1398,9 @@ async function lancer(){
       DB.history = []; DB.cardio = [];
       eq("Sans rien, il dort", F.poussinEtat().pose, "repos");
       DB.history = [seance(1, new Date().toISOString())];
-      eq("Une séance aujourd'hui : en forme", F.poussinEtat().pose, "en-forme");
+      eq("La toute première séance débloque le bandeau : c'est la fête", F.poussinEtat().pose, F.eval("POUSSIN").fete ? "fete" : "en-forme");
+      DB.history = [seance(1, new Date(Date.now() - J).toISOString()), seance(2, new Date().toISOString())];
+      eq("Deux séances, rien de débloqué aujourd'hui : en forme", F.poussinEtat().pose, "en-forme");
       DB.history = [1,3,5].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       eq("Trois activités sur sept jours", F.activites7j(), 3);
       eq("…c'est la pose musclée, si le dessin existe", F.poussinEtat().pose, F.eval("POUSSIN").muscle ? "muscle" : "en-forme");

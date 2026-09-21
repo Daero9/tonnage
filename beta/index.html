@@ -1652,6 +1652,7 @@
      depasse de la carte a peu pres autant que celui qui dort */
   .hero-poussin[data-pose="en-forme"], .hero-poussin[data-pose="muscle"]{width:88px; right:22px;}
   .hero-poussin[data-pose="record"]{width:78px; right:26px;}
+  .hero-poussin[data-pose="fete"]{width:82px; right:24px;}
   .poussin-rec{position:absolute; right:calc(100% - 26px); top:-14px; pointer-events:auto; white-space:nowrap; padding:6px 10px; border-radius:99px;
     background:#fff; color:var(--accent); font-size:12px; font-weight:800; transform:rotate(-4deg);}
   /* la flamme animee de Nico, dans le coin haut droit de la carte de la semaine, le chiffre
@@ -9051,6 +9052,7 @@ const POUSSIN = {
   "fatigue":{ratio:0.631, acc:["bandeau"]},
   "record":{ratio:1.267, acc:["bandeau"]},
   "repos":{ratio:0.743, acc:["bandeau"]},
+  "fete":{ratio:1.16, acc:["bandeau"]},
   "muscle":{ratio:1.019, acc:["bandeau"]}
 };
 /* Les accessoires : ce qui se gagne, et comment. Les courants avec le nombre de
@@ -9143,7 +9145,7 @@ function accessoireDuJour(){
 }
 /* La pose du poussin, par priorite. Chaque pose ne s'active que si son dessin existe
    dans POUSSIN ; sinon on passe a la suivante. Ni le poids ni le profil n'y entrent.
-     1. en-fete         un accessoire debloque aujourd'hui (jusqu'a minuit)
+     1. fete            un accessoire debloque aujourd'hui (jusqu'a minuit)
      2. record          un vrai record (+5 kg), les 10 minutes qui suivent la seance
      3. apres-la-seance l'heure qui suit une seance ou une sortie
      4. fatigue         recuperation du corps entier sous 40 %
@@ -9154,7 +9156,7 @@ function accessoireDuJour(){
 function poussinPose(){
   const a = n => !!POUSSIN[n];
   const sj = serieJours(), fin = finDerniereActivite(), depuis = Date.now() - fin;
-  if(a("en-fete") && accessoireDuJour()) return "en-fete";
+  if(a("fete") && accessoireDuJour()) return "fete";
   if(a("record") && fin && depuis < 10 * 60000 && recordSignificatif()) return "record";
   if(a("apres-la-seance") && fin && depuis < 3600e3) return "apres-la-seance";
   if(a("fatigue") && (db.history || []).length && recuperation().global < 40) return "fatigue";
@@ -9319,7 +9321,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 23h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 00h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
