@@ -2140,6 +2140,38 @@
   .pr-col:active .pr-b{opacity:.6;}
   .pr-labels{display:flex; gap:5px; margin-top:5px; padding-left:32px;}
   .pr-labels span{flex:1; text-align:center; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  /* ---- la carte des proteines, d'apres la maquette du 21 septembre ---- */
+  .pt-card{padding:16px 14px 14px;}
+  .pt-tete{display:flex; align-items:flex-start; gap:12px; margin-bottom:18px;}
+  .pt-ic{flex:none; width:52px; height:52px; border-radius:14px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .pt-t{font-size:22px; font-weight:800; letter-spacing:-.02em; line-height:1.1;}
+  .pt-obj{font-size:14px; color:var(--ink-soft); margin-top:3px; white-space:nowrap;} .pt-obj b{color:var(--accent); font-size:16px;}
+  .pt-quota{flex:none; font-size:11.5px; font-weight:800; white-space:nowrap; padding:7px 10px; border-radius:99px; background:rgba(245,130,32,.14); color:var(--accent); margin-top:2px;}
+  .pt-quota.bon{background:rgba(46,158,79,.14); color:#2e9e4f;}
+  .pt-plot{height:150px; padding-left:36px;}
+  .pt-plot .pt-grad{position:absolute; left:0; width:30px; text-align:right; transform:translateY(50%); font-size:11px; color:var(--ink-mute); font-variant-numeric:tabular-nums;}
+  .pt-plot .pr-target{left:36px; border-top:1.5px dashed rgba(0,0,0,.25); opacity:1;}
+  .pt-plot .pr-target i{left:-38px; top:-8px; width:34px; text-align:right; padding:0; font-size:11px; font-weight:800; color:var(--ink);}
+  .pt-plot .pr-col .pr-b{background:rgba(245,130,32,.22); border-radius:6px 6px 2px 2px;}
+  .pt-plot .pr-col.quota .pr-b{background:rgba(245,130,32,.45);}
+  .pt-plot .pr-col.auj .pr-b{background:var(--accent-grad);}
+  .pt-plot .pr-col .pr-val{height:26px;}
+  /* la bulle du jour, posee juste au-dessus de sa barre */
+  .pt-plot .pr-col.auj .pr-b{position:relative;}
+  .pt-plot .pr-col.auj .pr-b[data-v]::after{content:attr(data-v); position:absolute; left:50%; bottom:calc(100% + 5px); transform:translateX(-50%); white-space:nowrap;
+    font-size:12px; font-weight:800; color:var(--accent); background:rgba(245,130,32,.14); padding:3px 8px; border-radius:99px;}
+  .pt-labels span.auj{color:var(--accent);}
+  .pt-labels{padding-left:36px;}
+  .pt-moy{margin-top:14px; background:rgba(245,130,32,.07); border-radius:14px; padding:4px 12px;}
+  .pt-moy .l{display:flex; align-items:center; gap:10px; padding:10px 0; font-size:13px; color:var(--ink-soft);}
+  .pt-moy .l + .l{border-top:1px solid rgba(0,0,0,.06);}
+  .pt-moy .ic{flex:none; width:32px; height:32px; border-radius:10px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .pt-moy .ic svg{width:18px; height:18px; fill:var(--accent);}
+  .pt-moy b{font-size:16px; color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap;} .pt-moy b.bon{color:#2e9e4f;}
+  .pt-moy b small{font-weight:600; font-size:13px; color:var(--ink-mute);}
+  .pt-astuce{display:flex; align-items:center; gap:10px; margin-top:10px; background:rgba(245,130,32,.07); border-radius:14px; padding:10px 12px; font-size:13px; color:var(--accent); font-weight:600;}
+  .pt-astuce .ic{flex:none; width:32px; height:32px; border-radius:10px; background:rgba(245,130,32,.14); display:flex; align-items:center; justify-content:center;}
+  .pt-astuce .ic svg{width:18px; height:18px;}
   .week-dots{display:flex; gap:8px; margin:12px 0 14px;}
   .wd{flex:1; text-align:center;}
   .wd i{display:block; height:26px; border-radius:9px; background:var(--surface2); border:1px solid var(--border); margin-bottom:4px;}
@@ -8844,7 +8876,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 17h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 17h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20301,38 +20333,43 @@ function renderProteinSection(sec){
      pour un jour à zéro protéine et tirerait tout vers le bas. */
   const joursProt = days.filter(x=>x.v > 0);
   const moyProt = Math.round(joursProt.reduce((a, x)=>a + x.v, 0) / Math.max(1, joursProt.length));
+  /* d'apres la maquette du 21 septembre : l'icone dans un carre, la pastille « jours au
+     quota », des barres pales pour les jours passes et une barre orange pour aujourd'hui
+     avec sa bulle, l'echelle a gauche, puis deux lignes de moyennes et le conseil */
+  const pas = cap <= 150 ? 50 : 100;
+  const graduations = []; for(let g = 0; g <= cap; g += pas) graduations.push(g);
+  const auj = days[days.length - 1];
   div.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-        <div>
-          <div class="card-t">${icoTitre(icoM("muscle", 22))}${TR("Protéines")}</div>
-          <div class="card-sub">${target
-            ? TR("Objectif") + ` <b style="color:var(--ink);">${target} g</b> / ` + TR("jour")
+    <div class="card pt-card">
+      <div class="pt-tete">
+        <span class="pt-ic">${icoM("muscle", 26)}</span>
+        <div class="grow">
+          <div class="pt-t">${TR("Protéines")}</div>
+          <div class="pt-obj">${target
+            ? TR("Objectif") + ` <b>${target} g</b> / ` + TR("jour")
             : TR("Note ton poids pour connaître ton objectif")}</div>
         </div>
         ${/* « 0 jour au quota » sans quota se lit comme un echec alors qu il n y a
              simplement pas de cible : on se tait plutot que de compter vers rien. */""}
-        ${target ? `<span style="font-size:12.5px; font-weight:700; white-space:nowrap; color:${hit>=5?'var(--good)':'var(--ink-soft)'};">${hit} ${TR(hit>1?"jours au quota":"jour au quota")}</span>` : ""}
+        ${target ? `<span class="pt-quota ${hit>=5?'bon':''}">${hit} ${TR(hit>1?"jours au quota":"jour au quota")}</span>` : ""}
       </div>
-      <div class="pr-plot">
+      <div class="pr-plot pt-plot">
+        ${graduations.map(g=>`<span class="pt-grad" style="bottom:calc(${(g/cap).toFixed(3)} * (100% - 15px));">${g}</span>`).join("")}
         ${target ? `<div class="pr-target" style="bottom:calc(${(target/cap).toFixed(3)} * (100% - 15px));"><i>${target} g</i></div>` : ""}
-        ${days.map(x=>`<button class="pr-col" data-day="${x.key}">
-            <span class="pr-val" style="color:${x.v>=target?'var(--good)':(x.v>0?'var(--ink-soft)':'transparent')};">${x.v>0?Math.round(x.v):"·"}${x.fix?"*":""}</span>
-            <span class="pr-barwrap"><span class="pr-b" style="height:${Math.max(x.v>0?4:2, Math.min(100, x.v/cap*100))}%; background:${x.v>=target?'var(--good)':(x.v>0?'var(--accent)':'var(--surface2)')};"></span></span>
-          </button>`).join("")}
+        ${days.map((x, k)=>{ const dernier = k === days.length - 1;
+          return `<button class="pr-col ${dernier ? "auj" : ""} ${x.v >= target && target ? "quota" : ""}" data-day="${x.key}">
+            <span class="pr-val"></span>
+            <span class="pr-barwrap"><span class="pr-b" ${dernier && x.v > 0 ? `data-v="${Math.round(x.v)} g${x.fix?"*":""}"` : ""} style="height:${Math.max(x.v>0?4:2, Math.min(100, x.v/cap*100))}%;"></span></span>
+          </button>`; }).join("")}
       </div>
-      <div class="pr-labels">${days.map(x=>`<span>${(langue()==="en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"])[x.d.getDay()]}</span>`).join("")}</div>
-      <div class="row" style="justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:12.5px;">
-        <span style="color:var(--ink-mute);">${TR("Protéines · moyenne de la semaine")}</span>
-        <span style="font-weight:800; font-variant-numeric:tabular-nums; color:${
-          moyProt >= target ? 'var(--good)' : 'var(--ink)'};">${
-          joursProt.length ? "≈ " + moyProt + " g" : "—"}</span>
+      <div class="pr-labels pt-labels">${days.map((x, k)=>`<span class="${k === days.length - 1 ? "auj" : ""}">${(langue()==="en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"])[x.d.getDay()]}</span>`).join("")}</div>
+      <div class="pt-moy">
+        <div class="l"><span class="ic">${IC_ABO_LOGO}</span><span class="grow">${TR("Protéines · moyenne de la semaine")}</span>
+          <b class="${moyProt >= target && target ? "bon" : ""}">${joursProt.length ? "≈ " + moyProt + " g" : "—"}</b></div>
+        <div class="l"><span class="ic">${icoM("flamme", 18)}</span><span class="grow">${TR("Calories moyennes")}</span>
+          <b class="${(kcalCible && moyKcal>=kcalCible*0.9)?'bon':''}">≈ ${moyKcal||0} kcal${kcalCible? ` <small>/ ${kcalCible}</small>` : ""}</b></div>
       </div>
-      <div class="row" style="justify-content:space-between; margin-top:6px; font-size:12.5px;">
-        <span style="color:var(--ink-mute);">Calories moyennes</span>
-        <span style="font-weight:800; font-variant-numeric:tabular-nums; color:${(kcalCible && moyKcal>=kcalCible*0.9)?'var(--good)':'var(--ink)'};">≈ ${moyKcal||0} kcal${kcalCible? ` <span style="font-weight:600; color:var(--ink-mute);">/ ${kcalCible}</span>`:""}</span>
-      </div>
-      <div style="font-size:11.5px; color:var(--ink-mute); margin-top:6px;">${TR("Touche un jour pour voir le détail ou corriger un oubli.")}</div>
+      <div class="pt-astuce"><span class="ic">${IC_AMPOULE}</span>${TR("Touche un jour pour voir le détail ou corriger un oubli.")}</div>
     </div>`;
   sec.appendChild(div);
   div.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>openDayProt(b.dataset.day));
