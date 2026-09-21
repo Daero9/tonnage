@@ -2934,11 +2934,19 @@
   /* ---- la fiche des photos (plus de photo, ou pas le droit) ---- */
   .sc-h{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:4px;}
   .sc-h h3{margin-bottom:0;}
-  .sc-ic{width:52px; height:52px; border-radius:16px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
-  .sc-ic svg{width:26px; height:26px;}
+  .sc-ic{position:relative; width:64px; height:64px; border-radius:18px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center; margin:8px 0 4px;}
+  .sc-ic svg{width:30px; height:30px;}
+  /* quatre petits traits qui rayonnent, comme sur la maquette */
+  .sc-ic i{position:absolute; width:4px; height:14px; border-radius:2px; background:var(--accent);}
+  .sc-ic i:nth-child(1){left:-22px; top:2px; transform:rotate(35deg);}
+  .sc-ic i:nth-child(2){left:-28px; top:24px; transform:rotate(70deg);}
+  .sc-ic i:nth-child(3){right:-22px; top:2px; transform:rotate(-35deg);}
+  .sc-ic i:nth-child(4){right:-28px; top:24px; transform:rotate(-70deg);}
   .sc-sous{font-size:13.5px; line-height:1.5; color:var(--ink-soft); text-align:center; margin:8px 4px 16px;}
   .sc-reserve{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:12px 0 0;}
-  .sc-main{display:block; width:100%; text-align:center; padding:14px 0 4px; margin-top:6px; color:var(--accent); font-weight:700; font-size:14px;}
+  .sc-main{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:16px; padding:15px 12px; border-radius:16px;
+    background:var(--accent); color:var(--accent-ink); font-weight:800; font-size:15.5px;}
+  .sc-main svg{width:20px; height:20px;}
   .abo-gratuit b{color:var(--ink);}
   .abo-gages div{display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; flex:1 1 0; min-width:0;}
   .abo-gages svg{width:24px; height:24px; flex:none; color:var(--ink);}
@@ -2954,8 +2962,16 @@
   .pk b{font-size:20px; font-weight:900;} .pk i{font-style:normal; font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-mute); margin-top:2px;}
   .pk em{font-style:normal; font-size:13px; font-weight:800; margin-top:6px;}
   .pk-badge{position:absolute; top:-9px; right:10px; padding:2px 7px; border-radius:99px; background:var(--accent); color:var(--accent-ink); font-size:10px; font-weight:900;}
-  .pk-row.grand .pk{padding:16px 8px 14px; border-color:rgba(245,130,32,.45); background:linear-gradient(180deg, rgba(245,130,32,.10), rgba(245,130,32,.03));}
-  .pk-row.grand .pk b{font-size:30px;} .pk-row.grand .pk em{font-size:15px; margin-top:8px;}
+  /* en grand : deux cartes hautes, le pack remise en orange, son ancien prix barre */
+  .pk-row.grand{gap:12px; align-items:stretch;}
+  .pk-row.grand .pk{padding:22px 10px 20px; border-radius:18px; border-color:var(--border); background:var(--surface); justify-content:flex-start;}
+  .pk-row.grand .pk s:empty{display:none;}
+  .pk-row.grand .pk b{font-size:38px;} .pk-row.grand .pk i{font-size:12px; letter-spacing:.14em; margin-top:4px;}
+  .pk-row.grand .pk em{font-size:22px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); width:70%;}
+  .pk-row.grand .pk s{font-size:13px; color:var(--ink-mute); margin-top:4px; text-decoration:line-through;}
+  .pk-row.grand .pk.mis{border:2px solid var(--accent); background:linear-gradient(180deg, rgba(245,130,32,.12), rgba(245,130,32,.04));}
+  .pk-row.grand .pk.mis em{color:var(--accent);}
+  .pk-row.grand .pk-badge{top:-11px; right:14px; font-size:12px; padding:3px 10px;}
   .abo-fenetre .pk{background:var(--surface2);}
   .abo-restaurer{display:block; width:100%; text-align:center; padding:14px 0 4px; color:var(--accent);
     font-weight:800; font-size:14px; text-decoration:underline; text-underline-offset:3px;}
@@ -8553,7 +8569,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 03h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 03h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18078,10 +18094,20 @@ async function chargerPacks(){
   return true;
 }
 /* les deux boutons, cote a cote — memes dans la fenetre d'abonnement et dans la fiche */
+/* le prix qu'aurait le grand pack au tarif du petit : « 4,99 € » barre sous « 3,99 € » */
+function prixSansRemise(k){
+  const petit = PACKS[0];
+  if(k === petit || !(petit.montant > 0)) return "";
+  const m = k.scans * petit.montant / petit.scans;
+  const dev = petit.texte.replace(/[\d.,\s]/g, "");
+  const n = (Math.ceil(m) - 0.01).toFixed(2).replace(".", langue() === "en" ? "." : ",");   /* 4,975 -> « 4,99 » : un prix de boutique */
+  return dev ? (petit.texte.trim().startsWith(dev) ? dev + n : n + " " + dev) : n;
+}
 function boutonsPacks(classe){
-  return `<div class="pk-row ${classe || ""}">${PACKS.map(k=>`<button class="pk" data-pack="${k.id}">
+  const grand = classe === "grand";
+  return `<div class="pk-row ${classe || ""}">${PACKS.map(k=>`<button class="pk ${k.remise > 0 ? "mis" : ""}" data-pack="${k.id}">
       ${k.remise > 0 ? `<span class="pk-badge">−${k.remise} %</span>` : ""}
-      <b>${k.scans}</b><i>${TR("photos")}</i><em>${esc(k.texte)}</em></button>`).join("")}</div>`;
+      <b>${k.scans}</b><i>${TR("photos")}</i><em>${esc(k.texte)}</em>${grand && k.remise > 0 ? `<s>${esc(prixSansRemise(k))}</s>` : ""}</button>`).join("")}</div>`;
 }
 function brancherPacks(racine, apres){
   racine.querySelectorAll("[data-pack]").forEach(b=>b.onclick = async e=>{
@@ -18129,11 +18155,11 @@ function proposerPhotos(meal){
 let aboRetour = null;
 /* La fiche des packs, pour un abonne a court de photos du jour. */
 function openScans(meal){
-  openSheet(`<div class="sc-h"><span class="sc-ic">${IC_PHOTO}</span><h3>${TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
+  openSheet(`<div class="sc-h"><span class="sc-ic"><i></i><i></i><i></i><i></i>${IC_PHOTO}</span><h3>${TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
     <p class="sc-sous">${TR("Le compteur repart demain. Pour continuer aujourd'hui, une réserve de photos : achat unique, sans date limite, utilisée après celles du jour.")}</p>
     ${boutonsPacks("grand")}
     ${scansReserve() > 0 ? `<p class="sc-reserve">${TR("En réserve : {} photos").replace("{}", scansReserve())}</p>` : ""}
-    <button class="sc-main" id="sc-main">${TR("Ajouter à la main, c'est gratuit")}</button>`);
+    <button class="sc-main" id="sc-main">${IC_CRAYON}${TR("Ajouter à la main, c'est gratuit")}</button>`);
   brancherPacks(document.getElementById("sheet"), ()=>{ hideSheet(); if(meal) setTimeout(()=>lancerScan(meal, "plat"), 260); });
   document.getElementById("sc-main").onclick = ()=>{ hideSheet(); if(meal) setTimeout(()=>openAjoutAliment(meal), 240); };
   chargerPacks();
@@ -18225,6 +18251,7 @@ function prixParMois(){
   return a > 0 ? (a / 12).toFixed(2).replace(".", langue() === "en" ? "." : ",") + (PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") ? " " + PRIX_ABO.annuel.texte.replace(/[\d.,\s]/g, "") : "") : "";
 }
 const IC_PARTAGE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+const IC_CRAYON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg>';
 const IC_ABO_LOGO = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><rect x="4" y="13" width="4" height="7" rx="1.2"/><rect x="10" y="8" width="4" height="12" rx="1.2"/><rect x="16" y="4" width="4" height="16" rx="1.2"/></svg>';
 const IC_ABO_ASSIETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3v6.5a3 3 0 0 0 6 0V3"/><path d="M9.5 3v6.5M9.5 12.5V21"/><path d="M17 3c-1.7 0-3 2.2-3 5v3h3v10"/></svg>';
 const IC_ABO_COURBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
