@@ -1527,14 +1527,15 @@
   .hero-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;
     filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));}
   .hero-poussin img.acc{filter:none;}
-  /* la flamme : une pastille sombre posee sur le bord de la carte, sous le poussin */
-  .hero-flamme{position:absolute; right:22px; top:-13px; z-index:4; display:inline-flex; align-items:center; gap:3px;
-    padding:3px 9px 3px 7px; border-radius:99px; background:#1b1b1d; color:#fff; font-size:13px; font-weight:800; line-height:1;
-    box-shadow:0 3px 8px rgba(0,0,0,.25); border:2px solid var(--surface);}
-  .hero-flamme .fe{display:inline-block; transition:transform .3s ease, opacity .3s ease;}
-  .hero-flamme.moyenne .fe{transform:scale(.8); opacity:.85;}
-  .hero-flamme.petite .fe{transform:scale(.6); opacity:.6;}
-  .hero-flamme.petite{color:rgba(255,255,255,.7);}
+  /* la flamme animee de Nico, posee sur le bord de la carte sous le poussin, le chiffre
+     dans son coeur clair ; elle rapetisse et palit quand les jours sans seance passent */
+  .hero-flamme{position:absolute; right:30px; top:-30px; z-index:4; width:40px; height:50px; transform-origin:50% 100%;
+    transition:transform .4s ease, opacity .4s ease; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+  .hero-flamme .fe{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
+  .hero-flamme b{position:absolute; left:0; right:0; top:52%; text-align:center; color:#fff; font-size:15px; font-weight:900; line-height:1;
+    text-shadow:0 1px 2px rgba(160,70,0,.5);}
+  .hero-flamme.moyenne{transform:scale(.8); opacity:.85;}
+  .hero-flamme.petite{transform:scale(.62); opacity:.6;}
   /* ---- le vestiaire ---- */
   .vs-apercu{display:flex; justify-content:center; padding:6px 0 4px;}
   .vs-poussin{position:relative; width:150px;}
@@ -8764,7 +8765,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 12h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 14h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14374,7 +14375,7 @@ function renderSeance(app){
       ${(()=>{ const fl = serieJours(now); if(!POUSSIN.repos || fl.n < 1) return "";
         /* la flamme, entre les pattes du poussin : les jours de seance de la serie en
            cours ; elle faiblit quand les jours sans seance s'accumulent */
-        return `<div class="hero-flamme ${fl.force}" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><span class="fe">🔥</span><b>${fl.n}</b></div>`; })()}
+        return `<div class="hero-flamme ${fl.force}" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme.webp" alt=""><b>${fl.n}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
