@@ -2866,12 +2866,20 @@
   /* Le verdict ouvre la page Progression : la cause, puis la conclusion. Le trait de
      couleur donne le ton avant même la lecture — vert ça monte, orange ça coince,
      gris on ne sait pas encore. */
-  .vd-card{background:var(--surface); border-radius:16px; padding:13px 15px 14px;
-    border-left:4px solid var(--ink-mute); margin-bottom:12px;}
-  .vd-card.bon{border-left-color:var(--good);}
-  .vd-card.plat{border-left-color:var(--accent);}
-  .vd-card .t{font-size:15.5px; font-weight:800; letter-spacing:-.01em; margin-bottom:4px;}
-  .vd-card p{margin:0; font-size:13px; line-height:1.55; color:var(--ink-soft);}
+  /* La carte du verdict, d'apres la maquette du 21 septembre : sombre, l'icone dans un
+     carre orange, un chevron, un lisere orange. Meme dessin pour les trois tons. */
+  .vd-card{display:flex; align-items:center; gap:14px; background:#1b1b1d; color:#fff; border-radius:18px; padding:16px 14px 16px 16px;
+    border:1.5px solid rgba(245,130,32,.55); margin-bottom:12px; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.18);}
+  .vd-card .ic{flex:none; width:46px; height:46px; border-radius:13px; background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .vd-card .ic svg{width:24px; height:24px;}
+  .vd-card .t{font-size:16.5px; font-weight:800; letter-spacing:-.01em; margin-bottom:3px;}
+  .vd-card p{margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.72);}
+  .vd-card .fl{flex:none; color:#fff;} .vd-card .fl svg{width:18px; height:18px;}
+  /* le bandeau de la progression : titre en capitales, devise en petites capitales espacees */
+  .hero-prog .hero-h .ico-carre{display:inline-flex; width:44px; height:44px; border-radius:12px; border:2.5px solid var(--accent); color:var(--accent); align-items:center; justify-content:center;}
+  .hero-prog .hero-h .ico-carre svg{width:24px; height:24px;}
+  .hero-prog .hero-h .big{font-size:30px; text-transform:uppercase; letter-spacing:.02em; font-weight:900;}
+  .hero-prog .hero-h .devise{font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.6); line-height:1.6; margin-top:6px;}
   /* ---- la fiche d'abonnement ----
      Une FENÊTRE au centre de l'écran, pas un panneau du bas : elle s'arrête au-dessus de
      la barre d'onglets, qui reste touchable. On peut donc toujours repartir vers Séance
@@ -3924,7 +3932,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
+  "version du":"build of", "Discipline aujourd'hui":"Discipline today", "Résultats demain":"Results tomorrow", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
   "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
   "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
   "semaines d'affilée, au mieux":"weeks in a row, at best", "{} séances":"{} workouts", "Porté":"Worn", "Gagné":"Earned", "Bientôt":"Coming soon",
@@ -4835,6 +4843,7 @@ const TRAD = {en:{
   "Tes charges stagnent":"Your loads have stalled",
   "Tes séances s'arrêtent en route":"Your sessions stop halfway",
   "Tu viens t'entraîner, mais tu ne fais que {f} des {p} exercices prévus, et {b}. Termine ce que tu commences avant de chercher ailleurs.":"You show up, but you only do {f} of the {p} exercises planned, and {b}. Finish what you start before looking elsewhere.",
+  "1 séance sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.":"1 session over the last three weeks. {m} more {s} and I can tell you whether you are progressing.",
   "{n} séances sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.":"{n} sessions over the last three weeks. {m} more {s} and I can tell you whether you are progressing.",
   "{n} séances enregistrées, mais aucun exercice revu deux fois. Refais les mêmes mouvements d'une séance à l'autre : c'est ce qui permet de comparer.":"{n} sessions logged, but no exercise repeated twice. Do the same movements from one session to the next: that is what makes them comparable.",
   "aucun de tes {t} exercices suivis n'a monté":"none of your {t} tracked exercises went up",
@@ -8795,7 +8804,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 16h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 16h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19398,7 +19407,8 @@ function verdictProgression(){
     const manqueS = Math.max(0, VERDICT_SEANCES_MIN - recentes.length);
     return {ton:"manque", titre: TR("Encore un peu de matière"),
       texte: manqueS
-        ? TR("{n} séances sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.")
+        ? TR(recentes.length > 1 ? "{n} séances sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses."
+                                 : "1 séance sur les trois dernières semaines. Encore {m} {s}, et je peux te dire si tu progresses.")
             .replace("{n}", recentes.length).replace("{m}", manqueS)
             .replace("{s}", TR(manqueS > 1 ? "séances" : "séance"))
         : TR("{n} séances enregistrées, mais aucun exercice revu deux fois. Refais les mêmes mouvements d'une séance à l'autre : c'est ce qui permet de comparer.")
@@ -19436,7 +19446,10 @@ function renderVerdictSection(sec){
   const v = verdictProgression();
   const d = document.createElement("div");
   d.className = "vd-card " + v.ton;
-  d.innerHTML = `<div class="t">${esc(v.titre)}</div><p>${esc(v.texte)}</p>`;
+  const ic = v.ton === "bon" ? IC_PROGRESSION : (v.ton === "manque" ? icoM("flamme", 22) : IC_CHRONO);
+  d.innerHTML = `<span class="ic">${ic}</span><div class="grow"><div class="t">${esc(v.titre)}</div><p>${esc(v.texte)}</p></div><span class="fl">${IC_CHEVRON}</span>`;
+  /* le chevron mene au bilan, qui detaille ce que la carte resume */
+  d.onclick = ()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   /* renderWeightSection() écrit la section avec innerHTML : appelée après nous, elle
      effaçait le bandeau. On passe donc derrière elle, et on se remet en tête. */
   sec.insertBefore(d, sec.firstChild);
@@ -19447,8 +19460,9 @@ function renderProgress(app){
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    ${hero(`<div class="ico">${IC_PROGRESSION}</div>
-      <div class="big">${TR("Progression")}</div>`, {classe:"hero-jour", essai:true})}   /* meme calage que le soleil : le titre ne descend pas sous les cartes */
+    ${hero(`<div class="ico"><span class="ico-carre">${IC_PROGRESSION}</span></div>
+      <div class="big">${TR("Progression")}</div>
+      <div class="sub devise">${TR("Discipline aujourd'hui")}<br>${TR("Résultats demain")}</div>`, {classe:"hero-jour hero-prog", essai:true})}   /* meme calage que le soleil : le titre ne descend pas sous les cartes */
     <div class="under-hero stack" id="wt-sec"></div>
     <div id="prg-body"></div>`;
   wireTopbar();
