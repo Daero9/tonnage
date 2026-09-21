@@ -932,6 +932,12 @@
 
   /* règle graduée du poids cible */
   .regle{position:relative; margin-top:6px;}
+  /* l'encadre sous la regle du poids cible : il suit le curseur en direct */
+  .obj-box{background:var(--surface); border-radius:16px; padding:14px 14px 13px; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,.07);}
+  .obj-box .t{font-size:15px; font-weight:800;}
+  .obj-box .v{font-size:19px; font-weight:800; margin-top:3px;} .obj-box .v.prendre{color:#2e8f1e;} .obj-box .v.perdre{color:var(--accent);}
+  .obj-box .i{font-size:12.5px; color:var(--ink-mute); margin-top:3px;}
+  .obj-box .c{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:9px;}
   .regle-val{text-align:center; font-size:32px; font-weight:800; letter-spacing:-.01em;}
   .regle-lab{text-align:center; font-size:13px; color:var(--ink-soft); margin-bottom:2px;}
   .regle-box{position:relative; height:98px; overflow:hidden;
@@ -1143,6 +1149,31 @@
   /* le détail des macros : une barre par nutriment, en part des calories du jour */
   /* la bande des sept jours : entraînement plein, repas cochés en creux */
   .sm-bande{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:14px;}
+  /* ---- le bilan de la semaine, d'apres la maquette du 21 septembre ---- */
+  .bl-tete{margin-bottom:14px; text-align:center;} .bl-tete h3{margin:0 0 2px;}
+  .bl-tuiles{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
+  .bl-t{display:flex; align-items:center; gap:10px; padding:12px; border-radius:16px; background:var(--surface2); min-width:0;}
+  .bl-t .ic{flex:none; width:44px; height:44px; border-radius:50%; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .bl-t .ic svg{width:22px; height:22px;} .bl-t .ic.violet{background:rgba(110,80,230,.14); color:#6e50e6;} .bl-t .ic.bleu{background:rgba(47,125,225,.14); color:#2f7de1;}
+  .bl-t b{display:block; font-size:19px; font-weight:800; line-height:1.1; white-space:nowrap;} .bl-t small{display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .bl-semaine .sm-bande{gap:6px; margin-bottom:14px;}
+  .bl-semaine .sm-j{padding:12px 2px 10px; border-radius:14px; gap:8px;}
+  .bl-semaine .sm-j .d{font-size:13px;} .bl-semaine .sm-j .p{height:18px;} .bl-semaine .sm-j .p svg{width:16px; height:16px;}
+  .bl-semaine .sm-j .p:empty::before{content:""; width:14px; height:14px; border-radius:50%; border:2px solid var(--border);}
+  .bl-sec{border-radius:16px; padding:14px 12px 10px; margin-bottom:10px;}
+  .bl-st{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;}
+  .bl-st .ic{flex:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;} .bl-st .ic svg{width:15px; height:15px;}
+  .bl-sec.orange{background:rgba(245,130,32,.10);} .bl-sec.orange .bl-st{color:var(--accent);} .bl-sec.orange .bl-st .ic{background:rgba(245,130,32,.18);}
+  .bl-sec.vert{background:rgba(82,180,58,.10);} .bl-sec.vert .bl-st{color:#2e8f1e;} .bl-sec.vert .bl-st .ic{background:#52b43a; color:#fff;}
+  .bl-sec.bleu{background:rgba(47,125,225,.10); padding-bottom:14px;} .bl-sec.bleu .bl-st{color:#1f5fb0;} .bl-sec.bleu .bl-st .ic{background:rgba(47,125,225,.16); color:#2f7de1;}
+  .bl-item{display:flex; align-items:flex-start; gap:10px; padding:7px 0;}
+  .bl-item .ic{flex:none; width:40px; height:40px; border-radius:50%; background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--accent);}
+  .bl-item .ic svg{width:20px; height:20px;}
+  .bl-item b{display:block; font-size:14.5px; font-weight:800; line-height:1.25;} .bl-item b em{font-style:normal; color:var(--accent);}
+  .bl-item p{margin:2px 0 0; font-size:13px; color:var(--ink-soft); line-height:1.5;}
+  .bl-plus{flex:none; display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:12px; background:rgba(82,180,58,.16); color:#2e8f1e; font-weight:800; font-size:12.5px; line-height:1.1;}
+  .bl-plus svg{width:16px; height:16px;} .bl-plus small{display:block; font-weight:600; font-size:10px; margin-top:1px;}
+  .bl-note{font-size:13px; color:var(--ink-soft); line-height:1.5;}
   .sm-j{display:flex; flex-direction:column; align-items:center; gap:4px;
     background:var(--surface2); border-radius:11px; padding:7px 2px 6px;}
   .sm-j .d{font-size:10.5px; font-weight:800; color:var(--ink-mute);}
@@ -2307,6 +2338,30 @@
   .mp-row.faible .mp-pill{background:rgba(224,85,74,.14); color:#c9382d;}
   .mp-row.nodata .mp-pill{background:rgba(120,125,135,.12); color:var(--ink-mute);}
   .mp-row.nodata .mp-name, .mp-row.nodata .mp-val{color:var(--ink-mute);}
+  .mp-note{font-size:12px; color:var(--ink-mute); line-height:1.45; margin:2px 0 6px;}
+  /* ---- l'analyse du profil, d'apres la maquette du 21 septembre ---- */
+  .mp-depli{border:0; margin-top:8px;}
+  .mp-depli .depli-h{padding:8px 0; gap:10px;}
+  .mp-depli .depli-c{padding:6px 0 0;}
+  .an-b{display:flex; gap:12px; align-items:flex-start; padding:14px 12px; border-radius:16px; margin-bottom:10px;}
+  .an-ic{flex:none; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .an-ic svg{width:24px; height:24px;}
+  .an-c{flex:1; min-width:0;}
+  .an-t{display:block; font-size:15.5px; font-weight:800; line-height:1.2; margin-bottom:4px;}
+  .an-c p{margin:0; font-size:13px; line-height:1.5; color:var(--ink-soft);}
+  .an-c em{font-style:normal; font-weight:800;} .an-c p b{color:var(--ink);}
+  .an-b.vert{background:rgba(82,180,58,.10);} .an-b.vert .an-ic{background:rgba(82,180,58,.18); color:#2e8f1e;} .an-b.vert .an-t, .an-b.vert em{color:#2e8f1e;}
+  .an-b.orange{background:rgba(245,130,32,.10);} .an-b.orange .an-ic{background:rgba(245,130,32,.18); color:var(--accent);} .an-b.orange .an-t{color:#b4530a;} .an-b.orange em{color:var(--accent);}
+  .an-b.bleu{background:rgba(47,125,225,.10);} .an-b.bleu .an-ic{background:rgba(47,125,225,.16); color:#2f7de1;} .an-b.bleu .an-t{color:#1f5fb0;}
+  .an-b.gris{background:var(--surface2);} .an-b.gris .an-ic{background:var(--surface); color:var(--accent);}
+  .an-b.blanc{background:var(--surface); box-shadow:0 2px 10px rgba(0,0,0,.07); align-items:center; gap:10px;}
+  .an-b.blanc .an-t{font-size:14px;}
+  .an-fig{flex:none; width:60px; height:90px; border-radius:12px; overflow:hidden; position:relative; background:var(--surface2);}
+  .an-fig .mp-fig.an-mini{position:absolute; max-width:none;}
+  .mp-depli .depli-h .pt-ic svg{width:26px; height:26px; color:var(--accent);}
+  .an-ring{flex:none; width:60px; position:relative;} .an-ring svg{width:60px; height:60px; display:block;}
+  .an-ring b{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .an-note{margin:2px 0 0; font-size:11px; color:var(--ink-mute); line-height:1.45;}
   .mp-row:active{opacity:.6;}
   .tile .rec-d{font-style:normal; opacity:.7;}
   .mp-name .chev{width:13px; height:13px; margin-left:5px; color:var(--ink-mute);
@@ -4094,7 +4149,21 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Nouveaux records !":"New records!", "Nouveau record !":"New record!", "Tu te dépasses !":"You're outdoing yourself!", "Première performance enregistrée":"First performance recorded", "Suis tes progrès et dépasse tes limites !":"Track your progress and push your limits!", "Tu es à ton meilleur niveau !":"You're at your best!", "Continue comme ça !":"Keep it up!", "À débloquer":"Locked", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
+  "version du":"build of",
+  "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
+  "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
+  "Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui.":"Holding your weight while training is recomposition: the scale barely moves, your shape does.",
+  "dans la zone de référence":"in the reference range", "un peu au-dessus de la zone de référence":"slightly above the reference range", "au-dessus de la zone de référence":"above the reference range",
+  "Objectif : maintien":"Goal: maintain", "Objectif raisonnable":"Reasonable goal", "gain":"gain", "perte":"loss", "IMC cible":"Target BMI",
+  "Un muscle apparaît après deux passages sur un exercice qui le cible.":"A muscle shows up after two sessions on an exercise that targets it.",
+  "Tes muscles apparaîtront ici après deux passages sur un même exercice.":"Your muscles will show up here after two sessions on the same exercise.",
+  "Un regard sur tes forces et les points à améliorer.":"A look at your strengths and what to work on.", "Encore un peu de matière":"A little more data needed",
+  "<em>{e}</em> par rapport à ta moyenne":"<em>{e}</em> against your average", "Ton point fort : {m} !":"Your strong point: {m}!", "Le moins avancé : {m}":"Least advanced: {m}", "À améliorer : {m}":"To improve: {m}",
+  "{m} : {p} % de ta moyenne":"{m}: {p}% of your average", "Conseil personnalisé":"Personal advice", "Volume recommandé":"Recommended volume",
+  "Une semaine de plus vers tes objectifs !":"One more week towards your goals!", "{} séances cette semaine":"{} workouts this week", "La régularité est là !":"Consistency is there!",
+  "Tu as progressé":"You've progressed", "Sur {} 💪":"On {} 💪", "Alimentation suivie à {} %":"Nutrition logged at {}%", "Solide !":"Solid!", "Protéines ≈ {} g/j en moyenne":"Protein ≈ {} g/day on average", "Dans la cible.":"On target.",
+  "{} de cardio":"{} of cardio", "Le cœur suit.":"The heart's keeping up.", "Volume en hausse de {pct} %":"Volume up {pct}%", "({vol} soulevés)":"({vol} lifted)",
+  "À prioriser":"Priorities", "Ce qui roule":"What's going well", "À garder en tête":"Keep in mind", "vs semaine dernière":"vs last week", "C'est noté !":"Got it!", "Nouveaux records !":"New records!", "Nouveau record !":"New record!", "Tu te dépasses !":"You're outdoing yourself!", "Première performance enregistrée":"First performance recorded", "Suis tes progrès et dépasse tes limites !":"Track your progress and push your limits!", "Tu es à ton meilleur niveau !":"You're at your best!", "Continue comme ça !":"Keep it up!", "À débloquer":"Locked", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
   "semaines d'affilée":"weeks in a row", "au mieux":"at best", "Gagne des accessoires en restant régulier !":"Earn accessories by staying consistent!", "Encore <b>{}</b> avant ton objectif !":"<b>{}</b> to go before your goal!", "Ma photo":"My photo", "Photo illisible.":"Unreadable photo.", "En route vers mes objectifs !":"On the way to my goals!", "Discipline aujourd'hui":"Discipline today", "Résultats demain":"Results tomorrow", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
   "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
   "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
@@ -8118,12 +8187,17 @@ function openOnboarding(first, brouillon, depart){
       d.goalWeight = demiTour(d.goalWeight > 0 ? d.goalWeight : d.weight);
       corps.innerHTML = `<h2>${TR("Quel <span class=\"hl\">poids</span> vises-tu ?")}</h2>
         <div class="sous">${TR("Rien n'est figé : tu pourras le changer quand tu veux.")}</div>
+        <div style="display:flex; justify-content:center; margin:4px 0 8px;"><div class="rou-unite">
+          <button data-uw="kg" class="${!estImperial()?"on":""}">kg</button>
+          <button data-uw="lbs" class="${estImperial()?"on":""}">lb</button>
+        </div></div>
         <div class="regle">
           <div class="regle-lab" id="reg-lab"></div>
           <div class="regle-val" id="reg-val"></div>
           <div class="regle-box"><div class="regle-aig"></div><div class="regle-scroll" id="reg"></div></div>
         </div>
         <div id="reg-alerte" style="margin-top:18px;"></div>`;
+      corps.querySelectorAll("[data-uw]").forEach(b=>b.onclick=()=>{ majUnites(b.dataset.uw==="lbs" ? "imperial" : "metrique"); dessiner(); });
       const scroll = corps.querySelector("#reg");
       let html = "";
       for(let k = 60; k <= 400; k++){                  /* de 30 à 200 kg, par pas de 500 g */
@@ -8140,10 +8214,26 @@ function openOnboarding(first, brouillon, depart){
         corps.querySelector("#reg-val").textContent = pds(d.goalWeight);
         const a = alerteObjectif(d), w = aimWarning(d.aim, d.weight, d.goalWeight);
         const rouge = a && a.niveau === "danger";
+        /* sans alerte, l'encadre suit la regle en direct : l'ecart en %, l'IMC cible, et la
+           consigne qui va avec — prendre, perdre ou tenir */
+        const pctDiff = d.weight > 0 ? Math.round(diff / d.weight * 1000) / 10 : 0;
+        const imcCible = imc(d.goalWeight, d.height);
+        const sens = Math.abs(diff) < 0.4 ? "tenir" : (diff > 0 ? "prendre" : "perdre");
+        const consigne = sens === "prendre"
+          ? TR("Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.").replace("{r}", reperePoids(0.25))
+          : (sens === "perdre"
+            ? TR("Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.").replace("{r}", reperePoids(0.5))
+            : TR("Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui."));
+        const zoneImc = !imcCible ? "" : (imcCible < 25 ? TR("dans la zone de référence") : (imcCible < 30 ? TR("un peu au-dessus de la zone de référence") : TR("au-dessus de la zone de référence")));
+        const boite = `<div class="obj-box">
+          <div class="t">${TR(sens === "tenir" ? "Objectif : maintien" : "Objectif raisonnable")}</div>
+          ${sens === "tenir" ? "" : `<div class="v ${sens}">${sens === "prendre" ? TR("gain") : TR("perte")} ${Math.abs(pctDiff).toLocaleString(loc())} %</div>`}
+          ${imcCible ? `<div class="i">${TR("IMC cible")} ${imcCible.toFixed(1).replace(".", langue()==="en" ? "." : ",")}${zoneImc ? " · " + zoneImc : ""}</div>` : ""}
+          <div class="c">${consigne}</div></div>`;
         corps.querySelector("#reg-alerte").innerHTML = a
           ? `<div class="inj-note" style="margin:0; border-color:${rouge?"var(--bad)":"var(--accent)"};">
                <b style="color:${rouge?"var(--bad)":"var(--accent)"};">${rouge?"⛔":"⚠️"} ${esc(a.titre)}</b><br>${a.txt}</div>`
-          : (w ? `<div class="inj-note" style="margin:0;">⚠️ ${w}</div>` : "");
+          : (w ? `<div class="inj-note" style="margin:0;">⚠️ ${w}</div>` : boite);
       };
       let pose = false;
       /* les graduations suivent un arc de cercle : la règle se lit comme le cadran d'une balance */
@@ -8979,7 +9069,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 18h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 18h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14405,25 +14495,25 @@ function computeBilan(){
   if(tropBas) prios.push([TR("Des journées bien trop basses"), TR("≈ {moy} kcal par jour renseignées, pour un métabolisme de base de {bmr} kcal — ce que ton corps brûle en ne faisant rien. Soit il manque des aliments dans ton journal (huile, sauces, extras), soit tu manges vraiment trop peu : ça coûte du muscle, ça ne tient pas, et si c'est volontaire, parles-en à un professionnel de santé.").replace("{moy}", kcalAvg).replace("{bmr}", plB.bmr)]);
   if(wv.tone==="bad") prios.push([TR("Mange plus, c'est LA priorité"), wv.txt + " " + TR("Ajoute un shake (whey + lait + avoine + banane ≈ 600 kcal) chaque jour, sans exception.")]);
   else if(wv.tone==="warn") prios.push([TR(wv.txt.includes("vite")?"Lève un peu le pied sur les extras":(bulk?"Augmente un peu les apports":"Ajuste les apports")), wv.txt]);
-  else if(wv.tone==="good") wins.push(TR("Poids :") + " " + wv.txt);
+  else if(wv.tone==="good") wins.push(["poids", TR("Poids"), wv.txt]);
   if(cur.length<3) prios.push([TR("Remets de la régularité"), TR("{} séances de muscu sur 7 jours — vise 3 à 4. C'est le volume d'entraînement qui déclenche la prise de muscle.").replace("{}", cur.length)]);
-  else wins.push(TR("{} séances cette semaine — la régularité est là.").replace("{}", cur.length));
+  else wins.push(["seance", TR("{} séances cette semaine").replace("{}", cur.length), TR("La régularité est là !")]);
   if(downs.length>=2) prios.push([TR("Charges en baisse : récupère"), TR("Tu as baissé sur {}. Souvent un signe de fatigue : vérifie ton sommeil, respecte les repos longs, et si ça persiste une semaine de charges légères relance la machine.").replace("{}", downs.slice(0,3).join(", "))]);
   else if(downs.length===1) prios.push([TR("Un exercice en baisse"), TR("{} a reculé — regarde si c'est la fatigue ou la technique.").replace("{}", downs[0])]);
-  if(ups.length) wins.push(TR("Tu as progressé sur {} 💪").replace("{}", ups.slice(0,3).join(", ") + (ups.length>3?"…":"")));
+  if(ups.length) wins.push(["muscle", TR("Tu as progressé"), TR("Sur {} 💪").replace("{}", ups.slice(0,3).join(", ") + (ups.length>3?"…":""))]);
   if(hbPct<60) prios.push([TR("Coche tes repas"), TR("{} % de tes repas renseignés cette semaine. Même sans compter les calories, la checklist te tient — remplis-la chaque jour.").replace("{}", hbPct)]);
-  else if(hbPct>=80) wins.push(TR("Alimentation suivie à {} % — solide.").replace("{}", hbPct));
+  else if(hbPct>=80) wins.push(["midi", TR("Alimentation suivie à {} %").replace("{}", hbPct), TR("Solide !")]);
   if(protAvg!==null && protAvg < protTarget*0.7) prios.push([TR("Monte les protéines"), TR("≈ {moy} g/jour en moyenne, l'objectif est {cible} g. Le plus simple : whey + lait à la collation, et une vraie portion de viande/poisson à chaque repas.").replace("{moy}", protAvg).replace("{cible}", protTarget)]);
-  else if(protAvg!==null && protAvg>=protTarget*0.9) wins.push(TR("Protéines ≈ {} g/j en moyenne — dans la cible.").replace("{}", protAvg));
+  else if(protAvg!==null && protAvg>=protTarget*0.9) wins.push(["muscle", TR("Protéines ≈ {} g/j en moyenne").replace("{}", protAvg), TR("Dans la cible.")]);
   if(bulk && kmCur>25) prios.push([TR("Cardio généreux pour une prise de masse"), TR("{} cette semaine : c'est très bien pour le cœur, mais ça creuse ton déficit. Compense par une collation de plus les jours de sortie.").replace("{}", dist(kmCur))]);
-  else if(kmCur>0) wins.push(TR("{} de cardio — le cœur suit.").replace("{}", dist(kmCur)));
+  else if(kmCur>0) wins.push(["course", TR("{} de cardio").replace("{}", dist(kmCur)), TR("Le cœur suit.")]);
   if(volCur && volPrev) {
     const dv = Math.round((volCur-volPrev)/volPrev*100);
     if(dv<=-20) prios.push([TR("Volume en baisse"), TR("{pct} % de tonnage en moins que la semaine passée ({avant} vs {apres}).").replace("{pct}", Math.abs(dv)).replace("{avant}", pds(volCur)).replace("{apres}", pds(volPrev))]);
-    else if(dv>=10) wins.push(TR("Volume en hausse de {pct} % ({vol} soulevés).").replace("{pct}", dv).replace("{vol}", pds(volCur)));
+    else if(dv>=10) wins.push(["poids", TR("Volume en hausse de {pct} %").replace("{pct}", dv), TR("({vol} soulevés)").replace("{vol}", pds(volCur))]);
   }
   if(!prios.length) prios.push([TR("Continue exactement comme ça"), TR("Aucun point faible détecté cette semaine. Le seul conseil : ne change rien, la constance fait le reste.")]);
-  return {cur:cur.length, volCur, volPrev, kmCur, wv, prios:prios.slice(0,3), wins:wins.slice(0,4)};
+  return {cur:cur.length, prev:prev.length, volCur, volPrev, kmCur, wv, prios:prios.slice(0,3), wins:wins.slice(0,4)};
 }
 /* Les sept derniers jours, un carré par jour : entraînement, repas cochés, ou rien.
    La constance est le meilleur prédicteur de résultats, et elle ne se lit nulle part
@@ -14465,28 +14555,30 @@ function energieSemaine(){
 function openBilan(){
   const b = computeBilan();
   db.lastBilan = new Date().toISOString(); save();
-  openSheet(`<h3>${TR("Bilan des 7 derniers jours")}</h3>
-    <div class="row" style="gap:6px; flex-wrap:wrap; margin-bottom:14px;">
-      <span class="pill">${b.cur} ${TR(b.cur>1?"séances":"séance")}</span>
-      <span class="pill">${pds(b.volCur)} ${TR("soulevés")}</span>
-      ${b.kmCur? `<span class="pill">${dist(b.kmCur)} ${TR("cardio")}</span>`:""}
+  /* d'apres la maquette du 21 septembre : titre et devise, deux tuiles, la bande des sept
+     jours en grand, puis trois blocs colores (a prioriser, ce qui roule, a garder en tete) */
+  const icWin = {poids:icoM("poids", 20), seance:ICONS.seance, muscle:icoM("muscle", 20), midi:icoM("midi", 20), course:icoM("course", 20)};
+  const plusSeances = (b.prev > 0 && b.cur > b.prev) ? Math.round((b.cur - b.prev) / b.prev * 100) : 0;
+  openSheet(`<div class="bl-tete"><h3>${TR("Bilan des 7 derniers jours")}</h3><div class="pt-obj" style="white-space:normal;">${TR("Une semaine de plus vers tes objectifs !")}</div></div>
+    <div class="bl-tuiles">
+      <div class="bl-t"><span class="ic">${ICONS.seance}</span><div><b>${b.cur}</b><small>${TR(b.cur>1?"séances":"séance")}</small></div></div>
+      <div class="bl-t"><span class="ic violet">${icoM("poids", 22)}</span><div><b>${pds(b.volCur)}</b><small>${TR("soulevés")}</small></div></div>
+      ${b.kmCur? `<div class="bl-t"><span class="ic bleu">${icoM("course", 22)}</span><div><b>${dist(b.kmCur)}</b><small>${TR("cardio")}</small></div></div>`:""}
     </div>
-    ${semaineHtml()}
+    <div class="bl-semaine">${semaineHtml()}</div>
     ${energieSemaine()}
     ${(()=>{ const lien = lienProtTonnage();
       return lien ? `<div class="card" style="padding:13px 14px; margin-bottom:16px;">
         <div style="font-weight:800; font-size:13.5px; margin-bottom:4px;">${TR("🍽️ Alimentation et tonnage")}</div>
         <div style="font-size:13px; color:var(--ink-soft); line-height:1.55;">${lien}</div></div>` : ""; })()}
-    <div class="label" style="margin-bottom:8px;">${TR("🎯 À prioriser")}</div>
-    <div class="stack" style="gap:8px; margin-bottom:16px;">${b.prios.map((p,i)=>`
-      <div class="card" style="padding:13px 14px;">
-        <div style="font-weight:800; font-size:14.5px; margin-bottom:4px;"><span style="color:var(--accent);">${i+1}.</span> ${esc(p[0])}</div>
-        <div style="font-size:13px; color:var(--ink-soft);">${esc(p[1])}</div>
-      </div>`).join("")}</div>
-    ${b.wins.length? `<div class="label" style="margin-bottom:8px;">${TR("✅ Ce qui roule")}</div>
-    <div class="stack" style="gap:5px; margin-bottom:16px;">${b.wins.map(w=>`<div style="font-size:13.5px; color:var(--ink-soft);">· ${esc(w)}</div>`).join("")}</div>`:""}
-    <p style="margin:0 0 12px; font-size:11.5px; color:var(--ink-mute); text-align:center; line-height:1.5;">${TR("Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.")}</p>
-    <button class="btn btn-accent" id="bl-ok" style="width:100%;">${TR("C'est noté")}</button>`);
+    <div class="bl-sec orange"><div class="bl-st"><span class="ic">${IC_CIBLE}</span>${TR("À prioriser")}</div>
+      ${b.prios.map((p,i)=>`<div class="bl-item"><div class="grow"><b><em>${i+1}.</em> ${esc(p[0])}</b><p>${esc(p[1])}</p></div></div>`).join("")}</div>
+    ${b.wins.length? `<div class="bl-sec vert"><div class="bl-st"><span class="ic">${IC_CHECK}</span>${TR("Ce qui roule")}</div>
+      ${b.wins.map(w=>`<div class="bl-item"><span class="ic">${icWin[w[0]] || ICONS.seance}</span><div class="grow"><b>${esc(w[1])}</b><p>${esc(w[2])}</p></div>${
+        w[0] === "seance" && plusSeances ? `<span class="bl-plus">${IC_BARRES}<span>+${plusSeances} %<small>${TR("vs semaine dernière")}</small></span></span>` : ""}</div>`).join("")}</div>`:""}
+    <div class="bl-sec bleu"><div class="bl-st"><span class="ic">${IC_AMPOULE}</span>${TR("À garder en tête")}</div>
+      <div class="bl-note">${TR("Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.")}</div></div>
+    <button class="btn btn-accent fin-ok" id="bl-ok" style="width:100%; margin-top:4px;"><span class="grow">${TR("C'est noté !")}</span>${CHEV_MP}</button>`);
   document.getElementById("bl-ok").onclick=closeSheet;
 }
 function editGoal(){
@@ -20284,10 +20376,15 @@ function lienEntre(m1, m2){
 function analyseProfil(prof){
   const connus = MP_MUSCLES.filter(m=>prof[m]!==null);
   const nbSeances = db.history.length;
+  /* d'apres la maquette du 21 septembre : un bloc par idee, chacun avec sa couleur et son
+     signe — le point fort en vert, le retard en orange, l'ecart sur fond blanc avec la
+     silhouette et un anneau, le conseil, la projection en bleu */
+  const bloc = (classe, ic, titre, texte) => `<div class="an-b ${classe}"><span class="an-ic">${ic}</span>
+    <div class="an-c"><strong class="an-t">${titre}</strong><p>${texte}</p></div></div>`;
   if(connus.length < 2){
-    return `<div class="analyse">
-      <p style="margin:0;">${TR("Avec {} séances enregistrées, il me manque encore de la matière pour te dire quelque chose d'utile.").replace("{}", nbSeances)} ${TR("Il faut deux passages sur un même exercice pour qu'un muscle apparaisse ici. Continue à logger, l'analyse se remplira")} toute seule.</p>
-    </div>`;
+    return `<div class="analyse">${bloc("gris", IC_BARRES, TR("Encore un peu de matière"),
+      TR("Avec {} séances enregistrées, il me manque encore de la matière pour te dire quelque chose d'utile.").replace("{}", nbSeances) + " " +
+      TR("Il faut deux passages sur un même exercice pour qu'un muscle apparaisse ici. Continue à logger, l'analyse se remplira") + " toute seule.")}</div>`;
   }
   const tries = connus.slice().sort((a,b)=>prof[a]-prof[b]);
   const faible = tries[0], fort = tries[tries.length-1];
@@ -20309,15 +20406,33 @@ function analyseProfil(prof){
   const jamais = pourFaible.filter(e=>!freq[e.id]);
   const dansProgrammes = pourFaible.filter(e=>db.templates.some(t=>t.items.some(i=>i.exId===e.id)));
 
-  /* 1. le constat, avec tes chiffres */
-  let constat = TR("Sur tes {n} séances, ton point fort est <b style=\"color:var(--good);\">{m}</b>, à {e} de ta moyenne")
-    .replace("{n}", nbSeances).replace("{m}", TR(fort).toLowerCase()).replace("{e}", signe(pc(fort)));
-  constat += exFort ? TR(", porté par {n} passages sur {ex}. ").replace("{n}", freq[exFort.id]).replace("{ex}", exFort.name.toLowerCase()) : ". ";
-  constat += TR("Ton retard est sur <b style=\"color:var(--bad);\">{m}</b>, à {e}")
-    .replace("{m}", TR(faible).toLowerCase()).replace("{e}", signe(pc(faible)));
-  if(!faits.length) constat += TR(", et c'est logique : tu n'as encore enregistré aucun exercice qui le cible directement.");
-  else if(faits.length && freq[faits[0].id] <= 2) constat += TR(", avec seulement {n} passages sur {ex}.").replace("{n}", freq[faits[0].id]).replace("{ex}", faits[0].name.toLowerCase());
-  else constat += TR(", malgré {n} passages sur {ex} — la fréquence est là, c'est donc la charge ou l'intensité qu'il faut monter.").replace("{n}", freq[faits[0].id]).replace("{ex}", faits[0].name.toLowerCase());
+  /* 1. le constat, avec tes chiffres : un bloc vert pour le point fort, un orange pour le retard */
+  let txtFort = TR("<em>{e}</em> par rapport à ta moyenne").replace("{e}", signe(pc(fort)));
+  txtFort += exFort ? TR(", porté par {n} passages sur {ex}. ").replace("{n}", freq[exFort.id]).replace("{ex}", exFort.name.toLowerCase()) : ". ";
+  let txtFaible = TR("<em>{e}</em> par rapport à ta moyenne").replace("{e}", signe(pc(faible)));
+  if(!faits.length) txtFaible += TR(", et c'est logique : tu n'as encore enregistré aucun exercice qui le cible directement.");
+  else if(faits.length && freq[faits[0].id] <= 2) txtFaible += TR(", avec seulement {n} passages sur {ex}.").replace("{n}", freq[faits[0].id]).replace("{ex}", faits[0].name.toLowerCase());
+  else txtFaible += TR(", malgré {n} passages sur {ex} — la fréquence est là, c'est donc la charge ou l'intensité qu'il faut monter.").replace("{n}", freq[faits[0].id]).replace("{ex}", faits[0].name.toLowerCase());
+  const blocFort = bloc("vert", "🏆", TR("Ton point fort : {m} !").replace("{m}", TR(fort).toLowerCase()), txtFort);
+  const blocFaible = bloc("orange", ICONS.seance, TR(ecart < 20 ? "Le moins avancé : {m}" : "À améliorer : {m}").replace("{m}", TR(faible).toLowerCase()), txtFaible);
+  /* l'ecart : la silhouette avec les deux muscles, et le niveau du retard en anneau */
+  const stMini = {}; stMini[fort] = {color:"#52b43a", op:1}; stMini[faible] = {color:"#f58220", op:1};
+  const dosOk = MASK_OK.back.includes(fort) && MASK_OK.back.includes(faible), faceOk = MASK_OK.front.includes(fort) && MASK_OK.front.includes(faible);
+  const vueDos = dosOk ? true : (faceOk ? false : MASK_OK.back.includes(faible));
+  const niveau = Math.max(0, Math.min(100, Math.round(100 + pc(faible))));
+  const C = 2 * Math.PI * 26;
+  const anneau = `<div class="an-ring"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface2)" stroke-width="7"/>
+    <circle cx="32" cy="32" r="26" fill="none" stroke="#f58220" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(C * niveau / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/></svg><b>${niveau} %</b></div>`;
+  /* la silhouette est recadree sur les deux muscles, comme les vignettes de la liste */
+  const cleVue = vueDos ? "back" : "front";
+  const ys = [fort, faible].map(m=>MP_VIGNETTE[m]).filter(v=>v && v.cle === cleVue).map(v=>v.y);
+  const cy = ys.length ? ys.reduce((a,b)=>a+b,0) / ys.length : 0.3;
+  const FW = 132, FH = FW * 1200 / 658;
+  const fig = `<div class="an-fig"><div class="mp-fig an-mini" style="width:${FW}px; left:${(30 - 0.505 * FW).toFixed(1)}px; top:${(45 - cy * FH).toFixed(1)}px;">${
+    mpBodyHtml(vueDos, stMini).replace(/^<div class="mp-fig">/, "").replace(/<\/div>$/, "")}</div></div>`;
+  const blocEcart = d => `<div class="an-b blanc">${fig}${anneau}
+    <div class="an-c"><strong class="an-t">${TR("{m} : {p} % de ta moyenne").replace("{m}", TR(faible)).replace("{p}", niveau)}</strong><p>${d}</p></div></div>`;
+  const note = `<p class="an-note">${TR("Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.").replace("{}", connus.length)}</p>`;
 
   /* 2. l'écart : on n'invoque un risque que si le lien existe */
   const lien = lienEntre(fort, faible);
@@ -20336,12 +20451,9 @@ function analyseProfil(prof){
   let action;
   if(ecart < 20){
     const g0 = GAIN_MENSUEL[faible] || {};
-    return `<div class="analyse">
-      <p style="margin:0 0 8px;">${constat}</p>
-      <p style="margin:0 0 8px;">${diagnostic}</p>
-      <p style="margin:0 0 8px;">${TR("Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : {r} de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.").replace("{r}", reperePoids(2.5))}</p>
-      <p style="margin:0; font-size:11px; color:var(--ink-mute);">${TR("Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.").replace("{}", connus.length)}</p>
-    </div>`;
+    return `<div class="analyse">${blocFort}${blocFaible}${blocEcart(diagnostic)}
+      ${bloc("vert", IC_AMPOULE, TR("Conseil personnalisé"), TR("Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : {r} de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.").replace("{r}", reperePoids(2.5)))}
+      ${note}</div>`;
   }
   if(dansProgrammes.length){
     action = TR("{} est déjà dans tes séances : place-le <b>en premier exercice</b>, quand tu es frais, plutôt qu'en fin de séance.").replace("{}", dansProgrammes[0].name);
@@ -20361,12 +20473,10 @@ function analyseProfil(prof){
         .replace("{u}", estImperial() ? "in" : "cm").replace("{quoi}", TR(g.mesure))
     : TR("Deux passages par semaine suffisent à combler ce retard en quelques semaines.");
 
-  return `<div class="analyse">
-    <p style="margin:0 0 8px;">${constat}</p>
-    <p style="margin:0 0 8px;">${diagnostic}</p>
-    <p style="margin:0 0 8px;">${action} ${projection}</p>
-    <p style="margin:0; font-size:11px; color:var(--ink-mute);">${TR("Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.").replace("{}", connus.length)}</p>
-  </div>`;
+  return `<div class="analyse">${blocFort}${blocFaible}${blocEcart(diagnostic)}
+    ${bloc("vert", IC_AMPOULE, TR("Conseil personnalisé"), action)}
+    ${bloc("bleu", IC_CIBLE, TR("Volume recommandé"), projection)}
+    ${note}</div>`;
 }
 /* Tout ce que le moteur calcule sur un muscle, en une fiche. C'était le grand absent :
    l'app pesait le volume, la récupération, le retard — et n'en montrait rien. */
@@ -20410,7 +20520,9 @@ function renderMuscleSection(sec){
   const st = {}; MP_MUSCLES.forEach(m=>st[m]=mpStatus(prof[m], moy));
   /* d'apres la maquette du 21 septembre : une carte par muscle, avec sa vignette, sa barre,
      l'ecart en chiffres et la pastille de niveau */
-  const rows = MP_MUSCLES.map(m=>{
+  /* seuls les muscles deja travailles (deux passages) ont une ligne : quelqu'un qui ne
+     fait jamais les jambes voit le haut du corps, pas une liste de « peu de données » */
+  const rows = MP_MUSCLES.filter(m=>!st[m].nodata).map(m=>{
     const s = st[m], score = prof[m];
     const pct = s.nodata ? 0 : (moy? Math.max(6, Math.min(100, 50 + (score-moy)/moy*160)) : Math.max(6, Math.min(100, score/1.3)));
     const txt = s.nodata ? "–" : (moy? ((score>=moy?"+":"−") + Math.abs(Math.round((score-moy)/moy*100)) + " %") : (score + " %"));
@@ -20446,9 +20558,12 @@ function renderMuscleSection(sec){
         <div class="mp-legende">${legende}</div>
       </div>
       ${rows}
-      ${analyse? `<div class="depli">
+      <div class="mp-note">${rows ? TR("Un muscle apparaît après deux passages sur un exercice qui le cible.") : TR("Tes muscles apparaîtront ici après deux passages sur un même exercice.")}</div>
+      ${analyse? `<div class="depli mp-depli">
         <button class="depli-h" id="mp-depli" aria-expanded="${ouvert}">
-          <span>${TR("Analyse de ton profil")}</span>${CHEV}</button>
+          <span class="pt-ic">${IC_BARRES}</span>
+          <span class="grow" style="text-align:left; min-width:0;"><span class="pd-t" style="display:block;">${TR("Analyse de ton profil")}</span>
+            <span class="pt-obj" style="display:block; white-space:normal;">${TR("Un regard sur tes forces et les points à améliorer.")}</span></span>${CHEV}</button>
         <div class="depli-c" id="mp-analyse" ${ouvert?"":"hidden"}>${analyse}</div>
       </div>`:""}
       ${currentWeight()===null? `<p style="margin:10px 0 0; font-size:12px; color:var(--ink-mute);">${TR("Note ton poids corporel pour des scores plus précis.")}</p>`:""}
