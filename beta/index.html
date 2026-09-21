@@ -1648,6 +1648,9 @@
   .hero-poussin{position:absolute; right:14px; bottom:calc(100% - 7px); width:112px; pointer-events:none; z-index:3;}
   /* pas d'ombre portee : sur certains telephones elle se coupait en carre autour du dessin */
   .hero-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  /* le poussin en forme est debout, donc plus haut que large : on le resserre pour qu'il
+     depasse de la carte a peu pres autant que celui qui dort */
+  .hero-poussin[data-pose="en-forme"]{width:88px; right:22px;}
   /* la flamme animee de Nico, posee sur le bord de la carte sous le poussin, le chiffre
      dans son coeur clair ; elle rapetisse et palit quand les jours sans seance passent */
   .hero-flamme{position:absolute; right:30px; top:-30px; z-index:4; width:40px; height:50px; transform-origin:50% 100%;
@@ -9034,6 +9037,7 @@ const EXO_DEMO = {
 /* Le poussin, la mascotte : une pose par etat, des accessoires en calques. Table
    reecrite par C:\Projets\outils\poussin.py depuis C:\Projets\APP\Avatar. */
 const POUSSIN = {
+  "en-forme":{ratio:1.079, acc:["bandeau"]},
   "repos":{ratio:0.743, acc:["bandeau"]}
 };
 /* Les accessoires : ce qui se gagne, et comment. Les courants avec le nombre de
@@ -9082,8 +9086,10 @@ function accessoireGagne(a){
 }
 /* ce qu'il porte : le choix de la personne, filtre par ce qu'elle a gagne et par ce qui
    existe en dessin pour la pose */
+/* la pose suit la flamme : en forme quand on s'est entraine aujourd'hui ou hier, au
+   repos (il dort) des que ca fait deux jours ou plus */
 function poussinEtat(){
-  const pose = "repos";
+  const pose = (POUSSIN["en-forme"] && serieJours().force === "pleine") ? "en-forme" : "repos";
   const choix = (db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"];
   const dispo = POUSSIN[pose] ? POUSSIN[pose].acc : [];
   return {pose, acc:choix.filter(id=>dispo.includes(id) && ACCESSOIRES.some(a=>a.id === id && accessoireGagne(a)))};
@@ -9218,7 +9224,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 21h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 21h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
