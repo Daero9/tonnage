@@ -4276,7 +4276,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Épargne tes {m} : encore <b>{p} %</b>":"Spare your {m}: <b>{p}%</b> to go", "Tous les muscles":"All muscles", "Aucun muscle dans cet état.":"No muscle in that state.", "Ton corps est au top !":"Your body is at its best!", "Vas-y en douceur.":"Take it easy.", "Laisse tes muscles souffler.":"Let your muscles breathe.",
+  "version du":"build of", "{} activités":"{} activities", "{} activité":"{} activity", "activités":"activities", "activité":"activity", "Épargne tes {m} : encore <b>{p} %</b>":"Spare your {m}: <b>{p}%</b> to go", "Tous les muscles":"All muscles", "Aucun muscle dans cet état.":"No muscle in that state.", "Ton corps est au top !":"Your body is at its best!", "Vas-y en douceur.":"Take it easy.", "Laisse tes muscles souffler.":"Let your muscles breathe.",
   "Bonne séance !":"Good workout!", "En douceur !":"Go easy!", "Repose-toi !":"Get some rest!", "pièce":"piece", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
@@ -4293,7 +4293,7 @@ const TRAD = {en:{
   "{} de cardio":"{} of cardio", "Le cœur suit.":"The heart's keeping up.", "Volume en hausse de {pct} %":"Volume up {pct}%", "({vol} soulevés)":"({vol} lifted)",
   "À prioriser":"Priorities", "Ce qui roule":"What's going well", "À garder en tête":"Keep in mind", "vs semaine dernière":"vs last week", "C'est noté !":"Got it!", "Nouveaux records !":"New records!", "Nouveau record !":"New record!", "Tu te dépasses !":"You're outdoing yourself!", "Première performance enregistrée":"First performance recorded", "Suis tes progrès et dépasse tes limites !":"Track your progress and push your limits!", "Tu es à ton meilleur niveau !":"You're at your best!", "Continue comme ça !":"Keep it up!", "À débloquer":"Locked", "Personnalise ton compagnon d'entraînement !":"Customise your training buddy!", "{} séance":"{} workout",
   "semaines d'affilée":"weeks in a row", "au mieux":"at best", "Gagne des accessoires en restant régulier !":"Earn accessories by staying consistent!", "Encore <b>{}</b> avant ton objectif !":"<b>{}</b> to go before your goal!", "Ma photo":"My photo", "Photo illisible.":"Unreadable photo.", "En route vers mes objectifs !":"On the way to my goals!", "Discipline aujourd'hui":"Discipline today", "Résultats demain":"Results tomorrow", "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
-  "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
+  "Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout or run counts. Tap an earned accessory to put it on or take it off.",
   "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
   "semaines d'affilée, au mieux":"weeks in a row, at best", "{} séances":"{} workouts", "Porté":"Worn", "Gagné":"Earned", "Bientôt":"Coming soon",
   "Bandeau noir":"Black headband", "Bandeau orange":"Orange headband", "Gants":"Gloves", "Serviette":"Towel", "Casquette":"Cap", "Lunettes de soleil":"Sunglasses",
@@ -9065,9 +9065,13 @@ function meilleureSerieSemaines(){
   sem.forEach(t=>{ if(sem.has(t - 7*864e5)) return; let n = 0; while(sem.has(t + n*7*864e5)) n++; best = Math.max(best, n); });
   return best;
 }
+/* une activite = une seance de muscu OU une sortie cardio enregistree seule : quelqu'un
+   qui ne fait que courir gagne ses accessoires comme les autres (la flamme compte deja
+   les deux). Une sortie faite pendant une seance est dans la seance : pas comptee deux fois. */
+function nActivites(){ return (db.history || []).length + (db.cardio || []).length; }
 function accessoireGagne(a){
   if(a.serie) return meilleureSerieSemaines() >= a.serie;
-  return (db.history || []).length >= (a.seances || 0);
+  return nActivites() >= (a.seances || 0);
 }
 /* ce qu'il porte : le choix de la personne, filtre par ce qu'elle a gagne et par ce qui
    existe en dessin pour la pose */
@@ -9080,7 +9084,7 @@ function poussinEtat(){
 /* Le vestiaire : le poussin tel qu'il est, puis les accessoires — gagnes (on choisit ce
    qu'il porte), a gagner (avec ce qu'il reste a faire), rares a part. */
 function openVestiaire(){
-  const e = poussinEtat(), nSeances = (db.history || []).length, best = meilleureSerieSemaines();
+  const e = poussinEtat(), nSeances = nActivites(), best = meilleureSerieSemaines();
   const porte = new Set(e.acc);
   /* d'apres la maquette du 21 septembre : le poussin en grand, deux compteurs en tuiles
      (flamme / etoile), les accessoires en cartes avec un cadenas et une jauge de
@@ -9088,7 +9092,7 @@ function openVestiaire(){
      accessoires en restant regulier » */
   const tuile = a=>{
     const gagne = accessoireGagne(a), dessin = POUSSIN.repos && POUSSIN.repos.acc.includes(a.id);
-    const reste = a.serie ? TR("{} semaines d'affilée").replace("{}", a.serie) : TR(a.seances > 1 ? "{} séances" : "{} séance").replace("{}", a.seances);
+    const reste = a.serie ? TR("{} semaines d'affilée").replace("{}", a.serie) : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances);
     const avance = a.serie ? Math.min(1, best / a.serie) : Math.min(1, nSeances / Math.max(1, a.seances));
     return `<button class="vs-t ${gagne ? "ok" : "verrou"} ${porte.has(a.id) ? "on" : ""} ${dessin ? "" : "sans"}" data-acc="${a.id}" ${gagne && dessin ? "" : "disabled"}>
       ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
@@ -9103,10 +9107,10 @@ function openVestiaire(){
     <div class="pr-sous" style="text-align:center;">${TR("Personnalise ton compagnon d'entraînement !")}</div>
     <div class="vs-apercu">${poussinHtml("vs-poussin")}</div>
     <div class="vs-compte">
-      <div class="vs-c"><span class="ic">${icoM("flamme", 22)}</span><span><b>${nSeances}</b><small>${TR(nSeances > 1 ? "séances" : "séance")}</small></span></div>
+      <div class="vs-c"><span class="ic">${icoM("flamme", 22)}</span><span><b>${nSeances}</b><small>${TR(nSeances > 1 ? "activités" : "activité")}</small></span></div>
       <div class="vs-c"><span class="ic etoile">${IC_ETOILE}</span><span><b>${best}</b><small>${TR("semaines d'affilée")}<i>${TR("au mieux")}</i></small></span></div>
     </div>
-    <div class="vs-titre"><span class="em">🎒</span><b>${TR("Accessoires")}</b><span class="vs-bulle">${TR("Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.")}</span></div>
+    <div class="vs-titre"><span class="em">🎒</span><b>${TR("Accessoires")}</b><span class="vs-bulle">${TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.")}</span></div>
     <div class="vs-grille">${courants.map(tuile).join("")}</div>
     <div class="vs-titre"><span class="em">✨</span><b>${TR("Rares")}</b><span class="vs-bulle">${TR("Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.")}</span></div>
     <div class="vs-grille">${rares.map(tuile).join("")}</div>
@@ -9197,7 +9201,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 20h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 21h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */

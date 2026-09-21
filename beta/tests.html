@@ -1379,6 +1379,11 @@ async function lancer(){
       vrai("Le bandeau noir est acquis d'office, les gants à cinq séances, pas encore la serviette (dix)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
         && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "serviette")));
       vrai("La chaîne en or (4 semaines d'affilée) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
+      DB.cardio = [1,2,3,4,5].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
+      eq("Cinq séances et cinq sorties font dix activités", F.nActivites(), 10);
+      vrai("…et la serviette (dix) est gagnée grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "serviette")));
+      DB.cardio = [];
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@repos']"));
       F.openProfil();
