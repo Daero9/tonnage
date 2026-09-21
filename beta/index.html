@@ -4237,7 +4237,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
+  "version du":"build of", "pièce":"piece", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
   "Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui.":"Holding your weight while training is recomposition: the scale barely moves, your shape does.",
@@ -9157,7 +9157,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 20h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 20h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13379,8 +13379,10 @@ function openAjoutAliment(meal){
         const mn = TR(it[0]).match(/^(.*?)\s*\(([^)]*)\)\s*$/);
         const nom = mn ? mn[1] : TR(it[0]), det = mn ? mn[2] : "";
         /* à la pièce, l'unité est déjà dans le nom : « 78 kcal » suffit sous « Œuf » */
-        const par = it[3] === "100g" ? " / 100 g" : (it[3] === "cl" ? " / 100 ml" : "");
-        const bas = [det, it[2] + " kcal" + par].filter(Boolean).join(" · ");
+        /* un fruit qu'on compte a la piece : les calories d'une piece, pas de 100 g */
+        const gp = it[3] === "100g" ? POIDS_PIECE[it[0]] : 0;
+        const par = gp ? " / " + TR("pièce") : (it[3] === "100g" ? " / 100 g" : (it[3] === "cl" ? " / 100 ml" : ""));
+        const bas = [det, (gp ? "≈ " + Math.round(it[2] * gp / 100) : it[2]) + " kcal" + par].filter(Boolean).join(" · ");
         /* plus de grammes de protéines en bout de fiche : « Frites … 6 g » se lisait
            comme le poids de la portion. Les valeurs complètes s'affichent sous la
            quantité, une fois l'aliment choisi. */
