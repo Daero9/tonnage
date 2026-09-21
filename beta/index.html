@@ -8794,7 +8794,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 15h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 15h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9874,7 +9874,7 @@ function heroSvg(photo, plat){
     </mask></defs>
     <g mask="url(#hero-m)">
       <rect width="1210" height="${HERO_H}" fill="url(#hero-g)"/>
-      ${photo ? `<image href="img/${photo}.jpg" x="0" y="${decal}" width="${larg}" height="${haut}"
+      ${photo ? `<image href="${photoUrl(photo)}" x="0" y="${decal}" width="${larg}" height="${haut}"
         preserveAspectRatio="none" opacity=".62"/>
       <rect width="1210" height="${HERO_H}" fill="#0e0e10" opacity=".42"/>` : ""}
     </g>
@@ -14314,7 +14314,10 @@ function photoSeance(t){
   if(/cardio|course|run|hiit|marche/.test(n)) return "cardio";
   return "push";
 }
-function photoUrl(nom){ return `img/${nom}.jpg`; }
+/* le numero de version dans le nom : une photo refaite a le meme nom sinon, et le
+   telephone la garde dix minutes en cache — on l'incremente a chaque changement */
+const PHOTOS_V = 2;
+function photoUrl(nom){ return `img/${nom}-${PHOTOS_V}.jpg`; }
 /* ---- combien de temps dure vraiment une séance -------------------------------
    Trois formules cohabitaient dans l'app, toutes bâties sur « le repos plus quarante
    secondes ». Un forfait de quarante secondes par série est faux dans les deux sens :
