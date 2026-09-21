@@ -1358,6 +1358,23 @@ async function lancer(){
       eq("…mais une sortie cardio la comble", F.serieSemaines().n, 4);
       DB.cardio = [];
       vrai("Une séance datée de demain ne compte pas", (()=>{ DB.history = [seance(9, new Date(Date.now() + 8*J).toISOString())]; return F.serieSemaines().n === 0; })());
+      /* le poussin et son vestiaire */
+      DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3)), seance(6, sem(6)), seance(7, sem(7))];
+      eq("La meilleure série jamais tenue : trois semaines", F.meilleureSerieSemaines(), 3);
+      vrai("Le bandeau noir est acquis d'office, les gants à cinq séances, pas encore la serviette (dix)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
+        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "serviette")));
+      vrai("La chaîne en or (4 semaines d'affilée) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      F.render();
+      vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@repos']"));
+      F.openProfil();
+      vrai("Le profil propose « Personnaliser mon avatar »", !!F.document.getElementById("pr-avatar"));
+      F.document.getElementById("pr-avatar").click();
+      vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon avatar/.test(F.document.querySelector("#sheet h3").textContent) && F.document.querySelector("#sheet [data-acc='bandeau']").classList.contains("on"));
+      F.document.querySelector("#sheet [data-acc='bandeau']").click();
+      vrai("Toucher le bandeau l'enlève, et le poussin l'enlève aussi", !F.document.querySelector("#sheet [data-acc='bandeau']").classList.contains("on") && !F.document.querySelector("#sheet .vs-poussin img.acc"));
+      vrai("Un accessoire non gagné ne se touche pas", F.document.querySelector("#sheet [data-acc='serviette']").disabled);
+      vrai("…ni un accessoire gagné qui n'a pas encore son dessin", F.document.querySelector("#sheet [data-acc='gants']").disabled && /Bientôt/.test(F.document.querySelector("#sheet [data-acc='gants']").textContent));
+      F.hideSheet(); delete DB.avatar;
       DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",
         start:Date.now()-3.6e6, end:Date.now(),
         entries:[{exId:id("Développé couché"), sets:[{w:60,r:10,done:true},{w:60,r:10,done:true}]}]}];
