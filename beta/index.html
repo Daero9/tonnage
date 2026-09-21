@@ -522,6 +522,15 @@
   .fin-tiles .tile .ic{display:flex; width:30px; height:30px; border-radius:50%; margin-bottom:8px;
     background:rgba(245,130,32,.13); color:var(--accent); align-items:center; justify-content:center;}
   .fin-tiles .tile .ic svg{width:17px; height:17px;}
+  /* ---- « Terminer la séance ? », d'apres la maquette du 21 septembre ---- */
+  .tf-coche{width:64px; height:64px; border-radius:50%; margin:4px auto 10px; background:rgba(82,180,58,.16); color:#3d9a27; display:flex; align-items:center; justify-content:center;}
+  .tf-coche svg{width:34px; height:34px;}
+  .tf-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 14px; padding:12px 8px; border-radius:16px; background:var(--surface2);}
+  .tf{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0;}
+  .tf .ic{width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
+  .tf .ic svg{width:22px; height:22px;} .tf .ic.o{background:rgba(245,130,32,.14); color:var(--accent);} .tf .ic.v{background:rgba(110,80,230,.14); color:#6e50e6;}
+  .tf b{font-size:15px; font-weight:800; white-space:nowrap;} .tf small{font-size:12px; color:var(--ink-soft); margin-top:-3px;}
+  .tf-q{text-align:center; color:var(--ink-soft); font-size:14px; margin:0 0 14px;}
   .fin-titre{position:relative; display:inline-block;}
   .fin-souligne{position:absolute; left:50%; bottom:-7px; width:70%; transform:translateX(-50%); height:8px;}
   .fin-serie{display:flex; align-items:center; justify-content:center; gap:8px; margin:0 auto 14px; width:max-content; max-width:100%;
@@ -4228,7 +4237,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
+  "version du":"build of", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
   "Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui.":"Holding your weight while training is recomposition: the scale barely moves, your shape does.",
@@ -9148,7 +9157,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 19h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 19h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -17693,7 +17702,21 @@ function renderActive(app){
     if(!doneSets && !cardioFait){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
     const kcal = liftKcal(a);
-    askConfirm(TR("Terminer la séance ?"), `${doneSets} ${TR(doneSets > 1 ? "séries validées" : "série validée")} · ${volPds(vol)} ${TR("soulevés")} · ${TR("environ")} ${kcal} ${TR("kcal brûlées. On enregistre ?")}`, TR("Enregistrer"), false, ()=>{
+    /* d'apres la maquette du 21 septembre : la coche verte dans son rond, la question,
+       trois tuiles (series, tonnage, calories) et « On enregistre ? » */
+    const tuile = (ic, classe, v, l) => `<div class="tf"><span class="ic ${classe}">${ic}</span><b>${v}</b><small>${l}</small></div>`;
+    openSheet(`<div class="tf-coche">${IC_COCHE}</div>
+      <h3 style="text-align:center;">${TR("Terminer la séance ?")}</h3>
+      <div class="tf-tuiles">
+        ${tuile(ICONS.seance, "o", doneSets + " " + TR(doneSets > 1 ? "séries" : "série"), TR(doneSets > 1 ? "validées" : "validée"))}
+        ${tuile(icoM("poids", 22), "v", volPds(vol), TR("soulevés"))}
+        ${tuile(icoM("flamme", 22), "o", "≈ " + kcal + " kcal", TR("brûlées"))}
+      </div>
+      <p class="tf-q">${TR("On enregistre ?")}</p>
+      <div class="row"><button class="btn grow" id="cf-no">${TR("Annuler")}</button>
+      <button class="btn grow btn-accent" id="cf-yes">${TR("Enregistrer")}</button></div>`);
+    document.getElementById("cf-no").onclick = closeSheet;
+    document.getElementById("cf-yes").onclick = ()=>{ closeSheet(); (()=>{
       /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
       const recap = {
         nom: a.name, series: doneSets, volume: Math.round(vol), kcal,
@@ -17734,7 +17757,7 @@ function renderActive(app){
       setTimeout(()=>openFinSeance(recap), 260);
       /* la premiere seance terminee : le bon moment pour proposer un rappel, une fois */
       if(db.history.length === 1) setTimeout(proposerNotifs, 9000);
-    });
+    })(); };
   };
 }
 /* records battus pendant la séance : meilleur 1RM estimé face à tout l'historique précédent */
