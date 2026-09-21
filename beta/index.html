@@ -1646,6 +1646,26 @@
   /* pose sur le bord de la carte de la semaine : il est dans le meme bloc qu'elle, au-dessus */
   .under-hero{position:relative;}
   .hero-poussin{position:absolute; right:14px; bottom:calc(100% - 7px); width:112px; pointer-events:none; z-index:3;}
+  /* ---- le halo de la regularite : un disque en degrade radial derriere le poussin, qui
+     pulse. Pas d'ombre portee (elle se coupe en carre sur certains Android). Il grandit
+     et s'avive chaque semaine tenue, et passe a l'or a la quatrieme. ---- */
+  .halo{position:absolute; left:50%; top:55%; width:var(--halo-w, 120%); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%);
+    background:radial-gradient(circle, var(--halo-c1, rgba(255,170,60,.55)) 0%, var(--halo-c2, rgba(255,140,30,.22)) 45%, rgba(255,140,30,0) 70%);
+    animation:haloPulse var(--halo-t, 3.2s) ease-in-out infinite; pointer-events:none; z-index:-1;}
+  .hero-poussin, .vs-poussin{isolation:isolate;}
+  [data-halo="1"]{--halo-w:115%; --halo-t:3.4s;}
+  [data-halo="2"]{--halo-w:135%; --halo-t:2.6s; --halo-c1:rgba(255,175,60,.7); --halo-c2:rgba(255,140,30,.3);}
+  [data-halo="3"]{--halo-w:155%; --halo-t:2s; --halo-c1:rgba(255,185,70,.85); --halo-c2:rgba(255,140,30,.38);}
+  [data-halo="4"]{--halo-w:160%; --halo-t:1.8s; --halo-c1:rgba(255,226,120,.95); --halo-c2:rgba(255,196,60,.42);}
+  /* des etincelles a partir de trois semaines : deux petits points qui clignotent en decale */
+  [data-halo="3"] .halo::before, [data-halo="3"] .halo::after, [data-halo="4"] .halo::before, [data-halo="4"] .halo::after{
+    content:""; position:absolute; width:6px; height:6px; border-radius:50%; background:#fff;
+    animation:haloScintille 1.6s ease-in-out infinite;}
+  [data-halo="3"] .halo::before, [data-halo="4"] .halo::before{left:22%; top:30%;}
+  [data-halo="3"] .halo::after, [data-halo="4"] .halo::after{right:20%; top:58%; width:4px; height:4px; animation-delay:.8s;}
+  @keyframes haloPulse{0%,100%{opacity:.75; transform:translate(-50%,-50%) scale(.94);} 50%{opacity:1; transform:translate(-50%,-50%) scale(1.06);}}
+  @keyframes haloScintille{0%,100%{opacity:0; transform:scale(.4);} 50%{opacity:1; transform:scale(1.2);}}
+  @media (prefers-reduced-motion:reduce){ .halo, .halo::before, .halo::after{animation:none;} }
   /* pas d'ombre portee : sur certains telephones elle se coupait en carre autour du dessin */
   .hero-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;}
   /* le poussin en forme est debout, donc plus haut que large : on le resserre pour qu'il
@@ -9129,10 +9149,24 @@ function accessoireGagne(a){
 /* ce qu'il porte : le choix de la personne, filtre par ce qu'elle a gagne et par ce qui
    existe en dessin pour la pose */
 /* activites (jours avec une seance ou une sortie) sur les 7 derniers jours */
-function activites7j(){
-  const jours = new Set(), depuis = Date.now() - 7 * 864e5;
-  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= Date.now()) jours.add(dayKey(d)); });
+function activites7j(fin){
+  const now = fin || Date.now(), jours = new Set(), depuis = now - 7 * 864e5;
+  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= now) jours.add(dayKey(d)); });
   return jours.size;
+}
+/* Depuis combien de jours d'affilee la condition « muscle » (3 activites sur 7 jours)
+   tient sans interruption : on remonte jour par jour tant qu'elle est vraie. C'est ce qui
+   fait grandir le halo. Plafonne a 60 jours, inutile d'aller plus loin. */
+function joursMuscle(){
+  let n = 0;
+  const fin = new Date(); fin.setHours(23, 59, 59, 999);
+  while(n < 60 && activites7j(fin.getTime() - n * 864e5) >= 3) n++;
+  return n;
+}
+/* le halo : 0 (rien), 1 (une semaine), 2 (deux), 3 (trois), 4 (quatre et plus : dore) */
+function niveauHalo(){
+  const j = joursMuscle();
+  return j >= 28 ? 4 : (j >= 21 ? 3 : (j >= 14 ? 2 : (j >= 7 ? 1 : 0)));
 }
 /* la fin de la derniere activite (seance ou sortie), en ms ; 0 s'il n'y en a pas */
 function finDerniereActivite(){
@@ -9262,7 +9296,10 @@ function poussinHtml(classe, poseForcee){
   const calques = e.acc.filter(a=>p.acc.includes(a)).map(a=>`<img class="acc" src="img/poussin/${a}@${e.pose}.webp" alt="">`).join("");
   /* sur l'accueil, un vrai record du jour se signale a cote de lui ; on touche, il raconte */
   const rec = !classe && recordSignificatif();
-  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" style="aspect-ratio:1/${p.ratio};"><img src="img/poussin/${e.pose}.webp" alt="">${calques}${
+  /* le halo de la regularite, derriere lui, sur toutes les poses tant que la condition tient */
+  const halo = niveauHalo();
+  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio};">${
+    halo ? `<i class="halo"></i>` : ""}<img src="img/poussin/${e.pose}.webp" alt="">${calques}${
     rec ? `<button class="poussin-rec" id="poussin-record">🏆 ${TR("Record !")}</button>` : ""}</div>`;
 }
 document.addEventListener("click", e=>{
@@ -9355,7 +9392,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 01h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 01h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
