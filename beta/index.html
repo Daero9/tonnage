@@ -1693,7 +1693,8 @@
   .vs-c small i{display:block; font-style:normal; font-size:11px; color:var(--ink-mute);}
   .vs-titre{display:flex; align-items:center; gap:8px; margin:6px 0 10px;}
   .vs-titre .em{width:30px; height:30px; display:block;} .vs-titre b{font-size:17px; font-weight:900; letter-spacing:.02em; text-transform:uppercase;}
-  .vs-titre .card-i{margin-left:2px;}
+  .vs-titre .card-i{margin-left:2px;} .vs-titre .card-i.on{background:var(--accent); color:#fff;}
+  .vs-info{margin:-4px 0 10px; padding:10px 12px; border-radius:12px; background:rgba(245,130,32,.10); font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
   .vs-titre .vs-bulle{flex:1; min-width:0; margin-left:6px; padding:8px 10px; border-radius:12px; background:var(--surface2); font-size:11px; line-height:1.35; color:var(--ink-mute);}
   .vs-grille{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:16px;}
   .vs-t{position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px 12px; border-radius:16px; background:var(--surface2); color:var(--ink); text-align:center; min-height:150px;}
@@ -9211,7 +9212,7 @@ function openVestiaire(){
   const tuile = a=>{
     const gagne = accessoireGagne(a), dessin = POUSSIN.repos && POUSSIN.repos.acc.includes(a.id);
     const reste = a.flamme ? TR("Flamme de {}").replace("{}", a.flamme)
-      : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances) + (a.duree && a.seances > 1 ? ` · ≈ ${TR(a.duree)}` : "");
+      : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances) + (a.duree && a.seances > 1 ? `<br>≈ ${TR(a.duree)}` : "");
     const avance = a.flamme ? Math.min(1, best / a.flamme) : Math.min(1, nSeances / Math.max(1, a.seances));
     return `<button class="vs-t ${gagne ? "ok" : "verrou"} ${porte.has(a.id) ? "on" : ""} ${dessin ? "" : "sans"}" data-acc="${a.id}" ${gagne && dessin ? "" : "disabled"}>
       ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
@@ -9234,15 +9235,19 @@ function openVestiaire(){
     <div class="vs-titre"><img class="em" src="img/vs-etoile.png" alt=""><b>${TR("Rares")}</b><button class="card-i" data-vsinfo="rare" aria-label="${TR("À quoi ça sert ?")}">i</button></div>
     <div class="vs-grille">${rares.map(tuile).join("")}</div>
     <div class="vs-pied"><span class="ic">🏆</span><span class="grow">${TR("Gagne des accessoires en restant régulier !")}</span></div>`);
-  /* le i de chaque famille ouvre son explication */
+  /* le i deplie son explication juste sous le titre, dans la fiche : on ne quitte pas
+     le vestiaire (une fiche par-dessus laissait voir l'accueil derriere) */
   document.querySelectorAll("[data-vsinfo]").forEach(b=>b.onclick=()=>{
     const rare = b.dataset.vsinfo === "rare";
-    ouvrirParDessus(openVestiaire, ()=>openSheet(`<h3>${rare ? TR("Rares") : TR("Accessoires")}</h3>
-      <p style="margin:0 0 16px; font-size:14.5px; line-height:1.55; color:var(--ink-soft);">${rare
-        ? TR("Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.")
-        : TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.") + " " + TR("Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.")}</p>
-      <button class="btn btn-accent" id="vsi-ok" style="width:100%;">${TR("Compris")}</button>`));
-    document.getElementById("vsi-ok").onclick = closeSheet;
+    const titre = b.closest(".vs-titre");
+    const deja = titre.nextElementSibling && titre.nextElementSibling.classList.contains("vs-info");
+    if(deja){ titre.nextElementSibling.remove(); b.classList.remove("on"); return; }
+    const d = document.createElement("div");
+    d.className = "vs-info";
+    d.innerHTML = rare
+      ? TR("Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.")
+      : TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.") + " " + TR("Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.");
+    titre.after(d); b.classList.add("on");
   });
   document.querySelectorAll("#sheet [data-acc]").forEach(b=>b.onclick = ()=>{
     const id = b.dataset.acc, acc = new Set((db.avatar && db.avatar.acc) || ["bandeau"]);
@@ -9350,7 +9355,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 01h16 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 01h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
