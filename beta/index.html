@@ -2267,15 +2267,13 @@
     transition:border-color .3s ease;}
   .cam .declencheur span{width:52px; height:52px; border-radius:50%; background:#fff;   /* blanc, comme un vrai declencheur */
     transition:transform .34s cubic-bezier(.34,1.4,.64,1);}
-  .cam.code .declencheur{border-color:rgba(255,255,255,.3); pointer-events:none;}
-  .cam.code .declencheur span{transform:scale(0);}
-  /* les deux petits boutons de gauche occupent la meme place : l'un fond dans l'autre */
+  /* galerie a gauche, declencheur au milieu, saisie a droite. En mode code-barres le
+     declencheur sert aussi : il fige une image du flux et y lit le code, pour les
+     codes que la lecture continue n'attrape pas. La saisie n'a pas de sens pour un
+     plat : elle s'efface, sans bouger les deux autres. */
   .cam .ligne{position:relative;}
-  .cam [data-main], .cam [data-galerie]{transition:opacity .22s ease, transform .3s ease;}
-  .cam.code [data-galerie], .cam.plat [data-main]{opacity:0; transform:scale(.6); pointer-events:none; position:absolute; left:calc(50% - 101px);}
-  /* sans flux en mode code : la photo du code ET la saisie a la main, cote a cote */
-  .cam.sans-flux.code [data-galerie], .cam.sans-flux.code [data-main]{opacity:1; transform:none; pointer-events:auto; position:static;}
-  .cam.sans-flux.code .vide{display:none;}
+  .cam [data-main]{transition:opacity .22s ease, transform .3s ease;}
+  .cam.plat [data-main]{opacity:0; transform:scale(.6); pointer-events:none;}
   /* la saisie du code a la main, dans l'ecran */
   .cam .saisie{position:absolute; left:16px; right:16px; top:calc(50% - 150px); background:#fff; color:#17181a; border-radius:18px; padding:16px;
     animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards; z-index:2;}
@@ -8594,7 +8592,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 03h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 03h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11766,10 +11764,9 @@ function ouvrirCamera(mode, titre){
         <div class="modes"><span class="curseur"></span><button data-mode="code" class="${mode === "code" ? "on" : ""}">${IC_CODEBARRE}${TR("Code-barres")}</button>
           <button data-mode="plat" class="${mode === "plat" ? "on" : ""}">${IC_PHOTO}${TR("Plat")}</button></div>
         <div class="ligne">
-          <button class="rond" data-main aria-label="${TR("Saisir le code à la main")}">${IC_CLAVIER}</button>
           <button class="rond" data-galerie aria-label="${TR("Choisir dans la galerie")}">${IC_GALERIE}</button>
           <button class="declencheur" data-prendre aria-label="${TR("Prendre la photo")}"><span></span></button>
-          <span class="rond vide"></span>
+          <button class="rond" data-main aria-label="${TR("Saisir le code à la main")}">${IC_CLAVIER}</button>
         </div>
       </div>
       <input type="file" accept="image/*" data-fichier style="display:none;">`;
@@ -11838,8 +11835,8 @@ function ouvrirCamera(mode, titre){
     fich.onchange = async ()=>{
       const f = fich.files && fich.files[0]; fich.value = "";
       if(!f) return;
-      if(mode === "code" && !flux){
-        /* pas de flux : on lit le code sur la photo, comme avant */
+      if(mode === "code"){
+        /* en mode code, une photo est une photo DU CODE : on y lit les chiffres */
         texte.textContent = TR("Lecture de la photo…");
         try{
           const code = await lireCodeSurPhoto(f);
@@ -11854,6 +11851,22 @@ function ouvrirCamera(mode, titre){
     };
     /* le declencheur : l'image du flux, reduite comme une photo de fichier */
     q("[data-prendre]").onclick = ()=>{
+      if(mode === "code"){
+        if(!flux || video.readyState < 2){ fich.click(); return; }
+        const cv = document.createElement("canvas");
+        cv.width = video.videoWidth; cv.height = video.videoHeight;
+        cv.getContext("2d").drawImage(video, 0, 0);
+        vibrer(20); boite.classList.add("flash"); setTimeout(()=>boite.classList.remove("flash"), 300);
+        texte.textContent = TR("Lecture de la photo…");
+        cv.toBlob(async b=>{
+          try{
+            const code = b && await lireCodeSurPhoto(b);
+            if(code){ vibrer(30); return finir({type:"code", code}); }
+            texte.textContent = TR("Code illisible. Réessaie de plus près, ou saisis les chiffres.");
+          }catch(e){ texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); }
+        }, "image/jpeg", 0.9);
+        return;
+      }
       if(photosRestantes() <= 0) return finir({type:"scans"});
       if(!flux || video.readyState < 2){ fich.click(); return; }
       /* On n'envoie que le carre de visee. La video est affichee en « cover » : on
