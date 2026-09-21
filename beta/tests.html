@@ -922,6 +922,12 @@ async function lancer(){
   vrai("Un dégressif ajoute de la fatigue", avecDrop < sansDrop, `avec ${avecDrop} % vs sans ${sansDrop} %`);
   eq("Poids de fatigue : à l'échec", F.poidsFatigue({rir:0}), 1.35);
   eq("Poids de fatigue : 3 reps en réserve", F.poidsFatigue({rir:3}), 0.7);
+  /* le volume de la serie : un double lourd ne coute pas une serie de dix */
+  eq("Huit reps : la référence", F.poidsFatigue({rir:1, r:8}), 1);
+  eq("Deux reps : bien moins", F.poidsFatigue({rir:1, r:2}), 0.35);
+  eq("Quinze reps : un peu plus, plafonné", F.poidsFatigue({rir:1, r:15}), 1.25);
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,2,1),serie(80,2,1)]}])];
+  vrai("Deux doubles laissent les quadriceps presque frais", F.recuperation().muscles["Quadriceps"].pct >= 85, F.recuperation().muscles["Quadriceps"].pct + " %");
   neuf();
 
   /* ---------------------------------------------------------- profil musculaire */
