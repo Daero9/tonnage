@@ -8844,7 +8844,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 16h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 16h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -11795,13 +11795,13 @@ function renderEat(app){
       /* « 30 g » tout seul se lit comme le poids du repas. Le mot dessous lève
          l'ambiguïté sans coûter une ligne de plus : il tient sous le chiffre. */
       return `<button class="meal-tab ${mealCur===id?'on':''}" data-meal="${id}"
-        style="${mealCur===id? `background:${MEAL_C[id]};`:""}"><span>${TR(lab)}<b>${
+        style="${mealCur===id? degradeRepas(MEAL_C[id], 135):""}"><span>${TR(lab)}<b>${
           g? g+" g" : "—"}</b>${g? `<u>${TR("protéines")}</u>` : ""}</span><i></i></button>`;
     }).join("")}</div>
     <div class="meal-panel" id="meal-panel"></div>
     <div style="height:34px;"></div>
     <div class="eat-fab">
-      <button class="fab" id="eat-add" style="background:${coul};" aria-label="${TR("Ajouter un aliment")}">＋</button>
+      <button class="fab" id="eat-add" style="${degradeRepas(coul, 180)}" aria-label="${TR("Ajouter un aliment")}">＋</button>
       <span class="lb" style="color:${coul};">${TR("Ajouter un aliment")}</span>
     </div>`;
   wireTopbar();
@@ -11875,7 +11875,7 @@ function dessineRepas(panel){
        est bien une quantité. */
     const bas = pa.qCourt;
     return `<button class="fchip ${on?'on':''}" data-opt="${esc(on ? choisiL : socle)}"
-        data-socle="${esc(soc)}" style="${on? `background:${coul};`:""}">
+        data-socle="${esc(soc)}" style="${on? degradeRepas(coul, 135):""}">
       <span class="ic">${foodIcon(socle)}</span>
       <span class="tx"><span class="nm">${esc(pa.nom)}</span>${bas? `<span class="q">${esc(bas)}</span>`:""}</span>
       ${on ? `<span class="fst">${f > 1.001
@@ -13844,6 +13844,12 @@ function mealProt(key, meal){
 function dayCorrige(key){ const o = db.dayFix && db.dayFix[key]; return !!(o && (o.prot!=null || o.kcal!=null)); }
 const MEALS = [["matin","Matin"],["midi","Midi"],["collation","Collation"],["soir","Soir"],["extra","Extra"]];
 const MEAL_C = {matin:"var(--matin)", midi:"var(--midi)", collation:"var(--collation)", soir:"var(--soir)", extra:"var(--extra)"};
+/* Le degrade d'une couleur de repas : plus clair en haut a gauche, plus dense et plus
+   sombre en bas a droite (en diagonale pour les onglets, a la verticale pour le bouton
+   « + »). La couleur plate est posee d'abord : un navigateur sans color-mix garde celle-la. */
+function degradeRepas(c, angle){
+  return `background:${c}; background:linear-gradient(${angle || 135}deg, color-mix(in srgb, ${c} 82%, white) 0%, ${c} 52%, color-mix(in srgb, ${c} 80%, black) 100%);`;
+}
 /* Un signe dessine, pose en masque : il prend la couleur de ce qui l entoure. */
 function icoM(nom, taille){
   return `<span class="icm icm-${nom}" style="width:${taille}px; height:${taille}px;" aria-hidden="true"></span>`;
