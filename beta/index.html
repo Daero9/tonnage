@@ -1651,6 +1651,8 @@
   /* le poussin en forme est debout, donc plus haut que large : on le resserre pour qu'il
      depasse de la carte a peu pres autant que celui qui dort */
   .hero-poussin[data-pose="en-forme"], .hero-poussin[data-pose="muscle"]{width:88px; right:22px;}
+  .poussin-rec{position:absolute; right:calc(100% - 26px); top:-14px; pointer-events:auto; white-space:nowrap; padding:6px 10px; border-radius:99px;
+    background:#fff; color:var(--accent); font-size:12px; font-weight:800; transform:rotate(-4deg);}
   /* la flamme animee de Nico, posee sur le bord de la carte sous le poussin, le chiffre
      dans son coeur clair ; elle rapetisse et palit quand les jours sans seance passent */
   .hero-flamme{position:absolute; right:30px; top:-30px; z-index:4; width:40px; height:50px; transform-origin:50% 100%;
@@ -4280,7 +4282,10 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Une semaine compte dès qu'elle contient une séance ou une sortie.":"A week counts as soon as it holds a workout or a run.",
+  "version du":"build of", "Record !":"Record!", "puis":"then", "Continuer comme ça !":"Keep it up!",
+  "<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>, tu étais bloqué. Aujourd'hui tu as monté à <b>{b}</b>.":"<b>{ex}</b>: your last two sessions were at <b>{a}</b>, you were stuck. Today you moved up to <b>{b}</b>.",
+  "<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>. Aujourd'hui tu as monté à <b>{b}</b>.":"<b>{ex}</b>: your last two sessions were at <b>{a}</b>. Today you moved up to <b>{b}</b>.",
+  "<b>+{g}</b> de charge de travail : c'est un vrai palier, pas un kilo de plus.":"<b>+{g}</b> of working load: a real step up, not just one more kilo.", "Une semaine compte dès qu'elle contient une séance ou une sortie.":"A week counts as soon as it holds a workout or a run.",
   "Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.":"Only one activity counts per day: a workout and a run on the same day make one.", "À quoi ça sert ?":"What is this?", "{} activités":"{} activities", "{} activité":"{} activity", "activités":"activities", "activité":"activity", "Épargne tes {m} : encore <b>{p} %</b>":"Spare your {m}: <b>{p}%</b> to go", "Tous les muscles":"All muscles", "Aucun muscle dans cet état.":"No muscle in that state.", "Ton corps est au top !":"Your body is at its best!", "Vas-y en douceur.":"Take it easy.", "Laisse tes muscles souffler.":"Let your muscles breathe.",
   "Bonne séance !":"Good workout!", "En douceur !":"Go easy!", "Repose-toi !":"Get some rest!", "pièce":"piece", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
@@ -9092,12 +9097,66 @@ function activites7j(){
   (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= Date.now()) jours.add(dayKey(d)); });
   return jours.size;
 }
-/* la pose recompense la regularite : muscle a partir de 3 activites sur 7 jours (le
-   seuil du bilan), en forme quand on s'est entraine aujourd'hui ou hier, au repos (il
-   dort) des que ca fait deux jours ou plus. Ni le poids ni le profil n'y entrent. */
+/* la fin de la derniere activite (seance ou sortie), en ms ; 0 s'il n'y en a pas */
+function finDerniereActivite(){
+  let fin = 0;
+  (db.history || []).forEach(h=>{ const t = h.end || new Date(h.date).getTime(); if(t > fin && t <= Date.now()) fin = t; });
+  (db.cardio || []).forEach(c=>{ const t = new Date(c.date).getTime() + (c.min || 0) * 60000; if(t > fin && t <= Date.now()) fin = t; });
+  return fin;
+}
+/* Un VRAI record, pas +1 kg : la charge de travail de la seance du jour depasse d'au
+   moins 5 kg (10 lb) la meilleure des deux dernieres seances de cet exercice — deux
+   seances qu'il faut avoir faites, sinon on ne compare a rien. On rend l'exercice, les
+   charges d'avant et celle du jour, pour le raconter quand on touche le poussin. */
+function recordSignificatif(){
+  const hist = db.history || [];
+  if(!hist.length) return null;
+  const h = hist[hist.length - 1];
+  if(dayKey(h.date) !== dayKey()) return null;
+  const seuil = estImperial() ? 10 / PAR_LB : 5;
+  const maxW = en => Math.max(0, ...en.sets.filter(s=>s.done !== false && !s.warm && s.w > 0).map(s=>s.w));
+  for(const en of h.entries){
+    const w = maxW(en);
+    if(!(w > 0)) continue;
+    const avant = hist.slice(0, -1).filter(x=>x.entries.some(e=>e.exId === en.exId)).slice(-2)
+      .map(x=>maxW(x.entries.find(e=>e.exId === en.exId))).filter(v=>v > 0);
+    if(avant.length < 2) continue;
+    const ref = Math.max(...avant);
+    if(w - ref >= seuil - 1e-9) return {nom:getEx(en.exId).name, avant, ref, apres:w, bloque:Math.abs(avant[0] - avant[1]) < 0.01, fin:h.end || new Date(h.date).getTime()};
+  }
+  return null;
+}
+/* un accessoire gagne aujourd'hui : le palier d'activites tombe pile sur le jour, ou la
+   serie de semaines vient d'atteindre celui d'un rare */
+function accessoireDuJour(){
+  if(serieJours().depuis !== 0) return null;
+  const n = nActivites(), sem = serieSemaines();
+  return ACCESSOIRES.find(a=>a.serie ? (sem.enCours && sem.n === a.serie && activites7j() === 1) : a.seances === n) || null;
+}
+/* La pose du poussin, par priorite. Chaque pose ne s'active que si son dessin existe
+   dans POUSSIN ; sinon on passe a la suivante. Ni le poids ni le profil n'y entrent.
+     1. en-fete         un accessoire debloque aujourd'hui (jusqu'a minuit)
+     2. record          un vrai record (+5 kg), les 10 minutes qui suivent la seance
+     3. apres-la-seance les 3 heures qui suivent une seance ou une sortie
+     4. fatigue         recuperation du corps entier sous 50 %
+     5. en-danger       3 jours sans activite : demain la flamme s'eteint
+     6. muscle          au moins 3 activites sur les 7 derniers jours (la regularite)
+     7. en-forme        une activite aujourd'hui ou hier
+     8. repos           le reste du temps — et la pose de secours */
+function poussinPose(){
+  const a = n => !!POUSSIN[n];
+  const sj = serieJours(), fin = finDerniereActivite(), depuis = Date.now() - fin;
+  if(a("en-fete") && accessoireDuJour()) return "en-fete";
+  if(a("record") && fin && depuis < 10 * 60000 && recordSignificatif()) return "record";
+  if(a("apres-la-seance") && fin && depuis < 3 * 3600e3) return "apres-la-seance";
+  if(a("fatigue") && (db.history || []).length && recuperation().global < 50) return "fatigue";
+  if(a("en-danger") && sj.depuis === 3) return "en-danger";
+  if(a("muscle") && activites7j() >= 3) return "muscle";
+  if(a("en-forme") && sj.force === "pleine") return "en-forme";
+  return "repos";
+}
 function poussinEtat(){
-  const pose = (POUSSIN["muscle"] && activites7j() >= 3) ? "muscle"
-    : ((POUSSIN["en-forme"] && serieJours().force === "pleine") ? "en-forme" : "repos");
+  const pose = poussinPose();
   const choix = (db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"];
   const dispo = POUSSIN[pose] ? POUSSIN[pose].acc : [];
   return {pose, acc:choix.filter(id=>dispo.includes(id) && ACCESSOIRES.some(a=>a.id === id && accessoireGagne(a)))};
@@ -9157,8 +9216,28 @@ function poussinHtml(classe){
   const e = poussinEtat(), p = POUSSIN[e.pose];
   if(!p) return "";
   const calques = e.acc.filter(a=>p.acc.includes(a)).map(a=>`<img class="acc" src="img/poussin/${a}@${e.pose}.png" alt="">`).join("");
-  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" style="aspect-ratio:1/${p.ratio};"><img src="img/poussin/${e.pose}.png" alt="">${calques}</div>`;
+  /* sur l'accueil, un vrai record du jour se signale a cote de lui ; on touche, il raconte */
+  const rec = !classe && recordSignificatif();
+  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" style="aspect-ratio:1/${p.ratio};"><img src="img/poussin/${e.pose}.png" alt="">${calques}${
+    rec ? `<button class="poussin-rec" id="poussin-record">🏆 ${TR("Record !")}</button>` : ""}</div>`;
 }
+document.addEventListener("click", e=>{
+  const b = e.target.closest("#poussin-record");
+  if(!b) return;
+  const r = recordSignificatif();
+  if(!r) return;
+  const memes = r.bloque;
+  openSheet(`<div class="tf-coche" style="background:rgba(245,130,32,.14); color:var(--accent); font-size:30px;">🏆</div>
+    <h3 style="text-align:center;">${TR("Record !")}</h3>
+    <p style="margin:0 0 16px; font-size:15px; line-height:1.55; color:var(--ink-soft); text-align:center;">${
+      (memes
+        ? TR("<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>, tu étais bloqué. Aujourd'hui tu as monté à <b>{b}</b>.")
+        : TR("<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>. Aujourd'hui tu as monté à <b>{b}</b>."))
+        .replace("{ex}", esc(r.nom)).replace("{a}", memes ? pds(r.ref) : r.avant.map(v=>pds(v)).join(" " + TR("puis") + " ")).replace("{b}", pds(r.apres))} ${
+      TR("<b>+{g}</b> de charge de travail : c'est un vrai palier, pas un kilo de plus.").replace("{g}", pds(Math.round((r.apres - r.ref) * 10) / 10))}</p>
+    <button class="btn btn-accent" id="pr-ok" style="width:100%;">${TR("Continuer comme ça !")}</button>`);
+  document.getElementById("pr-ok").onclick = closeSheet;
+});
 const EXO_PHOTO = {
   "Développé couché":"developpe-couche", "Développé incliné haltères":"developpe-incline-halteres",
   "Développé couché haltères":"developpe-couche-halteres",
@@ -9232,7 +9311,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 21h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 21h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
