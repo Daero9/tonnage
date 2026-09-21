@@ -6161,7 +6161,8 @@ async function lancer(){
     eq("…avec les deux packs côte à côte, sous les forfaits", pks.length, 2);
     vrai("…le 50 porte son badge, pas le 20", !pks[0].querySelector(".pk-badge") && /−20 %/.test(pks[1].querySelector(".pk-badge").textContent));
     vrai("…les forfaits passent avant les packs", D2.querySelector("#abo-fenetre .abo-forfaits").compareDocumentPosition(D2.querySelector("#abo-fenetre .abo-packs")) & 4);
-    vrai("…et les packs sont plus discrets que les forfaits", parseFloat(F.getComputedStyle(pks[0].querySelector("b")).fontSize) < parseFloat(F.getComputedStyle(D2.querySelector("#abo-mensuel .prix")).fontSize));
+    vrai("…et leur prix reste plus petit que celui des forfaits", parseFloat(F.getComputedStyle(pks[0].querySelector("em")).fontSize) < parseFloat(F.getComputedStyle(D2.querySelector("#abo-mensuel .prix")).fontSize));
+    vrai("…après la promesse gratuite, pas avant", D2.querySelector("#abo-fenetre .abo-gratuit").compareDocumentPosition(D2.querySelector("#abo-fenetre .abo-packs")) & 4);
     D2.getElementById("abo-x").click();
     await attendre(()=>!!D2.querySelector(".cam"), 2000);
     vrai("Fermer la fenêtre ramène à la caméra, en code-barres", !!D2.querySelector(".cam.code"));
