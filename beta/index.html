@@ -175,13 +175,28 @@
   .ob-steps{display:flex; gap:5px; margin-bottom:10px;}
   .ob-steps i{flex:1; height:4px; border-radius:2px; background:var(--surface2); transition:background .3s;}
   .ob-steps i.on{background:var(--accent);}
-  .start-card{border-color:var(--accent-deep) !important;}
-  .start-step{display:flex; gap:10px; align-items:flex-start; margin-bottom:9px; font-size:13.5px; color:var(--ink-soft);}
-  .start-step b{color:var(--ink);}
-  .start-step .num{flex:none; width:21px; height:21px; border-radius:50%; background:var(--surface2); color:var(--ink-mute);
-    font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; margin-top:1px;}
-  .start-step.done .num{background:var(--good); color:#0d1a12;}
-  .start-step.done b{color:var(--ink-mute); text-decoration:line-through;}
+  .start-card{border-color:transparent !important; padding:18px 16px 10px;}
+  .start-step{position:relative; display:flex; gap:14px; align-items:flex-start; padding-bottom:18px; font-size:13.5px; color:var(--ink-soft);}
+  .start-step:last-child{padding-bottom:6px;}
+  .start-step b{display:block; color:var(--ink); font-size:16px; line-height:1.2;}
+  .start-step .sous{display:block; font-size:13.5px; color:var(--ink-mute); margin-top:2px;}
+  .start-step .num{flex:none; width:36px; height:36px; border-radius:50%; background:var(--surface2); color:var(--ink-mute);
+    font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center; z-index:1;}
+  /* le fil en pointille entre les pastilles */
+  .start-step:not(:last-child)::before{content:""; position:absolute; left:17px; top:36px; bottom:0; border-left:2px dotted var(--border);}
+  .start-step.done::before{border-color:var(--good);}
+  .start-step.done .num{background:var(--good); color:#fff;}
+  .start-step.done b{color:var(--ink);}
+  .start-step.encours .num{background:var(--accent); color:#fff;}
+  .start-step .sc-go{width:100%; max-width:260px; margin-top:12px; padding:13px 18px; font-size:17px; border-radius:99px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 6px 16px rgba(245,130,32,.35);}
+  .start-step .sc-go .fl svg{width:18px; height:18px;}
+  /* l'etat vide du carrousel : l'illustration, puis le titre et la consigne */
+  .vide-seance{padding:26px 18px 30px; flex:0 0 auto !important; width:calc(100% + 0px);}
+  /* la carte vide prend toute la largeur : le carrousel se cale sur elle, sans les marges d'une pile */
+  .car:has(.vide-seance){--cardw:100%; padding-left:16px; padding-right:16px;}
+  .vide-seance img{display:block; width:min(56%, 200px); height:auto; margin:0 auto 14px;}
+  .vide-seance b{display:block; color:var(--ink); font-size:19px; margin-bottom:6px;}
   .slider{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:99px; padding:0; border:none;
     background:linear-gradient(90deg, var(--accent-deep), var(--accent)); outline:none;}
   .slider::-webkit-slider-thumb{-webkit-appearance:none; width:26px; height:26px; border-radius:50%; background:var(--accent);
@@ -3547,6 +3562,9 @@ const TRAD = {en:{
   "Supprimer cette sortie ?":"Delete this session?",
   "Crée ta première séance avec le bouton ＋":"Create your first workout with the ＋ button",
   "Renseigner ton profil pour obtenir ton plan":"Fill in your profile to get your plan",
+  "Renseigner ton profil":"Fill in your profile", "Pour obtenir ton plan personnalisé.":"To get your personalised plan.",
+  "Choisis tes exercices et lance-toi !":"Pick your exercises and go!", "Et suivre ta progression.":"And track your progress.",
+  "Par où commencer ?":"Where to start?", "Aucune séance pour l'instant":"No workouts yet", "Appuie sur le + pour créer ta première séance.":"Tap + to create your first workout.",
   "Créer ta première séance":"Create your first workout",
   "La faire":"Do it",
   "Tu n'as encore rien enregistré : autant commencer par là.":"You haven't logged anything yet: might as well start there.",
@@ -8733,7 +8751,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 12h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 12h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14375,13 +14393,16 @@ function renderSeance(app){
      doigt le carrousel et le bouton ＋ — répéter la même chose en liste au-dessus
      n'aidait plus personne. Avant, il tenait jusqu'à la première séance terminée. */
   if(!db.history.length && !(profilOk && aDesSeances)){
-    const etape = (ok, num, txt, act) => `<div class="start-step ${ok?"done":""}">
-      <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b>${act&&!ok? `<div style="margin-top:5px;"><button class="btn btn-accent btn-sm" id="${act}">${TR("Commencer")}</button></div>`:""}</div></div>`;
-    startZone.innerHTML = `<div class="section-t"><i>🚩</i>${TR("Par où commencer")}</div>
+    /* trois etapes reliees par un fil : la faite en vert, celle du moment en orange avec
+       son bouton, la suivante en gris — d'apres la maquette du 21 septembre */
+    const etape = (ok, num, txt, sous, act, encours) => `<div class="start-step ${ok?"done":""} ${encours?"encours":""}">
+      <span class="num">${ok?"✓":num}</span><div class="grow"><b>${txt}</b><span class="sous">${sous}</span>${act&&!ok? `<button class="btn btn-accent sc-go" id="${act}">${TR("Commencer")}<span class="fl">${IC_CHEVRON}</span></button>`:""}</div></div>`;
+    const etapeEnCours = !profilOk ? 1 : (!aDesSeances ? 2 : 3);
+    startZone.innerHTML = `<div class="section-t"><i>🚩</i>${TR("Par où commencer ?")}</div>
       <div class="card start-card">
-        ${etape(profilOk, 1, TR("Renseigner ton profil pour obtenir ton plan"), !profilOk? "sc-profil":null)}
-        ${etape(aDesSeances, 2, TR("Créer ta première séance"), (profilOk && !aDesSeances)? "sc-prog":null)}
-        ${etape(false, 3, TR("La faire"), (aDesSeances)? "sc-go":null)}
+        ${etape(profilOk, 1, TR("Renseigner ton profil"), TR("Pour obtenir ton plan personnalisé."), !profilOk? "sc-profil":null, etapeEnCours === 1)}
+        ${etape(aDesSeances, 2, TR("Créer ta première séance"), TR("Choisis tes exercices et lance-toi !"), (profilOk && !aDesSeances)? "sc-prog":null, etapeEnCours === 2)}
+        ${etape(false, 3, TR("La faire"), TR("Et suivre ta progression."), (aDesSeances)? "sc-go":null, etapeEnCours === 3)}
       </div>`;
     const bp = document.getElementById("sc-profil"); if(bp) bp.onclick=()=>openOnboarding(true);
     const bg = document.getElementById("sc-prog");   if(bg) bg.onclick=()=>openTplEditor(null);
@@ -14391,7 +14412,7 @@ function renderSeance(app){
   /* ---- carrousel des séances ---- */
   const car = document.getElementById("car");
   if(!db.templates.length){
-    car.innerHTML = `<div class="card empty" style="flex:1;"><div class="big">🏗️</div>${TR("Aucune séance pour l'instant.")}<br>${TR("Appuie sur ＋ pour créer la première.")}</div>`;
+    car.innerHTML = `<div class="card empty vide-seance" style="flex:1;"><img src="img/aucune-seance.png" alt=""><b>${TR("Aucune séance pour l'instant")}</b>${TR("Appuie sur le + pour créer ta première séance.")}</div>`;
   } else {
     const ordered = sug? [sug].concat(db.templates.filter(t=>t.id!==sug.id)) : db.templates.slice();
     car.innerHTML = ordered.map(t=>{
