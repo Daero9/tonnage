@@ -1346,14 +1346,27 @@ async function lancer(){
       vrai("Une seule semaine : pas encore une série", !D2.querySelector(".wk-serie") && F.serieSemaines().n === 1);
       DB.history = [seance(0, lun.toISOString()), seance(1, sem(1)), seance(2, sem(2))];
       F.render();
-      /* avec le poussin, la serie est une flamme sous lui ; la ligne de la carte s'efface */
-      const sr = F.document.querySelector(".hero-flamme");
-      vrai("Trois semaines de suite : la flamme dit « 3 » sous le poussin", sr && sr.textContent.trim() === "🔥3" && !sr.classList.contains("risque") && /3 semaines d'affilée/.test(sr.title));
-      vrai("…et la ligne de la carte ne fait plus doublon", !F.document.querySelector(".wk-serie"));
-      DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3))];
+      vrai("…et la ligne de la carte ne fait plus doublon avec le poussin", !F.document.querySelector(".wk-serie"));
+      /* la flamme : des jours de seance, des la premiere, eteinte apres trois jours sans rien */
+      const jour = n => new Date(Date.now() - n*J).toISOString();
+      DB.history = [seance(1, jour(0))];
+      let fl = F.serieJours();
+      vrai("Une seule séance, aujourd'hui : la flamme s'allume à 1, pleine", fl.n === 1 && fl.force === "pleine");
       F.render();
-      const sr2 = F.document.querySelector(".hero-flamme");
-      vrai("Rien cette semaine : la flamme tient encore, en orange", sr2 && /3/.test(sr2.textContent) && sr2.classList.contains("risque"));
+      vrai("…et elle est sous le poussin", /1/.test((F.document.querySelector(".hero-flamme") || {textContent:""}).textContent));
+      DB.history = [seance(1, jour(1)), seance(2, jour(3)), seance(3, jour(5)), seance(4, jour(12))];
+      fl = F.serieJours();
+      vrai("Trois jours de séance espacés de deux jours : 3 ; celle d'il y a 12 jours est hors série", fl.n === 3 && fl.force === "pleine");
+      DB.history = [seance(1, jour(2)), seance(2, jour(4))];
+      eq("Deux jours sans séance : la flamme est moyenne", F.serieJours().force, "moyenne");
+      DB.history = [seance(1, jour(3)), seance(2, jour(5))];
+      eq("Trois jours sans séance : petite", F.serieJours().force, "petite");
+      DB.history = [seance(1, jour(4)), seance(2, jour(6))];
+      vrai("Quatre jours sans séance : éteinte, à zéro", F.serieJours().n === 0 && F.serieJours().force === "eteinte");
+      F.render();
+      vrai("…et plus de flamme à l'écran", !F.document.querySelector(".hero-flamme"));
+      DB.history = [seance(1, jour(0)), seance(2, jour(0)), seance(3, jour(1))];
+      eq("Deux séances le même jour comptent pour un jour", F.serieJours().n, 2);
       DB.history = [seance(1, sem(1)), seance(3, sem(3)), seance(4, sem(4))];
       eq("Un trou casse la série", F.serieSemaines().n, 1);
       DB.cardio = [{id:"c1", date:sem(2), type:"course", min:30}];

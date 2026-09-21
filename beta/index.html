@@ -1531,7 +1531,10 @@
   .hero-flamme{position:absolute; right:22px; top:-13px; z-index:4; display:inline-flex; align-items:center; gap:3px;
     padding:3px 9px 3px 7px; border-radius:99px; background:#1b1b1d; color:#fff; font-size:13px; font-weight:800; line-height:1;
     box-shadow:0 3px 8px rgba(0,0,0,.25); border:2px solid var(--surface);}
-  .hero-flamme.risque{background:var(--accent); color:var(--accent-ink);}
+  .hero-flamme .fe{display:inline-block; transition:transform .3s ease, opacity .3s ease;}
+  .hero-flamme.moyenne .fe{transform:scale(.8); opacity:.85;}
+  .hero-flamme.petite .fe{transform:scale(.6); opacity:.6;}
+  .hero-flamme.petite{color:rgba(255,255,255,.7);}
   /* ---- le vestiaire ---- */
   .vs-apercu{display:flex; justify-content:center; padding:6px 0 4px;}
   .vs-poussin{position:relative; width:150px;}
@@ -5064,7 +5067,7 @@ const TRAD = {en:{
 
   /* --- accueil, progression, infobulles --- */
   "Soulevés":"Lifted", "Brûlées":"Burned",
-  "{} semaines d'affilée":"{} weeks in a row", "à tenir cette semaine":"keep it up this week",
+  "{} semaines d'affilée":"{} weeks in a row", "{} jours de séance d'affilée":"{} training days in a row", "à tenir cette semaine":"keep it up this week",
   "Conseillé aujourd'hui":"Suggested today", "dernière":"latest",
   "Depuis la 1re pesée":"Since your first weigh-in",
   "Analyse de ton profil":"Your profile breakdown",
@@ -8761,7 +8764,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 12h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 12h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -13214,6 +13217,25 @@ function weekStartDate(){
    une sortie — ce que compte aussi la rangée des jours. La semaine en cours compte si
    elle a déjà sa séance, sinon elle ne casse rien : on a jusqu'à dimanche. Fonction
    pure, « maintenant » se passe en paramètre pour les tests. */
+/* La flamme : le nombre de JOURS de seance de la serie en cours. Elle s'allume des la
+   premiere seance, grandit a chaque jour d'entrainement, et s'eteint apres trois jours
+   sans rien — en faiblissant : pleine le lendemain, moyenne le 2e jour, petite le 3e,
+   partie le 4e. Deux seances a moins de quatre jours d'ecart sont dans la meme serie.
+   Fonction pure, « maintenant » en parametre pour les tests. */
+function serieJours(maintenant){
+  const now = maintenant ? new Date(maintenant) : new Date();
+  const auj = new Date(now); auj.setHours(0,0,0,0);
+  const jours = [...new Set((db.history || []).concat(db.cardio || []).map(x=>{
+    const d = new Date(x.date); if(!(d > 0) || d > now) return null;
+    d.setHours(0,0,0,0); return d.getTime();
+  }).filter(t=>t !== null))].sort((a, b)=>b - a);
+  if(!jours.length) return {n:0, depuis:99, force:"eteinte"};
+  const depuis = Math.round((auj - jours[0]) / 864e5);
+  if(depuis > 3) return {n:0, depuis, force:"eteinte"};
+  let n = 1;
+  for(let i = 1; i < jours.length && jours[i - 1] - jours[i] <= 3 * 864e5; i++) n++;
+  return {n, depuis, force: depuis <= 1 ? "pleine" : (depuis === 2 ? "moyenne" : "petite")};
+}
 function serieSemaines(maintenant){
   const now = maintenant ? new Date(maintenant) : new Date();
   const lundi = new Date(now); lundi.setHours(0,0,0,0); lundi.setDate(lundi.getDate() - ((lundi.getDay()+6)%7));
@@ -14349,10 +14371,10 @@ function renderSeance(app){
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
     <div class="under-hero">
       ${poussinHtml()}
-      ${(()=>{ const sr = serieSemaines(now); if(!POUSSIN.repos || sr.n < 2) return "";
-        /* la flamme, entre les pattes du poussin : la meme serie que la ligne de la carte,
-           qui ne s'affiche plus quand il est la */
-        return `<div class="hero-flamme ${sr.enCours ? "" : "risque"}" title="${TR("{} semaines d'affilée").replace("{}", sr.n)}">🔥<b>${sr.n}</b></div>`; })()}
+      ${(()=>{ const fl = serieJours(now); if(!POUSSIN.repos || fl.n < 1) return "";
+        /* la flamme, entre les pattes du poussin : les jours de seance de la serie en
+           cours ; elle faiblit quand les jours sans seance s'accumulent */
+        return `<div class="hero-flamme ${fl.force}" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><span class="fe">🔥</span><b>${fl.n}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
