@@ -1346,12 +1346,14 @@ async function lancer(){
       vrai("Une seule semaine : pas encore une série", !D2.querySelector(".wk-serie") && F.serieSemaines().n === 1);
       DB.history = [seance(0, lun.toISOString()), seance(1, sem(1)), seance(2, sem(2))];
       F.render();
-      const sr = F.document.querySelector(".wk-serie");
-      vrai("Trois semaines de suite : « 3 semaines d'affilée »", sr && /3 semaines d'affilée/.test(sr.textContent) && !sr.classList.contains("risque"));
+      /* avec le poussin, la serie est une flamme sous lui ; la ligne de la carte s'efface */
+      const sr = F.document.querySelector(".hero-flamme");
+      vrai("Trois semaines de suite : la flamme dit « 3 » sous le poussin", sr && sr.textContent.trim() === "🔥3" && !sr.classList.contains("risque") && /3 semaines d'affilée/.test(sr.title));
+      vrai("…et la ligne de la carte ne fait plus doublon", !F.document.querySelector(".wk-serie"));
       DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3))];
       F.render();
-      const sr2 = F.document.querySelector(".wk-serie");
-      vrai("Rien cette semaine : la série tient encore, et elle le dit", sr2 && /3 semaines/.test(sr2.textContent) && sr2.classList.contains("risque") && /à tenir/.test(sr2.textContent));
+      const sr2 = F.document.querySelector(".hero-flamme");
+      vrai("Rien cette semaine : la flamme tient encore, en orange", sr2 && /3/.test(sr2.textContent) && sr2.classList.contains("risque"));
       DB.history = [seance(1, sem(1)), seance(3, sem(3)), seance(4, sem(4))];
       eq("Un trou casse la série", F.serieSemaines().n, 1);
       DB.cardio = [{id:"c1", date:sem(2), type:"course", min:30}];
