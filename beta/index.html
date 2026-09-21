@@ -2245,7 +2245,9 @@
   .cam .quota:not(:empty){display:inline-block; left:50%; right:auto; transform:translateX(-50%); background:rgba(0,0,0,.55); border-radius:99px; padding:5px 11px;}
   /* plus de photo : un encadre rouge, lisible, a la place de la pastille */
   .cam .quota.zero{background:rgba(214,48,49,.92); border:1.5px solid #ff8a8a; border-radius:12px; padding:9px 14px; font-weight:700; font-size:12.5px; max-width:82%; line-height:1.4;}
-  .cam.epuise .declencheur{opacity:.35; pointer-events:none;}
+  /* a zero, le declencheur s'eteint a moitie mais reste touchable : il mene a la fiche
+     des photos (pack, abonnement, saisie a la main) — un bouton mort ne dit rien */
+  .cam.epuise .declencheur{opacity:.55;}
   .cam .t{position:absolute; left:0; right:0; top:calc(50% + 40px); text-align:center; font-size:14.5px; font-weight:700;
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
   .cam.plat .t{top:auto; bottom:calc(178px + env(safe-area-inset-bottom));}
@@ -2929,11 +2931,38 @@
   .abo-gages{display:flex; justify-content:space-between; gap:6px; margin:18px 0 0; padding-bottom:14px; border-bottom:1px solid var(--border);}
   /* ce qui ne sera jamais payant, dit noir sur blanc sous les forfaits */
   .abo-gratuit{margin:12px 2px 0; font-size:12.5px; line-height:1.45; color:var(--ink-soft); text-align:center;}
+  /* ---- la fiche des photos (plus de photo, ou pas le droit) ---- */
+  .sc-h{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:4px;}
+  .sc-h h3{margin-bottom:0;}
+  .sc-ic{width:52px; height:52px; border-radius:16px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .sc-ic svg{width:26px; height:26px;}
+  .sc-sous{font-size:13.5px; line-height:1.5; color:var(--ink-soft); text-align:center; margin:8px 4px 16px;}
+  .sc-abo, .sc-pack{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:14px; border-radius:16px; color:var(--ink);}
+  .sc-abo{background:#1b1b1d; color:#fff; border:1px solid #1b1b1d;}
+  .sc-abo .ic{flex:0 0 auto; width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,.10); display:flex; align-items:center; justify-content:center;}
+  .sc-abo .ic svg{width:22px; height:22px;}
+  .sc-abo b{display:block; font-size:16px;} .sc-abo b em{color:var(--accent); font-style:normal;}
+  .sc-abo .grow > span{display:block; font-size:12.5px; color:rgba(255,255,255,.72); margin-top:2px;}
+  .sc-abo .sc-prix{color:#fff;}
+  .sc-pack{background:linear-gradient(90deg, rgba(245,130,32,.14), rgba(245,130,32,.04)); border:1.5px solid rgba(245,130,32,.45);}
+  .sc-pack.seul{padding:18px 14px;}
+  .sc-pack .sc-n{flex:0 0 auto; width:52px; height:52px; border-radius:14px; background:var(--accent); color:var(--accent-ink); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;}
+  .sc-pack .sc-n b{font-size:22px; font-weight:900;} .sc-pack .sc-n i{font-style:normal; font-size:9px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; margin-top:2px;}
+  .sc-pack .grow b{display:block; font-size:15.5px;} .sc-pack .grow em{display:block; font-style:normal; font-size:12px; color:var(--ink-mute); margin-top:2px;}
+  .sc-prix{flex:0 0 auto; font-weight:800; font-size:15px; white-space:nowrap;} .sc-prix small{font-weight:600; font-size:11px; color:var(--ink-mute);}
+  .sc-abo .sc-prix small{color:rgba(255,255,255,.6);}
+  .sc-ou{text-align:center; font-size:11.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mute); margin:8px 0;}
+  .sc-reserve{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:12px 0 0;}
+  .sc-main{display:block; width:100%; text-align:center; padding:14px 0 4px; margin-top:6px; color:var(--accent); font-weight:700; font-size:14px;}
   .abo-gratuit b{color:var(--ink);}
   .abo-gages div{display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; flex:1 1 0; min-width:0;}
   .abo-gages svg{width:24px; height:24px; flex:none; color:var(--ink);}
   .abo-gages span{font-size:10.5px; line-height:1.3; color:var(--ink); font-weight:700;}
   .abo-gages span em{display:block; font-style:normal; font-weight:500; color:var(--ink-mute);}
+  /* le pack, en une ligne sous la promesse gratuite : present, pas concurrent */
+  .abo-pack-lien{display:block; width:100%; text-align:center; margin-top:10px; padding:10px 12px; border-radius:12px;
+    background:var(--surface2); border:1px dashed var(--border); color:var(--ink-soft); font-size:12.5px; line-height:1.4;}
+  .abo-pack-lien b{color:var(--ink);}
   .abo-restaurer{display:block; width:100%; text-align:center; padding:14px 0 4px; color:var(--accent);
     font-weight:800; font-size:14px; text-decoration:underline; text-underline-offset:3px;}
   .abo-legal{margin:8px 0 0; text-align:center; font-size:11px; color:var(--ink-mute); line-height:1.5;}
@@ -3749,6 +3778,24 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
+  "La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.":"Plate photos are part of Tonnup Analyse — or a 20-photo pack.",
+  "Tes {} photos du jour sont passées. Appuie pour en ajouter.":"Your {} photos for today are used up. Tap to add more.",
+  "{j} aujourd'hui + {r} en réserve":"{j} today + {r} in reserve",
+  "Photographie ton assiette":"Photograph your plate",
+  "L'app reconnaît le plat et l'ajoute à ton journal : 10 photos par jour (5 pendant l'essai).":"The app recognises the dish and adds it to your log: 10 photos a day (5 during the trial).",
+  "Les séances, l'adaptation des charges et le journal alimentaire (à la main ou au code-barres) restent gratuits, pour toujours. Seuls la photo de l'assiette, la progression et le bilan passent par Tonnup Analyse.":"Workouts, load adaptation and the food log (by hand or barcode) stay free, forever. Only plate photos, progress and the weekly review are part of Tonnup Analyse.",
+  "Juste quelques photos ? <b>20 photos pour {}</b>, sans abonnement.":"Just a few photos? <b>20 photos for {}</b>, no subscription.",
+  "Sur le web, le pack s'achète dans l'app Android.":"On the web, the pack is bought in the Android app.",
+  "{} photos ajoutées à ta réserve.":"{} photos added to your reserve.",
+  "La photo de l'assiette":"Plate photos",
+  "Tes {} photos du jour sont passées":"Your {} photos for today are used up",
+  "Prends ton assiette en photo, l'app reconnaît le plat et le chiffre. C'est la seule partie du journal qui est payante : le reste est gratuit, pour toujours.":"Photograph your plate and the app recognises the dish and works out the numbers. It's the only paid part of the log: the rest is free, forever.",
+  "Le compteur repart demain. Pour continuer aujourd'hui, une réserve de 20 photos, valable sans limite de temps.":"The counter resets tomorrow. To keep going today, a reserve of 20 photos, with no time limit.",
+  "Le compteur repart demain. Pour aller plus loin : dix photos par jour avec Tonnup Analyse, ou une réserve de vingt.":"The counter resets tomorrow. To go further: ten photos a day with Tonnup Analyse, or a reserve of twenty.",
+  "photos":"photos", "Pack de 20 photos":"20-photo pack", "Achat unique · sans abonnement · sans date limite":"One-time purchase · no subscription · no expiry",
+  "10 photos par jour, ta progression et ton bilan":"10 photos a day, your progress and your review",
+  "En réserve : {} photos":"In reserve: {} photos", "Ajouter à la main, c'est gratuit":"Add by hand, it's free",
+  "Photo de l'assiette, progression et bilan.":"Plate photos, progress and review.", "{} photos en réserve":"{} photos in reserve",
   "Ta séance {s} t'attend":"Your {s} workout is waiting",
   "{n} exercices · ~{m} min":"{n} exercises · ~{m} min",
   "C'est l'heure{p} 💪":"It's time{p} 💪", "{s} : {n} exercices, ~{m} min. On y va ?":"{s}: {n} exercises, ~{m} min. Let's go?",
@@ -8515,7 +8562,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 01h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 02h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -8648,7 +8695,7 @@ function applyDefaults(){
 applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
-setTimeout(()=>{ sonderAbo(); chargerForfaits(); driveRattrapage(); }, 0);
+setTimeout(()=>{ sonderAbo(); chargerForfaits(); chargerPack(); rattraperPacks(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
 setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
 /* ---- le widget de l'ecran d'accueil (Android) -----------------------------------------
@@ -11712,9 +11759,14 @@ function ouvrirCamera(mode, titre){
       const quota = q(".quota");
       quota.classList.toggle("zero", mode === "plat" && restantes === 0);
       boite.classList.toggle("epuise", mode === "plat" && restantes === 0);
+      /* a zero, le texte dit pourquoi, et le declencheur ouvre la fiche des photos */
+      const reserve = scansReserve(), jour = photosJour();
       quota.textContent = mode !== "plat" ? "" : restantes === 0
-        ? TR("Plus de photo aujourd'hui — on reprend demain. Tu peux ajouter à la main.")
-        : (restantes === 1 ? TR("Dernière photo aujourd'hui") : TR("{} photos restantes aujourd'hui").replace("{}", restantes));
+        ? (quotaPhotos() === 0 ? TR("La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.")
+                               : TR("Tes {} photos du jour sont passées. Appuie pour en ajouter.").replace("{}", quotaPhotos()))
+        : reserve > 0
+          ? TR("{j} aujourd'hui + {r} en réserve").replace("{j}", jour).replace("{r}", reserve)
+          : (restantes === 1 ? TR("Dernière photo aujourd'hui") : TR("{} photos restantes aujourd'hui").replace("{}", restantes));
       if(!flux) return;
       if(mode === "code") texte.textContent = scanDispo() || zbar ? TR("Vise le code-barres, ça se valide tout seul") : TR("Lecteur en cours de chargement…");
       else texte.textContent = TR("Toute l'assiette dans le cadre, vue un peu en diagonale — puis appuie");
@@ -11729,6 +11781,8 @@ function ouvrirCamera(mode, titre){
       consigne(); relancerBoucle();
     };
     boite.querySelectorAll("[data-mode]").forEach(b=>b.onclick = ()=>changerMode(b.dataset.mode));
+    /* l'encadre rouge aussi mene a la fiche : c'est lui qu'on lit, autant qu'il reponde */
+    q(".quota").onclick = ()=>{ if(mode === "plat" && photosRestantes() <= 0) finir({type:"scans"}); };
     q("[data-non]").onclick = ()=>finir(null);
     /* la saisie a la main se fait dans l'ecran : la boite native prompt() figeait
        le flux video a sa fermeture sur Android */
@@ -11760,14 +11814,14 @@ function ouvrirCamera(mode, titre){
         }catch(e){ texte.textContent = TR("Lecteur indisponible. Saisis les chiffres à la main."); }
         return;
       }
-      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
+      if(photosRestantes() <= 0) return finir({type:"scans"});
       try{ const img = await reduirePhoto(f); finir({type:"photo", b64:img.b64, apercu:img.apercu}); }
       catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur"); }
     };
     /* le declencheur : l'image du flux, reduite comme une photo de fichier */
     q("[data-prendre]").onclick = ()=>{
+      if(photosRestantes() <= 0) return finir({type:"scans"});
       if(!flux || video.readyState < 2){ fich.click(); return; }
-      if(photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
       /* On n'envoie que le carre de visee. La video est affichee en « cover » : on
          retrouve la zone du capteur qui correspond au carre a l'ecran, et on la decoupe.
          Moins de table, de mains et de verres autour — et un peu moins de pixels. */
@@ -12194,6 +12248,7 @@ async function lancerScan(meal, mode){
      a un glissement de la */
   const r = await ouvrirCamera(mode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
   if(!r) return;
+  if(r.type === "scans"){ openScans(meal); return; }
   if(r.type === "photo"){
     photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
     lancerAnalysePhoto("");
@@ -12222,8 +12277,10 @@ function tuileNut(ic, couleur, val, unite, libelle){
    100 g rendues par le modele, marquees « valeurs estimees ». Les portions restent
    reglables : une photo n'a pas d'echelle, l'estimation est un point de depart, pas
    une mesure. La photo part chez Anthropic pour l'analyse et n'est pas conservee.
-   Cinq photos par jour et par appareil pendant l'essai, dix avec Tonnup Analyse (abonne
-   ou code) ; au-dela, on ajoute a la main. Corriger une
+   La photo est la seule partie payante du journal : cinq par jour pendant l'essai, dix
+   avec Tonnup Analyse (abonne ou code), rien sans — et une RESERVE, achetee par packs de
+   vingt, qui prend le relais quand le compteur du jour est a zero (ou qu'il n'y en a
+   pas). Le code-barres et la saisie a la main restent libres. Corriger une
    analyse (« c'est du poisson, pas du cordon bleu ») renvoie la MEME photo : ca ne
    compte pas comme une photo de plus — deux corrections au plus, pour que ca ne
    tourne pas en boucle. */
@@ -12231,21 +12288,30 @@ const RELAIS_PHOTO = "https://tonnup-relais.inncopproject.workers.dev/";
 const RELAIS_JETON = "tnp-7Qx2mR9vK4Lp8Wd3";
 const PHOTOS_PAR_JOUR = 5;                       /* pendant l'essai */
 const PHOTOS_PAR_JOUR_ABONNE = 10;               /* Tonnup Analyse : abonne ou debloque par code */
-function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : PHOTOS_PAR_JOUR; }
+const PACK_SCANS = 20;
+function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : (essaiRestant() > 0 ? PHOTOS_PAR_JOUR : 0); }
+/* ce qui reste du compteur du jour, et la reserve des packs — les deux se lisent separement */
+function photosJour(){
+  const p = db.photos || {};
+  return Math.max(0, quotaPhotos() - (p.jour === dayKey() ? (p.n || 0) : 0));
+}
+function scansReserve(){ return Math.max(0, Math.floor(Number(db.scansReserve) || 0)); }
+function crediterScans(n){ db.scansReserve = scansReserve() + n; save(); }
 const CORRECTIONS_PAR_PHOTO = 2;
 const IC_PHOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function idAppareil(){
   if(!db.appareilId){ db.appareilId = "a" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); save(); }
   return db.appareilId;
 }
-function photosRestantes(){
-  const p = db.photos || {};
-  return quotaPhotos() - (p.jour === dayKey() ? (p.n || 0) : 0);
-}
+function photosRestantes(){ return photosJour() + scansReserve(); }
+/* le compteur du jour d'abord, la reserve ensuite : un pack ne s'entame que quand il le faut */
 function compterPhoto(){
-  const k = dayKey();
-  if(!db.photos || db.photos.jour !== k) db.photos = {jour:k, n:0};
-  db.photos.n++; save();
+  if(photosJour() > 0){
+    const k = dayKey();
+    if(!db.photos || db.photos.jour !== k) db.photos = {jour:k, n:0};
+    db.photos.n++;
+  }else if(scansReserve() > 0) db.scansReserve = scansReserve() - 1;
+  save();
 }
 /* le fichier de l'appareil photo, reduit a 1 000 px et compresse : une photo de
    telephone fait 3 a 5 Mo, on n'en envoie que 60 a 150 Ko */
@@ -12434,7 +12500,7 @@ function openResultatPhoto(meal, res){
         const indice = document.getElementById("ph-indice").value.trim();
         if(!indice){ toast(TR("Dis-moi ce qui change, sinon l'analyse sera la même.")); return; }
         const gratuite = (photoEnCours.corrections || 0) < CORRECTIONS_PAR_PHOTO;
-        if(!gratuite && photosRestantes() <= 0){ toast(TR("Beaucoup de photos aujourd'hui — on reprend demain. Tu peux toujours ajouter à la main."), "erreur"); return; }
+        if(!gratuite && photosRestantes() <= 0){ openScans(photoEnCours.meal); return; }
         pileFiches = [];   /* on relance : l'ancienne fiche du plat n'a plus lieu d'etre */
         lancerAnalysePhoto(indice);
       };
@@ -17991,6 +18057,80 @@ async function chargerForfaits(){
   if(document.getElementById("abo-fenetre")){ fermerAbonnement(); openAbonnement(); }
   return true;
 }
+/* ---- le pack de 20 photos : achat unique, consomme chez Google, garde dans la page ---- */
+const PRIX_PACK = {texte:"1,99 €", montant:1.99};
+let packCharge = false;
+async function chargerPack(){
+  const p = pluginAbo();
+  if(!p || packCharge || typeof p.pack !== "function") return false;
+  let r;
+  try{ r = await p.pack(); }catch(e){ return false; }
+  if(!r || !r.dispo || !(r.montant > 0)) return false;
+  PRIX_PACK.texte = r.prix; PRIX_PACK.montant = r.montant;
+  packCharge = true;
+  return true;
+}
+async function acheterPack(bouton){
+  vibrer(20);
+  const p = pluginAbo();
+  if(!p || typeof p.acheterPack !== "function"){ toast(TR("Sur le web, le pack s'achète dans l'app Android.")); return false; }
+  if(bouton){ if(bouton.disabled) return false; bouton.disabled = true; }
+  try{
+    const r = await p.acheterPack();
+    if(r && r.credite){
+      crediterScans(r.scans || PACK_SCANS);
+      vibrer(26);
+      toast(TR("{} photos ajoutées à ta réserve.").replace("{}", r.scans || PACK_SCANS));
+      return true;
+    }
+    if(!(r && r.raison === "annule")) toast(TR("Google Play n'a pas pu finaliser l'achat.") + (r && r.raison ? " · " + String(r.raison).slice(0, 60) : ""), "erreur");
+  }catch(e){ toast(TR("Google Play n'a pas pu finaliser l'achat."), "erreur"); }
+  finally{ if(bouton) bouton.disabled = false; }
+  return false;
+}
+/* un pack paye pendant que l'app etait fermee : on le retrouve a l'ouverture */
+async function rattraperPacks(){
+  const p = pluginAbo();
+  if(!p || typeof p.packsEnAttente !== "function") return;
+  try{
+    const r = await p.packsEnAttente();
+    if(r && r.scans > 0){ crediterScans(r.scans); toast(TR("{} photos ajoutées à ta réserve.").replace("{}", r.scans)); }
+  }catch(e){}
+}
+/* La fiche des photos : ce qu'on voit quand on veut photographier sans en avoir le
+   droit (essai fini, pas d'abonnement) ou plus de photo du jour. L'abonnement reste la
+   proposition principale tant qu'on n'est pas abonne ; le pack est la, en second — et
+   en premier pour un abonne, a qui on n'a rien d'autre a vendre. */
+function openScans(meal){
+  const abonne = db.abo === true, essai = essaiEnCours(), sans = quotaPhotos() === 0;
+  const titre = sans ? TR("La photo de l'assiette") : TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos());
+  const sous = sans
+    ? TR("Prends ton assiette en photo, l'app reconnaît le plat et le chiffre. C'est la seule partie du journal qui est payante : le reste est gratuit, pour toujours.")
+    : (abonne ? TR("Le compteur repart demain. Pour continuer aujourd'hui, une réserve de 20 photos, valable sans limite de temps.")
+              : TR("Le compteur repart demain. Pour aller plus loin : dix photos par jour avec Tonnup Analyse, ou une réserve de vingt."));
+  const pack = `<button class="sc-pack ${abonne ? "seul" : ""}" id="sc-pack">
+      <span class="sc-n"><b>20</b><i>${TR("photos")}</i></span>
+      <span class="grow"><b>${TR("Pack de 20 photos")}</b>
+        <em>${TR("Achat unique · sans abonnement · sans date limite")}</em></span>
+      <span class="sc-prix">${esc(PRIX_PACK.texte)}</span></button>`;
+  const abo = abonne ? "" : `<button class="sc-abo" id="sc-abo">
+      <span class="ic">${IC_ABO_LOGO}</span>
+      <span class="grow"><b>Tonnup <em>Analyse</em></b>
+        <span>${TR("10 photos par jour, ta progression et ton bilan")}</span></span>
+      <span class="sc-prix">${esc(PRIX_ABO.mensuel.texte)}<small>/${TR("mois")}</small></span></button>`;
+  openSheet(`<div class="sc-h"><span class="sc-ic">${IC_PHOTO}</span><h3>${titre}</h3></div>
+    <p class="sc-sous">${sous}</p>
+    ${abonne ? pack : abo + `<div class="sc-ou">${TR("ou")}</div>` + pack}
+    ${scansReserve() > 0 ? `<p class="sc-reserve">${TR("En réserve : {} photos").replace("{}", scansReserve())}</p>` : ""}
+    <button class="sc-main" id="sc-main">${TR("Ajouter à la main, c'est gratuit")}</button>`);
+  const bAbo = document.getElementById("sc-abo");
+  if(bAbo) bAbo.onclick = ()=>{ hideSheet(); setTimeout(openAbonnement, 240); };
+  document.getElementById("sc-pack").onclick = async e=>{
+    if(await acheterPack(e.currentTarget)){ hideSheet(); if(meal) setTimeout(()=>lancerScan(meal, "plat"), 260); }
+  };
+  document.getElementById("sc-main").onclick = ()=>{ hideSheet(); if(meal) setTimeout(()=>openAjoutAliment(meal), 240); };
+  chargerPack();
+}
 /* Ou l'on gere un abonnement pris sur Google Play : chez Google, pas chez nous */
 function gererSurPlay(){
   window.open("https://play.google.com/store/account/subscriptions?sku=tonnup_analyse&package=com.inncop.tonnup", "_blank");
@@ -18017,9 +18157,10 @@ function essaiRestant(){
 }
 function essaiEnCours(){ return db.abo !== true && essaiRestant() > 0; }
 function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
-/* Ce qui est derriere l'abonnement : Alimentation, Progression et le Bilan. La seance,
-   elle, reste gratuite de bout en bout — c'est la vitrine. */
-const ONGLETS_PAYANTS = ["eat", "prg", "bilan"];
+/* Ce qui est derriere l'abonnement : la Progression et le Bilan — et, dans l'onglet
+   Alimentation, la photo de l'assiette seulement (voir quotaPhotos). La seance et le
+   journal a la main ou au code-barres restent gratuits de bout en bout : c'est la vitrine. */
+const ONGLETS_PAYANTS = ["prg", "bilan"];
 function verrouille(quoi){ return ONGLETS_PAYANTS.includes(quoi) && !estAbonne(); }
 /* Le profil de demonstration : un mois d'entrainement et de repas plausibles, pour que
    l'ecran floute ait l'air d'un vrai — chiffres, courbes, jauges remplies. Aucune
@@ -18100,8 +18241,8 @@ function openAbonnement(){
         <div><h3>Tonnup <em>Analyse</em></h3>
           <p class="abo-accroche">${TR("Ce que tu soulèves, ce que tu manges, où ça te mène.")}</p></div></div>
       <ul class="abo-promesses">
-        <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Analyse ton alimentation")}</b>
-          <span>${TR("Calories, protéines, ce que tu manges vraiment. Photo de l'assiette : 10 par jour (5 pendant l'essai).")}</span></div></li>
+        <li><span class="ic">${IC_ABO_ASSIETTE}</span><div><b>${TR("Photographie ton assiette")}</b>
+          <span>${TR("L'app reconnaît le plat et l'ajoute à ton journal : 10 photos par jour (5 pendant l'essai).")}</span></div></li>
         <li><span class="ic">${IC_ABO_COURBE}</span><div><b>${TR("Suis tes progrès")}</b>
           <span>${TR("Tes courbes de charge, exercice par exercice.")}</span></div></li>
         <li><span class="ic"><span class="icm icm-muscle" style="width:17px; height:17px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
@@ -18131,7 +18272,8 @@ function openAbonnement(){
       <div>${IC_ABO_PLAY}<span>${TR("Disponible sur")}<em>${TR("le Play Store")}</em></span></div>
     </div>
     <p class="abo-gratuit">${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b> ` : ""}${
-      TR("Les séances, l'entraînement et l'adaptation des charges restent gratuits, pour toujours. Seuls l'alimentation, la progression et le bilan passent par Tonnup Analyse.")}</p>
+      TR("Les séances, l'adaptation des charges et le journal alimentaire (à la main ou au code-barres) restent gratuits, pour toujours. Seuls la photo de l'assiette, la progression et le bilan passent par Tonnup Analyse.")}</p>
+    ${db.abo === true ? "" : `<button class="abo-pack-lien" id="abo-pack-lien">${TR("Juste quelques photos ? <b>20 photos pour {}</b>, sans abonnement.").replace("{}", esc(PRIX_PACK.texte))}</button>`}
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
     <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
     <p class="abo-legal">${TR("Renouvellement automatique, résiliable à tout moment dans Google Play.")} <a href="${URL_CGU}" target="_blank" rel="noopener">${TR("Conditions")}</a> · <a href="${URL_CONF}" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>
@@ -18144,12 +18286,14 @@ function openAbonnement(){
   document.body.appendChild(f);
   /* fermer, c'est repartir : la fenêtre ne s'ouvre que sur un onglet verrouillé, il n'y
      a rien d'autre à y faire. On revient donc à la séance. */
-  document.getElementById("abo-x").onclick = ()=>{ fermerAbonnement(); if(curTab !== "seance"){ curTab = "seance"; render(); } };
+  document.getElementById("abo-x").onclick = ()=>{ fermerAbonnement(); if(verrouille(curTab)){ curTab = "seance"; render(); } };
   f.addEventListener("click", e=>{ if(e.target === f) document.getElementById("abo-x").click(); });
   document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
   document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel");
   chargerForfaits();                 /* les vrais prix, s'ils ne sont pas encore la */
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
+  const lienPack = document.getElementById("abo-pack-lien");
+  if(lienPack) lienPack.onclick = ()=>{ fermerAbonnement(); openScans(null); };
   const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
   const champ = document.getElementById("abo-code-in");
   /* le clavier rogne la zone visible : on amene le champ sous les yeux, une fois la
@@ -18248,7 +18392,7 @@ function openSettings(){
     <div class="rg-sous">${TR("Personnalise ton expérience sur Tonnup.")}</div>
     <button class="rg-abo" id="st-abo">
       <span class="rgi">${IC_ABO_COURBE}</span>
-      <span class="grow"><b>${TR("Tonnup Analyse")}</b><em>${TR("Alimentation, progression et bilan.")}</em></span>
+      <span class="grow"><b>${TR("Tonnup Analyse")}</b><em>${TR("Photo de l'assiette, progression et bilan.")}${scansReserve() > 0 ? ` · ${TR("{} photos en réserve").replace("{}", scansReserve())}` : ""}</em></span>
       <span class="rg-pill">${IC_COURONNE}<span>${db.abo === true
           ? (db.aboVia === "play" ? TR("Abonné") : TR("Débloqué par code"))
           : essaiEnCours()

@@ -5921,9 +5921,10 @@ async function lancer(){
       DB.photos = {jour:F.dayKey(), n:10};
       const prQ = F.ouvrirCamera("plat", "Test");
       await attendre(()=>!!F.document.querySelector(".cam"), 1000);
-      vrai("À zéro photo, l'écran le dit dans un encadré rouge et gèle le déclencheur",
+      vrai("À zéro photo, l'écran le dit dans un encadré rouge et éteint à moitié le déclencheur",
         F.document.querySelector(".cam .quota").classList.contains("zero") && F.document.querySelector(".cam").classList.contains("epuise")
-        && /demain/.test(F.document.querySelector(".cam .quota").textContent));
+        && /passées/.test(F.document.querySelector(".cam .quota").textContent));
+      vrai("…mais il reste touchable : il mène à la fiche des photos", F.getComputedStyle(F.document.querySelector(".cam .declencheur")).pointerEvents !== "none");
       DB.photos = {jour:F.dayKey(), n:9};
       F.document.querySelector(".cam [data-mode='code']").click(); F.document.querySelector(".cam [data-mode='plat']").click();
       vrai("…à une photo restante, la pastille dit « Dernière photo »", !F.document.querySelector(".cam .quota").classList.contains("zero") && /Dernière/.test(F.document.querySelector(".cam .quota").textContent));
@@ -6039,12 +6040,27 @@ async function lancer(){
     const pf = F.par100DeTable(F.alimentDeTable("frites"));
     vrai("Une portion de frites de 150 g donne ses valeurs pour 100 g", pf && Math.round(pf.kcal100) === 307, JSON.stringify(pf));
     /* le quota du jour */
-    delete DB.photos; const aboAvant = DB.abo; DB.abo = false;
+    delete DB.photos; delete DB.scansReserve; const aboAvant = DB.abo, essaiAvant = DB.essaiDebut;
+    DB.abo = false; DB.essaiDebut = new Date().toISOString();
     eq("Cinq photos par jour pendant l'essai", F.photosRestantes(), 5);
     F.compterPhoto(); F.compterPhoto();
     eq("…deux de prises, trois restent", F.photosRestantes(), 3);
     DB.photos.jour = "2000-01-01";
     eq("…et un autre jour remet le compteur", F.photosRestantes(), 5);
+    DB.essaiDebut = new Date(Date.now() - 9 * 864e5).toISOString();
+    eq("Essai fini, pas d'abonnement : aucune photo", F.photosRestantes(), 0);
+    /* la reserve des packs : elle sert quand le compteur du jour ne peut plus */
+    F.crediterScans(20);
+    eq("…un pack de 20 : vingt photos, même sans abonnement", F.photosRestantes(), 20);
+    F.compterPhoto();
+    eq("…une photo prise vient de la réserve", DB.scansReserve, 19);
+    DB.abo = true; delete DB.photos;
+    eq("Abonné avec une réserve : dix du jour plus dix-neuf", F.photosRestantes(), 29);
+    for(let i = 0; i < 10; i++) F.compterPhoto();
+    eq("Les dix du jour partent d'abord, la réserve est intacte", DB.scansReserve, 19);
+    F.compterPhoto();
+    eq("…la onzième entame la réserve", DB.scansReserve, 18);
+    delete DB.scansReserve; delete DB.photos; DB.essaiDebut = essaiAvant;
     DB.abo = true; eq("Dix par jour avec Tonnup Analyse (abonné ou code)", F.photosRestantes(), 10);
     /* corriger la meme photo (« c'est du poisson ») ne compte pas comme une photo de plus */
     delete DB.photos;
@@ -6087,16 +6103,17 @@ async function lancer(){
   neuf();
   await (async ()=>{
     delete DB.abo; delete DB.aboVia; delete DB.essaiDebut;
-    vrai("Sans essai ni abonnement : verrouillé", F.verrouille("eat"));
+    vrai("Sans essai ni abonnement : la progression est verrouillée", F.verrouille("prg"));
+    vrai("…mais jamais le journal alimentaire — seule la photo l'est", !F.verrouille("eat") && F.quotaPhotos() === 0);
     vrai("L'essai démarre une seule fois", F.demarrerEssai() === true && F.demarrerEssai() === false);
     eq("Il reste sept jours", F.essaiRestant(), 7);
-    vrai("…et Alimentation est ouverte", !F.verrouille("eat") && F.essaiEnCours());
+    vrai("…et la photo s'ouvre, cinq par jour", F.quotaPhotos() === 5 && F.essaiEnCours());
     DB.essaiDebut = new Date(Date.now() - 6.5 * 864e5).toISOString();
     eq("Au septième jour, il en reste un", F.essaiRestant(), 1);
     vrai("…toujours ouvert", !F.verrouille("prg"));
     DB.essaiDebut = new Date(Date.now() - 7.01 * 864e5).toISOString();
     eq("Au huitième jour, zéro", F.essaiRestant(), 0);
-    vrai("…et le voile revient", F.verrouille("eat") && !F.essaiEnCours());
+    vrai("…et le voile revient sur la progression", F.verrouille("prg") && !F.essaiEnCours());
     DB.essaiDebut = "n'importe quoi";
     eq("Une date illisible ne donne rien", F.essaiRestant(), 0);
     /* la fenêtre dit ce qui reste gratuit, et que l'essai est fini */
@@ -6106,13 +6123,63 @@ async function lancer(){
     const D2 = F.document;
     await attendre(()=>!!D2.querySelector(".abo-gratuit"), 2000);
     const g = D2.querySelector(".abo-gratuit").textContent;
-    vrai("La fenêtre rappelle que les séances restent gratuites", /séances/.test(g) && /gratuits/.test(g), g);
+    vrai("La fenêtre rappelle que les séances et le journal restent gratuits", /séances/.test(g) && /journal/.test(g) && /gratuits/.test(g), g);
     vrai("…et que l'essai est terminé", /essai sont terminés/.test(g), g);
+    vrai("…et glisse le pack, en une ligne, sous la promesse", /20 photos/.test(D2.querySelector(".abo-pack-lien").textContent));
     F.fermerAbonnement();
     /* un abonnement prime sur l'essai fini */
     DB.abo = true;
-    vrai("Abonné après l'essai : ouvert", !F.verrouille("eat") && !F.essaiEnCours());
+    vrai("Abonné après l'essai : ouvert", !F.verrouille("prg") && !F.essaiEnCours());
+    F.openAbonnement();
+    await attendre(()=>!!D2.querySelector(".abo-gratuit"), 2000);
+    vrai("…et la fenêtre ne lui propose plus de pack", !D2.querySelector(".abo-pack-lien"));
+    F.fermerAbonnement();
     delete DB.abo;
+  })();
+  neuf();
+
+  /* --------------------------------------- la fiche des photos */
+  /* Quand on veut photographier sans droit, ou sans photo du jour : l'abonnement en
+     premier tant qu'on n'est pas abonne, le pack en second ; le pack seul pour un abonne. */
+  grp("La fiche des photos et le pack de 20");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    delete DB.abo; delete DB.scansReserve; delete DB.photos;
+    DB.essaiDebut = new Date(Date.now() - 9 * 864e5).toISOString();
+    F.openScans("midi");
+    await attendre(()=>!!D2.getElementById("sc-pack"), 2000);
+    vrai("Essai fini : la fiche explique que seule la photo est payante", /seule partie du journal/.test(D2.querySelector(".sc-sous").textContent));
+    vrai("…l'abonnement d'abord, le pack ensuite", D2.getElementById("sc-abo") && D2.getElementById("sc-abo").compareDocumentPosition(D2.getElementById("sc-pack")) & 4);
+    vrai("…le pack dit son prix et ses vingt photos", /20/.test(D2.getElementById("sc-pack").textContent) && /€/.test(D2.getElementById("sc-pack").textContent));
+    vrai("…et la porte gratuite reste ouverte", /gratuit/.test(D2.getElementById("sc-main").textContent));
+    F.hideSheet(); await attendre(()=>!D2.getElementById("sc-pack"), 2000);
+    DB.abo = true; DB.photos = {jour:F.dayKey(), n:10};
+    F.openScans("midi");
+    await attendre(()=>!!D2.getElementById("sc-pack"), 2000);
+    vrai("Abonné à court de photos : le pack seul, pas d'abonnement à vendre", !D2.getElementById("sc-abo") && D2.getElementById("sc-pack").classList.contains("seul"));
+    vrai("…et le titre dit que les dix du jour sont passées", /10 photos du jour/.test(D2.querySelector("#sheet h3").textContent));
+    F.hideSheet(); await attendre(()=>!D2.getElementById("sc-pack"), 2000);
+    DB.scansReserve = 7;
+    F.openScans("midi");
+    await attendre(()=>!!D2.getElementById("sc-pack"), 2000);
+    vrai("La réserve se lit dans la fiche", /7 photos/.test(D2.querySelector(".sc-reserve").textContent));
+    F.hideSheet(); await attendre(()=>!D2.getElementById("sc-pack"), 2000);
+    /* la camera, en mode plat, sans photo : le declencheur mene a la fiche, pas a un refus */
+    delete DB.scansReserve;
+    const cam = F.ouvrirCamera("plat", "x");
+    await attendre(()=>!!D2.querySelector(".cam .quota"), 2000);
+    vrai("La caméra dit que les photos du jour sont passées", /passées/.test(D2.querySelector(".cam .quota").textContent));
+    D2.querySelector(".cam [data-prendre]").click();
+    const r = await cam;
+    vrai("…et le déclencheur renvoie vers la fiche des photos", r && r.type === "scans");
+    /* les reglages montrent la reserve */
+    DB.scansReserve = 12;
+    F.openSettings();
+    await attendre(()=>!!D2.getElementById("st-abo"), 2000);
+    vrai("Les réglages affichent la réserve", /12 photos/.test(D2.getElementById("st-abo").textContent));
+    F.hideSheet();
+    delete DB.abo; delete DB.scansReserve; delete DB.photos; delete DB.essaiDebut;
   })();
   neuf();
 
@@ -6125,21 +6192,21 @@ async function lancer(){
   await (async ()=>{
     const D2 = F.document, app = D2.getElementById("app");
     delete DB.abo;
-    vrai("Sans abonnement, Alimentation et Progression sont verrouillées", F.verrouille("eat") && F.verrouille("prg"));
+    vrai("Sans abonnement, la Progression est verrouillée", F.verrouille("prg"));
     vrai("…le Bilan aussi", F.verrouille("bilan"));
-    vrai("…mais jamais la séance", !F.verrouille("seance"));
+    vrai("…mais jamais la séance, ni le journal alimentaire", !F.verrouille("seance") && !F.verrouille("eat"));
     F.eval("curTab='eat'; render()");
+    await attendre(()=>!!D2.querySelector("#app .meal-tabs"), 2000);
+    vrai("L'alimentation s'ouvre en clair, sans fenêtre", !D2.getElementById("abo-fenetre") && !app.classList.contains("verrou"));
+    F.eval("curTab='prg'; render()");
     await attendre(()=>!!D2.getElementById("abo-fenetre"), 2000);
     vrai("L'onglet verrouillé ouvre la fenêtre d'abonnement de lui-même", !!D2.getElementById("abo-fenetre"));
     vrai("…et la page passe sous le voile", app.classList.contains("verrou"));
-    vrai("…avec un écran rempli derrière (le profil de démonstration)", D2.querySelectorAll("#app .fgrid .chip, #app .fgrid button").length > 0
-      || /Protéines/.test(app.textContent));
     eq("Le vrai historique n'a pas bougé", DB.history.length, 0);
     eq("…ni les vrais repas", Object.keys(DB.habitSel).length, 0);
     vrai("…et le vrai profil est de retour", F.eval("db") === DB);
-    F.eval("curTab='prg'; render()");
     await attendre(()=>app.classList.contains("verrou") && /Progression/i.test(app.textContent), 2000);
-    vrai("Progression aussi est voilée", app.classList.contains("verrou") && !!D2.getElementById("abo-fenetre"));
+    vrai("Progression est voilée", app.classList.contains("verrou") && !!D2.getElementById("abo-fenetre"));
     F.eval("curTab='seance'; render()");
     await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
     vrai("Retour à la séance : le voile et la fenêtre s'en vont", !app.classList.contains("verrou") && !D2.getElementById("abo-fenetre"));
