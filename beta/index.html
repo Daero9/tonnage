@@ -1677,7 +1677,8 @@
   .vs-c b{display:block; font-size:24px; font-weight:800; line-height:1;} .vs-c small{display:block; font-size:12.5px; color:var(--ink-soft); margin-top:3px; line-height:1.2;}
   .vs-c small i{display:block; font-style:normal; font-size:11px; color:var(--ink-mute);}
   .vs-titre{display:flex; align-items:center; gap:8px; margin:6px 0 10px;}
-  .vs-titre .em{font-size:20px;} .vs-titre b{font-size:17px; font-weight:900; letter-spacing:.02em; text-transform:uppercase;}
+  .vs-titre .em{width:30px; height:30px; display:block;} .vs-titre b{font-size:17px; font-weight:900; letter-spacing:.02em; text-transform:uppercase;}
+  .vs-titre .card-i{margin-left:2px;}
   .vs-titre .vs-bulle{flex:1; min-width:0; margin-left:6px; padding:8px 10px; border-radius:12px; background:var(--surface2); font-size:11px; line-height:1.35; color:var(--ink-mute);}
   .vs-grille{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:16px;}
   .vs-t{position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px 12px; border-radius:16px; background:var(--surface2); color:var(--ink); text-align:center; min-height:150px;}
@@ -4276,7 +4277,8 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "{} activités":"{} activities", "{} activité":"{} activity", "activités":"activities", "activité":"activity", "Épargne tes {m} : encore <b>{p} %</b>":"Spare your {m}: <b>{p}%</b> to go", "Tous les muscles":"All muscles", "Aucun muscle dans cet état.":"No muscle in that state.", "Ton corps est au top !":"Your body is at its best!", "Vas-y en douceur.":"Take it easy.", "Laisse tes muscles souffler.":"Let your muscles breathe.",
+  "version du":"build of", "Une semaine compte dès qu'elle contient une séance ou une sortie.":"A week counts as soon as it holds a workout or a run.",
+  "Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.":"Only one activity counts per day: a workout and a run on the same day make one.", "À quoi ça sert ?":"What is this?", "{} activités":"{} activities", "{} activité":"{} activity", "activités":"activities", "activité":"activity", "Épargne tes {m} : encore <b>{p} %</b>":"Spare your {m}: <b>{p}%</b> to go", "Tous les muscles":"All muscles", "Aucun muscle dans cet état.":"No muscle in that state.", "Ton corps est au top !":"Your body is at its best!", "Vas-y en douceur.":"Take it easy.", "Laisse tes muscles souffler.":"Let your muscles breathe.",
   "Bonne séance !":"Good workout!", "En douceur !":"Go easy!", "Repose-toi !":"Get some rest!", "pièce":"piece", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
@@ -9115,11 +9117,21 @@ function openVestiaire(){
       <div class="vs-c"><span class="ic">${icoM("flamme", 22)}</span><span><b>${nSeances}</b><small>${TR(nSeances > 1 ? "activités" : "activité")}</small></span></div>
       <div class="vs-c"><span class="ic etoile">${IC_ETOILE}</span><span><b>${best}</b><small>${TR("semaines d'affilée")}<i>${TR("au mieux")}</i></small></span></div>
     </div>
-    <div class="vs-titre"><span class="em">🎒</span><b>${TR("Accessoires")}</b><span class="vs-bulle">${TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.")}</span></div>
+    <div class="vs-titre"><img class="em" src="img/vs-sac.png" alt=""><b>${TR("Accessoires")}</b><button class="card-i" data-vsinfo="acc" aria-label="${TR("À quoi ça sert ?")}">i</button></div>
     <div class="vs-grille">${courants.map(tuile).join("")}</div>
-    <div class="vs-titre"><span class="em">✨</span><b>${TR("Rares")}</b><span class="vs-bulle">${TR("Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.")}</span></div>
+    <div class="vs-titre"><img class="em" src="img/vs-etoile.png" alt=""><b>${TR("Rares")}</b><button class="card-i" data-vsinfo="rare" aria-label="${TR("À quoi ça sert ?")}">i</button></div>
     <div class="vs-grille">${rares.map(tuile).join("")}</div>
     <div class="vs-pied"><span class="ic">🏆</span><span class="grow">${TR("Gagne des accessoires en restant régulier !")}</span></div>`);
+  /* le i de chaque famille ouvre son explication */
+  document.querySelectorAll("[data-vsinfo]").forEach(b=>b.onclick=()=>{
+    const rare = b.dataset.vsinfo === "rare";
+    ouvrirParDessus(openVestiaire, ()=>openSheet(`<h3>${rare ? TR("Rares") : TR("Accessoires")}</h3>
+      <p style="margin:0 0 16px; font-size:14.5px; line-height:1.55; color:var(--ink-soft);">${rare
+        ? TR("Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.") + " " + TR("Une semaine compte dès qu'elle contient une séance ou une sortie.")
+        : TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.") + " " + TR("Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.")}</p>
+      <button class="btn btn-accent" id="vsi-ok" style="width:100%;">${TR("Compris")}</button>`));
+    document.getElementById("vsi-ok").onclick = closeSheet;
+  });
   document.querySelectorAll("#sheet [data-acc]").forEach(b=>b.onclick = ()=>{
     const id = b.dataset.acc, acc = new Set((db.avatar && db.avatar.acc) || ["bandeau"]);
     if(acc.has(id)) acc.delete(id); else acc.add(id);
@@ -9206,7 +9218,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 21h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 21h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
