@@ -9168,8 +9168,8 @@ function poussinPose(){
   if(a("en-forme") && sj.force === "pleine") return "en-forme";
   return "repos";
 }
-function poussinEtat(){
-  const pose = poussinPose();
+function poussinEtat(poseForcee){
+  const pose = (poseForcee && POUSSIN[poseForcee]) ? poseForcee : poussinPose();
   const choix = (db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"];
   const dispo = POUSSIN[pose] ? POUSSIN[pose].acc : [];
   return {pose, acc:choix.filter(id=>dispo.includes(id) && ACCESSOIRES.some(a=>a.id === id && accessoireGagne(a)))};
@@ -9177,7 +9177,9 @@ function poussinEtat(){
 /* Le vestiaire : le poussin tel qu'il est, puis les accessoires — gagnes (on choisit ce
    qu'il porte), a gagner (avec ce qu'il reste a faire), rares a part. */
 function openVestiaire(){
-  const e = poussinEtat(), nSeances = nActivites(), best = meilleureSerieSemaines();
+  /* dans le vestiaire, il pose toujours « en forme » : la pose du moment (endormi, vautre)
+     cacherait ce qu'on est en train de lui mettre */
+  const e = poussinEtat("en-forme"), nSeances = nActivites(), best = meilleureSerieSemaines();
   const porte = new Set(e.acc);
   /* d'apres la maquette du 21 septembre : le poussin en grand, deux compteurs en tuiles
      (flamme / etoile), les accessoires en cartes avec un cadenas et une jauge de
@@ -9198,7 +9200,7 @@ function openVestiaire(){
   const courants = ACCESSOIRES.filter(a=>!a.rare), rares = ACCESSOIRES.filter(a=>a.rare);
   openSheet(`<h3 style="font-size:22px;">${TR("Mon avatar")}</h3>
     <div class="pr-sous" style="text-align:center;">${TR("Personnalise ton compagnon d'entraînement !")}</div>
-    <div class="vs-apercu">${poussinHtml("vs-poussin")}</div>
+    <div class="vs-apercu">${poussinHtml("vs-poussin", "en-forme")}</div>
     <div class="vs-compte">
       <div class="vs-c"><span class="ic">${icoM("flamme", 22)}</span><span><b>${nSeances}</b><small>${TR(nSeances > 1 ? "activités" : "activité")}</small></span></div>
       <div class="vs-c"><span class="ic etoile">${IC_ETOILE}</span><span><b>${best}</b><small>${TR("semaines d'affilée")}<i>${TR("au mieux")}</i></small></span></div>
@@ -9225,8 +9227,8 @@ function openVestiaire(){
     openVestiaire();
   });
 }
-function poussinHtml(classe){
-  const e = poussinEtat(), p = POUSSIN[e.pose];
+function poussinHtml(classe, poseForcee){
+  const e = poussinEtat(poseForcee), p = POUSSIN[e.pose];
   if(!p) return "";
   const calques = e.acc.filter(a=>p.acc.includes(a)).map(a=>`<img class="acc" src="img/poussin/${a}@${e.pose}.webp" alt="">`).join("");
   /* sur l'accueil, un vrai record du jour se signale a cote de lui ; on touche, il raconte */
@@ -9324,7 +9326,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 00h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 00h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
