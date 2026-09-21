@@ -1067,12 +1067,20 @@
   .proj h3{font-size:15px; font-weight:800; margin-bottom:10px;}
 
   /* ---- jauge de récupération ---- */
-  .recup-card{display:flex; align-items:center; gap:11px; width:100%; margin-top:14px;
-    background:var(--hero); color:#fff; border-radius:16px; padding:10px 14px 10px 10px;
-    box-shadow:0 5px 16px rgba(0,0,0,.18);}
-  .recup-card .rc-ring{flex:0 0 auto; display:block; line-height:0;}
-  .recup-card .rc-t{display:block; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55);}
-  .recup-card .rc-s{display:block; font-size:15px; font-weight:800; margin-top:2px;}
+  .recup-card{display:flex; align-items:center; gap:12px; width:100%; margin-top:14px; min-height:96px;
+    background:#11181B; color:#fff; border-radius:18px; padding:12px 12px 12px 12px;
+    position:relative; overflow:hidden; text-align:left;}
+  .recup-card .rc-ring{flex:0 0 auto; display:block; line-height:0; position:relative; z-index:2;}
+  .recup-card .rc-txt{position:relative; z-index:2; min-width:0; padding-right:70px;}
+  .recup-card .rc-t{display:block; font-size:11.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.55);}
+  .recup-card .rc-s{display:block; font-size:17px; font-weight:800; margin-top:2px; line-height:1.15; white-space:nowrap;}
+  .recup-card .rc-sous{display:block; font-size:13px; color:rgba(255,255,255,.7); margin-top:3px;}
+  .recup-card .rc-img{position:absolute; right:30px; bottom:0; width:42%; max-width:190px; height:auto; z-index:1; pointer-events:none;}
+  .recup-card .rc-bulle{position:absolute; right:40px; top:10px; z-index:2; padding:5px 10px; border-radius:10px; background:#fff; color:#11181B;
+    font-size:12px; font-weight:700; font-style:italic; white-space:nowrap; transform:rotate(-4deg);}
+  .recup-card .rc-bulle::after{content:""; position:absolute; left:18px; bottom:-6px; border:6px solid transparent; border-top-color:#fff; border-bottom:0;}
+  .recup-card .rc-chev{position:absolute; right:12px; top:50%; transform:translateY(-50%); z-index:2; color:rgba(255,255,255,.8);}
+  .recup-card .rc-chev .chev{width:18px; height:18px; margin:0;}
   .recup-card .rc-bar{flex:0 0 64px; height:7px; border-radius:5px; background:rgba(255,255,255,.16); overflow:hidden;}
   .recup-card .rc-bar i{display:block; height:100%; border-radius:5px;}
   .mp-body .mp-fig{max-width:118px;}
@@ -4241,7 +4249,8 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "pièce":"piece", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
+  "version du":"build of", "Ton corps est au top !":"Your body is at its best!", "Vas-y en douceur.":"Take it easy.", "Laisse tes muscles souffler.":"Let your muscles breathe.",
+  "Bonne séance !":"Good workout!", "En douceur !":"Go easy!", "Repose-toi !":"Get some rest!", "pièce":"piece", "à la pièce":"by the piece", "en grammes":"in grams", "Nombre de {}":"Number of {}", "Pour {q} {u} (≈ {g} g)":"For {q} {u} (≈ {g} g)", "validées":"done", "validée":"done", "On enregistre ?":"Save it?", "brûlées":"burned", "Ajouter une série":"Add a set", "poids":"weight", "répétitions":"reps", "1 série":"1 set", "Voir tout":"See all", "kcal brûlés":"kcal burned", "Supprimer cette sortie":"Delete this session",
   "Surveille ta masse grasse en route : l'idée est de construire du muscle, pas du gras. Compte {r} par semaine au mieux.":"Keep an eye on body fat along the way: the idea is to build muscle, not fat. Expect {r} a week at best.",
   "Garde les protéines hautes et la muscu au programme : on veut perdre du gras, pas du muscle. Environ {r} par semaine, pas plus.":"Keep protein high and lifting in the plan: the goal is to lose fat, not muscle. About {r} a week, no more.",
   "Tenir son poids en s'entraînant, c'est recomposer : la balance bouge peu, la silhouette oui.":"Holding your weight while training is recomposition: the scale barely moves, your shape does.",
@@ -9161,7 +9170,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 20h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 20h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -14912,13 +14921,22 @@ function renderSeance(app){
     ${db.history.length? `<button class="recup-card" id="recup-btn">
       ${(()=>{ const r = recuperation();
         const c = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
-        return `<span class="rc-ring">${anneau(r.global, 44, c)}</span>
-          <span class="grow" style="text-align:left;">
+        /* d'apres la maquette du 21 septembre : l'anneau en grand, le titre et une phrase,
+           la montagne de Nico en bas a droite avec sa bulle, et le chevron */
+        const etat = r.global>=85? "frais" : (r.global>=50? "recup":"fatigue");
+        const w = recupPire(r);
+        const sous = w.pct < 65 ? TR("{m} à {p} %").replace("{m}", esc(TR(w.nom))).replace("{p}", w.pct)
+          : TR(etat === "frais" ? "Ton corps est au top !" : (etat === "recup" ? "Vas-y en douceur." : "Laisse tes muscles souffler."));
+        const bulle = TR(etat === "frais" ? "Bonne séance !" : (etat === "recup" ? "En douceur !" : "Repose-toi !"));
+        return `<span class="rc-ring">${anneau(r.global, 60, c)}</span>
+          <span class="grow rc-txt">
             <span class="rc-t">${TR("Récupération")}</span>
-            <span class="rc-s">${(()=>{ const w = recupPire(r);
-              return w.pct < 65 ? TR("{m} à {p} %").replace("{m}", esc(TR(w.nom))).replace("{p}", w.pct) : recupTitre(r.global); })()}</span>
+            <span class="rc-s">${recupTitre(r.global)}</span>
+            <span class="rc-sous">${sous}</span>
           </span>
-          <span class="rc-bar"><i style="width:${r.global}%; background:${c};"></i></span>`;
+          <img class="rc-img" src="img/recup.png" alt="">
+          <span class="rc-bulle">${bulle}</span>
+          <span class="rc-chev">${CHEV_MP}</span>`;
       })()}
     </button>`:""}
     <div class="car-wrap"><div class="car" id="car"></div></div>
