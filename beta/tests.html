@@ -1391,6 +1391,12 @@ async function lancer(){
       DB.history = [0,2,4,6,8,10,12,14,16,18, 30,32].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       eq("Dix activités tous les deux jours, puis un trou : meilleure flamme 10", F.meilleureFlamme(), 10);
       vrai("…la chaîne en or est gagnée", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      /* le halo : depuis combien de jours la condition « muscle » tient sans trou */
+      DB.history = [1,3,5,7,9,11,13,15,17,19].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      vrai("Dix séances tous les deux jours : musclé depuis au moins deux semaines", F.joursMuscle() >= 14, F.joursMuscle() + " jours");
+      eq("…deuxième halo", F.niveauHalo(), 2);
+      DB.history = [1,3].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      eq("Deux séances : pas musclé, pas de halo", F.niveauHalo(), 0);
       DB.history = hist1;
       /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
       DB.cardio = [8,9,10,11,12].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
