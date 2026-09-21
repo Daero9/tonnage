@@ -1653,6 +1653,7 @@
   .hero-poussin[data-pose="en-forme"], .hero-poussin[data-pose="muscle"]{width:88px; right:22px;}
   .hero-poussin[data-pose="record"]{width:78px; right:26px;}
   .hero-poussin[data-pose="fete"]{width:82px; right:24px;}
+  .hero-poussin[data-pose="seance"]{width:92px; right:20px;}
   .poussin-rec{position:absolute; right:calc(100% - 26px); top:-14px; pointer-events:auto; white-space:nowrap; padding:6px 10px; border-radius:99px;
     background:#fff; color:var(--accent); font-size:12px; font-weight:800; transform:rotate(-4deg);}
   /* la flamme animee de Nico, dans le coin haut droit de la carte de la semaine, le chiffre
@@ -9053,7 +9054,8 @@ const POUSSIN = {
   "record":{ratio:1.267, acc:["bandeau"]},
   "repos":{ratio:0.743, acc:["bandeau"]},
   "fete":{ratio:1.16, acc:["bandeau"]},
-  "muscle":{ratio:1.019, acc:["bandeau"]}
+  "muscle":{ratio:1.019, acc:["bandeau"]},
+  "seance":{ratio:0.945, acc:["bandeau"]}
 };
 /* Les accessoires : ce qui se gagne, et comment. Les courants avec le nombre de
    seances (un total, jamais perdu) ; les rares avec la MEILLEURE serie de semaines
@@ -9147,7 +9149,7 @@ function accessoireDuJour(){
    dans POUSSIN ; sinon on passe a la suivante. Ni le poids ni le profil n'y entrent.
      1. fete            un accessoire debloque aujourd'hui (jusqu'a minuit)
      2. record          un vrai record (+5 kg), les 10 minutes qui suivent la seance
-     3. apres-la-seance l'heure qui suit une seance ou une sortie
+     3. seance          l'heure qui suit une seance ou une sortie
      4. fatigue         recuperation du corps entier sous 40 %
      5. danger       3 jours sans activite : demain la flamme s'eteint
      6. muscle          au moins 3 activites sur les 7 derniers jours (la regularite)
@@ -9158,7 +9160,7 @@ function poussinPose(){
   const sj = serieJours(), fin = finDerniereActivite(), depuis = Date.now() - fin;
   if(a("fete") && accessoireDuJour()) return "fete";
   if(a("record") && fin && depuis < 10 * 60000 && recordSignificatif()) return "record";
-  if(a("apres-la-seance") && fin && depuis < 3600e3) return "apres-la-seance";
+  if(a("seance") && fin && depuis < 3600e3) return "seance";
   if(a("fatigue") && (db.history || []).length && recuperation().global < 40) return "fatigue";
   if(a("danger") && sj.depuis === 3) return "danger";
   if(a("muscle") && activites7j() >= 3) return "muscle";
@@ -9321,7 +9323,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 00h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 00h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
