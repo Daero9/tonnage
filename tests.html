@@ -922,6 +922,12 @@ async function lancer(){
   vrai("Un dégressif ajoute de la fatigue", avecDrop < sansDrop, `avec ${avecDrop} % vs sans ${sansDrop} %`);
   eq("Poids de fatigue : à l'échec", F.poidsFatigue({rir:0}), 1.35);
   eq("Poids de fatigue : 3 reps en réserve", F.poidsFatigue({rir:3}), 0.7);
+  /* le volume de la serie : un double lourd ne coute pas une serie de dix */
+  eq("Huit reps : la référence", F.poidsFatigue({rir:1, r:8}), 1);
+  eq("Deux reps : bien moins", F.poidsFatigue({rir:1, r:2}), 0.35);
+  eq("Quinze reps : un peu plus, plafonné", F.poidsFatigue({rir:1, r:15}), 1.25);
+  DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,2,1),serie(80,2,1)]}])];
+  vrai("Deux doubles laissent les quadriceps presque frais", F.recuperation().muscles["Quadriceps"].pct >= 85, F.recuperation().muscles["Quadriceps"].pct + " %");
   neuf();
 
   /* ---------------------------------------------------------- profil musculaire */
@@ -937,9 +943,9 @@ async function lancer(){
   vrai("Une moyenne personnelle est calculée", moy !== null);
   vrai("Triceps en retard sur la moyenne", prof["Triceps"] < moy);
   eq("Étiquette : point faible", F.mpStatus(prof["Triceps"], moy).tag, "Point faible");
-  eq("Étiquette : équilibré au niveau de la moyenne", F.mpStatus(moy, moy).tag, "Équilibré");
+  eq("Étiquette : équilibré au niveau de la moyenne", F.mpStatus(moy, moy).tag, "Dans la moyenne");
   eq("Étiquette : point fort à +20 %", F.mpStatus(moy*1.2, moy).tag, "Point fort");
-  eq("Sans moyenne, on retombe sur le barème", F.mpStatus(100, null).tag, "Équilibré");
+  eq("Sans moyenne, on retombe sur le barème", F.mpStatus(100, null).tag, "Dans la moyenne");
   const avant = F.muscleProfile()["Triceps"];
   DB.unilat[id("Extension poulie (barre)")] = true;
   vrai("Unilatéral : le score double", F.muscleProfile()["Triceps"] > avant*1.9);
@@ -1337,7 +1343,7 @@ async function lancer(){
     vrai("Plus aucune barre de tonnage", !D2.querySelector(".wk-day i, .wk-day b"));
     eq("Le jour d'entraînement est plein", jours.filter(j=>j.classList.contains("on")).length, 1);
     vrai("Lundi est le jour plein", jours[0].classList.contains("on"));
-    eq("Aujourd'hui est cerclé", jours.filter(j=>j.classList.contains("today")).length, 1);
+    eq("Aujourd'hui est marqué", jours.filter(j=>j.classList.contains("today")).length, 1);
     vrai("Plus de titre « cette semaine »", !D2.querySelector(".wk-top"));
     /* la série de semaines, sous les jours */
     (()=>{
@@ -1346,18 +1352,95 @@ async function lancer(){
       vrai("Une seule semaine : pas encore une série", !D2.querySelector(".wk-serie") && F.serieSemaines().n === 1);
       DB.history = [seance(0, lun.toISOString()), seance(1, sem(1)), seance(2, sem(2))];
       F.render();
-      const sr = F.document.querySelector(".wk-serie");
-      vrai("Trois semaines de suite : « 3 semaines d'affilée »", sr && /3 semaines d'affilée/.test(sr.textContent) && !sr.classList.contains("risque"));
-      DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3))];
+      vrai("…et la ligne de la carte ne fait plus doublon avec le poussin", !F.document.querySelector(".wk-serie"));
+      /* la flamme : des jours de seance, des la premiere, eteinte apres trois jours sans rien */
+      const jour = n => new Date(Date.now() - n*J).toISOString();
+      DB.history = [seance(1, jour(0))];
+      let fl = F.serieJours();
+      vrai("Une seule séance, aujourd'hui : la flamme s'allume à 1, pleine", fl.n === 1 && fl.force === "pleine");
       F.render();
-      const sr2 = F.document.querySelector(".wk-serie");
-      vrai("Rien cette semaine : la série tient encore, et elle le dit", sr2 && /3 semaines/.test(sr2.textContent) && sr2.classList.contains("risque") && /à tenir/.test(sr2.textContent));
+      vrai("…et elle est sous le poussin", /1/.test((F.document.querySelector(".hero-flamme") || {textContent:""}).textContent));
+      DB.history = [seance(1, jour(1)), seance(2, jour(3)), seance(3, jour(5)), seance(4, jour(12))];
+      fl = F.serieJours();
+      vrai("Trois jours de séance espacés de deux jours : 3 ; celle d'il y a 12 jours est hors série", fl.n === 3 && fl.force === "pleine");
+      DB.history = [seance(1, jour(2)), seance(2, jour(4))];
+      eq("Deux jours sans séance : la flamme est moyenne", F.serieJours().force, "moyenne");
+      DB.history = [seance(1, jour(3)), seance(2, jour(5))];
+      eq("Trois jours sans séance : petite", F.serieJours().force, "petite");
+      DB.history = [seance(1, jour(4)), seance(2, jour(6))];
+      vrai("Quatre jours sans séance : éteinte, à zéro", F.serieJours().n === 0 && F.serieJours().force === "eteinte");
+      F.render();
+      vrai("…et plus de flamme à l'écran", !F.document.querySelector(".hero-flamme"));
+      DB.history = [seance(1, jour(0)), seance(2, jour(0)), seance(3, jour(1))];
+      eq("Deux séances le même jour comptent pour un jour", F.serieJours().n, 2);
       DB.history = [seance(1, sem(1)), seance(3, sem(3)), seance(4, sem(4))];
       eq("Un trou casse la série", F.serieSemaines().n, 1);
       DB.cardio = [{id:"c1", date:sem(2), type:"course", min:30}];
       eq("…mais une sortie cardio la comble", F.serieSemaines().n, 4);
       DB.cardio = [];
       vrai("Une séance datée de demain ne compte pas", (()=>{ DB.history = [seance(9, new Date(Date.now() + 8*J).toISOString())]; return F.serieSemaines().n === 0; })());
+      /* le poussin et son vestiaire */
+      DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3)), seance(6, sem(6)), seance(7, sem(7))];
+      eq("La meilleure série jamais tenue : trois semaines", F.meilleureSerieSemaines(), 3);
+      vrai("Le bandeau noir dès la première activité, le bandeau orange à trois, pas encore les gants (six)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
+        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "bandeau-orange")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")));
+      vrai("La chaîne en or (flamme de 10) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      /* la meilleure flamme : la plus longue suite d'activites sans trou de plus de 3 jours */
+      eq("Une séance par semaine : la flamme ne dépasse jamais 1", F.meilleureFlamme(), 1);
+      const hist1 = DB.history;
+      DB.history = [0,2,4,6,8,10,12,14,16,18, 30,32].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      eq("Dix activités tous les deux jours, puis un trou : meilleure flamme 10", F.meilleureFlamme(), 10);
+      vrai("…la chaîne en or est gagnée", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      /* le halo : depuis combien de jours la condition « muscle » tient sans trou */
+      DB.history = [1,3,5,7,9,11,13,15,17,19].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      vrai("Dix séances tous les deux jours : musclé depuis au moins deux semaines", F.joursMuscle() >= 14, F.joursMuscle() + " jours");
+      eq("…deuxième halo", F.niveauHalo(), 2);
+      DB.history = [1,3].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      eq("Deux séances : pas musclé, pas de halo", F.niveauHalo(), 0);
+      DB.history = hist1;
+      /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
+      DB.cardio = [8,9,10,11,12].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
+      eq("Cinq séances et cinq sorties, des jours différents : dix activités", F.nActivites(), 10);
+      vrai("…et les gants (six) sont gagnés grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")));
+      DB.cardio = [1,2,3].map(k=>({id:"cy"+k, date:sem(k), type:"course", min:30}));
+      eq("Une sortie le jour d'une séance ne compte pas deux fois", F.nActivites(), 5);
+      DB.cardio = [];
+      /* la pose du poussin : muscle a trois activites sur sept jours, en forme apres une
+         activite recente, repos sinon (les dessins absents retombent sur repos) */
+      const hist0 = DB.history;
+      DB.history = []; DB.cardio = [];
+      eq("Sans rien, il dort", F.poussinEtat().pose, "repos");
+      DB.history = [seance(1, new Date().toISOString())];
+      eq("La toute première séance débloque le bandeau : c'est la fête", F.poussinEtat().pose, F.eval("POUSSIN").fete ? "fete" : "en-forme");
+      DB.history = [seance(1, new Date(Date.now() - J).toISOString()), seance(2, new Date(Date.now() - 2*36e5).toISOString())];
+      eq("Deux séances, la dernière il y a deux heures, rien de débloqué : en forme", F.poussinEtat().pose, "en-forme");
+      DB.history = [seance(1, new Date(Date.now() - J).toISOString()), seance(2, new Date(Date.now() - 20*60000).toISOString())];
+      eq("…et vingt minutes après la séance, il souffle", F.poussinEtat().pose, F.eval("POUSSIN").seance ? "seance" : "en-forme");
+      DB.history = [1,3,5].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+      eq("Trois activités sur sept jours", F.activites7j(), 3);
+      eq("…c'est la pose musclée, si le dessin existe", F.poussinEtat().pose, F.eval("POUSSIN").muscle ? "muscle" : "en-forme");
+      /* un vrai record : +5 kg sur la charge de travail, apres deux seances au meme poids */
+      const sq = (k, w) => ({id:"r"+k, date:new Date(Date.now() - k*J).toISOString(), name:"Bas", templateId:null, start:0, end:Date.now() - k*J,
+        entries:[{exId:id("Squat"), sets:[{w, r:8, done:true}]}]});
+      DB.history = [sq(6, 80), sq(3, 80), sq(0, 84)];
+      vrai("+4 kg n'est pas un vrai record", !F.recordSignificatif());
+      DB.history = [sq(6, 80), sq(3, 80), sq(0, 85)];
+      const rec = F.recordSignificatif();
+      vrai("+5 kg après deux séances à 80 : record, et on était bloqué", !!rec && rec.bloque && rec.ref === 80 && rec.apres === 85);
+      DB.history = [sq(3, 80), sq(0, 85)];
+      vrai("Une seule séance avant : pas de comparaison, pas de record", !F.recordSignificatif());
+      DB.history = hist0;
+      F.render();
+      vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@']"));
+      F.openProfil();
+      vrai("Le profil propose « Personnaliser mon avatar »", !!F.document.getElementById("pr-avatar"));
+      F.document.getElementById("pr-avatar").click();
+      vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && F.document.querySelector("#sheet [data-acc='bandeau']").classList.contains("on"));
+      F.document.querySelector("#sheet [data-acc='bandeau']").click();
+      vrai("Toucher le bandeau l'enlève, et le poussin l'enlève aussi", !F.document.querySelector("#sheet [data-acc='bandeau']").classList.contains("on") && !F.document.querySelector("#sheet .vs-poussin img.acc"));
+      vrai("Un accessoire sans dessin n'apparaît pas encore", !F.document.querySelector("#sheet [data-acc='serviette']") && !F.document.querySelector("#sheet [data-acc='bandeau-orange']"));
+      vrai("…une case dit que d'autres arrivent", !!F.document.querySelector("#sheet .vs-bientot"));
+      F.hideSheet(); delete DB.avatar;
       DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",
         start:Date.now()-3.6e6, end:Date.now(),
         entries:[{exId:id("Développé couché"), sets:[{w:60,r:10,done:true},{w:60,r:10,done:true}]}]}];
@@ -1560,7 +1643,7 @@ async function lancer(){
     const carte = D2.querySelector(".ex-card");
     vrai("La carte se sait isométrique", carte.classList.contains("iso"));
     eq("La colonne porte la durée",
-      [...carte.querySelectorAll(".set-cols span")][2].textContent, "durée");
+      [...carte.querySelectorAll(".set-row .bn-tete span")][2].textContent, "durée");
     eq("Le champ attend des secondes",
       carte.querySelectorAll(".set-row input")[1].placeholder, "sec");
     /* un dégressif consiste à baisser la charge : sur un gainage à zéro kilo, rien à baisser */
@@ -1572,7 +1655,7 @@ async function lancer(){
     const rgs = [...carte.children].map(n=>n.className);
     vrai("Le repos se règle au-dessus des séries",
       rgs.indexOf("ex-repos") > rgs.indexOf("iso-chrono") &&
-      rgs.indexOf("ex-repos") < rgs.indexOf("set-cols"));
+      rgs.indexOf("ex-repos") < rgs.indexOf("sets"));
     eq("Il propose de démarrer", carte.querySelector("[data-iso]").textContent, "Démarrer");
     eq("Le bandeau annonce ce qu'il reste à tenir",
       carte.querySelector(".iso-chrono .k").textContent, "Séries à tenir");
@@ -1750,7 +1833,7 @@ async function lancer(){
     vrai("Le bandeau de séance n'a plus l'arc",
       !/A1021/.test(D2.querySelector(".hero-en-cours .hero-bg").innerHTML));
     /* ce que pèse la séance, en un coup d'œil */
-    const meta = D2.querySelector(".hero-meta span").textContent;
+    const meta = [...D2.querySelectorAll(".hero-meta span")].map(x=>x.textContent).join(" · ");
     const travail = DB.active.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
     eq("L'échauffement ne compte pas comme une série", travail, 6);
     eq("Le bandeau dit ce que pèse la séance",
@@ -1791,10 +1874,10 @@ async function lancer(){
     eq("…et l'exemple en gras", deg.querySelector("b").textContent, "6 × 12 kg, puis 4 × 10 kg.");
     /* le bas de carte : un seul geste encadré, les autres sont des mots */
     const bas = D2.querySelector(".ex-bas");
-    vrai("« + série » garde son cadre",
-      bas.querySelector('[data-act="addset"]').classList.contains("btn-ghost"));
-    vrai("« Remplacer » est un mot, pas un bouton",
-      bas.querySelector('[data-act="swap"]').classList.contains("ex-lien"));
+    vrai("« + 1 série » est un bouton avec son signe",
+      bas.querySelector('[data-act="addset"]').classList.contains("ex-btn") && !!bas.querySelector('[data-act="addset"] svg'));
+    vrai("« Remplacer » aussi",
+      bas.querySelector('[data-act="swap"]').classList.contains("ex-btn"));
     vrai("« Retirer » aussi, en rouge",
       bas.querySelector('[data-act="delex"]').classList.contains("danger"));
     DB.active = null; DB.templates = [];
@@ -1854,8 +1937,9 @@ async function lancer(){
     DB.cardio = [{date:j(4), km:5, min:30}, {date:j(11), km:4, min:25}];
     F.eval("curTab = 'prg';");
     F.render();
+    /* le poids et les proteines ont leur propre en-tete (pd-t, pt-t) depuis les maquettes du 21 septembre */
     const titres = [...F.document.querySelectorAll(".card-t")];
-    vrai("La page des analyses a ses sections", titres.length >= 4);
+    vrai("La page des analyses a ses sections", titres.length + F.document.querySelectorAll(".pd-t, .pt-t").length >= 4);
     const sans = titres.filter(t=>!t.querySelector(".ic-t svg, .ic-t .icm")).map(t=>t.textContent.trim());
     vrai("Chaque section porte son signe" + (sans.length? " (manque : "+sans.join(", ")+")" : ""),
       sans.length === 0);
@@ -2053,18 +2137,18 @@ async function lancer(){
     vrai("Les calories ont la flamme", !!D2.querySelector(".pr-t .icm-flamme"));
     vrai("Les protéines ont le biceps", !!D2.querySelector(".pr-t .icm-muscle"));
     /* parti de 68, objectif 80, on est à 74 : la moitié du chemin */
-    eq("La jauge dit la moitié du chemin", D2.querySelector(".pr-jauge i").style.width, "50%");
+    eq("La jauge dit la moitié du chemin", D2.querySelector(".pr-t.b .pr-jauge i").style.width, "50%");
     vrai("…et ce qu'il reste", /Encore/.test(D2.querySelector(".pr-etat").textContent));
     /* sans historique, la barre ne raconte pas d'histoire */
     F.hideSheet(); DB.weights = []; F.openProfil();
     eq("Sans historique la jauge reste vide",
-      F.document.querySelector(".pr-jauge i").style.width, "0%");
+      F.document.querySelector(".pr-t.b .pr-jauge i").style.width, "0%");
     /* objectif atteint */
     F.hideSheet(); DB.profile.goalWeight = 74;
     DB.weights = [{date:j(60), kg:68}, {date:j(2), kg:74}];
     F.openProfil();
     eq("Objectif atteint : la jauge est pleine",
-      F.document.querySelector(".pr-jauge i").style.width, "100%");
+      F.document.querySelector(".pr-t.b .pr-jauge i").style.width, "100%");
     vrai("…et l'app le dit", /atteint/i.test(F.document.querySelector(".pr-etat").textContent));
     F.hideSheet();
     DB.weights = [];
@@ -3641,6 +3725,9 @@ async function lancer(){
     F.photoSeance({name:"Pull", items:exDe("Dos")}), "pull");
   eq("Les pectoraux donnent push", F.photoSeance({name:"Push", items:exDe("Pectoraux")}), "push");
   eq("Les jambes donnent jambes", F.photoSeance({name:"Legs", items:exDe("Jambes")}), "jambes");
+  eq("Biceps, triceps et épaules seulement : la photo « bras »", F.photoSeance({name:"Bras", items:exDe("Biceps").concat(exDe("Triceps"), exDe("Épaules"))}), "bras");
+  vrai("…mais un seul exercice de dos dedans, et c'est une séance pull", F.photoSeance({name:"Bras", items:exDe("Biceps").concat(exDe("Triceps"), exDe("Dos").slice(0,1))}) !== "bras");
+  eq("Le nom « Bras » seul, sans exercice, suffit", F.photoSeance({name:"Bras", items:[]}), "bras");
   eq("Les exercices priment sur le nom",
     F.photoSeance({name:"Pull", items:exDe("Jambes")}), "jambes");
   eq("Une photo choisie à la main est respectée",
@@ -3655,8 +3742,10 @@ async function lancer(){
   eq("Un exercice d'épaules ne renverse pas une séance de dos",
     F.photoSeance({name:"Séance A",
       items:exos(["Tractions","Rowing barre","Tirage vertical","Curl haltères","Face pull"])}), "pull");
-  eq("Le biceps compte du côté du tirage",
-    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "pull");
+  eq("Rien que des curls : c'est une séance de bras, plus une séance de tirage",
+    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau"])}), "bras");
+  eq("Des curls avec un rowing : le biceps compte du côté du tirage",
+    F.photoSeance({name:"Séance A", items:exos(["Curl barre","Curl haltères","Curl marteau","Rowing barre"])}), "pull");
   eq("La poussée est reconnue sans l'aide du nom",
     F.photoSeance({name:"Séance A",
       items:exos(["Développé couché","Développé militaire","Extension poulie (barre)"])}), "push");
@@ -3840,8 +3929,8 @@ async function lancer(){
 
     /* la barre du haut : la même qu'avant, en orange et plus épaisse */
     const barre = D2.querySelector(".onb-prog i");
-    eq("La barre d'avancement est orange",
-      F.getComputedStyle(barre).backgroundColor, "rgb(245, 130, 32)");
+    vrai("La barre d'avancement porte le dégradé orange des jauges (FE7610 → FDAA16)",
+      /254, 118, 16/.test(F.getComputedStyle(barre).backgroundImage) && /253, 170, 22/.test(F.getComputedStyle(barre).backgroundImage));
     vrai("…et plus épaisse qu'avant",
       parseFloat(F.getComputedStyle(D2.querySelector(".onb-prog")).height) >= 9);
 
@@ -5975,10 +6064,11 @@ async function lancer(){
       cardio:{machine:"course", min:20, km:3.2, pente:1, fait:true, derniere:""}};
     F.eval("curTab='seance'; render()");
     await attendre(()=>!!F.document.getElementById("finish-w"), 2000);
-    const vraiAsk = F.askConfirm; F.askConfirm = (t, m, ok, danger, cb)=>cb();
+    /* « Terminer la séance ? » est une fiche à part : on appuie sur son « Enregistrer » */
     F.document.getElementById("finish-w").click();
+    await attendre(()=>!!F.document.querySelector(".tf-coche"), 2000);
+    F.document.getElementById("cf-yes").click();
     await attendre(()=>DB.history.length === 1, 2000);
-    F.askConfirm = vraiAsk;
     eq("La séance est enregistrée", DB.history.length, 1);
     eq("…avec sa sortie", DB.history[0].cardio && DB.history[0].cardio.km, 3.2);
     eq("…et la sortie existe aussi dans le cardio", DB.cardio.length, 1);
