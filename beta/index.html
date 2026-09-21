@@ -1507,6 +1507,22 @@
   .hero-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;
     filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));}
   .hero-poussin img.acc{filter:none;}
+  /* ---- le vestiaire ---- */
+  .vs-apercu{display:flex; justify-content:center; padding:6px 0 4px;}
+  .vs-poussin{position:relative; width:150px;}
+  .vs-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .vs-compte{display:flex; justify-content:center; gap:18px; font-size:12.5px; color:var(--ink-mute); margin-bottom:6px;}
+  .vs-compte b{color:var(--ink); font-size:15px;}
+  .vs-sous{font-size:12.5px; color:var(--ink-mute); margin:-4px 0 10px;}
+  .vs-grille{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:14px;}
+  .vs-t{display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px 9px; border-radius:14px; background:var(--surface2); border:1.5px solid var(--border); color:var(--ink); text-align:center;}
+  .vs-t .vs-img{width:54px; height:54px; border-radius:12px; background:var(--surface); display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .vs-t .vs-img img{width:100%; height:100%; object-fit:cover; object-position:50% 35%; transform:scale(1.6);}
+  .vs-t .vs-img i{font-style:normal; font-size:20px; font-weight:800; color:var(--ink-mute);}
+  .vs-t b{font-size:12px; line-height:1.15;} .vs-t em{font-style:normal; font-size:10.5px; color:var(--ink-mute);}
+  .vs-t.on{border-color:var(--accent); background:rgba(245,130,32,.10);} .vs-t.on em{color:var(--accent); font-weight:800;}
+  .vs-t.verrou{opacity:.55;} .vs-t.verrou .vs-img{background:var(--border);}
+  .vs-t.ok.sans{opacity:.75;}
   .hero-h .hl{color:var(--accent);}
   /* ---- le bandeau d une séance en cours ----
      Il est droit : sans l'arc, le titre, le compte des séries et le chrono se calent
@@ -3846,6 +3862,12 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
+  "Mon avatar":"My avatar", "Personnaliser mon avatar":"Customise my avatar", "Accessoires":"Accessories", "Rares":"Rare",
+  "Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.":"Every workout counts. Tap an earned accessory to put it on or take it off.",
+  "Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.":"For consistency: your best run of weeks in a row, never lost.",
+  "semaines d'affilée, au mieux":"weeks in a row, at best", "{} séances":"{} workouts", "Porté":"Worn", "Gagné":"Earned", "Bientôt":"Coming soon",
+  "Bandeau noir":"Black headband", "Bandeau orange":"Orange headband", "Gants":"Gloves", "Serviette":"Towel", "Casquette":"Cap", "Lunettes de soleil":"Sunglasses",
+  "Ceinture de force":"Lifting belt", "Débardeur Tonnup":"Tonnup tank top", "Cape":"Cape", "Chaîne en or":"Gold chain", "Bandeau doré":"Golden headband", "Couronne":"Crown", "Ailes":"Wings",
   "Petite assiette":"Small plate", "Assiette moyenne":"Medium plate", "Grande assiette":"Large plate", "Bol":"Bowl", "Barquette / boîte":"Takeaway box", "Sans assiette":"No plate",
   "La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.":"Plate photos are part of Tonnup Analyse — or a 20-photo pack.",
   "Tes {} photos du jour sont passées. Appuie pour en ajouter.":"Your {} photos for today are used up. Tap to add more.",
@@ -8560,13 +8582,83 @@ const EXO_DEMO = {
 const POUSSIN = {
   "repos":{ratio:0.74, acc:["bandeau"]}
 };
-/* la pose du moment et ce qu'il porte — pour l'instant : repos, avec le bandeau */
-function poussinEtat(){ return {pose:"repos", acc:["bandeau"]}; }
-function poussinHtml(){
+/* Les accessoires : ce qui se gagne, et comment. Les courants avec le nombre de
+   seances (un total, jamais perdu) ; les rares avec la MEILLEURE serie de semaines
+   jamais tenue — pas la serie en cours, pour qu'un accessoire gagne le reste. Un
+   accessoire sans dessin (pas dans POUSSIN) s'affiche en case « a venir » : la carotte
+   se voit avant le dessin. */
+const ACCESSOIRES = [
+  {id:"bandeau",       nom:"Bandeau noir",      seances:0},
+  {id:"bandeau-orange",nom:"Bandeau orange",    seances:1},
+  {id:"gants",         nom:"Gants",             seances:5},
+  {id:"serviette",     nom:"Serviette",         seances:10},
+  {id:"casquette",     nom:"Casquette",         seances:20},
+  {id:"lunettes",      nom:"Lunettes de soleil",seances:35},
+  {id:"ceinture",      nom:"Ceinture de force", seances:50},
+  {id:"debardeur",     nom:"Débardeur Tonnup",  seances:75},
+  {id:"cape",          nom:"Cape",              seances:100},
+  {id:"chaine",        nom:"Chaîne en or",      serie:4,  rare:true},
+  {id:"bandeau-or",    nom:"Bandeau doré",      serie:8,  rare:true},
+  {id:"couronne",      nom:"Couronne",          serie:12, rare:true},
+  {id:"ailes",         nom:"Ailes",             serie:26, rare:true}
+];
+/* la meilleure serie de semaines jamais tenue, sur tout l'historique */
+function meilleureSerieSemaines(){
+  const sem = new Set();
+  (db.history || []).concat(db.cardio || []).forEach(x=>{
+    const d = new Date(x.date); if(!(d > 0)) return;
+    d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); sem.add(d.getTime());
+  });
+  let best = 0;
+  sem.forEach(t=>{ if(sem.has(t - 7*864e5)) return; let n = 0; while(sem.has(t + n*7*864e5)) n++; best = Math.max(best, n); });
+  return best;
+}
+function accessoireGagne(a){
+  if(a.serie) return meilleureSerieSemaines() >= a.serie;
+  return (db.history || []).length >= (a.seances || 0);
+}
+/* ce qu'il porte : le choix de la personne, filtre par ce qu'elle a gagne et par ce qui
+   existe en dessin pour la pose */
+function poussinEtat(){
+  const pose = "repos";
+  const choix = (db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"];
+  const dispo = POUSSIN[pose] ? POUSSIN[pose].acc : [];
+  return {pose, acc:choix.filter(id=>dispo.includes(id) && ACCESSOIRES.some(a=>a.id === id && accessoireGagne(a)))};
+}
+/* Le vestiaire : le poussin tel qu'il est, puis les accessoires — gagnes (on choisit ce
+   qu'il porte), a gagner (avec ce qu'il reste a faire), rares a part. */
+function openVestiaire(){
+  const e = poussinEtat(), nSeances = (db.history || []).length, best = meilleureSerieSemaines();
+  const porte = new Set(e.acc);
+  const tuile = a=>{
+    const gagne = accessoireGagne(a), dessin = POUSSIN.repos && POUSSIN.repos.acc.includes(a.id);
+    const reste = a.serie ? TR("{} semaines d'affilée").replace("{}", a.serie) : TR("{} séances").replace("{}", a.seances);
+    return `<button class="vs-t ${gagne ? "ok" : "verrou"} ${porte.has(a.id) ? "on" : ""} ${dessin ? "" : "sans"}" data-acc="${a.id}" ${gagne && dessin ? "" : "disabled"}>
+      <span class="vs-img">${dessin ? `<img src="img/poussin/${a.id}@repos.png" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
+      <b>${TR(a.nom)}</b><em>${gagne ? (dessin ? (porte.has(a.id) ? TR("Porté") : TR("Gagné")) : TR("Bientôt")) : reste}</em></button>`;
+  };
+  const courants = ACCESSOIRES.filter(a=>!a.rare), rares = ACCESSOIRES.filter(a=>a.rare);
+  openSheet(`<h3>${TR("Mon avatar")}</h3>
+    <div class="vs-apercu">${poussinHtml("vs-poussin")}</div>
+    <div class="vs-compte"><span><b>${nSeances}</b> ${TR("séances")}</span><span><b>${best}</b> ${TR("semaines d'affilée, au mieux")}</span></div>
+    <div class="section-t"><i>🎒</i>${TR("Accessoires")}</div>
+    <div class="vs-sous">${TR("Chaque séance compte. Touche un accessoire gagné pour le mettre ou l'enlever.")}</div>
+    <div class="vs-grille">${courants.map(tuile).join("")}</div>
+    <div class="section-t"><i>✨</i>${TR("Rares")}</div>
+    <div class="vs-sous">${TR("Pour la régularité : la meilleure série de semaines d'affilée, jamais perdue.")}</div>
+    <div class="vs-grille">${rares.map(tuile).join("")}</div>`);
+  document.querySelectorAll("#sheet [data-acc]").forEach(b=>b.onclick = ()=>{
+    const id = b.dataset.acc, acc = new Set((db.avatar && db.avatar.acc) || ["bandeau"]);
+    if(acc.has(id)) acc.delete(id); else acc.add(id);
+    db.avatar = Object.assign({}, db.avatar, {acc:[...acc]}); save(); vibrer(12);
+    openVestiaire();
+  });
+}
+function poussinHtml(classe){
   const e = poussinEtat(), p = POUSSIN[e.pose];
   if(!p) return "";
   const calques = e.acc.filter(a=>p.acc.includes(a)).map(a=>`<img class="acc" src="img/poussin/${a}@${e.pose}.png" alt="">`).join("");
-  return `<div class="hero-poussin" data-pose="${e.pose}" style="aspect-ratio:1/${p.ratio};"><img src="img/poussin/${e.pose}.png" alt="">${calques}</div>`;
+  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" style="aspect-ratio:1/${p.ratio};"><img src="img/poussin/${e.pose}.png" alt="">${calques}</div>`;
 }
 const EXO_PHOTO = {
   "Développé couché":"developpe-couche", "Développé incliné haltères":"developpe-incline-halteres",
@@ -8641,7 +8733,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 12h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 12h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9785,11 +9877,15 @@ function openProfil(){
         <span class="fl">${IC_CHEVRON}</span></button>
       <button class="btn" id="pr-edit" style="background:var(--surface);">${TR("Modifier mon profil")}
         <span class="fl">${IC_CHEVRON}</span></button>
+      ${POUSSIN.repos ? `<button class="btn" id="pr-avatar" style="background:var(--surface);">${TR("Personnaliser mon avatar")}
+        <span class="fl">${IC_CHEVRON}</span></button>` : ""}
       <button class="btn btn-ghost" id="pr-ok">${TR("Fermer")}</button>
     </div>`);
   /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
   document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
   document.getElementById("pr-edit").onclick = ()=>{ closeSheet(); openOnboarding(false); };
+  const bAv = document.getElementById("pr-avatar");
+  if(bAv) bAv.onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
   document.getElementById("pr-ok").onclick = closeSheet;
 }
 function wireTopbar(){
