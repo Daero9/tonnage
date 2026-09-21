@@ -1659,8 +1659,8 @@
   .hero-flamme{position:absolute; right:6px; top:-40px; z-index:4; width:40px; height:50px; transform-origin:50% 100%;
     transition:transform .4s ease, opacity .4s ease, right .4s ease;}
   /* en danger, elle revient sous le poussin, centree sur lui : il la protege */
-  .under-hero:has(.hero-poussin[data-pose="en-danger"]) .hero-flamme{right:46px; top:-30px;}
-  .hero-poussin[data-pose="en-danger"]{width:88px; right:22px;}
+  .under-hero:has(.hero-poussin[data-pose="danger"]) .hero-flamme{right:46px; top:-58px;}
+  .hero-poussin[data-pose="danger"]{width:88px; right:22px;}
   .hero-flamme .fe{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
   /* Le chiffre de la flamme dans une police ronde et pleine (Fredoka, licence OFL) : seuls
      les dix chiffres sont embarques, 1,7 Ko, pas de reseau. */
@@ -9046,6 +9046,7 @@ const EXO_DEMO = {
 /* Le poussin, la mascotte : une pose par etat, des accessoires en calques. Table
    reecrite par C:\Projets\outils\poussin.py depuis C:\Projets\APP\Avatar. */
 const POUSSIN = {
+  "danger":{ratio:1.045, acc:["bandeau"]},
   "en-forme":{ratio:1.079, acc:["bandeau"]},
   "fatigue":{ratio:0.631, acc:["bandeau"]},
   "record":{ratio:1.267, acc:["bandeau"]},
@@ -9146,7 +9147,7 @@ function accessoireDuJour(){
      2. record          un vrai record (+5 kg), les 10 minutes qui suivent la seance
      3. apres-la-seance l'heure qui suit une seance ou une sortie
      4. fatigue         recuperation du corps entier sous 40 %
-     5. en-danger       3 jours sans activite : demain la flamme s'eteint
+     5. danger       3 jours sans activite : demain la flamme s'eteint
      6. muscle          au moins 3 activites sur les 7 derniers jours (la regularite)
      7. en-forme        une activite aujourd'hui ou hier
      8. repos           le reste du temps — et la pose de secours */
@@ -9157,7 +9158,7 @@ function poussinPose(){
   if(a("record") && fin && depuis < 10 * 60000 && recordSignificatif()) return "record";
   if(a("apres-la-seance") && fin && depuis < 3600e3) return "apres-la-seance";
   if(a("fatigue") && (db.history || []).length && recuperation().global < 40) return "fatigue";
-  if(a("en-danger") && sj.depuis === 3) return "en-danger";
+  if(a("danger") && sj.depuis === 3) return "danger";
   if(a("muscle") && activites7j() >= 3) return "muscle";
   if(a("en-forme") && sj.force === "pleine") return "en-forme";
   return "repos";
@@ -9318,7 +9319,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "21 septembre 2026 23h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "21 septembre 2026 23h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
