@@ -1,6 +1,6 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-beta-v10-20260922-2112";
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
+const CACHE = "tonnup-beta-v11-20260922-2115";
+const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png?v=3", "./icon-512.png?v=3", "./apple-touch-icon.png?v=3",
   "./img/exos/abducteurs.png",
   "./img/exos/abduction-hanche.png",
   "./img/exos/adducteurs.png",
