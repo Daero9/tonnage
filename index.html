@@ -3440,14 +3440,8 @@
   /* ---- la fiche des photos (plus de photo, ou pas le droit) ---- */
   .sc-h{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:4px;}
   .sc-h h3{margin-bottom:0;}
-  .sc-ic{position:relative; width:64px; height:64px; border-radius:18px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center; margin:8px 0 4px;}
-  .sc-ic svg{width:30px; height:30px;}
-  /* quatre petits traits qui rayonnent, comme sur la maquette */
-  .sc-ic i{position:absolute; width:4px; height:14px; border-radius:2px; background:var(--accent);}
-  .sc-ic i:nth-child(1){left:-22px; top:2px; transform:rotate(35deg);}
-  .sc-ic i:nth-child(2){left:-28px; top:24px; transform:rotate(70deg);}
-  .sc-ic i:nth-child(3){right:-22px; top:2px; transform:rotate(-35deg);}
-  .sc-ic i:nth-child(4){right:-28px; top:24px; transform:rotate(-70deg);}
+  /* l'appareil photo dessine par Nico, les eclats compris */
+  .sc-ic{width:112px; height:112px; display:block; margin:6px 0 2px;}
   .sc-sous{font-size:13.5px; line-height:1.5; color:var(--ink-soft); text-align:center; margin:8px 4px 16px;}
   .sc-reserve{text-align:center; font-size:12.5px; color:var(--ink-mute); margin:12px 0 0;}
   .sc-main{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:16px; padding:15px 12px; border-radius:16px;
@@ -3469,7 +3463,7 @@
   .pk{position:relative; flex:1; display:flex; flex-direction:column; align-items:center; padding:16px 8px 14px; border-radius:16px;
     background:var(--surface); border:1.5px solid var(--border); color:var(--ink); line-height:1.1;}
   .pk-ic{display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
-  .pk-ic img{width:44px; height:auto; filter:drop-shadow(0 3px 5px rgba(120,60,0,.18));}   /* une ombre douce, l'icone se decolle */
+  .pk-ic img{width:52px; height:auto;}
   .pk b{font-size:26px; font-weight:900;} .pk i{font-style:normal; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-mute); margin-top:3px;}
   .pk em{font-style:normal; font-size:16px; font-weight:800; margin-top:10px;}
   .pk s{font-size:12px; color:var(--ink-mute); margin-top:3px;} .pk s:empty{display:none;}
@@ -3479,7 +3473,7 @@
   /* en grand : deux cartes hautes, le pack remise en orange, son ancien prix barre */
   .pk-row.grand{gap:12px; align-items:stretch;}
   .pk-row.grand .pk{padding:22px 10px 20px; border-radius:18px; justify-content:flex-start;}
-  .pk-row.grand .pk-ic{display:none;}
+  .pk-row.grand .pk-ic{margin-bottom:12px;} .pk-row.grand .pk-ic img{width:76px;}
   .pk-row.grand .pk b{font-size:38px;} .pk-row.grand .pk i{font-size:12px; margin-top:4px;}
   .pk-row.grand .pk em{font-size:22px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); width:70%;}
   .pk-row.grand .pk s{font-size:13px; margin-top:4px;}
@@ -9414,7 +9408,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 13h00";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 13h45";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19219,7 +19213,7 @@ function boutonsPacks(classe){
   const grand = classe === "grand";
   return `<div class="pk-row ${classe || ""}">${PACKS.map(k=>`<button class="pk ${k.remise > 0 ? "mis" : ""}" data-pack="${k.id}">
       ${k.remise > 0 ? `<span class="pk-badge">−${k.remise} %</span>` : ""}
-      <span class="pk-ic"><img src="img/photos.png" alt=""></span>
+      <span class="pk-ic"><img src="img/pack${k.scans}.webp" alt=""></span>
       <b>${k.scans}</b><i>${TR("photos")}</i><em>${esc(k.texte)}</em>${k.remise > 0 ? `<s>${esc(prixSansRemise(k))}</s>` : ""}</button>`).join("")}</div>`;
 }
 function brancherPacks(racine, apres){
@@ -19269,7 +19263,7 @@ let aboRetour = null;
 /* La fiche des packs, pour un abonne a court de photos du jour. */
 function openScans(meal){
   const jour = photosJour();
-  openSheet(`<div class="sc-h"><span class="sc-ic"><i></i><i></i><i></i><i></i>${IC_PHOTO}</span><h3>${jour > 0
+  openSheet(`<div class="sc-h"><img class="sc-ic" src="img/sc-appareil.webp" alt=""><h3>${jour > 0
       ? TR(jour > 1 ? "Il te reste {n} photos aujourd'hui" : "Il te reste {n} photo aujourd'hui").replace("{n}", jour)
       : TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
     <p class="sc-sous">${jour > 0
