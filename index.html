@@ -300,6 +300,9 @@
      huitieme jour ne surprenne personne */
   .hero-essai{height:28px; padding:0 11px; border-radius:14px; background:var(--accent); color:#fff;
     font-size:12px; font-weight:800; letter-spacing:.01em; white-space:nowrap;}
+  /* la pastille des photos d'assiette (Alimentation) : l'appareil et le nombre qu'il reste */
+  .hero-scans{display:inline-flex; align-items:center; gap:5px; padding:0 10px 0 8px;}
+  .hero-scans svg{width:15px; height:15px;} .hero-scans b{font-size:13px;}
   .hero-h{position:relative; z-index:2; text-align:center; margin-top:11%;}
   .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
   .hero-h .sub{font-size:14px; font-weight:600; color:var(--hero-soft); margin-top:8px;}
@@ -2650,7 +2653,7 @@
   /* le basculement : le cadre s'ouvre et s'efface, le declencheur se remplit, la pilule glisse */
   .cam.plat .cadre{opacity:0; transform:scale(1.12); pointer-events:none;}
   /* le carre de l'assiette : ce qui est dedans part, le reste non */
-  .cam .carre{position:absolute; left:50%; top:44%; width:min(84vw, 46vh); aspect-ratio:1; transform:translate(-50%,-50%);
+  .cam .carre{position:absolute; left:50%; top:42%; width:min(82vw, 42vh); aspect-ratio:1; transform:translate(-50%,-50%);
     border:3px solid #fff; border-radius:24px; box-shadow:0 0 0 9999px rgba(0,0,0,.35);
     transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
   .cam.code .carre{opacity:0; transform:translate(-50%,-50%) scale(.9); pointer-events:none;}
@@ -2671,7 +2674,9 @@
   .cam.epuise .declencheur{opacity:.55;}
   .cam .t{position:absolute; left:0; right:0; top:calc(50% + 40px); text-align:center; font-size:14.5px; font-weight:700;
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
-  .cam.plat .t{top:auto; bottom:calc(232px + env(safe-area-inset-bottom));}   /* au-dessus de la pilule de l'assiette */
+  /* le texte se cale sous le carre, quelle que soit la hauteur de l'ecran : calcule depuis le
+     centre du carre (42 %) plus sa demi-largeur, il ne peut plus le toucher */
+  .cam.plat .t{top:calc(42% + min(41vw, 21vh) + 14px); bottom:auto;}
   /* le declencheur au-dessus de la pilule des modes, comme sur un appareil photo : l'inversion
      se fait en CSS, la pilule reste ecrite en premier */
   .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column-reverse; gap:18px; align-items:center;}
@@ -4319,7 +4324,8 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Objectif et choix en désaccord":"Goal and choice disagree", "D'autres arrivent":"More coming", "dans une prochaine mise à jour":"in a future update", "1er jour":"day one", "1 semaine":"1 week", "2 semaines":"2 weeks", "1 mois":"1 month", "2 mois":"2 months", "3 mois":"3 months", "6 mois":"6 months", "1 an":"1 year", "2 ans":"2 years",
+  "version du":"build of", "Photos d'assiette restantes":"Plate photos left", "Il te reste {n} photos aujourd'hui":"You have {n} photos left today", "Il te reste {n} photo aujourd'hui":"You have {n} photo left today",
+  "Sur {q} par jour. Le compteur repart demain. Une réserve de photos, achat unique et sans date limite, prend le relais quand celles du jour sont passées.":"Out of {q} a day. The counter resets tomorrow. A photo reserve — one-off purchase, no expiry — takes over once today's are used.", "Objectif et choix en désaccord":"Goal and choice disagree", "D'autres arrivent":"More coming", "dans une prochaine mise à jour":"in a future update", "1er jour":"day one", "1 semaine":"1 week", "2 semaines":"2 weeks", "1 mois":"1 month", "2 mois":"2 months", "3 mois":"3 months", "6 mois":"6 months", "1 an":"1 year", "2 ans":"2 years",
   "Voici ton compagnon":"Meet your buddy", "Personnalise-le grâce à tes entraînements : chaque activité débloque des accessoires (voir ton profil).":"Customise it through your training: every activity unlocks accessories, found in your profile.", "Flamme de {}":"Flame of {}", "meilleure flamme":"best flame", "jamais perdue":"never lost",
   "Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.":"For consistency: your best flame, i.e. the longest run of activities without ever letting more than 3 days go by. It is never lost.", "Record !":"Record!", "puis":"then", "Continuer comme ça !":"Keep it up!",
   "<b>{ex}</b> : tes deux dernières séances étaient à <b>{a}</b>, tu étais bloqué. Aujourd'hui tu as monté à <b>{b}</b>.":"<b>{ex}</b>: your last two sessions were at <b>{a}</b>, you were stuck. Today you moved up to <b>{b}</b>.",
@@ -9408,7 +9414,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 10h08";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 13h00";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9602,13 +9608,13 @@ function executerRaccourci(action){
   if(!action || !db.profile || db.profile.skipped || onbEl) return false;
   raccourciRecu = true;
   if(action === "scan"){
-    curTab = "eat"; render();
+    allerOnglet("eat");
     if(verrouille("eat")){ setTimeout(openAbonnement, 300); return true; }
     setTimeout(()=>lancerScan(mealParHeure()), 250);
     return true;
   }
   if(action === "seance"){
-    curTab = "seance"; render();
+    allerOnglet("seance");
     if(db.active){ setTimeout(()=>{ const c = document.querySelector(".ex-card"); if(c) c.scrollIntoView({block:"start", behavior:"smooth"}); }, 300); return true; }
     const t = suggestedTemplate();
     setTimeout(()=>{ if(t) openPreview(t.id); else openPropose(); }, 250);
@@ -10509,7 +10515,7 @@ function hero(inner, opts){
         <button class="hero-ic" id="tb-close" title="Fermer" aria-label="${TR("Fermer")}">${IC_CROIX}</button>`
         : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}">${IC_USER}</button>
-        <span class="hero-droite">${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
+        <span class="hero-droite">${o.scans ? `<button class="hero-essai hero-scans" id="hero-scans" aria-label="${TR("Photos d'assiette restantes")}">${IC_PHOTO}<b>${photosRestantes()}</b></button>` : ""}${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
           TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
       </div>
       <div class="hero-h">${inner}</div>${o.apres || ""}
@@ -10602,9 +10608,11 @@ function ajusterSalut(){
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
   const es = document.getElementById("hero-essai"); if(es) es.onclick = openAbonnement;   /* voir les forfaits, sans attendre */
+  /* la pastille des photos : le compte du jour + la reserve ; on touche, on voit le detail et les packs */
+  const sc = document.getElementById("hero-scans"); if(sc) sc.onclick = ()=>{ if(db.abo === true || essaiEnCours()) openScans(); else openAbonnement(); };
   const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
   const x = document.getElementById("tb-close");
-  if(x) x.onclick = ()=>{ curTab = "seance"; render(); };
+  if(x) x.onclick = ()=>allerOnglet("seance");
 }
 /* ---- la visite guidee, une fois par onglet ------------------------------------
    « Par ou commencer » disait quoi faire, jamais ou c'etait. Ces etiquettes montrent
@@ -10754,15 +10762,26 @@ function lancerGuide(onglet, surFiche){
   montrer();
 }
 let curTab = "seance";
+/* Changer d'onglet passe par ici : quitter l'accueil pose une entree d'historique, pour
+   que le bouton Retour d'Android ramene a l'accueil au lieu de fermer l'app (Capacitor ne
+   ferme l'app que si la page n'a plus rien a remonter). Revenir a l'accueil par l'onglet
+   REPREND cette entree (history.back) au lieu d'en laisser une vide derriere : sinon le
+   premier Retour ne faisait rien et le second fermait l'app. */
+function allerOnglet(id){
+  if(id === curTab){ return; }
+  if(id === "seance" && history.state && history.state.tonnage === "tab"){
+    try{ history.back(); return; }catch(e){}     /* popstate fera le rendu */
+  }
+  if(curTab === "seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
+  if(curTab === "eat") jourCur = null;
+  curTab = id; render();
+}
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
     `<button class="tab ${curTab===id?'on':''}" data-tab="${id}">${ICONS[id]}<span>${TR(lab)}</span></button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
     if(b.dataset.tab===curTab) return;
-    if(curTab==="seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
-    /* on ne reste pas coincé sur une vieille date : quitter l'alimentation revient à aujourd'hui */
-    if(curTab === "eat") jourCur = null;
-    curTab=b.dataset.tab; render();
+    allerOnglet(b.dataset.tab);
   });
 }
 /* De quel ecran on vient. Ce n'est pas tout a fait l'onglet : lancer ou terminer une
@@ -11344,9 +11363,9 @@ function brancherNotifs(){
       const a = ev && ev.notification && ev.notification.extra && ev.notification.extra.action;
       if(!a) return;
       if(a === "scan" || a === "seance"){ executerRaccourci(a); return; }
-      if(a === "bilan"){ curTab = "eat"; render(); if(!verrouille("bilan")) setTimeout(openBilan, 300); return; }
-      if(a === "pesee"){ curTab = "prg"; render(); return; }
-      curTab = "eat"; render();
+      if(a === "bilan"){ allerOnglet("eat"); if(!verrouille("bilan")) setTimeout(openBilan, 300); return; }
+      if(a === "pesee"){ allerOnglet("prg"); return; }
+      allerOnglet("eat");
     });
   }catch(e){}
 }
@@ -12097,8 +12116,7 @@ let jourCur = null;
 function jourAlim(){ return jourCur || dayKey(); }
 function poserJour(key){
   jourCur = (key && key !== dayKey()) ? key : null;
-  curTab = "eat";
-  render();
+  if(curTab === "eat") render(); else allerOnglet("eat");
 }
 /* Ce que la journée a coûté à l'entraînement : la muscu ET les sorties. On l'affiche
    à côté des calories mangées, SANS faire la soustraction — la dépense estimée du plan
@@ -12329,7 +12347,7 @@ function renderEat(app){
     ${hero(`<div class="ico">${IC_SOLEIL}</div>
       <div class="big">${auj ? TR("Aujourd'hui")
       : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>
-      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour", essai:true})}
+      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour", essai:true, scans:true})}
     <div class="under-hero sous-jour" style="display:flex; gap:9px; align-items:stretch;">
       <div class="eat-stats">
         <div class="eat-card eat-stat">
@@ -15190,7 +15208,7 @@ function renderSeance(app){
     <div class="hist-tete"><span class="pt-ic hist-ic">${IC_CALENDRIER}</span><span class="hist-t">${TR("Historique")}</span>
       <button class="hist-tout" id="hist-all">${TR("Voir tout")}${CHEV_MP}</button></div>
     <div class="hist-strip" id="hist-strip"></div>`;
-  document.getElementById("hist-all").onclick = ()=>{ curTab="hist"; render(); };
+  document.getElementById("hist-all").onclick = ()=>allerOnglet("hist");
   wireTopbar();
   ajusterSalut();
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
@@ -19250,11 +19268,17 @@ function proposerPhotos(meal){
 let aboRetour = null;
 /* La fiche des packs, pour un abonne a court de photos du jour. */
 function openScans(meal){
-  openSheet(`<div class="sc-h"><span class="sc-ic"><i></i><i></i><i></i><i></i>${IC_PHOTO}</span><h3>${TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
-    <p class="sc-sous">${TR("Le compteur repart demain. Pour continuer aujourd'hui, une réserve de photos : achat unique, sans date limite, utilisée après celles du jour.")}</p>
+  const jour = photosJour();
+  openSheet(`<div class="sc-h"><span class="sc-ic"><i></i><i></i><i></i><i></i>${IC_PHOTO}</span><h3>${jour > 0
+      ? TR(jour > 1 ? "Il te reste {n} photos aujourd'hui" : "Il te reste {n} photo aujourd'hui").replace("{n}", jour)
+      : TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
+    <p class="sc-sous">${jour > 0
+      ? TR("Sur {q} par jour. Le compteur repart demain. Une réserve de photos, achat unique et sans date limite, prend le relais quand celles du jour sont passées.").replace("{q}", quotaPhotos())
+      : TR("Le compteur repart demain. Pour continuer aujourd'hui, une réserve de photos : achat unique, sans date limite, utilisée après celles du jour.")}</p>
     ${boutonsPacks("grand")}
     ${scansReserve() > 0 ? `<p class="sc-reserve">${TR("En réserve : {} photos").replace("{}", scansReserve())}</p>` : ""}
-    <button class="sc-main" id="sc-main">${IC_CRAYON}${TR("Ajouter à la main, c'est gratuit")}</button>`);
+    ${meal ? `<button class="sc-main" id="sc-main">${IC_CRAYON}${TR("Ajouter à la main, c'est gratuit")}</button>`
+           : `<button class="btn btn-ghost" id="sc-main" style="width:100%;">${TR("Compris")}</button>`}`);
   brancherPacks(document.getElementById("sheet"), ()=>{ hideSheet(); if(meal) setTimeout(()=>lancerScan(meal, "plat"), 260); });
   document.getElementById("sc-main").onclick = ()=>{ hideSheet(); if(meal) setTimeout(()=>openAjoutAliment(meal), 240); };
   chargerPacks();
@@ -19423,14 +19447,17 @@ function openAbonnement(){
     const r = aboRetour; aboRetour = null;
     fermerAbonnement();
     if(r && r.fermer) r.fermer();                          /* venue de la camera : on y retourne */
-    else if(verrouille(curTab)){ curTab = "seance"; render(); }
+    else if(verrouille(curTab)){ allerOnglet("seance"); }
   };
   f.addEventListener("click", e=>{ if(e.target === f) document.getElementById("abo-x").click(); });
   document.getElementById("abo-mensuel").onclick = ()=>acheterAbonnement("mensuel");
   document.getElementById("abo-annuel").onclick = ()=>acheterAbonnement("annuel");
   chargerForfaits();                 /* les vrais prix, s'ils ne sont pas encore la */
   document.getElementById("abo-restaurer").onclick = ()=>restaurerAbonnement();
-  brancherPacks(f, ()=>{ const r = aboRetour; aboRetour = null; fermerAbonnement(); if(r && r.achete) r.achete(); });
+  /* un pack achete depuis la fenetre : on revient a la camera si on en venait, sinon a
+     l'Alimentation — c'est la que les photos servent. Rester sur l'onglet verrouille
+     d'ou la fenetre s'etait ouverte laissait la Progression floutee sous les yeux. */
+  brancherPacks(f, ()=>{ const r = aboRetour; aboRetour = null; fermerAbonnement(); if(r && r.achete) r.achete(); else allerOnglet("eat"); });
   chargerPacks();
   const lien = document.getElementById("abo-code-lien"), form = document.getElementById("abo-code");
   const champ = document.getElementById("abo-code-in");
