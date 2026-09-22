@@ -1518,6 +1518,21 @@ async function lancer(){
         eq("Chaque teinte est dessinée pour les huit poses", manquantes.length, 0, manquantes.join(" "));
         delete DB.avatar; F.eval("save()"); F.openVestiaire();
       })();
+      (()=>{
+        /* Le poussin de la page derriere doit changer en meme temps que la tuile : sinon
+           on choisit une couleur, on referme, et l accueil montre encore l ancienne. */
+        F.hideSheet(); F.render();
+        const surPage = ()=>[...F.document.querySelectorAll("#app .hero-poussin img.acc")]
+          .map(i=>i.getAttribute("src")).join(" ");
+        vrai("Le poussin de l'accueil porte le bandeau noir", /bandeau@/.test(surPage()), surPage());
+        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        F.document.querySelector("#sheet .cl[data-cl='bandeau-rose']").click();
+        vrai("…et passe au rose sans attendre la fermeture",
+          /bandeau-rose@/.test(surPage()) && !/bandeau@/.test(surPage()), surPage());
+        F.hideSheet();
+        vrai("…la couleur tient après la fermeture", /bandeau-rose@/.test(surPage()));
+        delete DB.avatar; F.eval("save()"); F.render(); F.openVestiaire();
+      })();
       vrai("…une case dit que d'autres arrivent", !!F.document.querySelector("#sheet .vs-bientot"));
       F.hideSheet(); delete DB.avatar; F.eval("save()");
       DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",

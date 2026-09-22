@@ -16486,6 +16486,7 @@ function openVestiaire(){
     if(force || !avant.includes(id)) acc.push(id);
     const cl = f ? Object.assign({}, db.avatar && db.avatar.cl, {[f.id]:id}) : (db.avatar && db.avatar.cl);
     db.avatar = Object.assign({}, db.avatar, {acc, cl}); save(); vibrer(12);
+    majPoussins();                      /* celui de la page derriere, tout de suite */
     openVestiaire();
   };
   document.querySelectorAll("#sheet [data-acc]").forEach(b=>b.onclick = ()=>habille(b.dataset.acc, false));
@@ -16510,6 +16511,18 @@ function poussinHtml(classe, poseForcee){
   return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio};">${
     halo ? `<i class="halo"></i>` : ""}${fonds}<img src="img/poussin/${e.pose}.webp" alt="">${calques}${
     rec ? `<button class="poussin-rec" id="poussin-record">🏆 ${TR("Record !")}</button>` : ""}</div>`;
+}
+/* Rhabiller le poussin de la page sans la reconstruire : on echange son bloc, rien
+   d'autre. La personne choisit une couleur dans le vestiaire ; elle doit la retrouver
+   sur l'accueil en refermant la fiche, pas au prochain chargement de l'app. Un render()
+   complet ferait la meme chose mais remonterait la page en haut. */
+function majPoussins(){
+  document.querySelectorAll("#app .hero-poussin").forEach(vieux=>{
+    const boite = document.createElement("div");
+    boite.innerHTML = poussinHtml();
+    const neuf = boite.firstElementChild;
+    if(neuf) vieux.replaceWith(neuf);
+  });
 }
 document.addEventListener("click", e=>{
   const b = e.target.closest("#poussin-record");
@@ -16601,7 +16614,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 01h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 01h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
