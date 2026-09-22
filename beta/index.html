@@ -368,7 +368,9 @@
   .wk-nums .n{text-align:left; color:var(--ink);}
   .wk-nums .v{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
   .wk-nums .v small{font-size:13px; font-weight:700; color:var(--ink-soft);}
-  .wk-nums .u{font-size:11.5px; color:var(--ink-mute); display:flex; align-items:center; gap:2px;}
+  /* « Soulevés −50 % » ne tient pas sur un ecran etroit : l evolution passe a la ligne
+     plutot que d etre coupee par le bouton Bilan */
+  .wk-nums .u{font-size:11.5px; color:var(--ink-mute); display:flex; align-items:center; gap:2px; flex-wrap:wrap;}
   .wk-nums .u svg{width:11px; height:11px; opacity:.7;}
   /* Texte agrandi = moins de points CSS : a 125 %, un ecran de 412 tombe a 330,
      et le tonnage revenait toucher le bouton. On reduit alors le chiffre et la
@@ -2653,7 +2655,7 @@
   /* le basculement : le cadre s'ouvre et s'efface, le declencheur se remplit, la pilule glisse */
   .cam.plat .cadre{opacity:0; transform:scale(1.12); pointer-events:none;}
   /* le carre de l'assiette : ce qui est dedans part, le reste non */
-  .cam .carre{position:absolute; left:50%; top:42%; width:min(82vw, 42vh); aspect-ratio:1; transform:translate(-50%,-50%);
+  .cam .carre{position:absolute; left:50%; top:40%; width:min(82vw, 38vh); aspect-ratio:1; transform:translate(-50%,-50%);
     border:3px solid #fff; border-radius:24px; box-shadow:0 0 0 9999px rgba(0,0,0,.35);
     transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
   .cam.code .carre{opacity:0; transform:translate(-50%,-50%) scale(.9); pointer-events:none;}
@@ -2676,7 +2678,9 @@
     padding:0 24px; line-height:1.5; text-shadow:0 1px 4px rgba(0,0,0,.6);}
   /* le texte se cale sous le carre, quelle que soit la hauteur de l'ecran : calcule depuis le
      centre du carre (42 %) plus sa demi-largeur, il ne peut plus le toucher */
-  .cam.plat .t{top:calc(42% + min(41vw, 21vh) + 14px); bottom:auto;}
+  .cam.plat .t{top:calc(40% + min(41vw, 19vh) + 12px); bottom:auto;}
+  /* ecran court : la consigne se resserre pour ne pas toucher la pilule des assiettes */
+  @media (max-height:700px){ .cam .t{font-size:13px; line-height:1.35; padding:0 18px;} }
   /* le declencheur au-dessus de la pilule des modes, comme sur un appareil photo : l'inversion
      se fait en CSS, la pilule reste ecrite en premier */
   .cam .bas{position:absolute; left:0; right:0; bottom:calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column-reverse; gap:18px; align-items:center;}
@@ -9413,7 +9417,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 13h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 15h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
