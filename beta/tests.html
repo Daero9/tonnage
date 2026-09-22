@@ -1396,9 +1396,9 @@ async function lancer(){
       vrai("Le bandeau dès la première activité, le casque à trois, pas encore les gants de boxe (six)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
         && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "casque-audio")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
       /* l'orange n'est plus un accessoire a part : c'est une couleur du bandeau */
-      vrai("L'orange est une couleur du bandeau, pas un accessoire de plus",
-        !F.eval("ACCESSOIRES").some(a=>a.id === "bandeau-orange")
-        && F.eval("familleAcc('bandeau-orange')").id === "bandeau");
+      vrai("Le rose est une couleur du bandeau, pas un accessoire de plus",
+        !F.eval("ACCESSOIRES").some(a=>a.id === "bandeau-rose")
+        && F.eval("familleAcc('bandeau-rose')").id === "bandeau");
       vrai("Le t-shirt sans manches tombe à la 100e activité",
         F.eval("ACCESSOIRES").find(a=>a.id === "t-shirt-sans-manches").seances === 100);
       vrai("Le sifflet de coach (flamme de 10) n'est pas encore gagné", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "sifflet-de-coach")));
@@ -1456,13 +1456,20 @@ async function lancer(){
       vrai("Le profil propose « Personnaliser mon avatar »", !!F.document.getElementById("pr-avatar"));
       F.document.getElementById("pr-avatar").click();
       /* la tuile du bandeau, quelle que soit la couleur qu'elle montre */
-      const tuileB = ()=>F.document.querySelector("#sheet [data-acc='bandeau'], #sheet [data-acc='bandeau-orange']").closest(".vs-t");
+      const tuileB = ()=>F.document.querySelector("#sheet .vs-t [data-acc^='bandeau']").closest(".vs-t");
       vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && tuileB().classList.contains("on"));
       F.document.querySelector("#sheet [data-acc='bandeau']").click();
       vrai("Toucher le bandeau l'enlève, et le poussin l'enlève aussi", !tuileB().classList.contains("on") && !F.document.querySelector("#sheet .vs-poussin img.acc"));
       vrai("Un accessoire sans dessin n'apparaît pas encore", !F.document.querySelector("#sheet [data-acc='casque']"));
       /* les couleurs : tant qu'une seule est dessinee, aucune pastille — il n'y a rien a choisir */
-      vrai("Une seule couleur dessinée : pas de pastilles", !F.document.querySelector("#sheet .vs-cl"));
+      /* les couleurs : une pastille par teinte dessinée, et rien du tout quand il n'y a
+         pas de choix à faire */
+      eq("Une pastille par couleur dessinée", F.document.querySelectorAll("#sheet .vs-cl .cl").length,
+         F.eval("variantesDessinees(ACCESSOIRES[0]).length"));
+      vrai("Un accessoire d'une seule couleur n'a pas de pastilles",
+        F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length === 1)
+          .every(a=>!document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']")
+            .closest(".vs-t").querySelector(".vs-cl"))`));
       /* un decor marque « arriere » se pose sous le poussin, pas sur son corps */
       (()=>{
         const poses = F.eval("POUSSIN");
@@ -1479,23 +1486,37 @@ async function lancer(){
         delete DB.avatar; F.eval("save()"); F.openVestiaire();
       })();
       (()=>{
-        /* on fait comme si le bandeau orange etait dessine, pour voir le choix de couleur */
-        const acc = F.eval("POUSSIN").repos.acc, poses = F.eval("POUSSIN");
-        Object.keys(poses).forEach(p=>poses[p].acc.push("bandeau-orange"));
+        /* le choix de couleur, sur les teintes réellement dessinées */
+        const teintes = F.eval("variantes(ACCESSOIRES[0]).map(v=>v.id)");
+        const dessinees = F.eval("variantesDessinees(ACCESSOIRES[0]).map(v=>v.id)");
+        vrai("Le bandeau existe en plusieurs teintes", dessinees.length >= 2, dessinees.join(", "));
+        vrai("…chacune a sa couleur pour la pastille",
+          F.eval("variantes(ACCESSOIRES[0]).every(v=>/^#[0-9A-F]{6}$/i.test(v.hex))"));
         F.openVestiaire();
-        const pastilles = F.document.querySelectorAll("#sheet .vs-cl .cl");
-        eq("Deux couleurs dessinées : deux pastilles", pastilles.length, 2);
-        eq("…la première est cochée", F.document.querySelector("#sheet .vs-cl .cl.on").dataset.cl, "bandeau");
-        F.document.querySelector("#sheet .cl[data-cl='bandeau-orange']").click();
-        vrai("Toucher l'orange le met tout de suite", tuileB().classList.contains("on")
-          && !!F.document.querySelector("#sheet .vs-poussin img.acc[src*='bandeau-orange@']"));
-        vrai("…et on ne porte jamais deux teintes à la fois", F.document.querySelectorAll("#sheet .vs-poussin img.acc").length === 1);
-        eq("…la tuile montre désormais l'orange", F.document.querySelector("#sheet [data-acc]").dataset.acc, "bandeau-orange");
-        F.document.querySelector("#sheet [data-acc='bandeau-orange']").click();
+        eq("…la première est cochée par défaut",
+          F.document.querySelector("#sheet .vs-cl .cl.on").dataset.cl, dessinees[0]);
+        const autre = dessinees[1];
+        F.document.querySelector("#sheet .cl[data-cl='" + autre + "']").click();
+        vrai("Toucher une couleur la met tout de suite", tuileB().classList.contains("on")
+          && !!F.document.querySelector("#sheet .vs-poussin img.acc[src*='" + autre + "@']"));
+        vrai("…et on ne porte jamais deux teintes à la fois",
+          F.document.querySelectorAll("#sheet .vs-poussin img.acc").length === 1);
+        eq("…la tuile montre désormais cette couleur",
+          F.document.querySelector("#sheet [data-acc]").dataset.acc, autre);
+        F.document.querySelector("#sheet [data-acc='" + autre + "']").click();
         vrai("On l'enlève, la couleur reste mémorisée", !tuileB().classList.contains("on")
-          && F.document.querySelector("#sheet .vs-cl .cl.on").dataset.cl === "bandeau-orange");
-        Object.keys(poses).forEach(p=>poses[p].acc = poses[p].acc.filter(x=>x !== "bandeau-orange"));
-        delete DB.avatar; F.openVestiaire();
+          && F.document.querySelector("#sheet .vs-cl .cl.on").dataset.cl === autre);
+        /* le dessin de chaque teinte existe pour toutes les poses, sinon elle disparaîtrait
+           dès que le poussin change d'humeur */
+        const manquantes = F.eval(`(() => {
+          const out = [];
+          Object.keys(POUSSIN).forEach(p => variantesDessinees(ACCESSOIRES[0]).forEach(v => {
+            if (!POUSSIN[p].acc.includes(v.id)) out.push(v.id + "@" + p);
+          }));
+          return out;
+        })()`);
+        eq("Chaque teinte est dessinée pour les huit poses", manquantes.length, 0, manquantes.join(" "));
+        delete DB.avatar; F.eval("save()"); F.openVestiaire();
       })();
       vrai("…une case dit que d'autres arrivent", !!F.document.querySelector("#sheet .vs-bientot"));
       F.hideSheet(); delete DB.avatar; F.eval("save()");
