@@ -2564,6 +2564,9 @@
     background:var(--good); color:#0d1a12; font-weight:700; font-size:14px; padding:11px 18px; border-radius:12px;
     box-shadow:0 8px 26px rgba(0,0,0,.5); transition:opacity .4s; max-width:88%; text-align:center;}
   .toast.erreur{background:#d63031; color:#fff;}
+  /* « Appuie encore pour quitter » : le gris du systeme, pas les couleurs de l'app — on
+     comprend que c'est Android qui parle, pas Tonnup */
+  .toast.systeme{background:rgba(30,30,32,.92); color:#fff; font-weight:600; box-shadow:0 6px 20px rgba(0,0,0,.4);}
   .empty{text-align:center; color:var(--ink-mute); padding:34px 18px; font-size:14.5px;}
   .empty .big{font-size:34px; margin-bottom:8px;}
 
@@ -4322,7 +4325,7 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of",
+  "version du":"build of", "Appuie encore pour quitter":"Press again to exit",
   "Sans abonnement, tes photos achetées restent disponibles sans limite de temps — et l'ajout à la main reste gratuit.":"Without a subscription, the photos you buy never expire — and adding food by hand stays free.",
   "Tes {q} photos gratuites reviennent demain. D'ici là, tes photos achetées prennent le relais et restent disponibles sans limite de temps.":"Your {q} free photos come back tomorrow. Until then, the photos you bought take over and never expire.",
   "Il te reste {n} photos":"You have {n} photos left", "Il te reste {n} photo":"You have {n} photo left", "Des photos quand tu en as besoin":"Photos whenever you need them",
@@ -9417,7 +9420,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 15h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 15h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -9934,7 +9937,7 @@ function wireHints(root){
 /* type « erreur » : rouge — un refus ne doit jamais s'afficher dans le vert du succes */
 function toast(msg, type){
   const t = document.createElement("div");
-  t.className = "toast" + (type === "erreur" ? " erreur" : ""); t.textContent = msg;
+  t.className = "toast" + (type === "erreur" ? " erreur" : (type === "systeme" ? " systeme" : "")); t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(()=>{ t.style.opacity="0"; setTimeout(()=>t.remove(), 400); }, 2400);
 }
@@ -11044,16 +11047,32 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
   sheet.addEventListener("touchcancel", fin);
 })();
 
-/* touche retour Android : ferme la fiche ouverte, puis revient à l'onglet Séance,
-   et seulement ensuite laisse le système fermer l'app */
+/* touche retour Android : ferme la fiche ouverte, puis revient à l'onglet Séance, et
+   depuis l'accueil demande confirmation — un second appui dans les deux secondes quitte,
+   comme dans la plupart des applications. Sans ca, un retour de trop fermait l'app en
+   pleine seance. */
+let quitterArme = 0;
 window.addEventListener("popstate", ()=>{
   if(overlay.classList.contains("show")){
     /* le bouton retour du telephone fait comme la croix : un cran, pas tout */
     if(retourFiche()){ try{ history.pushState({tonnage:"sheet"}, ""); }catch(e){} return; }
     hideSheet(); return;
   }
-  if(curTab !== "seance"){ curTab = "seance"; render(); }
+  if(curTab !== "seance"){ curTab = "seance"; render(); return; }
+  /* sur l'accueil : le premier appui prévient, le second laisse partir */
+  if(!dansLApp()) return;
+  if(Date.now() - quitterArme < 2000){ quitterArme = 0; quitterApp(); return; }
+  quitterArme = Date.now();
+  try{ history.pushState({tonnage:"quitter"}, ""); }catch(e){}
+  toast(TR("Appuie encore pour quitter"), "systeme");
+  vibrer(12);
 });
+/* fermer l'app : le greffon Raccourci sait la mettre en arriere-plan (elle garde son
+   etat et revient instantanement). Sur le web, il n'y a rien a fermer. */
+function quitterApp(){
+  const p = pluginRaccourci();
+  if(p && typeof p.quitter === "function"){ try{ p.quitter(); }catch(e){} }
+}
 function askConfirm(title, msg, okLabel, danger, cb, nonLabel){
   openSheet(`<h3>${esc(title)}</h3><p style="color:var(--ink-soft); margin:0 0 18px; font-size:14.5px;">${esc(msg)}</p>
     <div class="row"><button class="btn grow" id="cf-no">${esc(nonLabel || TR("Annuler"))}</button>
