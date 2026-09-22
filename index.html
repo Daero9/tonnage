@@ -4318,7 +4318,12 @@ const TRAD = {en:{
   "Une séance est en cours":"A workout is in progress",
   "Reprends-la où tu l'as laissée, ou termine-la.":"Pick it up where you left it, or finish it.",
   "Ta séance du jour t'attend.":"Today's workout is waiting.",
-  "version du":"build of", "Photos d'assiette restantes":"Plate photos left", "Il te reste {n} photos aujourd'hui":"You have {n} photos left today", "Il te reste {n} photo aujourd'hui":"You have {n} photo left today",
+  "version du":"build of",
+  "Sans abonnement, tes photos achetées restent disponibles sans limite de temps — et l'ajout à la main reste gratuit.":"Without a subscription, the photos you buy never expire — and adding food by hand stays free.",
+  "Tes {q} photos gratuites reviennent demain. D'ici là, tes photos achetées prennent le relais et restent disponibles sans limite de temps.":"Your {q} free photos come back tomorrow. Until then, the photos you bought take over and never expire.",
+  "Il te reste {n} photos":"You have {n} photos left", "Il te reste {n} photo":"You have {n} photo left", "Des photos quand tu en as besoin":"Photos whenever you need them",
+  "La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de photos. Appuie pour voir.":"Plate photos are part of Tonnup Analyse — or a photo pack. Tap to see.",
+  "Tes {} photos gratuites du jour sont passées. Appuie pour en ajouter.":"Your {} free photos for today are used. Tap to add more.", "Photos d'assiette restantes":"Plate photos left", "Il te reste {n} photos aujourd'hui":"You have {n} photos left today", "Il te reste {n} photo aujourd'hui":"You have {n} photo left today",
   "{q} photos gratuites chaque jour. Une fois épuisées, tes photos achetées prennent le relais et restent disponibles sans limite de temps.":"{q} free photos every day. Once they're used, your purchased photos take over and never expire.", "Objectif et choix en désaccord":"Goal and choice disagree", "D'autres arrivent":"More coming", "dans une prochaine mise à jour":"in a future update", "1er jour":"day one", "1 semaine":"1 week", "2 semaines":"2 weeks", "1 mois":"1 month", "2 mois":"2 months", "3 mois":"3 months", "6 mois":"6 months", "1 an":"1 year", "2 ans":"2 years",
   "Voici ton compagnon":"Meet your buddy", "Personnalise-le grâce à tes entraînements : chaque activité débloque des accessoires (voir ton profil).":"Customise it through your training: every activity unlocks accessories, found in your profile.", "Flamme de {}":"Flame of {}", "meilleure flamme":"best flame", "jamais perdue":"never lost",
   "Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.":"For consistency: your best flame, i.e. the longest run of activities without ever letting more than 3 days go by. It is never lost.", "Record !":"Record!", "puis":"then", "Continuer comme ça !":"Keep it up!",
@@ -9408,7 +9413,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 13h48";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 13h51";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -12677,8 +12682,8 @@ function ouvrirCamera(mode, titre){
       /* a zero, le texte dit pourquoi, et le declencheur ouvre la fiche des photos */
       const reserve = scansReserve(), jour = photosJour();
       quota.textContent = mode !== "plat" ? "" : restantes === 0
-        ? (quotaPhotos() === 0 ? TR("La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de 20.")
-                               : TR("Tes {} photos du jour sont passées. Appuie pour en ajouter.").replace("{}", quotaPhotos()))
+        ? (quotaPhotos() === 0 ? TR("La photo de l'assiette fait partie de Tonnup Analyse — ou d'un pack de photos. Appuie pour voir.")
+                               : TR("Tes {} photos gratuites du jour sont passées. Appuie pour en ajouter.").replace("{}", quotaPhotos()))
         : reserve > 0
           ? TR("{j} aujourd'hui + {r} en réserve").replace("{j}", jour).replace("{r}", reserve)
           : (restantes === 1 ? TR("Dernière photo aujourd'hui") : TR("{} photos restantes aujourd'hui").replace("{}", restantes));
@@ -19263,12 +19268,17 @@ let aboRetour = null;
 /* La fiche des packs, pour un abonne a court de photos du jour. */
 function openScans(meal){
   const jour = photosJour();
-  openSheet(`<div class="sc-h"><img class="sc-ic" src="img/sc-appareil.webp" alt=""><h3>${jour > 0
-      ? TR(jour > 1 ? "Il te reste {n} photos aujourd'hui" : "Il te reste {n} photo aujourd'hui").replace("{n}", jour)
-      : TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
-    <p class="sc-sous">${jour > 0
-      ? TR("{q} photos gratuites chaque jour. Une fois épuisées, tes photos achetées prennent le relais et restent disponibles sans limite de temps.").replace("{q}", quotaPhotos())
-      : TR("Le compteur repart demain. Pour continuer aujourd'hui, une réserve de photos : achat unique, sans date limite, utilisée après celles du jour.")}</p>
+  openSheet(`<div class="sc-h"><img class="sc-ic" src="img/sc-appareil.webp" alt=""><h3>${quotaPhotos() === 0
+      ? (scansReserve() > 0 ? TR(scansReserve() > 1 ? "Il te reste {n} photos" : "Il te reste {n} photo").replace("{n}", scansReserve())
+                            : TR("Des photos quand tu en as besoin"))
+      : jour > 0
+        ? TR(jour > 1 ? "Il te reste {n} photos aujourd'hui" : "Il te reste {n} photo aujourd'hui").replace("{n}", jour)
+        : TR("Tes {} photos du jour sont passées").replace("{}", quotaPhotos())}</h3></div>
+    <p class="sc-sous">${quotaPhotos() === 0
+      ? TR("Sans abonnement, tes photos achetées restent disponibles sans limite de temps — et l'ajout à la main reste gratuit.")
+      : jour > 0
+        ? TR("{q} photos gratuites chaque jour. Une fois épuisées, tes photos achetées prennent le relais et restent disponibles sans limite de temps.").replace("{q}", quotaPhotos())
+        : TR("Tes {q} photos gratuites reviennent demain. D'ici là, tes photos achetées prennent le relais et restent disponibles sans limite de temps.").replace("{q}", quotaPhotos())}</p>
     ${boutonsPacks("grand")}
     ${scansReserve() > 0 ? `<p class="sc-reserve">${TR("En réserve : {} photos").replace("{}", scansReserve())}</p>` : ""}
     ${meal ? `<button class="sc-main" id="sc-main">${IC_CRAYON}${TR("Ajouter à la main, c'est gratuit")}</button>`
