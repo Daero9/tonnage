@@ -254,29 +254,36 @@ async function lancer(){
   eq("…et son nom canonique est le sien", CANONX(F.getEx("x1")), "Ma variante");
   DB.custom = [];
 
-  /* --- les 107 fiches en anglais --- */
-  const FEN = F.eval("EXO_INFO_EN"), FICHE = F.eval("ficheDe");
-  eq("Chaque fiche a sa version anglaise",
-     Object.keys(EXOI).filter(n => !FEN[n]).length, 0);
-  eq("Aucune fiche anglaise orpheline",
-     Object.keys(FEN).filter(n => !EXOI[n]).length, 0);
-  eq("Autant d'étapes des deux côtés",
-     Object.keys(EXOI).reduce((a,n)=>a+EXOI[n].steps.length,0),
-     Object.keys(FEN).reduce((a,n)=>a+FEN[n].steps.length,0));
-  vrai("Chaque fiche anglaise a un conseil et au moins 3 étapes",
-       Object.keys(FEN).every(n => FEN[n].tip && FEN[n].tip.length > 20 && FEN[n].steps.length >= 3));
-  vrai("Aucune fiche anglaise n'a gardé du français",
-       !Object.keys(FEN).some(n => /[éèêàçùôîû]|\b(les|des|une|tes|pour|avec|dans)\b/i
-         .test(FEN[n].tip + " " + FEN[n].steps.join(" "))),
-       Object.keys(FEN).filter(n => /[éèêàçùôîû]/.test(FEN[n].tip + FEN[n].steps.join(""))).join(", "));
+  /* --- les fiches d'execution, dans les trois langues ---
+     Elles vivaient dans une table anglaise a part, remplie a moitie. Elles passent
+     maintenant par TRAD comme le reste de l'app : chaque phrase francaise est une
+     cle, et on verifie ici qu'aucune n'est restee sur le carreau. */
+  const FICHE = F.eval("ficheDe"), TRAD = F.eval("TRAD");
+  const phrasesFiches = Object.keys(EXOI).reduce(
+    (a, n) => a.concat([EXOI[n].tip], EXOI[n].steps), []);
+  eq("Chaque fiche a un conseil et au moins 3 étapes",
+     Object.keys(EXOI).filter(n => !(EXOI[n].tip && EXOI[n].tip.length > 20 && EXOI[n].steps.length >= 3)).length, 0);
+  ["en", "es", "pt"].forEach(lg => {
+    const absentes = phrasesFiches.filter(t => !TRAD[lg][t]);
+    eq("Les fiches sont traduites en " + lg, absentes.length, 0, absentes.slice(0, 3).join(" | "));
+  });
+  vrai("Aucune traduction de fiche n'a gardé du français",
+       !["en", "es", "pt"].some(lg => phrasesFiches.some(t =>
+         TRAD[lg][t] && /\b(tes|pour|avec|dans|les|des|une)\b/i.test(TRAD[lg][t]) && lg === "en")),
+       "en anglais");
 
-  /* c'est bien la fiche anglaise qui sort quand la langue est l'anglais */
+  /* c'est bien la phrase traduite qui sort quand la langue change */
   DB.settings.lang = "en";
-  vrai("En anglais, ficheDe rend la fiche anglaise",
-       FICHE(LIBEN[0]).tip === FEN["Développé couché"].tip);
+  eq("En anglais, le conseil de pro est en anglais",
+     F.TR(FICHE(LIBEN[0]).tip), TRAD.en[EXOI["Développé couché"].tip]);
+  eq("…et la première étape aussi",
+     F.TR(FICHE(LIBEN[0]).steps[0]), TRAD.en[EXOI["Développé couché"].steps[0]]);
+  DB.settings.lang = "es";
+  eq("En espagnol, le conseil de pro est en espagnol",
+     F.TR(FICHE(LIBEN[0]).tip), TRAD.es[EXOI["Développé couché"].tip]);
   DB.settings.lang = "fr";
-  vrai("En français, ficheDe rend la fiche française",
-       FICHE(LIBEN[0]).tip === EXOI["Développé couché"].tip);
+  eq("En français, c'est la phrase d'origine",
+     F.TR(FICHE(LIBEN[0]).tip), EXOI["Développé couché"].tip);
 
   /* --- les chemins d'appel, en anglais --- */
   /* Ces fonctions cherchent par nom FRANÇAIS. Si un appelant leur passe le nom
@@ -1387,20 +1394,20 @@ async function lancer(){
       DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3)), seance(6, sem(6)), seance(7, sem(7))];
       eq("La meilleure série jamais tenue : trois semaines", F.meilleureSerieSemaines(), 3);
       vrai("Le bandeau dès la première activité, le casque à trois, pas encore les gants de boxe (six)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
-        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "casque")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-boxe")));
+        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "casque-audio")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
       /* l'orange n'est plus un accessoire a part : c'est une couleur du bandeau */
       vrai("L'orange est une couleur du bandeau, pas un accessoire de plus",
         !F.eval("ACCESSOIRES").some(a=>a.id === "bandeau-orange")
         && F.eval("familleAcc('bandeau-orange')").id === "bandeau");
       vrai("Le t-shirt sans manches tombe à la 100e activité",
-        F.eval("ACCESSOIRES").find(a=>a.id === "tshirt").seances === 100);
-      vrai("La chaîne en or (flamme de 10) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+        F.eval("ACCESSOIRES").find(a=>a.id === "t-shirt-sans-manches").seances === 100);
+      vrai("Le sifflet de coach (flamme de 10) n'est pas encore gagné", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "sifflet-de-coach")));
       /* la meilleure flamme : la plus longue suite d'activites sans trou de plus de 3 jours */
       eq("Une séance par semaine : la flamme ne dépasse jamais 1", F.meilleureFlamme(), 1);
       const hist1 = DB.history;
       DB.history = [0,2,4,6,8,10,12,14,16,18, 30,32].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       eq("Dix activités tous les deux jours, puis un trou : meilleure flamme 10", F.meilleureFlamme(), 10);
-      vrai("…la chaîne en or est gagnée", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      vrai("…le sifflet de coach est gagné", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "sifflet-de-coach")));
       /* le halo : depuis combien de jours la condition « muscle » tient sans trou */
       DB.history = [1,3,5,7,9,11,13,15,17,19].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       vrai("Dix séances tous les deux jours : musclé depuis au moins deux semaines", F.joursMuscle() >= 14, F.joursMuscle() + " jours");
@@ -1411,7 +1418,7 @@ async function lancer(){
       /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
       DB.cardio = [8,9,10,11,12].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
       eq("Cinq séances et cinq sorties, des jours différents : dix activités", F.nActivites(), 10);
-      vrai("…et les gants de boxe (six) sont gagnés grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-boxe")));
+      vrai("…et les gants de boxe (six) sont gagnés grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
       DB.cardio = [1,2,3].map(k=>({id:"cy"+k, date:sem(k), type:"course", min:30}));
       eq("Une sortie le jour d'une séance ne compte pas deux fois", F.nActivites(), 5);
       DB.cardio = [];
@@ -1456,6 +1463,21 @@ async function lancer(){
       vrai("Un accessoire sans dessin n'apparaît pas encore", !F.document.querySelector("#sheet [data-acc='casque']"));
       /* les couleurs : tant qu'une seule est dessinee, aucune pastille — il n'y a rien a choisir */
       vrai("Une seule couleur dessinée : pas de pastilles", !F.document.querySelector("#sheet .vs-cl"));
+      /* un decor marque « arriere » se pose sous le poussin, pas sur son corps */
+      (()=>{
+        const poses = F.eval("POUSSIN");
+        Object.keys(poses).forEach(p2=>poses[p2].acc.push("arc-en-ciel"));
+        DB.avatar = {acc:["bandeau", "arc-en-ciel"]};
+        DB.history = [1,2,3].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+        F.openVestiaire();
+        const imgs = [...F.document.querySelectorAll("#sheet .vs-poussin img")].map(i=>i.getAttribute("src"));
+        const corps = imgs.findIndex(s2=>!/@/.test(s2));
+        vrai("L'arc-en-ciel se dessine derrière le poussin",
+          imgs.findIndex(s2=>/arc-en-ciel@/.test(s2)) < corps, imgs.join(" | "));
+        vrai("…et le bandeau par-dessus", imgs.findIndex(s2=>/bandeau@/.test(s2)) > corps);
+        Object.keys(poses).forEach(p2=>poses[p2].acc = poses[p2].acc.filter(x=>x !== "arc-en-ciel"));
+        delete DB.avatar; F.eval("save()"); F.openVestiaire();
+      })();
       (()=>{
         /* on fait comme si le bandeau orange etait dessine, pour voir le choix de couleur */
         const acc = F.eval("POUSSIN").repos.acc, poses = F.eval("POUSSIN");
