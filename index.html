@@ -1645,6 +1645,9 @@
   .hero-accueil.avec-poussin .hero-bg{aspect-ratio:1210/870;}
   .hero-accueil.avec-poussin .hero-h{left:20px; right:auto; margin-inline:0; max-width:calc(100% - 148px); bottom:33%;}
   .hero-accueil.avec-poussin .hero-h h1{font-size:30px;}
+  /* le salut tient sur UNE ligne : sur deux, il montait sous le bouton du profil et le
+     rendait intouchable. Si le prenom est long, le script reduit le corps (ajusterSalut). */
+  .hero-accueil .hero-h h1{white-space:nowrap;}
   /* pose sur le bord de la carte de la semaine : il est dans le meme bloc qu'elle, au-dessus */
   .under-hero{position:relative;}
   .hero-poussin{position:absolute; right:14px; bottom:calc(100% - 7px); width:112px; pointer-events:none; z-index:3;}
@@ -9405,7 +9408,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "22 septembre 2026 01h50";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "22 septembre 2026 10h01";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -10586,6 +10589,15 @@ function openProfil(){
     }catch(e){ toast(TR("Photo illisible."), "erreur"); }
   };
   document.getElementById("pr-ok").onclick = closeSheet;
+}
+/* le salut de l'accueil sur une seule ligne : on reduit le corps jusqu'a ce qu'il tienne
+   dans la place laissee par le poussin (jamais sous 18 px) */
+function ajusterSalut(){
+  const h = document.querySelector(".hero-accueil .hero-h"), t = h && h.querySelector("h1");
+  if(!t) return;
+  let taille = parseFloat(getComputedStyle(t).fontSize) || 30;
+  const place = h.clientWidth;
+  while(taille > 18 && t.scrollWidth > place + 1){ taille -= 1; t.style.fontSize = taille + "px"; }
 }
 function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
@@ -15180,6 +15192,7 @@ function renderSeance(app){
     <div class="hist-strip" id="hist-strip"></div>`;
   document.getElementById("hist-all").onclick = ()=>{ curTab="hist"; render(); };
   wireTopbar();
+  ajusterSalut();
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
