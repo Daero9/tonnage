@@ -1552,20 +1552,36 @@ async function lancer(){
       F.habille("casquette-noir", true);
       vrai("…et la casquette chasse le bonnet",
         porte().includes("casquette-noir") && !porte().includes("bonnet-rose"), porte().join(", "));
-      vrai("…mais le bandeau reste : ce n'est pas le même endroit",
-        porte().includes("bandeau"), porte().join(", "));
+      /* le bandeau tient le front, la casquette le recouvre : elle le chasse aussi */
+      vrai("…et le bandeau part avec, la casquette lui passe dessus",
+        !porte().includes("bandeau"), porte().join(", "));
       F.habille("boxe-rouge", true);
       vrai("Les gants s'ajoutent, ils sont aux mains",
         porte().includes("boxe-rouge") && porte().includes("casquette-noir"), porte().join(", "));
+      /* le bandeau tient le front, le casque les oreilles : ils vont ensemble */
+      DB.avatar = {acc:["bandeau"], cl:{}};
+      F.habille("casque-vert", true);
+      vrai("Le bandeau et le casque se portent ensemble",
+        porte().includes("bandeau") && porte().includes("casque-vert"), porte().join(", "));
+      F.habille("bonnet-vert", true);
+      vrai("Le bonnet chasse les deux : il couvre le crâne ET les oreilles",
+        porte().includes("bonnet-vert") && !porte().includes("bandeau") && !porte().includes("casque-vert"),
+        porte().join(", "));
+      F.habille("bandeau", true);
+      vrai("…et remettre le bandeau retire le bonnet",
+        porte().includes("bandeau") && !porte().includes("bonnet-vert"), porte().join(", "));
+      F.habille("petit-noeud-rose", true);
+      vrai("Le nœud est sur le crâne, il chasse le bandeau",
+        porte().includes("petit-noeud-rose") && !porte().includes("bandeau"), porte().join(", "));
       /* ce qui flotte autour du personnage ne prend la place de personne */
-      eq("Les effets flottants n'occupent aucun endroit",
-         F.emplacement({plan:60}), null);
-      eq("…contrairement à ce qui couvre la tête", F.emplacement({plan:30}), 30);
+      eq("Les effets flottants n'occupent aucune zone",
+         F.zonesAcc({plan:60}).length, 0);
+      eq("…contrairement à ce qui couvre le crâne", F.zonesAcc({plan:30}).join(), "crane");
       /* une sauvegarde d'avant la règle ne dessine qu'un seul objet par endroit */
       DB.avatar = {acc:["bonnet-rose", "casquette-noir", "casque-vert", "bandeau"], cl:{}};
       const dessine = F.poussinEtat("en-forme").acc;
-      eq("Une vieille sauvegarde n'en dessine qu'un par endroit",
-         dessine.filter(id=>F.emplacement(F.familleAcc(id)) === 30).length, 1);
+      eq("Une vieille sauvegarde n'en dessine qu'un par zone",
+         dessine.filter(id=>F.zonesAcc(F.familleAcc(id)).indexOf("crane") >= 0).length, 1);
       DB.avatar = {acc:["bandeau"], cl:{}};
     })();
 
