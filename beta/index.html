@@ -3288,6 +3288,11 @@
   .rg-stats .rg-tel .rgi{flex:0 0 auto; width:34px; height:34px; border-radius:10px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink-soft);}
   .rg-stats .rg-tel .rgi svg{width:18px; height:18px;}
   .rg-stats .rg-tel em{display:block; font-style:normal; font-size:12px; color:var(--ink-mute); margin-top:1px;}
+  /* la place occupee, sous les compteurs : discrete, mais elle repond a une question
+     que le telephone pose sans y repondre lui-meme */
+  .rg-stats .rg-place{grid-column:1 / -1; text-align:left; font-size:12px;
+    color:var(--ink-mute); line-height:1.45; margin-top:8px;}
+  .rg-stats .rg-place b{display:inline; font-size:12px; color:var(--ink);}
   /* la fiche des notifications (maquette du 20 septembre) */
   .nt-liste{display:flex; flex-direction:column; gap:10px; transition:opacity .2s;}
   .nt-liste.off{opacity:.45; pointer-events:none;}
@@ -3745,6 +3750,13 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Occupe <b>{}</b> sur ce téléphone":"Takes up <b>{}</b> on this phone",
+  "dont":"of which",
+  "tes données":"your data",
+  "fichiers de l'app":"app files",
+  "base interne":"internal database",
+  "service worker":"service worker",
+  "fichiers":"files",
   "Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté.":"Payment awaiting Google's approval. Your photos will arrive as soon as it goes through.",
   /* --- navigation et repas --- */
   "Séance":"Workout", "Alimentation":"Nutrition", "Progression":"Progress",
@@ -6865,6 +6877,13 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Occupe <b>{}</b> sur ce téléphone":"Ocupa <b>{}</b> en este teléfono",
+  "dont":"de los cuales",
+  "tes données":"tus datos",
+  "fichiers de l'app":"archivos de la app",
+  "base interne":"base de datos interna",
+  "service worker":"service worker",
+  "fichiers":"archivos",
   "Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté.":"Pago pendiente de validación por Google. Tus fotos llegarán en cuanto se acepte.",
   "Séance":"Entrenamiento",
   "Alimentation":"Nutrición",
@@ -10204,6 +10223,13 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Occupe <b>{}</b> sur ce téléphone":"Ocupa <b>{}</b> neste telefone",
+  "dont":"dos quais",
+  "tes données":"seus dados",
+  "fichiers de l'app":"arquivos do app",
+  "base interne":"banco interno",
+  "service worker":"service worker",
+  "fichiers":"arquivos",
   "Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté.":"Pagamento aguardando validação do Google. Suas fotos chegarão assim que for aceito.",
   "Séance":"Treino",
   "Alimentation":"Nutrição",
@@ -16886,7 +16912,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 23h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "24 septembre 2026 00h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27289,6 +27315,7 @@ function openSettings(){
         <div><b>${db.weights.length}</b><span>${db.weights.length > 1 ? TR("pesées enregistrées") : TR("pesée enregistrée")}</span></div>
         <div><b>${(db.templates||[]).length}</b><span>${(db.templates||[]).length > 1 ? TR("séances types créées") : TR("séance type créée")}</span></div>
         <div class="rg-tel"><span class="rgi">${IC_TELEPHONE}</span><span>${driveActif() ? TR("Copie sur ton Google Drive.") : TR("Tout est dans ce téléphone.")}<em>${TR("Dernière sauvegarde : {}").replace("{}", agoTexte(derniere))}</em></span></div>
+        <div class="rg-place" id="st-place" hidden></div>
       </div>
       <button class="rg-l" id="st-bk">
         <span class="rgi rgi-img"><img src="img/drive.png" alt=""></span>
@@ -27379,11 +27406,58 @@ function openSettings(){
     save(); render(); openSettings();
   };
   document.getElementById("st-legal").onclick = openLegal;
+  majPlace();                      /* asynchrone : la ligne apparait quand la mesure arrive */
   document.getElementById("st-hints").onclick=()=>{ db.seen = {}; save(); closeSheet(); render(); toast(TR("Les explications réapparaîtront ✓")); };
 }
 /* ---- la page « Sauvegarde et transfert » ------------------------------------------
    D'abord rassurer (ou sont les donnees, qui peut les lire), puis le geste
    recommande (Drive), puis les autres chemins, et tout en bas le diagnostic. */
+/* Ce que l'app occupe vraiment, et en quoi.
+
+   Android affiche « données utilisateur » sans dire ce qu'il y a dedans, et sa ligne
+   « cache » ne compte PAS le Cache Storage du navigateur — celui-ci vit dans le dossier
+   de données. D'où l'intérêt de demander au navigateur lui-même.
+
+   `usage` est le total du stockage du site. `usageDetails` ventile, mais c'est propre à
+   Chromium : ailleurs on n'affiche que le total. Et `localStorage` — là où vivent
+   vraiment tes séances — n'est pas toujours compté dedans : on le mesure à part, en
+   comptant les caractères (UTF-16, deux octets chacun). */
+const NOM_PLACE = {caches:"fichiers de l'app", indexedDB:"base interne",
+  serviceWorkerRegistrations:"service worker", fileSystem:"fichiers", sqlite:"base interne"};
+function poidsLocal(){
+  try{
+    let n = 0;
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      n += (k.length + (localStorage.getItem(k) || "").length) * 2;
+    }
+    return n;
+  }catch(e){ return 0; }
+}
+function motOctets(n){
+  if(n < 1024) return n + " o";
+  if(n < 1048576) return Math.round(n / 1024) + " Ko";
+  return (n / 1048576).toFixed(n < 10485760 ? 1 : 0).replace(".", ",") + " Mo";
+}
+async function majPlace(){
+  const el = document.getElementById("st-place");
+  if(!el) return;
+  const mien = poidsLocal();
+  let e = null;
+  try{ if(navigator.storage && navigator.storage.estimate) e = await navigator.storage.estimate(); }
+  catch(err){}
+  if(!el.isConnected) return;                 /* la fiche a été refermée entre-temps */
+  const d = (e && e.usageDetails) || {};
+  const morceaux = Object.keys(d).filter(k=>d[k] > 51200)
+    .sort((a, b)=>d[b] - d[a])
+    .map(k=>motOctets(d[k]) + " " + TR(NOM_PLACE[k] || k));
+  if(mien > 51200) morceaux.push(motOctets(mien) + " " + TR("tes données"));
+  const total = e && e.usage ? Math.max(e.usage, mien) : mien;
+  if(!total){ return; }
+  el.innerHTML = TR("Occupe <b>{}</b> sur ce téléphone").replace("{}", motOctets(total))
+    + (morceaux.length ? "<br>" + TR("dont") + " " + morceaux.join(" · ") : "");
+  el.hidden = false;
+}
 function openSauvegarde(){
   const ago = agoTexte;
   openSheet(`<h3 class="rg-h">${TR("Sauvegarde et transfert")}</h3>
