@@ -16419,9 +16419,10 @@ const ACCESSOIRES = [
     {id:"bandeau",      nom:"Noir", hex:"#1B1B1B"},
     {id:"bandeau-rose", nom:"Rose", hex:"#C42258"},
     {id:"bandeau-bleu", nom:"Bleu", hex:"#2232C4"}]},
-  /* `zones` : le casque tient les OREILLES, pas le crâne — il se porte donc avec un
-     bandeau, mais pas avec un bonnet, qui couvre les deux. */
-  {id:"casque",                nom:"Casque audio", plan:30,          seances:3,   duree:"1 semaine", zones:["oreilles"], couleurs:[
+  /* `zones` : l'arceau du casque passe sur le DESSUS du crâne et se termine aux
+     oreilles — il laisse le front libre. Il se porte donc avec un bandeau, mais ni sous
+     une casquette (où l'arceau disparaîtrait) ni sous un bonnet. */
+  {id:"casque",                nom:"Casque audio", plan:30,          seances:3,   duree:"1 semaine", zones:["dessus", "oreilles"], couleurs:[
     {id:"casque-noir",  nom:"Noir",  hex:"#222526"},
     {id:"casque-rouge", nom:"Rouge", hex:"#9F2F2D"},
     {id:"casque-vert",  nom:"Vert",  hex:"#5A9C33"}]},
@@ -16445,7 +16446,7 @@ const ACCESSOIRES = [
     {id:"casquette-bodeaux", nom:"Bordeaux", hex:"#96243C"}]},
   /* Trois laines pastel : les pastilles sont claires, elles portent donc un filet
      comme les autres teintes proches du fond. */
-  {id:"bonnet-d-hiver",        nom:"Bonnet d'hiver", plan:30,        seances:16,  duree:"5 semaines", zones:["crane", "oreilles"], couleurs:[
+  {id:"bonnet-d-hiver",        nom:"Bonnet d'hiver", plan:30,        seances:16,  duree:"5 semaines", zones:["front", "dessus", "oreilles"], couleurs:[
     {id:"bonnet-blanc", nom:"Blanc", hex:"#EADED8"},
     {id:"bonnet-rose",  nom:"Rose",  hex:"#F6D2E4"},
     {id:"bonnet-vert",  nom:"Vert",  hex:"#D8F6D2"}]},
@@ -16494,16 +16495,18 @@ function plan(id){ const f = familleAcc(id); return (f && f.plan) || 0; }
    en partagent une.
 
    La plupart n'occupent qu'une zone, et on la déduit de `plan` — il dit déjà qui passe
-   devant qui, et ce qui se dessine au même étage se pose au même endroit. Mais la tête
-   ne se résume pas à un étage : un bandeau tient le front, un casque tient les oreilles,
-   et les deux vont très bien ensemble. Un bonnet, lui, couvre les DEUX — c'est pour ça
-   qu'il ne va ni avec le bandeau, ni avec le casque. Ces cas-là portent leur propre
-   liste dans ACCESSOIRES.
+   devant qui, et ce qui se dessine au même étage se pose au même endroit.
+
+   La tête fait exception : elle se découpe en TROIS. Le bandeau tient le front ; une
+   casquette prend le front et le dessus du crâne ; l'arceau d'un casque traverse le
+   dessus et se termine sur les oreilles ; un bonnet prend tout. C'est ce découpage qui
+   permet de porter un bandeau AVEC un casque — le bandeau passe sous l'arceau sans le
+   toucher — tout en refusant le casque sous la casquette, où l'arceau disparaîtrait.
 
    Ce qui FLOTTE autour du personnage (étincelles, confettis, trophées — plan 60) et le
    décor de fond n'occupent aucune zone : ils s'ajoutent à tout. */
 const ZONES_PLAN = {5:["peau"], 8:["dos"], 10:["torse"], 12:["par-dessus"], 16:["cou"],
-  20:["crane"], 25:["crane"], 30:["crane"], 40:["yeux"], 50:["mains"]};
+  20:["front"], 25:["front", "dessus"], 30:["front", "dessus"], 40:["yeux"], 50:["mains"]};
 function zonesAcc(f){
   if(!f || f.arriere || (f.plan || 0) >= 60) return [];
   return f.zones || ZONES_PLAN[f.plan || 0] || [];
@@ -16975,7 +16978,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "24 septembre 2026 01h34";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "24 septembre 2026 01h48";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */

@@ -1570,18 +1570,27 @@ async function lancer(){
       F.habille("bandeau", true);
       vrai("…et remettre le bandeau retire le bonnet",
         porte().includes("bandeau") && !porte().includes("bonnet-vert"), porte().join(", "));
+      /* l'arceau du casque passe sur le dessus du crâne : il ne peut pas se glisser
+         sous une casquette, il y disparaîtrait */
+      F.habille("casquette-noir", true);
+      F.habille("casque-noir", true);
+      vrai("Le casque chasse la casquette : l'arceau passerait dessous",
+        porte().includes("casque-noir") && !porte().includes("casquette-noir"), porte().join(", "));
+      F.habille("bandeau", true);
+      vrai("…mais le bandeau tient le front, il reste sous l'arceau",
+        porte().includes("bandeau") && porte().includes("casque-noir"), porte().join(", "));
       F.habille("petit-noeud-rose", true);
       vrai("Le nœud est sur le crâne, il chasse le bandeau",
         porte().includes("petit-noeud-rose") && !porte().includes("bandeau"), porte().join(", "));
       /* ce qui flotte autour du personnage ne prend la place de personne */
       eq("Les effets flottants n'occupent aucune zone",
          F.zonesAcc({plan:60}).length, 0);
-      eq("…contrairement à ce qui couvre le crâne", F.zonesAcc({plan:30}).join(), "crane");
+      eq("…contrairement à ce qui couvre le crâne", F.zonesAcc({plan:30}).join(), "front,dessus");
       /* une sauvegarde d'avant la règle ne dessine qu'un seul objet par endroit */
       DB.avatar = {acc:["bonnet-rose", "casquette-noir", "casque-vert", "bandeau"], cl:{}};
       const dessine = F.poussinEtat("en-forme").acc;
       eq("Une vieille sauvegarde n'en dessine qu'un par zone",
-         dessine.filter(id=>F.zonesAcc(F.familleAcc(id)).indexOf("crane") >= 0).length, 1);
+         dessine.filter(id=>F.zonesAcc(F.familleAcc(id)).indexOf("dessus") >= 0).length, 1);
       DB.avatar = {acc:["bandeau"], cl:{}};
     })();
 
