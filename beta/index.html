@@ -16875,7 +16875,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 17h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 17h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -23481,6 +23481,14 @@ function progressionParExo(){
   return out;
 }
 /* La séance complète. `evites` : ce qu'on ne veut pas revoir (bouton « une autre »). */
+/* Le matériel de secours : ce qu'on achète pour s'entraîner chez soi, et qui n'a plus
+   de raison d'être quand on a une salle autour de soi. */
+const MAT_REMPLACANT = ["Élastique", "Ballon", "Sangles"];
+function rangRemplacant(c){
+  if(db.materiel) return 0;                  /* un filtre est posé : on s'entraîne chez soi */
+  const ex = getEx(libId(c.nom));
+  return (ex && MAT_REMPLACANT.includes(equipCanon(ex))) ? 1 : 0;
+}
 function genererAdaptative(type, evites){
   const moule = MOULES[type] || MOULES.full;
   const besoins = besoinsMuscles(type);
@@ -23574,7 +23582,15 @@ function genererAdaptative(type, evites){
          mouvement ». Sanctionner l'exercice aurait retiré à Nico celui dont il a
          justement besoin pour débloquer. */
       const rangPerf = c => (perf[c.nom] > 0.03 ? 0 : 1);
-      const triee = liste.slice().sort((a, b)=>rangPerf(a) - rangPerf(b));
+      /* En salle, un élastique ou un ballon est un REMPLAÇANT : il est dans la
+         bibliothèque pour qui s'entraîne chez soi. Le classement se fait sur la charge
+         qu'un mouvement supporte, et un soulevé de terre à l'élastique y vaut autant que
+         le même à la barre — un leg curl sur ballon passait même devant le leg curl de
+         la machine. On les met donc derrière tout le reste quand aucun filtre de
+         matériel n'est posé, ce qui est la définition d'une salle ici. Derrière, pas
+         dehors : sur un muscle où ils seraient seuls, ils restent proposés. */
+      const triee = liste.slice().sort((a, b)=>
+        rangRemplacant(a) - rangRemplacant(b) || rangPerf(a) - rangPerf(b));
       const choisi = triee.find(c=>!recents.has(c.nom) && !recouvre(c))
                   || triee.find(c=>!recouvre(c))
                   || triee.find(c=>!recents.has(c.nom))
@@ -28158,19 +28174,39 @@ function recuperation(){
       if(!series.length) return;
       /* une série menée à l'échec fatigue bien plus qu'une série gardée en réserve */
       const cout = series.reduce((a,st)=>a + poidsFatigue(st), 0) * facteurRessenti(sess);
+      /* UN exercice, UNE fois par groupe. Le développé militaire cite deux faisceaux du
+         deltoïde (antérieur 3, latéral 2) : les additionner faisait coûter une série
+         1,67 fois ce que coûte un exercice principal, et cinq séries pesaient à elles
+         seules 114 points sur une échelle qui en compte cent. On garde le faisceau le
+         plus sollicité, qui est ce que le groupe encaisse réellement. */
+      const parGroupe = {};
       (MUSCLE_WORK[nomCanon(ex)]||[]).forEach(([mus, niveau])=>{
         const g = groupeDe(mus);
         if(!g) return;
+        if(!(g in parGroupe) || niveau > parGroupe[g]) parGroupe[g] = niveau;
+      });
+      Object.keys(parGroupe).forEach(g=>{
         const plein = (RECUP_H[g] || 48) * facteurAge();
         if(heures >= plein) return;
         const reste = 1 - heures/plein;              /* la fatigue s'efface avec le temps */
-        fat[g] += cout * (niveau/3) * 11 * reste;    /* ~11 points pour 1 série lourde à 1-2 reps de l'échec */
+        fat[g] += cout * (parGroupe[g]/3) * 11 * reste;   /* ~11 points pour 1 série lourde à 1-2 reps de l'échec */
       });
     });
   });
   const muscles = {};
   MP_MUSCLES.forEach(m=>{
-    const pct = Math.max(0, Math.min(100, Math.round(100 - fat[m])));
+    /* La fatigue ne s'additionne pas indéfiniment : elle sature. La somme brute d'une
+       séance Push atteignait 220 sur une échelle de 100 — le deltoïde affichait 0 % et y
+       restait une vingtaine d'heures, alors qu'on se sent loin d'être vidé. Cette courbe
+       suit la somme brute presque exactement tant qu'elle est petite (une séance légère
+       ne bouge pas), puis se couche : elle approche 100 sans jamais l'atteindre, donc
+       « il ne reste rien » ne s'affiche plus jamais.
+       Aucune étude ne donne un « pourcentage de muscle disponible » : cette échelle est
+       une convention de l'app, pas une mesure. Ce qui est établi, c'est que la force
+       revient en gros en 24 à 72 h selon le muscle et le volume, et que la fatigue d'une
+       séance ne croît pas proportionnellement au nombre de séries. La forme de la courbe
+       est mon choix ; son plafond, lui, corrige une faute de calcul. */
+    const pct = Math.max(0, Math.min(100, Math.round(100 * Math.exp(-fat[m] / 100))));
     muscles[m] = {pct, etat: pct>=85? "frais" : (pct>=50? "recup" : "fatigue")};
   });
   const vals = MP_MUSCLES.map(m=>muscles[m].pct);
