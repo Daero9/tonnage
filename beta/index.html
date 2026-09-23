@@ -1754,6 +1754,22 @@
   .pr-actions .pr-l{position:relative;}
   .pr-actions .pr-l .pastille{top:10px; right:10px;}
   @keyframes pastilleIn{from{transform:scale(0)} to{transform:scale(1)}}
+  /* le paquet : un accessoire gagne qu'on n'a pas encore ouvert. Il se voit de loin
+     sans rien devoiler du dessin. */
+  .vs-t.neuf{background:rgba(245,130,32,.09); box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.35);}
+  .vs-t.neuf b{color:var(--accent);}
+  .vs-t.neuf em{color:var(--accent); opacity:.75;}
+  .paquet{display:flex; align-items:center; justify-content:center; width:46px; height:46px;
+    border-radius:14px; background:var(--accent-grad); color:#fff; animation:paquetTremble 2.6s ease-in-out infinite;}
+  .paquet svg{width:26px; height:26px;}
+  @keyframes paquetTremble{
+    0%,72%,100%{transform:none}
+    76%{transform:rotate(-7deg) scale(1.04)}
+    82%{transform:rotate(6deg) scale(1.04)}
+    88%{transform:rotate(-4deg) scale(1.02)}
+    94%{transform:rotate(2deg)}
+  }
+  @media (prefers-reduced-motion:reduce){ .paquet{animation:none;} }
   /* la revelation : par-dessus le vestiaire, sans ouvrir une fiche de plus */
   .vs-rev{position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
     padding:24px; background:rgba(18,18,20,.55); animation:revFond .22s ease both;}
@@ -5070,6 +5086,7 @@ const TRAD = {en:{
   "Serre les obliques du côté au sol.":"Squeeze the obliques on the floor side.",
   "Rose":"Pink", "Bleu":"Blue", "Rouge":"Red", "Vert":"Green",
   "Débloqué !":"Unlocked!", "Le porter":"Wear it",
+  "À découvrir":"Unopened", "Touche pour ouvrir":"Tap to open", "Un accessoire t'attend":"An accessory is waiting for you",
   "Tu l'as gagné en {n} activités.":"You earned it in {n} activities.",
   "Tu l'as gagné dès ta première activité.":"You earned it on your very first activity.",
   "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"A flame of {n}: the longest run of activities you have ever held.",
@@ -8309,6 +8326,9 @@ es:{
   "Vert":"Verde",
   "Débloqué !":"¡Desbloqueado!",
   "Le porter":"Ponérselo",
+  "À découvrir":"Sin abrir",
+  "Touche pour ouvrir":"Toca para abrir",
+  "Un accessoire t'attend":"Un accesorio te espera",
   "Tu l'as gagné en {n} activités.":"Lo has ganado con {n} actividades.",
   "Tu l'as gagné dès ta première activité.":"Lo has ganado desde tu primera actividad.",
   "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"Una llama de {n}: la racha de actividades más larga que has aguantado.",
@@ -11645,6 +11665,9 @@ pt:{
   "Vert":"Verde",
   "Débloqué !":"Desbloqueado!",
   "Le porter":"Vestir",
+  "À découvrir":"Por abrir",
+  "Touche pour ouvrir":"Toque para abrir",
+  "Un accessoire t'attend":"Um acessório espera por você",
   "Tu l'as gagné en {n} activités.":"Você conquistou com {n} atividades.",
   "Tu l'as gagné dès ta première activité.":"Você conquistou já na primeira atividade.",
   "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"Uma chama de {n}: a maior sequência de atividades que você já sustentou.",
@@ -16532,10 +16555,18 @@ function openVestiaire(){
     /* les couleurs, en bas de la tuile : seulement quand il y a vraiment un choix a faire */
     const cercles = (gagne && dess.length > 1) ? `<span class="vs-cl">${dess.map(v=>
       `<button class="cl${v.id === vid ? " on" : ""}" data-cl="${v.id}" style="--c:${v.hex || "#8a8a8a"}" aria-label="${esc(TR(v.nom))}" title="${esc(TR(v.nom))}"></button>`).join("")}</span>` : "";
+    /* Gagne mais pas encore ouvert : on ne montre ni le dessin ni les couleurs. La tuile
+       est un paquet cadeau, et c'est la revelation qui devoile ce qu'il y a dedans. */
     const neuf = gagne && dessin && neufs.indexOf(a.id) >= 0;
+    if(neuf) return `<div class="vs-t ok neuf">
+      <i class="pastille"></i>
+      <button class="vs-corps" data-acc="${vid}" aria-label="${esc(TR("Un accessoire t'attend"))}">
+        <span class="vs-img"><i class="paquet">${IC_CADEAU}</i></span>
+        <b>${TR("À découvrir")}</b>
+        <em>${TR("Touche pour ouvrir")}</em>
+      </button></div>`;
     return `<div class="vs-t ${gagne ? "ok" : "verrou"} ${mis ? "on" : ""} ${dessin ? "" : "sans"}">
       ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
-      ${neuf ? `<i class="pastille"></i>` : ""}
       <button class="vs-corps" data-acc="${vid}" ${gagne && dessin ? "" : "disabled"}>
         <span class="vs-img">${dessin ? `<img src="img/poussin/ico-${vid}.webp" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
         ${gagne ? `<b>${TR(a.nom)}</b>` : `<b class="vs-muet">${TR("À débloquer")}</b>`}
@@ -16549,7 +16580,7 @@ function openVestiaire(){
      ACCESSOIRES, prets pour le jour ou les dessins arrivent. */
   const dessine = a=>variantesDessinees(a).length > 0;
   const courants = ACCESSOIRES.filter(a=>!a.rare && dessine(a)), rares = ACCESSOIRES.filter(a=>a.rare && dessine(a));
-  const bientot = `<div class="vs-t vs-bientot"><span class="vs-img"><i>🎁</i></span><b>${TR("D'autres arrivent")}</b><em>${TR("dans une prochaine mise à jour")}</em></div>`;
+  const bientot = `<div class="vs-t vs-bientot"><span class="vs-img"><i>⋯</i></span><b>${TR("D'autres arrivent")}</b><em>${TR("dans une prochaine mise à jour")}</em></div>`;
   openSheet(`<h3 style="font-size:22px;">${TR("Mon compagnon")}</h3>
     <div class="pr-sous" style="text-align:center;">${TR("Personnalise ton compagnon d'entraînement !")}</div>
     <div class="vs-apercu">${poussinHtml("vs-poussin", "en-forme")}</div>
@@ -16746,7 +16777,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 02h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 02h57 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -26931,6 +26962,8 @@ async function restaurerAbonnement(){
                            : TR("Google Play ne répond pas.") + (aboEtat.panne ? " · " + String(aboEtat.panne).slice(0, 60) : ""));
 }
 const IC_CADENAS_MINI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+/* le paquet cadeau : ce qu'on voit d'un accessoire gagne tant qu'on ne l'a pas ouvert */
+const IC_CADEAU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M2 7.5h20V10H2z"/><path d="M12 7.5V21"/><path d="M12 7.5S10.5 3 8 3a2.5 2.5 0 0 0 0 5h4zM12 7.5S13.5 3 16 3a2.5 2.5 0 0 1 0 5h-4z"/></svg>';
 const IC_FLECHE_D = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 const IC_COURONNE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8.5 7.5 12 12 5l4.5 7L21 8.5 19.2 18H4.8L3 8.5Z"/><rect x="4.8" y="19" width="14.4" height="2" rx="1"/></svg>';
 const IC_DISQUETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>';
