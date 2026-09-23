@@ -1394,7 +1394,7 @@ async function lancer(){
       DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3)), seance(6, sem(6)), seance(7, sem(7))];
       eq("La meilleure série jamais tenue : trois semaines", F.meilleureSerieSemaines(), 3);
       vrai("Le bandeau dès la première activité, le casque à trois, pas encore les gants de boxe (six)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
-        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "casque-audio")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
+        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "casque")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
       /* l'orange n'est plus un accessoire a part : c'est une couleur du bandeau */
       vrai("Le rose est une couleur du bandeau, pas un accessoire de plus",
         !F.eval("ACCESSOIRES").some(a=>a.id === "bandeau-rose")
@@ -1460,12 +1460,20 @@ async function lancer(){
       vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && tuileB().classList.contains("on"));
       F.document.querySelector("#sheet [data-acc='bandeau']").click();
       vrai("Toucher le bandeau l'enlève, et le poussin l'enlève aussi", !tuileB().classList.contains("on") && !F.document.querySelector("#sheet .vs-poussin img.acc"));
-      vrai("Un accessoire sans dessin n'apparaît pas encore", !F.document.querySelector("#sheet [data-acc='casque']"));
+      /* rien de dessine, rien d'affiche : la tuile n'apparait qu'avec son dessin */
+      vrai("Un accessoire sans dessin n'apparaît pas encore",
+        F.eval(`ACCESSOIRES.filter(a=>!variantesDessinees(a).length)
+          .every(a=>variantes(a).every(v=>!document.querySelector("#sheet [data-acc='" + v.id + "']")))`));
       /* les couleurs : tant qu'une seule est dessinee, aucune pastille — il n'y a rien a choisir */
       /* les couleurs : une pastille par teinte dessinée, et rien du tout quand il n'y a
          pas de choix à faire */
-      eq("Une pastille par couleur dessinée", F.document.querySelectorAll("#sheet .vs-cl .cl").length,
-         F.eval("variantesDessinees(ACCESSOIRES[0]).length"));
+      eq("Une pastille par couleur dessinée, tuile par tuile",
+         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length).map(a=>{
+           const t = document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']").closest(".vs-t");
+           return a.id + ":" + t.querySelectorAll(".vs-cl .cl").length;
+         }).join(" ")`),
+         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length)
+           .map(a=>a.id + ":" + (variantesDessinees(a).length > 1 ? variantesDessinees(a).length : 0)).join(" ")`));
       vrai("Un accessoire d'une seule couleur n'a pas de pastilles",
         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length === 1)
           .every(a=>!document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']")
