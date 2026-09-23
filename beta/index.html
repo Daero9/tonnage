@@ -1726,6 +1726,9 @@
   .hero-flamme.petite{--fl-etat:.62; opacity:.6;}
   /* ---- le vestiaire ---- */
   /* ---- le vestiaire, d'apres la maquette du 21 septembre ---- */
+  /* le bandeau du mode essai : assez visible pour qu'on ne le prenne pas pour un bug */
+  .vs-essai{background:rgba(245,130,32,.14); color:var(--accent); font-size:12px;
+    font-weight:700; line-height:1.45; padding:10px 12px; border-radius:12px; margin-bottom:6px;}
   .vs-apercu{display:flex; justify-content:center; padding:10px 0 6px; position:relative;}
   .vs-apercu::before{content:""; position:absolute; left:50%; top:50%; width:230px; height:150px; transform:translate(-50%,-50%); border-radius:50% 45% 55% 50%; background:rgba(245,130,32,.10); z-index:0;}
   .vs-poussin{position:relative; width:190px; z-index:1;}
@@ -3750,6 +3753,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.":"Preview mode: every accessory is unlocked. Remove \u00ab #accessoires \u00bb from the address to go back to your real progress.",
   "Occupe <b>{}</b> sur ce téléphone":"Takes up <b>{}</b> on this phone",
   "dont":"of which",
   "tes données":"your data",
@@ -6877,6 +6881,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.":"Modo de prueba: todos los accesorios est\u00e1n desbloqueados. Quita \u00ab #accessoires \u00bb de la direcci\u00f3n para volver a tu progreso real.",
   "Occupe <b>{}</b> sur ce téléphone":"Ocupa <b>{}</b> en este teléfono",
   "dont":"de los cuales",
   "tes données":"tus datos",
@@ -10223,6 +10228,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.":"Modo de teste: todos os acess\u00f3rios est\u00e3o desbloqueados. Remova \u00ab #accessoires \u00bb do endere\u00e7o para voltar ao seu progresso real.",
   "Occupe <b>{}</b> sur ce téléphone":"Ocupa <b>{}</b> neste telefone",
   "dont":"dos quais",
   "tes données":"seus dados",
@@ -16510,6 +16516,7 @@ function ordinal(n){
    pastille rouge, du profil jusqu'a la tuile. On ne marque « vu » qu'a la revelation :
    ouvrir le vestiaire par hasard ne doit pas escamoter la recompense. */
 function accessoiresNeufs(){
+  if(essaiAccessoires) return [];      /* en essai, on veut les dessins tout de suite */
   const vus = (db.avatar && db.avatar.vus) || [];
   return ACCESSOIRES.filter(a=>accessoireGagne(a) && variantesDessinees(a).length && vus.indexOf(a.id) < 0);
 }
@@ -16574,7 +16581,13 @@ function nActivites(){
   (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > 0) jours.add(dayKey(d)); });
   return jours.size;
 }
+/* Mode essai du vestiaire : « …/beta/#accessoires » dans la barre d'adresse. Tout est
+   considéré comme gagné, le temps de regarder les dessins. Il ne s'active que par
+   l'adresse, il s'annonce par un bandeau, et il ne change rien d'autre dans l'app. */
+let essaiAccessoires = false;
+try{ essaiAccessoires = /accessoires/i.test(location.hash || ""); }catch(e){}
 function accessoireGagne(a){
+  if(essaiAccessoires) return true;
   if(a.flamme) return meilleureFlamme() >= a.flamme;
   return nActivites() >= (a.seances || 0);
 }
@@ -16730,6 +16743,7 @@ function openVestiaire(){
   const bientot = `<div class="vs-t vs-bientot"><span class="vs-img"><i>⋯</i></span><b>${TR("D'autres arrivent")}</b><em>${TR("dans une prochaine mise à jour")}</em></div>`;
   openSheet(`<h3 style="font-size:22px;">${TR("Mon compagnon")}</h3>
     <div class="pr-sous" style="text-align:center;">${TR("Personnalise ton compagnon d'entraînement !")}</div>
+    ${essaiAccessoires ? `<div class="vs-essai">${TR("Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.")}</div>` : ""}
     <div class="vs-apercu">${poussinHtml("vs-poussin", "en-forme")}</div>
     <div class="vs-compte">
       <div class="vs-c"><span class="ic">${icoM("flamme", 22)}</span><span><b>${nSeances}</b><small>${TR(nSeances > 1 ? "activités" : "activité")}</small></span></div>
@@ -16948,7 +16962,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "24 septembre 2026 01h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "24 septembre 2026 01h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
