@@ -16482,6 +16482,17 @@ function familleAcc(id){ return ACCESSOIRES.find(a=>variantes(a).some(v=>v.id ==
    qui couvre la tete. Sans ce tri, l'ordre d'affichage etait celui dans lequel la
    personne avait enfile ses accessoires. */
 function plan(id){ const f = familleAcc(id); return (f && f.plan) || 0; }
+/* L'ENDROIT du corps qu'un accessoire occupe. On le lit dans `plan` : il dit déjà qui
+   passe devant qui, et deux objets au même plan sont au même endroit — un bonnet et une
+   casquette, deux paires de lunettes, un t-shirt et un débardeur. On ne peut donc pas
+   les porter ensemble.
+   Deux exceptions, qui ne se disputent aucune place : ce qui FLOTTE autour du personnage
+   (les étincelles, les confettis, les trophées — plan 60) et le décor de fond. Ceux-là
+   s'ajoutent. */
+function emplacement(f){
+  if(!f || f.arriere || (f.plan || 0) >= 60) return null;
+  return f.plan || 0;
+}
 /* « 10e » en francais, « 10th » en anglais, « 10.ª » en espagnol, « 10ª » en portugais.
    Le francais est le seul a distinguer le premier (1re) ; l'anglais distingue 1st, 2nd
    et 3rd, sauf de 11 a 13 ou tout est « th ». */
@@ -16651,7 +16662,19 @@ function poussinEtat(poseForcee){
   const pose = (poseForcee && POUSSIN[poseForcee]) ? poseForcee : poussinPose();
   const choix = (db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"];
   const dispo = POUSSIN[pose] ? POUSSIN[pose].acc : [];
-  return {pose, acc:choix.filter(id=>{ const f = familleAcc(id); return dispo.includes(id) && f && accessoireGagne(f); })};
+  /* Une sauvegarde d'avant la règle peut contenir deux objets au même endroit (un bonnet
+     ET une casquette) : on garde le premier et on laisse l'autre de côté. Rien n'est
+     effacé — il suffira d'y retoucher dans le vestiaire. */
+  const pris = {};
+  return {pose, acc:choix.filter(id=>{
+    const f = familleAcc(id);
+    if(!(dispo.includes(id) && f && accessoireGagne(f))) return false;
+    const place = emplacement(f);
+    if(place === null) return true;
+    if(pris[place]) return false;
+    pris[place] = true;
+    return true;
+  })};
 }
 /* Le vestiaire : le poussin tel qu'il est, puis les accessoires — gagnes (on choisit ce
    qu'il porte), a gagner (avec ce qu'il reste a faire), rares a part. */
@@ -16740,12 +16763,20 @@ function openVestiaire(){
   /* toucher une couleur la choisit ET la met : c'est le geste qu'on attend d'une pastille */
   document.querySelectorAll("#sheet [data-cl]").forEach(b=>b.onclick = ()=>habille(b.dataset.cl, true));
 }
-/* Mettre ou enlever un accessoire : on retire d'abord toutes les couleurs de la famille,
-   pour ne jamais en porter deux teintes a la fois. Au premier niveau, pas dans
-   openVestiaire : la revelation d'un accessoire doit pouvoir l'enfiler aussi. */
+/* Mettre ou enlever un accessoire : on libère d'abord la place. Les autres teintes de
+   la même famille s'en vont — on n'en porte jamais deux à la fois — ET tout ce qui
+   occupe le même endroit du corps : mettre un bonnet retire la casquette et le casque.
+   Au premier niveau, pas dans openVestiaire : la révélation d'un accessoire doit pouvoir
+   l'enfiler aussi. */
 function habille(id, force){
   const f = familleAcc(id), avant = (db.avatar && db.avatar.acc) || ["bandeau"];
-  const acc = avant.filter(x=>!f || !variantes(f).some(v=>v.id === x));
+  const place = emplacement(f);
+  const acc = avant.filter(x=>{
+    const g = familleAcc(x);
+    if(f && g && g.id === f.id) return false;                          /* une seule teinte */
+    if(place !== null && g && emplacement(g) === place) return false;  /* une seule chose ici */
+    return true;
+  });
   if(force || !avant.includes(id)) acc.push(id);
   const cl = f ? Object.assign({}, db.avatar && db.avatar.cl, {[f.id]:id}) : (db.avatar && db.avatar.cl);
   db.avatar = Object.assign({}, db.avatar, {acc, cl}); save(); vibrer(12);
@@ -16917,7 +16948,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "24 septembre 2026 00h57 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "24 septembre 2026 01h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
