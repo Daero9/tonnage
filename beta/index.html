@@ -16419,7 +16419,9 @@ const ACCESSOIRES = [
     {id:"bandeau",      nom:"Noir", hex:"#1B1B1B"},
     {id:"bandeau-rose", nom:"Rose", hex:"#C42258"},
     {id:"bandeau-bleu", nom:"Bleu", hex:"#2232C4"}]},
-  {id:"casque",                nom:"Casque audio", plan:30,          seances:3,   duree:"1 semaine", couleurs:[
+  /* `zones` : le casque tient les OREILLES, pas le crâne — il se porte donc avec un
+     bandeau, mais pas avec un bonnet, qui couvre les deux. */
+  {id:"casque",                nom:"Casque audio", plan:30,          seances:3,   duree:"1 semaine", zones:["oreilles"], couleurs:[
     {id:"casque-noir",  nom:"Noir",  hex:"#222526"},
     {id:"casque-rouge", nom:"Rouge", hex:"#9F2F2D"},
     {id:"casque-vert",  nom:"Vert",  hex:"#5A9C33"}]},
@@ -16443,7 +16445,7 @@ const ACCESSOIRES = [
     {id:"casquette-bodeaux", nom:"Bordeaux", hex:"#96243C"}]},
   /* Trois laines pastel : les pastilles sont claires, elles portent donc un filet
      comme les autres teintes proches du fond. */
-  {id:"bonnet-d-hiver",        nom:"Bonnet d'hiver", plan:30,        seances:16,  duree:"5 semaines", couleurs:[
+  {id:"bonnet-d-hiver",        nom:"Bonnet d'hiver", plan:30,        seances:16,  duree:"5 semaines", zones:["crane", "oreilles"], couleurs:[
     {id:"bonnet-blanc", nom:"Blanc", hex:"#EADED8"},
     {id:"bonnet-rose",  nom:"Rose",  hex:"#F6D2E4"},
     {id:"bonnet-vert",  nom:"Vert",  hex:"#D8F6D2"}]},
@@ -16488,16 +16490,28 @@ function familleAcc(id){ return ACCESSOIRES.find(a=>variantes(a).some(v=>v.id ==
    qui couvre la tete. Sans ce tri, l'ordre d'affichage etait celui dans lequel la
    personne avait enfile ses accessoires. */
 function plan(id){ const f = familleAcc(id); return (f && f.plan) || 0; }
-/* L'ENDROIT du corps qu'un accessoire occupe. On le lit dans `plan` : il dit déjà qui
-   passe devant qui, et deux objets au même plan sont au même endroit — un bonnet et une
-   casquette, deux paires de lunettes, un t-shirt et un débardeur. On ne peut donc pas
-   les porter ensemble.
-   Deux exceptions, qui ne se disputent aucune place : ce qui FLOTTE autour du personnage
-   (les étincelles, les confettis, les trophées — plan 60) et le décor de fond. Ceux-là
-   s'ajoutent. */
-function emplacement(f){
-  if(!f || f.arriere || (f.plan || 0) >= 60) return null;
-  return f.plan || 0;
+/* Les ZONES du corps qu'un accessoire occupe. Deux accessoires se refusent dès qu'ils
+   en partagent une.
+
+   La plupart n'occupent qu'une zone, et on la déduit de `plan` — il dit déjà qui passe
+   devant qui, et ce qui se dessine au même étage se pose au même endroit. Mais la tête
+   ne se résume pas à un étage : un bandeau tient le front, un casque tient les oreilles,
+   et les deux vont très bien ensemble. Un bonnet, lui, couvre les DEUX — c'est pour ça
+   qu'il ne va ni avec le bandeau, ni avec le casque. Ces cas-là portent leur propre
+   liste dans ACCESSOIRES.
+
+   Ce qui FLOTTE autour du personnage (étincelles, confettis, trophées — plan 60) et le
+   décor de fond n'occupent aucune zone : ils s'ajoutent à tout. */
+const ZONES_PLAN = {5:["peau"], 8:["dos"], 10:["torse"], 12:["par-dessus"], 16:["cou"],
+  20:["crane"], 25:["crane"], 30:["crane"], 40:["yeux"], 50:["mains"]};
+function zonesAcc(f){
+  if(!f || f.arriere || (f.plan || 0) >= 60) return [];
+  return f.zones || ZONES_PLAN[f.plan || 0] || [];
+}
+/* deux familles se disputent-elles un bout de corps ? */
+function memeEndroit(a, b){
+  const za = zonesAcc(a);
+  return zonesAcc(b).some(z=>za.indexOf(z) >= 0);
 }
 /* « 10e » en francais, « 10th » en anglais, « 10.ª » en espagnol, « 10ª » en portugais.
    Le francais est le seul a distinguer le premier (1re) ; l'anglais distingue 1st, 2nd
@@ -16678,14 +16692,14 @@ function poussinEtat(poseForcee){
   /* Une sauvegarde d'avant la règle peut contenir deux objets au même endroit (un bonnet
      ET une casquette) : on garde le premier et on laisse l'autre de côté. Rien n'est
      effacé — il suffira d'y retoucher dans le vestiaire. */
-  const pris = {};
+  const prises = [];
   return {pose, acc:choix.filter(id=>{
     const f = familleAcc(id);
     if(!(dispo.includes(id) && f && accessoireGagne(f))) return false;
-    const place = emplacement(f);
-    if(place === null) return true;
-    if(pris[place]) return false;
-    pris[place] = true;
+    const z = zonesAcc(f);
+    if(!z.length) return true;
+    if(z.some(x=>prises.indexOf(x) >= 0)) return false;
+    z.forEach(x=>prises.push(x));
     return true;
   })};
 }
@@ -16784,11 +16798,10 @@ function openVestiaire(){
    l'enfiler aussi. */
 function habille(id, force){
   const f = familleAcc(id), avant = (db.avatar && db.avatar.acc) || ["bandeau"];
-  const place = emplacement(f);
   const acc = avant.filter(x=>{
     const g = familleAcc(x);
-    if(f && g && g.id === f.id) return false;                          /* une seule teinte */
-    if(place !== null && g && emplacement(g) === place) return false;  /* une seule chose ici */
+    if(f && g && g.id === f.id) return false;              /* une seule teinte par famille */
+    if(f && g && memeEndroit(f, g)) return false;          /* pas deux choses au même endroit */
     return true;
   });
   if(force || !avant.includes(id)) acc.push(id);
@@ -16962,7 +16975,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "24 septembre 2026 01h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "24 septembre 2026 01h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
