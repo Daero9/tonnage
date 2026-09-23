@@ -1583,8 +1583,11 @@ async function lancer(){
         /* tant qu'on ne l'a pas ouvert, la tuile ne devoile rien : ni le dessin, ni les couleurs */
         const paquet = F.document.querySelector("#sheet .vs-t.neuf");
         vrai("L'accessoire reste un paquet fermé", !!paquet
-          && !paquet.querySelector("img") && !paquet.querySelector(".vs-cl")
-          && !!paquet.querySelector(".paquet"), paquet ? paquet.textContent : "pas de paquet");
+          && !paquet.querySelector("img[src*='ico-']") && !paquet.querySelector(".vs-cl")
+          && !!paquet.querySelector(".paquet img"), paquet ? paquet.textContent : "pas de paquet");
+        vrai("…et c'est le cadeau qui bouge, pas son cadre",
+          F.getComputedStyle(paquet.querySelector(".paquet")).animationName === "none"
+          && F.getComputedStyle(paquet.querySelector(".paquet img")).animationName !== "none");
         vrai("…et ne dit pas encore son nom", !/Bandeau|Casque/.test(paquet.textContent), paquet.textContent);
         /* toucher la tuile neuve ne l'habille pas : elle raconte d'abord */
         F.document.querySelector("#sheet [data-acc]").click();
