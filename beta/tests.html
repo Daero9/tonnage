@@ -1487,15 +1487,18 @@ async function lancer(){
       /* les couleurs : tant qu'une seule est dessinee, aucune pastille — il n'y a rien a choisir */
       /* les couleurs : une pastille par teinte dessinée, et rien du tout quand il n'y a
          pas de choix à faire */
+      /* Seulement les accessoires GAGNES : une tuile encore verrouillee est un cadeau, elle
+         cache jusqu'aux teintes — c'est la surprise. Sans ce filtre, le test tombait des
+         qu'un accessoire dessine demandait plus d'activites que n'en a cette fiche. */
       eq("Une pastille par couleur dessinée, tuile par tuile",
-         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length).map(a=>{
+         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length && accessoireGagne(a)).map(a=>{
            const t = document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']").closest(".vs-t");
            return a.id + ":" + t.querySelectorAll(".vs-cl .cl").length;
          }).join(" ")`),
-         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length)
+         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length && accessoireGagne(a))
            .map(a=>a.id + ":" + (variantesDessinees(a).length > 1 ? variantesDessinees(a).length : 0)).join(" ")`));
       vrai("Un accessoire d'une seule couleur n'a pas de pastilles",
-        F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length === 1)
+        F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length === 1 && accessoireGagne(a))
           .every(a=>!document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']")
             .closest(".vs-t").querySelector(".vs-cl"))`));
       /* un decor marque « arriere » se pose sous le poussin, pas sur son corps */
@@ -4149,6 +4152,38 @@ async function lancer(){
     DB.active = null;
     DB.templates = []; DB.history = []; DB.materiel = null;
     F.render();
+  })();
+  neuf();
+
+  /* Nico notait 74 dans le tableau des pesées, et quelques jours plus tard l'app
+     réaffichait 73. Deux endroits écrivaient le poids sans se parler : le champ du
+     parcours de profil partait de db.profile.weight — figé à la dernière fois qu'on
+     avait rempli le profil —, et valider le profil écrasait la pesée du jour avec lui.
+     Ouvrir son profil pour changer son âge suffisait à faire reculer son poids. */
+  grp("Le poids ne recule plus tout seul");
+  neuf();
+  await (async ()=>{
+    DB.profile = Object.assign({}, DB.profile, {weight:73});
+    DB.weights = [{date:new Date(Date.now() - 3*864e5).toISOString(), kg:73},
+                  {date:new Date().toISOString(), kg:74}];
+    eq("La dernière pesée fait foi", F.currentWeight(), 74);
+
+    /* Le parcours de profil part desormais de cette pesée, et non du champ du profil.
+       Sa roulette ne se vérifie pas ici : elle se cale en mesurant sa hauteur, et le
+       cadre des tests n'a pas de dimensions. Ce qui SE vérifie, et qui suffit, c'est
+       que les deux chiffres ne puissent plus diverger — voir juste dessous. */
+
+    /* et noter un poids dans le tableau remet le profil d'accord, par le vrai bouton */
+    F.eval("curTab = 'prg'; render()");
+    await attendre(()=>!!F.document.getElementById("wt-add"), 3000);
+    F.document.getElementById("wt-add").click();
+    await attendre(()=>!!F.document.getElementById("wt-ok"), 3000);
+    F.document.getElementById("wt-in").value = "75";
+    F.document.getElementById("wt-ok").click();
+    eq("Noter 75 dans le tableau…", F.currentWeight(), 75);
+    eq("…met le profil d'accord, il ne peut plus le contredire", DB.profile.weight, 75);
+    /* on rend l'écran comme on l'a trouvé : fiche refermée, onglet Séance */
+    F.eval("closeSheet(); curTab = 'seance'; render();");
   })();
   neuf();
 
