@@ -1120,7 +1120,7 @@
 
   /* ---- bouton + flottant ---- */
   .fab{width:58px; height:58px; border-radius:50%; background:var(--accent); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-size:31px; font-weight:300;
+    display:flex; align-items:center; justify-content:center; font-size:31px; font-weight:600;
     box-shadow:0 6px 18px rgba(245,130,32,.42); line-height:1;}
   .fab-row{display:flex; justify-content:flex-end; margin:2px 4px 0;}
 
@@ -1432,8 +1432,8 @@
      en se fondant dans le fond. La cinquième est l'ombre douce du bouton, en plus léger :
      une ombre calibrée pour un disque de 58 px écraserait des capitales de 10 px. */
   .eat-fab .lb{font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
-    text-shadow:0 0 5px var(--bg), 0 0 5px var(--bg), 0 0 10px var(--bg), 0 0 16px var(--bg),
-      0 4px 10px rgba(0,0,0,.16);}
+    text-shadow:0 0 4px var(--bg), 0 0 4px var(--bg), 0 0 4px var(--bg), 0 0 8px var(--bg),
+      0 0 8px var(--bg), 0 0 14px var(--bg), 0 0 20px var(--bg), 0 4px 10px rgba(0,0,0,.16);}
 
   /* ---- records de fin de séance ----
      Un record mérite mieux qu'une carte de plus : le bloc s'inverse par rapport à la
@@ -1689,6 +1689,11 @@
   /* le poussin en forme est debout, donc plus haut que large : on le resserre pour qu'il
      depasse de la carte a peu pres autant que celui qui dort */
   .hero-poussin[data-pose="en-forme"], .hero-poussin[data-pose="muscle"]{width:88px; right:22px;}
+  /* La pose musclee grossit avec la serie en cours (voir --po-ech). Elle grandit par le
+     coin bas-droit : le poussin reste pose au meme endroit sur la carte, et deborde vers
+     le haut et la gauche, ou il y a de la place. */
+  .hero-poussin[data-pose="muscle"]{--po-ech:1; transform-origin:100% 100%;
+    transform:scale(var(--po-ech)); transition:transform .4s ease;}
   .hero-poussin[data-pose="record"]{width:78px; right:26px;}
   .hero-poussin[data-pose="fete"]{width:82px; right:24px;}
   .hero-poussin[data-pose="seance"]{width:92px; right:34px;}
@@ -1697,10 +1702,15 @@
     background:#fff; color:var(--accent); font-size:12px; font-weight:800; transform:rotate(-4deg);}
   /* la flamme animee de Nico, dans le coin haut droit de la carte de la semaine, le chiffre
      dans son coeur clair ; elle rapetisse et palit quand les jours sans seance passent */
-  .hero-flamme{position:absolute; right:6px; top:-40px; z-index:4; width:40px; height:50px; transform-origin:50% 100%;
+  /* Sa taille se compose de trois facteurs, pour qu'ils ne s'ecrasent pas l'un l'autre :
+     --fl-etat, l'etat de la serie (elle palit et rapetisse quand les jours passent),
+     --fl-ech, la recompense de l'anciennete (voir plus bas, +2 % par activite), et le
+     0.66 de depart, qui la pose plus discretement au-dessus de la carte. */
+  .hero-flamme{--fl-etat:1; --fl-ech:1; position:absolute; right:6px; top:-34px; z-index:4; width:40px; height:50px;
+    transform-origin:50% 100%; transform:scale(calc(.66 * var(--fl-etat) * var(--fl-ech)));
     transition:transform .4s ease, opacity .4s ease, right .4s ease;}
   /* en danger, elle revient sous le poussin, centree sur lui : il la protege */
-  .under-hero:has(.hero-poussin[data-pose="danger"]) .hero-flamme{right:50px; top:-44px; opacity:1; transform:scale(.55);}
+  .under-hero:has(.hero-poussin[data-pose="danger"]) .hero-flamme{--fl-etat:.55; right:50px; top:-38px; opacity:1;}
   .hero-poussin[data-pose="danger"]{width:88px; right:22px;}
   .hero-flamme .fe{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
   /* Le chiffre de la flamme dans une police ronde et pleine (Fredoka, licence OFL) : seuls
@@ -1712,8 +1722,8 @@
     /* blanc, avec un fin contour sombre : paint-order met le trait DERRIERE le remplissage,
        sinon le contour mange l'interieur des chiffres */
     -webkit-text-stroke:2.5px #d42a12; paint-order:stroke fill;}
-  .hero-flamme.moyenne{transform:scale(.8); opacity:.85;}
-  .hero-flamme.petite{transform:scale(.62); opacity:.6;}
+  .hero-flamme.moyenne{--fl-etat:.8; opacity:.85;}
+  .hero-flamme.petite{--fl-etat:.62; opacity:.6;}
   /* ---- le vestiaire ---- */
   /* ---- le vestiaire, d'apres la maquette du 21 septembre ---- */
   .vs-apercu{display:flex; justify-content:center; padding:10px 0 6px; position:relative;}
@@ -3214,8 +3224,10 @@
     color:var(--ink); min-height:52px;}
   .rg-c .rg-t + .rg-l{border-top:0;}
   /* le signe de la ligne, dans sa case : on repère un réglage sans lire son intitulé */
+  /* la case n'a plus de trait : seul son fond la detache, ce qui suffit a la lire et
+     allege une page qui aligne une vingtaine de lignes */
   .rg-l .rgi{flex:0 0 auto; width:36px; height:36px; border-radius:11px;
-    background:var(--surface2); border:1px solid var(--border); color:var(--ink-soft);
+    background:var(--surface2); border:0; color:var(--ink-soft);
     display:flex; align-items:center; justify-content:center;}
   .rg-l .rgi svg{width:19px; height:19px;}
   .rg-l em{display:block; font-style:normal; font-size:12.5px; font-weight:400; line-height:1.45;
@@ -3232,9 +3244,11 @@
   .rg-c .rg-l:first-child{border-top:0;}
   .rg-t{padding:14px 2px 6px;}
   .rg-l .fl svg{width:18px; height:18px;}
-  .rg-l .rgi.rgi-img{background:#fff; border-color:var(--border);} .rg-l .rgi.rgi-img img{width:24px; height:auto;}
-  .rg-l .rgi.b{background:#e9edfb; color:#3b52c8; border-color:transparent;}
-  .rg-l .rgi.j{background:#fbefd6; color:#c98a12; border-color:transparent;}
+  /* la case d'un logo etait blanche sur une carte blanche : sans son filet elle
+     disparaissait. Elle prend le meme fond que les autres. */
+  .rg-l .rgi.rgi-img img{width:24px; height:auto;}
+  .rg-l .rgi.b{background:#e9edfb; color:#3b52c8;}
+  .rg-l .rgi.j{background:#fbefd6; color:#c98a12;}
   .rg-l .rgi.g{background:var(--surface2); color:var(--ink-soft);}
   /* la carte de l'abonnement : teinte orange, pastille a droite */
   .rg-version{text-align:center; font-size:11.5px; color:var(--ink-mute); margin-top:14px; letter-spacing:.02em;}
@@ -3362,6 +3376,11 @@
   /* Le voile : les cartes se floutent, les titres restent lisibles — on sait ce qu'on
      regarde sans pouvoir le lire. Rien ne repond au doigt derriere la fenetre. */
   #app.verrou{pointer-events:none; user-select:none;}
+  /* ... sauf la barre du haut : ses deux boutons ne vendent rien, et l'un d'eux est le
+     seul chemin vers le code d'acces. Ses icones restent nettes, sinon elles tombent
+     sous le flou general des `svg`. */
+  #app.verrou .hero-top{pointer-events:auto;}
+  #app.verrou .hero-top svg{filter:none;}
   #app.verrou .eat-card, #app.verrou .fgrid, #app.verrou .meal-tabs,
   #app.verrou svg, #app.verrou canvas, #app.verrou table, #app.verrou .jauge, #app.verrou .pill,
   #app.verrou .vd-card, #app.verrou .rg-resume{filter:blur(6px);}
@@ -3401,11 +3420,13 @@
   .ot-deplie #ot-cats{animation-delay:.02s;} .ot-deplie #ot-liste{animation-delay:.06s;}
   .ot-deplie > :nth-child(n+4){animation-delay:.1s;}
   @keyframes otDeplie{from{opacity:0; transform:translateY(-8px);}}
-  .ot-carte.solo{flex-direction:row; text-align:left; gap:12px; padding:14px 14px 14px 16px; width:100%;}
-  .ot-carte.solo .ic{width:auto; height:auto; margin:0; gap:2px;}
-  .ot-carte.solo .ic svg{width:24px; height:24px;}
+  /* Sans sa ligne d'explication, la carte n'a plus qu'un mot a porter : il peut donc
+     etre plus grand, et les deux icones avec lui. */
+  .ot-carte.solo{flex-direction:row; text-align:left; gap:14px; padding:17px 14px 17px 18px; width:100%;}
+  .ot-carte.solo .ic{width:auto; height:auto; margin:0; gap:4px;}
+  .ot-carte.solo .ic svg{width:31px; height:31px;}
+  .ot-carte.solo b{font-size:16.5px;}
   .ot-carte.solo .tx{flex:1; display:flex; flex-direction:column; gap:2px;}
-  .ot-carte.solo b{font-size:14.5px;}
   .ot-carte.solo > svg{width:18px; height:18px; opacity:.8;}
   /* la fiche « Voici ce que je vois » */
   .ph-bandeau{position:relative; margin:-18px -16px 12px; height:210px; overflow:hidden; border-radius:20px 20px 0 0;}
@@ -3444,11 +3465,14 @@
   .ph-rem{display:flex; gap:9px; align-items:flex-start; font-size:12.5px; color:var(--ink-soft); line-height:1.45;
     padding:10px 12px; border-radius:14px; background:rgba(200,162,74,.14);}
   .ph-rem svg{width:16px; height:16px; flex:0 0 auto; color:#a67c1c; margin-top:2px;}
-  .abo-fenetre{position:fixed; left:0; right:0; top:0; bottom:calc(96px + env(safe-area-inset-bottom));
+  /* Le voile commence SOUS la barre du haut de l'app : il couvrait « Mon profil » et
+     « Reglages », et comme #app est fige par .verrou, les deux boutons etaient morts —
+     on arrivait sur Progression sans abonnement et on ne pouvait plus ni ouvrir les
+     reglages (ou se trouvent le code d'acces et l'abonnement) ni voir son profil. */
+  .abo-fenetre{position:fixed; left:0; right:0; top:calc(44px + env(safe-area-inset-top));
+    bottom:calc(96px + env(safe-area-inset-bottom));
     z-index:39; display:flex; align-items:center; justify-content:center; touch-action:none; overscroll-behavior:contain;
-    /* la carte reste sous la barre d'etat (heure, batterie) : sans ca la croix passe
-       dessous et rien ne se ferme */
-    padding:max(44px, calc(18px + env(safe-area-inset-top))) 22px 18px;
+    padding:10px 22px 18px;
     background:rgba(0,0,0,.42);}
   .abo-carte-f{position:relative; width:100%; max-width:340px; max-height:100%; overflow-y:auto; touch-action:pan-y; overscroll-behavior:contain;
     background:var(--sheet); border-radius:22px; padding:18px 16px 14px;
@@ -3715,6 +3739,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté.":"Payment awaiting Google's approval. Your photos will arrive as soon as it goes through.",
   /* --- navigation et repas --- */
   "Séance":"Workout", "Alimentation":"Nutrition", "Progression":"Progress",
   "Matin":"Morning", "Midi":"Midday", "Collation":"Snack", "Soir":"Evening", "Extra":"Extra",
@@ -6834,6 +6859,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté.":"Pago pendiente de validación por Google. Tus fotos llegarán en cuanto se acepte.",
   "Séance":"Entrenamiento",
   "Alimentation":"Nutrición",
   "Progression":"Progreso",
@@ -10172,6 +10198,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté.":"Pagamento aguardando validação do Google. Suas fotos chegarão assim que for aceito.",
   "Séance":"Treino",
   "Alimentation":"Nutrição",
   "Progression":"Progresso",
@@ -16713,7 +16740,11 @@ function poussinHtml(classe, poseForcee){
   const rec = !classe && recordSignificatif();
   /* le halo de la regularite, derriere lui, sur toutes les poses tant que la condition tient */
   const halo = niveauHalo();
-  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio};">${
+  /* La recompense de la regularite : dans sa pose musclee, il prend 1 % par jour de la
+     serie en cours, et s'arrete a +50 % (cinquante jours d'affilee). Sans ce plafond, une
+     serie longue le ferait sortir de l'ecran. */
+  const ech = e.pose === "muscle" ? 1 + Math.min(.5, .01 * serieJours().n) : 1;
+  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio}; --po-ech:${ech.toFixed(3)};">${
     halo ? `<i class="halo"></i>` : ""}${fonds}<img src="img/poussin/${e.pose}.webp" alt="">${calques}${
     rec ? `<button class="poussin-rec" id="poussin-record">🏆 ${TR("Record !")}</button>` : ""}</div>`;
 }
@@ -16819,7 +16850,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 16h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 16h51 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20954,7 +20985,7 @@ function openAjoutAliment(meal){
   openSheet(`<h3 style="text-align:center;">${TR("Ajouter un aliment")}</h3>
     <div class="stack ot-replie" id="ot-stack">
       <button class="ot-carte orange solo" id="ot-scan"><span class="ic">${IC_CODEBARRE}${IC_PHOTO}</span>
-        <span class="tx"><b>${TR("Scanner mon repas")}</b><i>${TR("Code-barres d'un produit, ou photo de l'assiette")}</i></span>${IC_CHEVRON}</button>
+        <span class="tx"><b>${TR("Scanner mon repas")}</b></span>${IC_CHEVRON}</button>
       <div class="et-h"><span class="n">1</span><span class="t">${TR("Rechercher un aliment")}</span></div>
       <div>
       <div class="ch-champ">
@@ -22592,7 +22623,10 @@ function renderSeance(app){
       ${(()=>{ const fl = serieJours(now); if(!POUSSIN.repos || fl.n < 1) return "";
         /* la flamme, entre les pattes du poussin : les jours de seance de la serie en
            cours ; elle faiblit quand les jours sans seance s'accumulent */
-        return `<div class="hero-flamme ${fl.force}" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${fl.n}</b></div>`; })()}
+        /* elle grandit de 2 % par activite accumulee depuis le debut, et s'arrete a
+           +100 % : au bout de cinquante activites elle a double, et ne bouge plus. */
+        const ech = 1 + Math.min(1, .02 * nActivites());
+        return `<div class="hero-flamme ${fl.force}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${fl.n}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
@@ -26760,6 +26794,14 @@ async function acheterPack(id, bouton){
       toast(TR("{} photos ajoutées à ta réserve.").replace("{}", r.scans || k.scans));
       return true;
     }
+    /* Un paiement differe (virement, especes, autorisation d'un parent) revient
+       « en-attente » : Google ne l'a pas refuse, il ne l'a pas encore accepte. Les photos
+       seront creditees toutes seules des l'accord, a l'ouverture suivante. L'annoncer
+       comme un echec faisait croire a un paiement perdu. */
+    if(r && r.raison === "en-attente"){
+      toast(TR("Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté."));
+      return false;
+    }
     if(!(r && r.raison === "annule")) toast(TR("Google Play n'a pas pu finaliser l'achat.") + (r && r.raison ? " · " + String(r.raison).slice(0, 60) : ""), "erreur");
   }catch(e){ toast(TR("Google Play n'a pas pu finaliser l'achat."), "erreur"); }
   finally{ if(bouton) bouton.disabled = false; }
@@ -26772,6 +26814,7 @@ async function rattraperPacks(){
   try{
     const r = await p.packsEnAttente();
     if(r && r.scans > 0){ crediterScans(r.scans); toast(TR("{} photos ajoutées à ta réserve.").replace("{}", r.scans)); }
+    else if(r && r.raison === "en-attente") toast(TR("Paiement en attente de validation par Google. Tes photos arriveront dès qu'il sera accepté."));
   }catch(e){}
 }
 /* Plus de photo disponible : un abonne voit la fiche des packs (on n'a rien d'autre a
