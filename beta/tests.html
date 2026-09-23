@@ -939,6 +939,40 @@ async function lancer(){
   eq("Quinze reps : un peu plus, plafonné", F.poidsFatigue({rir:1, r:15}), 1.25);
   DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,2,1),serie(80,2,1)]}])];
   vrai("Deux doubles laissent les quadriceps presque frais", F.recuperation().muscles["Quadriceps"].pct >= 85, F.recuperation().muscles["Quadriceps"].pct + " %");
+
+  /* Nico : après une grosse séance d'épaules, l'app annonçait « 0 % » alors qu'il se
+     sentait autour de 30 %. Deux fautes se cumulaient. */
+  (()=>{
+    /* 1. Le développé militaire cite DEUX faisceaux du même groupe (antérieur 3,
+       latéral 2) : les additionner faisait coûter une série 1,67 fois ce que coûte un
+       exercice principal. Une élévation latérale, qui n'en cite qu'un au niveau 3,
+       doit fatiguer le groupe AU MOINS autant, à volume égal. */
+    const dm = [{exId:id("Développé militaire"), sets:[serie(40,10,2),serie(40,10,2),serie(40,10,2)]}];
+    const el = [{exId:id("Élévations latérales"), sets:[serie(10,10,2),serie(10,10,2),serie(10,10,2)]}];
+    DB.history = [seance(2, dm)];
+    const milit = F.recuperation().muscles["Deltoïdes"].pct;
+    DB.history = [seance(2, el)];
+    const lat = F.recuperation().muscles["Deltoïdes"].pct;
+    eq("Un exercice ne compte qu'une fois par groupe, même s'il cite deux faisceaux",
+       milit, lat);
+
+    /* 2. La somme était linéaire : une séance Push totalisait 220 points sur une
+       échelle de 100, le deltoïde tombait à 0 et y restait une vingtaine d'heures.
+       Elle sature désormais : il reste toujours quelque chose. */
+    DB.history = [seance(1, [
+      {exId:id("Développé militaire"), sets:[1,2,3,4,5].map(()=>serie(40,10,2))},
+      {exId:id("Développé couché"),   sets:[1,2,3,4].map(()=>serie(60,10,2))},
+      {exId:id("Élévations latérales"), sets:[1,2,3].map(()=>serie(10,12,2))},
+      {exId:id("Dips"),                  sets:[1,2,3].map(()=>serie(0,10,2))}])];
+    const gros = F.recuperation().muscles["Deltoïdes"].pct;
+    vrai("Une grosse séance d'épaules entame beaucoup…", gros < 40, gros + " %");
+    vrai("…mais ne descend jamais à zéro", gros > 0, gros + " %");
+
+    /* et une séance légère reste légère : la courbe ne se couche qu'au-delà */
+    DB.history = [seance(2, [{exId:id("Élévations latérales"), sets:[serie(10,10,3),serie(10,10,3)]}])];
+    const leger = F.recuperation().muscles["Deltoïdes"].pct;
+    vrai("Deux séries en réserve laissent les épaules disponibles", leger >= 75, leger + " %");
+  })();
   neuf();
 
   /* ---------------------------------------------------------- profil musculaire */
@@ -4006,6 +4040,39 @@ async function lancer(){
   neuf();
 
   /* ---------------------------------------------------------- parcours d'accueil */
+  /* Nico : « en salle, est-ce que ça met en valeur les machines ? » Non : le classement
+     des candidats se faisait sur la charge qu'un mouvement supporte, et un soulevé de
+     terre à l'élastique y valait autant que le même à la barre — le leg curl sur ballon
+     (42) passait même devant le leg curl de la machine (25). */
+  grp("En salle, les remplaçants passent derrière");
+  neuf();
+  (()=>{
+    const equipDe = nom => (F.getEx(F.libId(nom)) || {}).equip;
+    const noms = g => (g.items || []).map(it=>it.nom);
+    /* en salle : aucun filtre de matériel */
+    DB.materiel = null; DB.maison = null;
+    DB.profile = Object.assign({}, DB.profile, {lieu:"salle"});
+    DB.history = [];
+    const salle = ["push", "pull", "jambes", "full"]
+      .map(t=>noms(F.genererAdaptative(t))).reduce((a, b)=>a.concat(b), []);
+    const secours = salle.filter(n=>["Élastique", "Ballon", "Sangles"].includes(equipDe(n)));
+    eq("Aucun élastique ni ballon dans quatre séances de salle", secours.join(", "), "");
+    /* et le leg curl de la machine reprend la place du leg curl sur ballon */
+    const jambes = noms(F.genererAdaptative("jambes"));
+    vrai("La machine passe devant le ballon pour les ischios",
+      !jambes.includes("Leg curl sur ballon"), jambes.join(", "));
+
+    /* chez soi, avec des élastiques, ils reviennent : on ne les a pas écartés */
+    DB.materiel = ["elastique", "tapis"];
+    DB.profile = Object.assign({}, DB.profile, {lieu:"maison"});
+    const maison = ["push", "jambes"]
+      .map(t=>noms(F.genererAdaptative(t))).reduce((a, b)=>a.concat(b), []);
+    vrai("Chez soi, l'élastique revient",
+      maison.some(n=>equipDe(n) === "Élastique"), maison.join(", "));
+    DB.materiel = null;
+  })();
+  neuf();
+
   grp("Séances adaptatives");
   neuf();
   /* La séance ne se contente plus d un moule fixe : elle se construit sur l état réel
