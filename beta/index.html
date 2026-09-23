@@ -16811,7 +16811,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 11h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 11h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -23555,7 +23555,15 @@ function genererAdaptative(type, evites){
         if(series >= 5) return;
         series += 1; pourquoiSeries = raison;
       };
-      if(k === 0 && rang === 0 && p.recup >= 60 && choisi.risque < 2)
+      /* La série que gagne le muscle prioritaire va sur son DEUXIÈME exercice quand il
+         en a un : 4 + 4 plutôt que 5 + 3. Même volume pour le muscle, réparti sur deux
+         mouvements au lieu d'être empilé sur un seul — les dernières séries d'un même
+         exercice sont les moins productives, et cinq d'affilée sur le développé couché
+         font une longue attente pour ce qu'elles rapportent.
+         Quand il n'a qu'un exercice (une séance Jambes sert cinq muscles, un chacun),
+         la série ne se reporte nulle part : on ne la donne pas. Nico a tranché ainsi
+         plutôt que de revoir un exercice à cinq séries. */
+      if(rang === 0 && p.recup >= 60 && choisi.risque < 2 && p.n > 1 && k === 1)
         plus("muscle frais et prioritaire");
       if(k === 0 && rang >= parts.length - 1 && parts.length > 2)
         moins("muscle le moins prioritaire aujourd'hui");

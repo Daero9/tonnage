@@ -3456,10 +3456,12 @@ async function lancer(){
         const premier = gen.items.filter(it=>it.role === b[0].muscle);
         const dernier = gen.items.filter(it=>it.role === b[b.length-1].muscle);
         gen.items.forEach(it=>{ if(it.sets < 2 || it.sets > 5) borne = false; });
-        /* le muscle de tête reçoit souvent DEUX exercices : seul le premier est majoré,
-           le second est une finition */
-        if(premier.length && b[0].recup >= 60
-           && premier.some(it=>it.sets === Math.min(5, dose[niv(b[0].recup)].s + 1))) vuPlus = true;
+        /* Le muscle de tête reçoit souvent DEUX exercices, et c'est le SECOND qui porte
+           la série en plus : 4 + 4 plutôt que 5 + 3. Le second descend d'un cran de dose
+           (une finition), puis regagne la série — on cherche donc ce compte-là. */
+        const baisse = n2 => n2 === "lourd" ? "moyen" : "leger";
+        if(premier.length > 1 && b[0].recup >= 60
+           && premier.some(it=>it.sets === dose[baisse(niv(b[0].recup))].s + 1)) vuPlus = true;
         if(dernier.length === 1 && b.length > 2
            && dernier[0].sets === Math.max(2, dose[niv(b[b.length-1].recup)].s - 1)) vuMoins = true;
       }
@@ -4039,6 +4041,26 @@ async function lancer(){
       pull.items.some(i=>i.role === "Biceps"));
     vrai("Le premier exercice est un gros mouvement",
       F.chargeExo(pull.items[0].nom) >= 30, pull.items[0].nom);
+    /* La serie que gagne le muscle prioritaire va sur son DEUXIEME exercice, pas sur le
+       premier : 4 + 4 plutot que 5 + 3. Cinq series d affilee sur un meme mouvement,
+       c est long pour ce que les dernieres rapportent. */
+    (()=>{
+      DB.profile = Object.assign({}, DB.profile, {aim:"masse"});
+      ["push","pull","jambes","haut","bas","full"].forEach(t2=>{
+        const g = F.genererAdaptative(t2);
+        const max = Math.max(...g.items.map(i=>i.sets));
+        vrai("En prise de masse, jamais cinq séries sur un exercice (" + t2 + ")", max <= 4,
+          g.items.map(i=>i.nom + " ×" + i.sets).join(", "));
+        const i0 = g.items.findIndex(i=>i.pourquoiSeries === "muscle frais et prioritaire");
+        if(i0 >= 0) vrai("…et la série en plus n'est jamais sur le premier exercice (" + t2 + ")",
+          i0 > 0, g.items[i0].nom);
+      });
+      /* en force, les cinq series viennent de la dose elle-meme : on n y touche pas */
+      DB.profile = Object.assign({}, DB.profile, {aim:"force"});
+      vrai("En cycle de force, le gros mouvement garde ses cinq séries",
+        Math.max(...F.genererAdaptative("push").items.map(i=>i.sets)) === 5);
+      DB.profile = Object.assign({}, DB.profile, {aim:"masse"});
+    })();
     /* une isolation ne se fait pas en 8 reps avec deux minutes trente de repos */
     pull.items.forEach(it=>{
       if(F.chargeExo(it.nom) < 15)
@@ -5144,14 +5166,21 @@ async function lancer(){
       vrai("…et la raison n'est pas vide", vu.pourquoiSeries.length > 5, vu.pourquoiSeries);
       vrai("…et le compte reste au moins à deux", vu.sets >= 2, vu.sets);
     }
-    /* et une série AJOUTÉE se dit aussi : l'app ne montre pas que ses restrictions */
+    /* et une série AJOUTÉE se dit aussi : l'app ne montre pas que ses restrictions.
+       On la cherche sur un Push : c'est là que le muscle prioritaire a deux exercices,
+       donc un second où poser la série en plus. Une séance Haut sert cinq muscles, un
+       chacun — il n'y a nulle part où la reporter. */
     let plus = null;
+    /* sans l'épaule douloureuse : elle interdit justement la série en plus */
+    DB.profile = gardeP;
     for(let i = 0; i < 40 && !plus; i++){
-      const g = F.genererAdaptative("haut");
+      const g = F.genererAdaptative("push");
       plus = (g.items || []).find(it=>it.ecartSeries > 0 && it.pourquoiSeries);
     }
     vrai("Une série ajoutée porte aussi sa raison", !!plus,
       plus ? plus.pourquoiSeries : "jamais vu");
+    /* on remet l'épaule douloureuse : la suite du bloc en a besoin */
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
 
     /* la fiche ⚠ garde l'avertissement, la fiche ⓘ ne le répète plus */
     DB.templates = [{id:"tw", name:"P", items:[{exId:dm, sets:3, reps:"8-12", rest:120}]}];
