@@ -16912,7 +16912,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "24 septembre 2026 00h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "24 septembre 2026 00h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -23656,9 +23656,13 @@ function genererAdaptative(type, evites){
          la machine. On les met donc derrière tout le reste quand aucun filtre de
          matériel n'est posé, ce qui est la définition d'une salle ici. Derrière, pas
          dehors : sur un muscle où ils seraient seuls, ils restent proposés. */
-      /* « finition » = les deux gros mouvements de la séance sont déjà pris ; ce qui
-         suit est là pour ajouter du volume, pas pour porter la séance. */
-      const finition = lourdsDejaPris >= 2;
+      /* « finition » = on a déjà deux exercices, quels qu'ils soient. La condition
+         portait avant sur leur CHARGE (deux mouvements à 60 ou plus), et ne se
+         déclenchait alors que quatre fois sur dix : une séance Push qui commence par un
+         développé couché haltères n'atteignait jamais le compte, et gardait des barres
+         jusqu'au bout. Le rang est un critère sûr — les deux premières places sont les
+         grosses, le reste ajoute du volume. */
+      const finition = items.length >= 2;
       const triee = liste.slice().sort((a, b)=>
         rangMateriel(a, finition) - rangMateriel(b, finition) || rangPerf(a) - rangPerf(b));
       const choisi = triee.find(c=>!recents.has(c.nom) && !recouvre(c))
