@@ -916,7 +916,10 @@ async function lancer(){
   neuf();
   DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
   const r1 = F.recuperation();
-  vrai("Quadriceps entamés juste après la séance", r1.muscles["Quadriceps"].pct < 70);
+  /* « entamés » = plus frais. Le chiffre exact suit l'échelle d'affichage, qui a été
+     élargie pour coller au ressenti ; ce qui doit rester vrai, c'est qu'il a baissé. */
+  vrai("Quadriceps entamés juste après la séance", r1.muscles["Quadriceps"].pct < 85,
+    r1.muscles["Quadriceps"].pct + " %");
   vrai("Pectoraux intacts", r1.muscles["Pectoraux"].pct === 100);
   DB.history = [seance(80, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
   eq("Quadriceps récupérés après 80 h", F.recuperation().muscles["Quadriceps"].pct, 100);

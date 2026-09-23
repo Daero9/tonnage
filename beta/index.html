@@ -16601,7 +16601,7 @@ function poussinPose(){
   if(a("fete") && accessoireDuJour()) return "fete";
   if(a("record") && fin && depuis < 10 * 60000 && recordSignificatif()) return "record";
   if(a("seance") && fin && depuis < 3600e3) return "seance";
-  if(a("fatigue") && (db.history || []).length && recuperation().global < 40) return "fatigue";
+  if(a("fatigue") && (db.history || []).length && recuperation().global < R_POUSSIN) return "fatigue";
   if(a("danger") && sj.depuis === 3) return "danger";
   if(a("muscle") && activites7j() >= 3) return "muscle";
   if(a("en-forme") && sj.force === "pleine") return "en-forme";
@@ -16877,7 +16877,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 17h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 18h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -23211,7 +23211,12 @@ function musclePompe(muscle, perf, rec){
   if(total < 6 || dures * 2 < total) return false;
   /* 3. et il ne récupère plus entre deux séances. `rec` est passé par l'appelant :
      le recalculer pour chaque muscle relisait tout l'historique six fois de suite. */
-  return !!(rec && rec.muscles[g] && rec.muscles[g].pct < 65);
+  /* Ce seuil-ci ne se traduit PAS : il se mesure. Sur la nouvelle échelle, le biceps du
+     cas franc (charge plate, tout à l'échec, quatre séances rapprochées) tombe à 65, et
+     celui qu'on garde en réserve reste à 80. 70 sépare les deux avec de la marge des deux
+     côtés ; la traduction mécanique aurait donné 81, et aurait déclenché l'alerte sur
+     quelqu'un qui s'entraîne correctement. */
+  return !!(rec && rec.muscles[g] && rec.muscles[g].pct < 70);
 }
 /* Le poids de chaque force, selon l'objectif. Ce n'est pas un détail : en force, on ne
    touche pas un muscle qui n'est pas frais, et le volume compte moins que la qualité.
@@ -23345,7 +23350,7 @@ function raisonsSeance(type){
     const n = nom(p.muscle), jours = j(p.muscle);
     if(p.pompe)
       return [n, TR("Tu forces dessus sans que ça monte. On lève le pied cette semaine.")];
-    if(p.recup < 60)
+    if(p.recup < R_MOYEN)
       return [n, TR("Pas encore récupéré. On l'épargne aujourd'hui.")];
     if(jours === null)
       return [n, TR("Jamais travaillé pour l'instant. On commence par lui.")];
@@ -23358,7 +23363,7 @@ function raisonsSeance(type){
       return [n, TR("Faiblement sollicité cette semaine. Il en redemande.")];
     if(p.vol >= p.cible)
       return [n, TR("Bien servi cette semaine. Il passe son tour.")];
-    if(p.recup >= 90)
+    if(p.recup >= R_INTACT)
       return [n, TR("Complètement récupéré. C'est le moment de charger.")];
     return [n, TR("Il a de la marge cette semaine. On lui en donne.")];
   };
@@ -23381,7 +23386,7 @@ function raisonsSeance(type){
   if(b.length > 1) out.push(phrase(b[1]));
   /* le dernier de la liste n'est intéressant que s'il est vraiment écarté */
   const dernier = b[b.length - 1];
-  if(b.length > 2 && !humeur && (dernier.recup < 60 || dernier.vol >= dernier.cible))
+  if(b.length > 2 && !humeur && (dernier.recup < R_MOYEN || dernier.vol >= dernier.cible))
     out.push(phrase(dernier));
   return out;
 }
@@ -23498,7 +23503,11 @@ const MAT_STATION = ["dips", "traction"];
    derrière une fente avant au poids du corps (64), et « Mollets debout » à la machine
    (9) derrière le même mouvement sans rien (12). Dans une salle pleine de machines, on
    n'en voyait aucune. */
-function rangMateriel(c){
+/* Ce qu'on ne trouve qu'en salle, et qui fait exactement le travail d'une finition :
+   charger un muscle seul, sans demander d'équilibre ni de technique quand on est déjà
+   entamé par deux gros mouvements. */
+const MAT_SALLE = ["Machine", "Poulie"];
+function rangMateriel(c, finition){
   if(db.materiel) return 0;                  /* un filtre est posé : on s'entraîne chez soi */
   const ex = getEx(libId(c.nom));
   if(!ex) return 0;
@@ -23506,6 +23515,10 @@ function rangMateriel(c){
   if(MAT_REMPLACANT.includes(eq)) return 2;
   if(eq === "Poids du corps"
      && !materielDe(ex).some(b=>!Array.isArray(b) && MAT_STATION.includes(b))) return 1;
+  /* Sur une place de FINITION — les deux gros mouvements sont déjà pris —, la machine
+     et la poulie passent devant. Jamais avant : on ne remplace pas un squat par une
+     presse à cuisses, on garnit ce qui vient après. */
+  if(finition && MAT_SALLE.includes(eq)) return -1;
   return 0;
 }
 function genererAdaptative(type, evites){
@@ -23608,8 +23621,11 @@ function genererAdaptative(type, evites){
          la machine. On les met donc derrière tout le reste quand aucun filtre de
          matériel n'est posé, ce qui est la définition d'une salle ici. Derrière, pas
          dehors : sur un muscle où ils seraient seuls, ils restent proposés. */
+      /* « finition » = les deux gros mouvements de la séance sont déjà pris ; ce qui
+         suit est là pour ajouter du volume, pas pour porter la séance. */
+      const finition = lourdsDejaPris >= 2;
       const triee = liste.slice().sort((a, b)=>
-        rangMateriel(a) - rangMateriel(b) || rangPerf(a) - rangPerf(b));
+        rangMateriel(a, finition) - rangMateriel(b, finition) || rangPerf(a) - rangPerf(b));
       const choisi = triee.find(c=>!recents.has(c.nom) && !recouvre(c))
                   || triee.find(c=>!recouvre(c))
                   || triee.find(c=>!recents.has(c.nom))
@@ -23622,7 +23638,7 @@ function genererAdaptative(type, evites){
       /* La dose suit la récupération : à 85 % et plus on tape lourd, entre 60 et 85 on
          reste moyen, en dessous on se contente d'entretenir. Le deuxième exercice d'un
          même muscle descend d'un cran : c'est une finition, pas un second gros. */
-      let niveau = p.recup >= 85 ? "lourd" : (p.recup >= 60 ? "moyen" : "leger");
+      let niveau = p.recup >= R_LOURD ? "lourd" : (p.recup >= R_MOYEN ? "moyen" : "leger");
       if(k > 0) niveau = niveau === "lourd" ? "moyen" : "leger";
       const d = dose[niveau];
       /* Le NOMBRE DE SÉRIES vient du besoin — c'est le levier qui donne enfin du volume
@@ -23665,7 +23681,7 @@ function genererAdaptative(type, evites){
          Quand il n'a qu'un exercice (une séance Jambes sert cinq muscles, un chacun),
          la série ne se reporte nulle part : on ne la donne pas. Nico a tranché ainsi
          plutôt que de revoir un exercice à cinq séries. */
-      if(rang === 0 && p.recup >= 60 && choisi.risque < 2 && p.n > 1 && k === 1)
+      if(rang === 0 && p.recup >= R_MOYEN && choisi.risque < 2 && p.n > 1 && k === 1)
         plus("muscle frais et prioritaire");
       if(k === 0 && rang >= parts.length - 1 && parts.length > 2)
         moins("muscle le moins prioritaire aujourd'hui");
@@ -23702,7 +23718,7 @@ function genererAdaptative(type, evites){
         .filter(c=>!pris.has(c.nom) && !bannis.has(c.nom) && schemaDe(c.nom) === "isolation")[0];
       if(!c2) continue;
       pris.add(c2.nom);
-      const d2 = dose[p.recup >= 60 ? "moyen" : "leger"];
+      const d2 = dose[p.recup >= R_MOYEN ? "moyen" : "leger"];
       items.push({nom:c2.nom, sets:d2.s, reps:repsTenue(c2.nom, "10-15"),
                   rest:reposTenue(c2.nom, Math.min(d2.p, 90)),
                   role:p.muscle, charge:c2.charge, niveau:"leger"});
@@ -28224,8 +28240,12 @@ function recuperation(){
        une convention de l'app, pas une mesure. Ce qui est établi, c'est que la force
        revient en gros en 24 à 72 h selon le muscle et le volume, et que la fatigue d'une
        séance ne croît pas proportionnellement au nombre de séries. La forme de la courbe
-       est mon choix ; son plafond, lui, corrige une faute de calcul. */
-    const pct = Math.max(0, Math.min(100, Math.round(100 * Math.exp(-fat[m] / 100))));
+       est mon choix ; son plafond, lui, corrige une faute de calcul.
+       Le 165 est CALÉ SUR UN RESSENTI, le seul repère qu'on ait : la grosse séance
+       d'épaules de Nico (militaire 5×10, couché 4×10, élévations 3×12, dips 3×10, soit
+       174 points bruts) donnait 18 % alors qu'il se sentait à 35 %. À 165, elle donne
+       35 %. Un chiffre mesuré sur une personne : à revoir si d'autres le contredisent. */
+    const pct = Math.max(0, Math.min(100, Math.round(100 * Math.exp(-fat[m] / RECUP_ECHELLE))));
     muscles[m] = {pct, etat: pct>=85? "frais" : (pct>=50? "recup" : "fatigue")};
   });
   const vals = MP_MUSCLES.map(m=>muscles[m].pct);
@@ -28234,6 +28254,20 @@ function recuperation(){
   MP_MUSCLES.forEach(m=>n[muscles[m].etat]++);
   return {global, muscles, n};
 }
+/* Le dénominateur de la courbe de fatigue. Plus il est grand, plus le pourcentage est
+   indulgent. Voir recuperation() pour d'où vient le 165. */
+const RECUP_ECHELLE = 165;
+/* Traduire un seuil pensé sur l'ANCIENNE échelle (« 100 moins les points de fatigue »)
+   vers celle-ci. Tous les seuils qui DÉCIDENT quelque chose — la dose du jour, la série
+   en plus, la pose fatiguée du poussin — passent par là : l'app continue ainsi à décider
+   exactement comme avant l'élargissement, qui ne concernait que la lecture. Les seuils
+   qui ne servent qu'à AFFICHER (frais / en récup / fatigué) se lisent, eux, directement
+   sur la nouvelle échelle. */
+const seuilRecup = ancien => Math.round(100 * Math.exp(-(100 - ancien) / RECUP_ECHELLE));
+const R_LOURD = seuilRecup(85);        /* 91 : on peut taper lourd */
+const R_MOYEN = seuilRecup(60);        /* 78 : dose moyenne au-dessus, entretien en dessous */
+const R_INTACT = seuilRecup(90);       /* 94 : muscle à peine touché */
+const R_POUSSIN = seuilRecup(40);      /* 70 : en dessous, le poussin a l'air fatigué */
 const RECUP_C = {frais:"#4caf50", recup:"#e8a33d", fatigue:"#e0554a"};
 /* construite au chargement : pas de TR() ici, on traduit à l'affichage */
 const RECUP_LAB = {frais:"Prêt", recup:"En récup", fatigue:"Fatigué"};
