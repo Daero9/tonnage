@@ -1541,6 +1541,29 @@ async function lancer(){
         vrai("…la couleur tient après la fermeture", /bandeau-rose@/.test(surPage()));
         delete DB.avatar; F.eval("save()"); F.render(); F.openVestiaire();
       })();
+      (()=>{
+        /* Le bandeau passe SOUS le casque, quel que soit l'ordre dans lequel on les a
+           enfiles : c'est le `plan` de chaque accessoire qui tranche, pas l'historique
+           des clics. */
+        const rang = ()=>{
+          F.render();
+          const src = [...F.document.querySelectorAll("#app .hero-poussin img.acc")]
+            .map(i=>i.getAttribute("src"));
+          return {bandeau:src.findIndex(x=>/bandeau[^@]*@/.test(x)),
+                  casque:src.findIndex(x=>/casque[^@]*@/.test(x)), src};
+        };
+        DB.avatar = {acc:["bandeau", "casque-noir"]};
+        let r = rang();
+        vrai("Le bandeau se dessine sous le casque", r.bandeau >= 0 && r.casque > r.bandeau, r.src.join(" | "));
+        DB.avatar = {acc:["casque-noir", "bandeau"]};   /* enfiles dans l'autre sens */
+        r = rang();
+        vrai("…même quand on les met dans l'autre ordre", r.casque > r.bandeau, r.src.join(" | "));
+        eq("Les lunettes passent devant ce qui couvre la tête",
+           F.eval("plan('lunettes-aviateur') > plan('casque-noir') && plan('casque-noir') > plan('bandeau')"), true);
+        eq("Chaque accessoire a son plan",
+           F.eval("ACCESSOIRES.filter(a=>a.plan === undefined && !a.arriere).length"), 0);
+        delete DB.avatar; F.eval("save()"); F.render(); F.openVestiaire();
+      })();
       vrai("…une case dit que d'autres arrivent", !!F.document.querySelector("#sheet .vs-bientot"));
       F.hideSheet(); delete DB.avatar; F.eval("save()");
       DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",
