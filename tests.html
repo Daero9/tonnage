@@ -177,7 +177,11 @@ async function lancer(){
   eq("Téléphone canadien francophone → français", simuleLangue("fr-CA", LSYS), "fr");
   eq("Téléphone américain → anglais", simuleLangue("en-US", LSYS), "en");
   eq("Téléphone allemand → anglais, pas français", simuleLangue("de-DE", LSYS), "en");
-  eq("Téléphone espagnol → anglais, pas français", simuleLangue("es-ES", LSYS), "en");
+  eq("Téléphone espagnol → espagnol", simuleLangue("es-ES", LSYS), "es");
+  eq("Téléphone mexicain → espagnol", simuleLangue("es-MX", LSYS), "es");
+  eq("Téléphone brésilien → portugais", simuleLangue("pt-BR", LSYS), "pt");
+  eq("Téléphone portugais → portugais", simuleLangue("pt-PT", LSYS), "pt");
+  eq("Téléphone italien → anglais, pas français", simuleLangue("it-IT", LSYS), "en");
   eq("Téléphone japonais → anglais, pas français", simuleLangue("ja-JP", LSYS), "en");
 
   /* Bug signalé par Nico : en impérial, la charge appliquée aux séries suivantes
@@ -250,29 +254,36 @@ async function lancer(){
   eq("…et son nom canonique est le sien", CANONX(F.getEx("x1")), "Ma variante");
   DB.custom = [];
 
-  /* --- les 107 fiches en anglais --- */
-  const FEN = F.eval("EXO_INFO_EN"), FICHE = F.eval("ficheDe");
-  eq("Chaque fiche a sa version anglaise",
-     Object.keys(EXOI).filter(n => !FEN[n]).length, 0);
-  eq("Aucune fiche anglaise orpheline",
-     Object.keys(FEN).filter(n => !EXOI[n]).length, 0);
-  eq("Autant d'étapes des deux côtés",
-     Object.keys(EXOI).reduce((a,n)=>a+EXOI[n].steps.length,0),
-     Object.keys(FEN).reduce((a,n)=>a+FEN[n].steps.length,0));
-  vrai("Chaque fiche anglaise a un conseil et au moins 3 étapes",
-       Object.keys(FEN).every(n => FEN[n].tip && FEN[n].tip.length > 20 && FEN[n].steps.length >= 3));
-  vrai("Aucune fiche anglaise n'a gardé du français",
-       !Object.keys(FEN).some(n => /[éèêàçùôîû]|\b(les|des|une|tes|pour|avec|dans)\b/i
-         .test(FEN[n].tip + " " + FEN[n].steps.join(" "))),
-       Object.keys(FEN).filter(n => /[éèêàçùôîû]/.test(FEN[n].tip + FEN[n].steps.join(""))).join(", "));
+  /* --- les fiches d'execution, dans les trois langues ---
+     Elles vivaient dans une table anglaise a part, remplie a moitie. Elles passent
+     maintenant par TRAD comme le reste de l'app : chaque phrase francaise est une
+     cle, et on verifie ici qu'aucune n'est restee sur le carreau. */
+  const FICHE = F.eval("ficheDe"), TRAD = F.eval("TRAD");
+  const phrasesFiches = Object.keys(EXOI).reduce(
+    (a, n) => a.concat([EXOI[n].tip], EXOI[n].steps), []);
+  eq("Chaque fiche a un conseil et au moins 3 étapes",
+     Object.keys(EXOI).filter(n => !(EXOI[n].tip && EXOI[n].tip.length > 20 && EXOI[n].steps.length >= 3)).length, 0);
+  ["en", "es", "pt"].forEach(lg => {
+    const absentes = phrasesFiches.filter(t => !TRAD[lg][t]);
+    eq("Les fiches sont traduites en " + lg, absentes.length, 0, absentes.slice(0, 3).join(" | "));
+  });
+  vrai("Aucune traduction de fiche n'a gardé du français",
+       !["en", "es", "pt"].some(lg => phrasesFiches.some(t =>
+         TRAD[lg][t] && /\b(tes|pour|avec|dans|les|des|une)\b/i.test(TRAD[lg][t]) && lg === "en")),
+       "en anglais");
 
-  /* c'est bien la fiche anglaise qui sort quand la langue est l'anglais */
+  /* c'est bien la phrase traduite qui sort quand la langue change */
   DB.settings.lang = "en";
-  vrai("En anglais, ficheDe rend la fiche anglaise",
-       FICHE(LIBEN[0]).tip === FEN["Développé couché"].tip);
+  eq("En anglais, le conseil de pro est en anglais",
+     F.TR(FICHE(LIBEN[0]).tip), TRAD.en[EXOI["Développé couché"].tip]);
+  eq("…et la première étape aussi",
+     F.TR(FICHE(LIBEN[0]).steps[0]), TRAD.en[EXOI["Développé couché"].steps[0]]);
+  DB.settings.lang = "es";
+  eq("En espagnol, le conseil de pro est en espagnol",
+     F.TR(FICHE(LIBEN[0]).tip), TRAD.es[EXOI["Développé couché"].tip]);
   DB.settings.lang = "fr";
-  vrai("En français, ficheDe rend la fiche française",
-       FICHE(LIBEN[0]).tip === EXOI["Développé couché"].tip);
+  eq("En français, c'est la phrase d'origine",
+     F.TR(FICHE(LIBEN[0]).tip), EXOI["Développé couché"].tip);
 
   /* --- les chemins d'appel, en anglais --- */
   /* Ces fonctions cherchent par nom FRANÇAIS. Si un appelant leur passe le nom
@@ -905,7 +916,10 @@ async function lancer(){
   neuf();
   DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
   const r1 = F.recuperation();
-  vrai("Quadriceps entamés juste après la séance", r1.muscles["Quadriceps"].pct < 70);
+  /* « entamés » = plus frais. Le chiffre exact suit l'échelle d'affichage, qui a été
+     élargie pour coller au ressenti ; ce qui doit rester vrai, c'est qu'il a baissé. */
+  vrai("Quadriceps entamés juste après la séance", r1.muscles["Quadriceps"].pct < 85,
+    r1.muscles["Quadriceps"].pct + " %");
   vrai("Pectoraux intacts", r1.muscles["Pectoraux"].pct === 100);
   DB.history = [seance(80, [{exId:id("Squat"), sets:[serie(80,8),serie(80,8),serie(80,8),serie(80,8)]}])];
   eq("Quadriceps récupérés après 80 h", F.recuperation().muscles["Quadriceps"].pct, 100);
@@ -928,6 +942,40 @@ async function lancer(){
   eq("Quinze reps : un peu plus, plafonné", F.poidsFatigue({rir:1, r:15}), 1.25);
   DB.history = [seance(2, [{exId:id("Squat"), sets:[serie(80,2,1),serie(80,2,1)]}])];
   vrai("Deux doubles laissent les quadriceps presque frais", F.recuperation().muscles["Quadriceps"].pct >= 85, F.recuperation().muscles["Quadriceps"].pct + " %");
+
+  /* Nico : après une grosse séance d'épaules, l'app annonçait « 0 % » alors qu'il se
+     sentait autour de 30 %. Deux fautes se cumulaient. */
+  (()=>{
+    /* 1. Le développé militaire cite DEUX faisceaux du même groupe (antérieur 3,
+       latéral 2) : les additionner faisait coûter une série 1,67 fois ce que coûte un
+       exercice principal. Une élévation latérale, qui n'en cite qu'un au niveau 3,
+       doit fatiguer le groupe AU MOINS autant, à volume égal. */
+    const dm = [{exId:id("Développé militaire"), sets:[serie(40,10,2),serie(40,10,2),serie(40,10,2)]}];
+    const el = [{exId:id("Élévations latérales"), sets:[serie(10,10,2),serie(10,10,2),serie(10,10,2)]}];
+    DB.history = [seance(2, dm)];
+    const milit = F.recuperation().muscles["Deltoïdes"].pct;
+    DB.history = [seance(2, el)];
+    const lat = F.recuperation().muscles["Deltoïdes"].pct;
+    eq("Un exercice ne compte qu'une fois par groupe, même s'il cite deux faisceaux",
+       milit, lat);
+
+    /* 2. La somme était linéaire : une séance Push totalisait 220 points sur une
+       échelle de 100, le deltoïde tombait à 0 et y restait une vingtaine d'heures.
+       Elle sature désormais : il reste toujours quelque chose. */
+    DB.history = [seance(1, [
+      {exId:id("Développé militaire"), sets:[1,2,3,4,5].map(()=>serie(40,10,2))},
+      {exId:id("Développé couché"),   sets:[1,2,3,4].map(()=>serie(60,10,2))},
+      {exId:id("Élévations latérales"), sets:[1,2,3].map(()=>serie(10,12,2))},
+      {exId:id("Dips"),                  sets:[1,2,3].map(()=>serie(0,10,2))}])];
+    const gros = F.recuperation().muscles["Deltoïdes"].pct;
+    vrai("Une grosse séance d'épaules entame beaucoup…", gros < 40, gros + " %");
+    vrai("…mais ne descend jamais à zéro", gros > 0, gros + " %");
+
+    /* et une séance légère reste légère : la courbe ne se couche qu'au-delà */
+    DB.history = [seance(2, [{exId:id("Élévations latérales"), sets:[serie(10,10,3),serie(10,10,3)]}])];
+    const leger = F.recuperation().muscles["Deltoïdes"].pct;
+    vrai("Deux séries en réserve laissent les épaules disponibles", leger >= 75, leger + " %");
+  })();
   neuf();
 
   /* ---------------------------------------------------------- profil musculaire */
@@ -1177,6 +1225,21 @@ async function lancer(){
   vrai("Charge fixe : jamais de baisse de charge", rate.mode !== "down");
   vrai("Charge fixe : le conseil dit qu'on ne peut pas alléger", /alléger/.test(rate.text));
   eq("Charge fixe : au plafond, on ajoute des reps", fixe([15,15,15], [2,2,2]).mode, "reps");
+  /* Bug remonte par Nico : il tenait 18 pompes inclinees, l'app lui demandait 12. Le
+     conseil disait bien « vise 20 reps », mais la cible en repetitions se perdait en
+     route et l'objectif du jour retombait sur la fourchette du plan. */
+  eq("Charge fixe : la nouvelle cible en reps arrive jusqu'à l'objectif",
+    fixe([15,15,15], [2,2,2]).reps, 17);
+  (()=>{
+    const exId = id("Pompes inclinées");
+    DB.history = [{id:"pi", date:new Date(Date.now() - 3*864e5).toISOString(), name:"Push",
+      start:0, end:Date.now() - 3*864e5,
+      entries:[{exId, sets:[{w:0,r:18,done:true},{w:0,r:18,done:true},{w:0,r:16,done:true}]}]}];
+    const o = F.objectifDuJour(exId, {reps:"8-12", rest:120});
+    eq("Dix-huit pompes tenues : l'objectif suit, il ne redemande pas douze", o.reps, "20");
+    eq("…et rappelle ce qui a été fait", o.passe, "3 × 18");
+    DB.history = [];
+  })();
   eq("Sans charge fixe, une séance vraiment ratée fait baisser la charge",
     seanceDe([9,8,7], [0,0,0]).mode, "down");
 
@@ -1382,15 +1445,21 @@ async function lancer(){
       /* le poussin et son vestiaire */
       DB.history = [seance(1, sem(1)), seance(2, sem(2)), seance(3, sem(3)), seance(6, sem(6)), seance(7, sem(7))];
       eq("La meilleure série jamais tenue : trois semaines", F.meilleureSerieSemaines(), 3);
-      vrai("Le bandeau noir dès la première activité, le bandeau orange à trois, pas encore les gants (six)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
-        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "bandeau-orange")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")));
-      vrai("La chaîne en or (flamme de 10) n'est pas encore gagnée", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      vrai("Le bandeau dès la première activité, le casque à trois, pas encore les gants de boxe (six)", F.accessoireGagne(F.eval("ACCESSOIRES")[0])
+        && F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "casque")) && !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
+      /* l'orange n'est plus un accessoire a part : c'est une couleur du bandeau */
+      vrai("Le rose est une couleur du bandeau, pas un accessoire de plus",
+        !F.eval("ACCESSOIRES").some(a=>a.id === "bandeau-rose")
+        && F.eval("familleAcc('bandeau-rose')").id === "bandeau");
+      vrai("Le t-shirt sans manches tombe à la 100e activité",
+        F.eval("ACCESSOIRES").find(a=>a.id === "t-shirt-sans-manches").seances === 100);
+      vrai("Le sifflet de coach (flamme de 10) n'est pas encore gagné", !F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "sifflet-de-coach")));
       /* la meilleure flamme : la plus longue suite d'activites sans trou de plus de 3 jours */
       eq("Une séance par semaine : la flamme ne dépasse jamais 1", F.meilleureFlamme(), 1);
       const hist1 = DB.history;
       DB.history = [0,2,4,6,8,10,12,14,16,18, 30,32].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       eq("Dix activités tous les deux jours, puis un trou : meilleure flamme 10", F.meilleureFlamme(), 10);
-      vrai("…la chaîne en or est gagnée", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "chaine")));
+      vrai("…le sifflet de coach est gagné", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "sifflet-de-coach")));
       /* le halo : depuis combien de jours la condition « muscle » tient sans trou */
       DB.history = [1,3,5,7,9,11,13,15,17,19].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
       vrai("Dix séances tous les deux jours : musclé depuis au moins deux semaines", F.joursMuscle() >= 14, F.joursMuscle() + " jours");
@@ -1401,7 +1470,7 @@ async function lancer(){
       /* quelqu'un qui ne fait que courir : ses sorties sont des activites, elles ouvrent les accessoires */
       DB.cardio = [8,9,10,11,12].map(k=>({id:"cx"+k, date:sem(k), type:"course", min:30}));
       eq("Cinq séances et cinq sorties, des jours différents : dix activités", F.nActivites(), 10);
-      vrai("…et les gants (six) sont gagnés grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants")));
+      vrai("…et les gants de boxe (six) sont gagnés grâce aux sorties", F.accessoireGagne(F.eval("ACCESSOIRES").find(a=>a.id === "gants-de-boxe")));
       DB.cardio = [1,2,3].map(k=>({id:"cy"+k, date:sem(k), type:"course", min:30}));
       eq("Une sortie le jour d'une séance ne compte pas deux fois", F.nActivites(), 5);
       DB.cardio = [];
@@ -1430,17 +1499,266 @@ async function lancer(){
       DB.history = [sq(3, 80), sq(0, 85)];
       vrai("Une seule séance avant : pas de comparaison, pas de record", !F.recordSignificatif());
       DB.history = hist0;
+      /* le vestiaire enregistre : sans ce coup de balai, l'habillage d'un passage
+         precedent (bandeau enleve) reviendrait depuis le stockage et fausserait la suite */
+      delete DB.avatar; F.eval("save()");
+      /* Ces tests-la parlent d'habillage, pas de decouverte : on considere les
+         accessoires deja vus, sinon le premier appui ouvrirait la revelation. */
+      const toutVu = ()=>F.eval(`ACCESSOIRES.forEach(a=>{
+        if(accessoireGagne(a) && variantesDessinees(a).length) marquerAccessoireVu(a); })`);
+      toutVu();
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@']"));
       F.openProfil();
       vrai("Le profil propose « Personnaliser mon avatar »", !!F.document.getElementById("pr-avatar"));
       F.document.getElementById("pr-avatar").click();
-      vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && F.document.querySelector("#sheet [data-acc='bandeau']").classList.contains("on"));
+      /* la tuile du bandeau, quelle que soit la couleur qu'elle montre */
+      const tuileB = ()=>F.document.querySelector("#sheet .vs-t [data-acc^='bandeau']").closest(".vs-t");
+      vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && tuileB().classList.contains("on"));
       F.document.querySelector("#sheet [data-acc='bandeau']").click();
-      vrai("Toucher le bandeau l'enlève, et le poussin l'enlève aussi", !F.document.querySelector("#sheet [data-acc='bandeau']").classList.contains("on") && !F.document.querySelector("#sheet .vs-poussin img.acc"));
-      vrai("Un accessoire sans dessin n'apparaît pas encore", !F.document.querySelector("#sheet [data-acc='serviette']") && !F.document.querySelector("#sheet [data-acc='bandeau-orange']"));
+      vrai("Toucher le bandeau l'enlève, et le poussin l'enlève aussi", !tuileB().classList.contains("on") && !F.document.querySelector("#sheet .vs-poussin img.acc"));
+      /* rien de dessine, rien d'affiche : la tuile n'apparait qu'avec son dessin */
+      vrai("Un accessoire sans dessin n'apparaît pas encore",
+        F.eval(`ACCESSOIRES.filter(a=>!variantesDessinees(a).length)
+          .every(a=>variantes(a).every(v=>!document.querySelector("#sheet [data-acc='" + v.id + "']")))`));
+      /* les couleurs : tant qu'une seule est dessinee, aucune pastille — il n'y a rien a choisir */
+      /* les couleurs : une pastille par teinte dessinée, et rien du tout quand il n'y a
+         pas de choix à faire */
+      /* Seulement les accessoires GAGNES : une tuile encore verrouillee est un cadeau, elle
+         cache jusqu'aux teintes — c'est la surprise. Sans ce filtre, le test tombait des
+         qu'un accessoire dessine demandait plus d'activites que n'en a cette fiche. */
+      eq("Une pastille par couleur dessinée, tuile par tuile",
+         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length && accessoireGagne(a)).map(a=>{
+           const t = document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']").closest(".vs-t");
+           return a.id + ":" + t.querySelectorAll(".vs-cl .cl").length;
+         }).join(" ")`),
+         F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length && accessoireGagne(a))
+           .map(a=>a.id + ":" + (variantesDessinees(a).length > 1 ? variantesDessinees(a).length : 0)).join(" ")`));
+      vrai("Un accessoire d'une seule couleur n'a pas de pastilles",
+        F.eval(`ACCESSOIRES.filter(a=>variantesDessinees(a).length === 1 && accessoireGagne(a))
+          .every(a=>!document.querySelector("#sheet [data-acc='" + varChoisie(a) + "']")
+            .closest(".vs-t").querySelector(".vs-cl"))`));
+      /* Un bonnet et une casquette ne se portent pas ensemble : ils occupent le même
+       endroit de la tête. La table le disait déjà sans le savoir — `plan` range ce qui
+       couvre le crâne au même étage. */
+    (()=>{
+      const porte = () => ((DB.avatar && DB.avatar.acc) || []).slice();
+      DB.avatar = {acc:["bandeau"], cl:{}};
+      F.habille("casque-vert", true);
+      vrai("Le casque se met par-dessus le bandeau", porte().includes("casque-vert"));
+      F.habille("bonnet-rose", true);
+      vrai("Le bonnet chasse le casque",
+        porte().includes("bonnet-rose") && !porte().includes("casque-vert"), porte().join(", "));
+      F.habille("casquette-noir", true);
+      vrai("…et la casquette chasse le bonnet",
+        porte().includes("casquette-noir") && !porte().includes("bonnet-rose"), porte().join(", "));
+      /* le bandeau tient le front, la casquette le recouvre : elle le chasse aussi */
+      vrai("…et le bandeau part avec, la casquette lui passe dessus",
+        !porte().includes("bandeau"), porte().join(", "));
+      F.habille("boxe-rouge", true);
+      vrai("Les gants s'ajoutent, ils sont aux mains",
+        porte().includes("boxe-rouge") && porte().includes("casquette-noir"), porte().join(", "));
+      /* le bandeau tient le front, le casque les oreilles : ils vont ensemble */
+      DB.avatar = {acc:["bandeau"], cl:{}};
+      F.habille("casque-vert", true);
+      vrai("Le bandeau et le casque se portent ensemble",
+        porte().includes("bandeau") && porte().includes("casque-vert"), porte().join(", "));
+      F.habille("bonnet-vert", true);
+      vrai("Le bonnet chasse les deux : il couvre le crâne ET les oreilles",
+        porte().includes("bonnet-vert") && !porte().includes("bandeau") && !porte().includes("casque-vert"),
+        porte().join(", "));
+      F.habille("bandeau", true);
+      vrai("…et remettre le bandeau retire le bonnet",
+        porte().includes("bandeau") && !porte().includes("bonnet-vert"), porte().join(", "));
+      F.habille("petit-noeud-rose", true);
+      vrai("Le nœud est sur le crâne, il chasse le bandeau",
+        porte().includes("petit-noeud-rose") && !porte().includes("bandeau"), porte().join(", "));
+      /* ce qui flotte autour du personnage ne prend la place de personne */
+      eq("Les effets flottants n'occupent aucune zone",
+         F.zonesAcc({plan:60}).length, 0);
+      eq("…contrairement à ce qui couvre le crâne", F.zonesAcc({plan:30}).join(), "crane");
+      /* une sauvegarde d'avant la règle ne dessine qu'un seul objet par endroit */
+      DB.avatar = {acc:["bonnet-rose", "casquette-noir", "casque-vert", "bandeau"], cl:{}};
+      const dessine = F.poussinEtat("en-forme").acc;
+      eq("Une vieille sauvegarde n'en dessine qu'un par zone",
+         dessine.filter(id=>F.zonesAcc(F.familleAcc(id)).indexOf("crane") >= 0).length, 1);
+      DB.avatar = {acc:["bandeau"], cl:{}};
+    })();
+
+    /* un decor marque « arriere » se pose sous le poussin, pas sur son corps */
+      (()=>{
+        const poses = F.eval("POUSSIN");
+        Object.keys(poses).forEach(p2=>poses[p2].acc.push("arc-en-ciel"));
+        DB.avatar = {acc:["bandeau", "arc-en-ciel"]};
+        DB.history = [1,2,3].map(k=>seance(k, new Date(Date.now() - k*J).toISOString()));
+        F.openVestiaire();
+        const imgs = [...F.document.querySelectorAll("#sheet .vs-poussin img")].map(i=>i.getAttribute("src"));
+        const corps = imgs.findIndex(s2=>!/@/.test(s2));
+        vrai("L'arc-en-ciel se dessine derrière le poussin",
+          imgs.findIndex(s2=>/arc-en-ciel@/.test(s2)) < corps, imgs.join(" | "));
+        vrai("…et le bandeau par-dessus", imgs.findIndex(s2=>/bandeau@/.test(s2)) > corps);
+        Object.keys(poses).forEach(p2=>poses[p2].acc = poses[p2].acc.filter(x=>x !== "arc-en-ciel"));
+        delete DB.avatar; F.eval("save()"); toutVu(); F.openVestiaire();
+      })();
+      (()=>{
+        /* le choix de couleur, sur les teintes réellement dessinées */
+        const teintes = F.eval("variantes(ACCESSOIRES[0]).map(v=>v.id)");
+        const dessinees = F.eval("variantesDessinees(ACCESSOIRES[0]).map(v=>v.id)");
+        vrai("Le bandeau existe en plusieurs teintes", dessinees.length >= 2, dessinees.join(", "));
+        vrai("…chacune a sa couleur pour la pastille",
+          F.eval("variantes(ACCESSOIRES[0]).every(v=>/^#[0-9A-F]{6}$/i.test(v.hex))"));
+        F.openVestiaire();
+        eq("…la première est cochée par défaut",
+          F.document.querySelector("#sheet .vs-cl .cl.on").dataset.cl, dessinees[0]);
+        const autre = dessinees[1];
+        F.document.querySelector("#sheet .cl[data-cl='" + autre + "']").click();
+        vrai("Toucher une couleur la met tout de suite", tuileB().classList.contains("on")
+          && !!F.document.querySelector("#sheet .vs-poussin img.acc[src*='" + autre + "@']"));
+        vrai("…et on ne porte jamais deux teintes à la fois",
+          F.document.querySelectorAll("#sheet .vs-poussin img.acc").length === 1);
+        eq("…la tuile montre désormais cette couleur",
+          F.document.querySelector("#sheet [data-acc]").dataset.acc, autre);
+        F.document.querySelector("#sheet [data-acc='" + autre + "']").click();
+        vrai("On l'enlève, la couleur reste mémorisée", !tuileB().classList.contains("on")
+          && F.document.querySelector("#sheet .vs-cl .cl.on").dataset.cl === autre);
+        /* le dessin de chaque teinte existe pour toutes les poses, sinon elle disparaîtrait
+           dès que le poussin change d'humeur */
+        const manquantes = F.eval(`(() => {
+          const out = [];
+          Object.keys(POUSSIN).forEach(p => variantesDessinees(ACCESSOIRES[0]).forEach(v => {
+            if (!POUSSIN[p].acc.includes(v.id)) out.push(v.id + "@" + p);
+          }));
+          return out;
+        })()`);
+        eq("Chaque teinte est dessinée pour les huit poses", manquantes.length, 0, manquantes.join(" "));
+        delete DB.avatar; F.eval("save()"); toutVu(); F.openVestiaire();
+      })();
+      (()=>{
+        /* Le poussin de la page derriere doit changer en meme temps que la tuile : sinon
+           on choisit une couleur, on referme, et l accueil montre encore l ancienne. */
+        F.hideSheet(); F.render();
+        const surPage = ()=>[...F.document.querySelectorAll("#app .hero-poussin img.acc")]
+          .map(i=>i.getAttribute("src")).join(" ");
+        vrai("Le poussin de l'accueil porte le bandeau noir", /bandeau@/.test(surPage()), surPage());
+        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        F.document.querySelector("#sheet .cl[data-cl='bandeau-rose']").click();
+        vrai("…et passe au rose sans attendre la fermeture",
+          /bandeau-rose@/.test(surPage()) && !/bandeau@/.test(surPage()), surPage());
+        F.hideSheet();
+        vrai("…la couleur tient après la fermeture", /bandeau-rose@/.test(surPage()));
+        delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
+      })();
+      (()=>{
+        /* Le bandeau passe SOUS le casque, quel que soit l'ordre dans lequel on les a
+           enfiles : c'est le `plan` de chaque accessoire qui tranche, pas l'historique
+           des clics. */
+        const rang = ()=>{
+          F.render();
+          const src = [...F.document.querySelectorAll("#app .hero-poussin img.acc")]
+            .map(i=>i.getAttribute("src"));
+          return {bandeau:src.findIndex(x=>/bandeau[^@]*@/.test(x)),
+                  casque:src.findIndex(x=>/casque[^@]*@/.test(x)), src};
+        };
+        DB.avatar = {acc:["bandeau", "casque-noir"]};
+        let r = rang();
+        vrai("Le bandeau se dessine sous le casque", r.bandeau >= 0 && r.casque > r.bandeau, r.src.join(" | "));
+        DB.avatar = {acc:["casque-noir", "bandeau"]};   /* enfiles dans l'autre sens */
+        r = rang();
+        vrai("…même quand on les met dans l'autre ordre", r.casque > r.bandeau, r.src.join(" | "));
+        eq("Les lunettes passent devant ce qui couvre la tête",
+           F.eval("plan('lunettes-aviateur') > plan('casque-noir') && plan('casque-noir') > plan('bandeau')"), true);
+        eq("Chaque accessoire a son plan",
+           F.eval("ACCESSOIRES.filter(a=>a.plan === undefined && !a.arriere).length"), 0);
+        delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
+      })();
+      (()=>{
+        /* La pastille rouge conduit de l'icone du profil jusqu'a l'accessoire, et ne
+           s'eteint qu'une fois la revelation vue. */
+        F.hideSheet(); delete DB.avatar; F.eval("save()"); F.render();
+        const pastille = sel => !!F.document.querySelector(sel + " .pastille");
+        vrai("Une pastille sur l'icône du profil quand un accessoire est neuf",
+          pastille("#app #tb-user"), F.eval("accessoiresNeufs().map(a=>a.id).join(',')"));
+        F.openProfil();
+        vrai("…et sur « Personnaliser mon compagnon »", pastille("#sheet #pr-avatar"));
+        F.document.getElementById("pr-avatar").click();
+        vrai("…et sur la tuile de l'accessoire", pastille("#sheet .vs-t"));
+        /* tant qu'on ne l'a pas ouvert, la tuile ne devoile rien : ni le dessin, ni les couleurs */
+        const paquet = F.document.querySelector("#sheet .vs-t.neuf");
+        vrai("L'accessoire reste un paquet fermé", !!paquet
+          && !paquet.querySelector("img[src*='ico-']") && !paquet.querySelector(".vs-cl")
+          && !!paquet.querySelector(".paquet img"), paquet ? paquet.textContent : "pas de paquet");
+        vrai("…et c'est le cadeau qui bouge, pas son cadre",
+          F.getComputedStyle(paquet.querySelector(".paquet")).animationName === "none"
+          && F.getComputedStyle(paquet.querySelector(".paquet img")).animationName !== "none");
+        vrai("…et ne dit pas encore son nom", !/Bandeau|Casque/.test(paquet.textContent), paquet.textContent);
+        /* toucher la tuile neuve ne l'habille pas : elle raconte d'abord */
+        F.document.querySelector("#sheet [data-acc]").click();
+        const rev = F.document.querySelector(".vs-rev");
+        vrai("Toucher un accessoire neuf ouvre la révélation", !!rev);
+        vrai("…qui félicite pour ce qui l'a débloqué", /Félicitations/.test(rev.textContent)
+          && /activit|flamme/i.test(rev.textContent), rev.textContent);
+        eq("L'ordinal se dit dans la langue", F.eval(`[ordinal(1), ordinal(10), ordinal(3)].join(" ")`), "1re 10e 3e");
+        eq("…en anglais aussi", F.eval(`(()=>{ const v = db.settings.lang; db.settings.lang = "en";
+          const r = [ordinal(1), ordinal(2), ordinal(3), ordinal(11), ordinal(42)].join(" ");
+          db.settings.lang = v; return r; })()`), "1st 2nd 3rd 11th 42nd");
+        vrai("…et nomme l'accessoire", /Bandeau|Casque/.test(rev.textContent));
+        rev.querySelector("button").click();
+        const tuile1 = ()=>F.document.querySelector("#sheet [data-acc]").closest(".vs-t");
+        vrai("Le bouton l'enfile et referme", !F.document.querySelector(".vs-rev")
+          && tuile1().classList.contains("on"));
+        vrai("…la pastille de cette tuile s'éteint", !tuile1().querySelector(".pastille"));
+        /* les autres accessoires neufs gardent la leur */
+        const reste = F.eval("accessoiresNeufs().length");
+        vrai("Ceux qu'on n'a pas encore regardés gardent la leur",
+          F.document.querySelectorAll("#sheet .vs-t .pastille").length === reste, reste + " restant(s)");
+        F.hideSheet(); F.render();
+        eq("La pastille du profil suit ce qu'il reste à découvrir",
+          pastille("#app #tb-user"), reste > 0);
+        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        /* tout vu : plus aucune pastille nulle part */
+        F.eval("ACCESSOIRES.forEach(a=>{ if(accessoireGagne(a) && variantesDessinees(a).length) marquerAccessoireVu(a); })");
+        F.hideSheet(); F.render();
+        vrai("Tout vu : l'icône du profil n'a plus de pastille", !pastille("#app #tb-user"));
+        delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
+      })();
+      (()=>{
+        /* Un accessoire pas encore gagne ne doit rien devoiler : le cadenas, et rien
+           d'autre. Avec une seule activite, le casque (trois) est dessine mais ferme. */
+        F.hideSheet();
+        const vrai0 = DB.history;
+        DB.history = [seance(1, new Date(Date.now() - J).toISOString())];
+        delete DB.avatar; F.eval("save()"); toutVu();
+        F.openVestiaire();
+        const ferme = [...F.document.querySelectorAll("#sheet .vs-t.verrou")]
+          .find(t=>t.querySelector("img"));
+        vrai("Un accessoire à débloquer montre le cadenas", !!ferme
+          && /cadenas/.test(ferme.querySelector("img").getAttribute("src")), ferme ? ferme.innerHTML.slice(0,120) : "aucun");
+        vrai("…et jamais l'objet qu'il cache",
+          !F.document.querySelector("#sheet .vs-t.verrou img[src*='ico-']"));
+        vrai("…ni son nom", !/Casque/.test(ferme.textContent), ferme.textContent);
+        DB.history = vrai0; delete DB.avatar; F.eval("save()"); toutVu(); F.openVestiaire();
+      })();
+      (()=>{
+        /* La revelation propose deux boutons : « Fermer » laisse l'accessoire au
+           vestiaire, « Le porter » l'enfile. Dans les deux cas il est decouvert. */
+        F.hideSheet(); delete DB.avatar; F.eval("save()"); F.render();
+        F.openVestiaire();
+        F.document.querySelector("#sheet .vs-t.neuf [data-acc]").click();
+        const rev = F.document.querySelector(".vs-rev");
+        eq("La révélation a deux boutons", rev.querySelectorAll(".vs-rev-b .btn").length, 2);
+        vrai("…« Fermer » et « Le porter »",
+          !!rev.querySelector('[data-rev="fermer"]') && !!rev.querySelector('[data-rev="porter"]'));
+        vrai("…et une explosion de confettis", !!rev.querySelector("canvas.vs-conf"));
+        const nom = rev.querySelector("b").textContent;
+        rev.querySelector('[data-rev="fermer"]').click();
+        vrai("« Fermer » ne l'enfile pas mais le découvre",
+          !F.document.querySelector(".vs-rev")
+          && F.eval("accessoiresNeufs().map(a=>a.id).join(',')").indexOf("bandeau") < 0
+          && !/À découvrir/.test(F.document.querySelector("#sheet .vs-t").textContent), nom);
+        delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
+      })();
       vrai("…une case dit que d'autres arrivent", !!F.document.querySelector("#sheet .vs-bientot"));
-      F.hideSheet(); delete DB.avatar;
+      F.hideSheet(); delete DB.avatar; F.eval("save()");
       DB.history = [{id:"hacc", date:lun.toISOString(), tplId:"tacc", name:"Pull-up",
         start:Date.now()-3.6e6, end:Date.now(),
         entries:[{exId:id("Développé couché"), sets:[{w:60,r:10,done:true},{w:60,r:10,done:true}]}]}];
@@ -3225,10 +3543,12 @@ async function lancer(){
         const premier = gen.items.filter(it=>it.role === b[0].muscle);
         const dernier = gen.items.filter(it=>it.role === b[b.length-1].muscle);
         gen.items.forEach(it=>{ if(it.sets < 2 || it.sets > 5) borne = false; });
-        /* le muscle de tête reçoit souvent DEUX exercices : seul le premier est majoré,
-           le second est une finition */
-        if(premier.length && b[0].recup >= 60
-           && premier.some(it=>it.sets === Math.min(5, dose[niv(b[0].recup)].s + 1))) vuPlus = true;
+        /* Le muscle de tête reçoit souvent DEUX exercices, et c'est le SECOND qui porte
+           la série en plus : 4 + 4 plutôt que 5 + 3. Le second descend d'un cran de dose
+           (une finition), puis regagne la série — on cherche donc ce compte-là. */
+        const baisse = n2 => n2 === "lourd" ? "moyen" : "leger";
+        if(premier.length > 1 && b[0].recup >= 60
+           && premier.some(it=>it.sets === dose[baisse(niv(b[0].recup))].s + 1)) vuPlus = true;
         if(dernier.length === 1 && b.length > 2
            && dernier[0].sets === Math.max(2, dose[niv(b[b.length-1].recup)].s - 1)) vuMoins = true;
       }
@@ -3770,6 +4090,54 @@ async function lancer(){
   neuf();
 
   /* ---------------------------------------------------------- parcours d'accueil */
+  /* Nico : « en salle, est-ce que ça met en valeur les machines ? » Non : le classement
+     des candidats se faisait sur la charge qu'un mouvement supporte, et un soulevé de
+     terre à l'élastique y valait autant que le même à la barre — le leg curl sur ballon
+     (42) passait même devant le leg curl de la machine (25). */
+  grp("En salle, les remplaçants passent derrière");
+  neuf();
+  (()=>{
+    const equipDe = nom => (F.getEx(F.libId(nom)) || {}).equip;
+    const noms = g => (g.items || []).map(it=>it.nom);
+    /* en salle : aucun filtre de matériel */
+    DB.materiel = null; DB.maison = null;
+    DB.profile = Object.assign({}, DB.profile, {lieu:"salle"});
+    DB.history = [];
+    const salle = ["push", "pull", "jambes", "full"]
+      .map(t=>noms(F.genererAdaptative(t))).reduce((a, b)=>a.concat(b), []);
+    const secours = salle.filter(n=>["Élastique", "Ballon", "Sangles"].includes(equipDe(n)));
+    eq("Aucun élastique ni ballon dans quatre séances de salle", secours.join(", "), "");
+    /* et le leg curl de la machine reprend la place du leg curl sur ballon */
+    const jambes = noms(F.genererAdaptative("jambes"));
+    vrai("La machine passe devant le ballon pour les ischios",
+      !jambes.includes("Leg curl sur ballon"), jambes.join(", "));
+
+    /* Et les machines ARRIVENT, sur les places qui suivent les deux gros mouvements.
+       La première version de cette règle se déclenchait sur la CHARGE des exercices
+       déjà pris (deux à 60 ou plus) : elle ne tombait juste que quatre fois sur dix, et
+       une séance Push partie sur un développé couché haltères gardait des barres
+       jusqu'au bout. On compte donc ce qui sort vraiment. */
+    (()=>{
+      let machines = 0, places = 0;
+      ["jambes", "push", "pull", "full", "haut"].forEach(t=>{
+        const eq = noms(F.genererAdaptative(t)).map(equipDe);
+        eq.slice(2).forEach(e=>{ places++; if(e === "Machine" || e === "Poulie") machines++; });
+      });
+      const part = Math.round(100 * machines / places);
+      vrai("Les places de finition vont aux machines et aux poulies", part >= 60, part + " %");
+    })();
+
+    /* chez soi, avec des élastiques, ils reviennent : on ne les a pas écartés */
+    DB.materiel = ["elastique", "tapis"];
+    DB.profile = Object.assign({}, DB.profile, {lieu:"maison"});
+    const maison = ["push", "jambes"]
+      .map(t=>noms(F.genererAdaptative(t))).reduce((a, b)=>a.concat(b), []);
+    vrai("Chez soi, l'élastique revient",
+      maison.some(n=>equipDe(n) === "Élastique"), maison.join(", "));
+    DB.materiel = null;
+  })();
+  neuf();
+
   grp("Séances adaptatives");
   neuf();
   /* La séance ne se contente plus d un moule fixe : elle se construit sur l état réel
@@ -3808,6 +4176,26 @@ async function lancer(){
       pull.items.some(i=>i.role === "Biceps"));
     vrai("Le premier exercice est un gros mouvement",
       F.chargeExo(pull.items[0].nom) >= 30, pull.items[0].nom);
+    /* La serie que gagne le muscle prioritaire va sur son DEUXIEME exercice, pas sur le
+       premier : 4 + 4 plutot que 5 + 3. Cinq series d affilee sur un meme mouvement,
+       c est long pour ce que les dernieres rapportent. */
+    (()=>{
+      DB.profile = Object.assign({}, DB.profile, {aim:"masse"});
+      ["push","pull","jambes","haut","bas","full"].forEach(t2=>{
+        const g = F.genererAdaptative(t2);
+        const max = Math.max(...g.items.map(i=>i.sets));
+        vrai("En prise de masse, jamais cinq séries sur un exercice (" + t2 + ")", max <= 4,
+          g.items.map(i=>i.nom + " ×" + i.sets).join(", "));
+        const i0 = g.items.findIndex(i=>i.pourquoiSeries === "muscle frais et prioritaire");
+        if(i0 >= 0) vrai("…et la série en plus n'est jamais sur le premier exercice (" + t2 + ")",
+          i0 > 0, g.items[i0].nom);
+      });
+      /* en force, les cinq series viennent de la dose elle-meme : on n y touche pas */
+      DB.profile = Object.assign({}, DB.profile, {aim:"force"});
+      vrai("En cycle de force, le gros mouvement garde ses cinq séries",
+        Math.max(...F.genererAdaptative("push").items.map(i=>i.sets)) === 5);
+      DB.profile = Object.assign({}, DB.profile, {aim:"masse"});
+    })();
     /* une isolation ne se fait pas en 8 reps avec deux minutes trente de repos */
     pull.items.forEach(it=>{
       if(F.chargeExo(it.nom) < 15)
@@ -3896,6 +4284,38 @@ async function lancer(){
     DB.active = null;
     DB.templates = []; DB.history = []; DB.materiel = null;
     F.render();
+  })();
+  neuf();
+
+  /* Nico notait 74 dans le tableau des pesées, et quelques jours plus tard l'app
+     réaffichait 73. Deux endroits écrivaient le poids sans se parler : le champ du
+     parcours de profil partait de db.profile.weight — figé à la dernière fois qu'on
+     avait rempli le profil —, et valider le profil écrasait la pesée du jour avec lui.
+     Ouvrir son profil pour changer son âge suffisait à faire reculer son poids. */
+  grp("Le poids ne recule plus tout seul");
+  neuf();
+  await (async ()=>{
+    DB.profile = Object.assign({}, DB.profile, {weight:73});
+    DB.weights = [{date:new Date(Date.now() - 3*864e5).toISOString(), kg:73},
+                  {date:new Date().toISOString(), kg:74}];
+    eq("La dernière pesée fait foi", F.currentWeight(), 74);
+
+    /* Le parcours de profil part desormais de cette pesée, et non du champ du profil.
+       Sa roulette ne se vérifie pas ici : elle se cale en mesurant sa hauteur, et le
+       cadre des tests n'a pas de dimensions. Ce qui SE vérifie, et qui suffit, c'est
+       que les deux chiffres ne puissent plus diverger — voir juste dessous. */
+
+    /* et noter un poids dans le tableau remet le profil d'accord, par le vrai bouton */
+    F.eval("curTab = 'prg'; render()");
+    await attendre(()=>!!F.document.getElementById("wt-add"), 3000);
+    F.document.getElementById("wt-add").click();
+    await attendre(()=>!!F.document.getElementById("wt-ok"), 3000);
+    F.document.getElementById("wt-in").value = "75";
+    F.document.getElementById("wt-ok").click();
+    eq("Noter 75 dans le tableau…", F.currentWeight(), 75);
+    eq("…met le profil d'accord, il ne peut plus le contredire", DB.profile.weight, 75);
+    /* on rend l'écran comme on l'a trouvé : fiche refermée, onglet Séance */
+    F.eval("closeSheet(); curTab = 'seance'; render();");
   })();
   neuf();
 
@@ -4913,14 +5333,21 @@ async function lancer(){
       vrai("…et la raison n'est pas vide", vu.pourquoiSeries.length > 5, vu.pourquoiSeries);
       vrai("…et le compte reste au moins à deux", vu.sets >= 2, vu.sets);
     }
-    /* et une série AJOUTÉE se dit aussi : l'app ne montre pas que ses restrictions */
+    /* et une série AJOUTÉE se dit aussi : l'app ne montre pas que ses restrictions.
+       On la cherche sur un Push : c'est là que le muscle prioritaire a deux exercices,
+       donc un second où poser la série en plus. Une séance Haut sert cinq muscles, un
+       chacun — il n'y a nulle part où la reporter. */
     let plus = null;
+    /* sans l'épaule douloureuse : elle interdit justement la série en plus */
+    DB.profile = gardeP;
     for(let i = 0; i < 40 && !plus; i++){
-      const g = F.genererAdaptative("haut");
+      const g = F.genererAdaptative("push");
       plus = (g.items || []).find(it=>it.ecartSeries > 0 && it.pourquoiSeries);
     }
     vrai("Une série ajoutée porte aussi sa raison", !!plus,
       plus ? plus.pourquoiSeries : "jamais vu");
+    /* on remet l'épaule douloureuse : la suite du bloc en a besoin */
+    DB.profile = Object.assign({}, gardeP, {injuries:["epaule"], douleurs:{epaule:"mal"}});
 
     /* la fiche ⚠ garde l'avertissement, la fiche ⓘ ne le répète plus */
     DB.templates = [{id:"tw", name:"P", items:[{exId:dm, sets:3, reps:"8-12", rest:120}]}];
