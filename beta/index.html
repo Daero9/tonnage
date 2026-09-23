@@ -16811,7 +16811,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 11h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 11h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -17650,7 +17650,10 @@ function suggestFor(exId, target){
     const maxR = Math.max(...last.sets.map(s=>s.r||0));
     if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow)){
       const pr = progressionSansCharge(exId, maxR, last.sets.length);
-      return {mode:pr.mode, w:maxW, text:pr.text, why:pr.why};
+      /* `pr.reps` etait perdu ici : la consigne disait « vise 20 reps » pendant que
+         l'objectif du jour affichait encore la fourchette du plan, « 8–12 ». Quelqu'un
+         qui tient 18 pompes lisait donc 12 et croyait l'app en retard sur lui. */
+      return {mode:pr.mode, w:maxW, reps:pr.reps, cible:pr.cible, text:pr.text, why:pr.why};
     }
     if(anyBelow && avgRir!==null && avgRir<0.5){
       /* Charge fixe : la barre ne peut pas s'alléger, donc le seul levier qui reste est la

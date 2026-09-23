@@ -1188,6 +1188,21 @@ async function lancer(){
   vrai("Charge fixe : jamais de baisse de charge", rate.mode !== "down");
   vrai("Charge fixe : le conseil dit qu'on ne peut pas alléger", /alléger/.test(rate.text));
   eq("Charge fixe : au plafond, on ajoute des reps", fixe([15,15,15], [2,2,2]).mode, "reps");
+  /* Bug remonte par Nico : il tenait 18 pompes inclinees, l'app lui demandait 12. Le
+     conseil disait bien « vise 20 reps », mais la cible en repetitions se perdait en
+     route et l'objectif du jour retombait sur la fourchette du plan. */
+  eq("Charge fixe : la nouvelle cible en reps arrive jusqu'à l'objectif",
+    fixe([15,15,15], [2,2,2]).reps, 17);
+  (()=>{
+    const exId = id("Pompes inclinées");
+    DB.history = [{id:"pi", date:new Date(Date.now() - 3*864e5).toISOString(), name:"Push",
+      start:0, end:Date.now() - 3*864e5,
+      entries:[{exId, sets:[{w:0,r:18,done:true},{w:0,r:18,done:true},{w:0,r:16,done:true}]}]}];
+    const o = F.objectifDuJour(exId, {reps:"8-12", rest:120});
+    eq("Dix-huit pompes tenues : l'objectif suit, il ne redemande pas douze", o.reps, "20");
+    eq("…et rappelle ce qui a été fait", o.passe, "3 × 18");
+    DB.history = [];
+  })();
   eq("Sans charge fixe, une séance vraiment ratée fait baisser la charge",
     seanceDe([9,8,7], [0,0,0]).mode, "down");
 
