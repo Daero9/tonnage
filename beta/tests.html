@@ -4065,6 +4065,21 @@ async function lancer(){
     vrai("La machine passe devant le ballon pour les ischios",
       !jambes.includes("Leg curl sur ballon"), jambes.join(", "));
 
+    /* Et les machines ARRIVENT, sur les places qui suivent les deux gros mouvements.
+       La première version de cette règle se déclenchait sur la CHARGE des exercices
+       déjà pris (deux à 60 ou plus) : elle ne tombait juste que quatre fois sur dix, et
+       une séance Push partie sur un développé couché haltères gardait des barres
+       jusqu'au bout. On compte donc ce qui sort vraiment. */
+    (()=>{
+      let machines = 0, places = 0;
+      ["jambes", "push", "pull", "full", "haut"].forEach(t=>{
+        const eq = noms(F.genererAdaptative(t)).map(equipDe);
+        eq.slice(2).forEach(e=>{ places++; if(e === "Machine" || e === "Poulie") machines++; });
+      });
+      const part = Math.round(100 * machines / places);
+      vrai("Les places de finition vont aux machines et aux poulies", part >= 60, part + " %");
+    })();
+
     /* chez soi, avec des élastiques, ils reviennent : on ne les a pas écartés */
     DB.materiel = ["elastique", "tapis"];
     DB.profile = Object.assign({}, DB.profile, {lieu:"maison"});
