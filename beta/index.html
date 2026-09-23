@@ -1793,6 +1793,14 @@
   @keyframes revPop{from{opacity:0; transform:translateY(22px) scale(.88)} to{opacity:1; transform:none}}
   @keyframes revIco{from{opacity:0; transform:scale(.35) rotate(-14deg)} to{opacity:1; transform:none}}
   @keyframes revHalo{0%{transform:scale(.72); opacity:.32} 70%{transform:scale(1.3); opacity:0} 100%{opacity:0}}
+  .vs-rev-c{position:relative;}
+  .vs-rev-b{display:flex; gap:9px;}
+  .vs-rev-b .btn{flex:1; min-width:0;}
+  /* l'explosion traverse tout l'ecran, par-dessus la carte, sans gener les boutons */
+  .vs-conf{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;}
+  /* un accessoire pas encore gagne ne montre pas ce qu'il cache : juste le cadenas */
+  .vs-t .vs-img img.verrouille{width:auto; height:100%; max-height:52px;}
+  .vs-t.verrou .vs-img{background:none;}
   @media (prefers-reduced-motion:reduce){
     .vs-rev, .vs-rev-c, .vs-rev-c .im img, .pastille{animation:none;}
     .vs-rev-c .im i{display:none;}
@@ -5090,9 +5098,8 @@ const TRAD = {en:{
   "Rose":"Pink", "Bleu":"Blue", "Rouge":"Red", "Vert":"Green",
   "Débloqué !":"Unlocked!", "Le porter":"Wear it",
   "À découvrir":"Unopened", "Touche pour ouvrir":"Tap to open", "Un accessoire t'attend":"An accessory is waiting for you",
-  "Tu l'as gagné en {n} activités.":"You earned it in {n} activities.",
-  "Tu l'as gagné dès ta première activité.":"You earned it on your very first activity.",
-  "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"A flame of {n}: the longest run of activities you have ever held.",
+  "Félicitations pour ta {n} activité !":"Congratulations on your {n} activity!",
+  "Félicitations pour ta flamme de {n} !":"Congratulations on your flame of {n}!",
   "Sifflet de coach":"Coach's whistle", "Médaille d'or":"Gold medal", "Ceinture noire":"Black belt",
   "Couronne de laurier":"Laurel wreath", "Étincelles dorées":"Golden sparkles",
   "Ceinture de champion":"Championship belt", "Confettis permanents":"Endless confetti",
@@ -8332,9 +8339,8 @@ es:{
   "À découvrir":"Sin abrir",
   "Touche pour ouvrir":"Toca para abrir",
   "Un accessoire t'attend":"Un accesorio te espera",
-  "Tu l'as gagné en {n} activités.":"Lo has ganado con {n} actividades.",
-  "Tu l'as gagné dès ta première activité.":"Lo has ganado desde tu primera actividad.",
-  "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"Una llama de {n}: la racha de actividades más larga que has aguantado.",
+  "Félicitations pour ta {n} activité !":"¡Felicidades por tu {n} actividad!",
+  "Félicitations pour ta flamme de {n} !":"¡Felicidades por tu llama de {n}!",
   "Sifflet de coach":"Silbato de entrenador",
   "Médaille d'or":"Medalla de oro",
   "Ceinture noire":"Cinturón negro",
@@ -11671,9 +11677,8 @@ pt:{
   "À découvrir":"Por abrir",
   "Touche pour ouvrir":"Toque para abrir",
   "Un accessoire t'attend":"Um acessório espera por você",
-  "Tu l'as gagné en {n} activités.":"Você conquistou com {n} atividades.",
-  "Tu l'as gagné dès ta première activité.":"Você conquistou já na primeira atividade.",
-  "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"Uma chama de {n}: a maior sequência de atividades que você já sustentou.",
+  "Félicitations pour ta {n} activité !":"Parabéns pela sua {n} atividade!",
+  "Félicitations pour ta flamme de {n} !":"Parabéns pela sua chama de {n}!",
   "Sifflet de coach":"Apito de treinador",
   "Médaille d'or":"Medalha de ouro",
   "Ceinture noire":"Faixa preta",
@@ -16379,6 +16384,19 @@ function familleAcc(id){ return ACCESSOIRES.find(a=>variantes(a).some(v=>v.id ==
    qui couvre la tete. Sans ce tri, l'ordre d'affichage etait celui dans lequel la
    personne avait enfile ses accessoires. */
 function plan(id){ const f = familleAcc(id); return (f && f.plan) || 0; }
+/* « 10e » en francais, « 10th » en anglais, « 10.ª » en espagnol, « 10ª » en portugais.
+   Le francais est le seul a distinguer le premier (1re) ; l'anglais distingue 1st, 2nd
+   et 3rd, sauf de 11 a 13 ou tout est « th ». */
+function ordinal(n){
+  const lg = langue();
+  if(lg === "es") return n + ".ª";
+  if(lg === "pt") return n + "ª";
+  if(lg === "en"){
+    const d = n % 10, c = n % 100;
+    return n + ((c >= 11 && c <= 13) ? "th" : d === 1 ? "st" : d === 2 ? "nd" : d === 3 ? "rd" : "th");
+  }
+  return n === 1 ? "1re" : n + "e";
+}
 /* Les accessoires gagnes que la personne n'a pas encore vus. C'est ce qui allume la
    pastille rouge, du profil jusqu'a la tuile. On ne marque « vu » qu'a la revelation :
    ouvrir le vestiaire par hasard ne doit pas escamoter la recompense. */
@@ -16569,9 +16587,10 @@ function openVestiaire(){
         <em>${TR("Touche pour ouvrir")}</em>
       </button></div>`;
     return `<div class="vs-t ${gagne ? "ok" : "verrou"} ${mis ? "on" : ""} ${dessin ? "" : "sans"}">
-      ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
       <button class="vs-corps" data-acc="${vid}" ${gagne && dessin ? "" : "disabled"}>
-        <span class="vs-img">${dessin ? `<img src="img/poussin/ico-${vid}.webp" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
+        <span class="vs-img">${
+          !gagne ? `<img class="verrouille" src="img/cadenas.webp" alt="">`
+          : dessin ? `<img src="img/poussin/ico-${vid}.webp" alt="">` : `<i>✓</i>`}</span>
         ${gagne ? `<b>${TR(a.nom)}</b>` : `<b class="vs-muet">${TR("À débloquer")}</b>`}
         ${gagne
           ? (mis ? `<em class="porte">${TR("Porté")}</em> ` : `<em>${dessin ? TR("Gagné") : TR("Bientôt")}</em>`)
@@ -16638,8 +16657,8 @@ function habille(id, force){
 function revelerAccessoire(a){
   const v = varChoisie(a);
   const phrase = a.flamme
-    ? TR("Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.").replace("{n}", a.flamme)
-    : TR(a.seances > 1 ? "Tu l'as gagné en {n} activités." : "Tu l'as gagné dès ta première activité.").replace("{n}", a.seances);
+    ? TR("Félicitations pour ta flamme de {n} !").replace("{n}", a.flamme)
+    : TR("Félicitations pour ta {n} activité !").replace("{n}", ordinal(a.seances));
   const el = document.createElement("div");
   el.className = "vs-rev";
   el.innerHTML = `<div class="vs-rev-c" role="dialog" aria-live="polite">
@@ -16647,17 +16666,29 @@ function revelerAccessoire(a){
     <h4>${TR("Débloqué !")}</h4>
     <b>${esc(TR(a.nom))}</b>
     <p>${phrase}</p>
-    <button class="btn btn-accent" style="width:100%;">${TR("Le porter")}</button></div>`;
+    <div class="vs-rev-b"><button class="btn" data-rev="fermer">${TR("Fermer")}</button>
+      <button class="btn btn-accent" data-rev="porter">${TR("Le porter")}</button></div></div>
+    <canvas class="vs-conf"></canvas>`;
   overlay.appendChild(el);
   vibrer(18);
   marquerAccessoireVu(a);
-  const fermer = ()=>{
+  /* « Le porter » l'enfile, « Fermer » le laisse au vestiaire — dans les deux cas
+     l'accessoire est desormais decouvert et sa tuile redevient normale. */
+  const fermer = porter=>{
     el.remove();
-    habille(v, true);                 /* on l'enfile en sortant : c'est le geste attendu */
+    if(porter) habille(v, true);
+    else { openVestiaire(); majPoussins(); }
     majPastilles();
   };
-  el.querySelector("button").onclick = fermer;
-  el.onclick = e=>{ if(e.target === el) fermer(); };
+  el.querySelector('[data-rev="porter"]').onclick = ()=>fermer(true);
+  el.querySelector('[data-rev="fermer"]').onclick = ()=>fermer(false);
+  el.onclick = e=>{ if(e.target === el) fermer(false); };
+  /* l'explosion part de l'accessoire qui vient d'apparaitre, et traverse l'ecran */
+  const cv = el.querySelector(".vs-conf"), cible = el.querySelector(".im");
+  requestAnimationFrame(()=>{
+    const r = cible.getBoundingClientRect();
+    explosion(cv, 1000, r.left + r.width / 2, r.top + r.height / 2);
+  });
 }
 function poussinHtml(classe, poseForcee){
   const e = poussinEtat(poseForcee), p = POUSSIN[e.pose];
@@ -16780,7 +16811,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 03h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 11h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25512,6 +25543,45 @@ function nouveauxRecords(a){
   return out;
 }
 /* confettis : quelques centaines de rectangles qui retombent, sans bibliothèque */
+/* Une explosion, pas une chute : les bouts partent du centre dans toutes les directions,
+   ralentissent, puis retombent. Une seconde, pas plus — c'est une ponctuation, pas un
+   spectacle qu'on attend la fin. */
+function explosion(canvas, duree, ox, oy){
+  if(!canvas || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  if(!W || !H) return;
+  canvas.width = W * dpr; canvas.height = H * dpr; ctx.scale(dpr, dpr);
+  const coul = ["#F58220", "#FFD166", "#4CAF50", "#3CA0E8", "#F2506E", "#FFFFFF"];
+  const cx = (ox === undefined ? W / 2 : ox), cy = (oy === undefined ? H * 0.34 : oy);
+  const bouts = [];
+  for(let i = 0; i < 70; i++){
+    const ang = Math.random() * Math.PI * 2, vit = 180 + Math.random() * 320;
+    bouts.push({
+      x: cx, y: cy, vx: Math.cos(ang) * vit, vy: Math.sin(ang) * vit - 150,
+      l: 5 + Math.random() * 5, h: 7 + Math.random() * 7,
+      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 14,
+      c: coul[(Math.random() * coul.length) | 0]
+    });
+  }
+  let t0 = null;
+  const boucle = t=>{
+    if(t0 === null) t0 = t;
+    const ecoule = t - t0, dt = 1 / 60;
+    ctx.clearRect(0, 0, W, H);
+    bouts.forEach(b=>{
+      b.vx *= 0.94; b.vy = b.vy * 0.94 + 560 * dt;   /* l'air freine, la gravite reprend */
+      b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.vr * dt;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+      ctx.fillStyle = b.c; ctx.globalAlpha = Math.max(0, 1 - ecoule / duree);
+      ctx.fillRect(-b.l / 2, -b.h / 2, b.l, b.h); ctx.restore();
+    });
+    if(ecoule < duree) requestAnimationFrame(boucle);
+    else ctx.clearRect(0, 0, W, H);
+  };
+  requestAnimationFrame(boucle);
+}
 function confettis(canvas, duree){
   const ctx = canvas.getContext("2d");
   const dpr = Math.min(2, window.devicePixelRatio||1);

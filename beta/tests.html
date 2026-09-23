@@ -1593,7 +1593,12 @@ async function lancer(){
         F.document.querySelector("#sheet [data-acc]").click();
         const rev = F.document.querySelector(".vs-rev");
         vrai("Toucher un accessoire neuf ouvre la révélation", !!rev);
-        vrai("…qui dit comment il a été gagné", /activit|flamme/i.test(rev.textContent), rev.textContent);
+        vrai("…qui félicite pour ce qui l'a débloqué", /Félicitations/.test(rev.textContent)
+          && /activit|flamme/i.test(rev.textContent), rev.textContent);
+        eq("L'ordinal se dit dans la langue", F.eval(`[ordinal(1), ordinal(10), ordinal(3)].join(" ")`), "1re 10e 3e");
+        eq("…en anglais aussi", F.eval(`(()=>{ const v = db.settings.lang; db.settings.lang = "en";
+          const r = [ordinal(1), ordinal(2), ordinal(3), ordinal(11), ordinal(42)].join(" ");
+          db.settings.lang = v; return r; })()`), "1st 2nd 3rd 11th 42nd");
         vrai("…et nomme l'accessoire", /Bandeau|Casque/.test(rev.textContent));
         rev.querySelector("button").click();
         const tuile1 = ()=>F.document.querySelector("#sheet [data-acc]").closest(".vs-t");
@@ -1612,6 +1617,42 @@ async function lancer(){
         F.eval("ACCESSOIRES.forEach(a=>{ if(accessoireGagne(a) && variantesDessinees(a).length) marquerAccessoireVu(a); })");
         F.hideSheet(); F.render();
         vrai("Tout vu : l'icône du profil n'a plus de pastille", !pastille("#app #tb-user"));
+        delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
+      })();
+      (()=>{
+        /* Un accessoire pas encore gagne ne doit rien devoiler : le cadenas, et rien
+           d'autre. Avec une seule activite, le casque (trois) est dessine mais ferme. */
+        F.hideSheet();
+        const vrai0 = DB.history;
+        DB.history = [seance(1, new Date(Date.now() - J).toISOString())];
+        delete DB.avatar; F.eval("save()"); toutVu();
+        F.openVestiaire();
+        const ferme = [...F.document.querySelectorAll("#sheet .vs-t.verrou")]
+          .find(t=>t.querySelector("img"));
+        vrai("Un accessoire à débloquer montre le cadenas", !!ferme
+          && /cadenas/.test(ferme.querySelector("img").getAttribute("src")), ferme ? ferme.innerHTML.slice(0,120) : "aucun");
+        vrai("…et jamais l'objet qu'il cache",
+          !F.document.querySelector("#sheet .vs-t.verrou img[src*='ico-']"));
+        vrai("…ni son nom", !/Casque/.test(ferme.textContent), ferme.textContent);
+        DB.history = vrai0; delete DB.avatar; F.eval("save()"); toutVu(); F.openVestiaire();
+      })();
+      (()=>{
+        /* La revelation propose deux boutons : « Fermer » laisse l'accessoire au
+           vestiaire, « Le porter » l'enfile. Dans les deux cas il est decouvert. */
+        F.hideSheet(); delete DB.avatar; F.eval("save()"); F.render();
+        F.openVestiaire();
+        F.document.querySelector("#sheet .vs-t.neuf [data-acc]").click();
+        const rev = F.document.querySelector(".vs-rev");
+        eq("La révélation a deux boutons", rev.querySelectorAll(".vs-rev-b .btn").length, 2);
+        vrai("…« Fermer » et « Le porter »",
+          !!rev.querySelector('[data-rev="fermer"]') && !!rev.querySelector('[data-rev="porter"]'));
+        vrai("…et une explosion de confettis", !!rev.querySelector("canvas.vs-conf"));
+        const nom = rev.querySelector("b").textContent;
+        rev.querySelector('[data-rev="fermer"]').click();
+        vrai("« Fermer » ne l'enfile pas mais le découvre",
+          !F.document.querySelector(".vs-rev")
+          && F.eval("accessoiresNeufs().map(a=>a.id).join(',')").indexOf("bandeau") < 0
+          && !/À découvrir/.test(F.document.querySelector("#sheet .vs-t").textContent), nom);
         delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
       })();
       vrai("…une case dit que d'autres arrivent", !!F.document.querySelector("#sheet .vs-bientot"));
