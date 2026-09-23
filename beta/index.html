@@ -1746,6 +1746,38 @@
   .vs-cadenas svg{width:12px; height:12px;}
   .vs-jauge{display:block; width:100%; height:7px; border-radius:99px; background:var(--border); overflow:hidden; margin-top:auto;}
   .vs-jauge i{display:block; height:100%; border-radius:99px; background:var(--jauge-grad);}
+  /* la pastille : elle conduit de l'icone du profil jusqu'a l'accessoire */
+  .pastille{position:absolute; top:-2px; right:-2px; width:10px; height:10px; border-radius:50%;
+    background:#E5342B; box-shadow:0 0 0 2px var(--surface); animation:pastilleIn .3s ease both;}
+  .hero-ic .pastille{box-shadow:0 0 0 2px #fff;}
+  .vs-t > .pastille{top:7px; right:7px; width:11px; height:11px;}
+  .pr-actions .pr-l{position:relative;}
+  .pr-actions .pr-l .pastille{top:10px; right:10px;}
+  @keyframes pastilleIn{from{transform:scale(0)} to{transform:scale(1)}}
+  /* la revelation : par-dessus le vestiaire, sans ouvrir une fiche de plus */
+  .vs-rev{position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+    padding:24px; background:rgba(18,18,20,.55); animation:revFond .22s ease both;}
+  .vs-rev-c{width:min(310px, 100%); padding:26px 20px 20px; border-radius:24px; background:var(--surface);
+    text-align:center; box-shadow:0 20px 56px rgba(0,0,0,.4);
+    animation:revPop .46s cubic-bezier(.2,1.25,.4,1) both;}
+  .vs-rev-c .im{position:relative; width:112px; height:112px; margin:0 auto 14px;
+    display:flex; align-items:center; justify-content:center;}
+  .vs-rev-c .im img{max-width:100%; max-height:100%; object-fit:contain;
+    animation:revIco .55s .08s cubic-bezier(.2,1.4,.4,1) both;}
+  .vs-rev-c .im i{position:absolute; inset:6px; border-radius:50%; background:var(--accent-grad);
+    animation:revHalo 1.8s .2s ease-out infinite;}
+  .vs-rev-c h4{margin:0 0 4px; font-size:13px; font-weight:800; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--accent);}
+  .vs-rev-c b{display:block; font-size:21px; margin-bottom:8px;}
+  .vs-rev-c p{margin:0 0 18px; font-size:14px; line-height:1.5; color:var(--ink-soft);}
+  @keyframes revFond{from{opacity:0} to{opacity:1}}
+  @keyframes revPop{from{opacity:0; transform:translateY(22px) scale(.88)} to{opacity:1; transform:none}}
+  @keyframes revIco{from{opacity:0; transform:scale(.35) rotate(-14deg)} to{opacity:1; transform:none}}
+  @keyframes revHalo{0%{transform:scale(.72); opacity:.32} 70%{transform:scale(1.3); opacity:0} 100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){
+    .vs-rev, .vs-rev-c, .vs-rev-c .im img, .pastille{animation:none;}
+    .vs-rev-c .im i{display:none;}
+  }
   /* la tuile est une boite : le corps se touche pour mettre l'accessoire, les pastilles de
      couleur vivent en dessous et se touchent a part */
   .vs-corps{display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; flex:1;
@@ -5037,6 +5069,10 @@ const TRAD = {en:{
   "Décolle les hanches jusqu'à l'alignement complet.":"Lift your hips until your body is in a straight line.",
   "Serre les obliques du côté au sol.":"Squeeze the obliques on the floor side.",
   "Rose":"Pink", "Bleu":"Blue", "Rouge":"Red", "Vert":"Green",
+  "Débloqué !":"Unlocked!", "Le porter":"Wear it",
+  "Tu l'as gagné en {n} activités.":"You earned it in {n} activities.",
+  "Tu l'as gagné dès ta première activité.":"You earned it on your very first activity.",
+  "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"A flame of {n}: the longest run of activities you have ever held.",
   "Sifflet de coach":"Coach's whistle", "Médaille d'or":"Gold medal", "Ceinture noire":"Black belt",
   "Couronne de laurier":"Laurel wreath", "Étincelles dorées":"Golden sparkles",
   "Ceinture de champion":"Championship belt", "Confettis permanents":"Endless confetti",
@@ -8271,6 +8307,11 @@ es:{
   "Bleu":"Azul",
   "Rouge":"Rojo",
   "Vert":"Verde",
+  "Débloqué !":"¡Desbloqueado!",
+  "Le porter":"Ponérselo",
+  "Tu l'as gagné en {n} activités.":"Lo has ganado con {n} actividades.",
+  "Tu l'as gagné dès ta première activité.":"Lo has ganado desde tu primera actividad.",
+  "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"Una llama de {n}: la racha de actividades más larga que has aguantado.",
   "Sifflet de coach":"Silbato de entrenador",
   "Médaille d'or":"Medalla de oro",
   "Ceinture noire":"Cinturón negro",
@@ -11602,6 +11643,11 @@ pt:{
   "Bleu":"Azul",
   "Rouge":"Vermelho",
   "Vert":"Verde",
+  "Débloqué !":"Desbloqueado!",
+  "Le porter":"Vestir",
+  "Tu l'as gagné en {n} activités.":"Você conquistou com {n} atividades.",
+  "Tu l'as gagné dès ta première activité.":"Você conquistou já na primeira atividade.",
+  "Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.":"Uma chama de {n}: a maior sequência de atividades que você já sustentou.",
   "Sifflet de coach":"Apito de treinador",
   "Médaille d'or":"Medalha de ouro",
   "Ceinture noire":"Faixa preta",
@@ -16307,6 +16353,27 @@ function familleAcc(id){ return ACCESSOIRES.find(a=>variantes(a).some(v=>v.id ==
    qui couvre la tete. Sans ce tri, l'ordre d'affichage etait celui dans lequel la
    personne avait enfile ses accessoires. */
 function plan(id){ const f = familleAcc(id); return (f && f.plan) || 0; }
+/* Les accessoires gagnes que la personne n'a pas encore vus. C'est ce qui allume la
+   pastille rouge, du profil jusqu'a la tuile. On ne marque « vu » qu'a la revelation :
+   ouvrir le vestiaire par hasard ne doit pas escamoter la recompense. */
+function accessoiresNeufs(){
+  const vus = (db.avatar && db.avatar.vus) || [];
+  return ACCESSOIRES.filter(a=>accessoireGagne(a) && variantesDessinees(a).length && vus.indexOf(a.id) < 0);
+}
+function marquerAccessoireVu(a){
+  const vus = ((db.avatar && db.avatar.vus) || []).slice();
+  if(vus.indexOf(a.id) < 0) vus.push(a.id);
+  db.avatar = Object.assign({}, db.avatar, {vus}); save();
+}
+/* la pastille suit la personne : l'icone du profil est dans la page, pas dans la fiche */
+function majPastilles(){
+  const n = accessoiresNeufs().length;
+  document.querySelectorAll("#app #tb-user, #sheet #pr-avatar").forEach(b=>{
+    const p = b.querySelector(".pastille");
+    if(n && !p){ const i = document.createElement("i"); i.className = "pastille"; b.appendChild(i); }
+    else if(!n && p) p.remove();
+  });
+}
 /* la couleur montree pour cet accessoire : celle qu'il porte, sinon la derniere choisie,
    sinon la premiere dessinee */
 function varChoisie(a){
@@ -16451,6 +16518,7 @@ function openVestiaire(){
      cacherait ce qu'on est en train de lui mettre */
   const e = poussinEtat("en-forme"), nSeances = nActivites(), best = meilleureFlamme();
   const porte = new Set(e.acc);
+  const neufs = accessoiresNeufs().map(a=>a.id);
   /* d'apres la maquette du 21 septembre : le poussin en grand, deux compteurs en tuiles
      (flamme / etoile), les accessoires en cartes avec un cadenas et une jauge de
      progression vers le deblocage, la carte portee encadree d'orange, un pied « gagne des
@@ -16464,8 +16532,10 @@ function openVestiaire(){
     /* les couleurs, en bas de la tuile : seulement quand il y a vraiment un choix a faire */
     const cercles = (gagne && dess.length > 1) ? `<span class="vs-cl">${dess.map(v=>
       `<button class="cl${v.id === vid ? " on" : ""}" data-cl="${v.id}" style="--c:${v.hex || "#8a8a8a"}" aria-label="${esc(TR(v.nom))}" title="${esc(TR(v.nom))}"></button>`).join("")}</span>` : "";
+    const neuf = gagne && dessin && neufs.indexOf(a.id) >= 0;
     return `<div class="vs-t ${gagne ? "ok" : "verrou"} ${mis ? "on" : ""} ${dessin ? "" : "sans"}">
       ${gagne ? "" : `<span class="vs-cadenas">${IC_CADENAS_MINI}</span>`}
+      ${neuf ? `<i class="pastille"></i>` : ""}
       <button class="vs-corps" data-acc="${vid}" ${gagne && dessin ? "" : "disabled"}>
         <span class="vs-img">${dessin ? `<img src="img/poussin/ico-${vid}.webp" alt="">` : `<i>${gagne ? "✓" : "?"}</i>`}</span>
         ${gagne ? `<b>${TR(a.nom)}</b>` : `<b class="vs-muet">${TR("À débloquer")}</b>`}
@@ -16506,20 +16576,54 @@ function openVestiaire(){
       : TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.") + " " + TR("Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.");
     titre.after(d); b.classList.add("on");
   });
-  /* mettre ou enlever : on retire d'abord toutes les couleurs de la famille, pour ne
-     jamais porter deux fois le meme accessoire dans deux teintes */
-  const habille = (id, force)=>{
-    const f = familleAcc(id), avant = (db.avatar && db.avatar.acc) || ["bandeau"];
-    const acc = avant.filter(x=>!f || !variantes(f).some(v=>v.id === x));
-    if(force || !avant.includes(id)) acc.push(id);
-    const cl = f ? Object.assign({}, db.avatar && db.avatar.cl, {[f.id]:id}) : (db.avatar && db.avatar.cl);
-    db.avatar = Object.assign({}, db.avatar, {acc, cl}); save(); vibrer(12);
-    majPoussins();                      /* celui de la page derriere, tout de suite */
-    openVestiaire();
-  };
-  document.querySelectorAll("#sheet [data-acc]").forEach(b=>b.onclick = ()=>habille(b.dataset.acc, false));
+  document.querySelectorAll("#sheet [data-acc]").forEach(b=>b.onclick = ()=>{
+    const f = familleAcc(b.dataset.acc);
+    /* la premiere fois, on raconte ; ensuite, on habille */
+    if(f && neufs.indexOf(f.id) >= 0) revelerAccessoire(f);
+    else habille(b.dataset.acc, false);
+  });
   /* toucher une couleur la choisit ET la met : c'est le geste qu'on attend d'une pastille */
   document.querySelectorAll("#sheet [data-cl]").forEach(b=>b.onclick = ()=>habille(b.dataset.cl, true));
+}
+/* Mettre ou enlever un accessoire : on retire d'abord toutes les couleurs de la famille,
+   pour ne jamais en porter deux teintes a la fois. Au premier niveau, pas dans
+   openVestiaire : la revelation d'un accessoire doit pouvoir l'enfiler aussi. */
+function habille(id, force){
+  const f = familleAcc(id), avant = (db.avatar && db.avatar.acc) || ["bandeau"];
+  const acc = avant.filter(x=>!f || !variantes(f).some(v=>v.id === x));
+  if(force || !avant.includes(id)) acc.push(id);
+  const cl = f ? Object.assign({}, db.avatar && db.avatar.cl, {[f.id]:id}) : (db.avatar && db.avatar.cl);
+  db.avatar = Object.assign({}, db.avatar, {acc, cl}); save(); vibrer(12);
+  majPoussins();                      /* celui de la page derriere, tout de suite */
+  openVestiaire();
+  majPastilles();
+}
+/* « Tu as debloque le casque audio. » On le montre en grand, on dit ce qu'il a fallu
+   faire pour l'avoir, et on l'enfile. C'est le seul endroit ou un accessoire passe de
+   « neuf » a « vu » : ouvrir le vestiaire ne suffit pas, il faut l'avoir regarde. */
+function revelerAccessoire(a){
+  const v = varChoisie(a);
+  const phrase = a.flamme
+    ? TR("Une flamme de {n} : la plus longue suite d'activités que tu aies tenue.").replace("{n}", a.flamme)
+    : TR(a.seances > 1 ? "Tu l'as gagné en {n} activités." : "Tu l'as gagné dès ta première activité.").replace("{n}", a.seances);
+  const el = document.createElement("div");
+  el.className = "vs-rev";
+  el.innerHTML = `<div class="vs-rev-c" role="dialog" aria-live="polite">
+    <div class="im"><i></i><img src="img/poussin/ico-${v}.webp" alt=""></div>
+    <h4>${TR("Débloqué !")}</h4>
+    <b>${esc(TR(a.nom))}</b>
+    <p>${phrase}</p>
+    <button class="btn btn-accent" style="width:100%;">${TR("Le porter")}</button></div>`;
+  overlay.appendChild(el);
+  vibrer(18);
+  marquerAccessoireVu(a);
+  const fermer = ()=>{
+    el.remove();
+    habille(v, true);                 /* on l'enfile en sortant : c'est le geste attendu */
+    majPastilles();
+  };
+  el.querySelector("button").onclick = fermer;
+  el.onclick = e=>{ if(e.target === el) fermer(); };
 }
 function poussinHtml(classe, poseForcee){
   const e = poussinEtat(poseForcee), p = POUSSIN[e.pose];
@@ -16642,7 +16746,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 02h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 02h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -17747,7 +17851,8 @@ function hero(inner, opts){
         ${o.fermer ? `<span></span>
         <button class="hero-ic" id="tb-close" title="Fermer" aria-label="${TR("Fermer")}">${IC_CROIX}</button>`
         : o.icones === false ? "<span></span><span></span>" : `
-        <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}">${IC_USER}</button>
+        <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}" style="position:relative;">${IC_USER}${
+          accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}</button>
         <span class="hero-droite">${o.scans ? `<button class="hero-essai hero-scans" id="hero-scans" aria-label="${TR("Photos d'assiette restantes")}">${IC_PHOTO}<b>${photosRestantes()}</b></button>` : ""}${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
           TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
       </div>
@@ -17805,7 +17910,8 @@ function openProfil(){
         <span class="fl">${IC_CHEVRON}</span></button>
       <button class="btn pr-l" id="pr-edit"><span class="pic">${IC_CRAYON}</span>${TR("Modifier mon profil")}
         <span class="fl">${IC_CHEVRON}</span></button>
-      ${POUSSIN.repos ? `<button class="btn pr-l" id="pr-avatar"><span class="pic">${IC_USER}</span>${TR("Personnaliser mon compagnon")}
+      ${POUSSIN.repos ? `<button class="btn pr-l" id="pr-avatar"><span class="pic">${IC_USER}</span>${TR("Personnaliser mon compagnon")}${
+        accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}
         <span class="fl">${IC_CHEVRON}</span></button>` : ""}
       <button class="btn btn-ghost pr-fermer" id="pr-ok">${TR("Fermer")}</button>
     </div>`);
