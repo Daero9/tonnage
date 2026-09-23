@@ -1427,15 +1427,13 @@
   #app > .eat-fab{position:fixed; left:0; right:0; bottom:calc(96px + env(safe-area-inset-bottom));
     z-index:41; display:flex; flex-direction:column; align-items:center; gap:7px; pointer-events:none;}
   .eat-fab .fab{pointer-events:auto; box-shadow:0 0 0 7px var(--bg), 0 8px 20px rgba(0,0,0,.22);}
-  /* Le mot reçoit le même traitement que le bouton, mais en halo plutôt qu'en anneau :
-     une pastille rectangulaire autour d'un texte de dix pixels se verrait comme une
-     étiquette. Les quatre ombres à la couleur de la page se superposent et forment un
-     coussin qui épouse les lettres — le texte se détache de ce qui défile derrière tout
-     en se fondant dans le fond. La cinquième est l'ombre douce du bouton, en plus léger :
-     une ombre calibrée pour un disque de 58 px écraserait des capitales de 10 px. */
+  /* Le mot reçoit exactement le même traitement que le bouton : un FOND plein à la
+     couleur de la page, comme l'anneau de 7 px du « + ». Le halo d'ombres qu'il portait
+     avant se fondait trop pour détacher des capitales de dix pixels de ce qui défile
+     derrière. La pastille se ferme aux deux bouts, la même ombre douce la pose. */
   .eat-fab .lb{font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
-    text-shadow:0 0 4px var(--bg), 0 0 4px var(--bg), 0 0 4px var(--bg), 0 0 8px var(--bg),
-      0 0 8px var(--bg), 0 0 14px var(--bg), 0 0 20px var(--bg), 0 4px 10px rgba(0,0,0,.16);}
+    background:var(--bg); padding:5px 12px; border-radius:99px;
+    box-shadow:0 4px 12px rgba(0,0,0,.16);}
 
   /* ---- records de fin de séance ----
      Un record mérite mieux qu'une carte de plus : le bloc s'inverse par rapport à la
@@ -16631,7 +16629,11 @@ function openVestiaire(){
     const gagne = accessoireGagne(a), dess = variantesDessinees(a), dessin = dess.length > 0;
     const vid = varChoisie(a), mis = porte.has(vid);
     const reste = a.flamme ? TR("Flamme de {}").replace("{}", a.flamme)
-      : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances) + (a.duree && a.seances > 1 ? `<br>≈ ${TR(a.duree)}` : "");
+      : TR(a.seances > 1 ? "{} activités" : "{} activité").replace("{}", a.seances);
+    /* Plus d'équivalent en semaines sous le cadenas : « ≈ 5 semaines » suppose un
+       rythme qui n'est pas forcément le tien, et deux chiffres pour un seul palier se
+       lisent moins bien qu'un. Le compte d'activités, lui, est exact. `duree` reste
+       dans la table : c'est l'échelle qui a servi à espacer les paliers. */
     const avance = a.flamme ? Math.min(1, best / a.flamme) : Math.min(1, nSeances / Math.max(1, a.seances));
     /* les couleurs, en bas de la tuile : seulement quand il y a vraiment un choix a faire */
     const cercles = (gagne && dess.length > 1) ? `<span class="vs-cl">${dess.map(v=>
@@ -16875,7 +16877,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "23 septembre 2026 17h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "23 septembre 2026 17h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -23484,10 +23486,27 @@ function progressionParExo(){
 /* Le matériel de secours : ce qu'on achète pour s'entraîner chez soi, et qui n'a plus
    de raison d'être quand on a une salle autour de soi. */
 const MAT_REMPLACANT = ["Élastique", "Ballon", "Sangles"];
-function rangRemplacant(c){
+/* Les deux stations d'une salle qui portent le corps : on s'y leste, ce ne sont pas
+   des mouvements « sans rien ». */
+const MAT_STATION = ["dips", "traction"];
+/* En salle, trois étages, regardés AVANT la masse musculaire.
+     0. ce qui se charge : barre, haltères, machine, poulie, kettlebell, barre fixe, dips
+     1. le poids du corps seul
+     2. les remplaçants de la maison : élastique, ballon, sangles
+   Sans eux, le classement se fait sur chargeExo(), qui mesure la masse musculaire mise
+   en jeu et non le poids qu'on peut mettre dessus : une presse à cuisses (48) passait
+   derrière une fente avant au poids du corps (64), et « Mollets debout » à la machine
+   (9) derrière le même mouvement sans rien (12). Dans une salle pleine de machines, on
+   n'en voyait aucune. */
+function rangMateriel(c){
   if(db.materiel) return 0;                  /* un filtre est posé : on s'entraîne chez soi */
   const ex = getEx(libId(c.nom));
-  return (ex && MAT_REMPLACANT.includes(equipCanon(ex))) ? 1 : 0;
+  if(!ex) return 0;
+  const eq = equipCanon(ex);
+  if(MAT_REMPLACANT.includes(eq)) return 2;
+  if(eq === "Poids du corps"
+     && !materielDe(ex).some(b=>!Array.isArray(b) && MAT_STATION.includes(b))) return 1;
+  return 0;
 }
 function genererAdaptative(type, evites){
   const moule = MOULES[type] || MOULES.full;
@@ -23590,7 +23609,7 @@ function genererAdaptative(type, evites){
          matériel n'est posé, ce qui est la définition d'une salle ici. Derrière, pas
          dehors : sur un muscle où ils seraient seuls, ils restent proposés. */
       const triee = liste.slice().sort((a, b)=>
-        rangRemplacant(a) - rangRemplacant(b) || rangPerf(a) - rangPerf(b));
+        rangMateriel(a) - rangMateriel(b) || rangPerf(a) - rangPerf(b));
       const choisi = triee.find(c=>!recents.has(c.nom) && !recouvre(c))
                   || triee.find(c=>!recouvre(c))
                   || triee.find(c=>!recents.has(c.nom))
