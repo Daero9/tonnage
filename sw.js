@@ -1,6 +1,6 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-v11-20260924-1014";
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png?v=4", "./icon-512.png?v=4", "./apple-touch-icon.png?v=4",
+const CACHE = "tonnup-v11-20260924-1021";
+const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png?v=4", "./icon-512.png?v=4", "./apple-touch-icon.png?v=4",
   "./img/exos/abducteurs.png",
   "./img/exos/abduction-hanche.png",
   "./img/exos/adducteurs.png",
@@ -151,7 +151,12 @@ self.addEventListener("fetch", e => {
     fetch(demande)
       .then(res => {
         const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        /* Une navigation se range sous « ./index.html », jamais sous son URL. Sinon la
+           meme page vit en double dans le cache — une fois sous « ./ », une fois sous
+           « ./index.html » —, soit 2,4 Mo pour rien sur le telephone. C est deja la cle
+           que le repli hors ligne va chercher, quelques lignes plus bas. */
+        const cle = req.mode === "navigate" ? "./index.html" : req;
+        caches.open(CACHE).then(c => c.put(cle, copy)).catch(() => {});
         return res;
       })
       .catch(() => caches.match(req).then(hit => hit || caches.match("./index.html")))
