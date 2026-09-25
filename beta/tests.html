@@ -3354,6 +3354,80 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico : 36 tractions quand elles ouvrent la séance, 28 quand elles viennent après
+     un rowing. Les deux chiffres ne se comparent pas entre eux. */
+  grp("La place de l'exercice dans la séance");
+  neuf();
+  (()=>{
+    const tr = id("Tractions"), trs = id("Tractions supination"), row = id("Rowing barre");
+    const dc = id("Développé couché"), pmp = id("Pompes");
+    DB.plafond = {};
+    const jours = j => new Date(Date.now() - j*864e5).toISOString();
+    const sess = (j, entries) => ({id:"pos"+j+Math.random(), date:jours(j), name:"x", templateId:"x",
+      start:0, end:0, entries});
+    const tractions = (r, n) => ({exId:tr, sets:Array.from({length:n || 3}, (_, i)=>serie(0, i ? r - 2 : r, 1))});
+    const rowing = {exId:row, sets:[serie(60,10,2), serie(60,10,2), serie(60,10,2), serie(60,10,2)]};
+
+    eq("Des tractions après quatre séries de rowing sont entamées",
+      F.eval("estEntame")(F.eval("prefatigue")([{exId:row, series:4}], tr)), true);
+    eq("…après un développé couché, elles restent fraîches",
+      F.eval("estEntame")(F.eval("prefatigue")([{exId:dc, series:4}], tr)), false);
+    /* l'ordre réel, lu à l'heure des séries : un exercice avancé compte tel qu'il a été fait */
+    const t = Date.now() - 864e5;
+    const ent = [{exId:tr, sets:[Object.assign(serie(0,30,1), {t:t})]},
+                 {exId:row, sets:[Object.assign(serie(60,10,2), {t:t + 3e5}), Object.assign(serie(60,10,2), {t:t + 6e5})]}];
+    eq("Faites en premier alors qu'elles étaient en bas de la liste, elles restent fraîches",
+      F.eval("prefatigueDans")([ent[1], ent[0]], 1), 0);
+
+    /* 1. comparer ce qui est comparable */
+    DB.history = [sess(10, [tractions(36)]), sess(3, [rowing, tractions(28)])];
+    const frais = F.suggestFor(tr, {reps:"8-12"}, 0);
+    eq("En ouverture, on se compare aux 36 d'ouverture, pas aux 28 d'après rowing",
+      Math.max(...frais.ref.sets.map(x=>x.r)), 36);
+    vrai("…et on dit pourquoi on remonte plus loin", /début|ouvrait/.test(frais.why), frais.why);
+    const apres = F.suggestFor(tr, {reps:"8-12"}, 4);
+    eq("En second, on se compare aux 28 d'après rowing", Math.max(...apres.ref.sets.map(x=>x.r)), 28);
+    eq("Sans position (séance libre, ancien appel), rien ne change : la dernière fois",
+      Math.max(...F.lastPerf(tr).sets.map(x=>x.r)), 28);
+
+    /* 2. rien de comparable, et aucun écart mesuré : on ne cherche pas à battre */
+    DB.history = [sess(3, [tractions(36)])];
+    const sans = F.suggestFor(tr, {reps:"8-12"}, 4);
+    eq("Plus entamé qu'à la dernière fois, sans écart mesuré : on tient", sans.mode, "hold");
+    vrai("…sans fixer un chiffre qu'on n'a pas mesuré", !!sans.sansCible && !sans.reps, JSON.stringify(sans));
+    eq("…et l'objectif du jour ne réaffiche pas la fourchette du plan",
+      F.eval("objectifDuJour")(tr, {reps:"8-12"}, 4).reps, "");
+    /* 2 bis. son propre écart, mesuré sur un exercice du même muscle */
+    DB.history = [sess(12, [{exId:trs, sets:[serie(0,20,1)]}]), sess(8, [rowing, {exId:trs, sets:[serie(0,16,1)]}]),
+                  sess(3, [tractions(36)])];
+    const ec = F.eval("ecartPerso")(tr, "reps");
+    vrai("Son écart se lit sur ses tractions supination (20 → 16)", ec && Math.abs(ec.r - 0.8) < 1e-9 && ec.source === "muscle",
+      JSON.stringify(ec));
+    const vise = F.suggestFor(tr, {reps:"8-12"}, 4);
+    eq("…et fixe la cible du jour : 36 × 0,8", vise.reps, 29);
+    vrai("…en le disant", /20 %/.test(vise.why), vise.why);
+
+    /* le sens inverse : plus frais qu'à la dernière fois, un raté ne fait pas baisser */
+    DB.history = [sess(3, [{exId:pmp, sets:[serie(0,20,1), serie(0,18,1), serie(0,16,1)]},
+      {exId:dc, sets:[serie(80,8,0), serie(80,7,0), serie(80,6,0), serie(80,5,0)]}])];
+    eq("Le même raté, sans position, fait baisser", F.suggestFor(dc, {reps:"10-12"}).mode, "down");
+    const plusTot = F.suggestFor(dc, {reps:"10-12"}, 0);
+    vrai("En ouverture aujourd'hui, on ne baisse pas", plusTot.mode === "hold" && plusTot.w === 80, JSON.stringify(plusTot));
+    /* et ce qui venait d'une ouverture ne pousse pas à monter quand l'exercice arrive tard */
+    DB.history = [sess(3, [{exId:dc, sets:[serie(80,12,3), serie(80,12,3), serie(80,12,3)]}])];
+    eq("« Monte » en ouverture…", F.suggestFor(dc, {reps:"10-12"}, 0).mode, "up");
+    eq("…devient « tiens » après des pompes", F.suggestFor(dc, {reps:"10-12"}, 3).mode, "hold");
+
+    /* 3. une baisse due à la place n'est pas une stagnation */
+    DB.history = [sess(20, [tractions(30)]), sess(17, [rowing, tractions(26)]), sess(14, [tractions(32)]),
+                  sess(10, [rowing, tractions(27)]), sess(7, [tractions(34)]), sess(3, [rowing, tractions(28)]),
+                  sess(1, [tractions(36)])];
+    const perf = F.eval("progressionParExo")();
+    vrai("Ses tractions montent : on les compare entre ouvertures", perf["Tractions"] > 0.02, perf["Tractions"]);
+    DB.history = [];
+  })();
+  neuf();
+
   grp("Les identifiants recalés");
   neuf();
   /* Deux exercices insérés au milieu de la bibliothèque les 4 et 5 septembre ont fait
