@@ -17254,7 +17254,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 18h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 18h40 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18559,6 +18559,21 @@ const PHOTO_L = 640, PHOTO_H = 929;    /* format d'origine des photos de séance
    Le liseré reste à 74,7 % de la hauteur : rien de ce qui s'y aligne n'a bougé.
    Le rond clair du haut garde sa position et sa taille exactes. */
 const HERO_H = 1000;
+/* Les photos des en-tetes Nutrition et Progression : chargees ET decodees des le
+   demarrage, et gardees en memoire. Sans ca, le premier passage sur la page — ou le
+   suivant, si le navigateur avait libere l'image — montrait l'en-tete vide un instant,
+   le temps de lire le fichier puis de le decoder. `HERO_PHOTOS` garde une reference :
+   une image referencee reste decodee dans le cache memoire du navigateur. */
+const HERO_PHOTOS = [];
+function prechargerHeros(){
+  ["img/hero-alimentation-1.webp", "img/hero-analyse-1.webp"].forEach(src=>{
+    const im = new Image();
+    im.decoding = "async";
+    im.src = src;
+    if(im.decode) im.decode().catch(()=>{});
+    HERO_PHOTOS.push(im);
+  });
+}
 function heroSvg(photo, plat, fond){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
@@ -29912,6 +29927,8 @@ render = function(){ _origRender(); syncWakeLock(); };
 appliquerTheme();
 majTextesFixes();
 render();
+/* juste apres le premier dessin : l'accueil passe avant les photos des autres pages */
+setTimeout(prechargerHeros, 300);
 if(!db.profile) setTimeout(()=>{ if(!db.profile) openOnboarding(true); }, 400);
 
 /* récupération : si IndexedDB détient une version plus récente (ou que localStorage a été vidé) */
