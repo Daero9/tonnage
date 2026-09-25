@@ -2434,7 +2434,13 @@ async function lancer(){
     DB.templates = [];
     F.showPlan(false);
     const D2 = F.document;
-    vrai("Le plan s'annonce", /plan personnalisé/i.test(D2.querySelector(".pn-sous").textContent));
+    vrai("Le plan s'annonce", /plan simple et personnalisé/i.test(D2.querySelector(".pn-sous").textContent));
+    /* d'apres la maquette de Nico : trois reperes du programme, lus dans ses seances */
+    eq("Trois repères du programme", D2.querySelectorAll(".pn-mini .m").length, 3);
+    vrai("…dont les répétitions des gros mouvements, prises dans les séances",
+      /\d+ à \d+ répétitions/.test(D2.querySelector(".pn-mini .m.orange b").textContent));
+    vrai("« Pour y arriver » : les calories et les protéines, puis une phrase simple",
+      !!D2.querySelector(".pn-obj .pr") && D2.querySelectorAll(".pn-obj .li").length === 2 && !!D2.querySelector(".pn-obj .tx p"));
     eq("Deux étiquettes en tête", D2.querySelectorAll(".pn-chips .ch").length, 2);
     vrai("La première porte l'haltère", !!D2.querySelector(".pn-chips .ch.on svg"));
     /* l'objectif en clair, avec le délai */
