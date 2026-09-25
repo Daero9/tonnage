@@ -7201,6 +7201,11 @@ async function lancer(){
     F.eval("curTab = 'prg'; render()");
     await attendre(()=>!!F.document.getElementById("prot-sec"), 3000);
     vrai("…et le repère revient", !!F.document.querySelector("#prot-sec .pr-target"));
+    /* Nico : une journee au quota restait sous le trait. Les barres et la ligne doivent
+       partager la meme reserve au-dessus d'elles (15 px) — on lit la regle, le cadre de
+       test n'a pas de hauteur. */
+    eq("Les barres ont la même échelle que la ligne d'objectif",
+      F.getComputedStyle(F.document.querySelector("#prot-sec .pt-plot .pr-col .pr-val")).height, "15px");
   })();
   neuf();
 
