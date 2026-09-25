@@ -2388,6 +2388,12 @@ async function lancer(){
       ["ajout d'aliment", ()=>F.openAjoutAliment("midi")],
       ["produit scanné", ()=>F.openProduitScanne("midi", {code:"1", nom:"Test", marque:"M",
         prot100:5, kcal100:50, gluc100:3, lip100:1, portion:25, liquide:true})]];
+    /* Nico, 25 septembre : toutes les pages qui s'ouvrent sont blanches, plus beiges */
+    F.openAjoutAliment("midi");
+    eq("La page qui s'ouvre est blanche",
+      F.document.documentElement.dataset.theme === "dark" ? "rgb(255, 255, 255)"
+        : F.getComputedStyle(D2.getElementById("sheet")).backgroundColor, "rgb(255, 255, 255)");
+    F.hideSheet();
     fiches.forEach(([nom, ouvrir])=>{
       ouvrir();
       const perdus = invisibles(D2.getElementById("sheet"));
