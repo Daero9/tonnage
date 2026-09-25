@@ -2519,6 +2519,11 @@
   .pp-st button{width:24px; height:24px; border-radius:50%; background:var(--pp-carte); color:var(--ink);
     font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center;}
   .pp-st b{font-size:14.5px; font-weight:800; min-width:38px; text-align:center;}
+  .pp-st b input.ps-g-carte{width:36px; padding:0; border:0; background:none; text-align:right;
+    font:inherit; color:inherit; -moz-appearance:textfield; appearance:textfield;}
+  .pp-st b input.ps-g-carte::-webkit-inner-spin-button, .pp-st b input.ps-g-carte::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  .sheet.plein > .ps-marque{margin:-2px 0 4px;}
+  .pp-titre .ps-nom-saisie{flex:1;}
   .pp-st b i{font-style:normal; font-size:10px; font-weight:600; color:var(--ink-mute); margin-left:1px;}
   /* les petites fenetres posees par-dessus la page : la confirmation, le detail */
   .pp-modal{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.45);
@@ -3872,6 +3877,9 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Valeurs nutritionnelles":"Nutrition facts",
+  "valeurs de l'emballage, {} : {k} kcal":"values from the pack, {}: {k} kcal",
+  "Pour {}":"For {}",
   "La dernière fois, cet exercice venait en début de séance. On te compare plutôt à ta séance du {d}, où il arrivait aussi après d'autres exercices pour les mêmes muscles.":"Last time, this exercise came at the start of the session. We compare you instead with your session of {d}, where it also came after other exercises for the same muscles.",
   "La dernière fois, cet exercice venait après d'autres exercices pour les mêmes muscles. On te compare plutôt à ta séance du {d}, où il ouvrait aussi le travail de ces muscles.":"Last time, this exercise came after other exercises for the same muscles. We compare you instead with your session of {d}, where it also opened the work on those muscles.",
   "La dernière fois, cet exercice arrivait après d'autres exercices pour les mêmes muscles : c'est peut-être ce qui t'a coûté des répétitions. Aujourd'hui il vient plus tôt, on ne baisse donc rien.":"Last time, this exercise came after other exercises for the same muscles: that may be what cost you reps. Today it comes earlier, so nothing goes down.",
@@ -7035,6 +7043,9 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Valeurs nutritionnelles":"Valores nutricionales",
+  "valeurs de l'emballage, {} : {k} kcal":"valores del envase, {}: {k} kcal",
+  "Pour {}":"Para {}",
   "La dernière fois, cet exercice venait en début de séance. On te compare plutôt à ta séance du {d}, où il arrivait aussi après d'autres exercices pour les mêmes muscles.":"La última vez, este ejercicio iba al principio del entrenamiento. Te comparamos mejor con tu sesión del {d}, en la que también iba después de otros ejercicios para los mismos músculos.",
   "La dernière fois, cet exercice venait après d'autres exercices pour les mêmes muscles. On te compare plutôt à ta séance du {d}, où il ouvrait aussi le travail de ces muscles.":"La última vez, este ejercicio iba después de otros ejercicios para los mismos músculos. Te comparamos mejor con tu sesión del {d}, en la que también abría el trabajo de esos músculos.",
   "La dernière fois, cet exercice arrivait après d'autres exercices pour les mêmes muscles : c'est peut-être ce qui t'a coûté des répétitions. Aujourd'hui il vient plus tôt, on ne baisse donc rien.":"La última vez, este ejercicio iba después de otros ejercicios para los mismos músculos: quizá eso te costó repeticiones. Hoy va antes, así que no bajamos nada.",
@@ -10417,6 +10428,9 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Valeurs nutritionnelles":"Valores nutricionais",
+  "valeurs de l'emballage, {} : {k} kcal":"valores da embalagem, {}: {k} kcal",
+  "Pour {}":"Para {}",
   "La dernière fois, cet exercice venait en début de séance. On te compare plutôt à ta séance du {d}, où il arrivait aussi après d'autres exercices pour les mêmes muscles.":"Da última vez, este exercício vinha no início do treino. Comparamos você com o seu treino de {d}, em que ele também vinha depois de outros exercícios para os mesmos músculos.",
   "La dernière fois, cet exercice venait après d'autres exercices pour les mêmes muscles. On te compare plutôt à ta séance du {d}, où il ouvrait aussi le travail de ces muscles.":"Da última vez, este exercício vinha depois de outros exercícios para os mesmos músculos. Comparamos você com o seu treino de {d}, em que ele também abria o trabalho desses músculos.",
   "La dernière fois, cet exercice arrivait après d'autres exercices pour les mêmes muscles : c'est peut-être ce qui t'a coûté des répétitions. Aujourd'hui il vient plus tôt, on ne baisse donc rien.":"Da última vez, este exercício vinha depois de outros exercícios para os mesmos músculos: talvez isso tenha custado repetições. Hoje ele vem antes, então nada diminui.",
@@ -17212,7 +17226,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 17h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 18h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21104,7 +21118,7 @@ function openProduitScanne(meal, p){
   /* « pour 100 ml » figurait sous chacune des quatre tuiles : quatre fois la même
      phrase, et la place qu'elle prenait empêchait les tuiles de tenir à côté de la
      photo. Elle est maintenant écrite une seule fois, sous la rangée. */
-  const tuile = (ic, val, u, lab) => `<div class="tu"><span class="ic">${ic}</span>
+  const tuile = (cl, ic, val, u, lab) => `<div class="tu ${cl}"><span class="ic">${ic}</span>
     <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
     <div class="l">${lab}</div></div>`;
   const signe = liquide ? IC_VERRE : IC_ASSIETTE;
@@ -21112,52 +21126,41 @@ function openProduitScanne(meal, p){
     <div class="ph-bandeau ps-bandeau" id="ps-photo">${p.photo
         ? `<img class="flou" src="${esc(p.photo)}" alt="" aria-hidden="true"><img class="net" id="ps-img" src="${esc(p.photo)}" alt="${esc(p.nom)}">`
         : `<span class="ic">${signe}</span>`}</div>
-    <div class="ps-tete">
-      <div class="ps-titre">
-        ${p.nom ? `<h3 class="ps-nom">${esc(p.nom)}</h3>`
-          : `<input class="ps-nom-saisie" id="ps-nom" maxlength="44" autocomplete="off"
-              value="${esc(p.marque)}" placeholder="${TR("Nomme ce produit")}"
-              aria-label="${TR("Nom du produit")}">`}
-        <div class="ps-marque">${p.marque? esc(p.marque) + " " : ""}<span class="ps-type">${
-          signe}${TR(liquide? "Boisson" : "Aliment")}</span></div>
-        <div class="ps-tuiles">
-          ${tuile(icoM("flamme", 20),  p.kcal100, "",  "kcal")}
-          ${tuile(icoM("muscle", 20),  p.prot100, "g", TR("protéines"))}
-          ${tuile(icoM("cereale", 20), p.gluc100 || 0, "g", TR("glucides"))}
-          ${tuile(IC_GOUTTE,           p.lip100 || 0,  "g", TR("lipides"))}
+    <div class="pp-titre">${p.nom ? `<h2>${esc(p.nom)}</h2>`
+        : `<input class="ps-nom-saisie" id="ps-nom" maxlength="44" autocomplete="off"
+            value="${esc(p.marque)}" placeholder="${TR("Nomme ce produit")}"
+            aria-label="${TR("Nom du produit")}">`}</div>
+    ${p.marque ? `<div class="ps-marque">${esc(p.marque)}</div>` : ""}
+    <div class="ph-estim"><b>${TR("Valeurs nutritionnelles")}</b><span class="ph-badge est ps-type">${TR(liquide? "Boisson" : "Aliment")}</span></div>
+    <div class="ps-tuiles ph-tuiles">
+      ${tuile("kcal", icoM("flamme", 20),  `<b id="ps-kcal">0</b>`, "",  "kcal")}
+      ${tuile("prot", icoM("muscle", 20),  `<b id="ps-prot">0</b>`, "g", TR("protéines"))}
+      ${tuile("gluc", icoM("cereale", 20), `<b id="ps-gluc">0</b>`, "g", TR("glucides"))}
+      ${tuile("lip",  IC_GOUTTE,           `<b id="ps-lip">0</b>`,  "g", TR("lipides"))}
+    </div>
+    <div class="ps-ref" style="margin:6px 0 0;"><span id="ps-pour"></span> · ${TR("valeurs de l'emballage, {} : {k} kcal")
+      .replace("{}", ref100).replace("{k}", p.kcal100)}</div>
+    <div class="pp-sect">${TR("Liste des aliments")}</div>
+    <div class="pp-grille">
+      <div class="pp-al">
+        <div class="nm">${esc(p.nom || p.marque || TR("Produit scanné"))}</div>
+        <div class="kc"><span id="ps-kc-carte">0</span> kcal</div>
+        <div class="nt">${TR(liquide ? "Boisson" : "Aliment")}</div>
+        <div class="pp-st">
+          <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
+          <b><input type="number" inputmode="decimal" min="0" id="ps-g" class="ps-g-carte"
+            value="${p.portion || (liquide ? 25 : 100)}"><i id="ps-uni"></i></b>
+          <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
         </div>
-        <div class="ps-ref">${TR("Informations {}").replace("{}", ref100)}</div>
       </div>
     </div>
-    <div class="stack">
+    <div class="stack" style="margin-top:14px;">
       <div class="ps-bloc">
         <div class="ps-qh">
           <span class="label" id="ps-lab"></span>
           ${liquide? `<button class="ps-bascule" id="ps-unite">${IC_ECHANGE}<span></span></button>`:""}
         </div>
-        <div class="ps-qrow">
-          <div class="ps-qg">
-            <div class="ps-step">
-              <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
-              <div class="ch"><input type="number" inputmode="decimal" min="0" id="ps-g"
-                value="${p.portion || (liquide ? 25 : 100)}"><span class="u" id="ps-uni"></span></div>
-              <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
-            </div>
-            <div class="ps-rapide" id="ps-rapide"></div>
-          </div>
-          <div class="ps-live">
-            <div class="tete">
-              <span class="ic" id="ps-ic">${signe}</span>
-              <div class="grow"><div class="kc"><b id="ps-kcal">0</b> kcal</div>
-                <i id="ps-pour"></i></div>
-            </div>
-            <div class="mac">
-              <div><b id="ps-prot">0</b> g<i>${TR("prot.")}</i></div>
-              <div><b id="ps-gluc">0</b> g<i>${TR("gluc.")}</i></div>
-              <div><b id="ps-lip">0</b> g<i>${TR("lip.")}</i></div>
-            </div>
-          </div>
-        </div>
+        <div class="ps-rapide" id="ps-rapide"></div>
       </div>
       <div class="ps-actions">
         <button type="button" class="ps-opts" id="ps-favbox" aria-pressed="false">
@@ -21169,7 +21172,6 @@ function openProduitScanne(meal, p){
           <span class="tx">${TR("Scanner un autre produit")}</span>
         </button>
       </div>
-      <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
     </div>
     <div class="pp-pied"><button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button></div>`, {plein:true});
   /* Hors ligne, ou photo retirée depuis : le signe reprend la place, sans case vide. */
@@ -21238,9 +21240,10 @@ function openProduitScanne(meal, p){
     document.getElementById("ps-gluc").textContent = Math.round((p.gluc100 || 0)*f);
     document.getElementById("ps-lip").textContent  = Math.round((p.lip100 || 0)*f);
     document.getElementById("ps-kcal").textContent = Math.round(p.kcal100*f);
+    document.getElementById("ps-kc-carte").textContent = Math.round(p.kcal100*f);
     const q = parseFloat(gEl.value);
     document.getElementById("ps-pour").textContent = q > 0
-      ? TR("pour {}").replace("{}", q + " " + uni) : "";
+      ? TR("Pour {}").replace("{}", q + " " + uni) : "";
     majRapide();
   };
   const bougerDe = d => {
@@ -21259,7 +21262,6 @@ function openProduitScanne(meal, p){
     majUnite(); maj();
   };
   gEl.oninput = maj; majUnite(); maj();
-  document.getElementById("ps-non").onclick = closeSheet;
   document.getElementById("ps-autre").onclick = ()=>scannerDepuisFiche(meal, ()=>openProduitScanne(meal, p));
   document.getElementById("ps-ok").onclick = ()=>{
     const f = part();

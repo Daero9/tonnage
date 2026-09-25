@@ -2737,8 +2737,10 @@ async function lancer(){
     eq("Les quatre libellés",
       [...D2ps().querySelectorAll(".ps-tuiles .l")].map(e=>e.textContent).join("|"),
       "kcal|protéines|glucides|lipides");
-    eq("Les glucides sont repris de l'étiquette",
-      D2ps().querySelectorAll(".ps-tuiles .v")[2].textContent.replace(/\s/g,""), "12g");
+    /* comme la page d'un plat photographié, les tuiles donnent ce qu'on consomme :
+       12 g de glucides pour 100 ml, 33 cl bus = 40 g */
+    eq("Les glucides suivent la quantité",
+      D2ps().querySelectorAll(".ps-tuiles .v")[2].textContent.replace(/\s/g,""), "40g");
     /* le compteur pas à pas */
     F.document.getElementById("ps-plus").click();
     eq("Le + avance de 5 cl", F.document.getElementById("ps-g").value, "38");
@@ -2821,7 +2823,7 @@ async function lancer(){
         .indexOf("https://images.openfoodfacts.org/images/") === 0);
     /* depuis la maquette de Nico : la photo occupe le haut de la page, au-dessus du nom */
     vrai("Elle est en haut de la page, au-dessus du nom",
-      avecPhoto.classList.contains("ph-bandeau") && !!avecPhoto.nextElementSibling.querySelector(".ps-titre"));
+      avecPhoto.classList.contains("ph-bandeau") && avecPhoto.nextElementSibling.classList.contains("pp-titre"));
     vrai("Le repas se choisit en haut à gauche", !!D2.querySelector("#sheet .pp-repas [data-repas='soir']"));
 
     /* sans photo : un signe, jamais une case vide */
@@ -2860,18 +2862,20 @@ async function lancer(){
     F.hideSheet();
     F.openProduitScanne("midi", {code:"9", nom:"Boisson test", marque:"M",
       prot100:0.8, kcal100:40, gluc100:8.9, lip100:0, portion:25, liquide:true, photo:""});
-    vrai("Les valeurs sont sous le nom, à droite de la photo",
-      !!D2.querySelector(".ps-titre .ps-tuiles"));
+    /* depuis le 25 septembre, la même page que celle d'un plat photographié : les
+       tuiles colorées, puis la liste des aliments avec sa carte */
+    vrai("Les tuiles colorées de la page photo", !!D2.querySelector("#sheet .ps-tuiles.ph-tuiles .tu.kcal"));
+    eq("Le produit est une carte de la liste des aliments", D2.querySelectorAll("#sheet .pp-grille .pp-al").length, 1);
     eq("Quatre valeurs", D2.querySelectorAll(".ps-tuiles .tu").length, 4);
     eq("Aucune tuile ne répète la référence", D2.querySelectorAll(".ps-tuiles .r").length, 0);
-    eq("Elle est écrite une seule fois, dessous",
-      D2.querySelector(".ps-ref").textContent, "Informations pour 100 ml");
+    eq("La référence est écrite une seule fois, dessous",
+      D2.querySelector(".ps-ref").textContent, "Pour 25 cl · valeurs de l'emballage, pour 100 ml : 40 kcal");
     /* un solide se mesure en grammes */
     F.hideSheet();
     F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
       prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
     eq("…et en grammes pour un aliment",
-      D2.querySelector(".ps-ref").textContent, "Informations pour 100 g");
+      D2.querySelector(".ps-ref").textContent, "Pour 100 g · valeurs de l'emballage, pour 100 g : 100 kcal");
 
     /* ---- boisson ou aliment, dit en toutes lettres ---- */
     /* L'étiquette explique pourquoi la quantité se compte en grammes ici et en
@@ -2894,15 +2898,13 @@ async function lancer(){
     eq("Les lipides", D2.getElementById("ps-lip").textContent, "2");
     eq("L'intitulé ne répète plus l'unité",
       D2.getElementById("ps-lab").textContent, "Quantité consommée");
-    /* le compteur et l aperçu se lisent d un même regard : ils ne se séparent jamais.
-       On lit la règle et non la géométrie — le cadre de test n a aucune largeur. */
-    eq("Le compteur et l'aperçu restent sur une ligne",
-      F.getComputedStyle(D2.querySelector(".ps-qrow")).flexWrap, "nowrap");
-    /* toute la quantité dans un cadre : le produit, la quantité et les boutons sont
-       trois plans distincts, et se lisent comme tels */
+    /* comme sur la page d'un plat : la quantité se règle dans la pastille de la carte */
+    vrai("Le compteur vit dans la pastille de la carte",
+      !!D2.querySelector(".pp-al .pp-st #ps-g") && !!D2.querySelector(".pp-al .pp-st #ps-plus"));
+    /* les raccourcis gardent leur cadre, sous la liste */
     const cadre = D2.querySelector(".ps-bloc");
-    vrai("La quantité vit dans son cadre",
-      !!cadre && !!cadre.querySelector(".ps-qh") && !!cadre.querySelector(".ps-qrow"));
+    vrai("Les raccourcis vivent dans leur cadre",
+      !!cadre && !!cadre.querySelector(".ps-qh") && !!cadre.querySelector("#ps-rapide"));
     vrai("…qui se distingue du fond de la fiche",
       F.getComputedStyle(cadre).backgroundColor !== F.getComputedStyle(D2.getElementById("sheet")).backgroundColor);
 
