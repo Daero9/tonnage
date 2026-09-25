@@ -2441,6 +2441,63 @@
   .grab{width:44px; height:5px; border-radius:3px; background:var(--ink-mute); opacity:.55; margin:0 auto 6px;}
   .grab::after{content:""; display:block; height:14px;}   /* zone de préhension plus large au doigt */
   .sheet{touch-action:pan-y;}
+  /* ---- les pages pleines : le resultat d'un scan, plat ou code-barres ----
+     Une page entiere et BLANCHE : la fiche grise qui remontait du bas laissait voir
+     l'app derriere, et la moitie de l'ecran servait a rien. */
+  .sheet.plein{max-height:none; height:100dvh; border-radius:0; border-top:0;
+    background:var(--surface); padding:calc(12px + env(safe-area-inset-top)) 16px 0;
+    display:flex; flex-direction:column;}
+  .sheet.plein > *{flex-shrink:0;}
+  .sheet.plein .grab{display:none;}
+  /* sur la page blanche, ce qui etait blanc pour trancher sur l'ancien fond gris se
+     fondait dans la page : la photo du produit et les tuiles prennent le creme */
+  .sheet.plein .ps-photo, .sheet.plein .ps-tuiles:not(.ph-tuiles) .tu{background:var(--bg);}   /* pas les tuiles de la photo : elles ont leurs couleurs */
+  /* le bouton d'ajout reste colle en bas pendant qu'on fait defiler */
+  /* margin-top:auto : quand le contenu est court, le pied descend tout en bas de
+     l'ecran au lieu de suivre le dernier aliment */
+  .pp-pied{position:sticky; bottom:0; z-index:4; margin:auto -16px 0; margin-top:auto;
+    padding:12px 16px calc(14px + env(safe-area-inset-bottom));
+    background:var(--surface); box-shadow:0 -10px 24px rgba(0,0,0,.07);}
+  .pp-pied .btn{width:100%; margin:0;}
+  .pp-tete{display:flex; justify-content:flex-end; margin-bottom:10px;}
+  .pp-x{width:36px; height:36px; border-radius:50%; background:var(--surface2); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-size:16px;}
+  .pp-titre{display:flex; align-items:center; gap:10px; margin:16px 0 6px;}
+  .pp-titre h2{flex:1; margin:0; font-size:23px; font-weight:800; letter-spacing:-.01em; line-height:1.2;}
+  .pp-edit{flex:0 0 auto; width:36px; height:36px; border-radius:50%; background:var(--surface2);
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center;}
+  .pp-edit svg{width:18px; height:18px;}
+  .pp-sect{font-size:18px; font-weight:800; margin:20px 0 10px;}
+  /* les aliments, trois par rangee, d'apres la maquette */
+  .pp-grille{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;}
+  .pp-al{background:var(--bg); border-radius:16px; padding:12px 5px 10px; text-align:center;
+    display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; cursor:pointer;}
+  .pp-al .nm{font-size:13.5px; font-weight:700; line-height:1.2; min-height:2.4em;
+    display:flex; align-items:center; justify-content:center; overflow-wrap:anywhere;}
+  .pp-al .kc{font-size:12px; color:var(--ink-mute);}
+  .pp-al .nt{font-size:11px; color:var(--ink-mute); line-height:1.25;}
+  .pp-st{display:flex; align-items:center; gap:3px; margin-top:8px;}
+  .pp-st button{width:26px; height:26px; border-radius:50%; background:var(--surface); color:var(--ink);
+    font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+  .pp-st b{font-size:15px; font-weight:800; min-width:40px; text-align:center;}
+  .pp-st b i{font-style:normal; font-size:10px; font-weight:600; color:var(--ink-mute); margin-left:1px;}
+  /* les petites fenetres posees par-dessus la page : la confirmation, le detail */
+  .pp-modal{position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.45);
+    display:flex; align-items:center; justify-content:center; padding:20px;}
+  .pp-boite{width:100%; max-width:360px; max-height:calc(100dvh - 40px); overflow-y:auto;
+    background:var(--surface); border-radius:22px; padding:18px 16px 14px;
+    box-shadow:0 22px 60px rgba(0,0,0,.3);}
+  @media (prefers-reduced-motion:no-preference){
+    .pp-modal{animation:voileIn .2s ease backwards;}
+    .pp-boite{animation:ficheIn .3s cubic-bezier(.22,1,.36,1) backwards;}
+  }
+  .pp-boite h3{margin:0 0 6px; font-size:18px; text-align:center;}
+  .pp-boite p{margin:0 0 16px; text-align:center; font-size:14px; color:var(--ink-soft); line-height:1.5;}
+  .pp-boite .ps-tuiles{margin:12px 0;}
+  .pp-deux{display:flex; gap:10px;} .pp-deux .btn{flex:1; margin:0;}
+  .btn-jeter{background:var(--bad); color:#fff;}
+  .pp-lien-sup{display:block; width:100%; margin-top:10px; padding:10px; text-align:center;
+    color:var(--bad); font-weight:700; font-size:14px; background:none;}
 
   .hb-row{display:flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid var(--border); border-radius:11px; padding:11px 12px; font-weight:600; font-size:14.5px;}
   .hb-row .hb-ck{width:24px; height:24px; flex:none; border-radius:8px; border:1.5px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800;}
@@ -2765,7 +2822,7 @@
   .cam.flash .voile{background:#fff; transition:background .1s;}
   /* la fenetre de visee du code-barres, avec sa ligne orange */
   .cam .cadre{position:absolute; left:11%; right:11%; top:calc(50% - 150px); aspect-ratio:2/1; max-width:330px; margin:0 auto;
-    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.45);
+    border:3px solid #fff; border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.74);
     transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
   .cam .cadre i{position:absolute; left:8%; right:8%; top:50%; height:2px; background:var(--accent); box-shadow:0 0 8px var(--accent);
     animation:camLigne 2.2s ease-in-out infinite;}
@@ -2777,7 +2834,7 @@
      hors champ. Elle s'elargit donc SEULEMENT en largeur : sa hauteur (46vh / 1,2 = 38vh)
      est exactement celle du carre d'avant, et elle gagne quatorze pour cent de largeur. */
   .cam .carre{position:absolute; left:50%; top:40%; width:min(94vw, 46vh); aspect-ratio:6/5; transform:translate(-50%,-50%);
-    border:3px solid #fff; border-radius:24px; box-shadow:0 0 0 9999px rgba(0,0,0,.35);
+    border:3px solid #fff; border-radius:24px; box-shadow:0 0 0 9999px rgba(0,0,0,.74);
     transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
   .cam.code .carre{opacity:0; transform:translate(-50%,-50%) scale(.9); pointer-events:none;}
   .cam.sans-flux .carre{display:none;}
@@ -3776,6 +3833,16 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Ton assiette":"Your plate",
+  "Liste des aliments":"Food list",
+  "Estimation d'après la photo — touche un aliment pour ajuster sa portion.":"Estimated from the photo — tap a food to adjust its portion.",
+  "Quitter ?":"Leave?",
+  "Si tu pars maintenant, tu perdras tous les résultats.":"If you leave now, you'll lose all the results.",
+  "Rester":"Stay",
+  "Jeter":"Discard",
+  "Enregistrer et quitter":"Save and close",
+  "Supprimer l'aliment":"Remove this food",
+  "Pour 100 g":"Per 100 g",
   "Nutrition":"Nutrition",
   "Vue d'ensemble de ton alimentation":"An overview of what you eat",
   "Analyse":"Analysis",
@@ -6913,6 +6980,16 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Ton assiette":"Tu plato",
+  "Liste des aliments":"Lista de alimentos",
+  "Estimation d'après la photo — touche un aliment pour ajuster sa portion.":"Estimación a partir de la foto: toca un alimento para ajustar su porción.",
+  "Quitter ?":"¿Salir?",
+  "Si tu pars maintenant, tu perdras tous les résultats.":"Si sales ahora, perderás todos los resultados.",
+  "Rester":"Quedarme",
+  "Jeter":"Descartar",
+  "Enregistrer et quitter":"Guardar y cerrar",
+  "Supprimer l'aliment":"Eliminar el alimento",
+  "Pour 100 g":"Por 100 g",
   "Nutrition":"Nutrición",
   "Vue d'ensemble de ton alimentation":"Resumen de tu alimentación",
   "Analyse":"Análisis",
@@ -10269,6 +10346,16 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Ton assiette":"Seu prato",
+  "Liste des aliments":"Lista de alimentos",
+  "Estimation d'après la photo — touche un aliment pour ajuster sa portion.":"Estimativa a partir da foto — toque em um alimento para ajustar a porção.",
+  "Quitter ?":"Sair?",
+  "Si tu pars maintenant, tu perdras tous les résultats.":"Se sair agora, você perderá todos os resultados.",
+  "Rester":"Ficar",
+  "Jeter":"Descartar",
+  "Enregistrer et quitter":"Salvar e fechar",
+  "Supprimer l'aliment":"Remover o alimento",
+  "Pour 100 g":"Por 100 g",
   "Nutrition":"Nutrição",
   "Vue d'ensemble de ton alimentation":"Visão geral da sua alimentação",
   "Analyse":"Análise",
@@ -17038,7 +17125,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 16h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 16h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18535,8 +18622,16 @@ let onSheetClose = null;   /* action à exécuter quand la fiche se ferme, quell
 /* verrou : la feuille ne se ferme ni au glissement, ni par le fond, ni par une croix.
    Réservé aux moments où l'utilisateur doit vraiment choisir (le plan de départ). */
 let sheetVerrou = false;
+/* Une page qui ne se quitte pas sans confirmation (le resultat d'une photo, qui a
+   coute un scan) pose ici ce qu'il faut faire a la place de fermer. La croix, le geste
+   retour et le bouton retour d'Android passent tous par elle. openSheet la remet a
+   zero : toute nouvelle fiche repart sans garde. */
+let gardeFermeture = null;
 function openSheet(html, opts){
   sheetVerrou = !!(opts && opts.verrou);
+  gardeFermeture = null;
+  /* « plein » : une page entière et blanche plutôt qu'une fiche qui remonte du bas */
+  sheet.classList.toggle("plein", !!(opts && opts.plein));
   sheet.style.transition = ""; sheet.style.transform = "";
   sheet.scrollTop = 0;
   sheet.innerHTML = (sheetVerrou ? "" : `<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="${TR("Fermer")}">✕</button>`)+html;
@@ -18599,7 +18694,9 @@ function hideSheet(){
     sheet.style.transform = "";
   }
   majVerrouPage(false);
-  sheetOpen = false; sheetVerrou = false;
+  sheetOpen = false; sheetVerrou = false; gardeFermeture = null;
+  sheet.classList.remove("plein");
+  document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
   pileFiches = [];                    /* on ferme pour de bon : rien ne doit resurgir */
   if(onSheetClose){ const f = onSheetClose; onSheetClose = null; try{ f(); }catch(e){} }
 }
@@ -18717,6 +18814,9 @@ window.addEventListener("popstate", ()=>{
   if(overlay.classList.contains("show")){
     /* le bouton retour du telephone fait comme la croix : un cran, pas tout */
     if(retourFiche()){ try{ history.pushState({tonnage:"sheet"}, ""); }catch(e){} return; }
+    /* une page qui demande confirmation : le geste retour la demande aussi, au lieu
+       de jeter les résultats en silence. On remet l'entrée d'historique consommée. */
+    if(gardeFermeture){ try{ history.pushState({tonnage:"sheet"}, ""); }catch(e){} sheetOpen = true; gardeFermeture(); return; }
     hideSheet(); return;
   }
   if(curTab !== "seance"){ curTab = "seance"; render(); return; }
@@ -20747,9 +20847,9 @@ function openProduitScanne(meal, p){
           <span class="tx">${TR("Scanner un autre produit")}</span>
         </button>
       </div>
-      <button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button>
       <button class="btn btn-ghost" id="ps-non">${TR("Annuler")}</button>
-    </div>`);
+    </div>
+    <div class="pp-pied"><button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button></div>`, {plein:true});
   /* Hors ligne, ou photo retirée depuis : le signe reprend la place, sans case vide. */
   const pimg = document.getElementById("ps-img");
   if(pimg) pimg.onerror = ()=>{
@@ -21110,16 +21210,14 @@ function openResultatPhoto(meal, res){
     const tuile = (cl, ic, val, u, lab) => `<div class="tu ${cl}"><span class="ic">${ic}</span>
       <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
       <div class="l">${lab}</div></div>`;
-    const composants = lignes.map(l=>l.nom.toLowerCase()).join(", ");
-    /* on redessine tout a chaque − / + : la fiche doit rester la ou elle etait,
+    /* on redessine tout a chaque − / + : la page doit rester la ou elle etait,
        pas remonter en haut a chaque geste */
     const yAvant = sheet.scrollTop;
-    openSheet(`<div class="ph-bandeau">
-        <img src="${p.apercu}" alt="">
-        <div class="ph-plat"><span class="ic">${IC_ASSIETTE}</span>
-          <div><b>${esc(res.plat ? majuscule(res.plat) : TR("Voici ce que je vois"))}</b><i>${esc(majuscule(composants))}</i></div></div>
-        <button type="button" class="ph-changer" id="ph-changer">${IC_PHOTO}${TR("Changer la photo")}</button>
-      </div>
+    const titre = res.plat ? majuscule(res.plat) : TR("Ton assiette");
+    openSheet(`<div class="pp-tete"><button type="button" class="pp-x" id="ph-x" aria-label="${TR("Fermer")}">✕</button></div>
+      <div class="ph-bandeau"><img src="${p.apercu}" alt=""></div>
+      <div class="pp-titre"><h2>${esc(titre)}</h2>
+        <button type="button" class="pp-edit" id="ph-preciser" aria-label="${TR("Modifier les ingrédients")}" title="${TR("Modifier les ingrédients")}">${IC_CRAYON}</button></div>
       <div class="ph-estim"><b>${TR("Estimation nutritionnelle")}</b>${estime ? `<span class="ph-badge est">≈ ${TR("valeurs estimées")}</span>` : ""}</div>
       <div class="ps-tuiles ph-tuiles">
         ${tuile("kcal", icoM("flamme", 20),  Math.round(tot.kcal), "",  "kcal")}
@@ -21127,49 +21225,88 @@ function openResultatPhoto(meal, res){
         ${tuile("gluc", icoM("cereale", 20), Math.round(tot.gluc), "g", TR("glucides"))}
         ${tuile("lip",  IC_GOUTTE,           Math.round(tot.lip),  "g", TR("lipides"))}
       </div>
-      <div class="ps-ref" style="margin:6px 0 12px;">${TR("Estimation d'après la photo — ajuste les portions si besoin.")}</div>
-      <div class="stack">
-        ${lignes.map((l, i)=>`<div class="ps-bloc ph-bloc" data-i="${i}">
-          <div class="ps-qh">
-            <span class="label">${TR("Quantité")} · <span class="nom">${esc(l.nom)}</span>${l.confiance === "basse" ? ` <span class="ph-badge">${TR("portion incertaine")}</span>` : ""}${l.source === "estimation" ? ` <span class="ph-badge est">≈</span>` : ""}</span>
-            <button type="button" class="ph-sup" data-sup="${i}" aria-label="${TR("Retirer")}">✕</button>
-          </div>
-          <div class="ps-qrow">
-            <div class="ps-qg"><div class="ps-step">
-              <button type="button" data-moins="${i}" aria-label="${TR("Moins")}">−</button>
-              <div class="ch"><input type="number" inputmode="decimal" min="0" step="10" value="${Math.round(l.g)}" data-g="${i}"><span class="u">g</span></div>
-              <button type="button" data-plus="${i}" aria-label="${TR("Plus")}">＋</button>
-            </div>${l.note ? `<div class="ph-note">${esc(l.note)}</div>` : ""}</div>
-            <div class="ps-live"><div class="tete">
-              <span class="ic">${IC_ASSIETTE}</span>
-              <div class="grow"><div class="kc"><b>${Math.round(l.kcal100 * l.g / 100)}</b> kcal</div>
-                <i>${TR("pour")} ${Math.round(l.g)} g</i></div>
-            </div>
-            <div class="mac">
-              <div><b>${Math.round(l.prot100 * l.g / 100)}</b> g<i>${TR("prot.")}</i></div>
-              <div><b>${Math.round((l.gluc100 || 0) * l.g / 100)}</b> g<i>${TR("gluc.")}</i></div>
-              <div><b>${Math.round((l.lip100 || 0) * l.g / 100)}</b> g<i>${TR("lip.")}</i></div>
-            </div></div>
+      <div class="ps-ref" style="margin:6px 0 0;">${TR("Estimation d'après la photo — touche un aliment pour ajuster sa portion.")}</div>
+      <div class="pp-sect">${TR("Liste des aliments")}</div>
+      <div class="pp-grille">
+        ${lignes.map((l, i)=>`<div class="pp-al" data-ouvre="${i}">
+          <div class="nm">${esc(l.nom)}</div>
+          <div class="kc">${Math.round(l.kcal100 * l.g / 100)} kcal${(l.confiance === "basse" || l.source === "estimation") ? " ≈" : ""}</div>
+          ${l.note ? `<div class="nt">${esc(l.note)}</div>` : ""}
+          <div class="pp-st">
+            <button type="button" data-moins="${i}" aria-label="${TR("Moins")}">−</button>
+            <b>${Math.round(l.g)}<i>g</i></b>
+            <button type="button" data-plus="${i}" aria-label="${TR("Plus")}">＋</button>
           </div>
         </div>`).join("")}
-        ${res.remarque ? `<div class="ph-rem">${IC_AMPOULE}<span>${esc(res.remarque)}</span></div>` : ""}
-        <button class="btn btn-accent" id="ph-ok" ${lignes.length ? "" : "disabled"}>${IC_CHECK}${TR("Ajouter à ce repas")}</button>
-        <div class="ps-actions">
-          <button type="button" class="ps-opts" id="ph-preciser"><span class="et">${IC_LISTE}</span><span class="tx">${TR("Modifier les ingrédients")}</span></button>
-          <button type="button" class="ps-opts" id="ph-refaire"><span class="et">${IC_PHOTO}</span><span class="tx">${TR("Refaire une photo")}</span></button>
-        </div>
-        <button class="btn btn-ghost" id="ph-non">${TR("Annuler")}</button>
-      </div>`);
+      </div>
+      ${res.remarque ? `<div class="ph-rem" style="margin-top:14px;">${IC_AMPOULE}<span>${esc(res.remarque)}</span></div>` : ""}
+      <div class="pp-pied"><button class="btn btn-accent" id="ph-ok" ${lignes.length ? "" : "disabled"}>${IC_CHECK}${TR("Ajouter à ce repas")}</button></div>`,
+      {verrou:true, plein:true});
     sheet.scrollTop = yAvant;
-    document.querySelectorAll("[data-moins]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.moins]; l.g = Math.max(10, l.g - 10); vibrer(6); dessiner(); });
-    document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{ const l = lignes[+b.dataset.plus]; l.g += 10; vibrer(6); dessiner(); });
-    document.querySelectorAll("[data-g]").forEach(inp=>inp.onchange=()=>{ const l = lignes[+inp.dataset.g]; l.g = Math.max(0, parseFloat(inp.value) || 0); dessiner(); });
-    document.querySelectorAll("[data-sup]").forEach(b=>b.onclick=()=>{ lignes.splice(+b.dataset.sup, 1); dessiner(); });
-    document.getElementById("ph-refaire").onclick = ()=>photographierRepas(meal);
-    document.getElementById("ph-changer").onclick = ()=>photographierRepas(meal);
-    document.getElementById("ph-non").onclick = ()=>{ photoEnCours = null; closeSheet(); };
+
+    /* Quitter demande confirmation : la photo a coûté un scan, et tout ce qu'on a
+       ajusté partirait avec. La croix, le geste retour, le bouton retour d'Android
+       passent tous par ici. */
+    const fenetre = html => {
+      document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
+      const m = document.createElement("div");
+      m.className = "pp-modal";
+      m.innerHTML = `<div class="pp-boite">${html}</div>`;
+      document.body.appendChild(m);
+      return m;
+    };
+    const confirmerDepart = ()=>{
+      const m = fenetre(`<h3>${TR("Quitter ?")}</h3>
+        <p>${TR("Si tu pars maintenant, tu perdras tous les résultats.")}</p>
+        <div class="pp-deux"><button class="btn" data-pp="rester">${TR("Rester")}</button>
+          <button class="btn btn-jeter" data-pp="jeter">${TR("Jeter")}</button></div>`);
+      m.onclick = e=>{ if(e.target === m) m.remove(); };
+      m.querySelector('[data-pp="rester"]').onclick = ()=>m.remove();
+      m.querySelector('[data-pp="jeter"]').onclick = ()=>{
+        m.remove(); photoEnCours = null; gardeFermeture = null; closeSheet();
+      };
+    };
+    gardeFermeture = confirmerDepart;
+    document.getElementById("ph-x").onclick = confirmerDepart;
+
+    /* Toucher une carte : toutes ses valeurs, et ses grammes. Rien n'est écrit tant
+       qu'on n'a pas appuyé sur « Enregistrer » — fermer la fenêtre annule. */
+    const detail = i=>{
+      const l = lignes[i]; let g = Math.round(l.g);
+      const peindre = ()=>{
+        const f = g / 100;
+        const m = fenetre(`<h3>${esc(l.nom)}</h3>
+          ${l.confiance === "basse" ? `<p style="margin-bottom:4px;"><span class="ph-badge">${TR("portion incertaine")}</span></p>` : ""}
+          ${l.note ? `<p style="margin-bottom:4px;">${esc(l.note)}</p>` : ""}
+          <div class="ps-tuiles ph-tuiles">
+            ${tuile("kcal", icoM("flamme", 20),  Math.round(l.kcal100 * f), "",  "kcal")}
+            ${tuile("prot", icoM("muscle", 20),  Math.round(l.prot100 * f), "g", TR("protéines"))}
+            ${tuile("gluc", icoM("cereale", 20), Math.round((l.gluc100 || 0) * f), "g", TR("glucides"))}
+            ${tuile("lip",  IC_GOUTTE,           Math.round((l.lip100 || 0) * f), "g", TR("lipides"))}
+          </div>
+          <div class="ps-step" style="justify-content:center; margin:6px 0 4px;">
+            <button type="button" data-dm aria-label="${TR("Moins")}">−</button>
+            <div class="ch"><input type="number" inputmode="decimal" min="0" step="10" value="${g}" data-dg><span class="u">g</span></div>
+            <button type="button" data-dp aria-label="${TR("Plus")}">＋</button>
+          </div>
+          <div class="ps-ref" style="text-align:center; margin:4px 0 14px;">${TR("Pour 100 g")} : ${Math.round(l.kcal100)} kcal · ${Math.round(l.prot100)} g ${TR("prot.")}${l.source === "estimation" ? " · ≈ " + TR("valeurs estimées") : ""}</div>
+          <button class="btn btn-accent" data-dok style="width:100%;">${TR("Enregistrer et quitter")}</button>
+          <button type="button" class="pp-lien-sup" data-dsup>${TR("Supprimer l'aliment")}</button>`);
+        m.onclick = e=>{ if(e.target === m) m.remove(); };
+        m.querySelector("[data-dm]").onclick = ()=>{ g = Math.max(0, g - 10); vibrer(6); peindre(); };
+        m.querySelector("[data-dp]").onclick = ()=>{ g += 10; vibrer(6); peindre(); };
+        m.querySelector("[data-dg]").onchange = e=>{ g = Math.max(0, Math.round(parseFloat(e.target.value) || 0)); peindre(); };
+        m.querySelector("[data-dok]").onclick = ()=>{ l.g = g; m.remove(); vibrer(10); dessiner(); };
+        m.querySelector("[data-dsup]").onclick = ()=>{ lignes.splice(i, 1); m.remove(); vibrer(10); dessiner(); };
+      };
+      peindre();
+    };
+    document.querySelectorAll("[data-ouvre]").forEach(c=>c.onclick=()=>detail(+c.dataset.ouvre));
+    /* les − / + d'une carte ajustent sans ouvrir la fenêtre */
+    document.querySelectorAll("[data-moins]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const l = lignes[+b.dataset.moins]; l.g = Math.max(10, l.g - 10); vibrer(6); dessiner(); });
+    document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const l = lignes[+b.dataset.plus]; l.g += 10; vibrer(6); dessiner(); });
     document.getElementById("ph-preciser").onclick = ()=>ouvrirParDessus(dessiner, ()=>{
-      /* par-dessus la fiche du plat : la croix revient au plat, elle ne quitte pas tout */
+      /* par-dessus la page du plat : la croix revient au plat, elle ne quitte pas tout */
       openSheet(`<h3>${TR("Modifier les ingrédients")}</h3>
         <p style="margin:0 0 10px; font-size:13px; color:var(--ink-soft);">${TR("Dis-moi ce qui ne va pas — un ingrédient absent, en trop, une portion, une cuisson — et je refais l'analyse.")}</p>
         <textarea id="ph-indice" rows="3" placeholder="${TR("Une précision pour l'analyse (ex. « c'est de la dinde », « sauce légère »)")}"></textarea>
@@ -21179,7 +21316,7 @@ function openResultatPhoto(meal, res){
         if(!indice){ toast(TR("Dis-moi ce qui change, sinon l'analyse sera la même.")); return; }
         const gratuite = (photoEnCours.corrections || 0) < CORRECTIONS_PAR_PHOTO;
         if(!gratuite && photosRestantes() <= 0){ proposerPhotos(photoEnCours.meal); return; }
-        pileFiches = [];   /* on relance : l'ancienne fiche du plat n'a plus lieu d'etre */
+        pileFiches = [];   /* on relance : l'ancienne page du plat n'a plus lieu d'etre */
         lancerAnalysePhoto(indice);
       };
     });
@@ -21195,7 +21332,7 @@ function openResultatPhoto(meal, res){
       });
       db.habitSel[k][meal] = (db.habitSel[k][meal] || []).concat(labels);
       if(db.dayFix[k]) delete db.dayFix[k];
-      photoEnCours = null;
+      photoEnCours = null; gardeFermeture = null;   /* enregistré : rien à confirmer */
       save(); closeSheet(); render(); vibrer(20);
       toast(labels.length > 1 ? TR("{} aliments ajoutés").replace("{}", labels.length) : TR("1 aliment ajouté"));
     };
