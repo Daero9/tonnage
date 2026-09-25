@@ -32,7 +32,7 @@
     --inv-bg:#17181a; --inv-ink:#ffffff; --inv-soft:rgba(255,255,255,.72); --inv-good:#7fd44e;
   }
   :root[data-theme="dark"]{
-    --bg:#141416; --bg0:rgba(20,20,22,0); --creme:#141416; --surface:#1f1f22; --surface2:#2a2a2e; --ombre-carte:0 2px 10px rgba(0,0,0,.3); --ombre-feuille:none; --bord-feuille:var(--border); --bord-doux:var(--border); --gris-clair:var(--surface2); --pp-carte:#262830; --btn:#2a2a2e; --border:#333338;
+    --bg:#141416; --bg0:rgba(20,20,22,0); --creme:#141416; --surface:#1f1f22; --surface2:#2a2a2e; --ombre-carte:0 2px 10px rgba(0,0,0,.3); --ombre-feuille:inset 0 0 0 1px var(--border); --bord-feuille:transparent; --bord-doux:var(--border); --gris-clair:var(--surface2); --pp-carte:#262830; --btn:#2a2a2e; --border:#333338;
     --tab:#2a2a2e;
     --ink:#f4f2ef; --ink-soft:#b3b1ad; --ink-mute:#85837f;
     --accent:#f58220; --accent-deep:#c96a12; --accent-ink:#ffffff;
@@ -359,8 +359,9 @@
   /* la carte de la semaine, a cheval sur la photo : verre depoli (Nico), assez opaque
      pour que les chiffres se lisent sans effort — la photo ne fait que transparaitre */
   .wk-card{border-radius:18px; padding:12px 14px 13px; box-shadow:0 6px 22px rgba(0,0,0,.14);
-    background:rgba(255,255,255,.80); -webkit-backdrop-filter:blur(18px) saturate(160%); backdrop-filter:blur(18px) saturate(160%);}
-  :root[data-theme="dark"] .wk-card{background:rgba(31,31,34,.80);}
+    background:rgba(255,255,255,.92); -webkit-backdrop-filter:blur(18px) saturate(160%); backdrop-filter:blur(18px) saturate(160%);
+    border:1.5px solid rgba(245,130,32,.55);}   /* le meme liseré que la carte « Tu progresses » */
+  :root[data-theme="dark"] .wk-card{background:rgba(31,31,34,.92);}
   /* l'écart avec la semaine passée est collé au nombre qu'il qualifie */
   .wk-nums .ev{font-weight:800; white-space:nowrap;}
   .wk-nums .ev.up{color:var(--good);}
@@ -373,10 +374,12 @@
      fait porte le degrade orange (plus clair en haut, plus sombre en bas), aujourd'hui
      sans seance se teinte a peine d'orange. */
   .wk-day{height:28px; border-radius:99px; display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:800; background:var(--surface2); color:var(--ink-mute);}
+    font-size:12px; font-weight:800; background:var(--surface); color:var(--ink-mute);
+    box-shadow:inset 0 0 0 1px var(--bord-doux);}   /* blancs, cernes d'un gris leger (Nico) */
   .wk-day.on{background:var(--accent-grad); color:var(--accent-ink);}
-  .wk-day.today{background:rgba(245,130,32,.14); color:var(--accent);}
-  .wk-day.on.today{background:var(--accent-grad); color:var(--accent-ink);}
+  /* aujourd'hui : juste un contour orange et la lettre en orange (Nico) */
+  .wk-day.today{background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent);}
+  .wk-day.on.today{background:var(--accent-grad); color:var(--accent-ink); box-shadow:none;}
   /* la série, sous les jours : discrète tant qu'elle tient, un ton plus chaud quand
      la semaine n'a pas encore sa séance */
   .wk-serie{font-size:12px; color:var(--ink-soft); margin:-3px 0 10px; line-height:1.3;}
@@ -17917,7 +17920,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 01h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 01h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
