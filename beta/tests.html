@@ -4233,7 +4233,7 @@ async function lancer(){
     const res = {plat:"saumon et riz", aliments:[
       {nom:"saumon grillé", grammes:150, confiance:"haute", kcal100:208, prot100:22, gluc100:0, lip100:13},
       {nom:"riz blanc cuit", grammes:150, confiance:"basse", kcal100:130, prot100:2.7, gluc100:28, lip100:0.3}]};
-    const ouvrir = () => { F.eval("photoEnCours = {apercu:'img/hero-alimentation-1.webp', meal:'midi', corrections:0}"); F.openResultatPhoto("midi", res); };
+    const ouvrir = () => { F.eval("photoEnCours = {apercu:'img/hero-alimentation-2.webp', meal:'midi', corrections:0}"); F.openResultatPhoto("midi", res); };
     ouvrir();
     const D2 = F.document;
     vrai("C'est une page pleine", D2.getElementById("sheet").classList.contains("plein"));
@@ -7204,6 +7204,13 @@ async function lancer(){
     /* Nico : une journee au quota restait sous le trait. Les barres et la ligne doivent
        partager la meme reserve au-dessus d'elles (15 px) — on lit la regle, le cadre de
        test n'a pas de hauteur. */
+    /* un commentaire de code glisse dans un gabarit s'affichait en toutes lettres
+       sous l'en-tete de Progression (« meme calage que le soleil… ») */
+    vrai("Aucun commentaire de code ne s'affiche sur la page",
+      !/\/\*|\*\//.test(F.document.getElementById("app").textContent));
+    /* les kilos du bilan debordaient de leur tuile : le chiffre retrecit avec sa longueur */
+    vrai("Le chiffre d'une tuile du bilan rétrécit quand il s'allonge",
+      F.eval("tailleBl")("0 kg") > F.eval("tailleBl")("12 450 kg"));
     eq("Les barres ont la même échelle que la ligne d'objectif",
       F.getComputedStyle(F.document.querySelector("#prot-sec .pt-plot .pr-col .pr-val")).height, "15px");
   })();
