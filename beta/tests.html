@@ -3440,6 +3440,40 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 25 septembre : la seance en cours et sa fiche d'exercice */
+  grp("La séance en cours, d'après les retours de Nico");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.materiel = null; DB.maison = null; DB.active = null;
+    DB.templates = []; F.addCoachProgram("masse");
+    const t = DB.templates[0];
+    F.startWorkout(t.id);
+    F.eval("curTab = 'seance'; render()");
+    vrai("Une flèche retour en haut à gauche", !!D2.getElementById("tb-retour"));
+    D2.getElementById("tb-retour").click();
+    vrai("…qui demande avant de quitter", /quitter la séance/i.test((D2.querySelector(".pp-modal h3") || {}).textContent || ""));
+    D2.querySelector('.pp-modal [data-q="rester"]').click();
+    vrai("« Rester » garde la séance", !!DB.active && !D2.querySelector(".pp-modal"));
+    vrai("Le réglage de l'exercice a une roue dentée, plus un menu burger",
+      !!D2.querySelector("[data-hist-ex] svg") && D2.querySelector("[data-hist-ex]").getAttribute("aria-label") === "Réglages de l'exercice");
+    F.openHistoExo(0);
+    vrai("La fiche d'exercice n'a plus la case « charge fixe »", !D2.getElementById("hx-plafond"));
+    vrai("…mais garde « un bras à la fois » ou sa note", !!(D2.getElementById("hx-unilat") || D2.querySelector(".hx2 .note")));
+    F.hideSheet();
+    D2.getElementById("tb-retour").click();
+    D2.querySelector('.pp-modal [data-q="quitter"]').click();
+    eq("« Quitter » abandonne la séance", DB.active, null);
+    /* la seance courte se reordonne : ce qu'elle garde ne change pas pour autant */
+    const longue = {items:[0,1,2,3,4].map(i=>({exId:"x"+i, sets:3, reps:"8-12", rest:90}))};
+    longue.courteIds = ["x4", "x1", "x2"];
+    eq("La séance courte retient les exercices qu'elle gardait", F.eval("gardesCourte")(longue).join(","), "1,2,4");
+    longue.items.splice(1, 1);
+    vrai("…et refait son choix si la séance a changé depuis", F.eval("gardesCourte")(longue).length >= 3);
+    DB.templates = [];
+  })();
+  neuf();
+
   grp("Les identifiants recalés");
   neuf();
   /* Deux exercices insérés au milieu de la bibliothèque les 4 et 5 septembre ont fait
