@@ -2895,6 +2895,12 @@ async function lancer(){
     eq("Les protéines de l'aperçu", D2.getElementById("ps-prot").textContent, "8");
     eq("Les glucides", D2.getElementById("ps-gluc").textContent, "3");
     eq("Les lipides", D2.getElementById("ps-lip").textContent, "2");
+    /* Nico : le nombre n'etait pas centre, et 1000 g etait coupe. Le champ prend la
+       largeur de ce qui est ecrit (on lit la regle : le cadre de test n'a pas de largeur) */
+    gEl.value = "1000"; gEl.dispatchEvent(new F.Event("input"));
+    eq("Le champ s'élargit pour 1000 g", gEl.style.width, "4.4ch");
+    eq("…et le nombre reste centré", F.getComputedStyle(gEl).textAlign, "center");
+    gEl.value = "150"; gEl.dispatchEvent(new F.Event("input"));
     vrai("Le compteur vit dans le grand cadre",
       !!D2.querySelector(".ps-gros #ps-g") && !!D2.querySelector(".ps-gros #ps-plus"));
     /* d'apres la reference de Nico : une pilule blanche aux bouts ronds, detachee par un contour */

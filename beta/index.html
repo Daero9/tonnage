@@ -2544,7 +2544,9 @@
     border:1px solid var(--bord-doux);
     font-size:28px; font-weight:600; display:flex; align-items:center; justify-content:center;}
   .ps-gros .val{flex:1; min-width:0; display:flex; align-items:baseline; justify-content:center; gap:4px;}
-  .ps-gros input{width:3.6ch; padding:0; border:0; background:none; text-align:right; color:var(--ink);
+  /* la largeur du champ suit le nombre tape (posee par le JS, en « ch » = largeur d'un
+     chiffre) : le nombre et son unite restent centres ensemble, de 5 g a 1000 g */
+  .ps-gros input{width:3ch; max-width:100%; padding:0; border:0; background:none; text-align:center; color:var(--ink);
     font-size:38px; font-weight:800; letter-spacing:-.02em; -moz-appearance:textfield; appearance:textfield;}
   .ps-gros input::-webkit-inner-spin-button, .ps-gros input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
   .ps-gros .val span{font-size:17px; font-weight:700; color:var(--ink-mute);}
@@ -17254,7 +17256,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 18h40 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 18h49 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21273,6 +21275,8 @@ function openProduitScanne(meal, p){
     document.getElementById("ps-lip").textContent  = Math.round((p.lip100 || 0)*f);
     document.getElementById("ps-kcal").textContent = Math.round(p.kcal100*f);
     const q = parseFloat(gEl.value);
+    /* le champ prend la largeur de ce qui est ecrit : ni vide a gauche, ni coupe a droite */
+    gEl.style.width = Math.max(1, String(gEl.value).length) + 0.4 + "ch";
     document.getElementById("ps-pour").textContent = q > 0
       ? TR("Pour {}").replace("{}", q + " " + uni) : "";
     majRapide();
