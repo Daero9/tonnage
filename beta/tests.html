@@ -3128,7 +3128,13 @@ async function lancer(){
     /* dix avec la ligne Notifications du 20 septembre */
     vrai("Dix réglages", lignes.length === 10, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
-    vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-abo") && D2.querySelector("#sheet .rg-abo").id === "st-abo");
+    vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-an") && D2.querySelector("#sheet .rg-an").id === "st-abo");
+    /* la carte d'apres la maquette de Nico : le poussin, trois atouts, un seul bouton */
+    vrai("La carte Analyse porte son poussin", !!D2.querySelector("#sheet .rg-an .an-perso img[src*='analyse-perso']"));
+    eq("…et ses trois atouts", D2.querySelectorAll("#sheet .rg-an .an-atouts > span").length, 3);
+    vrai("Sans abonnement : « Voir les forfaits » et sa flèche",
+      F.eval("db.abo") === true || (/Voir les forfaits|Essai/.test(D2.querySelector("#sheet .an-btn").textContent)
+        && !D2.querySelector("#sheet .an-btn").classList.contains("fait")));
     vrai("Chacun porte son signe",
       lignes.every(l => !!l.querySelector(":scope > .rgi svg, :scope > .rgi img")),
       lignes.filter(l => !l.querySelector(".rgi svg, .rgi img")).length + " sans icône");
