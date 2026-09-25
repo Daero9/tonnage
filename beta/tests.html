@@ -4109,6 +4109,86 @@ async function lancer(){
      des candidats se faisait sur la charge qu'un mouvement supporte, et un soulevé de
      terre à l'élastique y valait autant que le même à la barre — le leg curl sur ballon
      (42) passait même devant le leg curl de la machine (25). */
+  /* Trois bugs de séance remontés par Nico. Chacun venait d'un recalcul qui passait
+     derrière l'utilisateur et défaisait ce qu'il venait de faire. */
+  grp("Ce qu'on retouche à la main tient");
+  neuf();
+  await (async ()=>{
+    DB.materiel = null; DB.maison = null; DB.active = null;
+    DB.profile = Object.assign({}, DB.profile, {lieu:"salle"});
+    DB.templates = []; F.addCoachProgram("masse");
+    const t = DB.templates.find(x=>x.adaptatif === "pull");
+    /* 1. Remplacer : l'aperçu recalculait la séance à chaque redessin et effaçait le choix */
+    F.openPreview(t.id, true);
+    const autre = F.eval("LIB").find(e=>e.name && !t.items.some(i=>i.exId === e.id) && /Tirage vertical/.test(e.name));
+    t.items[0].exId = autre.id; t.retouche = Date.now();
+    F.openPreview(t.id, true);          /* le retour sur l'aperçu, comme après une fiche d'info */
+    eq("Un exercice remplacé survit au retour sur l'aperçu", t.items[0].exId, autre.id);
+    F.eval("closeSheet()");
+    /* 2. ↻ d'une ligne : il relançait tout le tirage */
+    F.eval("apercuProposition('pull')");
+    const lire = () => [...F.document.querySelectorAll("#sheet [data-ppswap]")]
+      .map(b=>b.closest(".card").querySelector("div[style*='font-weight:800']").textContent.trim());
+    const avant = lire();
+    F.document.querySelector("#sheet [data-ppswap='2']").click();
+    const apres = lire();
+    eq("↻ ne change que sa ligne",
+       avant.map((x, i)=>i === 2 ? "*" : x).join("|"), apres.map((x, i)=>i === 2 ? "*" : x).join("|"));
+    vrai("…et la change vraiment", avant[2] !== apres[2], avant[2] + " → " + apres[2]);
+    F.eval("hideSheet()");
+    DB.templates = [];
+  })();
+  neuf();
+
+  /* Le résultat d'une photo : une page pleine, qu'on ne quitte pas sans le vouloir. */
+  grp("La page de résultat d'une photo");
+  neuf();
+  await (async ()=>{
+    const res = {plat:"saumon et riz", aliments:[
+      {nom:"saumon grillé", grammes:150, confiance:"haute", kcal100:208, prot100:22, gluc100:0, lip100:13},
+      {nom:"riz blanc cuit", grammes:150, confiance:"basse", kcal100:130, prot100:2.7, gluc100:28, lip100:0.3}]};
+    const ouvrir = () => { F.eval("photoEnCours = {apercu:'img/hero-alimentation-1.webp', meal:'midi', corrections:0}"); F.openResultatPhoto("midi", res); };
+    ouvrir();
+    const D2 = F.document;
+    vrai("C'est une page pleine", D2.getElementById("sheet").classList.contains("plein"));
+    vrai("Plus de « Changer la photo » ni de « Refaire une photo »",
+      !D2.getElementById("ph-changer") && !D2.getElementById("ph-refaire"));
+    eq("Un titre simple : le nom du plat", D2.querySelector(".pp-titre h2").textContent, "Saumon et riz");
+    vrai("…avec l'icône « Modifier » à côté", !!D2.querySelector(".pp-titre #ph-preciser"));
+    eq("Une carte par aliment", D2.querySelectorAll(".pp-al").length, 2);
+    vrai("« Ajouter à ce repas » vit dans le pied collé en bas", !!D2.querySelector(".pp-pied #ph-ok"));
+    /* le détail d'un aliment : rien n'est écrit avant « Enregistrer » */
+    D2.querySelector("[data-ouvre='0']").click();
+    D2.querySelector(".pp-modal [data-dp]").click();
+    D2.querySelector(".pp-modal").click();            /* on tape à côté : annulé */
+    eq("Fermer le détail sans enregistrer ne change rien",
+       D2.querySelector("[data-ouvre='0'] .pp-st b").textContent, "150g");
+    D2.querySelector("[data-ouvre='0']").click();
+    D2.querySelector(".pp-modal [data-dp]").click();
+    D2.querySelector(".pp-modal [data-dok]").click();
+    eq("« Enregistrer et quitter » applique les grammes",
+       D2.querySelector("[data-ouvre='0'] .pp-st b").textContent, "160g");
+    /* la croix demande confirmation */
+    D2.getElementById("ph-x").click();
+    vrai("La croix demande confirmation", /Quitter/.test((D2.querySelector(".pp-modal h3") || {}).textContent || ""));
+    D2.querySelector("[data-pp='rester']").click();
+    vrai("« Rester » garde la page", F.eval("overlay.classList.contains('show')") && !D2.querySelector(".pp-modal"));
+    vrai("Le geste retour passe par la même confirmation", F.eval("typeof gardeFermeture === 'function'"));
+    D2.getElementById("ph-x").click();
+    D2.querySelector("[data-pp='jeter']").click();
+    await attendre(()=>!F.eval("overlay.classList.contains('show')"), 2000);
+    vrai("« Jeter » ferme la page", !F.eval("overlay.classList.contains('show')"));
+    /* enregistrer ne demande rien */
+    ouvrir();
+    F.eval("history.back = (()=>{})");               /* pas de popstate : on teste le filet */
+    D2.getElementById("ph-ok").click();
+    await attendre(()=>!F.eval("overlay.classList.contains('show')"), 2000);
+    vrai("Ajouter au repas ferme la page sans confirmation, même si le retour ne répond pas",
+      !F.eval("overlay.classList.contains('show')") && !D2.querySelector(".pp-modal"));
+    F.eval("delete history.back");
+  })();
+  neuf();
+
   grp("En salle, les remplaçants passent derrière");
   neuf();
   (()=>{
