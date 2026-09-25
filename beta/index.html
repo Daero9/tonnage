@@ -302,7 +302,12 @@
   .hero-essai{height:28px; padding:0 11px; border-radius:14px; background:var(--accent); color:#fff;
     font-size:12px; font-weight:800; letter-spacing:.01em; white-space:nowrap;}
   /* la pastille des photos d'assiette (Alimentation) : l'appareil et le nombre qu'il reste */
+  /* la pastille des photos d'assiette : noire, pour se detacher de la photo de l'en-tete
+     sans crier comme un bouton d'action */
   .hero-scans{display:inline-flex; align-items:center; gap:5px; padding:0 10px 0 8px;}
+  /* deux classes : la regle commune des boutons orange (plus bas dans la page) pose un
+     degrade en background-image, qui passait par-dessus une simple couleur de fond */
+  .hero-essai.hero-scans{background:#141416;}
   .hero-scans svg{width:15px; height:15px;} .hero-scans b{font-size:13px;}
   .hero-h{position:relative; z-index:2; text-align:center; margin-top:11%;}
   .hero-h h1{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1.05;}
@@ -319,6 +324,15 @@
   .hero-jour .hero-h .ico svg{width:25px; height:25px;}
   .hero-jour .hero-h .big{font-size:23px;}
   .hero-jour .hero-h .sub{font-size:12.5px; margin-top:4px;}
+  /* ---- les en-tetes photo (Alimentation, Progression), d'apres la maquette ----
+     Le texte passe a gauche, sur trois etages : un sur-titre orange souligne d'un trait
+     court, un grand titre, une phrase. */
+  .hero-photo .hero-h{text-align:left; left:7%; right:7%; bottom:24%;}
+  .hero-photo .hero-h .sur{display:inline-block; color:var(--accent); font-size:11.5px; font-weight:800;
+    letter-spacing:.14em; text-transform:uppercase; padding-bottom:5px; margin-bottom:6px;
+    border-bottom:2px solid var(--accent);}
+  .hero-photo .hero-h .big{font-size:34px; font-weight:800; letter-spacing:-.01em; text-transform:none; line-height:1.05;}
+  .hero-photo .hero-h .sub{font-size:13.5px; color:rgba(255,255,255,.78); margin-top:6px;}
   .under-hero{margin-top:-19%; position:relative; z-index:3;}
   .under-hero.sous-jour{margin-top:-15%;}
 
@@ -1672,6 +1686,9 @@
     background:radial-gradient(circle, var(--halo-c1, rgba(255,170,60,.55)) 0%, var(--halo-c2, rgba(255,140,30,.22)) 45%, rgba(255,140,30,0) 70%);
     animation:haloPulse var(--halo-t, 3.2s) ease-in-out infinite; pointer-events:none; z-index:-1;}
   .hero-poussin, .vs-poussin{isolation:isolate;}
+  /* les pieds restent sur la carte, meme quand un accessoire descend plus bas qu'eux ;
+     `translate` et non `transform`, que la pose musclee utilise deja pour grossir */
+  .hero-poussin, .vs-poussin{translate:0 calc(var(--pied, 0) * 100%);}
   [data-halo="1"]{--halo-w:115%; --halo-t:3.4s;}
   [data-halo="2"]{--halo-w:135%; --halo-t:2.6s; --halo-c1:rgba(255,175,60,.7); --halo-c2:rgba(255,140,30,.3);}
   [data-halo="3"]{--halo-w:155%; --halo-t:2s; --halo-c1:rgba(255,185,70,.85); --halo-c2:rgba(255,140,30,.38);}
@@ -1711,7 +1728,10 @@
     transform-origin:50% 100%; transform:scale(calc(.66 * var(--fl-etat) * var(--fl-ech)));
     transition:transform .4s ease, opacity .4s ease, right .4s ease;}
   /* en danger, elle revient sous le poussin, centree sur lui : il la protege */
-  .under-hero:has(.hero-poussin[data-pose="danger"]) .hero-flamme{--fl-etat:.55; right:50px; top:-38px; opacity:1;}
+  /* Le jour où elle va s'éteindre, elle se range sous le poussin, qui la protège — et un
+     peu plus haut qu'à l'ordinaire. La classe « danger » est posée par le JS : la règle
+     reposait sur :has(), que les WebView Android d'avant Chrome 105 ignorent en bloc. */
+  .hero-flamme.danger{--fl-etat:.55; right:50px; top:-50px; opacity:1;}
   .hero-poussin[data-pose="danger"]{width:88px; right:22px;}
   .hero-flamme .fe{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
   /* Le chiffre de la flamme dans une police ronde et pleine (Fredoka, licence OFL) : seuls
@@ -1723,8 +1743,10 @@
     /* blanc, avec un fin contour sombre : paint-order met le trait DERRIERE le remplissage,
        sinon le contour mange l'interieur des chiffres */
     -webkit-text-stroke:2.5px #d42a12; paint-order:stroke fill;}
-  .hero-flamme.moyenne{--fl-etat:.8; opacity:.85;}
-  .hero-flamme.petite{--fl-etat:.62; opacity:.6;}
+  /* Elle rétrécit quand les jours passent : c'est ce qui dit qu'elle faiblit. Elle ne
+     pâlit plus en plus — Nico la voyait transparente, elle reste pleine. */
+  .hero-flamme.moyenne{--fl-etat:.8;}
+  .hero-flamme.petite{--fl-etat:.62;}
   /* ---- le vestiaire ---- */
   /* ---- le vestiaire, d'apres la maquette du 21 septembre ---- */
   /* le bandeau du mode essai : assez visible pour qu'on ne le prenne pas pour un bug */
@@ -3754,6 +3776,15 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Nutrition":"Nutrition",
+  "Vue d'ensemble de ton alimentation":"An overview of what you eat",
+  "Analyse":"Analysis",
+  "Discipline aujourd'hui, résultats demain":"Discipline today, results tomorrow",
+  "Autre exercice":"Another exercise",
+  "Pas d'autre exercice possible pour cette place.":"No other exercise fits this slot.",
+  "La séance n'a pas pu démarrer.":"The workout couldn't start.",
+  "Sifflet":"Whistle",
+  "Noire":"Black",
   "Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.":"Preview mode: every accessory is unlocked. Remove \u00ab #accessoires \u00bb from the address to go back to your real progress.",
   "Occupe <b>{}</b> sur ce téléphone":"Takes up <b>{}</b> on this phone",
   "dont":"of which",
@@ -5156,7 +5187,7 @@ const TRAD = {en:{
   "À découvrir":"Unopened", "Touche pour ouvrir":"Tap to open", "Un accessoire t'attend":"An accessory is waiting for you",
   "Félicitations pour ta {n} activité !":"Congratulations on your {n} activity!",
   "Félicitations pour ta flamme de {n} !":"Congratulations on your flame of {n}!",
-  "Sifflet de coach":"Coach's whistle", "Médaille d'or":"Gold medal", "Ceinture noire":"Black belt",
+  "Sifflet de coach":"Coach's whistle", "Médaille de bronze":"Bronze medal", "Ceinture noire":"Black belt",
   "Couronne de laurier":"Laurel wreath", "Étincelles dorées":"Golden sparkles",
   "Ceinture de champion":"Championship belt", "Confettis permanents":"Endless confetti",
   "Arc-en-ciel":"Rainbow", "Flamme volante":"Flying flame", "Trophées volants":"Flying trophies",
@@ -6882,6 +6913,15 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Nutrition":"Nutrición",
+  "Vue d'ensemble de ton alimentation":"Resumen de tu alimentación",
+  "Analyse":"Análisis",
+  "Discipline aujourd'hui, résultats demain":"Disciplina hoy, resultados mañana",
+  "Autre exercice":"Otro ejercicio",
+  "Pas d'autre exercice possible pour cette place.":"No hay otro ejercicio posible para este lugar.",
+  "La séance n'a pas pu démarrer.":"No se pudo iniciar el entrenamiento.",
+  "Sifflet":"Silbato",
+  "Noire":"Negra",
   "Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.":"Modo de prueba: todos los accesorios est\u00e1n desbloqueados. Quita \u00ab #accessoires \u00bb de la direcci\u00f3n para volver a tu progreso real.",
   "Occupe <b>{}</b> sur ce téléphone":"Ocupa <b>{}</b> en este teléfono",
   "dont":"de los cuales",
@@ -8407,7 +8447,7 @@ es:{
   "Félicitations pour ta {n} activité !":"¡Felicidades por tu {n} actividad!",
   "Félicitations pour ta flamme de {n} !":"¡Felicidades por tu llama de {n}!",
   "Sifflet de coach":"Silbato de entrenador",
-  "Médaille d'or":"Medalla de oro",
+  "Médaille de bronze":"Medalla de bronce",
   "Ceinture noire":"Cinturón negro",
   "Couronne de laurier":"Corona de laurel",
   "Étincelles dorées":"Destellos dorados",
@@ -10229,6 +10269,15 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Nutrition":"Nutrição",
+  "Vue d'ensemble de ton alimentation":"Visão geral da sua alimentação",
+  "Analyse":"Análise",
+  "Discipline aujourd'hui, résultats demain":"Disciplina hoje, resultados amanhã",
+  "Autre exercice":"Outro exercício",
+  "Pas d'autre exercice possible pour cette place.":"Nenhum outro exercício possível para esta posição.",
+  "La séance n'a pas pu démarrer.":"Não foi possível iniciar o treino.",
+  "Sifflet":"Apito",
+  "Noire":"Preta",
   "Mode essai : tous les accessoires sont déverrouillés. Retire « #accessoires » de l'adresse pour revenir à ta vraie progression.":"Modo de teste: todos os acess\u00f3rios est\u00e3o desbloqueados. Remova \u00ab #accessoires \u00bb do endere\u00e7o para voltar ao seu progresso real.",
   "Occupe <b>{}</b> sur ce téléphone":"Ocupa <b>{}</b> neste telefone",
   "dont":"dos quais",
@@ -11754,7 +11803,7 @@ pt:{
   "Félicitations pour ta {n} activité !":"Parabéns pela sua {n} atividade!",
   "Félicitations pour ta flamme de {n} !":"Parabéns pela sua chama de {n}!",
   "Sifflet de coach":"Apito de treinador",
-  "Médaille d'or":"Medalha de ouro",
+  "Médaille de bronze":"Medalha de bronze",
   "Ceinture noire":"Faixa preta",
   "Couronne de laurier":"Coroa de louros",
   "Étincelles dorées":"Brilhos dourados",
@@ -16378,14 +16427,14 @@ const EXO_DEMO = {
 /* Le poussin, la mascotte : une pose par etat, des accessoires en calques. Table
    reecrite par C:\Projets\outils\poussin.py depuis C:\Projets\APP\Avatar. */
 const POUSSIN = {
-  "danger":{ratio:1.186, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "en-forme":{ratio:1.195, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "fatigue":{ratio:0.643, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "record":{ratio:1.374, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "repos":{ratio:0.762, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "fete":{ratio:1.157, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "muscle":{ratio:1.093, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]},
-  "seance":{ratio:1.069, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "petit-noeud-rose", "petit-noeud-rouge"]}
+  "danger":{ratio:1.231, pied:0.045, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-bleu", "medaille-rouge", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "en-forme":{ratio:1.21, pied:0.0118, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-rouge", "medaille-bleu", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "fatigue":{ratio:0.643, pied:0.0176, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-bleu", "medaille-rouge", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "record":{ratio:1.374, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-rouge", "medaille-bleu", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "repos":{ratio:0.762, pied:0.0383, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-rouge", "medaille-bleu", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "fete":{ratio:1.171, pied:0.0126, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-rouge", "medaille-bleu", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "muscle":{ratio:1.093, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-rouge", "medaille-bleu", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]},
+  "seance":{ratio:1.069, pied:0.019, acc:["bandeau-bleu", "bandeau-rose", "bandeau", "bonnet-blanc", "bonnet-rose", "bonnet-vert", "boxe-bleu", "boxe-rouge", "boxe-vert", "casque-noir", "casque-rouge", "casque-vert", "casquette-bleu", "casquette-bodeaux", "casquette-noir", "ceinture", "debardeur-noir", "lunette-noir", "medaille-rouge", "medaille-bleu", "petit-noeud-rose", "petit-noeud-rouge", "sifflet"]}
 };
 /* Les accessoires : ce qui se gagne, et comment. Les courants avec le nombre de
    seances (un total, jamais perdu) ; les rares avec la MEILLEURE serie de semaines
@@ -16451,8 +16500,10 @@ const ACCESSOIRES = [
     {id:"bonnet-blanc", nom:"Blanc", hex:"#EADED8"},
     {id:"bonnet-rose",  nom:"Rose",  hex:"#F6D2E4"},
     {id:"bonnet-vert",  nom:"Vert",  hex:"#D8F6D2"}]},
-  {id:"lunettes-aviateur",     nom:"Lunettes aviateur", plan:40,     seances:20,  duree:"7 semaines"},
-  {id:"debardeur-tonnup",      nom:"Débardeur Tonnup", plan:10,      seances:24,  duree:"2 mois"},
+  {id:"lunettes-aviateur",     nom:"Lunettes aviateur", plan:40,     seances:20,  duree:"7 semaines", couleurs:[
+    {id:"lunette-noir", nom:"Noir", hex:"#1B1B1B"}]},
+  {id:"debardeur-tonnup",      nom:"Débardeur Tonnup", plan:10,      seances:24,  duree:"2 mois", couleurs:[
+    {id:"debardeur-noir", nom:"Noir", hex:"#1B1B1B"}]},
   {id:"montre-connectee",      nom:"Montre connectée", plan:50,      seances:30,  duree:"10 semaines"},
   {id:"brassiere-de-sport",    nom:"Brassière de sport", plan:10,    seances:36,  duree:"3 mois"},
   {id:"noeud-papillon",        nom:"Nœud papillon", plan:16,         seances:42,  duree:"3 mois et demi"},
@@ -16469,9 +16520,15 @@ const ACCESSOIRES = [
      jamais laisser passer plus de 3 jours, jamais perdue. Les objets portes montent en
      prestige jusqu'a la couronne, puis les effets qui debordent du personnage ferment
      la marche. `arriere` = le calque se dessine DERRIERE lui. */
-  {id:"sifflet-de-coach",      nom:"Sifflet de coach", plan:16,      flamme:10,  rare:true},
-  {id:"medaille-d-or",         nom:"Médaille d'or", plan:16,         flamme:15,  rare:true},
-  {id:"ceinture-noire",        nom:"Ceinture noire", plan:12,        flamme:20,  rare:true},
+  {id:"sifflet-de-coach",      nom:"Sifflet de coach", plan:16,      flamme:10,  rare:true, couleurs:[
+    {id:"sifflet", nom:"Sifflet"}]},
+  /* Bronze, pas or : la premiere medaille d'une serie se gagne, elle ne se decerne pas
+     d'emblee. Deux rubans, rouge et bleu. */
+  {id:"medaille-de-bronze",    nom:"Médaille de bronze", plan:16,    flamme:15,  rare:true, couleurs:[
+    {id:"medaille-rouge", nom:"Rouge", hex:"#CC1812"},
+    {id:"medaille-bleu",  nom:"Bleu",  hex:"#3666BA"}]},
+  {id:"ceinture-noire",        nom:"Ceinture noire", plan:12,        flamme:20,  rare:true, couleurs:[
+    {id:"ceinture", nom:"Noire", hex:"#1B1B1B"}]},
   {id:"couronne-de-laurier",   nom:"Couronne de laurier", plan:25,   flamme:28,  rare:true},
   {id:"etincelles-dorees",     nom:"Étincelles dorées", plan:60,     flamme:36,  rare:true},
   {id:"cape",                  nom:"Cape", plan:8,                  flamme:45,  rare:true},
@@ -16873,7 +16930,9 @@ function poussinHtml(classe, poseForcee){
      serie en cours, et s'arrete a +50 % (cinquante jours d'affilee). Sans ce plafond, une
      serie longue le ferait sortir de l'ecran. */
   const ech = e.pose === "muscle" ? 1 + Math.min(.5, .01 * serieJours().n) : 1;
-  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio}; --po-ech:${ech.toFixed(3)};">${
+  /* --pied : le vide qu'un accessoire a ajoute SOUS les pattes (voir poussin.py). On
+     redescend l'image d'autant, sinon le poussin flotte au-dessus de la carte. */
+  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio}; --po-ech:${ech.toFixed(3)}; --pied:${p.pied || 0};">${
     halo ? `<i class="halo"></i>` : ""}${fonds}<img src="img/poussin/${e.pose}.webp" alt="">${calques}${
     rec ? `<button class="poussin-rec" id="poussin-record">🏆 ${TR("Record !")}</button>` : ""}</div>`;
 }
@@ -16979,7 +17038,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "24 septembre 2026 10h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 16h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18050,7 +18109,7 @@ const PHOTO_L = 640, PHOTO_H = 929;    /* format d'origine des photos de séance
    Le liseré reste à 74,7 % de la hauteur : rien de ce qui s'y aligne n'a bougé.
    Le rond clair du haut garde sa position et sa taille exactes. */
 const HERO_H = 1000;
-function heroSvg(photo, plat){
+function heroSvg(photo, plat, fond){
   const larg = 1210, haut = Math.round(larg * PHOTO_H / PHOTO_L);
   const pc = (PHOTO_CADRAGE[photo] === undefined) ? 50 : PHOTO_CADRAGE[photo];
   const decal = Math.round(-(haut - HERO_H) * Math.max(0, Math.min(100, pc)) / 100);
@@ -18063,9 +18122,17 @@ function heroSvg(photo, plat){
       <stop offset="0" stop-color="#0C1116"/>
       <stop offset="1" stop-color="#0D0E11"/>
     </radialGradient>
+    <!-- le voile des en-tetes photo : sombre a gauche, sous le texte, et nul vers la
+         droite ou la photo se montre en entier -->
+    <linearGradient id="hero-voile" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".62"/>
+      <stop offset=".55" stop-color="#000" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
     <mask id="hero-m" maskUnits="userSpaceOnUse" x="0" y="0" width="1210" height="${HERO_H}">
       <rect width="1210" height="${HERO_H}" fill="#000"/>
       ${plat ? `<rect width="1210" height="${HERO_H}" fill="#fff"/>`
+        : fond ? `<path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>`
         : `<path d="M0 0 H1210 V778 A1021 1021 0 0 1 0 778 Z" fill="#fff"/>
       <circle cx="605" cy="-44" r="868" fill="none" stroke="#000" stroke-width="10"/>
       <circle cx="605" cy="-60" r="171" fill="#000"/>`}
@@ -18074,6 +18141,9 @@ function heroSvg(photo, plat){
       <rect width="1210" height="${HERO_H}" fill="url(#hero-g)"/>
       ${photo ? `<image href="${photoUrl(photo)}" x="0" y="${decal}" width="${larg}" height="${haut}"
         preserveAspectRatio="none"/>` : ""}
+      ${fond ? `<image href="${fond}" x="0" y="0" width="1210" height="${HERO_H}"
+        preserveAspectRatio="xMaxYMid slice"/>
+      <rect width="1210" height="${HERO_H}" fill="url(#hero-voile)"/>` : ""}
     </g>
   </svg>`;
 }
@@ -18081,7 +18151,7 @@ function heroSvg(photo, plat){
 function hero(inner, opts){
   const o = opts || {};
   return `<div class="hero ${o.classe || ""}">
-    ${heroSvg(o.photo, o.plat)}
+    ${heroSvg(o.photo, o.plat, o.fond)}
     <div class="hero-in">
       <div class="hero-top">
         ${o.fermer ? `<span></span>
@@ -18538,7 +18608,18 @@ function closeSheet(){
   if(retourFiche()) return;
   if(sheetOpen && history.state && history.state.tonnage==="sheet"){
     sheetOpen = false;
-    try{ history.back(); return; }catch(e){}
+    try{
+      history.back();
+      /* Filet. history.back() confie la fermeture à l'événement popstate — mais sur
+         iPhone, dans une app ajoutée à l'écran d'accueil, cet événement ne vient pas
+         toujours. La fiche restait alors affichée, son voile couvrant toute la page :
+         plus aucun bouton ne répondait. On vérifie donc un instant après. Si une
+         autre fiche s'est ouverte entre-temps, sheetOpen le dit et on n'y touche pas. */
+      setTimeout(()=>{
+        if(!sheetOpen && overlay.classList.contains("show") && !overlay.classList.contains("part")) hideSheet();
+      }, 450);
+      return;
+    }catch(e){}
   }
   hideSheet();
 }
@@ -18546,7 +18627,7 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
 
 /* fermeture au glissement vers le bas (geste attendu sur iPhone) */
 (function glisserPourFermer(){
-  let y0 = null, dy = 0, glisse = false, dernierY = 0, dernierT = 0, vitesse = 0;
+  let y0 = null, x0 = 0, axe = null, dy = 0, glisse = false, dernierY = 0, dernierT = 0, vitesse = 0;
   /* Combien faut-il descendre pour fermer ? Assez pour que ce soit une décision.
      Un glissement lent doit parcourir un quart de la fiche ; un geste vif et net
      ferme plus tôt, parce que la vitesse dit déjà l'intention. */
@@ -18575,7 +18656,7 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
        entière descendait avec elle comme si on voulait la refermer. */
     if(e.target.closest("[data-poignee]")){ y0 = null; return; }
     if(zoneDefilante(e.target)){ y0 = null; return; }
-    y0 = e.touches[0].clientY; dy = 0; glisse = false;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; axe = null; dy = 0; glisse = false;
     dernierY = y0; dernierT = performance.now(); vitesse = 0;
     sheet.style.transition = "none";
   }, {passive:true});
@@ -18587,10 +18668,21 @@ overlay.addEventListener("click", e=>{ if(e.target===overlay && !sheetVerrou) cl
     dy = y - y0;
     /* la fiche s'est mise a defiler sous le doigt : c'etait un defilement, pas un tirage */
     if(!glisse && sheet.scrollTop > 0){ y0 = null; return; }
+    /* Le geste choisit son AXE une fois, après 12 px. Il n'est vertical que si la
+       descente l'emporte nettement sur le côté — à moins de 34° de la verticale. Sinon
+       c'est un défilement horizontal (une liste d'aliments, un carrousel) où le doigt
+       dérive un peu : on lâche la fiche pour tout le reste du toucher. */
+    if(axe === null){
+      const dx = e.touches[0].clientX - x0;
+      if(Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      axe = (dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.5) ? "v" : "h";
+    }
+    if(axe === "h"){ y0 = null; return; }
     if(dy <= 0){ if(glisse){ sheet.style.transform = ""; glisse = false; } return; }
-    /* on ne suit le doigt qu'à partir d'un vrai mouvement : sinon la fiche tremble
-       au moindre appui un peu glissant */
-    if(!glisse && dy < 22) return;
+    /* On ne suit le doigt qu'à partir de 40 px, près d'un centimètre. À 22 px, un demi-
+       centimètre suffisait à faire bouger la fiche : on la sentait partir au moindre
+       appui un peu glissant. */
+    if(!glisse && dy < 40) return;
     glisse = true;
     sheet.style.transform = `translateY(${dy}px)`;
     e.preventDefault();
@@ -19935,10 +20027,11 @@ function renderEat(app){
   const pctKcal = Math.min(100, kRef? kcalNow/kRef*100 : 0);
 
   app.innerHTML = `
-    ${hero(`<div class="ico">${IC_SOLEIL}</div>
+    ${hero(`<div class="sur">${TR("Nutrition")}</div>
       <div class="big">${auj ? TR("Aujourd'hui")
       : new Date(k+"T12:00:00").toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</div>
-      <div class="sub">${TR("Vue d'ensemble de ta journée")}</div>`, {classe:"hero-jour", essai:true, scans:true})}
+      <div class="sub">${TR("Vue d'ensemble de ton alimentation")}</div>`,
+      {classe:"hero-jour hero-photo", essai:true, scans:true, fond:"img/hero-alimentation-1.webp"})}
     <div class="under-hero sous-jour" style="display:flex; gap:9px; align-items:stretch;">
       <div class="eat-stats">
         <div class="eat-card eat-stat">
@@ -22755,7 +22848,10 @@ function renderSeance(app){
         /* elle grandit de 2 % par activite accumulee depuis le debut, et s'arrete a
            +100 % : au bout de cinquante activites elle a double, et ne bouge plus. */
         const ech = 1 + Math.min(1, .02 * nActivites());
-        return `<div class="hero-flamme ${fl.force}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${fl.n}</b></div>`; })()}
+        /* « danger » = le poussin est dans la pose du dernier jour : la flamme se cale
+           sous lui. On le lit dans l'état du poussin, pas dans le CSS (:has). */
+        const danger = poussinEtat().pose === "danger";
+        return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${fl.n}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
@@ -23844,13 +23940,12 @@ function genererAdaptative(type, evites){
   return {type, nom:moule.nom, sous:moule.sous, adaptatif:true,
           items:items.map(({charge, niveau, ...it})=>it)};
 }
-function genererSeance(type, evites){
-  const moule = MOULES[type] || MOULES.full;
-  const recents = exercicesRecents(6);
-  const bannis = new Set(evites || []);
-  const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
-  const items = [];
-  moule.roles.forEach((role, n)=>{
+/* Le choix d'UN exercice pour UN rôle d'une séance proposée. genererSeance l'appelle
+   pour chaque rôle ; le ↻ d'une ligne l'appelle pour sa seule ligne, les autres restant
+   en place. `deja` : les exercices déjà retenus ailleurs dans la séance. `n` : le rang du
+   rôle (le premier porte la dose lourde). Rend null si rien n'est possible. */
+function choisirPourRole(role, n, deja, bannis, recents, dose){
+  const items = deja;
     /* Les réservoirs sont écrits du plus sérieux au dernier recours : le développé
        couché en tête, les pompes et l'élastique en fin de liste. Mélanger la liste
        entière effaçait cette hiérarchie — en salle, où tout est disponible, « développé
@@ -23862,7 +23957,7 @@ function genererSeance(type, evites){
     const dispo = (RESERVOIRS[role] || [])
       .filter(nom=>libId(nom) && !items.some(it=>it.nom===nom) && exoDispo(getEx(libId(nom))));
     const pool = melanger(dispo.slice(0, Math.max(3, Math.ceil(dispo.length * 0.5))));
-    if(!pool.length) return;
+    if(!pool.length) return null;
     /* 1er choix : ni banni, ni récent, ni déconseillé par une blessure. Puis on relâche. */
     /* Même règle que pour les séances adaptatives : « je ne peux pas » est écarté pour
        de bon, le reste passe derrière ce qui est sûr. La dernière ligne du repli rendait
@@ -23870,7 +23965,7 @@ function genererSeance(type, evites){
        l'exercice que l'app déconseille. */
     const niveauDe = nom => { const b = injuryNote(nom); return b ? b.niveau : null; };
     const ouverts = pool.filter(n2=>niveauDe(n2) !== "stop");
-    if(!ouverts.length) return;
+    if(!ouverts.length) return null;
     const surs = ouverts.filter(n2=>!niveauDe(n2)).length
       ? ouverts.filter(n2=>!niveauDe(n2))
       : (ouverts.filter(n2=>niveauDe(n2) === "gene").length
@@ -23893,13 +23988,29 @@ function genererSeance(type, evites){
     const barreFixe = equipCanon(exChoisi) === "Barre fixe";
     if(exChoisi && (porteLeCorps(exChoisi) || barreFixe) && bas && bas.lo > 8)
       reps = barreFixe ? "6-12" : "8-12";
-    items.push({nom:choisi, sets:d.s, reps:repsTenue(choisi, reps),
-                rest:reposTenue(choisi, d.p), role});
+    return {nom:choisi, sets:d.s, reps:repsTenue(choisi, reps),
+            rest:reposTenue(choisi, d.p), role, rang:n};
+}
+function genererSeance(type, evites){
+  const moule = MOULES[type] || MOULES.full;
+  const recents = exercicesRecents(6);
+  const bannis = new Set(evites || []);
+  const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
+  const items = [];
+  moule.roles.forEach((role, n)=>{
+    const it = choisirPourRole(role, n, items, bannis, recents, dose);
+    if(it) items.push(it);
   });
   return {type, nom:moule.nom, sous:moule.sous, items};
 }
 /* Reconstruit une séance adaptative sur place. On garde les réglages de repos que
    l'utilisateur aurait posés sur un exercice qui revient : c'est son choix, pas le nôtre. */
+/* Une séance adaptative retouchée à la main AUJOURD'HUI garde ses retouches : on ne la
+   refait pas sous les doigts de celui qui vient de la modifier. Demain, elle repart de
+   l'état du jour — c'est le principe même d'une séance adaptative. */
+function retoucheDuJour(tpl){
+  return !!(tpl && tpl.retouche && dayKey(new Date(tpl.retouche)) === dayKey());
+}
 function regenererAdaptative(tpl){
   const anciens = {};
   (tpl.items || []).forEach(it=>{ if(it.exId) anciens[it.exId] = it.rest; });
@@ -24050,8 +24161,10 @@ function openPropose(){
 }
 
 /* aperçu d'une proposition, avec la possibilité d'en redemander une autre */
-function apercuProposition(type, evites){
-  const prop = avecMateriel(matProp(), ()=>genererSeance(type, evites));
+function apercuProposition(type, evites, dejaFaite){
+  /* `dejaFaite` : la proposition affichee, quand on revient ici pour redessiner apres
+     avoir rejoue une seule ligne. Sans elle, on tire une seance neuve. */
+  const prop = dejaFaite || avecMateriel(matProp(), ()=>genererSeance(type, evites));
   const dejaVus = (evites || []).concat(prop.items.map(it=>it.nom));
   const total = prop.items.reduce((a,it)=>a+it.sets, 0);
   const minutes = dureeMinutes(prop.items);
@@ -24068,7 +24181,7 @@ function apercuProposition(type, evites){
               <div style="font-weight:800; font-size:14.5px;">${esc(it.nom)}</div>
               <div style="font-size:12px; color:var(--ink-mute);">${it.sets} × ${esc(it.reps)} · repos ${it.rest} s</div>
             </div>
-            <button class="btn btn-sm" data-ppswap="${esc(it.nom)}" style="flex:0 0 auto;">↻</button>
+            <button class="btn btn-sm" data-ppswap="${prop.items.indexOf(it)}" style="flex:0 0 auto;" aria-label="${TR("Autre exercice")}">↻</button>
           </div>
           ${bless? `<div class="inj-note" style="margin:8px 0 0; font-size:11.5px;">⚠️ <b>${
             esc(TR(bless.injury))}</b> · ${TR("intensité {}").replace("{}",
@@ -24084,9 +24197,24 @@ function apercuProposition(type, evites){
     <button class="btn" id="pp-go" style="width:100%; margin-bottom:8px;">${TR("Ajouter et démarrer maintenant")}</button>
     <button class="btn btn-ghost" id="pp-again" style="width:100%; margin-bottom:8px;">${TR("↻ Une autre proposition")}</button>
     <button class="btn btn-ghost" id="pp-back" style="width:100%;">Retour</button>`);
-  /* ↻ sur une ligne : on ne rejoue que cet exercice */
+  /* ↻ sur une ligne : on ne rejoue QUE cette ligne. Relancer tout le tirage — ce que
+     faisait ce bouton — rebattait les cinq exercices, puisque chaque rôle est tiré au
+     hasard dans son réservoir. On garde les quatre autres, et on écarte ce qui a déjà
+     été montré pour cette ligne : chaque appui fait le tour des possibles. */
   document.querySelectorAll("[data-ppswap]").forEach(b=>b.onclick=()=>{
-    apercuProposition(type, (evites||[]).concat(b.dataset.ppswap));
+    const i = Number(b.dataset.ppswap), it = prop.items[i];
+    if(!it) return;
+    const vus = (it.vus || []).concat(it.nom);
+    const autres = prop.items.filter((_, k)=>k !== i);
+    const bannis = new Set((evites || []).concat(vus));
+    const dose = DOSES[(db.profile && db.profile.aim) || "masse"] || DOSES.masse;
+    const neuf = avecMateriel(matProp(), ()=>choisirPourRole(it.role, it.rang || 0, autres,
+                                                             bannis, exercicesRecents(6), dose));
+    if(!neuf || neuf.nom === it.nom){ toast(TR("Pas d'autre exercice possible pour cette place.")); return; }
+    neuf.vus = vus;
+    prop.items[i] = neuf;
+    vibrer(8);
+    apercuProposition(type, evites, prop);
   });
   document.getElementById("pp-again").onclick = ()=>apercuProposition(type, dejaVus);
   document.getElementById("pp-back").onclick = openPropose;
@@ -24364,7 +24492,11 @@ function openPreview(tplId, lieuFait){
   if(deuxLieux() && !lieuFait){
     /* closeSheet() passe par history.back() : la fermeture n'a lieu qu'au tour suivant.
        Ouvrir tout de suite ferait emporter notre fiche par celle qui part. */
-    setTimeout(()=>demanderLieu(l=>{ lieuProp = l; openPreview(tplId, true); }, t),
+    setTimeout(()=>demanderLieu(l=>{
+      lieuProp = l;
+      try{ openPreview(tplId, true); }
+      catch(e){ hideSheet(); toast(TR("La séance n'a pas pu démarrer.") + " " + String(e && e.message || e).slice(0, 90), "erreur"); }
+    }, t),
       overlay.classList.contains("show") ? 260 : 0);
     return;
   }
@@ -24378,10 +24510,20 @@ function openPreview(tplId, lieuFait){
      démarrage : un face pull sans poulie devenait des pompes piquées, c'est-à-dire une
      poussée à la place d'un tirage. Le tirage se fait maintenant directement dans ce
      qu'on peut vraiment faire sur place. */
+  /* On ne la refait PLUS à chaque redessin de l'aperçu. Remplacer un exercice, en
+     retirer un, ouvrir sa fiche d'info, cocher « séance courte » : tout repasse par
+     ici pour se redessiner, et le recalcul effaçait le choix qu'on venait de faire.
+     Une séance retouchée aujourd'hui garde ses retouches ; changer de lieu, en
+     revanche, la refait — un exercice choisi pour la salle n'est pas forcément
+     faisable chez soi. */
   if(t.adaptatif){
-    avecMateriel(matProp(), ()=>regenererAdaptative(t));
-    t.majAdapt = Date.now();
-    t.lieuAdapt = deuxLieux() ? lieuProp : null;
+    const lieuDuJour = deuxLieux() ? lieuProp : null;
+    if(!retoucheDuJour(t) || t.lieuAdapt !== lieuDuJour){
+      avecMateriel(matProp(), ()=>regenererAdaptative(t));
+      t.majAdapt = Date.now();
+      t.lieuAdapt = lieuDuJour;
+      delete t.retouche;
+    }
   }
   /* Une séance écrite à la main garde ses exercices : on annonce seulement ce qui sera
      remplacé, plutôt que d'afficher un mouvement et d'en lancer un autre. */
@@ -24470,6 +24612,7 @@ function openPreview(tplId, lieuFait){
   if(bCourte) bCourte.onclick = ()=>{ seanceCourte = !seanceCourte; vibrer(10); openPreview(tplId, true); };
   if(!seanceCourte) trierParGlisse(document.querySelector(".pv-liste"), ordre=>{
     appliquerOrdre(t, ordre);
+    if(t.adaptatif) t.retouche = Date.now();
     render();                                /* la carte de l'accueil suit aussi */
   });
   /* Remplacer : on repasse par la bibliothèque, qui sait déjà chercher et filtrer par
@@ -24479,6 +24622,7 @@ function openPreview(tplId, lieuFait){
     const i = Number(b.dataset.pvswap);
     ouvrirParDessus(()=>openPreview(tplId, true), ()=>openPicker(exId=>{
       t.items[i].exId = exId;
+      t.retouche = Date.now();       /* sinon le retour sur l'aperçu refait la séance */
       save(); render();
       retourFiche();                 /* on redescend sur l'aperçu, à jour */
     }));
@@ -24492,6 +24636,7 @@ function openPreview(tplId, lieuFait){
       TR("L'exercice sera enlevé de cette séance. Tes séances déjà faites ne changent pas."),
       TR("Retirer"), true, ()=>{
         t.items.splice(i, 1);
+        t.retouche = Date.now();
         save(); render();
         if(t.items.length) setTimeout(()=>openPreview(tplId, true), 60);
       });
@@ -24530,8 +24675,14 @@ function startWorkout(tplId, lieu, courte){
        la fermeture n'a lieu qu'au tour suivant. Ouvrir notre fiche tout de suite la ferait
        emporter par celle qui part — l'écran ne montrait alors plus rien du tout. On attend
        donc que la première soit vraiment partie. Rien d'ouvert : on n'attend pas. */
-    setTimeout(()=>demanderLieu(l=>{ lieuProp = l; closeSheet(); startWorkout(tplId, l, courte); },
-                                db.templates.find(t=>t.id===tplId)),
+    setTimeout(()=>demanderLieu(l=>{
+      lieuProp = l; closeSheet();
+      /* Si le lancement casse, on ne laisse pas l'écran figé : la fiche part, et le
+         message dit CE QUI a cassé — c'est ce qui manquait pour trouver la cause sur
+         un téléphone qu'on n'a pas sous la main. */
+      try{ startWorkout(tplId, l, courte); }
+      catch(e){ hideSheet(); toast(TR("La séance n'a pas pu démarrer.") + " " + String(e && e.message || e).slice(0, 90), "erreur"); }
+    }, db.templates.find(t=>t.id===tplId)),
       overlay.classList.contains("show") ? 260 : 0);
     return;
   }
@@ -24542,7 +24693,8 @@ function startWorkout(tplId, lieu, courte){
   /* L aperçu vient peut-être de la recalculer : dans ce cas on garde ce qui est affiché,
      y compris l ordre que l utilisateur a pu changer. Sinon (démarrage direct), on la
      recalcule ici. */
-  if(tpl && tpl.adaptatif && Date.now() - (tpl.majAdapt || 0) > 6e5){
+  const garder = retoucheDuJour(tpl) && tpl.lieuAdapt === (lieu || null);
+  if(tpl && tpl.adaptatif && !garder && Date.now() - (tpl.majAdapt || 0) > 6e5){
     avecMateriel(lieu === "maison" ? materielMaison() : db.materiel,
                  ()=>regenererAdaptative(tpl));
     tpl.majAdapt = Date.now();
@@ -28055,9 +28207,10 @@ function renderProgress(app){
   const exIds = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
 
   app.innerHTML = `
-    ${hero(`<div class="ico"><span class="ico-carre">${IC_PROGRESSION}</span></div>
+    ${hero(`<div class="sur">${TR("Analyse")}</div>
       <div class="big">${TR("Progression")}</div>
-      <div class="sub devise">${TR("Discipline aujourd'hui")}<br>${TR("Résultats demain")}</div>`, {classe:"hero-jour hero-prog", essai:true})}   /* meme calage que le soleil : le titre ne descend pas sous les cartes */
+      <div class="sub">${TR("Discipline aujourd'hui, résultats demain")}</div>`,
+      {classe:"hero-jour hero-photo", essai:true, fond:"img/hero-analyse-1.webp"})}   /* meme calage que le soleil : le titre ne descend pas sous les cartes */
     <div class="under-hero stack" id="wt-sec"></div>
     <div id="prg-body"></div>`;
   wireTopbar();
