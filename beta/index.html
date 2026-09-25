@@ -996,6 +996,7 @@
   .hx2 .badge svg{width:15px; height:15px; color:#E5A100;}
   .hx2 .badge.autre{background:rgba(245,130,32,.14); color:var(--accent);}
   .hx2 .rou-box.court{margin:0 18px; text-align:center;}
+  .icon-btn .roue-fine{width:19px; height:19px; color:var(--ink-mute); opacity:.75;}
   .hx2 .hx-mat{padding-bottom:12px;}
   .hx2 .choix{display:flex; gap:12px; align-items:flex-start; cursor:pointer; padding:4px 2px;}
   .hx2 .choix input{width:22px; height:22px; accent-color:var(--accent); flex:none; margin-top:1px;}
@@ -1983,11 +1984,17 @@
   .hero-en-cours .hero-in{grid-area:1/1; position:static; padding-bottom:14px; display:flex; flex-direction:column;}
   .hero-en-cours .hero-meta{gap:8px; margin-top:12px; flex-wrap:wrap;}
   .hero-en-cours .hero-meta span{display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px;
-    background:rgba(0,0,0,.42); border-radius:10px; padding:6px 10px; text-shadow:none;}
+    border-radius:10px; padding:6px 10px; text-shadow:none;
+    /* verre depoli sombre (Nico) : la photo se floute derriere, la pastille reste foncee */
+    background:rgba(16,16,20,.45); -webkit-backdrop-filter:blur(12px) saturate(140%); backdrop-filter:blur(12px) saturate(140%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);}
   .hero-en-cours .hero-meta svg, .hero-en-cours .hero-meta .icm{width:17px; height:17px;}
   /* la carte sombre du bas : tonnage, calories, chrono, chacun avec son signe dans un rond */
   .hero-en-cours .hero-stats{display:flex; align-items:stretch; gap:0; margin:14px 0 0;
-    padding:10px 6px; border-radius:18px; background:rgba(22,22,24,.9); text-shadow:none;}
+    padding:10px 6px; border-radius:18px; text-shadow:none;
+    /* le meme verre depoli sombre que les pastilles du dessus */
+    background:rgba(16,16,20,.55); -webkit-backdrop-filter:blur(16px) saturate(140%); backdrop-filter:blur(16px) saturate(140%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);}
   /* trois categories separees par un trait, sans rond autour des signes */
   .hero-en-cours .hero-stats .hs, .hero-en-cours .chrono-bloc{display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; flex:1 1 0; min-width:0; padding:4px 6px;}
   .hero-en-cours .hero-stats .hs + .hs, .hero-en-cours .hero-stats .chrono-bloc{border-left:1px solid rgba(255,255,255,.18);}
@@ -17357,7 +17364,7 @@ const ACCESSOIRES = [
     {id:"bonnet-blanc", nom:"Blanc", hex:"#EADED8"},
     {id:"bonnet-rose",  nom:"Rose",  hex:"#F6D2E4"},
     {id:"bonnet-vert",  nom:"Vert",  hex:"#D8F6D2"}]},
-  {id:"lunettes-aviateur",     nom:"Lunettes de soleil", plan:40,     seances:20,  duree:"7 semaines", couleurs:[
+  {id:"lunettes-aviateur",     nom:"Lunettes de soleil", plan:22, zones:["yeux"],     seances:20,  duree:"7 semaines", couleurs:[
     {id:"lunette-noir", nom:"Noir", hex:"#1B1B1B"}]},
   {id:"debardeur-tonnup",      nom:"Débardeur", plan:10,      seances:24,  duree:"2 mois", couleurs:[
     {id:"debardeur-noir", nom:"Noir", hex:"#1B1B1B"}]},
@@ -17368,7 +17375,7 @@ const ACCESSOIRES = [
   {id:"peintures-de-guerre",   nom:"Peintures de guerre", plan:5,   seances:56,  duree:"4 mois et demi"},
   {id:"oreilles-de-lapin",     nom:"Oreilles de lapin", plan:25,     seances:62,  duree:"5 mois"},
   {id:"couronne-de-fleurs",    nom:"Couronne de fleurs", plan:25,    seances:68,  duree:"5 mois et demi"},
-  {id:"lunettes-coeur",        nom:"Lunettes cœur", plan:40,         seances:76,  duree:"6 mois"},
+  {id:"lunettes-coeur",        nom:"Lunettes cœur", plan:22, zones:["yeux"],         seances:76,  duree:"6 mois"},
   {id:"bracelets-de-maintien", nom:"Bracelets de maintien", plan:50, seances:84,  duree:"7 mois"},
   {id:"echarpe",               nom:"Écharpe", plan:16,               seances:92,  duree:"7 mois et demi"},
   {id:"t-shirt-sans-manches",  nom:"T-shirt sans manches", plan:10,  seances:100, duree:"8 mois"},
@@ -17402,8 +17409,10 @@ function variantes(a){ return (a.couleurs && a.couleurs.length) ? a.couleurs : [
 function dessineVar(id){ return !!(POUSSIN.repos && POUSSIN.repos.acc.includes(id)); }
 function variantesDessinees(a){ return variantes(a).filter(v=>dessineVar(v.id)); }
 function familleAcc(id){ return ACCESSOIRES.find(a=>variantes(a).some(v=>v.id === id)) || null; }
-/* Qui passe devant qui : le bandeau sous le casque, les lunettes par-dessus tout ce
-   qui couvre la tete. Sans ce tri, l'ordre d'affichage etait celui dans lequel la
+/* Qui passe devant qui : le bandeau sous le casque, et les lunettes SOUS tout ce qui
+   couvre la tete (Nico) — la visiere d'une casquette, l'arceau et les coques d'un casque
+   passent par-dessus leurs branches ; seul le bandeau, pose sur le front, reste dessous.
+   Leur zone (« yeux ») est ecrite a part : elle ne se deduit plus de ce plan. Sans ce tri, l'ordre d'affichage etait celui dans lequel la
    personne avait enfile ses accessoires. */
 function plan(id){ const f = familleAcc(id); return (f && f.plan) || 0; }
 /* Les ZONES du corps qu'un accessoire occupe. Deux accessoires se refusent dès qu'ils
@@ -17900,7 +17909,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 23h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 00h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19269,6 +19278,9 @@ function heroSvg(photo, plat, fond, visible){
 const IC_RETOUR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 /* La fleche retour d'une seance en cours : une petite fenetre, pas une fiche, et le
    meme sort que « Annuler » — la seance n'est pas enregistree. */
+/* La roue des reglages d'un exercice : en trait fin, pas pleine comme celle des
+   reglages de l'app — elle accompagne la carte sans lui voler la vedette (Nico). */
+const IC_ROUE_FINE = '<svg class="roue-fine" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function confirmerQuitterSeance(){
   document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
   const m = document.createElement("div");
@@ -26415,7 +26427,7 @@ function renderActive(app){
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(nomEx(ex))}${
           ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>` : ""}</div></div>
-        <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Réglages de l'exercice")}" aria-label="${TR("Réglages de l'exercice")}">${IC_GEAR}</button>
+        <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Réglages de l'exercice")}" aria-label="${TR("Réglages de l'exercice")}">${IC_ROUE_FINE}</button>
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">${IC_INFO_ROND}</button></div>
       <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>

@@ -1674,10 +1674,13 @@ async function lancer(){
         DB.avatar = {acc:["casque-noir", "bandeau"]};   /* enfiles dans l'autre sens */
         r = rang();
         vrai("…même quand on les met dans l'autre ordre", r.casque > r.bandeau, r.src.join(" | "));
-        eq("Les lunettes passent devant ce qui couvre la tête",
-           /* le plan se lit sur l'identifiant d'une TEINTE : depuis leur dessin, les
-              lunettes aviateur s'appellent « lunette-noir », comme leur fichier */
-           F.eval("plan('lunette-noir') > plan('casque-noir') && plan('casque-noir') > plan('bandeau')"), true);
+        /* Nico, 26 septembre : les lunettes passent SOUS ce qui couvre la tete (casque,
+           casquette, bonnet), au-dessus du seul bandeau. Le plan se lit sur l'identifiant
+           d'une TEINTE : les lunettes s'appellent « lunette-noir », comme leur fichier. */
+        eq("Les lunettes passent sous le casque, la casquette et le bonnet",
+           F.eval("plan('lunette-noir') < plan('casque-noir') && plan('lunette-noir') < plan('casquette-noir') && plan('lunette-noir') < plan('bonnet-blanc') && plan('lunette-noir') > plan('bandeau')"), true);
+        vrai("…et se portent toujours avec le casque (zones distinctes)",
+           !F.eval("memeEndroit(familleAcc('lunette-noir'), familleAcc('casque-noir'))"));
         eq("Chaque accessoire a son plan",
            F.eval("ACCESSOIRES.filter(a=>a.plan === undefined && !a.arriere).length"), 0);
         delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
