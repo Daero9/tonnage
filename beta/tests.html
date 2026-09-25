@@ -1675,7 +1675,9 @@ async function lancer(){
         r = rang();
         vrai("…même quand on les met dans l'autre ordre", r.casque > r.bandeau, r.src.join(" | "));
         eq("Les lunettes passent devant ce qui couvre la tête",
-           F.eval("plan('lunettes-aviateur') > plan('casque-noir') && plan('casque-noir') > plan('bandeau')"), true);
+           /* le plan se lit sur l'identifiant d'une TEINTE : depuis leur dessin, les
+              lunettes aviateur s'appellent « lunette-noir », comme leur fichier */
+           F.eval("plan('lunette-noir') > plan('casque-noir') && plan('casque-noir') > plan('bandeau')"), true);
         eq("Chaque accessoire a son plan",
            F.eval("ACCESSOIRES.filter(a=>a.plan === undefined && !a.arriere).length"), 0);
         delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
@@ -1809,9 +1811,13 @@ async function lancer(){
     F.render();
     const D2 = F.document;
     /* l'en-tete annonce la journee */
-    vrai("Le soleil est en tête de page", !!D2.querySelector(".hero-h .ico svg"));
-    eq("…au-dessus du titre, pas à côté",
-      D2.querySelector(".hero-h .ico").nextElementSibling.className, "big");
+    /* D'apres la maquette de Nico : plus de soleil centre, mais une photo dans l'en-tete
+       et le texte a gauche, sur trois etages — sur-titre, titre, phrase. */
+    vrai("L'en-tête porte sa photo", !!D2.querySelector(".hero.hero-photo .hero-bg image[href*='hero-alimentation']"));
+    vrai("…sans l'anneau fin ni le disque découpé", !D2.querySelector(".hero.hero-photo #hero-m circle"));
+    const sur = D2.querySelector(".hero-h .sur");
+    vrai("Un sur-titre au-dessus du titre", !!sur && sur.nextElementSibling && sur.nextElementSibling.className === "big");
+    eq("…aligné à gauche", F.getComputedStyle(D2.querySelector(".hero-photo .hero-h")).textAlign, "left");
     vrai("Le sous-titre est là", /Vue d'ensemble/.test(D2.querySelector(".hero-h .sub").textContent));
     /* Ancre par le BAS du bandeau : pousse depuis le haut, le bloc suivait l'encoche du
        telephone et passait sous les cartes — le sous-titre disparaissait. */
