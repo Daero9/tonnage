@@ -2452,6 +2452,7 @@
     display:flex; flex-direction:column;}
   .sheet.plein > *{flex-shrink:0;}
   .sheet.plein .grab{display:none;}
+  .sheet.plein .sheet-x{display:none;}   /* les pages pleines ont leur croix sombre, posee sur la photo */
   /* sur la page blanche, ce qui etait blanc pour trancher sur l'ancien fond gris se
      fondait dans la page : la photo du produit et les tuiles prennent le creme */
   .sheet.plein .ps-photo, .sheet.plein .ps-tuiles:not(.ph-tuiles) .tu{background:var(--bg);}   /* pas les tuiles de la photo : elles ont leurs couleurs */
@@ -2468,8 +2469,29 @@
      coins arrondis — comme une feuille posee sur la photo. */
   .pp-tete.sur-photo{position:absolute; top:calc(12px + env(safe-area-inset-top)); right:16px;
     z-index:3; margin:0;}
-  .pp-tete.sur-photo .pp-x{background:rgba(0,0,0,.32); color:#fff;
-    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);}
+  /* la croix et la pastille du repas : le meme fond sombre, d'apres la reference */
+  .pp-tete.sur-photo .pp-x, .pp-repas > button, .pp-repas-menu{background:rgba(22,22,24,.86); color:#fff;
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
+  /* le repas, en haut a gauche : on corrige « midi » en « soir » sans quitter la page */
+  .pp-repas{position:absolute; top:calc(12px + env(safe-area-inset-top)); left:16px; z-index:3;}
+  .pp-repas > button{display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 13px 0 16px;
+    border-radius:999px; font-size:15px; font-weight:700;}
+  .pp-repas > button svg{width:10px; height:10px;}
+  .pp-repas-menu{position:absolute; top:42px; left:0; min-width:160px; padding:6px; border-radius:16px;
+    display:flex; flex-direction:column; gap:2px;}
+  .pp-repas-menu[hidden]{display:none;}
+  .pp-repas-menu button{padding:10px 12px; border-radius:10px; color:#fff; font-size:14.5px; font-weight:600; text-align:left;}
+  .pp-repas-menu button.on{background:rgba(255,255,255,.16);}
+  /* le produit d'un code-barres : sa photo d'emballage entiere, posee sur la meme
+     photo floutee — une photo sur fond blanc recadree en plein cadre perdait le produit */
+  .ps-bandeau{display:flex; align-items:center; justify-content:center; background:var(--bg);
+    padding:calc(58px + env(safe-area-inset-top)) 0 36px;}
+  .ph-bandeau.ps-bandeau img.flou{position:absolute; inset:-30px; width:calc(100% + 60px); height:calc(100% + 60px);
+    object-fit:cover; filter:blur(22px) brightness(.85);}
+  .ph-bandeau.ps-bandeau img.net{position:relative; width:auto; height:auto; max-width:72%; max-height:100%;
+    object-fit:contain; border-radius:10px;}
+  .ps-bandeau .ic{position:relative; display:flex; color:var(--accent);}
+  .ps-bandeau .ic svg{width:64px; height:64px;}
   .sheet.plein .ph-bandeau{margin:calc(-12px - env(safe-area-inset-top)) -16px 0;
     height:calc(260px + env(safe-area-inset-top)); border-radius:0;}
   .sheet.plein .ph-bandeau::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:24px;
@@ -17190,7 +17212,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 17h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 17h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21086,10 +21108,11 @@ function openProduitScanne(meal, p){
     <div class="v">${val}${u? `<span class="u">${u}</span>`:""}</div>
     <div class="l">${lab}</div></div>`;
   const signe = liquide ? IC_VERRE : IC_ASSIETTE;
-  openSheet(`<div class="ps-tete">
-      <div class="ps-photo" id="ps-photo">${p.photo
-        ? `<img id="ps-img" src="${esc(p.photo)}" alt="${esc(p.nom)}" loading="lazy">`
+  openSheet(`${repasPastille(meal)}<div class="pp-tete sur-photo"><button type="button" class="pp-x" id="ps-x" aria-label="${TR("Fermer")}">✕</button></div>
+    <div class="ph-bandeau ps-bandeau" id="ps-photo">${p.photo
+        ? `<img class="flou" src="${esc(p.photo)}" alt="" aria-hidden="true"><img class="net" id="ps-img" src="${esc(p.photo)}" alt="${esc(p.nom)}">`
         : `<span class="ic">${signe}</span>`}</div>
+    <div class="ps-tete">
       <div class="ps-titre">
         ${p.nom ? `<h3 class="ps-nom">${esc(p.nom)}</h3>`
           : `<input class="ps-nom-saisie" id="ps-nom" maxlength="44" autocomplete="off"
@@ -21150,6 +21173,8 @@ function openProduitScanne(meal, p){
     </div>
     <div class="pp-pied"><button class="btn btn-accent" id="ps-ok">${IC_CHECK}${TR("Ajouter à ce repas")}</button></div>`, {plein:true});
   /* Hors ligne, ou photo retirée depuis : le signe reprend la place, sans case vide. */
+  document.getElementById("ps-x").onclick = ()=>closeSheet();
+  brancherRepas(m=>{ meal = m; });
   const pimg = document.getElementById("ps-img");
   if(pimg) pimg.onerror = ()=>{
     const boite = document.getElementById("ps-photo");
@@ -21490,6 +21515,34 @@ async function lancerAnalysePhoto(indice){
   if(!res.aliments.length){ toast(res.remarque || TR("Je ne vois pas de nourriture sur cette photo.")); openAjoutAliment(p.meal); return; }
   openResultatPhoto(p.meal, res);
 }
+/* La pastille du repas, en haut à gauche des pages de scan. `change(m)` reçoit le
+   nouveau repas : chaque page le garde dans sa propre variable. */
+const IC_TRIANGLE_BAS = '<svg viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M1 3h8L5 8z"/></svg>';
+function repasPastille(meal){
+  const nom = m => TR((MEALS.find(x=>x[0] === m) || ["", m])[1]);
+  return `<div class="pp-repas"><button type="button" data-repas-btn aria-haspopup="true" aria-expanded="false">
+      <span>${esc(nom(meal))}</span>${IC_TRIANGLE_BAS}</button>
+    <div class="pp-repas-menu" hidden>${MEALS.map(m=>`<button type="button" data-repas="${m[0]}"${
+      m[0] === meal ? ' class="on"' : ""}>${esc(TR(m[1]))}</button>`).join("")}</div></div>`;
+}
+function brancherRepas(change){
+  const box = document.querySelector("#sheet .pp-repas");
+  if(!box) return;
+  const btn = box.querySelector("[data-repas-btn]"), menu = box.querySelector(".pp-repas-menu");
+  const ouvrir = v => { menu.hidden = !v; btn.setAttribute("aria-expanded", v ? "true" : "false"); };
+  btn.onclick = e => { e.stopPropagation(); ouvrir(menu.hidden); };
+  menu.querySelectorAll("[data-repas]").forEach(b=>b.onclick = e=>{
+    e.stopPropagation();
+    menu.querySelectorAll("[data-repas]").forEach(x=>x.classList.toggle("on", x === b));
+    btn.querySelector("span").textContent = b.textContent;
+    change(b.dataset.repas); vibrer(6); ouvrir(false);
+  });
+  /* un appui ailleurs sur la page referme le menu */
+  const sh = document.getElementById("sheet");
+  if(sh._fermeRepas) sh.removeEventListener("click", sh._fermeRepas);   /* une seule écoute, pas une par page ouverte */
+  sh._fermeRepas = ()=>ouvrir(false);
+  sh.addEventListener("click", sh._fermeRepas);
+}
 function openResultatPhoto(meal, res){
   const p = photoEnCours;
   /* chaque ligne : le nom du modele, ses grammes, et d'ou viennent les valeurs */
@@ -21513,7 +21566,7 @@ function openResultatPhoto(meal, res){
        pas remonter en haut a chaque geste */
     const yAvant = sheet.scrollTop;
     const titre = res.plat ? majuscule(res.plat) : TR("Ton assiette");
-    openSheet(`<div class="pp-tete sur-photo"><button type="button" class="pp-x" id="ph-x" aria-label="${TR("Fermer")}">✕</button></div>
+    openSheet(`${repasPastille(meal)}<div class="pp-tete sur-photo"><button type="button" class="pp-x" id="ph-x" aria-label="${TR("Fermer")}">✕</button></div>
       <div class="ph-bandeau"><img src="${p.apercu}" alt=""></div>
       <div class="pp-titre"><h2>${esc(titre)}</h2>
         <button type="button" class="pp-edit" id="ph-preciser" aria-label="${TR("Modifier les ingrédients")}" title="${TR("Modifier les ingrédients")}">${IC_CRAYON}</button></div>
@@ -21567,6 +21620,7 @@ function openResultatPhoto(meal, res){
     };
     gardeFermeture = confirmerDepart;
     document.getElementById("ph-x").onclick = confirmerDepart;
+    brancherRepas(m=>{ meal = m; if(photoEnCours) photoEnCours.meal = m; });
 
     /* Toucher une carte : toutes ses valeurs, et ses grammes. Rien n'est écrit tant
        qu'on n'a pas appuyé sur « Enregistrer » — fermer la fenêtre annule. */
