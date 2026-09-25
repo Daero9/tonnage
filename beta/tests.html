@@ -1370,11 +1370,11 @@ async function lancer(){
     vrai("…et le prénom", /Nico/.test(D2.querySelector(".hero-accueil h1").textContent));
     eq("Le titre se lit à gauche",
       F.getComputedStyle(D2.querySelector(".hero-accueil .hero-h")).textAlign, "left");
-    vrai("Le nom de la séance ressort", !!D2.querySelector(".hero-accueil .sub .hl"));
-    eq("…en orange",
-      F.getComputedStyle(D2.querySelector(".hero-accueil .sub .hl")).color, "rgb(245, 130, 32)");
-    eq("…et c'est bien la séance conseillée",
-      D2.querySelector(".hero-accueil .sub .hl").textContent, "Pull-up");
+    /* Nico, 25 septembre : plus le nom de la séance (« prise de masse »), juste la question */
+    eq("La question, sans le nom de la séance",
+      D2.querySelector(".hero-accueil .sub").textContent.trim(), "Prêt pour ta séance ?");
+    vrai("L'en-tête porte sa photo, comme Nutrition et Progression",
+      !!D2.querySelector(".hero-accueil .hero-bg image[href*='hero-seance']"));
     /* le bloc est centre dans le bandeau, son texte reste aligne a gauche */
     (()=>{
       const hb = D2.querySelector(".hero-accueil").getBoundingClientRect();
@@ -2389,6 +2389,10 @@ async function lancer(){
       ["produit scanné", ()=>F.openProduitScanne("midi", {code:"1", nom:"Test", marque:"M",
         prot100:5, kcal100:50, gluc100:3, lip100:1, portion:25, liquide:true})]];
     /* Nico, 25 septembre : toutes les pages qui s'ouvrent sont blanches, plus beiges */
+    /* et le fond de l'app aussi (Nico, 25 septembre) : « vraiment tout » */
+    eq("Le fond de l'app est blanc",
+      F.document.documentElement.dataset.theme === "dark" ? "rgb(255, 255, 255)"
+        : F.getComputedStyle(D2.body).backgroundColor, "rgb(255, 255, 255)");
     F.openAjoutAliment("midi");
     eq("La page qui s'ouvre est blanche",
       F.document.documentElement.dataset.theme === "dark" ? "rgb(255, 255, 255)"
