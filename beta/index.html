@@ -2519,6 +2519,16 @@
   .pp-st button{width:24px; height:24px; border-radius:50%; background:var(--pp-carte); color:var(--ink);
     font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center;}
   .pp-st b{font-size:14.5px; font-weight:800; min-width:38px; text-align:center;}
+  /* la quantite d'un produit scanne : grande, sous les tuiles */
+  .ps-gros{display:flex; align-items:center; gap:10px; margin:12px 0 0; padding:10px;
+    background:var(--pp-carte); border-radius:22px;}
+  .ps-gros > button{flex:0 0 56px; height:56px; border-radius:50%; background:var(--surface); color:var(--ink);
+    font-size:28px; font-weight:600; display:flex; align-items:center; justify-content:center;}
+  .ps-gros .val{flex:1; min-width:0; display:flex; align-items:baseline; justify-content:center; gap:4px;}
+  .ps-gros input{width:3.6ch; padding:0; border:0; background:none; text-align:right; color:var(--ink);
+    font-size:38px; font-weight:800; letter-spacing:-.02em; -moz-appearance:textfield; appearance:textfield;}
+  .ps-gros input::-webkit-inner-spin-button, .ps-gros input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  .ps-gros .val span{font-size:17px; font-weight:700; color:var(--ink-mute);}
   .pp-st b input.ps-g-carte{width:36px; padding:0; border:0; background:none; text-align:right;
     font:inherit; color:inherit; -moz-appearance:textfield; appearance:textfield;}
   .pp-st b input.ps-g-carte::-webkit-inner-spin-button, .pp-st b input.ps-g-carte::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
@@ -3287,8 +3297,8 @@
      ou en scanner un autre. Le geste principal reste seul, en dessous et en orange. */
   .ps-actions{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .ps-opts{display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
-    padding:11px 8px; width:100%; text-align:left; background:var(--surface);
-    border:1px solid var(--border); border-radius:14px;}
+    padding:13px 8px; width:100%; text-align:left; background:var(--surface);
+    border:0; border-radius:14px; box-shadow:0 1px 6px rgba(20,30,80,.10);}
   .ps-opts .tx{min-width:0; font-size:12px; font-weight:700; color:var(--ink-soft); line-height:1.25;}
   /* creuse tant que le produit n'est pas gardé, pleine dès qu'il l'est */
   .ps-opts .et{display:flex; color:var(--ink-mute); flex:0 0 auto;}
@@ -17226,7 +17236,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "25 septembre 2026 18h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "25 septembre 2026 18h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21138,30 +21148,17 @@ function openProduitScanne(meal, p){
       ${tuile("gluc", icoM("cereale", 20), `<b id="ps-gluc">0</b>`, "g", TR("glucides"))}
       ${tuile("lip",  IC_GOUTTE,           `<b id="ps-lip">0</b>`,  "g", TR("lipides"))}
     </div>
+    <!-- le nom est deja en titre : pas de liste d'un seul aliment, juste la quantite,
+         en grand, sous les valeurs qu'elle fait bouger -->
+    <div class="ps-gros">
+      <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
+      <label class="val"><input type="number" inputmode="decimal" min="0" id="ps-g"
+        value="${p.portion || (liquide ? 25 : 100)}"><span id="ps-uni"></span></label>
+      <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
+    </div>
     <div class="ps-ref" style="margin:6px 0 0;"><span id="ps-pour"></span> · ${TR("valeurs de l'emballage, {} : {k} kcal")
       .replace("{}", ref100).replace("{k}", p.kcal100)}</div>
-    <div class="pp-sect">${TR("Liste des aliments")}</div>
-    <div class="pp-grille">
-      <div class="pp-al">
-        <div class="nm">${esc(p.nom || p.marque || TR("Produit scanné"))}</div>
-        <div class="kc"><span id="ps-kc-carte">0</span> kcal</div>
-        <div class="nt">${TR(liquide ? "Boisson" : "Aliment")}</div>
-        <div class="pp-st">
-          <button type="button" id="ps-moins" aria-label="${TR("Moins")}">−</button>
-          <b><input type="number" inputmode="decimal" min="0" id="ps-g" class="ps-g-carte"
-            value="${p.portion || (liquide ? 25 : 100)}"><i id="ps-uni"></i></b>
-          <button type="button" id="ps-plus" aria-label="${TR("Plus")}">＋</button>
-        </div>
-      </div>
-    </div>
     <div class="stack" style="margin-top:14px;">
-      <div class="ps-bloc">
-        <div class="ps-qh">
-          <span class="label" id="ps-lab"></span>
-          ${liquide? `<button class="ps-bascule" id="ps-unite">${IC_ECHANGE}<span></span></button>`:""}
-        </div>
-        <div class="ps-rapide" id="ps-rapide"></div>
-      </div>
       <div class="ps-actions">
         <button type="button" class="ps-opts" id="ps-favbox" aria-pressed="false">
           <span class="et">${IC_ETOILE}</span>
@@ -21214,6 +21211,7 @@ function openProduitScanne(meal, p){
   };
   const construireRapide = ()=>{
     const box = document.getElementById("ps-rapide");
+    if(!box) return;
     box.innerHTML = (RAPIDES[uni] || []).map(v=>
       `<button type="button" data-q="${v}">${fmtRapide(v)}</button>`).join("");
     box.querySelectorAll("[data-q]").forEach(b=>b.onclick = ()=>{
@@ -21225,7 +21223,8 @@ function openProduitScanne(meal, p){
   };
   const majUnite = ()=>{
     /* l'unité est écrite dans le champ : la répéter dans l'intitulé ferait doublon */
-    document.getElementById("ps-lab").textContent = TR("Quantité consommée");
+    const lab = document.getElementById("ps-lab");
+    if(lab) lab.textContent = TR("Quantité consommée");
     document.getElementById("ps-uni").textContent = uni;
     gEl.step = pas();
     const b = document.getElementById("ps-unite");
@@ -21240,7 +21239,6 @@ function openProduitScanne(meal, p){
     document.getElementById("ps-gluc").textContent = Math.round((p.gluc100 || 0)*f);
     document.getElementById("ps-lip").textContent  = Math.round((p.lip100 || 0)*f);
     document.getElementById("ps-kcal").textContent = Math.round(p.kcal100*f);
-    document.getElementById("ps-kc-carte").textContent = Math.round(p.kcal100*f);
     const q = parseFloat(gEl.value);
     document.getElementById("ps-pour").textContent = q > 0
       ? TR("Pour {}").replace("{}", q + " " + uni) : "";
