@@ -2819,8 +2819,10 @@ async function lancer(){
     vrai("…et elle est bien celle du produit",
       avecPhoto.querySelector("img").getAttribute("src")
         .indexOf("https://images.openfoodfacts.org/images/") === 0);
-    vrai("Elle est à gauche du nom",
-      avecPhoto.nextElementSibling.classList.contains("ps-titre"));
+    /* depuis la maquette de Nico : la photo occupe le haut de la page, au-dessus du nom */
+    vrai("Elle est en haut de la page, au-dessus du nom",
+      avecPhoto.classList.contains("ph-bandeau") && !!avecPhoto.nextElementSibling.querySelector(".ps-titre"));
+    vrai("Le repas se choisit en haut à gauche", !!D2.querySelector("#sheet .pp-repas [data-repas='soir']"));
 
     /* sans photo : un signe, jamais une case vide */
     const boisson = fiche({liquide:true, photo:""});
