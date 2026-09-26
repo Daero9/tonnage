@@ -1179,6 +1179,9 @@
   .recup-card{display:flex; align-items:center; gap:12px; width:100%; margin-top:14px; min-height:82px;
     background:#11181B; color:#fff; border-radius:18px; padding:9px 12px 9px 10px;
     position:relative; overflow:hidden; text-align:left;}
+  /* en sombre, la carte sombre se perdait dans le fond : un liseré vert fin, le vert du
+     dessin et de l'anneau « Prêt » (Nico) */
+  :root[data-theme="dark"] .recup-card{box-shadow:inset 0 0 0 1px rgba(76,175,80,.5);}
   .recup-card .rc-ring{flex:0 0 auto; display:block; line-height:0; position:relative; z-index:2;}
   .recup-card .rc-txt{position:relative; z-index:2; min-width:0; padding-right:44px;}
   .recup-card .rc-t{display:block; font-size:11.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.55);}
@@ -2381,6 +2384,14 @@
   @keyframes cochePop{0%{transform:scale(.45); opacity:0;} 55%{transform:scale(1.18); opacity:1;}
     75%{transform:scale(.94);} 100%{transform:scale(1);}}
   .set-row .ck.pop svg{animation:cochePop .42s cubic-bezier(.3,1.4,.5,1);}
+  /* la coche se DESSINE d'un trait, et un anneau vert s'elargit autour de la case :
+     valider une serie est le geste le plus frequent de l'app (vert, jamais orange) */
+  @keyframes cocheTrace{from{stroke-dashoffset:22;} to{stroke-dashoffset:0;}}
+  @keyframes anneauVert{0%{box-shadow:0 0 0 0 rgba(76,175,80,.55);} 100%{box-shadow:0 0 0 12px rgba(76,175,80,0);}}
+  @media (prefers-reduced-motion:no-preference){
+    .set-row .ck.pop{animation:anneauVert .55s ease-out;}
+    .set-row .ck.pop svg path{stroke-dasharray:22; stroke-dashoffset:22; animation:cocheTrace .32s .06s ease-out forwards;}
+  }
   @media (prefers-reduced-motion:reduce){ .set-row .ck.pop svg{animation:none;} }
   /* La série validée s'efface le temps de sa question. Sans cela le bloc noir montrait
      huit boutons d'un coup — les deux champs, le dégressif, la coche, puis les quatre
@@ -3895,6 +3906,42 @@
   .ph-attente .spin{width:28px; height:28px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--accent); margin:0 auto 10px; animation:phspin .8s linear infinite;}
   @keyframes phspin{to{transform:rotate(360deg);}}
   .ph-attente .t{font-weight:800; font-size:15px;}
+  /* ---- animations (25 septembre) : toutes coupees par « reduire les animations » ---- */
+  .ph-scan{position:relative; width:140px; height:140px; margin:0 auto 14px; border-radius:18px; overflow:hidden;}
+  .ph-scan img{margin:0 !important;}
+  .ph-scan i{position:absolute; left:0; right:0; height:36%; top:-36%; pointer-events:none;
+    background:linear-gradient(180deg, rgba(245,130,32,0), rgba(245,130,32,.45) 80%, rgba(255,210,160,.95) 100%);
+    box-shadow:0 2px 0 rgba(255,220,180,.9);}
+  @keyframes balayage{0%{top:-36%;} 100%{top:100%;}}
+  @keyframes carteArrive{from{opacity:0; transform:translateY(14px) scale(.96);} to{opacity:1; transform:none;}}
+  @keyframes recFete{0%{transform:scale(1);} 35%{transform:scale(1.22);} 100%{transform:scale(1);}}
+  @keyframes etincelle{0%{opacity:1; transform:translate(0,0) scale(1);} 100%{opacity:0; transform:translate(var(--dx), var(--dy)) scale(.3);}}
+  /* l'image seule rebondit : la taille de la flamme, elle, est portee par son bloc */
+  @keyframes flammeRebond{0%{transform:scale(1);} 40%{transform:scale(1.25);} 100%{transform:scale(1);}}
+  @keyframes chiffreSort{to{transform:translateY(-100%); opacity:0;}}
+  @keyframes chiffreEntre{from{transform:translateY(100%); opacity:0;} to{transform:none; opacity:1;}}
+  @keyframes barMonte{from{transform:scaleY(0);} to{transform:scaleY(1);}}
+  /* la propriete « scale », a part : ni la position (translate) ni la taille musclee
+     (transform) du poussin ne sont touchees */
+  @keyframes poussinChange{0%{scale:.92;} 55%{scale:1.07;} 100%{scale:1;}}
+  .hero-flamme.grandit b{overflow:hidden; height:1.05em;}
+  .hero-flamme .fl-avant{position:absolute; left:0; right:0; top:0;}
+  .hero-flamme .fe{transform-origin:50% 100%;}
+  .hero-poussin.change:not([data-pose="muscle"]){transform-origin:50% 100%;}   /* la pose musclée garde son point d'ancrage */
+  @media (prefers-reduced-motion:no-preference){
+    .ph-scan i{animation:balayage 1.5s cubic-bezier(.45,0,.55,1) infinite;}
+    .pp-grille.cascade .pp-al{animation:carteArrive .42s cubic-bezier(.22,1,.36,1) backwards; animation-delay:calc(var(--i, 0) * 90ms + 80ms);}
+    .ex-done em.rec-fete{display:inline-block; position:relative; animation:recFete .7s cubic-bezier(.3,1.4,.5,1) .15s;}
+    .ex-done em.rec-fete::before, .ex-done em.rec-fete::after{content:"✦"; position:absolute; top:-2px; left:8px; color:#F5B820; font-size:13px;
+      opacity:0; animation:etincelle .8s ease-out .2s; --dx:-14px; --dy:-16px; pointer-events:none;}
+    .ex-done em.rec-fete::after{left:auto; right:6px; --dx:14px; --dy:-14px; animation-delay:.28s;}
+    .hero-flamme.grandit .fe{animation:flammeRebond .7s cubic-bezier(.3,1.5,.5,1) .3s;}
+    .hero-flamme.grandit .fl-avant{animation:chiffreSort .4s ease-in .45s forwards;}
+    .hero-flamme.grandit .fl-apres{display:inline-block; animation:chiffreEntre .4s ease-out .45s backwards;}
+    .pt-card.monte .pr-b{transform-origin:bottom; animation:barMonte .6s cubic-bezier(.22,1,.36,1) backwards; animation-delay:calc(var(--i, 0) * 60ms);}
+    .hero-poussin.change{animation:poussinChange .6s cubic-bezier(.3,1.4,.5,1);}
+  }
+  @media (prefers-reduced-motion:reduce){ .hero-flamme.grandit .fl-avant{display:none;} }
   .ph-attente .s{font-size:12px; color:var(--ink-mute); margin-top:4px;}
   .ph-tete{display:flex; gap:12px; align-items:center; margin-bottom:12px;}
   .ph-tete img{width:72px; height:72px; object-fit:cover; border-radius:14px; flex:0 0 auto;}
@@ -17092,6 +17139,7 @@ function showPlan(justCreated){
     /* premier plan : on ne peut pas balayer la feuille sans avoir tranché */
     {verrou: !!justCreated});
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
+  compterDepuisZero(document.querySelectorAll("#sheet .pn-t .v, #sheet .pn-obj .kg, #sheet .pn-carte .gros"));
   document.getElementById("pl-sante").onclick = openSante;
   /* le detail du programme et du plan, en phrases completes, par-dessus la page */
   /* le detail du programme, en deux cartes de phrases simples (d'apres la maquette de
@@ -17890,6 +17938,7 @@ function revelerAccessoire(a){
     explosion(cv, 1000, r.left + r.width / 2, r.top + r.height / 2);
   });
 }
+let poseVue = null;             /* la derniere pose montree sur l'accueil */
 function poussinHtml(classe, poseForcee){
   const e = poussinEtat(poseForcee), p = POUSSIN[e.pose];
   if(!p) return "";
@@ -17911,7 +17960,10 @@ function poussinHtml(classe, poseForcee){
   const ech = e.pose === "muscle" ? 1 + Math.min(.5, .01 * serieJours().n) : 1;
   /* --pied : le vide qu'un accessoire a ajoute SOUS les pattes (voir poussin.py). On
      redescend l'image d'autant, sinon le poussin flotte au-dessus de la carte. */
-  return `<div class="${classe || "hero-poussin"}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio}; --po-ech:${ech.toFixed(3)}; --pied:${p.pied || 0};">${
+  /* il vient de changer d'humeur (fatigue → en forme apres une seance) : un rebond */
+  const change = !classe && poseVue && poseVue !== e.pose;
+  if(!classe) poseVue = e.pose;
+  return `<div class="${classe || "hero-poussin"}${change ? " change" : ""}" data-pose="${e.pose}" ${halo ? `data-halo="${halo}"` : ""} style="aspect-ratio:1/${p.ratio}; --po-ech:${ech.toFixed(3)}; --pied:${p.pied || 0};">${
     halo ? `<i class="halo"></i>` : ""}${fonds}<img src="img/poussin/${e.pose}.webp" alt="">${calques}${
     rec ? `<button class="poussin-rec" id="poussin-record">🏆 ${TR("Record !")}</button>` : ""}</div>`;
 }
@@ -18017,7 +18069,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 12h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 14h22 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19683,6 +19735,7 @@ function allerOnglet(id){
   }
   if(curTab === "seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
   if(curTab === "eat") jourCur = null;
+  protAnimee = false;                 /* on revient sur Progression : les barres remontent */
   curTab = id; render();
 }
 function renderTabs(){
@@ -20011,12 +20064,22 @@ function quitterApp(){
   const p = pluginRaccourci();
   if(p && typeof p.quitter === "function"){ try{ p.quitter(); }catch(e){} }
 }
+/* Toutes les confirmations ont la meme forme (Nico) : la petite fenetre au centre, celle
+   de « Quitter la seance ? » et de la photo — plus une fiche qui monte du bas et
+   remplace la page ouverte. « Annuler » la referme simplement : la page d'en dessous
+   reste la. « Oui » ferme aussi la page ouverte, comme avant, puis agit. */
 function askConfirm(title, msg, okLabel, danger, cb, nonLabel){
-  openSheet(`<h3>${esc(title)}</h3><p style="color:var(--ink-soft); margin:0 0 18px; font-size:14.5px;">${esc(msg)}</p>
-    <div class="row"><button class="btn grow" id="cf-no">${esc(nonLabel || TR("Annuler"))}</button>
-    <button class="btn grow ${danger?'':'btn-accent'}" id="cf-yes" style="${danger?'background:var(--bad); color:#fff; border-color:var(--bad);':''}">${esc(okLabel)}</button></div>`);
-  document.getElementById("cf-no").onclick=closeSheet;
-  document.getElementById("cf-yes").onclick=()=>{ closeSheet(); cb(); };
+  document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
+  const m = document.createElement("div");
+  m.className = "pp-modal";
+  m.innerHTML = `<div class="pp-boite" role="dialog" aria-modal="true"><h3>${esc(title)}</h3><p>${esc(msg)}</p>
+    <div class="pp-deux"><button class="btn" id="cf-no">${esc(nonLabel || TR("Annuler"))}</button>
+      <button class="btn ${danger ? "btn-jeter" : "btn-accent"}" id="cf-yes">${esc(okLabel)}</button></div></div>`;
+  document.body.appendChild(m);
+  const fermer = ()=>m.remove();
+  m.onclick = e=>{ if(e.target === m) fermer(); };
+  m.querySelector("#cf-no").onclick = fermer;
+  m.querySelector("#cf-yes").onclick = ()=>{ fermer(); if(sheetOpen) closeSheet(); cb(); };
 }
 
 /* ================= REST TIMER ================= */
@@ -22363,7 +22426,7 @@ function photographierRepas(meal){ lancerScan(meal, "plat"); }
    precision est une correction de la meme photo (gratuite, dans la limite). */
 async function lancerAnalysePhoto(indice, premiere){
   const p = photoEnCours; if(!p) return;
-  openSheet(`<div class="ph-attente"><img src="${p.apercu}" alt=""><div class="spin"></div>
+  openSheet(`<div class="ph-attente"><div class="ph-scan"><img src="${p.apercu}" alt=""><i></i></div><div class="spin"></div>
     <div class="t">${TR("Analyse de la photo…")}</div>
     <div class="s">${TR("La photo part chez Anthropic pour l'analyse ; l'app ne la garde pas.")}</div></div>`);
   /* une correction de la meme photo est gratuite pour le quota (dans la limite) */
@@ -22416,6 +22479,7 @@ function openResultatPhoto(meal, res){
       prot100: t ? t.prot100 : a.prot100, kcal100: t ? t.kcal100 : a.kcal100,
       gluc100: a.gluc100, lip100: a.lip100, source: t ? "table" : "estimation"};
   });
+  let entree = true;                 /* la cascade des cartes : au premier dessin seulement */
   const dessiner = ()=>{
     const tot = lignes.reduce((o, l)=>{ const f = l.g / 100; o.kcal += l.kcal100 * f; o.prot += l.prot100 * f; o.gluc += (l.gluc100 || 0) * f; o.lip += (l.lip100 || 0) * f; return o; }, {kcal:0, prot:0, gluc:0, lip:0});
     const estime = lignes.some(l=>l.source === "estimation");
@@ -22439,8 +22503,8 @@ function openResultatPhoto(meal, res){
       </div>
       <div class="ps-ref" style="margin:6px 0 0;">${TR("Estimation d'après la photo — touche un aliment pour ajuster sa portion.")}</div>
       <div class="pp-sect">${TR("Liste des aliments")}</div>
-      <div class="pp-grille">
-        ${lignes.map((l, i)=>`<div class="pp-al" data-ouvre="${i}">
+      <div class="pp-grille${entree ? " cascade" : ""}">
+        ${lignes.map((l, i)=>`<div class="pp-al" data-ouvre="${i}" style="--i:${i}">
           <div class="nm">${esc(l.nom)}</div>
           <div class="kc">${Math.round(l.kcal100 * l.g / 100)} kcal${(l.confiance === "basse" || l.source === "estimation") ? " ≈" : ""}</div>
           ${l.note ? `<div class="nt">${esc(l.note)}</div>` : ""}
@@ -22454,6 +22518,7 @@ function openResultatPhoto(meal, res){
       ${res.remarque ? `<div class="ph-rem" style="margin-top:14px;">${IC_AMPOULE}<span>${esc(res.remarque)}</span></div>` : ""}
       <div class="pp-pied"><button class="btn btn-accent" id="ph-ok" ${lignes.length ? "" : "disabled"}>${IC_CHECK}${TR("Ajouter à ce repas")}</button></div>`,
       {verrou:true, plein:true});
+    entree = false;
     sheet.scrollTop = yAvant;
 
     /* Quitter demande confirmation : la photo a coûté un scan, et tout ce qu'on a
@@ -24001,6 +24066,32 @@ function energieSemaine(){
 /* Le chiffre d'une tuile du bilan tient dans sa tuile : « 0 kg » s'ecrit en grand,
    « 12 450 kg » plus petit. A taille fixe, les kilos debordaient du rectangle. */
 function tailleBl(t){ const n = String(t).length; return n <= 4 ? 26 : n <= 6 ? 22 : n <= 8 ? 18 : 16; }
+/* Les chiffres d'une page defilent de 0 a leur valeur en une demi-seconde. On anime le
+   texte du nombre lui-meme (le premier morceau de texte qui contient un chiffre) : la
+   couleur, l'unite et la mise en page autour ne bougent pas, et la valeur exacte est
+   remise a la fin. */
+function compterDepuisZero(els){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  [...els].forEach(el=>{
+    const it = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n; while((n = it.nextNode()) && !/\d/.test(n.nodeValue));
+    if(!n) return;
+    const txt = n.nodeValue, m = txt.match(/\d[\d\s\u202f\u00a0.,]*/);
+    if(!m) return;
+    const brut = m[0].trim().replace(/[\s\u202f\u00a0]/g, "");
+    const dec = /[.,]\d+$/.test(brut) ? brut.split(/[.,]/).pop().length : 0;
+    const val = parseFloat(dec ? brut.replace(/[.,](?=\d+$)/, ".").replace(/[.,](?=.*[.,])/g, "") : brut.replace(/[.,]/g, ""));
+    if(!(val > 0)) return;
+    const groupe = /[\s\u202f\u00a0]/.test(m[0].trim());   /* « 2990 » reste sans espace en comptant */
+    const t0 = performance.now(), dur = 600;
+    const pas = now=>{
+      const k = Math.min(1, (now - t0) / dur), v = val * (1 - Math.pow(1 - k, 3));
+      n.nodeValue = k >= 1 ? txt : txt.replace(m[0].trim(), v.toLocaleString(loc(), {minimumFractionDigits:dec, maximumFractionDigits:dec, useGrouping:groupe}));
+      if(k < 1) requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  });
+}
 function openBilan(){
   const b = computeBilan();
   db.lastBilan = new Date().toISOString(); save();
@@ -24032,6 +24123,7 @@ function openBilan(){
       <div class="bl-note">${TR("Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.")}</div></div>
     <button class="btn btn-accent fin-ok bl-okb" id="bl-ok" style="width:100%; margin-top:4px;"><span class="grow">${TR("C'est noté !")}</span>${CHEV_MP}</button>`);
   document.getElementById("bl-ok").onclick=closeSheet;
+  compterDepuisZero(document.querySelectorAll("#sheet .bl-tuiles b"));
 }
 function editGoal(){
   const cur = currentWeight();
@@ -24164,6 +24256,8 @@ function dureeMinutes(items){
 }
 function dureeSeance(t){ return dureeMinutes(t.items); }
 
+/* les records deja fetes dans cette seance : la fete n'a lieu qu'une fois */
+const recordsFetes = new Set();
 function renderSeance(app){
   if(chronoInt){ clearInterval(chronoInt); chronoInt=null; }
   if(db.active){ renderActive(app); return; }
@@ -24210,7 +24304,13 @@ function renderSeance(app){
         /* « danger » = le poussin est dans la pose du dernier jour : la flamme se cale
            sous lui. On le lit dans l'état du poussin, pas dans le CSS (:has). */
         const danger = poussinEtat().pose === "danger";
-        return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${fl.n}</b></div>`; })()}
+        /* la serie a grandi depuis la derniere fois qu'on l'a vue : la flamme rebondit et
+           le chiffre monte (4 → 5) au lieu de sauter */
+        const vue = Number(db.flammeVue) || 0;
+        const grandit = vue > 0 && fl.n > vue;
+        if(fl.n !== vue){ db.flammeVue = fl.n; setTimeout(save, 0); }
+        return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}${grandit ? " grandit" : ""}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${
+          grandit ? `<span class="fl-avant">${vue}</span><span class="fl-apres">${fl.n}</span>` : fl.n}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
@@ -26548,9 +26648,13 @@ function renderActive(app){
       /* le record est dit ici, une fois l'exercice fini : assez près de l'effort pour
          compter, assez rare pour rester un événement */
       const rec = recordExo(en);
+      /* la premiere fois qu'un record s'affiche pour cet exercice, il le fete */
+      const cleRec = a.start + ":" + ei;
+      const fete = rec && rec.gain > 0 && !recordsFetes.has(cleRec);
+      if(fete) recordsFetes.add(cleRec);
       plie.innerHTML = `<span class="vu">✓</span><span class="nm">${esc(nomEx(ex))}${
         (rec && rec.gain > 0)
-          ? `<em>🏆 ${TR("Record")} — ${rec.unite==="reps"
+          ? `<em class="${fete ? "rec-fete" : ""}">🏆 ${TR("Record")} — ${rec.unite==="reps"
                 ? TR("{} reps").replace("{}", rec.r)
                 : pds(rec.w) + " × " + rec.r} <b>+${rec.unite==="reps"
                 ? TR("{} reps").replace("{}", rec.gain)
@@ -26743,7 +26847,7 @@ function renderActive(app){
         const ck = row.querySelector(".ck");
         ck.innerHTML = st.done ? IC_COCHE : "○";
         ck.classList.remove("pop");
-        if(st.done){ void ck.offsetWidth; ck.classList.add("pop"); }
+        if(st.done){ void ck.offsetWidth; ck.classList.add("pop"); vibrer(12); }
         if(!st.done) majSerieActive();      /* décochage : la série redevient à faire */
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk){ oldAsk.remove(); rendreLignes(card); retirerBlocNoir(true); majSerieActive(); }
@@ -30553,6 +30657,7 @@ function openInfoProfil(moy){
   document.getElementById("mpi-ok").onclick = closeSheet;
 }
 
+let protAnimee = false;
 function renderProteinSection(sec){
   const target = proteinTarget();
   const plan = planFor(db.profile);
@@ -30594,8 +30699,9 @@ function renderProteinSection(sec){
   const pas = cap <= 150 ? 50 : 100;
   const graduations = []; for(let g = 0; g <= cap; g += pas) graduations.push(g);
   const auj = days[days.length - 1];
+  const monte = !protAnimee; protAnimee = true;   /* a l'arrivee sur l'onglet, pas a chaque rendu */
   div.innerHTML = `
-    <div class="card pt-card">
+    <div class="card pt-card${monte ? " monte" : ""}">
       <div class="pt-tete">
         <span class="pt-ic pt-ic-orange">${icoM("muscle", 26)}</span>
         <div class="grow">
@@ -30612,7 +30718,7 @@ function renderProteinSection(sec){
         ${graduations.map(g=>`<span class="pt-grad" style="bottom:calc(${(g/cap).toFixed(3)} * (100% - 15px));">${g}</span>`).join("")}
         ${target ? `<div class="pr-target" style="bottom:calc(${(target/cap).toFixed(3)} * (100% - 15px));"><i>${target} g</i></div>` : ""}
         ${days.map((x, k)=>{ const dernier = k === days.length - 1;
-          return `<button class="pr-col ${dernier ? "auj" : ""} ${x.v >= target && target ? "quota" : ""}" data-day="${x.key}">
+          return `<button class="pr-col ${dernier ? "auj" : ""} ${x.v >= target && target ? "quota" : ""}" data-day="${x.key}" style="--i:${k}">
             <span class="pr-val"></span>
             <span class="pr-barwrap"><span class="pr-b" ${dernier && x.v > 0 ? `data-v="${Math.round(x.v)} g${x.fix?"*":""}"` : ""} style="height:${Math.max(x.v>0?4:2, Math.min(100, x.v/cap*100))}%;"></span></span>
           </button>`; }).join("")}
