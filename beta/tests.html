@@ -2102,6 +2102,23 @@ async function lancer(){
     F.lancerSeqIso(0);
     F.arreterChronos();
     vrai("…et le décompte de départ avec", !F.eval("preIso"));
+    /* « Démarrer » ouvre maintenant le lecteur de course : tenues et repos en cartes */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    F.demarrerIso(0);
+    vrai("Démarrer ouvre le lecteur, tenues et repos en étapes", !!DB.courseEnCours && DB.courseEnCours.iso
+      && DB.courseEnCours.etapes.map(x=>x.type).join(",") === "tenue,repos,tenue,repos,tenue,repos,tenue");
+    vrai("…avec les 5 s de mise en position", DB.courseEnCours.debut > Date.now() + 3000);
+    /* arrete au milieu du 2e repos : les deux premieres tenues sont validees, pas la suite */
+    DB.courseEnCours.debut = Date.now() - (40 + 60 + 40 + 30) * 1000;
+    F.finirIso(false);
+    eq("Arrêté en route : seules les tenues menées au bout sont validées",
+      DB.active.entries[0].sets.map(st=>st.done ? 1 : 0).join(""), "1100");
+    vrai("…et on revient à la séance", !DB.courseEnCours && !!DB.active);
+    DB.active.entries[0].sets.forEach(st=>{ st.done = false; });
+    F.demarrerIso(0);
+    F.finirIso(true);
+    eq("Mené au bout : toutes les séries sont validées", DB.active.entries[0].sets.map(st=>st.done ? 1 : 0).join(""), "1111");
+    F.arreterTicCourse(); F.syncWakeLock();
     DB.active = null; DB.templates = [];
     F.render();
   })();
