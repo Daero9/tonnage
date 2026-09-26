@@ -7850,9 +7850,12 @@ async function lancer(){
     const faites = F.etapesFaites(c, false);
     vrai("Arrêtée à 17 min : 15 min de course puis 2 de marche", faites.length === 2 && faites[1].min === 2, JSON.stringify(faites));
     /* l'editeur : l'exemple de Nico, puis enregistrer */
+    /* la page Course (objectif, puis mes seances) ; « Nouvelle seance » ouvre l'editeur */
     F.openParcoursListe();
+    await attendre(()=>!!D2.getElementById("pc-nouv"), 1500);
+    D2.getElementById("pc-nouv").click();
     await attendre(()=>D2.querySelectorAll(".pc-et").length === 4, 1500);
-    vrai("Sans séance enregistrée, l'éditeur s'ouvre sur l'exemple (4 étapes)", D2.querySelectorAll(".pc-et").length === 4);
+    vrai("Une nouvelle séance part de l'exemple (4 étapes)", D2.querySelectorAll(".pc-et").length === 4);
     D2.querySelector(".pc-et [data-pas='min|1']").click();
     vrai("Le cran ajoute une minute à l'étape", D2.querySelector(".pc-et [data-f='min']").value === "16");
     D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").click();
@@ -7889,6 +7892,74 @@ async function lancer(){
     F.hideSheet();
     F.eval("flammeRetenue = false; finOuverte = false");
     DB.parcours = []; DB.cardio = []; DB.courseEnCours = null;
+    F.eval("render()");
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : objectifs de course et seances proposees */
+  grp("Les objectifs de course");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.objCourse = null; DB.cardio = []; DB.parcours = [];
+    /* 30 min sans s'arreter : on n'avance que si c'etait tenu et facile ou correct */
+    DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
+    let s = F.seanceProposee();
+    vrai("Niveau 1 : 6 × (1 min de course, 2 de marche), entre deux marches de 5 min",
+      s.etapes.length === 13 && s.etapes[0].type === "marche" && s.etapes[1].type === "course" && s.etapes[1].min === 1 && s.etapes[12].min === 5);
+    F.appliquerRessenti("niveau", "facile", true);
+    vrai("Facile : niveau suivant", DB.objCourse.niveau === 1);
+    F.appliquerRessenti("niveau", "dur", true);
+    vrai("Dur : on refait le niveau", DB.objCourse.niveau === 1);
+    F.appliquerRessenti("niveau", "facile", false);
+    vrai("Séance arrêtée avant la fin : on refait le niveau", DB.objCourse.niveau === 1);
+    DB.objCourse.niveau = 9;
+    s = F.seanceProposee();
+    vrai("Dernier niveau : 30 min d'affilée", s.etapes.filter(e=>e.type === "course").length === 1 && s.etapes[1].min === 30);
+    F.appliquerRessenti("niveau", "correct", true);
+    vrai("…tenu : objectif atteint", !!DB.objCourse.atteint);
+    /* distance : sortie longue puis footing ; la longue grandit de 10 % au plus */
+    DB.objCourse = F.nouvelObjectif("distance", {cible:10, vCourse:10, vMarche:6});
+    vrai("Sans sortie récente, la sortie longue part de 3 km", DB.objCourse.longue === 3);
+    s = F.seanceProposee();
+    vrai("D'abord la sortie longue", s.propose === "longue");
+    F.appliquerRessenti("longue", "correct", true);
+    vrai("Tenue : elle s'allonge d'environ 10 %", DB.objCourse.longue > 3 && DB.objCourse.longue <= 3.5, DB.objCourse.longue);
+    vrai("…et la suivante est un footing", F.seanceProposee().propose === "footing");
+    /* allure : fractionne puis bloc soutenu, les repetitions montent */
+    DB.objCourse = F.nouvelObjectif("allure", {vCourse:10, vMarche:6});
+    s = F.seanceProposee();
+    vrai("Allure : d'abord le fractionné, plus rapide que la course facile", s.propose === "fractionne" && s.etapes.some(e=>e.rythme === "rapide" && e.v > 10));
+    F.appliquerRessenti("fractionne", "correct", true);
+    vrai("…une répétition de plus", DB.objCourse.reps === 5);
+    vrai("…puis le bloc soutenu", F.seanceProposee().propose === "soutenu");
+    /* regularite : on compte les sorties de la semaine */
+    DB.objCourse = F.nouvelObjectif("frequence", {parSemaine:3});
+    DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:20, machine:"course"}];
+    vrai("Régularité : les sorties de la semaine sont comptées", F.sortiesSemaine() === 1 && /1 \/ 3/.test(F.avancementObjectif(DB.objCourse).txt));
+    /* la page Course : la carte de l'objectif et la seance du jour */
+    F.openParcoursListe();
+    await attendre(()=>!!D2.getElementById("oc-go"), 1500);
+    vrai("La page Course montre l'objectif et la séance du jour", !!D2.querySelector(".oc-carte") && !!D2.getElementById("oc-go"));
+    D2.getElementById("oc-pq").click();
+    await attendre(()=>!!D2.getElementById("pq-ok"), 1500);
+    vrai("« Pourquoi cette séance ? » explique et détaille les étapes", D2.querySelectorAll(".oc-etapes div").length > 0);
+    F.hideSheet();
+    /* au bout d'une seance proposee : la question du ressenti */
+    DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
+    F.demarrerCourse(F.seanceProposee());
+    await attendre(()=>!!D2.querySelector(".cr-c.encours"), 1500);
+    DB.courseEnCours.debut = Date.now() - 27 * 60e3;
+    await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
+    vrai("À la fin d'une séance proposée : « Comment c'était ? »", D2.querySelectorAll("#sheet [data-rs]").length === 3);
+    D2.querySelector('#sheet [data-rs="facile"]').click();
+    D2.getElementById("fc-ok").click();
+    /* la sortie est datee de son depart : on la retrouve par son genre, pas par sa place */
+    const faite = DB.cardio.find(c=>c.propose === "niveau");
+    vrai("…la réponse fait avancer l'objectif", DB.objCourse.niveau === 1 && faite && faite.ressenti === "facile", DB.objCourse.niveau + " / " + (faite && faite.ressenti));
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.objCourse = null; DB.cardio = []; DB.parcours = []; DB.courseEnCours = null;
     F.eval("render()");
   })();
   neuf();
