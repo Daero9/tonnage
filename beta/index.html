@@ -4382,7 +4382,10 @@
   .cr-c.fait > :not(.cr-num){opacity:.5;}
   /* les etapes faites et a venir, plus etroites que celle en cours (Nico) */
   .cr-c.fait, .cr-c.avenir{margin:0 22px; padding:16px 14px 14px;}
-  .cr-c.fait .cr-ic, .cr-c.avenir .cr-ic{width:46px; height:46px;}
+  .cr-c.fait .cr-ic, .cr-c.avenir .cr-ic{width:38px; height:38px; border-radius:12px;}
+  .cr-c.fait .cr-ic svg, .cr-c.avenir .cr-ic svg{width:22px; height:22px;}
+  .cr-c .cr-tx .cr-nom{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cr-c.fait .cr-tx .v, .cr-c.avenir .cr-tx .v{color:var(--ink); font-weight:800; white-space:nowrap; margin-top:1px;}
   .cr-c.fait .cr-tx b, .cr-c.avenir .cr-tx b{font-size:16px;}
   .cr-c.fait .cr-tx span, .cr-c.avenir .cr-tx span{font-size:13px;}
   @media (prefers-reduced-motion:no-preference){
@@ -4405,7 +4408,11 @@
   .cr-c.encours .cr-ic svg{width:36px; height:36px;} .cr-c.encours .cr-ic .icm{background-color:#fff;}
   .cr-c.encours .cr-tx b{font-size:22px;}
   .cr-c.encours .cr-tx .dur{font-size:26px; font-weight:900; color:#fff; margin-top:0; line-height:1.1;}
-  .cr-c.encours .cr-tx .v{color:rgba(255,255,255,.85); font-size:15px;}
+  .cr-c.encours .cr-tx .v{color:#fff; font-size:23px; font-weight:900; line-height:1.15; margin-top:4px; white-space:nowrap;}
+  .cr-c.encours .cr-tx .dur{font-size:18px; font-weight:800; color:rgba(255,255,255,.85);}
+  .cr-c.encours .cr-tx b.cr-titre{display:flex; align-items:center; gap:6px; font-size:18px; white-space:nowrap; min-width:0;}
+  .cr-c.encours .cr-tx .cr-titre span{overflow:hidden; text-overflow:ellipsis; font-size:inherit; color:inherit; margin:0;}
+  .cr-c.encours .cr-titre svg{flex:none; width:20px; height:20px;} .cr-c.encours .cr-titre .icm{flex:none; background-color:#fff;}
   .cr-anneau{flex:none; position:relative; width:118px; height:118px;}
   .cr-anneau svg{width:100%; height:100%; transform:rotate(-90deg);}
   .cr-anneau circle{fill:none; stroke-width:7;}
@@ -19045,7 +19052,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 23h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 23h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -26690,8 +26697,8 @@ function openPropose(){
       : TR("Pas travaillé depuis {n} {j}.").replace("{n}", manque.jours)
           .replace("{j}", TR(manque.jours>1 ? "jours" : "jour")));
   const nProg = COACH_PROGRAMS[aim.prog].templates.length;
-  openSheet(`<div class="pr-tete ch-titre">
-      <h3>${TR("Propose-moi")}<br><span class="hl">${TR("une séance")}</span></h3>
+  openSheet(`<div class="ca-titre">
+      <h3>${TR("Propose-moi")} ${TR("une séance")}</h3>
       <p>${TR("Selon ton objectif et tes dernières séances.")}</p>
     </div>
     ${deuxLieux()? `<div class="chips" style="justify-content:center; margin-bottom:12px;">
@@ -27157,13 +27164,6 @@ function openPreview(tplId, lieuFait){
       ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries":"série"))}
       ${tuile(IC_CHRONO, "~"+mins, TR("minutes"))}
     </div>
-    ${/* Ajouter un exercice, une course, un cardio : EN HAUT, sur une ligne. En bas d'une
-         longue liste, ces boutons etaient durs a atteindre (Nico, 26 septembre). */""}
-    <div class="pv-ajouts pv-ajouts3">
-      <button class="btn-dash" id="pv-add">＋ ${TR("Exercice")}</button>
-      ${!t.course ? `<button class="btn-dash" id="pv-add-course">${icoM("course", 16)}${TR("Course")}</button>` : ""}
-      ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Cardio")}</button>` : ""}
-    </div>
     <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
       seanceCourte && ecartes.length
         ? TR("Mis de côté aujourd'hui : {}").replace("{}", ecartes.map(it=>esc(getEx(it.exId).name)).join(", "))
@@ -27210,6 +27210,13 @@ function openPreview(tplId, lieuFait){
           <div class="meta"><b>${esc(texteSortie(objCardio))}</b>${objCardio.base ? ` · ${TR("Dernière fois : {}").replace("{}", esc(texteSortie(objCardio.base)))}` : ""}</div>
         </div>
         <button class="co-x pv-co-x" id="pv-cardio-rm" title="${TR("Retirer la sortie")}" aria-label="${TR("Retirer la sortie")}">${IC_CROIX}</button></div>` : ""}
+    ${/* Ajouter un exercice, une course, un cardio : sur une ligne, tout en bas, la ou l'on
+         cherche « en plus » (Nico). La feuille ne defile plus qu'une fois : on y arrive. */""}
+    <div class="pv-ajouts pv-ajouts3" style="margin-top:10px;">
+      <button class="btn-dash" id="pv-add">＋ ${TR("Exercice")}</button>
+      ${!t.course ? `<button class="btn-dash" id="pv-add-course">${icoM("course", 16)}${TR("Course")}</button>` : ""}
+      ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Cardio")}</button>` : ""}
+    </div>
     <div class="pv-pied">
       <button class="btn btn-accent" id="pv-start" style="width:100%;">${TR(seanceCourte ? "Lancer la séance courte" : "Lancer cette séance")}</button>
     </div>`);
@@ -29493,17 +29500,18 @@ function carteEtapeCourse(e, i, etat){
   const km = etapeKm(e);
   const nom = `${i + 1}. ${nomEtape(e)}`;
   if(etat === "encours"){
+    /* la vitesse se lit de loin, en courant (Nico) : l'icone passe petite sur la ligne
+       du titre, « 3. Marche », pour laisser la place aux km/h en grand */
     return `<div class="cr-c encours" data-i="${i}"><span class="cr-num">${i + 1}</span>
-      <span class="cr-ic">${icEtape(e, 34)}</span>
-      <div class="cr-tx"><b>${nom}</b><span class="dur">${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
+      <div class="cr-tx"><b class="cr-titre">${icEtape(e, 20)}<span>${nom}</span></b><span class="dur">${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
       <div class="cr-anneau"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fd" cx="50" cy="50" r="45"/><circle class="pg" id="cr-arc" cx="50" cy="50" r="45" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
         <div class="cr-centre"><b id="cr-temps">00:00</b><small>/ ${mmss(e.min * 60)}</small></div></div>
       <div class="cr-annonce" aria-live="assertive"></div>
     </div>`;
   }
   return `<div class="cr-c ${etat}" data-i="${i}"><span class="cr-num">${etat === "fait" ? IC_CHECK : i + 1}</span>
-    <span class="cr-ic">${icEtape(e, 26)}</span>
-    <div class="cr-tx"><b>${nom}</b><span>${minTxt(e.min)} • ${vitPente(e)}</span></div>
+    <span class="cr-ic">${icEtape(e, 22)}</span>
+    <div class="cr-tx"><b class="cr-nom">${nom}</b><span>${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
     <div class="cr-dr">${etat === "fait" ? `<small>${TR("Terminé")}</small><b>${kmTxt(km)}</b>` : `<b>${kmTxt(km)}</b><small>(${TR("est.")})</small>`}</div>
   </div>`;
 }
