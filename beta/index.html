@@ -4429,6 +4429,20 @@
     .cr-dec b{animation:crTop .9s ease-out;}
     @keyframes crTop{0%{transform:scale(1.5); opacity:.3;} 30%{transform:scale(1); opacity:1;}}
   }
+  /* l'annonce de la prochaine etape, posee sur la carte en cours */
+  .cr-annonce{position:absolute; inset:0; border-radius:20px; background:linear-gradient(135deg, #2A1206, #4A1E08);
+    display:flex; align-items:center; gap:14px; padding:18px 20px; color:#fff; opacity:0; pointer-events:none;
+    transition:opacity .25s ease;}
+  .cr-c.encours.annonce .cr-annonce{opacity:1;}
+  .cr-annonce .an-tx{flex:1; min-width:0;}
+  .cr-annonce .t{display:block; font-size:12px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.7);}
+  .cr-annonce .q{display:flex; align-items:center; gap:8px; font-size:24px; font-weight:900; margin-top:4px;}
+  .cr-annonce .q svg{width:26px; height:26px;} .cr-annonce .q .icm{background-color:#fff;}
+  .cr-annonce .v{display:block; font-size:18px; font-weight:800; color:#FFB056; margin-top:2px;}
+  .cr-annonce .n{flex:none; font-size:64px; font-weight:900; line-height:1; color:#FFB056; font-variant-numeric:tabular-nums;}
+  @media (prefers-reduced-motion:no-preference){
+    .cr-c.encours.annonce .cr-annonce .n{animation:crTop .9s ease-out;}
+  }
   /* l'editeur de course : la fleche de retour, et des reglages a gros boutons */
   .pc-tete{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .pc-tete h3{flex:1; margin:0; text-align:center; padding-right:44px;}
@@ -4464,6 +4478,9 @@
   .co-der b{display:block; font-size:14px; font-weight:800;} .co-der small{display:block; font-size:12px; color:var(--ink-soft); margin-top:1px;}
   .co-km{text-align:right; flex:none;} .co-km > span{display:block; font-size:12px; font-weight:800; margin-top:1px;}
   .co-up{color:#3d9a27;} .co-down{color:var(--bad);} .co-eg{color:var(--ink-mute);}
+  .prog-card .obj-tag{position:absolute; top:10px; left:10px; z-index:3; display:flex; align-items:center; gap:5px;
+    padding:5px 9px 5px 7px; border-radius:99px; background:var(--accent-grad); color:#fff; font-size:10.5px; font-weight:800;}
+  .prog-card .obj-tag .icm{background-color:#fff;}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4559,6 +4576,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Bravo !":"Well done!",
   "Dernières sorties":"Latest runs",
   "Distance par semaine":"Distance per week",
   "Meilleure vitesse moyenne":"Best average speed",
@@ -7931,6 +7949,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Bravo !":"¡Bravo!",
   "Dernières sorties":"Últimas salidas",
   "Distance par semaine":"Distancia por semana",
   "Meilleure vitesse moyenne":"Mejor velocidad media",
@@ -11519,6 +11538,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Bravo !":"Parabéns!",
   "Dernières sorties":"Últimas saídas",
   "Distance par semaine":"Distância por semana",
   "Meilleure vitesse moyenne":"Melhor velocidade média",
@@ -18653,7 +18673,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 17h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 18h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25046,7 +25066,7 @@ function renderSeance(app){
 
   /* ---- carrousel des séances ---- */
   const car = document.getElementById("car");
-  if(!db.templates.length && !(db.parcours || []).length){
+  if(!db.templates.length && !(db.parcours || []).length && !db.objCourse){
     car.innerHTML = `<div class="card empty vide-seance" style="flex:1;"><img src="img/aucune-seance.png" alt=""><b>${TR("Aucune séance pour l'instant")}</b>${TR("Appuie sur le + pour créer ta première séance.")}</div>`;
   } else {
     const ordered = sug? [sug].concat(db.templates.filter(t=>t.id!==sug.id)) : db.templates.slice();
@@ -25074,7 +25094,11 @@ function renderSeance(app){
           <button class="pen" data-edit="${t.id}" aria-label="Modifier"><img src="img/modif.png" alt=""></button>
         </div>
       </div>`;
-    }).join("") + (db.parcours || []).map(carteCourseCarrousel).join("");
+    }).join("") + carteObjectifCarrousel() + (db.parcours || []).map(carteCourseCarrousel).join("");
+    const co = car.querySelector("[data-cobj]");
+    if(co) co.onclick = e=>{ if(e.target.closest("[data-cobjreg]")) return; openCourseApercu("objectif"); };
+    const cr = car.querySelector("[data-cobjreg]");
+    if(cr) cr.onclick = e=>{ e.stopPropagation(); openObjectifCourse(); };
     car.querySelectorAll("[data-course]").forEach(c=>c.onclick = e=>{
       if(e.target.closest("[data-cedit]")) return;
       openCourseApercu(c.dataset.course);
@@ -28916,6 +28940,7 @@ function carteEtapeCourse(e, i, etat){
       <div class="cr-tx"><b>${nom}</b><span class="dur">${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
       <div class="cr-anneau"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fd" cx="50" cy="50" r="45"/><circle class="pg" id="cr-arc" cx="50" cy="50" r="45" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
         <div class="cr-centre"><b id="cr-temps">00:00</b><small>/ ${mmss(e.min * 60)}</small></div></div>
+      <div class="cr-annonce" aria-live="assertive"></div>
     </div>`;
   }
   return `<div class="cr-c ${etat}" data-i="${i}"><span class="cr-num">${etat === "fait" ? IC_CHECK : i + 1}</span>
@@ -28944,8 +28969,7 @@ function renderCourse(app){
   retirerCommandesCourse();
   const bas = document.createElement("div");
   bas.id = "cr-hors";
-  bas.innerHTML = `<div class="cr-dec" id="cr-dec" hidden></div>
-  <div class="cr-bas">
+  bas.innerHTML = `<div class="cr-bas">
     <!-- la pause au centre, posee au-dessus de la barre (Nico) -->
     <button class="cr-pause" id="cr-pause" aria-label="${TR(c.pauseA ? "Reprendre" : "Pause")}">${c.pauseA ? IC_LECTURE : IC_PAUSE}</button>
     <div class="cr-prog"><div class="cr-et" id="cr-et"></div><div class="cr-barre"><i id="cr-barre"></i></div><div class="cr-reste" id="cr-reste"></div></div>
@@ -28996,8 +29020,9 @@ function defilerVersCourse(el, anime){
   const haut = (document.querySelector(".cr-haut") || {}).offsetHeight || 0;
   const bas = (document.querySelector(".cr-bas") || {}).offsetHeight || 0;
   const r = el.getBoundingClientRect();
-  const visible = window.innerHeight - haut - bas;
-  const cible = Math.max(0, window.scrollY + r.top - haut - Math.max(0, (visible - r.height) / 2));
+  /* deja entierement visible sous le haut et au-dessus des commandes : on ne bouge pas */
+  if(r.top >= haut + 30 && r.bottom <= window.innerHeight - bas - 10) return;
+  const cible = Math.max(0, window.scrollY + r.top - haut - 34);
   const sobre = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(!anime || sobre){ window.scrollTo(0, cible); return; }
   const de = window.scrollY, dy = cible - de, t0 = performance.now(), duree = 750;
@@ -29030,21 +29055,24 @@ function ticCourse(){
   document.getElementById("cr-barre").style.width = Math.min(100, st.ecoule / st.total * 100) + "%";
   document.getElementById("cr-reste").textContent = TR("{} restantes").replace("{}", mmss(st.total - st.ecoule));
   /* « prochaine etape dans 3, 2, 1 » : le temps d'appuyer sur le bouton du tapis (Nico) */
-  const dec = document.getElementById("cr-dec");
-  if(st.reste <= 3.05 && !c.pauseA){
+  /* « prochaine etape dans 3, 2, 1 » : DANS la carte en cours, a la place de son texte,
+     pour n'avoir qu'un endroit a regarder (Nico) — la cadence a prendre, en grand */
+  const carte = document.querySelector(".cr-c.encours");
+  const an = carte && carte.querySelector(".cr-annonce");
+  if(an && st.reste <= 3.05 && !c.pauseA){
     const s = Math.max(1, Math.ceil(st.reste - 0.05));
     const suite = c.etapes[st.i + 1];
     if(s !== courseDecompte){
       courseDecompte = s;
       bipDecompte(); vibrer(40);
-      dec.innerHTML = `<span class="t">${suite ? TR("Prochaine étape") : TR("Fin de la séance")}</span>
-        ${suite ? `<span class="q">${icEtape(suite, 20)}${nomEtape(suite)} · ${vitPente(suite)}</span>` : ""}
-        <b>${s}</b>`;
+      an.innerHTML = `<div class="an-tx"><span class="t">${suite ? TR("Prochaine étape") : TR("Fin de la séance")}</span>
+          ${suite ? `<b class="q">${icEtape(suite, 26)}${nomEtape(suite)}</b><span class="v">${vitPente(suite)}</span>` : `<b class="q">${TR("Bravo !")}</b>`}</div>
+        <b class="n">${s}</b>`;
     }
-    dec.hidden = false;
-  } else {
+    carte.classList.add("annonce");
+  } else if(carte){
     courseDecompte = -1;
-    dec.hidden = true;
+    carte.classList.remove("annonce");
   }
 }
 function confirmerFinCourse(){
@@ -29447,18 +29475,34 @@ function carteCourseCarrousel(p){
     </div>
   </div>`;
 }
+/* la carte de l'objectif : la seance du jour, en tete des seances de course */
+function carteObjectifCarrousel(){
+  const obj = db.objCourse;
+  if(!obj) return "";
+  const p = seanceProposee(obj), t = parcoursTotaux(p.etapes);
+  return `<div class="prog-slot">
+    <div class="prog-card course objectif" data-cobj="1">
+      <div class="ph" style="background-image:url('${photoUrl("cardio")}');"></div>
+      <div class="dur">◷ ${Math.round(t.min)} min</div>
+      <div class="obj-tag">${icoM("cible", 13)}<span>${TR("Ton objectif")}</span></div>
+      <div class="in"><div class="nm">${esc(p.nom)}</div><div class="ex">${esc(TR(OBJ_COURSE[obj.type].nom))}<br>${esc(avancementObjectif(obj).txt)}</div></div>
+      <button class="pen" data-cobjreg="1" aria-label="${TR("Régler l'objectif")}"><img src="img/modif.png" alt=""></button>
+    </div>
+  </div>`;
+}
+/* `id` : une seance enregistree, ou « objectif » pour la seance du jour proposee */
 function openCourseApercu(id){
-  const p = (db.parcours || []).find(x=>x.id === id);
+  const p = id === "objectif" ? seanceProposee() : (db.parcours || []).find(x=>x.id === id);
   if(!p) return;
-  openSheet(`<div class="pr-tete"><h3>${esc(p.nom)}</h3></div>
+  openSheet(`<div class="pr-tete"><h3>${esc(p.nom)}</h3>${p.propose ? `<p>${esc(TR(OBJ_COURSE[db.objCourse.type].nom))}</p>` : ""}</div>
     ${crResume(parcoursTotaux(p.etapes))}
     <div class="oc-etapes" style="margin-top:14px;">${p.etapes.map((e, i)=>`<div><span class="n">${i + 1}</span>${esc(nomEtape(e))} · ${minTxt(e.min)} · ${vitPente(e)}</div>`).join("")}</div>
     <div class="row" style="gap:9px; margin-top:14px;">
-      <button class="btn grow btn-rond" id="ca-edit">${TR("Modifier")}</button>
+      <button class="btn grow btn-rond" id="ca-edit">${TR(id === "objectif" ? "Régler l'objectif" : "Modifier")}</button>
       <button class="btn btn-accent grow btn-rond" id="ca-go">${IC_LECTURE}${TR("Commencer")}</button>
     </div>`);
-  document.getElementById("ca-edit").onclick = ()=>openParcoursEditeur(id);
-  document.getElementById("ca-go").onclick = ()=>demarrerCourse(id);
+  document.getElementById("ca-edit").onclick = ()=>id === "objectif" ? openObjectifCourse() : openParcoursEditeur(id);
+  document.getElementById("ca-go").onclick = ()=>demarrerCourse(id === "objectif" ? seanceProposee() : id);
 }
 
 /* ---- le suivi de la course dans Progression (etape 3) ----

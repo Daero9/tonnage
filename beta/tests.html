@@ -7868,12 +7868,17 @@ async function lancer(){
     /* la lancer, puis la finir : elle devient une sortie */
     F.demarrerCourse(DB.parcours[0].id);
     await attendre(()=>!!D2.querySelector(".cr-c.encours"), 1500);
-    vrai("Lancée, l'étape en cours est au centre", !!D2.querySelector(".cr-c.encours") && D2.querySelectorAll(".cr-c.avenir").length === 4);
+    vrai("Lancée, l'étape en cours est en tête", !!D2.querySelector(".cr-c.encours") && D2.querySelectorAll(".cr-c.avenir").length === 4);
+    vrai("…et la page ne descend pas au départ : le haut reste en place", F.scrollY === 0);
     vrai("La barre d'onglets s'efface", D2.body.classList.contains("en-course"));
     vrai("Les commandes sont hors de la page animée", !!D2.querySelector("body > #cr-hors .cr-pause"));
     DB.courseEnCours.debut = Date.now() - (16 * 60 - 2) * 1000;
-    await attendre(()=>!D2.getElementById("cr-dec").hidden, 1500);
-    vrai("Juste avant la fin d'une étape : « Prochaine étape » et le décompte", !D2.getElementById("cr-dec").hidden && /Prochaine/.test(D2.getElementById("cr-dec").textContent));
+    await attendre(()=>!!D2.querySelector(".cr-c.encours.annonce"), 1500);
+    /* l'annonce s'affiche DANS la carte en cours, a la place de son texte (Nico) */
+    vrai("Juste avant la fin d'une étape : « Prochaine étape » et le décompte, dans la carte en cours",
+      !!D2.querySelector(".cr-c.encours.annonce") && /Prochaine/.test(D2.querySelector(".cr-c.encours .cr-annonce").textContent)
+      && /[123]/.test(D2.querySelector(".cr-annonce .n").textContent));
+    vrai("…et plus de bandeau séparé", !D2.getElementById("cr-dec"));
     await attendre(()=>!!D2.querySelector(".cr-c.fait"), 4000);
     vrai("L'étape finie remonte, grisée", !!D2.querySelector(".cr-c.fait") && D2.querySelector(".cr-c.encours").dataset.i === "1");
     D2.getElementById("cr-pause").click();
@@ -8006,6 +8011,16 @@ async function lancer(){
     await attendre(()=>!!D2.getElementById("ca-go"), 1500);
     vrai("La toucher ouvre son aperçu, avec Commencer", !!D2.getElementById("ca-go") && D2.querySelectorAll("#sheet .oc-etapes div").length === 2);
     F.hideSheet();
+    /* l'objectif en cours a sa carte dans le carrousel : sa seance du jour */
+    DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
+    F.eval("render()");
+    await attendre(()=>!!D2.querySelector("[data-cobj]"), 1500);
+    vrai("L'objectif commencé a sa carte dans le carrousel", !!D2.querySelector("[data-cobj]") && /Niveau 1/.test(D2.querySelector("[data-cobj]").textContent));
+    D2.querySelector("[data-cobj]").click();
+    await attendre(()=>!!D2.getElementById("ca-go"), 1500);
+    vrai("…la toucher ouvre la séance du jour, prête à lancer", !!D2.getElementById("ca-go") && D2.querySelectorAll("#sheet .oc-etapes div").length === 13);
+    F.hideSheet();
+    DB.objCourse = null;
     /* le suivi dans Progression */
     const j = d => new Date(Date.now() - d * 864e5).toISOString();
     DB.cardio = [
