@@ -1574,6 +1574,8 @@
     justify-content:center; font-size:13px; font-weight:800; line-height:1; background:rgba(255,255,255,.2); color:#fff;}
   /* le bouton reste petit pour laisser la place au nom, mais se vise sur toute la hauteur */
   .fchip .st::before{content:""; position:absolute; inset:-9px -2px;}
+  /* la zone des boutons s'etend jusqu'au bord droit et sur toute la hauteur de la pastille */
+  .fchip.on .fst{align-self:stretch; margin:-7px -8px -7px 0; padding:0 8px 0 10px; gap:5px; cursor:pointer;}
   .fchip .st:active{background:rgba(255,255,255,.4);}
   .fab-center{display:flex; justify-content:center; margin-top:14px;}
   /* Le bouton d ajout ne defile pas : quelle que soit la longueur de la liste, il reste
@@ -4457,18 +4459,21 @@
   /* l'editeur de course : la fleche de retour, et des reglages a gros boutons */
   .pc-tete{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .pc-tete h3{flex:1; margin:0; text-align:center; padding-right:44px;}
-  .pc-regs{display:grid; grid-template-columns:1fr 1fr; gap:10px 10px; margin-top:12px;}
-  .pc-reg .label{display:block; text-align:center; font-size:10.5px; letter-spacing:.1em; color:var(--ink-mute); margin-bottom:6px;}
-  .pc-pas{display:flex; align-items:center; gap:4px; background:var(--surface); border-radius:99px; padding:4px;
+  /* chaque etape dans son cadre gris fin ; duree, vitesse et pente sur une seule ligne (Nico) */
+  .tpl-item.tp-ex.pc-et{background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); border-radius:18px; padding:10px 10px 12px;}
+  .pc-regs{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin-top:10px;}
+  .pc-reg .label{display:block; text-align:center; font-size:10px; letter-spacing:.08em; color:var(--ink-mute); margin-bottom:5px;}
+  .pc-pas{display:flex; align-items:center; gap:0; background:var(--surface); border-radius:99px; padding:3px;
     box-shadow:inset 0 0 0 1px var(--bord-doux);}
-  .pc-pas > button{flex:none; width:40px; height:40px; border-radius:50%; border:0; background:var(--surface2); color:var(--ink);
-    font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; touch-action:manipulation;}
+  .pc-pas > button{flex:none; position:relative; width:26px; height:26px; border-radius:50%; border:0; background:var(--surface2); color:var(--ink);
+    font-size:16px; font-weight:700; line-height:1; padding:0; display:flex; align-items:center; justify-content:center; touch-action:manipulation;}
+  .pc-pas > button::before{content:""; position:absolute; inset:-8px -3px;}   /* petit a l'oeil, pas au doigt */
   .pc-pas > button:active{background:var(--btn); transform:scale(.94);}
-  .pc-pas label{flex:1; min-width:0; display:flex; align-items:baseline; justify-content:center; gap:2px;}
-  .pc-pas input{width:3.4ch; min-width:0; border:0; background:none; padding:0; text-align:center; font-size:18px; font-weight:800;
+  .pc-pas label{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; line-height:1.05;}
+  .pc-pas input{width:100%; min-width:0; border:0; background:none; padding:0; text-align:center; font-size:15px; font-weight:800;
     color:var(--ink); box-shadow:none; -moz-appearance:textfield;}
   .pc-pas input::-webkit-inner-spin-button, .pc-pas input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
-  .pc-pas label span{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .pc-pas label span{font-size:9.5px; font-weight:700; color:var(--ink-mute);}
   /* ---- la course dans Progression ---- */
   .co-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 12px;}
   .co-tuiles > div{background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); border-radius:14px; padding:10px 8px; text-align:center;}
@@ -4531,6 +4536,50 @@
   .pv-ajouts{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;}
   .pv-ajouts .btn-dash{margin:0; display:flex; align-items:center; justify-content:center; gap:6px;}
   .pv-ajouts .icm{background-color:currentColor;}
+  /* ---- les feuilles de choix (maquette de Nico) ---- */
+  .sheet .pr-tete.ch-titre{padding-bottom:16px;}
+  .sheet .pr-tete.ch-titre h3{font-size:32px; font-weight:900; letter-spacing:-.02em; line-height:1.02; margin-bottom:8px;}
+  .ch-grille{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .ch-liste{display:flex; flex-direction:column; gap:10px;}
+  .ch-c{position:relative; display:flex; align-items:center; gap:12px; width:100%; min-width:0; text-align:left; border:0;
+    border-radius:18px; padding:14px 12px; background:var(--surface); color:var(--ink);
+    box-shadow:inset 0 0 0 1px var(--bord-doux), 0 2px 8px rgba(0,0,0,.04);
+    transition:background .18s ease, box-shadow .18s ease, transform .2s cubic-bezier(.22,.9,.35,1);}
+  .ch-c:active{transform:scale(.97);}
+  .ch-grille .ch-c{min-height:92px; padding:12px 10px;}
+  .ch-c .ic{flex:none; width:52px; height:52px; border-radius:15px; background:var(--accent-grad); color:#fff;
+    display:flex; align-items:center; justify-content:center;}
+  .ch-grille .ch-c .ic{width:46px; height:46px; border-radius:13px;}
+  .ch-c .ic .icm{background-color:#fff;} .ch-c .ic svg{width:24px; height:24px;}
+  .ch-c .ic .emo{font-size:24px; line-height:1;}
+  .ch-c .tx{flex:1; min-width:0;}
+  .ch-c b{display:block; font-size:15px; font-weight:800; line-height:1.25; overflow-wrap:break-word;}
+  .ch-grille .ch-c b{font-size:14px;}
+  .ch-c small{display:block; font-size:13px; color:var(--ink-soft); margin-top:3px; line-height:1.35;}
+  .ch-c .oc-pause{font-size:11.5px; font-weight:700; color:var(--accent);}
+  .ch-c.on{background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 2px var(--accent), 0 4px 14px rgba(245,130,32,.14);}
+  .ch-ok{position:absolute; top:8px; right:8px; width:22px; height:22px; border-radius:50%; background:var(--accent-grad); color:#fff;
+    display:flex; align-items:center; justify-content:center; opacity:0; transform:scale(.5); transition:opacity .18s ease, transform .25s cubic-bezier(.2,1.3,.4,1);}
+  .ch-ok svg{width:12px; height:12px;}
+  .ch-c.on .ch-ok{opacity:1; transform:none;}
+  .ch-liste .ch-c .ch-ok{top:50%; right:14px; margin-top:-11px; transform:scale(.5);} .ch-liste .ch-c.on .ch-ok{transform:none;}
+  .ch-liste .ch-c{padding-right:44px;}
+  .ch-champs{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .ch-champs label{display:flex; flex-direction:column; justify-content:flex-end; min-width:0;}
+  .ch-champs .f-lab{display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:10.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-mute); margin-bottom:7px;}
+  .ch-champs input{width:100%; height:54px; border:0; border-radius:16px; background:var(--surface); padding:0 16px; font-size:20px; font-weight:700;
+    box-shadow:inset 0 0 0 1px var(--bord-doux); color:var(--ink);}
+  .btn.ch-go{position:relative; width:100%; margin-top:16px; min-height:56px; font-size:17px;}
+  .btn.ch-go svg{position:absolute; right:20px; top:50%; width:20px; height:20px; margin-top:-10px;}
+  /* la course ajoutee a la seance : une croix simple pour la retirer */
+  .ex-card.co-muscu{position:relative;}
+  .ex-card.co-muscu .ex-head{padding-right:34px;}
+  .co-x{position:absolute; top:12px; right:12px; width:28px; height:28px; border-radius:50%; border:0; padding:0;
+    background:none; color:var(--ink); box-shadow:inset 0 0 0 1.6px var(--ink); display:flex; align-items:center; justify-content:center;}
+  .co-x::before{content:""; position:absolute; inset:-8px;}
+  .co-x svg{width:14px; height:14px; stroke-width:2.6;}
+  .co-x.pv-co-x{position:relative; top:auto; right:auto; flex:none; margin-left:6px;}
+  .pv-ex .num.pv-co-num{background:var(--accent-grad);} .pv-ex .num.pv-co-num .icm{background-color:#fff;}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4632,6 +4681,14 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Ton objectif|de course":"Your running|goal",
+  "Ajouter une|séance de course":"Add a|running workout",
+  "Ajouter une|sortie cardio":"Add a|cardio session",
+  "Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance.":"It will be added at the end of your workout. You can make it your warm-up by editing the workout.",
+  "Elle sera ajoutée à la fin de ta séance. Tu règles la durée en modifiant la séance.":"It will be added at the end of your workout. Set the duration by editing the workout.",
+  "Elle s'ajoute à la fin de ta séance.":"It's added at the end of your workout.",
+  "Ajouter à la séance":"Add to the workout",
+  "Course retirée de la séance":"Run removed from the workout",
   "Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.":"It will be done at the end of the workout. You can move it to the warm-up by editing the workout.",
   "À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.":"At the end of the workout. Set the duration and distance by editing the workout.",
   "Aliment remis":"Food restored",
@@ -5372,17 +5429,17 @@ const TRAD = {en:{
   "Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.":"Gaps measured against your own average, across {} tracked groups. These figures assume enough protein and sleep, and slow down with experience.",
 
   /* --- écran « tes calories du jour » --- */
-  "Ton corps brûle environ <b>{tdee} kcal</b> par jour au repos et en activité (formule de Mifflin-St Jeor, à partir de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme). Pour {but}, on {sens} <b>{delta} kcal</b>.":"Your body burns about <b>{tdee} kcal</b> a day at rest and in activity (Mifflin-St Jeor formula, from your height, weight, age, your {n} sessions a week and your metabolism). To {but}, we {sens} <b>{delta} kcal</b>.",
+  "Ton corps dépense environ <b>{tdee} kcal</b> par jour, repos et activité compris. Ce chiffre vient de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme (formule de Mifflin et St Jeor). Pour {but}, on {sens} <b>{delta} kcal</b>.":"Your body uses about <b>{tdee} kcal</b> a day, rest and activity included. This number comes from your height, weight, age, your {n} workouts a week and your metabolism (Mifflin and St Jeor formula). To {but}, we {sens} <b>{delta} kcal</b>.",
   "progresser":"make progress",
   "ajoute":"add",
   "retire":"take off",
-  "Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Vise <b>au moins {min} kcal</b> — c'est le seuil qui compte, celui en dessous duquel tu ne prends rien. Au-delà de <b>{max} kcal</b>, le surplus part surtout en gras plutôt qu'en muscle : inutile de forcer plus haut.":"No formula lands exactly right: the real margin is ±5%. Aim for <b>at least {min} kcal</b> — that's the threshold that matters, the one below which you gain nothing. Above <b>{max} kcal</b>, the surplus mostly goes to fat rather than muscle: no point pushing higher.",
-  "Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Le chiffre qui compte est le plafond : <b>pas plus de {max} kcal</b>. Mais ne descends pas non plus sous <b>{min} kcal</b> — un déficit trop violent te fait perdre du muscle et ne tient pas deux semaines.":"No formula lands exactly right: the real margin is ±5%. The number that matters is the ceiling: <b>no more than {max} kcal</b>. But don't drop below <b>{min} kcal</b> either — too harsh a deficit costs you muscle and won't last two weeks.",
-  "Tu as indiqué toi-même une dépense de <b>{} kcal</b> : c'est elle qui sert de base, pas la formule.":"You entered a burn of <b>{} kcal</b> yourself: that's what we use as the baseline, not the formula.",
-  "Ta dépense a été recalculée d'après tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b> au lieu du chiffre théorique.":"Your burn has been recalculated from your {j} days of tracking and how your weight moved: <b>{k} kcal</b> instead of the theoretical figure.",
-  "Il vient uniquement des aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, passe par « Autre » — sinon le total sera sous-estimé. Tu peux aussi corriger une journée à la main depuis Progression.":"It comes only from the foods you tick. If you eat something that isn't in the list, use \u201cOther\u201d — otherwise the total will be under-counted. You can also correct a day by hand from Progress.",
-  "Elles ne se soustraient pas ici : tes séances sont déjà comptées dans ta dépense quotidienne. Les kcal affichées après une séance sont là pour l'info, pas pour t'autoriser à manger plus.":"They don't get subtracted here: your workouts are already counted in your daily burn. The kcal shown after a session are there for information, not as permission to eat more.",
-  "C'est la balance, pas l'appli. Pèse-toi une fois par semaine, au même moment : si le poids ne bouge pas dans le sens voulu au bout de 2 à 3 semaines, ajuste de 200 kcal.":"It's the scale, not the app. Weigh yourself once a week, at the same time: if the weight isn't moving the way you want after 2 or 3 weeks, adjust by 200 kcal.",
+  "Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Mange <b>au moins {min} kcal</b>. En dessous, tu ne prends rien. Au dessus de <b>{max} kcal</b>, le surplus devient surtout du gras, pas du muscle. Pas besoin d'aller plus haut.":"No calculation is exact to the gram: it can be off by about 5 %. Eat <b>at least {min} kcal</b>. Below that, you gain nothing. Above <b>{max} kcal</b>, the extra turns mostly into fat, not muscle. No need to go higher.",
+  "Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Le plus important : <b>pas plus de {max} kcal</b>. Mais ne descends pas sous <b>{min} kcal</b>. Si tu manges trop peu, tu perds du muscle et tu ne tiens pas longtemps.":"No calculation is exact to the gram: it can be off by about 5 %. What matters most: <b>no more than {max} kcal</b>. But don't go below <b>{min} kcal</b>. If you eat too little, you lose muscle and you won't keep it up for long.",
+  "Tu as indiqué toi-même une dépense de <b>{} kcal</b>. C'est ce chiffre qui sert de base.":"You entered an expenditure of <b>{} kcal</b> yourself. That number is used as the base.",
+  "On a recalculé ta dépense avec tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b>. C'est plus juste que le calcul de départ.":"Your expenditure was recalculated from your {j} days of tracking and how your weight changed: <b>{k} kcal</b>. That is more accurate than the starting estimate.",
+  "Il compte seulement les aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, ajoute-le avec « Autre ». Sinon, ton total sera trop bas. Tu peux aussi corriger une journée à la main dans Progression.":"It only counts the foods you tick. If you eat something that isn't in the list, add it with \u201cOther\u201d. Otherwise your total will be too low. You can also correct a day by hand in Progress.",
+  "On ne les retire pas ici : ton chiffre du jour compte déjà tes séances. Les kcal affichées après une séance sont là pour info. Elles ne veulent pas dire que tu peux manger plus.":"We don't subtract them here: your daily number already counts your workouts. The kcal shown after a workout are just for info. They don't mean you can eat more.",
+  "C'est ta balance, pas l'appli. Pèse-toi une fois par semaine, au même moment. Si ton poids ne va pas dans le bon sens après 2 à 3 semaines, change ton objectif de 200 kcal.":"It's your scale, not the app. Weigh yourself once a week, at the same time. If your weight isn't moving the right way after 2 to 3 weeks, change your target by 200 kcal.",
   "Progressif":"Gradual",
   "Rapide":"Fast",
 
@@ -5532,7 +5589,7 @@ const TRAD = {en:{
   "D'où vient le chiffre":"Where the number comes from",
   "perdre du gras":"lose fat",
   "prendre du muscle":"build muscle",
-  "Renseigne ton profil (poids, taille, âge, objectif) pour obtenir une cible personnalisée.":"Fill in your profile (weight, height, age, goal) to get a target of your own.",
+  "Remplis ton profil (poids, taille, âge, objectif) pour avoir un chiffre fait pour toi.":"Fill in your profile (weight, height, age, goal) to get a number made for you.",
   "Pourquoi une fourchette":"Why a range",
   "Le total affiché":"The total shown",
   "Et les calories brûlées ?":"What about calories burned?",
@@ -6507,7 +6564,7 @@ const TRAD = {en:{
   "Ce que l'app ne mesure pas":"What the app doesn't measure",
   "Fibres, sel, sucres ajoutés, vitamines et minéraux, qualité des graisses : Tonnup suit les calories et les macronutriments, pas la qualité nutritionnelle de ce que tu manges. Et un journal alimentaire, même tenu sérieusement, sous-estime en moyenne de 20 à 30 % — huile de cuisson, sauces, grignotages. Compte tes journées comme un plancher, pas comme une mesure.":"Fibre, salt, added sugars, vitamins and minerals, fat quality: Tonnup tracks calories and macronutrients, not the nutritional quality of what you eat. And a food log, even a careful one, underestimates by 20 to 30 % on average — cooking oil, sauces, snacking. Read your days as a floor, not a measurement.",
   "Il est presque toujours en dessous":"It's almost always below",
-  "Un journal alimentaire, même tenu sérieusement, sous-estime de 20 à 30 % en moyenne : l'huile de cuisson, la sauce, les grignotages n'y entrent jamais. Lis ton total comme un plancher. Si la balance ne suit pas ce qu'il annonce, c'est lui qui a tort, pas elle.":"A food log, even a careful one, underestimates by 20 to 30 % on average: cooking oil, sauce and snacking never make it in. Read your total as a floor. If the scale doesn't follow what it says, the log is wrong, not the scale.",
+  "Même quand on note tout avec soin, on oublie en moyenne 20 à 30 % de ce qu'on mange : l'huile de cuisson, les sauces, les grignotages. Ton vrai total est donc sans doute plus haut. Si ta balance ne suit pas, fais confiance à la balance.":"Even when you log carefully, you miss 20 to 30 % of what you eat on average: cooking oil, sauces, snacks. Your real total is probably higher. If the scale doesn't agree, trust the scale.",
   "Des journées bien trop basses":"Days far too low",
   "≈ {moy} kcal par jour renseignées, pour un métabolisme de base de {bmr} kcal — ce que ton corps brûle en ne faisant rien. Soit il manque des aliments dans ton journal (huile, sauces, extras), soit tu manges vraiment trop peu : ça coûte du muscle, ça ne tient pas, et si c'est volontaire, parles-en à un professionnel de santé.":"≈ {moy} kcal a day logged, against a basal metabolism of {bmr} kcal — what your body burns doing nothing. Either foods are missing from your log (oil, sauces, extras), or you really eat too little: it costs muscle, it doesn't last, and if it's deliberate, talk to a health professional.",
   "Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.":"Tonnup tracks calories and macros, not nutritional quality. Log totals are usually underestimated by 20 to 30 %.",
@@ -8048,6 +8105,14 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Ton objectif|de course":"Tu objetivo|de carrera",
+  "Ajouter une|séance de course":"Añadir un|entreno de carrera",
+  "Ajouter une|sortie cardio":"Añadir una|salida de cardio",
+  "Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance.":"Se añadirá al final de tu sesión. Puedes ponerla como calentamiento editando la sesión.",
+  "Elle sera ajoutée à la fin de ta séance. Tu règles la durée en modifiant la séance.":"Se añadirá al final de tu sesión. Ajusta la duración editando la sesión.",
+  "Elle s'ajoute à la fin de ta séance.":"Se añade al final de tu sesión.",
+  "Ajouter à la séance":"Añadir a la sesión",
+  "Course retirée de la séance":"Carrera quitada de la sesión",
   "Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.":"Se hará al final de la sesión. Podrás ponerla como calentamiento editando la sesión.",
   "À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.":"Al final de la sesión. Ajusta la duración y la distancia editando la sesión.",
   "Aliment remis":"Alimento restaurado",
@@ -8785,17 +8850,17 @@ es:{
   "Deux passages par semaine suffisent à combler ce retard en quelques semaines.":"Dos sesiones por semana bastan para recuperar ese retraso en unas semanas.",
   "Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : {r} de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.":"Lo que toca ahora no es recuperar nada, sino <b>añadir carga en todo</b>: {r} más en cuanto llegues a la parte alta de tu rango de repeticiones. Un físico equilibrado progresa en bloque.",
   "Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.":"Diferencias calculadas respecto a tu propia media, sobre {} grupos seguidos. Estas referencias dan por hecho suficientes proteínas y sueño, y se ralentizan con la experiencia.",
-  "Ton corps brûle environ <b>{tdee} kcal</b> par jour au repos et en activité (formule de Mifflin-St Jeor, à partir de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme). Pour {but}, on {sens} <b>{delta} kcal</b>.":"Tu cuerpo quema unas <b>{tdee} kcal</b> al día en reposo y en actividad (fórmula de Mifflin-St Jeor, a partir de tu estatura, tu peso, tu edad, tus {n} entrenamientos por semana y tu metabolismo). Para {but}, se {sens} <b>{delta} kcal</b>.",
+  "Ton corps dépense environ <b>{tdee} kcal</b> par jour, repos et activité compris. Ce chiffre vient de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme (formule de Mifflin et St Jeor). Pour {but}, on {sens} <b>{delta} kcal</b>.":"Tu cuerpo gasta unas <b>{tdee} kcal</b> al día, reposo y actividad incluidos. Esta cifra sale de tu altura, tu peso, tu edad, tus {n} sesiones por semana y tu metabolismo (fórmula de Mifflin y St Jeor). Para {but}, {sens} <b>{delta} kcal</b>.",
   "progresser":"progresar",
   "ajoute":"añade",
   "retire":"quita",
-  "Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Vise <b>au moins {min} kcal</b> — c'est le seuil qui compte, celui en dessous duquel tu ne prends rien. Au-delà de <b>{max} kcal</b>, le surplus part surtout en gras plutôt qu'en muscle : inutile de forcer plus haut.":"Ninguna fórmula acierta al gramo: el margen real es de ±5 %. Apunta a <b>al menos {min} kcal</b>: es el umbral que cuenta, por debajo del cual no ganas nada. Por encima de <b>{max} kcal</b>, el excedente se va sobre todo a grasa y no a músculo: no hace falta forzar más.",
-  "Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Le chiffre qui compte est le plafond : <b>pas plus de {max} kcal</b>. Mais ne descends pas non plus sous <b>{min} kcal</b> — un déficit trop violent te fait perdre du muscle et ne tient pas deux semaines.":"Ninguna fórmula acierta al gramo: el margen real es de ±5 %. La cifra que cuenta es el techo: <b>no más de {max} kcal</b>. Pero tampoco bajes de <b>{min} kcal</b>: un déficit demasiado brusco te hace perder músculo y no aguanta ni dos semanas.",
-  "Tu as indiqué toi-même une dépense de <b>{} kcal</b> : c'est elle qui sert de base, pas la formule.":"Tú mismo has indicado un gasto de <b>{} kcal</b>: es el que sirve de base, no la fórmula.",
-  "Ta dépense a été recalculée d'après tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b> au lieu du chiffre théorique.":"Tu gasto se ha recalculado con tus {j} días de seguimiento y la evolución de tu peso: <b>{k} kcal</b> en lugar de la cifra teórica.",
-  "Il vient uniquement des aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, passe par « Autre » — sinon le total sera sous-estimé. Tu peux aussi corriger une journée à la main depuis Progression.":"Sale únicamente de los alimentos que marcas. Si comes algo que no está en la lista, usa «Otro»; si no, el total quedará por debajo de lo real. También puedes corregir un día a mano desde Progreso.",
-  "Elles ne se soustraient pas ici : tes séances sont déjà comptées dans ta dépense quotidienne. Les kcal affichées après une séance sont là pour l'info, pas pour t'autoriser à manger plus.":"Aquí no se restan: tus entrenamientos ya están contados en tu gasto diario. Las kcal que aparecen tras un entrenamiento son informativas, no un permiso para comer más.",
-  "C'est la balance, pas l'appli. Pèse-toi une fois par semaine, au même moment : si le poids ne bouge pas dans le sens voulu au bout de 2 à 3 semaines, ajuste de 200 kcal.":"Es la báscula, no la app. Pésate una vez por semana, a la misma hora: si el peso no se mueve en la dirección deseada al cabo de 2 o 3 semanas, ajusta 200 kcal.",
+  "Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Mange <b>au moins {min} kcal</b>. En dessous, tu ne prends rien. Au dessus de <b>{max} kcal</b>, le surplus devient surtout du gras, pas du muscle. Pas besoin d'aller plus haut.":"Ningún cálculo es exacto al gramo: puede equivocarse en un 5 % más o menos. Come <b>al menos {min} kcal</b>. Por debajo, no ganas nada. Por encima de <b>{max} kcal</b>, el sobrante se convierte sobre todo en grasa, no en músculo. No hace falta subir más.",
+  "Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Le plus important : <b>pas plus de {max} kcal</b>. Mais ne descends pas sous <b>{min} kcal</b>. Si tu manges trop peu, tu perds du muscle et tu ne tiens pas longtemps.":"Ningún cálculo es exacto al gramo: puede equivocarse en un 5 % más o menos. Lo más importante: <b>no más de {max} kcal</b>. Pero no bajes de <b>{min} kcal</b>. Si comes demasiado poco, pierdes músculo y no aguantas mucho tiempo.",
+  "Tu as indiqué toi-même une dépense de <b>{} kcal</b>. C'est ce chiffre qui sert de base.":"Indicaste tú mismo un gasto de <b>{} kcal</b>. Esa cifra es la que sirve de base.",
+  "On a recalculé ta dépense avec tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b>. C'est plus juste que le calcul de départ.":"Recalculamos tu gasto con tus {j} días de registro y la evolución de tu peso: <b>{k} kcal</b>. Es más exacto que el cálculo inicial.",
+  "Il compte seulement les aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, ajoute-le avec « Autre ». Sinon, ton total sera trop bas. Tu peux aussi corriger une journée à la main dans Progression.":"Solo cuenta los alimentos que marcas. Si comes algo que no está en la lista, añádelo con «Otro». Si no, tu total quedará demasiado bajo. También puedes corregir un día a mano en Progreso.",
+  "On ne les retire pas ici : ton chiffre du jour compte déjà tes séances. Les kcal affichées après une séance sont là pour info. Elles ne veulent pas dire que tu peux manger plus.":"Aquí no se restan: tu cifra del día ya cuenta tus sesiones. Las kcal que ves después de una sesión son solo informativas. No quieren decir que puedas comer más.",
+  "C'est ta balance, pas l'appli. Pèse-toi une fois par semaine, au même moment. Si ton poids ne va pas dans le bon sens après 2 à 3 semaines, change ton objectif de 200 kcal.":"Es tu báscula, no la app. Pésate una vez por semana, a la misma hora. Si tu peso no va en la buena dirección después de 2 o 3 semanas, cambia tu objetivo en 200 kcal.",
   "Progressif":"Progresivo",
   "Rapide":"Rápido",
   "Renseigne ton profil pour recevoir des conseils adaptés à ton objectif.":"Rellena tu perfil para recibir consejos adaptados a tu objetivo.",
@@ -8933,7 +8998,7 @@ es:{
   "D'où vient le chiffre":"De dónde sale la cifra",
   "perdre du gras":"perder grasa",
   "prendre du muscle":"ganar músculo",
-  "Renseigne ton profil (poids, taille, âge, objectif) pour obtenir une cible personnalisée.":"Rellena tu perfil (peso, estatura, edad, objetivo) para obtener un objetivo personalizado.",
+  "Remplis ton profil (poids, taille, âge, objectif) pour avoir un chiffre fait pour toi.":"Completa tu perfil (peso, altura, edad, objetivo) para tener una cifra hecha para ti.",
   "Pourquoi une fourchette":"Por qué un rango",
   "Le total affiché":"El total mostrado",
   "Et les calories brûlées ?":"¿Y las calorías quemadas?",
@@ -10103,7 +10168,7 @@ es:{
   "Ce que l'app ne mesure pas":"Lo que la app no mide",
   "Fibres, sel, sucres ajoutés, vitamines et minéraux, qualité des graisses : Tonnup suit les calories et les macronutriments, pas la qualité nutritionnelle de ce que tu manges. Et un journal alimentaire, même tenu sérieusement, sous-estime en moyenne de 20 à 30 % — huile de cuisson, sauces, grignotages. Compte tes journées comme un plancher, pas comme une mesure.":"Fibra, sal, azúcares añadidos, vitaminas y minerales, calidad de las grasas: Tonnup sigue las calorías y los macronutrientes, no la calidad nutricional de lo que comes. Y un diario de comidas, aunque se lleve en serio, subestima de media entre un 20 y un 30 %: aceite de cocinado, salsas, picoteos. Lee tus días como un suelo, no como una medida.",
   "Il est presque toujours en dessous":"Casi siempre se queda por debajo",
-  "Un journal alimentaire, même tenu sérieusement, sous-estime de 20 à 30 % en moyenne : l'huile de cuisson, la sauce, les grignotages n'y entrent jamais. Lis ton total comme un plancher. Si la balance ne suit pas ce qu'il annonce, c'est lui qui a tort, pas elle.":"Un diario de comidas, aunque se lleve en serio, subestima de media entre un 20 y un 30 %: el aceite de cocinado, la salsa y los picoteos nunca entran. Lee tu total como un suelo. Si la báscula no sigue lo que anuncia, el equivocado es él, no ella.",
+  "Même quand on note tout avec soin, on oublie en moyenne 20 à 30 % de ce qu'on mange : l'huile de cuisson, les sauces, les grignotages. Ton vrai total est donc sans doute plus haut. Si ta balance ne suit pas, fais confiance à la balance.":"Incluso anotando todo con cuidado, se olvida de media entre un 20 y un 30 % de lo que se come: el aceite de cocina, las salsas, lo que se picotea. Tu total real probablemente es más alto. Si la báscula no está de acuerdo, confía en la báscula.",
   "Des journées bien trop basses":"Días demasiado bajos",
   "≈ {moy} kcal par jour renseignées, pour un métabolisme de base de {bmr} kcal — ce que ton corps brûle en ne faisant rien. Soit il manque des aliments dans ton journal (huile, sauces, extras), soit tu manges vraiment trop peu : ça coûte du muscle, ça ne tient pas, et si c'est volontaire, parles-en à un professionnel de santé.":"≈ {moy} kcal al día registradas, para un metabolismo basal de {bmr} kcal, lo que tu cuerpo quema sin hacer nada. O faltan alimentos en tu diario (aceite, salsas, extras), o comes realmente demasiado poco: eso cuesta músculo, no se sostiene, y si es voluntario, háblalo con un profesional sanitario.",
   "Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.":"Tonnup sigue las calorías y los macros, no la calidad nutricional. Los totales de un diario suelen quedarse entre un 20 y un 30 % por debajo.",
@@ -11680,6 +11745,14 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Ton objectif|de course":"Seu objetivo|de corrida",
+  "Ajouter une|séance de course":"Adicionar um|treino de corrida",
+  "Ajouter une|sortie cardio":"Adicionar uma|sessão de cardio",
+  "Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance.":"Será adicionada no fim do seu treino. Você pode colocá-la como aquecimento editando o treino.",
+  "Elle sera ajoutée à la fin de ta séance. Tu règles la durée en modifiant la séance.":"Será adicionada no fim do seu treino. Ajuste a duração editando o treino.",
+  "Elle s'ajoute à la fin de ta séance.":"Ela é adicionada no fim do seu treino.",
+  "Ajouter à la séance":"Adicionar ao treino",
+  "Course retirée de la séance":"Corrida removida do treino",
   "Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.":"Será feita no fim do treino. Você pode colocá-la como aquecimento editando o treino.",
   "À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.":"No fim do treino. Ajuste a duração e a distância editando o treino.",
   "Aliment remis":"Alimento restaurado",
@@ -12417,17 +12490,17 @@ pt:{
   "Deux passages par semaine suffisent à combler ce retard en quelques semaines.":"Duas sessões por semana bastam para recuperar esse atraso em algumas semanas.",
   "Le bon réflexe maintenant n'est pas de rattraper quoi que ce soit, mais d'<b>ajouter de la charge partout</b> : {r} de plus dès que tu tiens le haut de ta fourchette de répétitions. Un physique équilibré progresse en bloc.":"O certo agora não é compensar nada, e sim <b>adicionar carga em tudo</b>: {r} a mais assim que você segurar o topo da sua faixa de repetições. Um físico equilibrado progride em bloco.",
   "Écarts calculés par rapport à ta propre moyenne, sur {} groupes suivis. Ces repères supposent assez de protéines et de sommeil, et ralentissent avec l'expérience.":"Diferenças calculadas em relação à sua própria média, sobre {} grupos acompanhados. Estas referências pressupõem proteína e sono suficientes, e desaceleram com a experiência.",
-  "Ton corps brûle environ <b>{tdee} kcal</b> par jour au repos et en activité (formule de Mifflin-St Jeor, à partir de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme). Pour {but}, on {sens} <b>{delta} kcal</b>.":"Seu corpo queima cerca de <b>{tdee} kcal</b> por dia em repouso e em atividade (fórmula de Mifflin-St Jeor, a partir da sua altura, peso, idade, seus {n} treinos por semana e seu metabolismo). Para {but}, {sens} <b>{delta} kcal</b>.",
+  "Ton corps dépense environ <b>{tdee} kcal</b> par jour, repos et activité compris. Ce chiffre vient de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme (formule de Mifflin et St Jeor). Pour {but}, on {sens} <b>{delta} kcal</b>.":"Seu corpo gasta cerca de <b>{tdee} kcal</b> por dia, repouso e atividade incluídos. Esse número vem da sua altura, peso, idade, dos seus {n} treinos por semana e do seu metabolismo (fórmula de Mifflin e St Jeor). Para {but}, {sens} <b>{delta} kcal</b>.",
   "progresser":"progredir",
   "ajoute":"adicione",
   "retire":"tire",
-  "Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Vise <b>au moins {min} kcal</b> — c'est le seuil qui compte, celui en dessous duquel tu ne prends rien. Au-delà de <b>{max} kcal</b>, le surplus part surtout en gras plutôt qu'en muscle : inutile de forcer plus haut.":"Nenhuma fórmula acerta na grama: a margem real é de ±5 %. Busque <b>pelo menos {min} kcal</b> — é o limite que conta, abaixo do qual você não ganha nada. Acima de <b>{max} kcal</b>, o excedente vira principalmente gordura em vez de músculo: não adianta forçar mais.",
-  "Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Le chiffre qui compte est le plafond : <b>pas plus de {max} kcal</b>. Mais ne descends pas non plus sous <b>{min} kcal</b> — un déficit trop violent te fait perdre du muscle et ne tient pas deux semaines.":"Nenhuma fórmula acerta na grama: a margem real é de ±5 %. O número que conta é o teto: <b>não mais que {max} kcal</b>. Mas também não desça abaixo de <b>{min} kcal</b> — um déficit violento demais custa músculo e não dura duas semanas.",
-  "Tu as indiqué toi-même une dépense de <b>{} kcal</b> : c'est elle qui sert de base, pas la formule.":"Você mesmo informou um gasto de <b>{} kcal</b>: é ele que serve de base, não a fórmula.",
-  "Ta dépense a été recalculée d'après tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b> au lieu du chiffre théorique.":"Seu gasto foi recalculado a partir dos seus {j} dias de acompanhamento e da evolução do seu peso: <b>{k} kcal</b> em vez do número teórico.",
-  "Il vient uniquement des aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, passe par « Autre » — sinon le total sera sous-estimé. Tu peux aussi corriger une journée à la main depuis Progression.":"Ele vem apenas dos alimentos que você marca. Se comer algo que não está na lista, use “Outro” — senão o total ficará subestimado. Você também pode corrigir um dia à mão em Progresso.",
-  "Elles ne se soustraient pas ici : tes séances sont déjà comptées dans ta dépense quotidienne. Les kcal affichées après une séance sont là pour l'info, pas pour t'autoriser à manger plus.":"Elas não são descontadas aqui: seus treinos já estão contados no seu gasto diário. As kcal mostradas depois de um treino são informativas, não uma permissão para comer mais.",
-  "C'est la balance, pas l'appli. Pèse-toi une fois par semaine, au même moment : si le poids ne bouge pas dans le sens voulu au bout de 2 à 3 semaines, ajuste de 200 kcal.":"É a balança, não o app. Pese-se uma vez por semana, sempre no mesmo horário: se o peso não for na direção desejada depois de 2 ou 3 semanas, ajuste em 200 kcal.",
+  "Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Mange <b>au moins {min} kcal</b>. En dessous, tu ne prends rien. Au dessus de <b>{max} kcal</b>, le surplus devient surtout du gras, pas du muscle. Pas besoin d'aller plus haut.":"Nenhum cálculo é exato ao grama: ele pode errar em cerca de 5 %. Coma <b>pelo menos {min} kcal</b>. Abaixo disso, você não ganha nada. Acima de <b>{max} kcal</b>, o excedente vira principalmente gordura, não músculo. Não precisa ir mais alto.",
+  "Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Le plus important : <b>pas plus de {max} kcal</b>. Mais ne descends pas sous <b>{min} kcal</b>. Si tu manges trop peu, tu perds du muscle et tu ne tiens pas longtemps.":"Nenhum cálculo é exato ao grama: ele pode errar em cerca de 5 %. O mais importante: <b>não mais que {max} kcal</b>. Mas não desça abaixo de <b>{min} kcal</b>. Se comer pouco demais, você perde músculo e não aguenta por muito tempo.",
+  "Tu as indiqué toi-même une dépense de <b>{} kcal</b>. C'est ce chiffre qui sert de base.":"Você mesmo indicou um gasto de <b>{} kcal</b>. É esse número que serve de base.",
+  "On a recalculé ta dépense avec tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b>. C'est plus juste que le calcul de départ.":"Recalculamos o seu gasto com os seus {j} dias de registro e a evolução do seu peso: <b>{k} kcal</b>. É mais exato que o cálculo inicial.",
+  "Il compte seulement les aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, ajoute-le avec « Autre ». Sinon, ton total sera trop bas. Tu peux aussi corriger une journée à la main dans Progression.":"Ele só conta os alimentos que você marca. Se comer algo que não está na lista, adicione com “Outro”. Senão, seu total ficará baixo demais. Você também pode corrigir um dia à mão em Progresso.",
+  "On ne les retire pas ici : ton chiffre du jour compte déjà tes séances. Les kcal affichées après une séance sont là pour info. Elles ne veulent pas dire que tu peux manger plus.":"Aqui elas não são descontadas: seu número do dia já conta os seus treinos. As kcal mostradas depois de um treino são só informativas. Não querem dizer que você pode comer mais.",
+  "C'est ta balance, pas l'appli. Pèse-toi une fois par semaine, au même moment. Si ton poids ne va pas dans le bon sens après 2 à 3 semaines, change ton objectif de 200 kcal.":"É a sua balança, não o app. Pese-se uma vez por semana, no mesmo horário. Se o seu peso não for na direção certa depois de 2 a 3 semanas, mude sua meta em 200 kcal.",
   "Progressif":"Gradual",
   "Rapide":"Rápido",
   "Renseigne ton profil pour recevoir des conseils adaptés à ton objectif.":"Preencha seu perfil para receber conselhos adequados à sua meta.",
@@ -12565,7 +12638,7 @@ pt:{
   "D'où vient le chiffre":"De onde vem o número",
   "perdre du gras":"perder gordura",
   "prendre du muscle":"ganhar músculo",
-  "Renseigne ton profil (poids, taille, âge, objectif) pour obtenir une cible personnalisée.":"Preencha seu perfil (peso, altura, idade, meta) para obter um alvo personalizado.",
+  "Remplis ton profil (poids, taille, âge, objectif) pour avoir un chiffre fait pour toi.":"Preencha seu perfil (peso, altura, idade, objetivo) para ter um número feito para você.",
   "Pourquoi une fourchette":"Por que uma faixa",
   "Le total affiché":"O total exibido",
   "Et les calories brûlées ?":"E as calorias queimadas?",
@@ -13735,7 +13808,7 @@ pt:{
   "Ce que l'app ne mesure pas":"O que o app não mede",
   "Fibres, sel, sucres ajoutés, vitamines et minéraux, qualité des graisses : Tonnup suit les calories et les macronutriments, pas la qualité nutritionnelle de ce que tu manges. Et un journal alimentaire, même tenu sérieusement, sous-estime en moyenne de 20 à 30 % — huile de cuisson, sauces, grignotages. Compte tes journées comme un plancher, pas comme une mesure.":"Fibras, sal, açúcares adicionados, vitaminas e minerais, qualidade das gorduras: o Tonnup acompanha calorias e macronutrientes, não a qualidade nutricional do que você come. E um diário alimentar, mesmo feito com seriedade, subestima em média de 20 a 30 % — óleo de cozimento, molhos, beliscadas. Leia seus dias como um piso, não como uma medida.",
   "Il est presque toujours en dessous":"Quase sempre fica abaixo",
-  "Un journal alimentaire, même tenu sérieusement, sous-estime de 20 à 30 % en moyenne : l'huile de cuisson, la sauce, les grignotages n'y entrent jamais. Lis ton total comme un plancher. Si la balance ne suit pas ce qu'il annonce, c'est lui qui a tort, pas elle.":"Um diário alimentar, mesmo feito com seriedade, subestima em média de 20 a 30 %: o óleo de cozimento, o molho e as beliscadas nunca entram. Leia seu total como um piso. Se a balança não acompanha o que ele anuncia, quem está errado é ele, não ela.",
+  "Même quand on note tout avec soin, on oublie en moyenne 20 à 30 % de ce qu'on mange : l'huile de cuisson, les sauces, les grignotages. Ton vrai total est donc sans doute plus haut. Si ta balance ne suit pas, fais confiance à la balance.":"Mesmo anotando tudo com cuidado, esquecemos em média 20 a 30 % do que comemos: o óleo de cozinha, os molhos, os beliscos. Seu total real provavelmente é mais alto. Se a balança não concordar, confie na balança.",
   "Des journées bien trop basses":"Dias baixos demais",
   "≈ {moy} kcal par jour renseignées, pour un métabolisme de base de {bmr} kcal — ce que ton corps brûle en ne faisant rien. Soit il manque des aliments dans ton journal (huile, sauces, extras), soit tu manges vraiment trop peu : ça coûte du muscle, ça ne tient pas, et si c'est volontaire, parles-en à un professionnel de santé.":"≈ {moy} kcal por dia registradas, para um metabolismo basal de {bmr} kcal — o que seu corpo queima sem fazer nada. Ou faltam alimentos no seu diário (óleo, molhos, extras), ou você come realmente pouco demais: isso custa músculo, não se sustenta e, se for intencional, converse com um profissional de saúde.",
   "Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.":"O Tonnup acompanha calorias e macros, não a qualidade nutricional. Os totais de um diário costumam ficar de 20 a 30 % abaixo do real.",
@@ -16840,24 +16913,24 @@ function openKcalInfo(pl){
   openSheet(`${aideTete(icoM("flamme", 32), TR("Tes calories du jour"), "")}
     ${pl && pl.tdeeSource!=="formule" ? b(TR("Chiffre recalé sur toi"),
       pl.tdeeSource==="manuel"
-        ? TR("Tu as indiqué toi-même une dépense de <b>{} kcal</b> : c'est elle qui sert de base, pas la formule.").replace("{}", pl.tdee)
-        : TR("Ta dépense a été recalculée d'après tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b> au lieu du chiffre théorique.")
+        ? TR("Tu as indiqué toi-même une dépense de <b>{} kcal</b>. C'est ce chiffre qui sert de base.").replace("{}", pl.tdee)
+        : TR("On a recalculé ta dépense avec tes {j} jours de suivi et l'évolution de ton poids : <b>{k} kcal</b>. C'est plus juste que le calcul de départ.")
             .replace("{j}", pl.mesure.jours).replace("{k}", pl.tdee)) : ""}
     ${b(TR("D'où vient le chiffre"), pl
-      ? TR("Ton corps brûle environ <b>{tdee} kcal</b> par jour au repos et en activité (formule de Mifflin-St Jeor, à partir de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme). Pour {but}, on {sens} <b>{delta} kcal</b>.")
+      ? TR("Ton corps dépense environ <b>{tdee} kcal</b> par jour, repos et activité compris. Ce chiffre vient de ta taille, ton poids, ton âge, tes {n} séances par semaine et ton métabolisme (formule de Mifflin et St Jeor). Pour {but}, on {sens} <b>{delta} kcal</b>.")
           .replace("{tdee}", pl.tdee).replace("{n}", pl.seances)
           .replace("{but}", pl.aim==="seche"?TR("perdre du gras"):(pl.aim==="masse"?TR("prendre du muscle"):TR("progresser")))
           .replace("{sens}", TR(pl.delta>=0?"ajoute":"retire")).replace("{delta}", Math.abs(pl.delta))
-      : TR("Renseigne ton profil (poids, taille, âge, objectif) pour obtenir une cible personnalisée."))}
+      : TR("Remplis ton profil (poids, taille, âge, objectif) pour avoir un chiffre fait pour toi."))}
     ${pl? b(TR("Pourquoi une fourchette"), pl.delta>=0
-      ? TR("Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Vise <b>au moins {min} kcal</b> — c'est le seuil qui compte, celui en dessous duquel tu ne prends rien. Au-delà de <b>{max} kcal</b>, le surplus part surtout en gras plutôt qu'en muscle : inutile de forcer plus haut.")
+      ? TR("Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Mange <b>au moins {min} kcal</b>. En dessous, tu ne prends rien. Au dessus de <b>{max} kcal</b>, le surplus devient surtout du gras, pas du muscle. Pas besoin d'aller plus haut.")
           .replace("{min}", pl.kcalMin).replace("{max}", pl.kcalMax)
-      : TR("Aucune formule ne tombe juste au gramme près : la marge réelle est de ±5 %. Le chiffre qui compte est le plafond : <b>pas plus de {max} kcal</b>. Mais ne descends pas non plus sous <b>{min} kcal</b> — un déficit trop violent te fait perdre du muscle et ne tient pas deux semaines.")
+      : TR("Aucun calcul n'est exact au gramme près : il peut se tromper d'environ 5 %. Le plus important : <b>pas plus de {max} kcal</b>. Mais ne descends pas sous <b>{min} kcal</b>. Si tu manges trop peu, tu perds du muscle et tu ne tiens pas longtemps.")
           .replace("{max}", pl.kcalMax).replace("{min}", pl.kcalMin)):""}
-    ${b(TR("Le total affiché"), "Il vient uniquement des aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, passe par « Autre » — sinon le total sera sous-estimé. Tu peux aussi corriger une journée à la main depuis Progression.")}
-    ${b(TR("Il est presque toujours en dessous"), "Un journal alimentaire, même tenu sérieusement, sous-estime de 20 à 30 % en moyenne : l'huile de cuisson, la sauce, les grignotages n'y entrent jamais. Lis ton total comme un plancher. Si la balance ne suit pas ce qu'il annonce, c'est lui qui a tort, pas elle.")}
-    ${b(TR("Et les calories brûlées ?"), "Elles ne se soustraient pas ici : tes séances sont déjà comptées dans ta dépense quotidienne. Les kcal affichées après une séance sont là pour l'info, pas pour t'autoriser à manger plus.")}
-    ${b(TR("La vraie vérification"), "C'est la balance, pas l'appli. Pèse-toi une fois par semaine, au même moment : si le poids ne bouge pas dans le sens voulu au bout de 2 à 3 semaines, ajuste de 200 kcal.")}
+    ${b(TR("Le total affiché"), "Il compte seulement les aliments que tu coches. Si tu manges quelque chose qui n'est pas dans la liste, ajoute-le avec « Autre ». Sinon, ton total sera trop bas. Tu peux aussi corriger une journée à la main dans Progression.")}
+    ${b(TR("Il est presque toujours en dessous"), "Même quand on note tout avec soin, on oublie en moyenne 20 à 30 % de ce qu'on mange : l'huile de cuisson, les sauces, les grignotages. Ton vrai total est donc sans doute plus haut. Si ta balance ne suit pas, fais confiance à la balance.")}
+    ${b(TR("Et les calories brûlées ?"), "On ne les retire pas ici : ton chiffre du jour compte déjà tes séances. Les kcal affichées après une séance sont là pour info. Elles ne veulent pas dire que tu peux manger plus.")}
+    ${b(TR("La vraie vérification"), "C'est ta balance, pas l'appli. Pèse-toi une fois par semaine, au même moment. Si ton poids ne va pas dans le bon sens après 2 à 3 semaines, change ton objectif de 200 kcal.")}
     <button class="btn btn-accent" id="ki-ok" style="width:100%;">${TR("Compris")}</button>`);
   document.getElementById("ki-ok").onclick = closeSheet;
 }
@@ -18858,7 +18931,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 20h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 22h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22385,7 +22458,7 @@ function dessineRepas(panel){
   panel.querySelectorAll("[data-opt]").forEach(b=>{
     const label = b.dataset.opt, socle = b.dataset.socle;
     /* l'appui long reste le réglage précis : quantité au gramme, retrait, suppression */
-    const deb = e=>{ if(e.target.closest(".st")) return;
+    const deb = e=>{ if(e.target.closest(".fst")) return;
       lpFired=false; clearTimeout(lpT);
       lpT = setTimeout(()=>{ lpFired=true; vibrer(18); openModifAliment(mealCur, label); }, 340); };
     const fin = ()=>clearTimeout(lpT);
@@ -22397,10 +22470,18 @@ function dessineRepas(panel){
       if(lpFired){ lpFired=false; return; }
       basculerAliment(mealCur, label);
     };
-    b.querySelectorAll(".st").forEach(s=>s.addEventListener("click", e=>{
+    /* Toute la zone des boutons, bord droit compris, regle la portion et ne decoche
+       JAMAIS la pastille : un « + » un peu rate ajoutait... un retrait (Nico). Seul, le
+       « + » prend toute la zone ; avec le « − », chacun prend sa moitie. */
+    const zone = b.querySelector(".fst");
+    if(zone) zone.addEventListener("click", e=>{
       e.stopPropagation(); e.preventDefault();
-      reglerPortions(mealCur, socle, label, parseInt(s.dataset.pas, 10));
-    }));
+      const sts = [...zone.querySelectorAll(".st")];
+      let s = e.target.closest(".st");
+      if(!s && sts.length === 1) s = sts[0];
+      if(!s && sts.length === 2){ const r = zone.getBoundingClientRect(); s = e.clientX < r.left + r.width / 2 ? sts[0] : sts[1]; }
+      if(s) reglerPortions(mealCur, socle, label, parseInt(s.dataset.pas, 10));
+    });
   });
 }
 /* + ou − une portion sur une pastille déjà choisie. En dessous d'une portion la
@@ -27006,19 +27087,20 @@ function openPreview(tplId, lieuFait){
       ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Sortie cardio")}</button>` : ""}
     </div>` : ""}
     ${t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex" style="margin-top:8px;">
-        <span class="num">${icoM("course", 16)}</span>
+        <span class="num pv-co-num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
           <div class="nm">${esc(pc ? pc.nom : TR("Séance de course introuvable"))}</div>
           <div class="meta">${TR(t.course.place === "debut" ? "Au début · échauffement" : "À la fin")}${pc ? " · " + minTxt(parcoursTotaux(pc.etapes).min) : ""}</div>
         </div>
-        <span class="act"><button class="sup" id="pv-course-rm" title="${TR("Retirer la course")}" aria-label="${TR("Retirer la course")}">✕</button></span>
+        <button class="co-x pv-co-x" id="pv-course-rm" title="${TR("Retirer la course")}" aria-label="${TR("Retirer la course")}">${IC_CROIX}</button>
       </div>`; })() : ""}
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
-        <span class="num">${icoM("course", 16)}</span>
+        <span class="num pv-co-num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
           <div class="nm">${esc(TR(machineOf(t.cardio)[1]))}</div>
           <div class="meta"><b>${esc(texteSortie(objCardio))}</b>${objCardio.base ? ` · ${TR("Dernière fois : {}").replace("{}", esc(texteSortie(objCardio.base)))}` : ""}</div>
-        </div></div>` : ""}
+        </div>
+        <button class="co-x pv-co-x" id="pv-cardio-rm" title="${TR("Retirer la sortie")}" aria-label="${TR("Retirer la sortie")}">${IC_CROIX}</button></div>` : ""}
     <div class="pv-pied">
       <button class="btn btn-accent" id="pv-start" style="width:100%;">${TR(seanceCourte ? "Lancer la séance courte" : "Lancer cette séance")}</button>
       <button class="btn" id="pv-close" style="width:100%; margin-top:8px;">${TR("Fermer")}</button>
@@ -27094,27 +27176,29 @@ function openPreview(tplId, lieuFait){
   if(pvCo) pvCo.onclick = ()=>{
     const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
     if(!opts.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
-    ouvrirParDessus(()=>openPreview(tplId, true), ()=>{
-      openSheet(`<div class="pr-tete"><h3>${TR("Ajouter une séance de course")}</h3><p>${TR("Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.")}</p></div>
-        <div class="pc-liste">${opts.map(([v, l])=>`<button class="pc-l pc-l-t" data-co-choix="${esc(v)}"><span class="ic">${icoM("course", 24)}</span><span class="tx"><b>${esc(l)}</b></span></button>`).join("")}</div>`);
-      document.querySelectorAll("[data-co-choix]").forEach(b=>b.onclick = ()=>{
-        t.course = {ref:b.dataset.coChoix, place:"fin"};
-        save(); retourFiche();
-      });
-    });
+    ouvrirParDessus(()=>openPreview(tplId, true), ()=>feuilleChoix({
+      titre:"Ajouter une|séance de course",
+      sous:TR("Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance."),
+      items:(db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
+        .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
+          return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; })),
+      sel:opts[0][0], bouton:TR("Ajouter à la séance"),
+      ok:v=>{ t.course = {ref:v, place:"fin"}; save(); retourFiche(); }
+    }));
   };
   const pvCoRm = document.getElementById("pv-course-rm");
   if(pvCoRm) pvCoRm.onclick = ()=>{ delete t.course; save(); openPreview(tplId, true); };
+  const pvCaRm = document.getElementById("pv-cardio-rm");
+  if(pvCaRm) pvCaRm.onclick = ()=>{ delete t.cardio; save(); openPreview(tplId, true); };
   /* ajouter une sortie cardio : l'activite, puis l'objectif se regle comme d'habitude */
   const pvCa = document.getElementById("pv-add-cardio");
-  if(pvCa) pvCa.onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>{
-    openSheet(`<div class="pr-tete"><h3>${TR("Ajouter une sortie cardio")}</h3><p>${TR("À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.")}</p></div>
-      <div class="cd-grille">${MACHINES.map(([id, lab, ic])=>`<button data-ca-choix="${id}"><span class="ic">${ic}</span>${TR(lab)}</button>`).join("")}</div>`);
-    document.querySelectorAll("[data-ca-choix]").forEach(b=>b.onclick = ()=>{
-      t.cardio = {machine:b.dataset.caChoix, min:20, km:0, pente:0};
-      save(); retourFiche();
-    });
-  });
+  if(pvCa) pvCa.onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>feuilleChoix({
+    titre:"Ajouter une|sortie cardio", grille:true,
+    sous:TR("Elle sera ajoutée à la fin de ta séance. Tu règles la durée en modifiant la séance."),
+    items:MACHINES.map(m=>({v:m[0], ic:icMachine(m, 26), t:TR(m[1])})),
+    sel:MACHINES[0][0], bouton:TR("Ajouter à la séance"),
+    ok:v=>{ t.cardio = {machine:v, min:20, km:0, pente:0}; save(); retourFiche(); }
+  }));
   /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
   document.getElementById("pv-start").onclick=()=>{
     const courte = seanceCourte ? gardes.slice() : null;
@@ -28221,7 +28305,8 @@ function renderActive(app){
     const el = document.createElement("div");
     el.className = "ex-card co-muscu" + (co.fait ? " fini" : "");
     const tot = pc ? parcoursTotaux(pc.etapes) : null;
-    el.innerHTML = `<div class="ex-head" style="align-items:center; gap:10px;">
+    el.innerHTML = `${!co.fait ? `<button class="co-x" data-retirer-course aria-label="${TR("Retirer la course")}">${IC_CROIX}</button>` : ""}
+      <div class="ex-head" style="align-items:center; gap:10px;">
         <span class="ex-ico co-ic">${icoM("course", 24)}</span>
         <div class="grow"><div class="ex-name">${co.fait ? "✓ " : ""}${esc(pc ? pc.nom : TR("Séance de course"))}</div>
           <div class="co-sous">${co.fait ? `${kmTxt(co.km)} · ${minTxt(co.min)}`
@@ -28230,6 +28315,9 @@ function renderActive(app){
       ${!co.fait && pc ? `<button class="btn btn-accent btn-rond co-lancer" data-lancer-course>${IC_LECTURE}${TR("Lancer la course")}</button>` : ""}`;
     const bl = el.querySelector("[data-lancer-course]");
     if(bl) bl.onclick = ()=>demarrerCourse(courseDeSeance(co), {muscu:true});
+    /* ajoutee par erreur : la croix la retire de CETTE seance (le modele n'est pas touche) */
+    const bx = el.querySelector("[data-retirer-course]");
+    if(bx) bx.onclick = ()=>{ delete a.course; save(); vibrer(10); renderSurPlace(); toast(TR("Course retirée de la séance")); };
     if(co.place === "debut") list.insertBefore(el, list.firstChild); else list.appendChild(el);
   }
   if(a.cardio){
@@ -28300,19 +28388,20 @@ function renderActive(app){
   });
   /* une sortie cardio s'ajoute aussi en cours de seance : on choisit l'activite, et
      l'objectif du jour se calcule sur la derniere sortie du meme type */
-  const ajouterCardio = ()=>{
-    openSheet(`<div class="pr-tete"><h3>${TR("Ajouter une sortie cardio")}</h3><p>${TR("Activité")}</p></div>
-      <div class="cd-grille">${MACHINES.map(([id2, lab, ic])=>
-        `<button data-amach="${id2}"><span class="ic">${ic}</span>${TR(lab)}</button>`).join("")}</div>`);
-    document.querySelectorAll("[data-amach]").forEach(b=>b.onclick=()=>{
-      const plan = {machine:b.dataset.amach, min:30, km:0, pente:0};
+  const ajouterCardio = ()=>feuilleChoix({
+    titre:"Ajouter une|sortie cardio", grille:true,
+    sous:TR("Elle s'ajoute à la fin de ta séance."),
+    items:MACHINES.map(m=>({v:m[0], ic:icMachine(m, 26), t:TR(m[1])})),
+    sel:MACHINES[0][0], bouton:TR("Ajouter à la séance"),
+    ok:machine=>{
+      const plan = {machine, min:30, km:0, pente:0};
       const o = objectifCardio(plan);
       a.cardio = {machine:plan.machine, min:o.min, km:o.km, pente:o.pente, fait:false,
         derniere: o.base ? texteSortie(o.base) : ""};
       save(); closeSheet(); render();
       setTimeout(()=>{ const cc = document.querySelector(".ex-card.cardio"); if(cc) cc.scrollIntoView({block:"center", behavior:"smooth"}); }, 300);
-    });
-  };
+    }
+  });
   const fa = document.getElementById("fin-ajouter");
   if(fa) fa.onclick = ()=>document.getElementById("add-ex").click();
   const ft = document.getElementById("fin-terminer");
@@ -28326,7 +28415,7 @@ function renderActive(app){
       ${ligne("ae-exo", IC_PLUS, TR("Un exercice"), TR("Depuis la bibliothèque"))}
       ${ligne("ae-cardio", icoM("course", 22), TR("Une sortie cardio"), TR("En fin de séance, avec un objectif du jour"))}`);
     document.getElementById("ae-exo").onclick = ()=>{ closeSheet(); setTimeout(ajouterExo, 260); };
-    document.getElementById("ae-cardio").onclick = ()=>{ closeSheet(); setTimeout(ajouterCardio, 260); };
+    document.getElementById("ae-cardio").onclick = ajouterCardio;   /* sur place : fermer puis rouvrir se marchait dessus */
   };
   document.getElementById("tb-retour").onclick = confirmerQuitterSeance;
   document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),TR("Oui, annuler"),true,()=>{ db.active=null; arreterChronos(); save(); render(); });
@@ -29761,6 +29850,34 @@ function icObjectif(t){
   return t === "30min" ? icoF("chrono-2", 22) : t === "distance" ? icoF("gps-1", 22) : t === "allure" ? icoM("course", 22) : icoF("calendar-1", 22);
 }
 /* ---- choisir ou regler un objectif ---- */
+/* ---- les feuilles de choix, sur la maquette de Nico (26 septembre) ----
+   Grand titre sur deux lignes (la 2e en orange), des cartes blanches cernees de gris,
+   l'icone blanche dans un carre orange, la carte choisie cernee d'orange avec sa coche.
+   Le titre porte un « | » dans chaque langue : c'est la que la ligne se coupe. */
+function titreChoix(cle, sous){
+  const [a, b] = TR(cle).split("|");
+  return `<div class="pr-tete ch-titre"><div><h3>${esc(a)}${b ? `<br><span class="hl">${esc(b)}</span>` : ""}</h3>
+    ${sous ? `<p>${sous}</p>` : ""}</div></div>`;
+}
+function carteChoix(attr, v, ic, titre, sous, on){
+  return `<button type="button" class="ch-c ${on ? "on" : ""}" ${attr}="${esc(v)}">
+    <span class="ic">${ic}</span><span class="tx"><b>${titre}</b>${sous ? `<small>${sous}</small>` : ""}</span>
+    <span class="ch-ok" aria-hidden="true">${IC_COCHE}</span></button>`;
+}
+/* l'icone d'une machine : le coureur dessine pour la course, l'emoji pour les autres */
+function icMachine(m, t){ return m[0] === "course" ? icoM("course", t) : `<span class="emo">${m[2]}</span>`; }
+/* choisir puis valider : la coche se deplace, le bouton du bas ajoute */
+function feuilleChoix(o){
+  let sel = o.sel;
+  openSheet(`${titreChoix(o.titre, o.sous)}
+    <div class="${o.grille ? "ch-grille" : "ch-liste"}">${o.items.map(it=>carteChoix("data-ch", it.v, it.ic, it.t, it.s, it.v === sel)).join("")}</div>
+    <button class="btn btn-accent btn-rond ch-go" id="ch-go">${esc(o.bouton)}${IC_CHEVRON}</button>`);
+  document.querySelectorAll("[data-ch]").forEach(b=>b.onclick = ()=>{
+    sel = b.dataset.ch; vibrer(6);
+    document.querySelectorAll("[data-ch]").forEach(x=>x.classList.toggle("on", x === b));
+  });
+  document.getElementById("ch-go").onclick = ()=>o.ok(sel);
+}
 function openObjectifCourse(){
   const cur = db.objCourse;
   let type = cur ? cur.type : "30min";
@@ -29771,11 +29888,10 @@ function openObjectifCourse(){
     /* un objectif quitte plus tot reprend la ou il en etait : niveau, jauge, reglages */
     const enPause = (db.objPauses || {})[type];
     const d = cur && cur.type === type ? cur : (enPause || nouvelObjectif(type));
-    openSheet(`<div class="pr-tete"><h3>${TR("Ton objectif de course")}</h3>
-        <p>${TR("L'app prépare chaque séance et l'adapte à ton ressenti.")}</p></div>
-      <div class="oc-choix">${Object.keys(OBJ_COURSE).map(k=>`<button class="oc-c ${k === type ? "on" : ""}" data-oc="${k}">
-          <span class="ic">${icObjectif(k)}</span><b>${TR(OBJ_COURSE[k].nom)}</b>${
-          (db.objPauses || {})[k] && !(cur && cur.type === k) ? `<small class="oc-pause">${TR("En pause · {}").replace("{}", esc(avancementObjectif(db.objPauses[k]).txt))}</small>` : ""}</button>`).join("")}</div>
+    openSheet(`${titreChoix("Ton objectif|de course", TR("L'app prépare chaque séance et l'adapte à ton ressenti."))}
+      <div class="ch-grille">${Object.keys(OBJ_COURSE).map(k=>carteChoix("data-oc", k, icObjectif(k), TR(OBJ_COURSE[k].nom),
+          (db.objPauses || {})[k] && !(cur && cur.type === k) ? `<span class="oc-pause">${TR("En pause · {}").replace("{}", esc(avancementObjectif(db.objPauses[k]).txt))}</span>` : "",
+          k === type)).join("")}</div>
       <div class="stack" style="margin-top:14px;">
         ${type === "distance" ? `<div><span class="f-lab">${TR("Distance visée")}</span>
           <div class="chips oc-km">${[3, 5, 10, 21.1].map(k=>`<button class="chip ${Math.abs(d.cible - k) < 0.05 ? "on" : ""}" data-km="${k}">${kmTxt(k)}</button>`).join("")}</div></div>` : ""}
@@ -29786,12 +29902,12 @@ function openObjectifCourse(){
              la ou il EST l'objectif (Nico, 26 septembre). */""}
         ${type === "frequence" ? `<div><span class="f-lab">${TR("Séances par semaine")}</span>
           <div class="chips">${[2, 3, 4, 5].map(n=>`<button class="chip ${n === d.parSemaine ? "on" : ""}" data-ps="${n}">${n}</button>`).join("")}</div></div>` : ""}
-        <div class="row" style="gap:10px;">
-          <label class="grow"><span class="f-lab">${TR("Ta course facile")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="3" id="oc-vc" value="${vAff(d.vCourse)}"></label>
-          <label class="grow"><span class="f-lab">${TR("Ta marche")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="2" id="oc-vm" value="${vAff(d.vMarche)}"></label>
+        <div class="ch-champs">
+          <label><span class="f-lab">${TR("Ta course facile")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="3" id="oc-vc" value="${vAff(d.vCourse)}"></label>
+          <label><span class="f-lab">${TR("Ta marche")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="2" id="oc-vm" value="${vAff(d.vMarche)}"></label>
         </div>
-        <p class="oc-note">${TR("Ces vitesses servent à estimer les distances. Une course « facile », c'est une allure où tu peux encore parler.")}</p>
-        <button class="btn btn-accent btn-rond" id="oc-ok">${TR(cur && cur.type === type ? "Enregistrer" : (enPause ? "Reprendre cet objectif" : "Commencer cet objectif"))}</button>
+        <p class="oc-note">${TR("Ces vitesses servent à estimer les distances. Une course « facile », c'est une allure où tu peux encore parler.").replace(/« /g, "« ").replace(/ »/g, " »")}</p>
+        <button class="btn btn-accent btn-rond ch-go" id="oc-ok">${TR(cur && cur.type === type ? "Enregistrer" : (enPause ? "Reprendre cet objectif" : "Commencer cet objectif"))}${IC_CHEVRON}</button>
         ${cur ? `<button class="pp-lien-sup" id="oc-stop">${TR("Arrêter cet objectif")}</button>` : ""}
       </div>`);
     let ps = d.parSemaine, km = d.cible;
