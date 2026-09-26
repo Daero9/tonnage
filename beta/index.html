@@ -4489,6 +4489,7 @@
   .pc-pas.ferme input{pointer-events:none;}
   .pc-pas:not(.ferme){box-shadow:inset 0 0 0 2px var(--accent);}
   @media (prefers-reduced-motion:no-preference){ .pc-pas:not(.ferme) > button{animation:popEntree .2s ease-out;} }
+  .ch-creer{width:100%; margin-top:10px;}
   .pc-ajouts{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .pc-ajouts .btn-dash{margin:0; min-width:0; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:6px; padding-inline:6px; white-space:nowrap;}
   .pc-ajouts .icm{background-color:currentColor;}
@@ -4705,6 +4706,15 @@
   .aj-l:not(.vedette) .ic{background:rgba(245,130,32,.14); color:var(--accent); border-radius:13px;}
   .aj-l.vedette .ic{border-radius:13px;}
   .pc-type button.on, .pc-et .pc-type button.on, .co-seg button.on{background:var(--accent-grad); color:#fff; box-shadow:0 3px 10px rgba(245,130,32,.3);}
+  /* la bascule d'une etape : la pastille est un calque qui glisse sous les deux libelles */
+  #sheet .pc-et .pc-type{position:relative;}
+  #sheet .pc-et .pc-type::before{content:""; position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 9px) / 2);
+    border-radius:99px; background:var(--accent-grad); box-shadow:0 3px 10px rgba(245,130,32,.3);
+    transition:transform .32s cubic-bezier(.3,1.25,.5,1);}
+  #sheet .pc-et .pc-type.est-marche::before{transform:translateX(calc(100% + 3px));}
+  #sheet .pc-et .pc-type button, #sheet .pc-et .pc-type button.on{position:relative; z-index:1; background:none; box-shadow:none;
+    color:var(--ink-soft); transition:color .25s ease;}
+  #sheet .pc-et .pc-type button.on{color:#fff;}
 </style>
 
 <div id="app"></div>
@@ -4749,6 +4759,10 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Créer une nouvelle séance de course":"Create a new running workout",
+  "Créer et ajouter":"Create and add",
+  "Séance de course créée et ajoutée":"Running workout created and added",
+  "Elle sera ajoutée à la fin de ta séance.":"It will be added at the end of your workout.",
   "Ajouter une course":"Add a run",
   "Ajouter une marche":"Add a walk",
   "Cardio":"Cardio",
@@ -8181,6 +8195,10 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Créer une nouvelle séance de course":"Crear un nuevo entreno de carrera",
+  "Créer et ajouter":"Crear y añadir",
+  "Séance de course créée et ajoutée":"Entreno de carrera creado y añadido",
+  "Elle sera ajoutée à la fin de ta séance.":"Se añadirá al final de tu sesión.",
   "Ajouter une course":"Añadir carrera",
   "Ajouter une marche":"Añadir caminata",
   "Cardio":"Cardio",
@@ -11829,6 +11847,10 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Créer une nouvelle séance de course":"Criar um novo treino de corrida",
+  "Créer et ajouter":"Criar e adicionar",
+  "Séance de course créée et ajoutée":"Treino de corrida criado e adicionado",
+  "Elle sera ajoutée à la fin de ta séance.":"Será adicionada no fim do seu treino.",
   "Ajouter une course":"Adicionar corrida",
   "Ajouter une marche":"Adicionar caminhada",
   "Cardio":"Cardio",
@@ -19023,7 +19045,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 23h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 23h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27259,19 +27281,10 @@ function openPreview(tplId, lieuFait){
   }));
   /* ajouter une seance de course : une des tiennes, ou la seance du jour de l'objectif */
   const pvCo = document.getElementById("pv-add-course");
-  if(pvCo) pvCo.onclick = ()=>{
-    const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
-    if(!opts.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
-    ouvrirParDessus(()=>openPreview(tplId, true), ()=>feuilleChoix({
-      titre:"Ajouter une|séance de course", simple:true,
-      sous:TR("Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance."),
-      items:(db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
-        .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
-          return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; })),
-      sel:opts[0][0], bouton:TR("Ajouter à la séance"),
-      ok:v=>{ t.course = {ref:v, place:"fin"}; save(); retourFiche(); }
-    }));
-  };
+  if(pvCo) pvCo.onclick = ()=>choisirCourse({
+    sous:TR("Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance."),
+    ok:v=>{ t.course = {ref:v, place:"fin"}; save(); openPreview(tplId, true); }
+  });
   const pvCoRm = document.getElementById("pv-course-rm");
   if(pvCoRm) pvCoRm.onclick = ()=>{ delete t.course; save(); openPreview(tplId, true); };
   const pvCaRm = document.getElementById("pv-cardio-rm");
@@ -28476,14 +28489,8 @@ function renderActive(app){
   /* une seance de course ajoutee en cours de route : elle se place a la fin, et la
      carte « Lancer la course » apparait sous les exercices */
   const ajouterCourse = ()=>{
-    const items = (db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
-      .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
-        return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; }));
-    if(!items.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
-    feuilleChoix({
-      titre:"Ajouter une|séance de course", simple:true,
+    choisirCourse({
       sous:TR("Elle s'ajoute à la fin de ta séance."),
-      items, sel:items[0].v, bouton:TR("Ajouter à la séance"),
       ok:v=>{
         a.course = {ref:v, place:"fin", fait:false};
         save(); closeSheet(); render();
@@ -29292,7 +29299,8 @@ function crResume(tot){
 }
 
 /* ---- composer une seance ---- */
-function openParcoursEditeur(id){
+function openParcoursEditeur(id, o){
+  o = o || {};   /* o.apres(id) : creee depuis un choix, on l'y ajoute ; o.retour : la fleche y ramene */
   const src = id ? (db.parcours || []).find(p=>p.id === id) : null;
   /* une nouvelle seance part d'une course et d'une marche ; chaque etape ajoutee copie
      la derniere du meme type (Nico : « course 15 min → une copie de course 15 min »),
@@ -29322,12 +29330,13 @@ function openParcoursEditeur(id){
             <button class="btn-dash" id="pc-add-marche">＋ ${icoF("walk-1", 16)}${TR("Marche")}</button>
           </div></div>
         <div class="row" style="gap:9px;">
-          <button class="btn grow btn-rond" id="pc-save">${TR("Enregistrer")}</button>
-          <button class="btn btn-accent grow btn-rond" id="pc-go">${IC_LECTURE}${TR("Commencer")}</button>
+          ${o.apres ? `<button class="btn btn-accent grow" id="pc-save">${TR("Créer et ajouter")}</button>`
+            : `<button class="btn grow btn-rond" id="pc-save">${TR("Enregistrer")}</button>
+          <button class="btn btn-accent grow btn-rond" id="pc-go">${IC_LECTURE}${TR("Commencer")}</button>`}
         </div>
         ${src ? `<button class="pp-lien-sup" id="pc-del">${TR("Supprimer cette séance")}</button>` : ""}
       </div>`);
-    document.getElementById("pc-retour").onclick = ()=>{ p.nom = nomEl().value; openParcoursListe(); };
+    document.getElementById("pc-retour").onclick = ()=>{ p.nom = nomEl().value; o.retour ? o.retour() : openParcoursListe(); };
     const liste = document.getElementById("pc-etapes");
     const majResume = ()=>{ document.getElementById("pc-resume").innerHTML = crResume(parcoursTotaux(p.etapes)); };
     p.etapes.forEach((e, i)=>{
@@ -29338,7 +29347,7 @@ function openParcoursEditeur(id){
         <div class="tp-l">
           <span class="poig" data-poignee aria-label="${TR("Déplacer cette étape")}">⠿</span>
           <span class="tp-num">${i + 1}</span>
-          <div class="pc-type grow"><button type="button" data-t="course" class="${e.type === "course" ? "on" : ""}">${icoM("course", 16)}${TR("Course")}</button><button type="button" data-t="marche" class="${e.type === "marche" ? "on" : ""}">${icoF("walk-1", 16)}${TR("Marche")}</button></div>
+          <div class="pc-type grow ${e.type === "marche" ? "est-marche" : ""}"><button type="button" data-t="course" class="${e.type === "course" ? "on" : ""}">${icoM("course", 16)}${TR("Course")}</button><button type="button" data-t="marche" class="${e.type === "marche" ? "on" : ""}">${icoF("walk-1", 16)}${TR("Marche")}</button></div>
           <button class="tp-rm" data-rm aria-label="${TR("Retirer cette étape")}">${IC_CROIX}</button>
         </div>
         <div class="pc-regs">
@@ -29346,10 +29355,13 @@ function openParcoursEditeur(id){
           ${pas("v", vAff(e.v), imp ? "mph" : "km/h", TR("Vitesse"), 'min="1" step="0.5"')}
           ${pas("p", e.p || 0, "%", TR("Pente"), 'min="0" step="0.5"')}
         </div>`;
+      /* un appui n'importe ou sur la bascule passe a l'autre type ; la pastille orange glisse */
       d.querySelectorAll("[data-t]").forEach(b=>b.onclick = ()=>{
-        e.type = b.dataset.t;
+        e.type = e.type === "course" ? "marche" : "course";
         e.v = vitesseDefaut(e.type);
-        d.querySelectorAll("[data-t]").forEach(x=>x.classList.toggle("on", x === b));
+        d.querySelectorAll("[data-t]").forEach(x=>x.classList.toggle("on", x.dataset.t === e.type));
+        d.querySelector(".pc-type").classList.toggle("est-marche", e.type === "marche");
+        vibrer(8);
         d.querySelector('[data-f="v"]').value = vAff(e.v);
         majResume();
       });
@@ -29412,8 +29424,9 @@ function openParcoursEditeur(id){
       if(k >= 0) db.parcours[k] = p; else db.parcours.push(p);
       save();
     };
-    document.getElementById("pc-save").onclick = ()=>{ enregistrer(); carrouselCible = `[data-course="${p.id}"]`; closeSheet(); render(); toast(TR("Séance de course enregistrée")); };
-    document.getElementById("pc-go").onclick = ()=>{ enregistrer(); demarrerCourse(p.id); };
+    document.getElementById("pc-save").onclick = ()=>{ enregistrer(); if(o.apres){ o.apres(p.id); toast(TR("Séance de course créée et ajoutée")); return; } carrouselCible = `[data-course="${p.id}"]`; closeSheet(); render(); toast(TR("Séance de course enregistrée")); };
+    const pcGo = document.getElementById("pc-go");
+    if(pcGo) pcGo.onclick = ()=>{ enregistrer(); demarrerCourse(p.id); };
     const del = document.getElementById("pc-del");
     if(del) del.onclick = ()=>askConfirm(TR("Supprimer cette séance ?"), TR("{} disparaîtra de tes séances de course. Les sorties déjà faites restent.").replace("{}", p.nom || TR("Cette séance")), TR("Supprimer"), true, ()=>{
       db.parcours = (db.parcours || []).filter(x=>x.id !== p.id); save(); toast(TR("Séance supprimée"));
@@ -29994,13 +30007,30 @@ function icMachine(m, t){ return m[0] === "course" ? icoM("course", t) : `<span 
 function feuilleChoix(o){
   let sel = o.sel;
   openSheet(`${o.simple ? `<div class="ca-titre"><h3>${esc(TR(o.titre).replace("|", " "))}</h3>${o.sous ? `<p>${o.sous}</p>` : ""}</div>` : titreChoix(o.titre, o.sous)}
-    <div class="${o.grille ? "ch-grille" : "ch-liste"}">${o.items.map(it=>carteChoix("data-ch", it.v, it.ic, it.t, it.s, it.v === sel)).join("")}</div>
-    <button class="btn btn-accent btn-rond ch-go" id="ch-go">${esc(o.bouton)}${IC_CHEVRON}</button>`);
+    ${o.items.length ? `<div class="${o.grille ? "ch-grille" : "ch-liste"}">${o.items.map(it=>carteChoix("data-ch", it.v, it.ic, it.t, it.s, it.v === sel)).join("")}</div>` : ""}
+    ${o.creer ? `<button class="btn-dash ch-creer" id="ch-creer">＋ ${esc(o.creerTxt)}</button>` : ""}
+    ${o.items.length ? `<button class="btn btn-accent btn-rond ch-go" id="ch-go">${esc(o.bouton)}${IC_CHEVRON}</button>` : ""}`);
+  const cr = document.getElementById("ch-creer"); if(cr) cr.onclick = o.creer;
+  if(!o.items.length) return;
   document.querySelectorAll("[data-ch]").forEach(b=>b.onclick = ()=>{
     sel = b.dataset.ch; vibrer(6);
     document.querySelectorAll("[data-ch]").forEach(x=>x.classList.toggle("on", x === b));
   });
   document.getElementById("ch-go").onclick = ()=>o.ok(sel);
+}
+/* choisir la seance de course a ajouter : la seance du jour de l'objectif, l'une des
+   tiennes, ou en creer une nouvelle (Nico). Une seance creee ici est enregistree
+   comme les autres, puis ajoutee directement. */
+function choisirCourse(c){
+  const items = (db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
+    .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
+      return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; }));
+  feuilleChoix({
+    titre:"Ajouter une|séance de course", simple:true, sous:c.sous,
+    items, sel:items.length ? items[0].v : null, bouton:TR("Ajouter à la séance"), ok:c.ok,
+    creerTxt:TR("Créer une nouvelle séance de course"),
+    creer:()=>openParcoursEditeur(null, {apres:c.ok, retour:()=>choisirCourse(c)})
+  });
 }
 function openObjectifCourse(){
   const cur = db.objCourse;
@@ -30345,7 +30375,8 @@ function openTplEditor(id){
           const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
           return `<span class="f-lab">${TR("Séance de course")}</span>
           <div class="tpl-item tp-course">
-            <select data-co="ref">${opts.map(([v, l])=>`<option value="${esc(v)}" ${v === tpl.course.ref ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+            <select data-co="ref">${opts.map(([v, l])=>`<option value="${esc(v)}" ${v === tpl.course.ref ? "selected" : ""}>${esc(l)}</option>`).join("")}
+              <option value="__nouvelle">＋ ${TR("Créer une nouvelle séance de course")}</option></select>
             <div class="tp-bascule">
               <button type="button" data-co-place="fin" class="${tpl.course.place !== "debut" ? "on" : ""}">${TR("À la fin")}</button>
               <button type="button" data-co-place="debut" class="${tpl.course.place === "debut" ? "on" : ""}">${TR("Au début · échauffement")}</button>
@@ -30435,14 +30466,16 @@ function openTplEditor(id){
     const coAdd = document.getElementById("tp-course-add");
     if(coAdd) coAdd.onclick = ()=>{
       tpl.name = document.getElementById("tp-name").value;
-      const ref = db.objCourse ? "objectif" : ((db.parcours || [])[0] || {}).id;
-      if(!ref){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
-      tpl.course = {ref, place:"fin"}; draw();
+      choisirCourse({sous:TR("Elle sera ajoutée à la fin de ta séance."), ok:v=>{ tpl.course = {ref:v, place:"fin"}; draw(); }});
     };
     const coRm = document.getElementById("tp-course-rm");
     if(coRm) coRm.onclick = ()=>{ tpl.name = document.getElementById("tp-name").value; delete tpl.course; draw(); };
     const coSel = document.querySelector('[data-co="ref"]');
-    if(coSel) coSel.onchange = ()=>{ tpl.name = document.getElementById("tp-name").value; tpl.course.ref = coSel.value; draw(); };
+    if(coSel) coSel.onchange = ()=>{
+      tpl.name = document.getElementById("tp-name").value;
+      if(coSel.value === "__nouvelle"){ openParcoursEditeur(null, {apres:v=>{ tpl.course.ref = v; draw(); }, retour:draw}); return; }
+      tpl.course.ref = coSel.value; draw();
+    };
     document.querySelectorAll("[data-co-place]").forEach(b=>b.onclick = ()=>{
       tpl.name = document.getElementById("tp-name").value; tpl.course.place = b.dataset.coPlace; draw();
     });

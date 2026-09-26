@@ -8218,6 +8218,16 @@ async function lancer(){
     F.openTplEditor("tm");
     await attendre(()=>!!D2.getElementById("tp-course-add"), 1500);
     D2.getElementById("tp-course-add").click();
+    await attendre(()=>!!D2.getElementById("ch-creer"), 1500);
+    vrai("Ajouter une course : tes séances, et « Créer une nouvelle séance »", D2.querySelectorAll("[data-ch]").length === 2 && !!D2.getElementById("ch-creer"));
+    D2.getElementById("ch-creer").click();
+    await attendre(()=>!!D2.getElementById("pc-add-course"), 1500);
+    vrai("…qui ouvre l'éditeur de course, avec « Créer et ajouter »", !D2.getElementById("pc-go") && !!D2.getElementById("pc-save"));
+    D2.getElementById("pc-nom").value = "Neuve";
+    D2.getElementById("pc-save").click();
+    await attendre(()=>!!D2.querySelector('[data-co="ref"]'), 1500);
+    const neuve = DB.parcours.find(q=>q.nom === "Neuve");
+    vrai("Créée, enregistrée, et ajoutée à la séance", !!neuve && D2.querySelector('[data-co="ref"]').value === neuve.id);
     vrai("L'éditeur propose d'ajouter une séance de course, placée à la fin par défaut",
       !!D2.querySelector('[data-co="ref"]') && D2.querySelector("[data-co-place].on").dataset.coPlace === "fin");
     const sel = D2.querySelector('[data-co="ref"]'); sel.value = "pl"; sel.dispatchEvent(new F.Event("change"));
