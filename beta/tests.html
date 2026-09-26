@@ -2301,8 +2301,11 @@ async function lancer(){
     vrai("Le signe ouvre le titre",
       titres.every(t=>t.firstElementChild && t.firstElementChild.classList.contains("ic-t")));
     /* et il prend l'orange de l'app */
-    eq("Il est orange",
+    /* toutes les cartes ont maintenant l'en-tete a carre orange (pt-t / pd-t) : la carte
+       Course etait la derniere a l'ancien titre (Nico, 26 septembre) */
+    if(titres.length) eq("Il est orange",
       F.getComputedStyle(titres[0].querySelector(".ic-t")).color, "rgb(245, 130, 32)");
+    else vrai("Toutes les cartes ont l'en-tête à carré orange", F.document.querySelectorAll("#app .pt-ic, #app .pd-ic").length >= 3);
     DB.weights = []; DB.history = []; DB.cardio = []; DB.habitSel = {};
     F.eval("curTab = 'seance';");
     F.render();
@@ -8242,6 +8245,34 @@ async function lancer(){
     F.hideSheet();
     F.eval("flammeRetenue = false; finOuverte = false");
     DB.templates = gardeT; DB.parcours = []; DB.cardio = [];
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : annuler un aliment retire par megarde ; titre et icones de la course */
+  grp("Annuler un aliment retiré, et les icônes de la course");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const k = F.jourAlim(), meal = "midi";
+    DB.habitSel[k] = {midi:["Œuf (1 œuf) (~6 g prot. · 78 kcal)", "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)"]};
+    F.eval("mealCur = 'midi'; curTab = 'eat'; annulAliment = null; render()");
+    vrai("Sans retrait, pas de bouton « Annuler »", !D2.getElementById("eat-annuler"));
+    F.basculerAliment(meal, DB.habitSel[k].midi[0]);
+    F.eval("render()");
+    vrai("Un aliment retiré : « Annuler » apparaît à côté du +", !!D2.getElementById("eat-annuler") && DB.habitSel[k].midi.length === 1);
+    D2.getElementById("eat-annuler").click();
+    vrai("…et le remet, puis s'efface", DB.habitSel[k].midi.length === 2 && !D2.getElementById("eat-annuler"));
+    F.reglerPortions(meal, "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)", "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)", -1);
+    F.eval("render()");
+    vrai("Le − sous une portion qui retire l'aliment se rattrape aussi", !!D2.getElementById("eat-annuler"));
+    F.eval("annulAliment = null; curTab = 'seance'; render()");
+    /* la carte Course de Progression : le carre orange et le signe blanc des autres titres */
+    DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:30, machine:"course", type:"course"}];
+    const sec = D2.createElement("div"); D2.body.appendChild(sec);
+    F.renderCourseSection(sec);
+    vrai("La carte Course a le titre des autres cartes (carré orange, coureur blanc)", !!sec.querySelector(".pt-tete .pt-ic.pt-ic-orange .icm-course"));
+    sec.remove(); DB.cardio = [];
+    vrai("Les icônes dessinées par Nico sont posées en masque", /ic-walk-1\.webp/.test(F.icEtape({type:"marche"}, 20)) && /ic-gps-1/.test(F.crResume({min:10, km:1, kcal:50})));
   })();
   neuf();
 
