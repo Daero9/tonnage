@@ -8039,6 +8039,14 @@ async function lancer(){
     const plat = F.parcoursTotaux([{type:"course", min:20, v:10}]).kcal;
     const cote = F.parcoursTotaux([{type:"course", min:20, v:10, p:3}]).kcal;
     vrai("Une pente de 3 % coûte plus de calories qu'à plat", cote > plat, plat + " / " + cote);
+    vrai("Durée d'étape : 30 s s'affiche « 0:30 », 1 min 30 « 1:30 », 15 min « 15 »",
+      F.dureeAff(0.5) === "0:30" && F.dureeAff(1.5) === "1:30" && F.dureeAff(15) === "15");
+    vrai("…et se lit « 1:30 » comme « 1,5 »", Math.abs(F.dureeLue("1:30") - 1.5) < 1e-9 && Math.abs(F.dureeLue("1,5") - 1.5) < 1e-9);
+    vrai("Les crans : 15 s sous 2 min, 30 s jusqu'à 5 min, puis la minute",
+      F.dureeAff(F.dureePas(1, 1)) === "1:15" && F.dureeAff(F.dureePas(2, 1)) === "2:30"
+      && F.dureeAff(F.dureePas(2, -1)) === "1:45" && F.dureeAff(F.dureePas(5, 1)) === "6" && F.dureeAff(F.dureePas(5, -1)) === "4:30");
+    vrai("…sans descendre sous 15 s", F.dureePas(0.25, -1) === 0.25);
+    vrai("Une étape de 30 s dure 30 s dans le minuteur", F.minTxt(0.5) === "30 s");
     vrai("La pente s'affiche à côté de la vitesse", /3/.test(F.vitPente({v:10, p:3})) && !/%/.test(F.vitPente({v:10, p:0})));
     /* l'editeur : la fleche de retour, des boutons − / + hors du champ */
     F.openParcoursEditeur(null);
