@@ -7964,6 +7964,61 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre (soir) : retouches de la course, carrousel, suivi */
+  grp("La course : pente, carrousel et suivi");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.parcours = []; DB.cardio = []; DB.objCourse = null; DB.courseEnCours = null;
+    /* la pente compte dans les calories */
+    const plat = F.parcoursTotaux([{type:"course", min:20, v:10}]).kcal;
+    const cote = F.parcoursTotaux([{type:"course", min:20, v:10, p:3}]).kcal;
+    vrai("Une pente de 3 % coûte plus de calories qu'à plat", cote > plat, plat + " / " + cote);
+    vrai("La pente s'affiche à côté de la vitesse", /3/.test(F.vitPente({v:10, p:3})) && !/%/.test(F.vitPente({v:10, p:0})));
+    /* l'editeur : la fleche de retour, des boutons − / + hors du champ */
+    F.openParcoursEditeur(null);
+    await attendre(()=>!!D2.getElementById("pc-retour"), 1500);
+    vrai("L'éditeur a sa flèche de retour", !!D2.getElementById("pc-retour"));
+    const et = D2.querySelector(".pc-et");
+    vrai("Trois réglages par étape : durée, vitesse, pente", et.querySelectorAll(".pc-reg").length === 3);
+    et.querySelector('[data-pas="p|1"]').click(); et.querySelector('[data-pas="p|1"]').click();
+    vrai("Le + de la pente ajoute 0,5 %", et.querySelector('[data-f="p"]').value === "1");
+    vrai("…sans ouvrir le clavier", D2.activeElement === D2.body || D2.activeElement.tagName !== "INPUT");
+    D2.getElementById("pc-retour").click();
+    await attendre(()=>!!D2.getElementById("pc-nouv"), 1500);
+    vrai("La flèche ramène à la page Course", !!D2.getElementById("pc-nouv"));
+    F.hideSheet();
+    /* le carrousel montre les seances de course */
+    DB.parcours = [{id:"pc1", nom:"Tapis", etapes:[{type:"course", min:10, v:10, p:1}, {type:"marche", min:5, v:6}]}];
+    F.eval("curTab = 'seance'; render()");
+    await attendre(()=>!!D2.querySelector('.prog-card.course'), 1500);
+    vrai("Une séance de course apparaît dans le carrousel", !!D2.querySelector('.prog-card[data-course="pc1"]'));
+    D2.querySelector('.prog-card[data-course="pc1"]').click();
+    await attendre(()=>!!D2.getElementById("ca-go"), 1500);
+    vrai("La toucher ouvre son aperçu, avec Commencer", !!D2.getElementById("ca-go") && D2.querySelectorAll("#sheet .oc-etapes div").length === 2);
+    F.hideSheet();
+    /* le suivi dans Progression */
+    const j = d => new Date(Date.now() - d * 864e5).toISOString();
+    DB.cardio = [
+      {id:"a", date:j(9), km:3, min:30, machine:"course", parcours:"Tapis", type:"course"},
+      {id:"b", date:j(2), km:3.5, min:30, machine:"course", parcours:"Tapis", type:"course", estime:true}];
+    const sec = D2.createElement("div"); D2.body.appendChild(sec);
+    vrai("Avec des sorties, la section Course s'affiche", F.renderCourseSection(sec) === true);
+    vrai("…plus longue sortie : 3,5 km, marquée « est. »", /Plus longue sortie/.test(sec.textContent) && !!sec.querySelector(".co-rec .co-est"));
+    vrai("…la meilleure vitesse ne retient que les distances réelles (6 km/h)", /6,0 km\/h|3,7 mph/.test(sec.querySelector(".co-rec").textContent));
+    vrai("…chaque sortie comparée à la précédente de la même séance (+0,5)", /\+0,5|\+0,3/.test(sec.querySelector(".co-der").textContent));
+    sec.remove();
+    DB.cardio = [];
+    vrai("Sans sortie de course, pas de section", F.renderCourseSection(D2.createElement("div")) === false);
+    /* la bulle d'une courbe de distance ne passe plus par le formateur des poids */
+    const w = D2.createElement("div"); D2.body.appendChild(w);
+    F.drawChart(w, [{date:j(7), v:10}, {date:j(0), v:12}], "km", null, v=>String(v));
+    vrai("La bulle d'une courbe de distance garde sa valeur (12 km, pas 26)", [...w.querySelectorAll("text")].some(t=>t.textContent === "12 km"));
+    w.remove();
+    DB.parcours = []; F.eval("render()");
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
   bilan.innerHTML = echecs === 0

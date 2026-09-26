@@ -4333,14 +4333,17 @@
 
   /* l'ecran de la seance : plein ecran, sans barre d'onglets ; les commandes en bas */
   body.en-course .tabbar{display:none;}
-  .cr{padding:calc(10px + env(safe-area-inset-top)) 16px calc(130px + env(safe-area-inset-bottom));}
-  .cr-top{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .cr{padding:0 16px calc(160px + env(safe-area-inset-bottom));}
+  /* le haut fige : il reste en place pendant qu'on fait defiler les etapes */
+  .cr-haut{position:sticky; top:0; z-index:6; margin:0 -16px; padding:calc(10px + env(safe-area-inset-top)) 16px 12px;
+    background:var(--bg); box-shadow:0 10px 14px -12px rgba(0,0,0,.18);}
+  .cr-top{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
   .cr-top h2{flex:1; min-width:0; margin:0; text-align:center; font-size:20px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .cr-rond{flex:none; width:44px; height:44px; border-radius:50%; border:0; background:var(--surface2); color:var(--ink);
     display:flex; align-items:center; justify-content:center;}
   .cr-rond svg{width:20px; height:20px;}
   /* le parcours : un fil orange relie les etapes, chaque numero pose sur le haut de sa carte */
-  .cr-liste{position:relative; display:flex; flex-direction:column; gap:34px; margin-top:34px; padding-bottom:10px;}
+  .cr-liste{position:relative; display:flex; flex-direction:column; gap:34px; margin-top:40px; padding-bottom:10px;}
   .cr-liste::before{content:""; position:absolute; left:50%; top:-24px; bottom:0; width:3px; margin-left:-1.5px;
     background:repeating-linear-gradient(180deg, rgba(245,130,32,.55) 0 7px, transparent 7px 12px);}
   .cr-c{position:relative; display:flex; align-items:center; gap:14px; background:var(--surface); border-radius:20px;
@@ -4359,6 +4362,21 @@
   .cr-dr b{display:block; font-size:17px; font-weight:900;} .cr-dr small{display:block; font-size:12px; color:var(--ink-soft);}
   /* faite : grisee, la coche orange a la place du numero */
   .cr-c.fait > :not(.cr-num){opacity:.5;}
+  /* les etapes faites et a venir, plus etroites que celle en cours (Nico) */
+  .cr-c.fait, .cr-c.avenir{margin:0 22px; padding:16px 14px 14px;}
+  .cr-c.fait .cr-ic, .cr-c.avenir .cr-ic{width:46px; height:46px;}
+  .cr-c.fait .cr-tx b, .cr-c.avenir .cr-tx b{font-size:16px;}
+  .cr-c.fait .cr-tx span, .cr-c.avenir .cr-tx span{font-size:13px;}
+  @media (prefers-reduced-motion:no-preference){
+    /* a l'arrivee : les cartes se posent une a une */
+    .cr-liste.entree .cr-c{animation:crEntree .55s cubic-bezier(.2,.9,.3,1) backwards; animation-delay:calc(var(--i, 0) * 70ms);}
+    @keyframes crEntree{from{opacity:0; transform:translateY(22px) scale(.96);}}
+    /* a chaque etape : la nouvelle grandit en prenant sa place, l'ancienne se range */
+    .cr-liste.change .cr-c.encours{animation:crPromu .65s cubic-bezier(.3,1.3,.5,1);}
+    @keyframes crPromu{0%{transform:scale(.9); opacity:.6;} 60%{transform:scale(1.025); opacity:1;} 100%{transform:none;}}
+    .cr-liste.change .cr-c.vient{animation:crRange .55s ease-out;}
+    @keyframes crRange{from{transform:scale(1.06); filter:saturate(1.6);}}
+  }
   .cr-c.fait .cr-num{background:var(--accent-grad); color:#fff; box-shadow:0 2px 6px rgba(245,130,32,.35);}
   /* en cours : la grande carte orange, le chrono dans son anneau, le centre fonce pour
      faire ressortir les chiffres (Nico) */
@@ -4375,17 +4393,19 @@
   .cr-anneau circle{fill:none; stroke-width:7;}
   .cr-anneau .fd{stroke:rgba(255,255,255,.28);}
   .cr-anneau .pg{stroke:#fff; stroke-linecap:round; transition:stroke-dashoffset .25s linear;}
-  .cr-centre{position:absolute; inset:13px; border-radius:50%; background:rgba(70,22,0,.42);
+  .cr-centre{position:absolute; inset:13px; border-radius:50%; background:rgba(38,10,0,.62);
     display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff;}
   .cr-centre b{font-size:24px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1;}
   .cr-centre small{font-size:11.5px; opacity:.85; margin-top:3px; font-variant-numeric:tabular-nums;}
   .cr.en-pause .cr-c.encours{filter:saturate(.55);}
   /* les commandes, en bas : pause, avancement, arret */
   .cr-bas{position:fixed; left:0; right:0; bottom:0; z-index:30; max-width:560px; margin:0 auto; display:flex; align-items:center; gap:14px;
-    padding:12px 18px calc(14px + env(safe-area-inset-bottom)); background:var(--surface);
+    padding:44px 18px calc(14px + env(safe-area-inset-bottom)); background:var(--surface);
     border-radius:26px 26px 0 0; box-shadow:0 -6px 24px rgba(0,0,0,.1);}
-  .cr-pause{flex:none; width:64px; height:64px; border-radius:50%; border:0; background:var(--accent-grad); color:#fff;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(245,130,32,.4);}
+  .cr-pause{position:absolute; left:50%; top:-36px; transform:translateX(-50%); width:74px; height:74px; border-radius:50%; border:0;
+    background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 5px var(--surface), 0 8px 20px rgba(245,130,32,.45);}
+  .cr-pause:active{transform:translateX(-50%) scale(.94);}
   .cr-pause svg{width:28px; height:28px;}
   .cr-stop{flex:none; width:56px; height:56px; border-radius:50%; border:0; background:var(--surface); color:var(--accent);
     display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 1px var(--bord-doux), 0 4px 12px rgba(0,0,0,.08);}
@@ -4396,7 +4416,7 @@
   .cr-barre i{display:block; height:100%; border-radius:99px; background:var(--accent-grad); transition:width .25s linear;}
   .cr-reste{font-size:13px; color:var(--ink-soft); font-variant-numeric:tabular-nums;}
   /* « prochaine etape dans 3, 2, 1 » : au-dessus des commandes, en grand */
-  .cr-dec{position:fixed; left:16px; right:16px; max-width:528px; margin:0 auto; bottom:calc(110px + env(safe-area-inset-bottom)); z-index:31;
+  .cr-dec{position:fixed; left:16px; right:16px; max-width:528px; margin:0 auto; bottom:calc(150px + env(safe-area-inset-bottom)); z-index:31;
     display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 16px; border-radius:22px;
     background:rgba(16,16,20,.88); color:#fff; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
     box-shadow:0 10px 30px rgba(0,0,0,.3);}
@@ -4409,6 +4429,41 @@
     .cr-dec b{animation:crTop .9s ease-out;}
     @keyframes crTop{0%{transform:scale(1.5); opacity:.3;} 30%{transform:scale(1); opacity:1;}}
   }
+  /* l'editeur de course : la fleche de retour, et des reglages a gros boutons */
+  .pc-tete{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .pc-tete h3{flex:1; margin:0; text-align:center; padding-right:44px;}
+  .pc-regs{display:grid; grid-template-columns:1fr 1fr; gap:10px 10px; margin-top:12px;}
+  .pc-reg .label{display:block; text-align:center; font-size:10.5px; letter-spacing:.1em; color:var(--ink-mute); margin-bottom:6px;}
+  .pc-pas{display:flex; align-items:center; gap:4px; background:var(--surface); border-radius:99px; padding:4px;
+    box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .pc-pas > button{flex:none; width:40px; height:40px; border-radius:50%; border:0; background:var(--surface2); color:var(--ink);
+    font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; touch-action:manipulation;}
+  .pc-pas > button:active{background:var(--btn); transform:scale(.94);}
+  .pc-pas label{flex:1; min-width:0; display:flex; align-items:baseline; justify-content:center; gap:2px;}
+  .pc-pas input{width:3.4ch; min-width:0; border:0; background:none; padding:0; text-align:center; font-size:18px; font-weight:800;
+    color:var(--ink); box-shadow:none; -moz-appearance:textfield;}
+  .pc-pas input::-webkit-inner-spin-button, .pc-pas input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  .pc-pas label span{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  /* ---- la course dans Progression ---- */
+  .co-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 12px;}
+  .co-tuiles > div{background:var(--surface2); border-radius:14px; padding:10px 8px; text-align:center;}
+  .co-tuiles b{display:block; font-size:16px; font-weight:900; white-space:nowrap;}
+  .co-tuiles small{display:block; font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .co-rec{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .co-rec > div{display:flex; align-items:center; gap:10px; font-size:14px;}
+  .co-rec .ic{flex:none; width:32px; height:32px; border-radius:10px; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .co-rec .ic svg{width:17px; height:17px;} .co-rec .ic .icm{background-color:var(--accent);}
+  .co-rec b{font-weight:900; white-space:nowrap;}
+  .co-est{font-size:10.5px; font-weight:700; color:var(--ink-mute); margin-left:2px;}
+  .co-seg{display:flex; background:var(--surface2); border-radius:99px; padding:3px; gap:3px; margin-bottom:8px;}
+  .co-seg button{flex:1; border:0; background:none; border-radius:99px; padding:8px 6px; font-size:12.5px; font-weight:800; color:var(--ink-soft);}
+  .co-seg button.on{background:var(--surface); color:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .co-der-t{font-size:10.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-mute); margin:14px 0 8px;}
+  .co-der{display:flex; flex-direction:column; gap:8px;}
+  .co-der > div{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; background:var(--surface2);}
+  .co-der b{display:block; font-size:14px; font-weight:800;} .co-der small{display:block; font-size:12px; color:var(--ink-soft); margin-top:1px;}
+  .co-km{text-align:right; flex:none;} .co-km > span{display:block; font-size:12px; font-weight:800; margin-top:1px;}
+  .co-up{color:#3d9a27;} .co-down{color:var(--bad);} .co-eg{color:var(--ink-mute);}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4504,6 +4559,19 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Dernières sorties":"Latest runs",
+  "Distance par semaine":"Distance per week",
+  "Meilleure vitesse moyenne":"Best average speed",
+  "Pente":"Incline",
+  "Plus longue durée":"Longest duration",
+  "Plus longue sortie":"Longest run",
+  "Vitesse moyenne":"Average speed",
+  "ce mois-ci":"this month",
+  "de course et marche":"of running and walking",
+  "pente {} %":"incline {}%",
+  "sortie":"run",
+  "sorties":"runs",
+  "« est. » : distance estimée d'après la vitesse prévue. Donne la vraie distance à la fin d'une séance pour suivre ta vitesse réelle.":"\"est.\": distance estimated from the planned speed. Enter the real distance at the end of a workout to track your actual speed.",
   "30 min sans t'arrêter, une distance, courir plus vite… L'app prépare tes séances.":"30 min without stopping, a distance, running faster… The app plans your workouts.",
   "Allure soutenue : {a} sur {b}":"Steady pace: {a} of {b}",
   "Allure soutenue · {m} min":"Steady pace · {m} min",
@@ -7863,6 +7931,19 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Dernières sorties":"Últimas salidas",
+  "Distance par semaine":"Distancia por semana",
+  "Meilleure vitesse moyenne":"Mejor velocidad media",
+  "Pente":"Pendiente",
+  "Plus longue durée":"Mayor duración",
+  "Plus longue sortie":"Salida más larga",
+  "Vitesse moyenne":"Velocidad media",
+  "ce mois-ci":"este mes",
+  "de course et marche":"de carrera y caminata",
+  "pente {} %":"pendiente {} %",
+  "sortie":"salida",
+  "sorties":"salidas",
+  "« est. » : distance estimée d'après la vitesse prévue. Donne la vraie distance à la fin d'une séance pour suivre ta vitesse réelle.":"«est.»: distancia estimada a partir de la velocidad prevista. Indica la distancia real al final de un entrenamiento para seguir tu velocidad real.",
   "30 min sans t'arrêter, une distance, courir plus vite… L'app prépare tes séances.":"30 min sin parar, una distancia, correr más rápido… La app prepara tus entrenamientos.",
   "Allure soutenue : {a} sur {b}":"Ritmo sostenido: {a} de {b}",
   "Allure soutenue · {m} min":"Ritmo sostenido · {m} min",
@@ -11438,6 +11519,19 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Dernières sorties":"Últimas saídas",
+  "Distance par semaine":"Distância por semana",
+  "Meilleure vitesse moyenne":"Melhor velocidade média",
+  "Pente":"Inclinação",
+  "Plus longue durée":"Maior duração",
+  "Plus longue sortie":"Saída mais longa",
+  "Vitesse moyenne":"Velocidade média",
+  "ce mois-ci":"este mês",
+  "de course et marche":"de corrida e caminhada",
+  "pente {} %":"inclinação {}%",
+  "sortie":"saída",
+  "sorties":"saídas",
+  "« est. » : distance estimée d'après la vitesse prévue. Donne la vraie distance à la fin d'une séance pour suivre ta vitesse réelle.":"\"est.\": distância estimada a partir da velocidade prevista. Informe a distância real no fim de um treino para acompanhar sua velocidade real.",
   "30 min sans t'arrêter, une distance, courir plus vite… L'app prépare tes séances.":"30 min sem parar, uma distância, correr mais rápido… O app prepara seus treinos.",
   "Allure soutenue : {a} sur {b}":"Ritmo forte: {a} de {b}",
   "Allure soutenue · {m} min":"Ritmo forte · {m} min",
@@ -18559,7 +18653,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 17h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 17h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -24952,10 +25046,11 @@ function renderSeance(app){
 
   /* ---- carrousel des séances ---- */
   const car = document.getElementById("car");
-  if(!db.templates.length){
+  if(!db.templates.length && !(db.parcours || []).length){
     car.innerHTML = `<div class="card empty vide-seance" style="flex:1;"><img src="img/aucune-seance.png" alt=""><b>${TR("Aucune séance pour l'instant")}</b>${TR("Appuie sur le + pour créer ta première séance.")}</div>`;
   } else {
     const ordered = sug? [sug].concat(db.templates.filter(t=>t.id!==sug.id)) : db.templates.slice();
+    /* les seances de course composees suivent celles de musculation (Nico) */
     car.innerHTML = ordered.map(t=>{
       /* Une séance adaptative ne choisit ses exercices qu'au lancement : les lister
          ici serait à la fois faux et bavard. On garde le titre, l'étiquette dit le
@@ -24979,7 +25074,12 @@ function renderSeance(app){
           <button class="pen" data-edit="${t.id}" aria-label="Modifier"><img src="img/modif.png" alt=""></button>
         </div>
       </div>`;
-    }).join("");
+    }).join("") + (db.parcours || []).map(carteCourseCarrousel).join("");
+    car.querySelectorAll("[data-course]").forEach(c=>c.onclick = e=>{
+      if(e.target.closest("[data-cedit]")) return;
+      openCourseApercu(c.dataset.course);
+    });
+    car.querySelectorAll("[data-cedit]").forEach(b=>b.onclick = e=>{ e.stopPropagation(); openParcoursEditeur(b.dataset.cedit); });
     /* la carte au centre est plus grande que ses voisines, en continu pendant le glissement */
     const majCentre = ()=>{
       const mid = car.scrollLeft + car.clientWidth/2;
@@ -28625,7 +28725,7 @@ function parcoursTotaux(etapes){
   const kg = currentWeight() || 75;
   const min = etapes.reduce((a, e)=>a + (e.min || 0), 0);
   const km = etapes.reduce((a, e)=>a + etapeKm(e), 0);
-  const kcal = etapes.reduce((a, e)=>a + cardioKcal(etapeKm(e), e.min, 0, kg, e.type === "course"), 0);
+  const kcal = etapes.reduce((a, e)=>a + cardioKcal(etapeKm(e), e.min, e.p || 0, kg, e.type === "course"), 0);
   return {min, km, kcal:Math.round(kcal)};
 }
 function affVit(v){
@@ -28637,6 +28737,8 @@ function mmss(sec){
   sec = Math.max(0, Math.round(sec));
   return String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0");
 }
+/* « 10,0 km/h · pente 2 % » : la pente seulement quand il y en a une */
+function vitPente(e){ return affVit(e.v) + (e.p > 0 ? " · " + TR("pente {} %").replace("{}", e.p.toLocaleString(loc(), {maximumFractionDigits:1})) : ""); }
 function minTxt(m){
   const r = Math.round(m * 10) / 10;
   return r.toLocaleString(loc(), {maximumFractionDigits:1}) + " " + TR("min");
@@ -28662,9 +28764,15 @@ function openParcoursEditeur(id){
   const vAff = v => Math.round((imp ? v * 0.621371 : v) * 10) / 10;
   const vKmh = x => imp ? x / 0.621371 : x;
   const nomEl = ()=>document.getElementById("pc-nom");
-  const crans = f => `<span class="tp-crans"><button type="button" data-pas="${f}|1" aria-label="${TR("Plus")}">${TRI_H}</button><button type="button" data-pas="${f}|-1" aria-label="${TR("Moins")}">${TRI_B}</button></span>`;
+  /* un reglage : − et + de part et d'autre du nombre, assez grands pour le pouce. Les
+     petites fleches dans le champ ouvraient le clavier une fois sur deux (Nico). */
+  const pas = (f, val, unite, lab, attrs) => `<div class="pc-reg"><span class="label">${lab}</span>
+    <div class="pc-pas"><button type="button" data-pas="${f}|-1" aria-label="${TR("Moins")}">−</button>
+      <label><input type="number" inputmode="decimal" ${attrs} value="${val}" data-f="${f}"><span>${unite}</span></label>
+      <button type="button" data-pas="${f}|1" aria-label="${TR("Plus")}">＋</button></div></div>`;
   const draw = ()=>{
-    openSheet(`<h3 style="text-align:center;">${TR(src ? "Modifier la séance de course" : "Nouvelle séance de course")}</h3>
+    openSheet(`<div class="pc-tete"><button class="cr-rond" id="pc-retour" aria-label="${TR("Retour")}">${IC_RETOUR}</button>
+        <h3>${TR(src ? "Modifier la séance de course" : "Nouvelle séance de course")}</h3></div>
       <div class="stack">
         <div><span class="f-lab">${TR("Nom de la séance")}</span>
           <label class="tp-nom"><span class="ic">${icoM("course", 24)}</span><input id="pc-nom" placeholder="${TR("Ex : Course et marche")}" value="${esc(p.nom)}"></label></div>
@@ -28677,6 +28785,7 @@ function openParcoursEditeur(id){
         </div>
         ${src ? `<button class="pp-lien-sup" id="pc-del">${TR("Supprimer cette séance")}</button>` : ""}
       </div>`);
+    document.getElementById("pc-retour").onclick = ()=>{ p.nom = nomEl().value; openParcoursListe(); };
     const liste = document.getElementById("pc-etapes");
     const majResume = ()=>{ document.getElementById("pc-resume").innerHTML = crResume(parcoursTotaux(p.etapes)); };
     p.etapes.forEach((e, i)=>{
@@ -28690,9 +28799,10 @@ function openParcoursEditeur(id){
           <div class="pc-type grow"><button type="button" data-t="course" class="${e.type === "course" ? "on" : ""}">${icoM("course", 16)}${TR("Course")}</button><button type="button" data-t="marche" class="${e.type === "marche" ? "on" : ""}">${IC_MARCHE}${TR("Marche")}</button></div>
           <button class="tp-rm" data-rm aria-label="${TR("Retirer cette étape")}">${IC_CROIX}</button>
         </div>
-        <div class="cfg" style="grid-template-columns:1fr 1fr;">
-          <label><span class="label">${TR("Durée (min)")}</span><span class="tp-champ"><input type="number" inputmode="decimal" min="1" step="1" value="${e.min}" data-f="min">${crans("min")}</span></label>
-          <label><span class="label">${TR("Vitesse")} (${imp ? "mph" : "km/h"})</span><span class="tp-champ"><input type="number" inputmode="decimal" min="1" step="0.5" value="${vAff(e.v)}" data-f="v">${crans("v")}</span></label>
+        <div class="pc-regs">
+          ${pas("min", e.min, "min", TR("Durée"), 'min="1" step="1"')}
+          ${pas("v", vAff(e.v), imp ? "mph" : "km/h", TR("Vitesse"), 'min="1" step="0.5"')}
+          ${pas("p", e.p || 0, "%", TR("Pente"), 'min="0" step="0.5"')}
         </div>`;
       d.querySelectorAll("[data-t]").forEach(b=>b.onclick = ()=>{
         e.type = b.dataset.t;
@@ -28708,6 +28818,7 @@ function openParcoursEditeur(id){
       d.querySelectorAll("[data-f]").forEach(inp=>inp.oninput = ()=>{
         const x = parseFloat(String(inp.value).replace(",", "."));
         if(inp.dataset.f === "min"){ if(x > 0) e.min = Math.min(180, x); }
+        else if(inp.dataset.f === "p"){ if(x >= 0) e.p = Math.min(20, x); }
         else if(x > 0) e.v = Math.min(30, vKmh(x));
         majResume();
       });
@@ -28715,7 +28826,8 @@ function openParcoursEditeur(id){
         const [f, sens] = b.dataset.pas.split("|"), n = Number(sens);
         const inp = d.querySelector(`[data-f="${f}"]`);
         const x = parseFloat(String(inp.value).replace(",", ".")) || 0;
-        inp.value = f === "min" ? Math.max(1, Math.round(x) + n) : Math.max(1, Math.round((x + 0.5 * n) * 10) / 10);
+        inp.value = f === "min" ? Math.max(1, Math.round(x) + n)
+          : (f === "p" ? Math.min(20, Math.max(0, Math.round((x + 0.5 * n) * 10) / 10)) : Math.max(1, Math.round((x + 0.5 * n) * 10) / 10));
         inp.dispatchEvent(new Event("input"));
         vibrer(8);
       });
@@ -28785,7 +28897,7 @@ async function poserSequenceCourse(){
     etapes.push({
       sec: k === st.i ? Math.max(0.5, st.reste) : e.min * 60,
       titre: TR(e.type === "course" ? "Course terminée" : "Marche terminée"),
-      corps: suite ? TR("À toi : {m} de {t} à {v}").replace("{m}", minTxt(suite.min)).replace("{t}", nomEtape(suite).toLowerCase()).replace("{v}", affVit(suite.v))
+      corps: suite ? TR("À toi : {m} de {t} à {v}").replace("{m}", minTxt(suite.min)).replace("{t}", nomEtape(suite).toLowerCase()).replace("{v}", vitPente(suite))
                    : TR("Séance terminée, bravo !")
     });
   }
@@ -28801,26 +28913,30 @@ function carteEtapeCourse(e, i, etat){
   if(etat === "encours"){
     return `<div class="cr-c encours" data-i="${i}"><span class="cr-num">${i + 1}</span>
       <span class="cr-ic">${icEtape(e, 34)}</span>
-      <div class="cr-tx"><b>${nom}</b><span class="dur">${minTxt(e.min)}</span><span class="v">${affVit(e.v)}</span></div>
+      <div class="cr-tx"><b>${nom}</b><span class="dur">${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
       <div class="cr-anneau"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fd" cx="50" cy="50" r="45"/><circle class="pg" id="cr-arc" cx="50" cy="50" r="45" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
         <div class="cr-centre"><b id="cr-temps">00:00</b><small>/ ${mmss(e.min * 60)}</small></div></div>
     </div>`;
   }
   return `<div class="cr-c ${etat}" data-i="${i}"><span class="cr-num">${etat === "fait" ? IC_CHECK : i + 1}</span>
     <span class="cr-ic">${icEtape(e, 26)}</span>
-    <div class="cr-tx"><b>${nom}</b><span>${minTxt(e.min)} • ${affVit(e.v)}</span></div>
+    <div class="cr-tx"><b>${nom}</b><span>${minTxt(e.min)} • ${vitPente(e)}</span></div>
     <div class="cr-dr">${etat === "fait" ? `<small>${TR("Terminé")}</small><b>${kmTxt(km)}</b>` : `<b>${kmTxt(km)}</b><small>(${TR("est.")})</small>`}</div>
   </div>`;
 }
 function renderCourse(app){
   const c = db.courseEnCours;
   const st = courseEtat(c);
+  /* le haut reste fige (Nico) : retour, titre, son, et les trois chiffres ; seules les
+     etapes defilent dessous */
   app.innerHTML = `<div class="cr">
-    <div class="cr-top"><button class="cr-rond" id="cr-retour" aria-label="${TR("Terminer la séance")}">${IC_RETOUR}</button>
-      <h2>${esc(c.nom || TR("Séance de course"))}</h2>
-      <button class="cr-rond" id="cr-son" aria-label="${TR("Son")}">${db.settings.son === false ? IC_MUET : IC_SON}</button></div>
-    ${crResume(parcoursTotaux(c.etapes))}
-    <div class="cr-liste" id="cr-liste"></div>
+    <div class="cr-haut">
+      <div class="cr-top"><button class="cr-rond" id="cr-retour" aria-label="${TR("Terminer la séance")}">${IC_RETOUR}</button>
+        <h2>${esc(c.nom || TR("Séance de course"))}</h2>
+        <button class="cr-rond" id="cr-son" aria-label="${TR("Son")}">${db.settings.son === false ? IC_MUET : IC_SON}</button></div>
+      ${crResume(parcoursTotaux(c.etapes))}
+    </div>
+    <div class="cr-liste entree" id="cr-liste"></div>
   </div>`;
   /* Les commandes du bas et le decompte vivent HORS de #app : l'entree en fondu de la
      page anime #app, et un element « fixe » dans un parent anime se cale sur ce parent
@@ -28830,6 +28946,7 @@ function renderCourse(app){
   bas.id = "cr-hors";
   bas.innerHTML = `<div class="cr-dec" id="cr-dec" hidden></div>
   <div class="cr-bas">
+    <!-- la pause au centre, posee au-dessus de la barre (Nico) -->
     <button class="cr-pause" id="cr-pause" aria-label="${TR(c.pauseA ? "Reprendre" : "Pause")}">${c.pauseA ? IC_LECTURE : IC_PAUSE}</button>
     <div class="cr-prog"><div class="cr-et" id="cr-et"></div><div class="cr-barre"><i id="cr-barre"></i></div><div class="cr-reste" id="cr-reste"></div></div>
     <button class="cr-stop" id="cr-stop" aria-label="${TR("Terminer la séance")}">${IC_STOP}</button>
@@ -28865,10 +28982,31 @@ function renderCourse(app){
 function majListeCourse(i, anime){
   const c = db.courseEnCours, l = document.getElementById("cr-liste");
   if(!c || !l) return;
-  l.innerHTML = c.etapes.map((e, k)=>carteEtapeCourse(e, k, k < i ? "fait" : (k === i ? "encours" : "avenir"))).join("");
+  l.innerHTML = c.etapes.map((e, k)=>carteEtapeCourse(e, k, k < i ? "fait" : (k === i ? "encours" : "avenir"))
+    .replace('class="cr-c ', `style="--i:${k}" class="cr-c ${anime && k === i - 1 ? "vient " : ""}`)).join("");
+  if(anime) l.classList.remove("entree");
+  l.classList.toggle("change", !!anime);
   courseVu = i;
   const cur = l.querySelector(".cr-c.encours");
-  if(cur) requestAnimationFrame(()=>{ try{ cur.scrollIntoView({block:"center", behavior: anime ? "smooth" : "auto"}); }catch(e){} });
+  if(cur) requestAnimationFrame(()=>defilerVersCourse(cur, anime));
+}
+/* amene la carte en cours au centre de ce qui reste visible sous le haut fige ;
+   un glissement freine a l'arrivee plutot que le saut sec du navigateur */
+function defilerVersCourse(el, anime){
+  const haut = (document.querySelector(".cr-haut") || {}).offsetHeight || 0;
+  const bas = (document.querySelector(".cr-bas") || {}).offsetHeight || 0;
+  const r = el.getBoundingClientRect();
+  const visible = window.innerHeight - haut - bas;
+  const cible = Math.max(0, window.scrollY + r.top - haut - Math.max(0, (visible - r.height) / 2));
+  const sobre = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(!anime || sobre){ window.scrollTo(0, cible); return; }
+  const de = window.scrollY, dy = cible - de, t0 = performance.now(), duree = 750;
+  const pas = t=>{
+    const k = Math.min(1, (t - t0) / duree), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    window.scrollTo(0, de + dy * e);
+    if(k < 1) requestAnimationFrame(pas);
+  };
+  requestAnimationFrame(pas);
 }
 function ticCourse(){
   const c = db.courseEnCours;
@@ -28900,7 +29038,7 @@ function ticCourse(){
       courseDecompte = s;
       bipDecompte(); vibrer(40);
       dec.innerHTML = `<span class="t">${suite ? TR("Prochaine étape") : TR("Fin de la séance")}</span>
-        ${suite ? `<span class="q">${icEtape(suite, 20)}${nomEtape(suite)} · ${affVit(suite.v)}</span>` : ""}
+        ${suite ? `<span class="q">${icEtape(suite, 20)}${nomEtape(suite)} · ${vitPente(suite)}</span>` : ""}
         <b>${s}</b>`;
     }
     dec.hidden = false;
@@ -28955,7 +29093,8 @@ function finirCourse(complete){
   const km = Math.round(faites.reduce((a, e)=>a + etapeKm(e), 0) * 100) / 100;
   const runMin = faites.filter(e=>e.type === "course").reduce((a, e)=>a + e.min, 0);
   const type = runMin > 0 && runMin < min ? "mixte" : (runMin > 0 ? "course" : "marche");
-  const sortie = {id:uid(), date:new Date(c.debut).toISOString(), km, min:Math.round(min * 10) / 10, pente:0, type,
+  const pente = Math.round(faites.reduce((a, e)=>a + (e.p || 0) * e.min, 0) / min * 10) / 10;
+  const sortie = {id:uid(), date:new Date(c.debut).toISOString(), km, min:Math.round(min * 10) / 10, pente, type,
     runMin:Math.round(runMin * 10) / 10, machine:"course", parcours:c.nom, etapes:faites, estime:true};
   if(c.propose){ sortie.propose = c.propose; sortie.complete = !!complete; }
   db.cardio.push(sortie);
@@ -29271,7 +29410,7 @@ function openParcoursListe(){
     const s = seanceProposee();
     openSheet(`<div class="pr-tete"><h3>${TR("Pourquoi cette séance ?")}</h3></div>
       <p style="font-size:14.5px; line-height:1.6; color:var(--ink-soft); margin:0 0 14px;">${esc(s.pourquoi)}</p>
-      <div class="oc-etapes">${s.etapes.map((e, i)=>`<div><span class="n">${i + 1}</span>${esc(nomEtape(e))} · ${minTxt(e.min)} · ${affVit(e.v)}</div>`).join("")}</div>
+      <div class="oc-etapes">${s.etapes.map((e, i)=>`<div><span class="n">${i + 1}</span>${esc(nomEtape(e))} · ${minTxt(e.min)} · ${vitPente(e)}</div>`).join("")}</div>
       <button class="btn btn-accent btn-rond" id="pq-ok" style="width:100%; margin-top:14px;">${TR("Compris")}</button>`);
     document.getElementById("pq-ok").onclick = openParcoursListe;
   };
@@ -29289,6 +29428,113 @@ function demarrerCourse(quoi){
   courseVu = -1;
   curTab = "seance";
   setTimeout(()=>{ render(); syncWakeLock(); poserSequenceCourse(); }, 60);
+}
+
+/* ---- une seance de course dans le carrousel de l'accueil (Nico) ---- */
+function carteCourseCarrousel(p){
+  const t = parcoursTotaux(p.etapes);
+  const lignes = p.etapes.slice(0, 4).map(e=>`· ${esc(nomEtape(e))} ${minTxt(e.min)}`).join("<br>")
+    + (p.etapes.length > 4 ? `<br>+ ${p.etapes.length - 4}` : "");
+  return `<div class="prog-slot">
+    <div class="prog-card course" data-course="${p.id}">
+      <div class="ph" style="background-image:url('${photoUrl("cardio")}');"></div>
+      <div class="dur">◷ ${Math.round(t.min)} min</div>
+      <div class="in"><div class="nm">${esc(p.nom)}</div><div class="ex">${lignes}</div></div>
+      <button class="pen" data-cedit="${p.id}" aria-label="${TR("Modifier")}"><img src="img/modif.png" alt=""></button>
+    </div>
+  </div>`;
+}
+function openCourseApercu(id){
+  const p = (db.parcours || []).find(x=>x.id === id);
+  if(!p) return;
+  openSheet(`<div class="pr-tete"><h3>${esc(p.nom)}</h3></div>
+    ${crResume(parcoursTotaux(p.etapes))}
+    <div class="oc-etapes" style="margin-top:14px;">${p.etapes.map((e, i)=>`<div><span class="n">${i + 1}</span>${esc(nomEtape(e))} · ${minTxt(e.min)} · ${vitPente(e)}</div>`).join("")}</div>
+    <div class="row" style="gap:9px; margin-top:14px;">
+      <button class="btn grow btn-rond" id="ca-edit">${TR("Modifier")}</button>
+      <button class="btn btn-accent grow btn-rond" id="ca-go">${IC_LECTURE}${TR("Commencer")}</button>
+    </div>`);
+  document.getElementById("ca-edit").onclick = ()=>openParcoursEditeur(id);
+  document.getElementById("ca-go").onclick = ()=>demarrerCourse(id);
+}
+
+/* ---- le suivi de la course dans Progression (etape 3) ----
+   Les sorties de marche et de course : ce mois-ci, les meilleures, les dernieres
+   comparees a la precedente de la meme seance, et deux courbes. Une distance ESTIMEE
+   (vitesse prevue × duree) est marquee « est. » : sa vitesse n'est que celle qu'on
+   avait prevue, elle ne mesure pas un progres. Seules les distances reelles (montre,
+   tapis) disent si l'on va plus vite. */
+function sortiesCourse(){
+  return (db.cardio || []).filter(c=>(c.machine || "course") === "course" && c.km > 0 && c.min > 0)
+    .slice().sort((a, b)=>new Date(a.date) - new Date(b.date));
+}
+function vitesseSortie(c){ return c.km / (c.min / 60); }
+let courseGraphe = "km";
+function renderCourseSection(sec){
+  const l = sortiesCourse();
+  if(!l.length) return false;
+  const est = c => c.estime ? ` <small class="co-est">${TR("est.")}</small>` : "";
+  const m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
+  const mois = l.filter(c=>new Date(c.date) >= m0);
+  const kmMois = mois.reduce((a, c)=>a + c.km, 0), minMois = mois.reduce((a, c)=>a + c.min, 0);
+  const max = f => l.reduce((m, c)=>(!m || f(c) > f(m)) ? c : m, null);
+  const longue = max(c=>c.km), duree = max(c=>c.min);
+  /* la vitesse ne compte que sur une sortie d'au moins 10 minutes, et d'abord sur les
+     distances reelles : une estimation ne fait que repeter la vitesse prevue */
+  const reelles = l.filter(c=>!c.estime && c.min >= 10);
+  const rapide = (reelles.length ? reelles : l.filter(c=>c.min >= 10)).reduce((m, c)=>(!m || vitesseSortie(c) > vitesseSortie(m)) ? c : m, null);
+  const der = l.slice(-5).reverse();
+  const precedente = c => { const k = l.indexOf(c); for(let j = k - 1; j >= 0; j--) if(l[j].parcours && l[j].parcours === c.parcours) return l[j]; return null; };
+  const ecart = (a, b) => {
+    const d = Math.round((a - b) * 100) / 100;
+    if(Math.abs(d) < 0.05) return `<span class="co-eg">=</span>`;
+    return `<span class="${d > 0 ? "co-up" : "co-down"}">${d > 0 ? "+" : "−"}${kmTxt(Math.abs(d))}</span>`;
+  };
+  const div = document.createElement("div");
+  div.innerHTML = `<div class="card co-card">
+    <div class="card-t">${icoTitre(IC_REPERE)}${TR("Course")}</div>
+    <div class="co-tuiles">
+      <div><b>${kmTxt(kmMois)}</b><small>${TR("ce mois-ci")}</small></div>
+      <div><b>${mois.length}</b><small>${TR(mois.length > 1 ? "sorties" : "sortie")}</small></div>
+      <div><b>${minTxt(Math.round(minMois))}</b><small>${TR("de course et marche")}</small></div>
+    </div>
+    <div class="co-rec">
+      <div><span class="ic">${IC_REPERE}</span><span class="grow">${TR("Plus longue sortie")}</span><b>${kmTxt(longue.km)}${est(longue)}</b></div>
+      <div><span class="ic">${IC_CHRONO}</span><span class="grow">${TR("Plus longue durée")}</span><b>${minTxt(Math.round(duree.min))}</b></div>
+      ${rapide ? `<div><span class="ic">${icoM("course", 18)}</span><span class="grow">${TR("Meilleure vitesse moyenne")}</span><b>${affVit(vitesseSortie(rapide))}${est(rapide)}</b></div>` : ""}
+    </div>
+    <div class="co-seg"><button data-cg="km" class="${courseGraphe === "km" ? "on" : ""}">${TR("Distance par semaine")}</button><button data-cg="v" class="${courseGraphe === "v" ? "on" : ""}">${TR("Vitesse moyenne")}</button></div>
+    <div class="chart-wrap" id="co-chart"></div>
+    <div class="co-der-t">${TR("Dernières sorties")}</div>
+    <div class="co-der">${der.map(c=>{ const pr = precedente(c);
+      return `<div><div class="grow"><b>${esc(c.parcours || TR(cardioType(c) === "marche" ? "Marche" : "Course"))}</b>
+        <small>${fmtDateShort(c.date)} · ${minTxt(Math.round(c.min))} · ${affVit(vitesseSortie(c))}</small></div>
+        <div class="co-km"><b>${kmTxt(c.km)}${est(c)}</b>${pr ? ecart(c.km, pr.km) : ""}</div></div>`; }).join("")}</div>
+    ${l.some(c=>c.estime) ? `<p class="oc-note" style="margin-top:10px;">${TR("« est. » : distance estimée d'après la vitesse prévue. Donne la vraie distance à la fin d'une séance pour suivre ta vitesse réelle.")}</p>` : ""}
+  </div>`;
+  sec.appendChild(div);
+  const dessiner = ()=>{
+    const el = div.querySelector("#co-chart");
+    el.innerHTML = "";
+    const fmt = v => (Math.round(v * 10) / 10).toLocaleString(loc());
+    if(courseGraphe === "km"){
+      const sem = {};
+      l.forEach(c=>{ const d = new Date(c.date); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const k = dayKey(d); sem[k] = (sem[k] || 0) + c.km; });
+      const pts = Object.keys(sem).sort().slice(-12).map(k=>({date:k, v:Math.round(parseFloat(affDist(sem[k]).replace(",", ".")) * 10) / 10}));
+      drawChart(el, pts, uDist(), null, fmt);
+    } else {
+      const imp = estImperial();
+      const pts = l.slice(-15).map(c=>({date:c.date, v:Math.round(vitesseSortie(c) * (imp ? 0.621371 : 1) * 10) / 10}));
+      drawChart(el, pts, imp ? "mph" : "km/h", null, fmt);
+    }
+  };
+  div.querySelectorAll("[data-cg]").forEach(b=>b.onclick = ()=>{
+    courseGraphe = b.dataset.cg;
+    div.querySelectorAll("[data-cg]").forEach(x=>x.classList.toggle("on", x === b));
+    dessiner();
+  });
+  requestAnimationFrame(dessiner);
+  return true;
 }
 
 /* ================= PROGRAMMES ================= */
@@ -31097,7 +31343,7 @@ function renderProgress(app){
   renderVerdictSection(document.getElementById("wt-sec"));
   renderProteinSection(document.getElementById("wt-sec"));
   renderMuscleSection(document.getElementById("wt-sec"));
-  renderCardioSection(document.getElementById("wt-sec"));
+  if(!renderCourseSection(document.getElementById("wt-sec"))) renderCardioSection(document.getElementById("wt-sec"));
   const body = document.getElementById("prg-body");
   if(!exIds.length){
     body.innerHTML = `<div class="card" style="margin-top:14px;">
@@ -32180,17 +32426,19 @@ function renderCardioSection(sec){
   });
   const keys = Object.keys(weeks).sort();
   if(keys.length < 2) return;
-  const pts = keys.map(k=>({date:k, v:Math.round(weeks[k]*10)/10}));
+  const pts = keys.map(k=>({date:k, v:Math.round(parseFloat(affDist(weeks[k]).replace(",", ".")) * 10) / 10}));
   const div = document.createElement("div");
   div.innerHTML = `<div class="card">
     <div class="card-t">${icoTitre(IC_COEUR)}Cardio</div>
     <div class="card-sub" style="margin-bottom:10px;">${TR("Kilomètres par semaine")}</div>
     <div class="chart-wrap" id="cd-chart"></div></div>`;
   sec.appendChild(div);
-  drawChart(div.querySelector("#cd-chart"), pts, "km");
+  drawChart(div.querySelector("#cd-chart"), pts, uDist(), null, v=>(Math.round(v * 10) / 10).toLocaleString(loc()));
 }
 
-function drawChart(wrap, pts, unit, goal){
+/* `fmt` : comment ecrire la valeur de la bulle. Par defaut un poids (fmtKg) ; une
+   distance ou une vitesse DOIT passer le sien — fmtKg convertit en livres en imperial. */
+function drawChart(wrap, pts, unit, goal, fmt){
   const W = Math.max(280, wrap.clientWidth || 300), H = 220;
   const padL = 40, padR = 16, padT = 18, padB = 26;
   let min0 = Math.min(...pts.map(p=>p.v)), max0 = Math.max(...pts.map(p=>p.v));
@@ -32218,7 +32466,7 @@ function drawChart(wrap, pts, unit, goal){
   const bx = Math.min(Math.max(X(pts.length-1), padL + 30), W - padR - 30), by = Y(pts[pts.length-1].v) - 14;
   const lastLabel = `<rect x="${(bx-30).toFixed(1)}" y="${(by-20).toFixed(1)}" width="60" height="22" rx="11" fill="#FE7610"/>
     <path d="M${(bx-5).toFixed(1)} ${(by+2).toFixed(1)} L${bx.toFixed(1)} ${(by+8).toFixed(1)} L${(bx+5).toFixed(1)} ${(by+2).toFixed(1)} Z" fill="#FE7610"/>
-    <text x="${bx.toFixed(1)}" y="${(by-5).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">${fmtKg(pts[pts.length-1].v)} ${unit}</text>`;
+    <text x="${bx.toFixed(1)}" y="${(by-5).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">${(fmt || fmtKg)(pts[pts.length-1].v)} ${unit}</text>`;
   const xl0 = `<text x="${X(0).toFixed(1)}" y="${H-8}" text-anchor="${pts.length===1?"middle":"start"}" font-size="10.5" fill="var(--ink-mute)">${fmtDateShort(pts[0].date)}</text>`;
   const xl1 = pts.length>1? `<text x="${X(pts.length-1).toFixed(1)}" y="${H-8}" text-anchor="end" font-size="10.5" fill="var(--ink-mute)">${fmtDateShort(pts[pts.length-1].date)}</text>`:"";
 
