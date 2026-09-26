@@ -8113,6 +8113,38 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre (soir) : le menu +, le carrousel, les appuis fantomes */
+  grp("Le menu +, le carrousel et les onglets");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const gardeT = DB.templates;
+    F.openAjout();
+    await attendre(()=>!!D2.getElementById("aj-seance"), 1500);
+    const ordre = [...D2.querySelectorAll("#sheet .aj-l, #sheet .aj-sep")].map(e=>e.id || "—");
+    vrai("Le menu + : proposer, nouvelle séance, course, puis sous le trait la sortie passée et la bibliothèque",
+      ordre.join(",") === "aj-propose,aj-seance,aj-course,—,aj-cardio,aj-lib", ordre.join(","));
+    vrai("…et plus de « séance libre »", !D2.getElementById("aj-libre"));
+    D2.getElementById("aj-seance").click();
+    vrai("« Nouvelle séance » ouvre l'éditeur sur place, sans refermer la fiche", !!D2.getElementById("tp-save") && F.eval("sheetOpen") === true);
+    D2.getElementById("tp-name").value = "Créée";
+    D2.getElementById("tp-save").click();
+    const creee = DB.templates[DB.templates.length - 1];
+    vrai("Enregistrée, le carrousel sait qu'il doit aller la montrer", creee.name === "Créée");
+    F.hideSheet();
+    /* un clic qui arrive sur un onglet alors que l'appui avait commence ailleurs */
+    F.eval("curTab = 'seance'; render()");
+    F.eval("dernierAppui = {el: document.getElementById('app'), t: Date.now()}");
+    D2.querySelector('[data-tab="prg"]').click();
+    vrai("Un clic sur un onglet venu d'un appui commencé ailleurs est ignoré", F.eval("curTab") === "seance");
+    F.eval("dernierAppui = null");
+    D2.querySelector('[data-tab="prg"]').click();
+    vrai("…un vrai appui sur l'onglet, lui, change d'onglet", F.eval("curTab") === "prg");
+    F.eval("curTab = 'seance'; render()");
+    DB.templates = gardeT;
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
   bilan.innerHTML = echecs === 0
