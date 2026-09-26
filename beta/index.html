@@ -18653,7 +18653,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 17h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 17h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -29334,8 +29334,11 @@ function openObjectifCourse(){
           <div class="chips oc-km">${[3, 5, 10, 21.1].map(k=>`<button class="chip ${Math.abs(d.cible - k) < 0.05 ? "on" : ""}" data-km="${k}">${kmTxt(k)}</button>`).join("")}</div></div>` : ""}
         ${type === "allure" ? `<div><span class="f-lab">${TR("Vitesse visée sur un bloc soutenu")} (${imp ? "mph" : "km/h"})</span>
           <input type="number" inputmode="decimal" step="0.5" min="4" id="oc-cible" value="${vAff(d.cible)}"></div>` : ""}
-        <div><span class="f-lab">${TR("Séances par semaine")}</span>
-          <div class="chips">${[2, 3, 4, 5].map(n=>`<button class="chip ${n === d.parSemaine ? "on" : ""}" data-ps="${n}">${n}</button>`).join("")}</div></div>
+        ${/* Le nombre de seances par semaine ne changeait rien aux trois autres objectifs :
+             la progression suit le ressenti, pas le calendrier. On ne le demande donc que
+             la ou il EST l'objectif (Nico, 26 septembre). */""}
+        ${type === "frequence" ? `<div><span class="f-lab">${TR("Séances par semaine")}</span>
+          <div class="chips">${[2, 3, 4, 5].map(n=>`<button class="chip ${n === d.parSemaine ? "on" : ""}" data-ps="${n}">${n}</button>`).join("")}</div></div>` : ""}
         <div class="row" style="gap:10px;">
           <label class="grow"><span class="f-lab">${TR("Ta course facile")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="3" id="oc-vc" value="${vAff(d.vCourse)}"></label>
           <label class="grow"><span class="f-lab">${TR("Ta marche")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="2" id="oc-vm" value="${vAff(d.vMarche)}"></label>
@@ -29377,7 +29380,7 @@ function openParcoursListe(){
       <div class="oc-tete"><span class="ic">${icObjectif(obj.type)}</span>
         <div class="grow"><small>${TR("Ton objectif")}</small><b>${TR(OBJ_COURSE[obj.type].nom)}${obj.type === "distance" ? " · " + kmTxt(obj.cible) : ""}${obj.type === "frequence" ? " · " + obj.parSemaine + "×" : ""}</b></div>
         <button class="oc-reg" id="oc-reg" aria-label="${TR("Régler l'objectif")}">${IC_ROUE_FINE}</button></div>
-      <div class="oc-av"><span>${av.txt}</span>${obj.type !== "frequence" ? `<span>${TR("Cette semaine : {n} / {c}").replace("{n}", sortiesSemaine()).replace("{c}", obj.parSemaine)}</span>` : ""}</div>
+      <div class="oc-av"><span>${av.txt}</span></div>
       <div class="cr-barre"><i style="width:${Math.round(Math.max(0.04, av.pct) * 100)}%"></i></div>
       ${obj.atteint ? `<div class="oc-bravo">🏆 ${TR("Objectif atteint ! Choisis-en un nouveau, ou continue à ce niveau.")}</div>` : ""}
       <div class="oc-jour">
