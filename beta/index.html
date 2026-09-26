@@ -4516,8 +4516,13 @@
   .oc-c.on{box-shadow:inset 0 0 0 2px var(--accent); background:rgba(245,130,32,.06);}
   .oc-note{font-size:12.5px; color:var(--ink-mute); line-height:1.5; margin:0;}
   .oc-etapes{display:flex; flex-direction:column; gap:6px;}
-  .oc-etapes div{display:flex; align-items:center; gap:10px; font-size:14px; padding:8px 10px; border-radius:12px; background:var(--surface2);}
-  .oc-etapes .n{flex:none; width:24px; height:24px; border-radius:50%; background:var(--surface); color:var(--accent); font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center;}
+  /* les etapes : fond blanc, liseré gris fin, comme les autres cartes (Nico) */
+  .oc-etapes div{display:flex; align-items:center; gap:10px; font-size:14px; padding:9px 10px; border-radius:12px;
+    background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .oc-etapes .n{flex:none; width:24px; height:24px; border-radius:50%; background:rgba(245,130,32,.14); color:var(--accent); font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center;}
+  /* l'encadre de l'apercu : il defile seul, les boutons restent en place dessous */
+  .ca-boite{margin-top:14px; max-height:min(38vh, 300px); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+    padding:8px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
   /* ================================================================== en dernier :
      le degrade et les contours. Ecrit apres tout le reste pour l'emporter a specificite
      egale — place plus haut, chaque bouton defini plus bas reprenait son orange a plat. */
@@ -18676,7 +18681,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 18h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 18h25 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -29515,7 +29520,9 @@ function openCourseApercu(id){
   if(!p) return;
   openSheet(`<div class="pr-tete"><h3>${esc(p.nom)}</h3>${p.propose ? `<p>${esc(TR(OBJ_COURSE[db.objCourse.type].nom))}</p>` : ""}</div>
     ${crResume(parcoursTotaux(p.etapes))}
-    <div class="oc-etapes" style="margin-top:14px;">${p.etapes.map((e, i)=>`<div><span class="n">${i + 1}</span>${esc(nomEtape(e))} · ${minTxt(e.min)} · ${vitPente(e)}</div>`).join("")}</div>
+    <!-- les etapes defilent dans leur encadre ; les deux boutons restent toujours a
+         portee, sans descendre la liste (Nico) -->
+    <div class="oc-etapes ca-boite">${p.etapes.map((e, i)=>`<div><span class="n">${i + 1}</span>${esc(nomEtape(e))} · ${minTxt(e.min)} · ${vitPente(e)}</div>`).join("")}</div>
     <div class="row" style="gap:9px; margin-top:14px;">
       <button class="btn grow btn-rond" id="ca-edit">${TR(id === "objectif" ? "Régler l'objectif" : "Modifier")}</button>
       <button class="btn btn-accent grow btn-rond" id="ca-go">${IC_LECTURE}${TR("Commencer")}</button>
