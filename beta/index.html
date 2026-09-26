@@ -2039,7 +2039,10 @@
   /* Le bandeau de la seance en cours grandit avec son texte : avec une grande police
      systeme ou un nom sur deux lignes, « Temps de seance » passait sous la premiere
      carte. Fond et contenu partagent la meme cellule ; le plus haut des deux gagne. */
-  .hero-en-cours{display:grid; aspect-ratio:auto; min-height:250px;}
+  .hero-en-cours{display:grid; aspect-ratio:auto; min-height:250px;
+    /* coins arrondis en bas, la photo floutee derriere le texte (Nico) */
+    border-radius:0 0 28px 28px; overflow:hidden; isolation:isolate;}
+  .hero-en-cours .hero-bg image{filter:blur(6px); transform:scale(1.06); transform-origin:center; transform-box:fill-box;}
   .hero-en-cours .hero-bg{grid-area:1/1; height:100%; aspect-ratio:auto; object-fit:cover;}
   .hero-en-cours .hero-in{grid-area:1/1; position:static; padding-bottom:14px; display:flex; flex-direction:column;}
   .hero-en-cours .hero-meta{gap:8px; margin-top:12px; flex-wrap:wrap;}
@@ -4628,6 +4631,35 @@
   .co-x svg{width:14px; height:14px; stroke-width:2.6;}
   .co-x.pv-co-x{position:relative; top:auto; right:auto; flex:none; margin-left:6px;}
   .pv-ex .num.pv-co-num{background:rgba(245,130,32,.14);} .pv-ex .num.pv-co-num .icm{background-color:var(--accent);}
+  /* le cadenas du bilan, sans abonnement */
+  .wk-bilan .wk-cad{display:inline-flex; margin-right:5px;} .wk-bilan .wk-cad svg{width:13px; height:13px;}
+  /* le bilan : un titre de carte ; le lien vers le mois */
+  .bl-tete2{margin-bottom:16px; padding-right:34px;} .bl-tete2 .pt-t{font-size:24px; font-weight:900;}
+  .bl-mois{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; margin:0 0 16px; padding:12px 14px;
+    border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); color:var(--ink);}
+  .bl-mois .ic{flex:none; width:40px; height:40px; border-radius:12px; background:rgba(245,130,32,.14); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;} .bl-mois .ic .icm{background-color:var(--accent);}
+  .bl-mois b{display:block; font-size:15px; font-weight:800;} .bl-mois small{display:block; font-size:12.5px; color:var(--ink-soft);}
+  .bl-mois > svg{width:18px; height:18px; color:var(--ink-mute); flex:none;}
+  /* les cadres qui apparaissent en descendant */
+  .rv{opacity:0; transform:translateY(22px); transition:opacity .55s ease, transform .6s cubic-bezier(.2,.9,.3,1);}
+  .rv.vu{opacity:1; transform:none;}
+  /* le calendrier des seances */
+  .cal-c.cal-bleu{background:linear-gradient(180deg, #5AB0F0 0%, #3C8FE0 100%); color:#fff;}
+  .cs-p{display:flex; gap:2px; justify-content:center;} .cs-ic{display:inline-flex;}
+  .cs-ic svg{width:12px; height:12px;} .cal-c .cs-ic .icm{background-color:currentColor;}
+  .cal-leg i.o{background:var(--accent-grad);} .cal-leg i.b{background:#3C8FE0;}
+  .cs-tuiles{margin-top:14px;}
+  /* course : le crayon, seulement en pause */
+  .cr-edit{display:none; position:absolute; top:-12px; right:-8px; z-index:2; width:36px; height:36px; border-radius:50%; border:0;
+    background:var(--surface); color:var(--ink); box-shadow:inset 0 0 0 1px var(--bord-doux), 0 4px 12px rgba(0,0,0,.16);
+    align-items:center; justify-content:center; padding:0;}
+  .cr-edit svg{width:17px; height:17px;}
+  .cr-edit::before{content:""; position:absolute; inset:-6px;}
+  .cr.en-pause .cr-c .cr-edit{display:flex;}
+  @media (prefers-reduced-motion:no-preference){ .cr.en-pause .cr-c .cr-edit{animation:popEntree .3s cubic-bezier(.2,1.3,.4,1);} }
+  #sheet .cr-modif .pc-pas{box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .cr-modif .pc-type{margin-bottom:6px;} .cr-modif .pc-type button{padding:10px 8px;}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4766,6 +4798,17 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Mes séances du mois":"My workouts this month",
+  "Le calendrier, jour par jour":"The calendar, day by day",
+  "Musculation":"Strength",
+  "Course ou cardio":"Running or cardio",
+  "course et cardio":"running and cardio",
+  "Retour au bilan":"Back to the review",
+  "Retour au calendrier":"Back to the calendar",
+  "Modifier l'étape":"Edit the step",
+  "Modifier l'étape {}":"Edit step {}",
+  "Pour cette sortie seulement : ta séance enregistrée ne change pas.":"For this run only: your saved workout doesn't change.",
+  "Étape modifiée":"Step updated",
   "Créer une nouvelle séance de course":"Create a new running workout",
   "Créer et ajouter":"Create and add",
   "Séance de course créée et ajoutée":"Running workout created and added",
@@ -8202,6 +8245,17 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Mes séances du mois":"Mis sesiones del mes",
+  "Le calendrier, jour par jour":"El calendario, día a día",
+  "Musculation":"Musculación",
+  "Course ou cardio":"Carrera o cardio",
+  "course et cardio":"carrera y cardio",
+  "Retour au bilan":"Volver al balance",
+  "Retour au calendrier":"Volver al calendario",
+  "Modifier l'étape":"Editar la etapa",
+  "Modifier l'étape {}":"Editar la etapa {}",
+  "Pour cette sortie seulement : ta séance enregistrée ne change pas.":"Solo para esta salida: tu sesión guardada no cambia.",
+  "Étape modifiée":"Etapa modificada",
   "Créer une nouvelle séance de course":"Crear un nuevo entreno de carrera",
   "Créer et ajouter":"Crear y añadir",
   "Séance de course créée et ajoutée":"Entreno de carrera creado y añadido",
@@ -11854,6 +11908,17 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Mes séances du mois":"Meus treinos do mês",
+  "Le calendrier, jour par jour":"O calendário, dia a dia",
+  "Musculation":"Musculação",
+  "Course ou cardio":"Corrida ou cardio",
+  "course et cardio":"corrida e cardio",
+  "Retour au bilan":"Voltar ao balanço",
+  "Retour au calendrier":"Voltar ao calendário",
+  "Modifier l'étape":"Editar a etapa",
+  "Modifier l'étape {}":"Editar a etapa {}",
+  "Pour cette sortie seulement : ta séance enregistrée ne change pas.":"Só para esta saída: seu treino salvo não muda.",
+  "Étape modifiée":"Etapa modificada",
   "Créer une nouvelle séance de course":"Criar um novo treino de corrida",
   "Créer et ajouter":"Criar e adicionar",
   "Séance de course créée et ajoutée":"Treino de corrida criado e adicionado",
@@ -17982,6 +18047,13 @@ function roulette(box, min, max, valeur, unite, onChange, opts){
     maj();
     setTimeout(()=>{ pose = true; }, 300);
   });
+  /* de quoi tourner la roulette jusqu'a une valeur, sans refaire la fiche (Nico) */
+  return {aller(v){
+    const cible = items.find(it => parseFloat(it.dataset.v) === v);
+    if(!cible || !box.isConnected) return;
+    const top = cible.offsetTop + H/2 - box.clientHeight/2;
+    try{ box.scrollTo({top, behavior:"smooth"}); }catch(e){ box.scrollTop = top; }
+  }};
 }
 /* Une phrase qu'un debutant comprend du premier coup : pourquoi ces chiffres. Le
    detail chiffre reste dans planAdvice(), ouvert d'un appui sur le programme. */
@@ -18123,6 +18195,7 @@ function showPlan(justCreated){
     {verrou: !!justCreated});
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
   compterDepuisZero(document.querySelectorAll("#sheet .pn-t .v, #sheet .pn-obj .kg, #sheet .pn-carte .gros"));
+  revelerAuDefilement("#sheet .pn-plan > :not(h3):not(.pn-sous):not(.pn-chips)");
   document.getElementById("pl-sante").onclick = openSante;
   /* le detail du programme et du plan, en phrases completes, par-dessus la page */
   /* le detail du programme, en deux cartes de phrases simples (d'apres la maquette de
@@ -19052,7 +19125,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 23h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 23h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25204,13 +25277,16 @@ function openBilan(){
   const icPrio = {seance:ICONS.seance, repas:IC_ABO_ASSIETTE, midi:IC_ABO_ASSIETTE, prot:icoM("muscle", 20),
     poids:icoM("poids", 20), barres:IC_BARRES, course:icoM("course", 20), check:IC_CHECK};
   const plusSeances = (b.prev > 0 && b.cur > b.prev) ? Math.round((b.cur - b.prev) / b.prev * 100) : 0;
-  openSheet(`<div class="bl-tete"><h3>${TR("Bilan des 7 derniers jours")}</h3><div class="pt-obj" style="white-space:normal;">${TR("Une semaine de plus vers tes objectifs !")}</div></div>
+  openSheet(`<div class="pt-tete bl-tete2"><span class="pt-ic pt-ic-orange">${IC_BARRES}</span>
+      <div class="grow"><div class="pt-t">${TR("Bilan des 7 derniers jours")}</div><div class="pt-obj" style="white-space:normal;">${TR("Une semaine de plus vers tes objectifs !")}</div></div></div>
     <div class="bl-tuiles">
       <div class="bl-t"><span class="ic">${ICONS.seance}</span><div><b>${b.cur}</b><small>${TR(b.cur>1?"séances":"séance")}</small></div></div>
       <div class="bl-t"><span class="ic violet">${icoM("poids", 22)}</span><div><b style="font-size:${tailleBl(pds(b.volCur))}px">${pds(b.volCur)}</b><small>${TR("soulevés")}</small></div></div>
       ${b.kmCur? `<div class="bl-t"><span class="ic bleu">${icoM("course", 22)}</span><div><b style="font-size:${tailleBl(dist(b.kmCur))}px">${dist(b.kmCur)}</b><small>${TR("cardio")}</small></div></div>`:""}
     </div>
     <div class="bl-semaine">${semaineHtml()}</div>
+    <button class="bl-mois" id="bl-mois"><span class="ic">${icoF("calendar-1", 22)}</span>
+      <span class="grow"><b>${TR("Mes séances du mois")}</b><small>${TR("Le calendrier, jour par jour")}</small></span>${IC_CHEVRON}</button>
     ${energieSemaine()}
     ${(()=>{ const lien = lienProtTonnage();
       return lien ? `<div class="card" style="padding:13px 14px; margin-bottom:16px;">
@@ -25225,7 +25301,9 @@ function openBilan(){
       <div class="bl-note">${TR("Tonnup suit les calories et les macros, pas la qualité nutritionnelle. Les totaux d'un journal sont en général sous-estimés de 20 à 30 %.")}</div></div>
     <button class="btn btn-accent fin-ok bl-okb" id="bl-ok" style="width:100%; margin-top:4px;"><span class="grow">${TR("C'est noté !")}</span>${CHEV_MP}</button>`);
   document.getElementById("bl-ok").onclick=closeSheet;
+  document.getElementById("bl-mois").onclick = ()=>ouvrirParDessus(openBilan, ()=>openCalSeances(true));
   compterDepuisZero(document.querySelectorAll("#sheet .bl-tuiles b"));
+  revelerAuDefilement("#sheet > :not(.grab):not(.sheet-x):not(.bl-tete2)");
 }
 function editGoal(){
   const cur = currentWeight();
@@ -25432,7 +25510,7 @@ function renderSeance(app){
           <div class="n"><span class="ic">${icoM("flamme", 19)}</span>
             <span class="tx"><div class="v">${Math.round(weekKcal)} <small>kcal</small></div>
             <div class="u">${TR("Brûlées")}</div></span></div>
-          <button class="wk-bilan" id="bilan-btn">${TR("Bilan")}${bilanNeuf? '<span class="pt"></span>':""}</button>
+          <button class="wk-bilan" id="bilan-btn">${verrouille("bilan") ? `<span class="wk-cad">${IC_CADENAS_MINI}</span>` : ""}${TR("Bilan")}${bilanNeuf && !verrouille("bilan") ? '<span class="pt"></span>':""}</button>
         </div>
       </div>
     </div>
@@ -27513,11 +27591,12 @@ function openHistoExo(ei){
     const ret = document.getElementById("hx-rep-r");
     if(ret) ret.classList.toggle("autre", v !== en.reposBase);
   };
-  roulette(document.getElementById("hx-rou"), 10, 300, Math.round(repos/10)*10, "",
+  const rouRepos = roulette(document.getElementById("hx-rou"), 10, 300, Math.round(repos/10)*10, "",
     poserRepos, {pas:10, fmt:fmtRepos});
   document.getElementById("hx-rep-r").classList.toggle("autre", repos !== en.reposBase);
   const ret = document.getElementById("hx-rep-r");
-  if(ret) ret.onclick = ()=>{ closeSheet(); poserRepos(en.reposBase); setTimeout(()=>openHistoExo(ei), 260); };
+  /* la roulette tourne jusqu'au conseille, sur place : fermer et rouvrir la fiche faisait clignoter l'ecran */
+  if(ret) ret.onclick = ()=>{ poserRepos(en.reposBase); rouRepos.aller(Math.round(en.reposBase / 10) * 10); vibrer(8); };
   const uni = document.getElementById("hx-unilat");
   if(uni) uni.onchange = e=>{
     if(e.target.checked) db.unilat[en.exId] = true; else delete db.unilat[en.exId];
@@ -29499,17 +29578,19 @@ function retirerCommandesCourse(){ const h = document.getElementById("cr-hors");
 function carteEtapeCourse(e, i, etat){
   const km = etapeKm(e);
   const nom = `${i + 1}. ${nomEtape(e)}`;
+  /* en pause seulement, un crayon pour corriger l'etape (Nico : « course au lieu de marche ») */
+  const crayon = etat === "fait" ? "" : `<button class="cr-edit" data-cr-edit="${i}" aria-label="${TR("Modifier l'étape")}">${IC_CRAYON}</button>`;
   if(etat === "encours"){
     /* la vitesse se lit de loin, en courant (Nico) : l'icone passe petite sur la ligne
        du titre, « 3. Marche », pour laisser la place aux km/h en grand */
-    return `<div class="cr-c encours" data-i="${i}"><span class="cr-num">${i + 1}</span>
+    return `<div class="cr-c encours" data-i="${i}"><span class="cr-num">${i + 1}</span>${crayon}
       <div class="cr-tx"><b class="cr-titre">${icEtape(e, 20)}<span>${nom}</span></b><span class="dur">${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
       <div class="cr-anneau"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fd" cx="50" cy="50" r="45"/><circle class="pg" id="cr-arc" cx="50" cy="50" r="45" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
         <div class="cr-centre"><b id="cr-temps">00:00</b><small>/ ${mmss(e.min * 60)}</small></div></div>
       <div class="cr-annonce" aria-live="assertive"></div>
     </div>`;
   }
-  return `<div class="cr-c ${etat}" data-i="${i}"><span class="cr-num">${etat === "fait" ? IC_CHECK : i + 1}</span>
+  return `<div class="cr-c ${etat}" data-i="${i}"><span class="cr-num">${etat === "fait" ? IC_CHECK : i + 1}</span>${crayon}
     <span class="cr-ic">${icEtape(e, 22)}</span>
     <div class="cr-tx"><b class="cr-nom">${nom}</b><span>${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
     <div class="cr-dr">${etat === "fait" ? `<small>${TR("Terminé")}</small><b>${kmTxt(km)}</b>` : `<b>${kmTxt(km)}</b><small>(${TR("est.")})</small>`}</div>
@@ -29574,9 +29655,67 @@ function renderCourse(app){
     vibrer(10);
   };
   document.querySelector(".cr").classList.toggle("en-pause", !!c.pauseA);
+  document.getElementById("cr-liste").addEventListener("click", ev=>{
+    const b = ev.target.closest("[data-cr-edit]");
+    if(b && db.courseEnCours && db.courseEnCours.pauseA) modifierEtapeCourse(Number(b.dataset.crEdit));
+  });
   arreterTicCourse();
   courseTic = setInterval(ticCourse, 200);
   ticCourse();
+}
+/* corriger une etape pendant la pause : pour CETTE sortie seulement, la seance
+   enregistree ne change pas. Le decompte natif est repose a la reprise. */
+function modifierEtapeCourse(i){
+  const c = db.courseEnCours; if(!c || !c.etapes[i]) return;
+  const e = JSON.parse(JSON.stringify(c.etapes[i]));
+  const imp = estImperial();
+  const vAff = v => Math.round((imp ? v * 0.621371 : v) * 10) / 10;
+  const vKmh = x => imp ? x / 0.621371 : x;
+  const champ = (f, val, unite, lab) => `<div class="pc-reg"><span class="label">${lab}</span>
+    <div class="pc-pas"><button type="button" data-pas="${f}|-1" aria-label="${TR("Moins")}">−</button>
+      <label><input type="number" inputmode="decimal" value="${val}" data-f="${f}"><span>${unite}</span></label>
+      <button type="button" data-pas="${f}|1" aria-label="${TR("Plus")}">＋</button></div></div>`;
+  openSheet(`<div class="ca-titre"><h3>${TR("Modifier l'étape {}").replace("{}", i + 1)}</h3>
+      <p>${TR("Pour cette sortie seulement : ta séance enregistrée ne change pas.")}</p></div>
+    <div class="pc-et cr-modif">
+      <div class="pc-type ${e.type === "marche" ? "est-marche" : ""}"><button type="button" data-t="course" class="${e.type === "course" ? "on" : ""}">${icoM("course", 16)}${TR("Course")}</button><button type="button" data-t="marche" class="${e.type === "marche" ? "on" : ""}">${icoF("walk-1", 16)}${TR("Marche")}</button></div>
+      <div class="pc-regs">
+        ${champ("min", e.min, "min", TR("Durée"))}
+        ${champ("v", vAff(e.v), imp ? "mph" : "km/h", TR("Vitesse"))}
+        ${champ("p", e.p || 0, "%", TR("Pente"))}
+      </div>
+    </div>
+    <button class="btn btn-accent" id="cm-ok" style="width:100%; margin-top:16px;">${TR("Enregistrer")}</button>`);
+  const box = document.querySelector("#sheet .cr-modif");
+  box.querySelectorAll("[data-t]").forEach(b=>b.onclick = ()=>{
+    e.type = e.type === "course" ? "marche" : "course";
+    e.v = vitesseDefaut(e.type);
+    box.querySelectorAll("[data-t]").forEach(x=>x.classList.toggle("on", x.dataset.t === e.type));
+    box.querySelector(".pc-type").classList.toggle("est-marche", e.type === "marche");
+    box.querySelector('[data-f="v"]').value = vAff(e.v);
+    vibrer(8);
+  });
+  box.querySelectorAll("[data-pas]").forEach(b=>b.onclick = ()=>{
+    const [f, sens] = b.dataset.pas.split("|"), n = Number(sens);
+    const inp = box.querySelector(`[data-f="${f}"]`);
+    const x = parseFloat(String(inp.value).replace(",", ".")) || 0;
+    inp.value = f === "min" ? Math.max(1, Math.round(x) + n)
+      : (f === "p" ? Math.min(20, Math.max(0, Math.round((x + 0.5 * n) * 10) / 10)) : Math.max(1, Math.round((x + 0.5 * n) * 10) / 10));
+    vibrer(6);
+  });
+  document.getElementById("cm-ok").onclick = ()=>{
+    const lire = f => parseFloat(String(box.querySelector(`[data-f="${f}"]`).value).replace(",", "."));
+    const mn = lire("min"), v = lire("v"), pe = lire("p");
+    if(mn > 0) e.min = Math.min(180, mn);
+    if(v > 0) e.v = Math.min(30, vKmh(v));
+    if(pe >= 0) e.p = Math.min(20, pe);
+    const cc = db.courseEnCours; if(!cc) { closeSheet(); return; }
+    cc.etapes[i] = e; save(); closeSheet();
+    const r = document.querySelector("#cr-hors .cr-resume");
+    if(r) r.outerHTML = crResume(parcoursTotaux(cc.etapes));
+    courseVu = -1; majListeCourse(courseEtat(cc).i, false);
+    toast(TR("Étape modifiée"));
+  };
 }
 /* redessine la liste autour de l'etape i, et la ramene au centre de l'ecran */
 function majListeCourse(i, anime){
@@ -33220,6 +33359,100 @@ function dessineCalendrier(){
     closeSheet();
     /* la fermeture passe par history.back() : on laisse la fiche partir avant de redessiner */
     setTimeout(()=>poserJour(b.dataset.cal), 260);
+  });
+}
+
+/* ---- les cadres d'une longue fiche apparaissent un a un en descendant (Nico) ----
+   Ce qui est deja a l'ecran a l'ouverture arrive en cascade ; le reste, au fil du
+   defilement. Sans animation si le telephone le demande. */
+function revelerAuDefilement(sel){
+  const els = [...document.querySelectorAll(sel)];
+  if(!els.length || !("IntersectionObserver" in window)) return;
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const io = new IntersectionObserver(es=>{
+    let k = 0;
+    es.forEach(e=>{ if(!e.isIntersecting) return;
+      e.target.style.transitionDelay = (k++ * 90) + "ms";
+      e.target.classList.add("vu"); io.unobserve(e.target); });
+  }, {root:sheet, threshold:.12});
+  els.forEach(el=>{ el.classList.add("rv"); io.observe(el); });
+}
+
+/* ---- le mois des seances, comme le calendrier des proteines (partie payante) ----
+   Orange : une seance de musculation ce jour-la ; bleu : seulement de la course ou du
+   cardio. Rien de nouveau n'est enregistre : tout vient de l'historique. */
+let calSeMois = null;
+function seancesDuJour(key){
+  return {muscu:(db.history || []).filter(h=>dayKey(new Date(h.date)) === key),
+          cardio:(db.cardio || []).filter(c=>dayKey(new Date(c.date)) === key && !c.seanceId)};
+}
+function openCalSeances(depuisBilan){
+  if(!calSeMois){ const n = new Date(); calSeMois = new Date(n.getFullYear(), n.getMonth(), 1); }
+  const an = calSeMois.getFullYear(), mois = calSeMois.getMonth();
+  const premier = new Date(an, mois, 1), nbJours = new Date(an, mois + 1, 0).getDate();
+  const lundi = langue() !== "en";
+  const decal = lundi ? (premier.getDay() + 6) % 7 : premier.getDay();
+  const noms = Array.from({length:7}, (_, i)=>{
+    const n = new Date(2024, 0, (lundi ? 1 : 7) + i).toLocaleDateString(loc(), {weekday:"short"}).replace(/\.$/, "");
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  });
+  const auj = dayKey();
+  let nMuscu = 0, nCardio = 0, vol = 0, km = 0;
+  const cases = [];
+  for(let i = 0; i < decal; i++) cases.push(`<div class="cal-c vide"></div>`);
+  for(let j = 1; j <= nbJours; j++){
+    const key = dayKey(new Date(an, mois, j));
+    const sj = seancesDuJour(key), futur = key > auj;
+    nMuscu += sj.muscu.length; nCardio += sj.cardio.length;
+    sj.muscu.forEach(h=>{ vol += sessionVolume(h) || 0; if(h.course) km += h.course.km || 0; });
+    sj.cardio.forEach(c=>{ km += c.km || 0; });
+    const cl = futur ? "futur rien" : (sj.muscu.length ? "partiel" : (sj.cardio.length ? "cal-bleu" : "rien"));
+    const ics = (sj.muscu.length ? `<i class="cs-ic">${ICONS.seance}</i>` : "") + (sj.cardio.length || sj.muscu.some(h=>h.course) ? `<i class="cs-ic">${icoM("course", 12)}</i>` : "");
+    cases.push(`<button class="cal-c ${cl}${key === auj ? " auj" : ""}" ${futur || cl === "rien" ? "disabled" : `data-cs="${key}"`}>
+      <span class="d">${j}</span><span class="p cs-p">${ics || "·"}</span></button>`);
+  }
+  const jours = (db.history || []).map(h=>h.date).concat((db.cardio || []).map(c=>c.date)).filter(Boolean).sort();
+  const n0 = new Date(), limite = new Date(n0.getFullYear(), n0.getMonth() - 12, 1);
+  const d0 = jours.length ? new Date(jours[0]) : limite;
+  const premiereDonnee = new Date(d0.getFullYear(), d0.getMonth(), 1);
+  const avantPossible = premier > (premiereDonnee < limite ? premiereDonnee : limite);
+  const apresPossible = premier < new Date(n0.getFullYear(), n0.getMonth(), 1);
+  openSheet(`<div class="ca-titre"><h3>${TR("Mes séances")}</h3></div>
+    <div class="cal-top">
+      <button id="cs-prec" ${avantPossible ? "" : "disabled"} aria-label="${TR("Mois précédent")}">‹</button>
+      <div class="m">${premier.toLocaleDateString(loc(), {month:"long", year:"numeric"})}</div>
+      <button id="cs-suiv" ${apresPossible ? "" : "disabled"} aria-label="${TR("Mois suivant")}">›</button>
+    </div>
+    <div class="cal-jours">${noms.map(n=>`<span>${n}</span>`).join("")}</div>
+    <div class="cal-grille">${cases.join("")}</div>
+    <div class="cal-leg">
+      <span><i class="o"></i>${TR("Musculation")}</span>
+      <span><i class="b"></i>${TR("Course ou cardio")}</span>
+      <span><i class="g"></i>${TR("Repos")}</span>
+    </div>
+    <div class="co-tuiles cs-tuiles">
+      <div><b>${nMuscu + nCardio}</b><small>${TR(nMuscu + nCardio > 1 ? "séances" : "séance")}</small></div>
+      <div><b>${pds(vol)}</b><small>${TR("soulevés")}</small></div>
+      <div><b>${kmTxt(km)}</b><small>${TR("course et cardio")}</small></div>
+    </div>
+    <button class="btn btn-accent" id="cs-ok" style="width:100%; margin-top:6px;">${TR(depuisBilan ? "Retour au bilan" : "Fermer")}</button>`);
+  const prec = document.getElementById("cs-prec"), suiv = document.getElementById("cs-suiv");
+  if(!prec.disabled) prec.onclick = ()=>{ calSeMois = new Date(an, mois - 1, 1); openCalSeances(depuisBilan); };
+  if(!suiv.disabled) suiv.onclick = ()=>{ calSeMois = new Date(an, mois + 1, 1); openCalSeances(depuisBilan); };
+  document.getElementById("cs-ok").onclick = ()=>{ if(!(depuisBilan && retourFiche())) closeSheet(); };
+  /* un jour : ses seances, et on ouvre le detail d'une seance de musculation */
+  document.querySelectorAll("[data-cs]").forEach(b=>b.onclick = ()=>{
+    const key = b.dataset.cs, sj = seancesDuJour(key);
+    const d = new Date(key + "T12:00:00");
+    const revenir = ()=>openCalSeances(depuisBilan);
+    openSheet(`<div class="ca-titre"><h3 style="text-transform:capitalize;">${d.toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"})}</h3></div>
+      <div class="ch-liste">${sj.muscu.map(h=>`<button class="ch-c" data-cs-h="${esc(h.id)}"><span class="ic">${ICONS.seance}</span>
+          <span class="tx"><b>${esc(TR(h.name || ""))}</b><small>${pds(sessionVolume(h) || 0)}${h.course ? " · " + kmTxt(h.course.km || 0) : ""}</small></span>${IC_CHEVRON}</button>`).join("")}
+        ${sj.cardio.map(c=>`<div class="ch-c"><span class="ic">${icMachine(machineOf(c), 26)}</span>
+          <span class="tx"><b>${esc(TR(machineOf(c)[1]))}</b><small>${esc(texteSortie(c))}</small></span></div>`).join("")}</div>
+      <button class="btn" id="cs-retour" style="width:100%; margin-top:14px;">${TR("Retour au calendrier")}</button>`);
+    document.getElementById("cs-retour").onclick = revenir;
+    document.querySelectorAll("[data-cs-h]").forEach(x=>x.onclick = ()=>ouvrirParDessus(revenir, ()=>openHistDetail(x.dataset.csH)));
   });
 }
 
