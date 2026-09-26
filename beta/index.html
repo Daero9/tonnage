@@ -4814,6 +4814,12 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Tiens la position":"Hold the position",
+  "Récupère":"Recover",
+  "En position : {m} à tenir":"Get in position: {m} to hold",
+  "Arrêter le gainage ?":"Stop the hold?",
+  "Les séries déjà tenues restent validées.":"Sets you've already held stay checked.",
+  "Termine d'abord ta séance de course.":"Finish your run first.",
   "Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.":"Marathon: your longest training run will go up to 32 km, not 42. That's how marathon plans usually work; this exact cap is Tonnup's choice.",
   "Prêt pour ton marathon !":"Ready for your marathon!",
   "Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.":"For a marathon, the longest training run stops around 32 km: that's common practice in plans, not a proven rule.",
@@ -8264,6 +8270,12 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Tiens la position":"Mantén la posición",
+  "Récupère":"Recupera",
+  "En position : {m} à tenir":"En posición: {m} para aguantar",
+  "Arrêter le gainage ?":"¿Parar la plancha?",
+  "Les séries déjà tenues restent validées.":"Las series ya aguantadas quedan validadas.",
+  "Termine d'abord ta séance de course.":"Termina primero tu carrera.",
   "Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.":"Maratón: tu salida más larga de preparación llegará a 32 km, no a 42. Es lo habitual en los planes de maratón; este límite exacto es elección de Tonnup.",
   "Prêt pour ton marathon !":"¡Listo para tu maratón!",
   "Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.":"Para un maratón, la salida más larga de preparación se queda en unos 32 km: es lo habitual en los planes, no una regla demostrada.",
@@ -11930,6 +11942,12 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Tiens la position":"Mantenha a posição",
+  "Récupère":"Recupere",
+  "En position : {m} à tenir":"Em posição: {m} para segurar",
+  "Arrêter le gainage ?":"Parar a prancha?",
+  "Les séries déjà tenues restent validées.":"As séries já feitas ficam validadas.",
+  "Termine d'abord ta séance de course.":"Termine primeiro sua corrida.",
   "Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.":"Maratona: sua saída mais longa de preparação vai até 32 km, não 42. É o costume dos planos de maratona; esse limite exato é escolha do Tonnup.",
   "Prêt pour ton marathon !":"Pronto para a sua maratona!",
   "Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.":"Para uma maratona, a saída mais longa de preparação para por volta de 32 km: é o costume dos planos, não uma regra comprovada.",
@@ -19150,7 +19168,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 01h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 01h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -28018,7 +28036,7 @@ function renderActive(app){
       </div>
       <button class="ex-plier" data-act="plier" aria-label="${TR("Replier cet exercice")}">${TR("Replier")} ${CHEV}</button>`;
     const btnIso = card.querySelector("[data-iso]");
-    if(btnIso) btnIso.onclick = ()=>lancerSeqIso(ei);
+    if(btnIso) btnIso.onclick = ()=>{ if(seqIso || preIso) lancerSeqIso(ei); else demarrerIso(ei); };
     /* Le temps choisi vaut pour CET exercice : on l'écrit sur la séance en cours et,
        si le plan existe encore, sur le plan — sinon il faudrait le refaire à chaque
        séance. C'est la même règle que dans la fiche détaillée. */
@@ -29385,7 +29403,7 @@ function mmss(sec){
   return String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0");
 }
 /* « 10,0 km/h · pente 2 % » : la pente seulement quand il y en a une */
-function vitPente(e){ return affVit(e.v) + (e.p > 0 ? " · " + TR("pente {} %").replace("{}", e.p.toLocaleString(loc(), {maximumFractionDigits:1})) : ""); }
+function vitPente(e){ if(e.iso) return TR(e.type === "tenue" ? "Tiens la position" : "Récupère"); return affVit(e.v) + (e.p > 0 ? " · " + TR("pente {} %").replace("{}", e.p.toLocaleString(loc(), {maximumFractionDigits:1})) : ""); }
 /* ---- la duree d'une etape, a la seconde pres sous les minutes (Nico : « 30 s de course,
    1 min de marche, voire 1 min 30 ») ----
    Affichee « 1:30 » ; saisie « 1:30 » ou « 1,5 » (le clavier numerique n'a pas de
@@ -29420,7 +29438,10 @@ const IC_ANNULER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 function icoF(nom, t){
   return `<span class="icm" style="width:${t}px; height:${t}px; -webkit-mask-image:url(img/ic-${nom}.webp); mask-image:url(img/ic-${nom}.webp);" aria-hidden="true"></span>`;
 }
-function icEtape(e, t){ return e.type === "course" ? icoM("course", t) : icoF("walk-1", t); }
+function icEtape(e, t){
+  if(e.iso) return e.type === "tenue" ? icoM("flamme", t) : IC_PAUSE;
+  return e.type === "course" ? icoM("course", t) : icoF("walk-1", t);
+}
 /* les trois chiffres du haut : temps, distance, calories */
 function crResume(tot){
   return `<div class="cr-resume">
@@ -29603,8 +29624,9 @@ async function poserSequenceCourse(){
       encours: TR("Étape {i} / {n}").replace("{i}", k + 1).replace("{n}", c.etapes.length) + " · " + nomEtape(e),
       details: vitPente(e),
       sec: k === st.i ? Math.max(0.5, st.reste) + avance : e.min * 60,
-      titre: TR(e.type === "course" ? "Course terminée" : "Marche terminée"),
-      corps: suite ? TR("À toi : {m} de {t} à {v}").replace("{m}", minTxt(suite.min)).replace("{t}", nomEtape(suite).toLowerCase()).replace("{v}", vitPente(suite))
+      titre: e.iso ? TR(e.type === "tenue" ? "Gainage terminé" : "Repos terminé") : TR(e.type === "course" ? "Course terminée" : "Marche terminée"),
+      corps: e.iso ? (suite ? TR(suite.type === "tenue" ? "En position, on repart." : "Repose-toi.") : TR("Dernière tenue : c'est fini."))
+           : suite ? TR("À toi : {m} de {t} à {v}").replace("{m}", minTxt(suite.min)).replace("{t}", nomEtape(suite).toLowerCase()).replace("{v}", vitPente(suite))
                    : TR("Séance terminée, bravo !")
     });
   }
@@ -29616,6 +29638,7 @@ let courseTic = null, courseVu = -1, courseDecompte = -1;
 const PREPA_MS = 5000;
 /* « Prepare-toi a marcher 5 min a 6,0 km/h » : le verbe de l'etape, sa duree, sa cadence */
 function phrasePrepa(e){
+  if(e.iso) return TR("En position : {m} à tenir").replace("{m}", minTxt(e.min));
   return TR(e.type === "course" ? "Prépare-toi à courir {m} à {v}" : "Prépare-toi à marcher {m} à {v}")
     .replace("{m}", minTxt(e.min)).replace("{v}", vitPente(e));
 }
@@ -29625,7 +29648,7 @@ function carteEtapeCourse(e, i, etat){
   const km = etapeKm(e);
   const nom = `${i + 1}. ${nomEtape(e)}`;
   /* en pause seulement, un crayon pour corriger l'etape (Nico : « course au lieu de marche ») */
-  const crayon = etat === "fait" ? "" : `<button class="cr-edit" data-cr-edit="${i}" aria-label="${TR("Modifier l'étape")}">${IC_CRAYON}</button>`;
+  const crayon = etat === "fait" || e.iso ? "" : `<button class="cr-edit" data-cr-edit="${i}" aria-label="${TR("Modifier l'étape")}">${IC_CRAYON}</button>`;
   if(etat === "encours"){
     /* la vitesse se lit de loin, en courant (Nico) : l'icone passe petite sur la ligne
        du titre, « 3. Marche », pour laisser la place aux km/h en grand */
@@ -29639,7 +29662,8 @@ function carteEtapeCourse(e, i, etat){
   return `<div class="cr-c ${etat}" data-i="${i}"><span class="cr-num">${etat === "fait" ? IC_CHECK : i + 1}</span>${crayon}
     <span class="cr-ic">${icEtape(e, 22)}</span>
     <div class="cr-tx"><b class="cr-nom">${nom}</b><span>${minTxt(e.min)}</span><span class="v">${vitPente(e)}</span></div>
-    <div class="cr-dr">${etat === "fait" ? `<small>${TR("Terminé")}</small><b>${kmTxt(km)}</b>` : `<b>${kmTxt(km)}</b><small>(${TR("est.")})</small>`}</div>
+    <div class="cr-dr">${e.iso ? `<b>${mmss(e.min * 60)}</b>${etat === "fait" ? `<small>${TR("Terminé")}</small>` : ""}`
+      : etat === "fait" ? `<small>${TR("Terminé")}</small><b>${kmTxt(km)}</b>` : `<b>${kmTxt(km)}</b><small>(${TR("est.")})</small>`}</div>
   </div>`;
 }
 function renderCourse(app){
@@ -29663,7 +29687,7 @@ function renderCourse(app){
       <div class="cr-top"><button class="cr-rond" id="cr-retour" aria-label="${TR("Terminer la séance")}">${IC_RETOUR}</button>
         <h2>${esc(c.nom || TR("Séance de course"))}</h2>
         <button class="cr-rond" id="cr-son" aria-label="${TR("Son")}">${db.settings.son === false ? IC_MUET : IC_SON}</button></div>
-      ${crResume(parcoursTotaux(c.etapes))}
+      ${c.iso ? resumeIso(c) : crResume(parcoursTotaux(c.etapes))}
     </div>
   <div class="cr-bas">
     <!-- la pause au centre, posee au-dessus de la barre (Nico) -->
@@ -29860,6 +29884,19 @@ function ticCourse(){
 }
 function confirmerFinCourse(){
   document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
+  if(db.courseEnCours && db.courseEnCours.iso){
+    const mi = document.createElement("div");
+    mi.className = "pp-modal";
+    mi.innerHTML = `<div class="pp-boite"><h3>${TR("Arrêter le gainage ?")}</h3>
+      <p>${TR("Les séries déjà tenues restent validées.")}</p>
+      <div class="pp-deux"><button class="btn" data-cf="rester">${TR("Continuer")}</button>
+        <button class="btn btn-accent" data-cf="fin">${TR("Arrêter")}</button></div></div>`;
+    document.body.appendChild(mi);
+    mi.onclick = ev=>{ if(ev.target === mi) mi.remove(); };
+    mi.querySelector('[data-cf="rester"]').onclick = ()=>mi.remove();
+    mi.querySelector('[data-cf="fin"]').onclick = ()=>{ mi.remove(); finirIso(false); };
+    return;
+  }
   const m = document.createElement("div");
   m.className = "pp-modal";
   m.innerHTML = `<div class="pp-boite"><h3>${TR("Terminer la séance ?")}</h3>
@@ -29891,6 +29928,7 @@ function etapesFaites(c, complete){
 function finirCourse(complete){
   const c = db.courseEnCours;
   if(!c) return;
+  if(c.iso){ finirIso(complete); return; }
   arreterTicCourse();
   arreterServiceRepos();
   const faites = etapesFaites(c, complete);
@@ -30015,6 +30053,7 @@ function marche(min, obj){ return {type:"marche", min, v:obj.vMarche}; }
 function course(min, obj, rythme, v){ return Object.assign({type:"course", min, v:v || obj.vCourse}, rythme ? {rythme} : {}); }
 function arrondi05(x){ return Math.round(x * 2) / 2; }
 function nomEtape(e){
+  if(e.iso) return e.nom;
   if(e.type !== "course") return TR("Marche");
   return TR(e.rythme === "rapide" ? "Course rapide" : (e.rythme === "soutenu" ? "Course soutenue" : "Course"));
 }
@@ -30392,6 +30431,74 @@ function demarrerCourse(quoi, opts){
   courseVu = -1;
   curTab = "seance";
   setTimeout(()=>{ render(); syncWakeLock(); poserSequenceCourse(); }, 60);
+}
+
+/* ---- le gainage dans le lecteur de course (Nico) ----
+   « Demarrer » sur un exercice tenu ouvre le meme ecran qu'une course : les cartes qui
+   defilent, l'anneau, « Depart dans 5 », le 3-2-1 avant chaque changement, la pause, et
+   le service natif qui sonne ecran eteint. Les etapes sont les tenues et les repos de
+   l'exercice ; chaque tenue menee au bout valide sa serie. */
+function demarrerIso(ei){
+  const en = db.active && db.active.entries[ei];
+  if(!en) return;
+  if(db.courseEnCours){ toast(TR("Termine d'abord ta séance de course.")); return; }
+  const et = etapesIso(ei);
+  if(!et.length){ toast(TR("Indique d'abord une durée.")); return; }
+  /* un repos en cours s'efface : l'ecran de gainage prend la suite */
+  if(rest.int){ clearInterval(rest.int); rest.int = null; }
+  rest.paused = false; rest.end = 0;
+  restbar.classList.remove("show", "ending", "paused", "tenue");
+  retirerAlarmeRepos();
+  let n = 0;
+  const etapes = et.map(x=>{
+    const warm = !!(en.sets[x.si] || {}).warm;
+    if(x.type === "tenue" && !warm) n++;
+    return {iso:true, type:x.type, si:x.si, min:x.sec / 60, warm: x.type === "tenue" && warm,
+      nom: x.type === "repos" ? TR("Repos") : (warm ? TR("Échauffement") : TR("Série {}").replace("{}", n))};
+  });
+  closeSheet();
+  ensureAudio();
+  db.courseEnCours = {pid:null, nom:nomEx(getEx(en.exId)), etapes, debut:Date.now() + PREPA_MS, pauseA:null, pauseCumul:0,
+    muscu:true, iso:{ei, exId:en.exId}};
+  save();
+  courseVu = -1;
+  curTab = "seance";
+  setTimeout(()=>{ render(); syncWakeLock(); poserSequenceCourse(); }, 60);
+}
+function resumeIso(c){
+  const tenues = c.etapes.filter(e=>e.type === "tenue" && !e.warm);
+  if(!tenues.length) tenues.push(c.etapes[0]);
+  const repos = c.etapes.find(e=>e.type === "repos");
+  const tot = c.etapes.reduce((a, e)=>a + e.min, 0);
+  return `<div class="cr-resume">
+    <div><span class="ic">${icoF("chrono-2", 24)}</span><div><small>${TR("Temps total")}</small><b class="${minTxt(tot).length > 7 ? "long" : ""}">${minTxt(tot)}</b></div></div>
+    <div><span class="ic">${icoM("flamme", 22)}</span><div><small>${TR("Séries")}</small><b>${tenues.length} × ${fmtDuree(Math.round(tenues[0].min * 60))}</b></div></div>
+    <div><span class="ic">${IC_PAUSE}</span><div><small>${TR("Repos")}</small><b>${repos ? fmtDuree(Math.round(repos.min * 60)) : "—"}</b></div></div>
+  </div>`;
+}
+/* les tenues menees au bout sont validees ; on revient a la seance, sur l'exercice */
+function finirIso(complete){
+  const c = db.courseEnCours;
+  if(!c || !c.iso) return;
+  arreterTicCourse();
+  arreterServiceRepos();
+  const st = courseEtat(c);
+  const jusque = complete || st.fini ? c.etapes.length : st.i;
+  const en = db.active && db.active.entries[c.iso.ei];
+  let n = 0;
+  if(en && en.exId === c.iso.exId){
+    for(let k = 0; k < jusque; k++){
+      const e = c.etapes[k];
+      if(e.type === "tenue" && en.sets[e.si] && !en.sets[e.si].done){ en.sets[e.si].done = true; n++; }
+    }
+  }
+  db.courseEnCours = null;
+  save(); render(); syncWakeLock();
+  if(complete && !pluginRepos()) bipRepos();
+  vibrer(complete ? [200, 100, 200, 100, 300] : 40);
+  toast(n ? TR("Gainage terminé ✓") : TR("Aucune série validée"));
+  const ei = c.iso.ei;
+  setTimeout(()=>{ const card = document.querySelectorAll("#ex-list .ex-card")[ei]; if(card) card.scrollIntoView({block:"center"}); }, 300);
 }
 
 /* ---- une seance de course dans le carrousel de l'accueil (Nico) ---- */
