@@ -113,18 +113,19 @@
   .grow{flex:1; min-width:0;}
 
   /* les boutons gris portent exactement le gris du fond ; --surface2 reste la surface  en creux  */
-  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--btn); border:1px solid var(--border);
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--surface); border:1px solid var(--border);
+    box-shadow:var(--ombre-carte);   /* les boutons gris deviennent blancs, poses par leur ombre (Nico) */
     transition:transform .3s cubic-bezier(.22,1,.36,1);}
   /* Vite a la descente, en s appuyant au retour : c est ce rapport-la qui fait
      « repondre » un bouton. La meme duree dans les deux sens le rend mou. */
   .btn:active{transform:scale(.98); transition-duration:.06s;}
   /* un SVG sans dimension s etire a toute la hauteur d un bouton en flex */
   .btn > svg{flex:0 0 auto; width:20px; height:20px;}
-  .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
-  .btn-ghost{background:none; border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
+  .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none;}
+  .btn-ghost{background:var(--surface); border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
   .btn-danger{color:var(--bad);}
   .btn-sm{padding:8px 12px; font-size:14px; border-radius:10px;}
-  .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--btn); border:1px solid var(--border); flex:none; font-size:15px;}
+  .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface); box-shadow:var(--ombre-carte); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2);
     border:1px solid var(--border); border-radius:99px; padding:3px 9px; white-space:nowrap;}
@@ -566,7 +567,7 @@
   /* ---- « Terminer la séance ? », d'apres la maquette du 21 septembre ---- */
   .tf-coche{width:64px; height:64px; border-radius:50%; margin:4px auto 10px; background:rgba(82,180,58,.16); color:#3d9a27; display:flex; align-items:center; justify-content:center;}
   .tf-coche svg{width:34px; height:34px;}
-  .tf-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 14px; padding:12px 8px; border-radius:16px; background:var(--surface2);}
+  .tf-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 14px; padding:12px 8px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
   .tf{display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0;}
   .tf .ic{width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
   .tf .ic svg{width:22px; height:22px;} .tf .ic.o{background:rgba(245,130,32,.14); color:var(--accent);} .tf .ic.v{background:rgba(110,80,230,.14); color:#6e50e6;}
@@ -2410,7 +2411,11 @@
   @keyframes anneauVert{0%{box-shadow:0 0 0 0 rgba(76,175,80,.55);} 100%{box-shadow:0 0 0 12px rgba(76,175,80,0);}}
   @media (prefers-reduced-motion:no-preference){
     .set-row .ck.pop{animation:anneauVert .55s ease-out;}
-    .set-row .ck.pop svg path{stroke-dasharray:22; stroke-dashoffset:22; animation:cocheTrace .32s .06s ease-out forwards;}
+    /* « backwards » et pas « forwards » : la coche n'est cachee QUE pendant l'animation.
+       La ligne disparait le temps de la question (reps en reserve) ; sur telephone,
+       l'animation ne reprenait pas toujours a son retour, et une coche cachee par defaut
+       restait invisible — la case verte, vide (Nico). Au pire, elle apparait sans trace. */
+    .set-row .ck.pop svg path{stroke-dasharray:22; animation:cocheTrace .32s .06s ease-out backwards;}
   }
   @media (prefers-reduced-motion:reduce){ .set-row .ck.pop svg{animation:none;} }
   /* La série validée s'efface le temps de sa question. Sans cela le bloc noir montrait
@@ -4298,7 +4303,7 @@
   .btn, .btn-accent, .btn-ghost, .icon-btn, .chip, .cd-grille button, .fin-feel button, .al-cats .cat, .pn-chips .ch,
   .al-row, .al-c, .aj-l, .ot-carte, .pk, .abo-f, .rg-seg button, .sc-main, .vs-t, .mt-c, .af-o, .af-z, .onb-cartes .ct,
   .ps-rapide button, .fav-box, .pv-courte, .vd-card, .pk, .pk.mis, .vs-t, .vs-t.on{border:0;}
-  .btn-ghost{border:1px solid var(--border);}
+  .btn-ghost{border:0;}
   /* ce qui etait « selectionne » par un contour orange le reste par sa teinte de fond */
   .pk.mis, .vs-t.on, .pv-courte.on, .fav-box.on, .mt-c.on, .af-o.on, .onb-cartes .ct.on{box-shadow:inset 0 0 0 2px rgba(245,130,32,.35);}
 </style>
@@ -18118,7 +18123,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 14h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 14h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -26911,7 +26916,9 @@ function renderActive(app){
         const ck = row.querySelector(".ck");
         ck.innerHTML = st.done ? IC_COCHE : "○";
         ck.classList.remove("pop");
-        if(st.done){ void ck.offsetWidth; ck.classList.add("pop"); vibrer(12); }
+        if(st.done){ void ck.offsetWidth; ck.classList.add("pop"); vibrer(12);
+          /* retiree apres coup : une ligne qui reapparait ne rejoue pas l'animation */
+          setTimeout(()=>ck.classList.remove("pop"), 700); }
         if(!st.done) majSerieActive();      /* décochage : la série redevient à faire */
         const oldAsk = card.querySelector(".rir-ask");
         if(oldAsk){ oldAsk.remove(); rendreLignes(card); retirerBlocNoir(true); majSerieActive(); }
@@ -28119,7 +28126,7 @@ function openTplEditor(id){
             <button class="icon-btn" id="tp-cardio-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la sortie")}</button>
           </div>` : `<button class="btn-dash" id="tp-cardio-add">${icoM("course", 16)} ${TR("Ajouter une sortie cardio")}</button>`}</div>
         <div class="row" style="gap:9px;">
-          <button class="btn grow" id="tp-cancel" style="background:var(--field); box-shadow:var(--ombre-carte);">${TR("Annuler")}</button>
+          <button class="btn grow" id="tp-cancel" >${TR("Annuler")}</button>
           <button class="btn btn-accent grow" id="tp-save">${TR("Enregistrer")}</button>
         </div>
         ${id? `<button class="btn" id="tp-del" style="background:var(--bad); color:#fff; border-color:var(--bad);">${TR("Supprimer la séance")}</button>`:""}
@@ -30867,9 +30874,14 @@ function dessineCalendrier(){
       ${couronne ? `<i class="cal-cour">${IC_COURONNE_CAL}</i>` : ""}<span class="d">${j}</span><span class="p">${p > 0 ? p + " g" : "·"}</span></button>`);
   }
   /* on ne remonte pas avant la première journée enregistrée, ni au-delà du mois en cours */
-  const jours = Object.keys(db.habitSel || {}).sort();
-  const debut = jours.length ? jours[0] : auj;
-  const avantPossible = new Date(an, mois, 1) > new Date(Number(debut.slice(0,4)), Number(debut.slice(5,7)) - 1, 1);
+  /* On remonte jusqu'a la premiere donnee connue (repas, correction, seance) — et
+     toujours au moins douze mois : ne s'appuyer que sur les repas coches bloquait le
+     bouton des qu'on avait commence ce mois-ci, et il semblait casse (Nico). */
+  const jours = Object.keys(db.habitSel || {}).concat(Object.keys(db.dayFix || {}),
+    (db.history || []).map(h=>dayKey(new Date(h.date)))).filter(k=>/^\d{4}-\d{2}/.test(k)).sort();
+  const n0 = new Date(), limite = new Date(n0.getFullYear(), n0.getMonth() - 12, 1);
+  const premiereDonnee = jours.length ? new Date(Number(jours[0].slice(0,4)), Number(jours[0].slice(5,7)) - 1, 1) : limite;
+  const avantPossible = new Date(an, mois, 1) > (premiereDonnee < limite ? premiereDonnee : limite);
   const apresPossible = new Date(an, mois, 1) < new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   openSheet(`<h3 style="text-align:center;">${TR("Mes protéines")}</h3>
     <div class="cal-top">
