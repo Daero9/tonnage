@@ -4711,6 +4711,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Une séance de course":"A running workout",
+  "Ton objectif ou une de tes séances":"Your goal or one of your workouts",
   "Ton objectif|de course":"Your running|goal",
   "Ajouter une|séance de course":"Add a|running workout",
   "Ajouter une|sortie cardio":"Add a|cardio session",
@@ -8135,6 +8137,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Une séance de course":"Una sesión de carrera",
+  "Ton objectif ou une de tes séances":"Tu objetivo o una de tus sesiones",
   "Ton objectif|de course":"Tu objetivo|de carrera",
   "Ajouter une|séance de course":"Añadir un|entreno de carrera",
   "Ajouter une|sortie cardio":"Añadir una|salida de cardio",
@@ -11775,6 +11779,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Une séance de course":"Um treino de corrida",
+  "Ton objectif ou une de tes séances":"Seu objetivo ou um dos seus treinos",
   "Ton objectif|de course":"Seu objetivo|de corrida",
   "Ajouter une|séance de course":"Adicionar um|treino de corrida",
   "Ajouter une|sortie cardio":"Adicionar uma|sessão de cardio",
@@ -18961,7 +18967,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 22h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 22h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -28419,6 +28425,24 @@ function renderActive(app){
   });
   /* une sortie cardio s'ajoute aussi en cours de seance : on choisit l'activite, et
      l'objectif du jour se calcule sur la derniere sortie du meme type */
+  /* une seance de course ajoutee en cours de route : elle se place a la fin, et la
+     carte « Lancer la course » apparait sous les exercices */
+  const ajouterCourse = ()=>{
+    const items = (db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
+      .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
+        return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; }));
+    if(!items.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
+    feuilleChoix({
+      titre:"Ajouter une|séance de course",
+      sous:TR("Elle s'ajoute à la fin de ta séance."),
+      items, sel:items[0].v, bouton:TR("Ajouter à la séance"),
+      ok:v=>{
+        a.course = {ref:v, place:"fin", fait:false};
+        save(); closeSheet(); render();
+        setTimeout(()=>{ const cc = document.querySelector(".ex-card.co-muscu"); if(cc) cc.scrollIntoView({block:"center", behavior:"smooth"}); }, 300);
+      }
+    });
+  };
   const ajouterCardio = ()=>feuilleChoix({
     titre:"Ajouter une|sortie cardio", grille:true,
     sous:TR("Elle s'ajoute à la fin de ta séance."),
@@ -28438,15 +28462,19 @@ function renderActive(app){
   const ft = document.getElementById("fin-terminer");
   if(ft) ft.onclick = ()=>document.getElementById("finish-w").click();
   document.getElementById("add-ex").onclick=()=>{
-    if(a.cardio){ ajouterExo(); return; }          /* une seule sortie par seance */
+    if(a.cardio && a.course){ ajouterExo(); return; }   /* une seule sortie et une seule course par seance */
     const ligne = (id2, ic, titre, sous) => `<button class="aj-l" id="${id2}">
       <span class="ic">${ic}</span><span class="tx"><span class="t">${titre}</span><span class="s">${sous}</span></span>
       <span class="fl">${IC_CHEVRON}</span></button>`;
     openSheet(`<div class="pr-tete"><h3>${TR("Ajouter")}</h3></div>
       ${ligne("ae-exo", IC_PLUS, TR("Un exercice"), TR("Depuis la bibliothèque"))}
-      ${ligne("ae-cardio", icoM("course", 22), TR("Une sortie cardio"), TR("En fin de séance, avec un objectif du jour"))}`);
+      ${!a.course ? ligne("ae-course", icoM("course", 22), TR("Une séance de course"), TR("Ton objectif ou une de tes séances")) : ""}
+      ${!a.cardio ? ligne("ae-cardio", IC_PLUS, TR("Une sortie cardio"), TR("En fin de séance, avec un objectif du jour")) : ""}`);
     document.getElementById("ae-exo").onclick = ()=>{ closeSheet(); setTimeout(ajouterExo, 260); };
-    document.getElementById("ae-cardio").onclick = ajouterCardio;   /* sur place : fermer puis rouvrir se marchait dessus */
+    const aeCa = document.getElementById("ae-cardio");
+    if(aeCa) aeCa.onclick = ajouterCardio;   /* sur place : fermer puis rouvrir se marchait dessus */
+    const aeCo = document.getElementById("ae-course");
+    if(aeCo) aeCo.onclick = ajouterCourse;
   };
   document.getElementById("tb-retour").onclick = confirmerQuitterSeance;
   document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),TR("Oui, annuler"),true,()=>{ db.active=null; arreterChronos(); save(); render(); });
@@ -30271,7 +30299,7 @@ function openTplEditor(id){
               <label><span class="label">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" value="${tpl.cardio.pente || ""}" placeholder="0" data-cf="pente"></label>
             </div>
             <button class="tp-retirer" id="tp-cardio-rm">✕ ${TR("Retirer la sortie")}</button>
-          </div>` : `<button class="btn-dash" id="tp-cardio-add">＋ ${TR("Ajouter une sortie cardio")}</button>`}</div>
+          </div>` : ""}</div>
         <div class="row" style="gap:9px;">
           <button class="btn grow" id="tp-cancel">${TR("Annuler")}</button>
           <button class="btn btn-accent grow" id="tp-save">${TR("Enregistrer")}</button>
