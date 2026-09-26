@@ -7872,6 +7872,12 @@ async function lancer(){
     vrai("…et la page ne descend pas au départ : le haut reste en place", F.scrollY === 0);
     vrai("La barre d'onglets s'efface", D2.body.classList.contains("en-course"));
     vrai("Les commandes sont hors de la page animée", !!D2.querySelector("body > #cr-hors .cr-pause"));
+    /* le haut aussi, fixe en haut de l'ecran : dans la page il descendait sous sa marge
+       (encoche comptee deux fois sur iPhone — capture de Nico) */
+    vrai("Le haut (retour, titre, temps / distance / calories) est fixe, hors de la page",
+      !!D2.querySelector("body > #cr-hors .cr-haut") && !D2.querySelector("#app .cr-haut")
+      && F.getComputedStyle(D2.querySelector(".cr-haut")).position === "fixed");
+    vrai("…et la page perd sa marge haute pendant la course", F.getComputedStyle(D2.getElementById("app")).paddingTop === "0px");
     DB.courseEnCours.debut = Date.now() - (16 * 60 - 2) * 1000;
     await attendre(()=>!!D2.querySelector(".cr-c.encours.annonce"), 1500);
     /* l'annonce s'affiche DANS la carte en cours, a la place de son texte (Nico) */
