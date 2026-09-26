@@ -340,7 +340,7 @@
      recouvre plus. */
   .hero-photo .hero-bg{aspect-ratio:1210/920;}
   .hero-photo .hero-h{text-align:left; left:7%; right:7%; bottom:31%;}
-  .hero-photo .hero-h .sur{display:inline-block; color:var(--accent); font-size:11.5px; font-weight:800;
+  .hero-photo .hero-h .sur, .hero-accueil .hero-h .sur{display:inline-block; color:var(--accent); font-size:11.5px; font-weight:800;
     letter-spacing:.14em; text-transform:uppercase; padding-bottom:5px; margin-bottom:6px;
     border-bottom:2px solid var(--accent);}
   .hero-photo .hero-h .big{font-size:34px; font-weight:800; letter-spacing:-.01em; text-transform:none; line-height:1.05;}
@@ -1786,7 +1786,7 @@
     text-align:left; width:max-content; max-width:calc(100% - 40px); margin-inline:auto;}
   /* le salut et la question tiennent chacun sur leur ligne : une seance au nom long
      passe a la ligne sans aller cogner la carte de la semaine */
-  .hero-accueil .sub{margin-top:5px; line-height:1.35;}
+  .hero-accueil .sub{margin-top:6px; line-height:1.35; font-size:16px;}
   /* Le poussin, a droite du salut : il est pose sur le bord de la carte de la semaine.
      Le texte garde la gauche et lui laisse la place ; les accessoires sont des calques
      de la meme taille que la pose, empiles au pixel. */
@@ -1794,7 +1794,10 @@
      les icones du haut, sans se rapprocher de la carte */
   .hero-accueil.avec-poussin .hero-bg{aspect-ratio:1210/920;}
   .hero-accueil.avec-poussin .hero-h{left:20px; right:auto; margin-inline:0; max-width:calc(100% - 148px); bottom:33%;}
-  .hero-accueil.avec-poussin .hero-h h1{font-size:30px;}
+  /* le salut, plus grand (Nico : « ça fait un peu vide ») ; un prenom long le fait
+     encore reduire par ajusterSalut() */
+  .hero-accueil.avec-poussin .hero-h h1{font-size:36px;}
+  .hero-accueil .hero-h h1{font-size:36px;}
   /* le salut tient sur UNE ligne : sur deux, il montait sous le bouton du profil et le
      rendait intouchable. Si le prenom est long, le script reduit le corps (ajusterSalut). */
   .hero-accueil .hero-h h1{white-space:nowrap;}
@@ -3971,7 +3974,7 @@
   /* ---- le haut, d'apres la maquette de Nico : fond clair, titre en noir et orange,
      trois lignes courtes a gauche, le poussin et son telephone a droite. L'image est
      plus haute que la tete : la tete la coupe en bas (overflow). ---- */
-  .abo-tete{position:relative; margin:-18px -16px 0; padding:18px 16px 14px; min-height:350px; overflow:hidden;
+  .abo-tete{position:relative; margin:-18px -16px 0; padding:18px 16px 14px; min-height:326px; overflow:visible;
     background:linear-gradient(180deg, #FFF3E8 0%, #FFF3E8 70%, rgba(255,243,232,0) 100%);}
   :root[data-theme="dark"] .abo-tete{background:linear-gradient(180deg, rgba(245,130,32,.10) 0%, rgba(245,130,32,0) 100%);}
   .abo-titre{display:flex; align-items:flex-start; gap:12px; margin-bottom:6px; position:relative; z-index:1; padding-right:34px;}
@@ -3997,16 +4000,26 @@
   /* « 10 photos par jour » tient sur une ligne : le 10 ne reste plus seul en bout de ligne */
   .abo-promesses span.insecable{display:inline; white-space:nowrap; margin:0;}
   /* les deux forfaits sont des BOUTONS : la carte entiere se touche */
-  .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  /* les forfaits remontent sur le bas du telephone, qui passe dessous (maquette) */
+  .abo-forfaits{display:flex; flex-direction:column; gap:10px; margin-top:14px; position:relative; z-index:2;}
   .abo-f{position:relative; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
     border-radius:18px; padding:13px 14px 13px 18px; border:1.5px solid transparent;}
   .abo-f.mensuel{background:var(--accent); color:#fff; margin-top:10px;}   /* pas d'overflow:hidden : la pastille « populaire » dépasse en haut */
-  .abo-f.mensuel .sous{opacity:.9; white-space:nowrap; font-size:11px; margin-top:4px;}
-  .abo-f.mensuel .gauche{flex:1 1 auto;}
-  .abo-f.mensuel .sep{margin-left:14px;}   /* le trait et la couronne, decales vers la droite : le prix respire */
+  /* la sous-ligne reste dans la moitie gauche : trop longue (espagnol), elle passe a la ligne */
+  .abo-f.mensuel .sous{opacity:.9; font-size:11px; margin-top:4px; line-height:1.25;}
+  /* le trait au milieu exact du bouton (Nico) : le prix vit dans la moitie gauche,
+     la couronne au centre de la moitie droite */
+  .abo-f.mensuel .gauche{flex:0 0 calc(50% - 24px);}
+  .abo-f.mensuel .sep{position:absolute; left:50%; top:14px; bottom:14px; margin:0;}
+  .abo-f.mensuel .filigrane{flex:1 1 auto;}
   .abo-f .filigrane{flex:0 0 56px; display:flex; align-items:center; justify-content:center; margin-right:2px;}
   .abo-f .filigrane img{width:48px; height:auto; opacity:.22;}
-  .abo-f.annuel{background:var(--surface); color:var(--ink); border-color:var(--border);}
+  /* le forfait annuel : blanc sur la carte blanche, il disparaissait (la regle « pas de
+     contour sur les boutons » retire sa bordure). Un filet gris fin, en ombre interieure,
+     le dessine a nouveau. */
+  .abo-f.annuel{background:var(--surface); color:var(--ink); border-color:var(--border);
+    box-shadow:inset 0 0 0 1px #DCDCE1, 0 2px 10px rgba(20,25,40,.06);}
+  :root[data-theme="dark"] .abo-f.annuel{box-shadow:inset 0 0 0 1px var(--border);}
   .abo-f .prix{font-size:22px; font-weight:900; letter-spacing:-.02em; line-height:1; white-space:nowrap;}
   .abo-f .prix small{font-size:15px; font-weight:800; letter-spacing:0;}
   .abo-f .sous{font-size:12.5px; font-weight:600; margin-top:5px; opacity:.85;}
@@ -17978,7 +17991,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 02h50";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 03h09";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -24119,7 +24132,8 @@ function renderSeance(app){
     : TR("Prêt pour ta séance ?");
 
   app.innerHTML = `
-    ${hero(`<h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}
+    ${hero(`<div class="sur">${TR("Séance")}</div>
+      <h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}
         <span class="wv">👋</span></h1>
       <div class="sub">${sub}</div>`, {classe:"hero-accueil" + (POUSSIN[poussinEtat().pose] ? " avec-poussin" : ""),
       fond:"img/hero-seance-2.webp"})}
