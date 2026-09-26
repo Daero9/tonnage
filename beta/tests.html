@@ -3542,6 +3542,16 @@ async function lancer(){
     await attendre(()=>!!D2.querySelector(".cam"), 2000);
     vrai("Le raccourci « Scanner mon repas » ouvre le mode photo", !!D2.querySelector(".cam.plat"));
     fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* Nico : le chiffre de la pastille restait l'ancien apres une photo jetee — il ne se
+       reecrivait qu'au dessin de la page */
+    F.eval("curTab = 'eat'; render()");
+    const chiffre = () => D2.querySelector("#hero-scans b").textContent;
+    const avantPhoto = Number(chiffre());
+    F.compterPhoto();                  /* une photo analysee, sans redessiner la page */
+    eq("La pastille suit le compte dès qu'une photo est prise", Number(chiffre()), avantPhoto - 1);
+    F.crediterScans(20);
+    eq("…et dès qu'un pack est crédité", Number(chiffre()), avantPhoto - 1 + 20);
+    DB.scansReserve = 0; DB.photos = null;
     /* sans photo restante : la pastille propose d'en racheter, pas une camera morte */
     DB.photos = {jour:F.dayKey(), n:99};
     F.eval("render()");
