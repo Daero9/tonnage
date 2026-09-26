@@ -113,19 +113,18 @@
   .grow{flex:1; min-width:0;}
 
   /* les boutons gris portent exactement le gris du fond ; --surface2 reste la surface  en creux  */
-  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--surface); border:1px solid var(--border);
-    box-shadow:var(--ombre-carte);   /* les boutons gris deviennent blancs, poses par leur ombre (Nico) */
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--btn); border:1px solid var(--border);
     transition:transform .3s cubic-bezier(.22,1,.36,1);}
   /* Vite a la descente, en s appuyant au retour : c est ce rapport-la qui fait
      « repondre » un bouton. La meme duree dans les deux sens le rend mou. */
   .btn:active{transform:scale(.98); transition-duration:.06s;}
   /* un SVG sans dimension s etire a toute la hauteur d un bouton en flex */
   .btn > svg{flex:0 0 auto; width:20px; height:20px;}
-  .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none;}
-  .btn-ghost{background:var(--surface); border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
+  .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .btn-ghost{background:none; border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
   .btn-danger{color:var(--bad);}
   .btn-sm{padding:8px 12px; font-size:14px; border-radius:10px;}
-  .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface); box-shadow:var(--ombre-carte); border:1px solid var(--border); flex:none; font-size:15px;}
+  .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--btn); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2);
     border:1px solid var(--border); border-radius:99px; padding:3px 9px; white-space:nowrap;}
@@ -572,6 +571,8 @@
   .tf .ic{width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
   .tf .ic svg{width:22px; height:22px;} .tf .ic.o{background:rgba(245,130,32,.14); color:var(--accent);} .tf .ic.v{background:rgba(110,80,230,.14); color:#6e50e6;}
   .tf b{font-size:15px; font-weight:800; white-space:nowrap;} .tf small{font-size:12px; color:var(--ink-soft); margin-top:-3px;}
+  /* blanc, pose par son ombre (Nico) — ce bouton-la seulement pour l'instant */
+  .tf-annuler{background:var(--surface); box-shadow:var(--ombre-carte);}
   .tf-q{text-align:center; color:var(--ink-soft); font-size:14px; margin:0 0 14px;}
   .fin-titre{position:relative; display:inline-block;}
   .fin-souligne{position:absolute; left:50%; bottom:-7px; width:70%; transform:translateX(-50%); height:8px;}
@@ -4303,7 +4304,7 @@
   .btn, .btn-accent, .btn-ghost, .icon-btn, .chip, .cd-grille button, .fin-feel button, .al-cats .cat, .pn-chips .ch,
   .al-row, .al-c, .aj-l, .ot-carte, .pk, .abo-f, .rg-seg button, .sc-main, .vs-t, .mt-c, .af-o, .af-z, .onb-cartes .ct,
   .ps-rapide button, .fav-box, .pv-courte, .vd-card, .pk, .pk.mis, .vs-t, .vs-t.on{border:0;}
-  .btn-ghost{border:0;}
+  .btn-ghost{border:1px solid var(--border);}
   /* ce qui etait « selectionne » par un contour orange le reste par sa teinte de fond */
   .pk.mis, .vs-t.on, .pv-courte.on, .fav-box.on, .mt-c.on, .af-o.on, .onb-cartes .ct.on{box-shadow:inset 0 0 0 2px rgba(245,130,32,.35);}
 </style>
@@ -18123,7 +18124,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 14h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 14h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27428,7 +27429,7 @@ function renderActive(app){
         ${tuile(icoM("flamme", 22), "o", "≈ " + kcal + " kcal", TR("brûlées"))}
       </div>
       <p class="tf-q">${TR("On enregistre ?")}</p>
-      <div class="row"><button class="btn grow" id="cf-no">${TR("Annuler")}</button>
+      <div class="row"><button class="btn grow tf-annuler" id="cf-no">${TR("Annuler")}</button>
       <button class="btn grow btn-accent" id="cf-yes">${TR("Enregistrer")}</button></div>`);
     document.getElementById("cf-no").onclick = closeSheet;
     document.getElementById("cf-yes").onclick = ()=>{ closeSheet(); (()=>{
@@ -28126,7 +28127,7 @@ function openTplEditor(id){
             <button class="icon-btn" id="tp-cardio-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la sortie")}</button>
           </div>` : `<button class="btn-dash" id="tp-cardio-add">${icoM("course", 16)} ${TR("Ajouter une sortie cardio")}</button>`}</div>
         <div class="row" style="gap:9px;">
-          <button class="btn grow" id="tp-cancel" >${TR("Annuler")}</button>
+          <button class="btn grow" id="tp-cancel" style="background:var(--field); box-shadow:var(--ombre-carte);">${TR("Annuler")}</button>
           <button class="btn btn-accent grow" id="tp-save">${TR("Enregistrer")}</button>
         </div>
         ${id? `<button class="btn" id="tp-del" style="background:var(--bad); color:#fff; border-color:var(--bad);">${TR("Supprimer la séance")}</button>`:""}
