@@ -8068,7 +8068,10 @@ async function lancer(){
     F.openCourseApercu("pd");
     await attendre(()=>!!D2.getElementById("ca-oui"), 1500);
     D2.getElementById("ca-oui").click();
-    vrai("Oui : la plus longue étape de course gagne 1 à 2 min, même vitesse", DB.parcours[0].etapes[1].min === 17 && DB.parcours[0].etapes[1].v === 10 && !DB.parcours[0].aProposer);
+    /* 3,5 km : +200 m, a 10 km/h → 1 min 12 s de plus (15 → 16 min 12 s) */
+    vrai("Oui : +200 m pile, en allongeant la plus longue étape de course à la même vitesse",
+      Math.abs(DB.parcours[0].etapes[1].min - 16.2) < 0.01 && DB.parcours[0].etapes[1].v === 10 && !DB.parcours[0].aProposer, DB.parcours[0].etapes[1].min);
+    vrai("…et la durée s'écrit à la seconde : « 16 min 12 s »", F.minTxt(DB.parcours[0].etapes[1].min) === "16 min 12 s" || /16 min 12 s/.test(F.minTxt(16.2)));
     F.hideSheet();
     F.eval("flammeRetenue = false; finOuverte = false");
     DB.cardio = [];
@@ -8088,11 +8091,17 @@ async function lancer(){
       {id:"a", date:j(9), km:3, min:30, machine:"course", parcours:"Tapis", type:"course"},
       {id:"b", date:j(2), km:3.5, min:30, machine:"course", parcours:"Tapis", type:"course", estime:true}];
     const sec = D2.createElement("div"); D2.body.appendChild(sec);
+    /* repliee par defaut : seuls les chiffres du mois se voient */
     vrai("Avec des sorties, la section Course s'affiche", F.renderCourseSection(sec) === true);
+    vrai("…repliée : les chiffres du mois, et une languette pour le reste", !!sec.querySelector(".co-tuiles") && !sec.querySelector(".co-rec") && !!sec.querySelector("#co-pli"));
+    sec.innerHTML = "";
+    F.eval("prgPlis.course = true");
+    F.renderCourseSection(sec);
     vrai("…plus longue sortie : 3,5 km, marquée « est. »", /Plus longue sortie/.test(sec.textContent) && !!sec.querySelector(".co-rec .co-est"));
     vrai("…la meilleure vitesse ne retient que les distances réelles (6 km/h)", /6,0 km\/h|3,7 mph/.test(sec.querySelector(".co-rec").textContent));
     vrai("…chaque sortie comparée à la précédente de la même séance (+0,5)", /\+0,5|\+0,3/.test(sec.querySelector(".co-der").textContent));
     sec.remove();
+    F.eval("prgPlis.course = false");
     DB.cardio = [];
     vrai("Sans sortie de course, pas de section", F.renderCourseSection(D2.createElement("div")) === false);
     /* la bulle d'une courbe de distance ne passe plus par le formateur des poids */
