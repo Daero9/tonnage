@@ -578,7 +578,12 @@
     padding:9px 16px; border-radius:99px; background:rgba(245,130,32,.10); font-size:14px; color:var(--ink-soft);}
   .fin-serie .ic{display:flex; color:var(--accent);} .fin-serie .ic svg{width:16px; height:16px;}
   .fin-serie b{color:var(--accent); font-weight:800;}
-  .fin-feel{background:var(--surface2); border-radius:16px; padding:13px; margin-bottom:12px;}
+  /* blanc, pose sur la fiche par son ombre (Nico) ; les trois humeurs, un liseré gris fin */
+  .fin-feel{background:var(--surface); box-shadow:var(--ombre-carte); border-radius:18px; padding:14px; margin-bottom:14px;}
+  .fin-partager{background:var(--surface); color:var(--ink); box-shadow:var(--ombre-carte);}
+  .fin-poussin-zone{display:flex; justify-content:center; margin:-4px 0 2px;}
+  .fin-poussin{position:relative; width:118px;}
+  .fin-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;}
   .fin-feel .t{font-size:15px; font-weight:800; text-align:center; margin-bottom:10px;}
   .fin-feel .ch{display:grid; grid-template-columns:repeat(3,1fr); gap:7px;}
   .fin-feel button{display:flex; align-items:center; justify-content:center; gap:6px; background:var(--surface); border:0; border-radius:12px;
@@ -586,6 +591,7 @@
   .fin-feel .fe{flex:none; width:24px; height:24px; display:block;}
   .fin-ok{display:flex; align-items:center;} .fin-ok .chev{width:16px; height:16px; margin:0;}
   .fin-feel button:active{background:var(--btn);}
+  .fin-feel .ch button:not(.on){box-shadow:inset 0 0 0 1px var(--bord-doux);}
   .fin-feel button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
 
   /* « Pourquoi cette séance » : ce que l'app a lu dans l'historique. Un muscle par
@@ -1182,6 +1188,9 @@
   /* en sombre, la carte sombre se perdait dans le fond : un liseré vert fin, le vert du
      dessin et de l'anneau « Prêt » (Nico) */
   :root[data-theme="dark"] .recup-card{box-shadow:inset 0 0 0 1px rgba(76,175,80,.5);}
+  /* le liseré prend la couleur de l'etat, comme l'anneau : vert, orange ou rouge */
+  :root[data-theme="dark"] .recup-card[data-etat="recup"]{box-shadow:inset 0 0 0 1px rgba(232,163,61,.55);}
+  :root[data-theme="dark"] .recup-card[data-etat="fatigue"]{box-shadow:inset 0 0 0 1px rgba(224,85,74,.55);}
   .recup-card .rc-ring{flex:0 0 auto; display:block; line-height:0; position:relative; z-index:2;}
   .recup-card .rc-txt{position:relative; z-index:2; min-width:0; padding-right:44px;}
   .recup-card .rc-t{display:block; font-size:11.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.55);}
@@ -1605,34 +1614,45 @@
   .jour-passe span{flex:1; min-width:0; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
   .jour-passe button{flex:0 0 auto; font-size:12px; font-weight:800; color:var(--accent);
     background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:6px 10px;}
-  .cal-top{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
-  .cal-top .m{flex:1; text-align:center; font-size:15px; font-weight:800; text-transform:capitalize;}
-  .cal-top button{width:34px; height:34px; border-radius:10px; background:var(--surface2); border:1px solid var(--border);
-    display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800;}
+  /* ---- le calendrier des proteines, d'apres la maquette de Nico : le mois dans une
+     pilule grise entre deux boutons carres, des cases pleines et bombees (vert au quota,
+     orange en dessous, gris sans rien), une couronne sur les trois meilleurs jours, le
+     jour meme cerne de brun ; la legende en pastilles, l'objectif dans une carte ---- */
+  .cal-top{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .cal-top .m{flex:1; text-align:center; font-size:17px; font-weight:900; text-transform:capitalize;
+    background:var(--surface2); border-radius:16px; padding:10px 8px;}
+  .cal-top button{width:44px; height:44px; border-radius:14px; background:var(--surface2); border:0; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; line-height:1;}
   .cal-top button[disabled]{opacity:.3;}
-  .cal-jours{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:5px;}
-  .cal-jours span{text-align:center; font-size:10px; font-weight:800; color:var(--ink-mute);}
-  .cal-grille{display:grid; grid-template-columns:repeat(7,1fr); gap:3px;}
-  /* chaque case porte le numéro du jour et les protéines : le chiffre prime, la couleur résume */
-  .cal-c{aspect-ratio:1; border-radius:9px; background:var(--surface2); border:1px solid var(--border); display:flex;
-    flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:2px;
-    font-variant-numeric:tabular-nums;}
-  /* le numero du jour domine, les proteines commentent : deux tailles et deux graisses,
-     sinon les deux chiffres se lisent comme un seul nombre a deux etages */
-  .cal-c .d{font-size:14px; font-weight:800; line-height:1;}
-  .cal-c .p{font-size:9px; font-weight:600; line-height:1; color:var(--ink-mute);}
+  .cal-jours{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:8px;}
+  .cal-jours span{text-align:center; font-size:12px; font-weight:700; color:var(--ink-soft);}
+  .cal-grille{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .cal-c{position:relative; aspect-ratio:1; border-radius:12px; background:var(--surface2); border:0; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:2px;
+    font-variant-numeric:tabular-nums; color:var(--ink-mute);}
+  .cal-c .d{font-size:16px; font-weight:900; line-height:1;}
+  .cal-c .p{font-size:10px; font-weight:700; line-height:1;}
   .cal-c.vide{background:none;}
-  .cal-c.futur{opacity:.28;}
   .cal-c.rien .p{color:transparent;}
-  .cal-c.atteint{background:var(--good); color:#fff;}
-  .cal-c.atteint .p{color:rgba(255,255,255,.85);}
-  .cal-c.partiel{background:var(--accent); color:#fff;}
-  .cal-c.partiel .p{color:rgba(255,255,255,.85);}
-  .cal-c.auj{box-shadow:0 0 0 2px var(--ink) inset;}
-  .cal-leg{display:flex; gap:12px; justify-content:center; margin-top:12px; font-size:11px; color:var(--ink-mute);}
-  /* la pastille grise se confond avec la fiche : un liseré la rend visible */
-  .cal-leg i{display:inline-block; width:9px; height:9px; border-radius:3px; vertical-align:-1px;
-    margin-right:4px; border:1px solid var(--border);}
+  .cal-c.atteint, .cal-c.partiel{color:#fff; box-shadow:inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.08);}
+  .cal-c.atteint{background:linear-gradient(180deg, #7ACB45 0%, #5CB22E 100%);}
+  .cal-c.atteint .p, .cal-c.partiel .p{color:rgba(255,255,255,.95);}
+  .cal-c.auj{outline:2px solid #5A2A0C; outline-offset:-1px;}
+  :root[data-theme="dark"] .cal-c.auj{outline-color:#fff;}
+  .cal-cour{position:absolute; top:-5px; right:-3px; width:16px; height:14px; display:flex;}
+  .cal-cour svg{width:100%; height:100%;}
+  .cal-leg{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:16px; font-size:12px; color:var(--ink-soft);}
+  .cal-leg span{background:var(--surface2); border-radius:12px; padding:8px 12px; display:flex; align-items:center; gap:7px; white-space:nowrap;}
+  .cal-leg i{display:inline-block; width:14px; height:14px; border-radius:50%;}
+  .cal-leg i.v{background:#5CB22E;} .cal-leg i.o{background:var(--accent-grad);} .cal-leg i.g{background:#C9C9CE;}
+  .cal-obj{display:flex; align-items:center; gap:14px; margin-top:14px; padding:12px 14px; border-radius:18px;
+    background:var(--surface); box-shadow:var(--ombre-carte);}
+  .cal-obj .ic{width:56px; height:56px; border-radius:16px; flex:none; background:rgba(245,130,32,.14); color:var(--accent);
+    display:flex; align-items:center; justify-content:center;}
+  .cal-obj .ic svg{width:30px; height:30px;}
+  .cal-obj small{display:block; font-size:12.5px; color:var(--ink-soft);}
+  .cal-obj b{display:block; font-size:24px; font-weight:900; line-height:1.1; white-space:nowrap;}
+  .cal-obj p{margin:0 0 0 auto; max-width:46%; font-size:12.5px; color:var(--ink-soft); line-height:1.4;}
 
   /* La barre ne colle plus au bord : c est une carte posee sur la page, arrondie et
      portee par son ombre. Elle est PLEINE et non plus translucide — le flou laissait
@@ -1816,7 +1836,7 @@
   .halo{position:absolute; left:50%; top:55%; width:var(--halo-w, 120%); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%);
     background:radial-gradient(circle, var(--halo-c1, rgba(255,170,60,.55)) 0%, var(--halo-c2, rgba(255,140,30,.22)) 45%, rgba(255,140,30,0) 70%);
     animation:haloPulse var(--halo-t, 3.2s) ease-in-out infinite; pointer-events:none; z-index:-1;}
-  .hero-poussin, .vs-poussin{isolation:isolate;}
+  .hero-poussin, .vs-poussin, .fin-poussin{isolation:isolate;}
   /* les pieds restent sur la carte, meme quand un accessoire descend plus bas qu'eux ;
      `translate` et non `transform`, que la pose musclee utilise deja pour grossir */
   .hero-poussin, .vs-poussin{translate:0 calc(var(--pied, 0) * 100%);}
@@ -4198,6 +4218,32 @@
   .ex-ico.sm svg{width:30px; height:30px;}
 
   .tpl-item{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:11px 12px; margin-bottom:8px;}
+  /* ---- « Modifier la seance », d'apres la maquette de Nico ---- */
+  .tp-nom{display:flex; align-items:center; gap:12px; background:var(--surface); border-radius:99px; padding:4px 18px;
+    box-shadow:var(--ombre-feuille), inset 0 0 0 1px var(--bord-doux);}
+  .tp-nom .ic{display:flex; color:var(--accent);} .tp-nom .ic svg{width:26px; height:26px;}
+  .tp-nom input{flex:1; min-width:0; border:0; background:none; box-shadow:none; padding:12px 0; font-size:16px;}
+  .tpl-item.tp-ex{background:var(--surface); border:0; border-radius:20px; padding:12px 12px 14px; margin-bottom:12px; box-shadow:var(--ombre-carte);}
+  .tp-l{display:flex; align-items:center; gap:10px;}
+  .tp-l b{font-size:15.5px; font-weight:900; line-height:1.25; min-width:0;}
+  .tp-ex .poig{flex:none; align-self:stretch; display:flex; align-items:center; padding:0 2px; margin-left:-2px;
+    color:var(--ink-mute); font-size:18px; line-height:1; cursor:grab; touch-action:none;}
+  .tp-ex .poig:active{cursor:grabbing; color:var(--accent);}
+  .tp-ex.prend{position:relative; z-index:5; box-shadow:0 12px 28px rgba(0,0,0,.2);}
+  .tp-num{flex:none; width:34px; height:34px; border-radius:50%; background:rgba(245,130,32,.16); color:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900;}
+  .tp-rm{flex:none; width:36px; height:36px; border-radius:11px; border:0; background:#EF5B5B; color:#fff;
+    display:flex; align-items:center; justify-content:center;}
+  .tp-rm svg{width:15px; height:15px;}
+  .tpl-item.tp-ex .cfg{gap:10px; margin-top:12px;}
+  .tpl-item.tp-ex .cfg .label{text-align:center; font-size:10.5px; letter-spacing:.1em; color:var(--ink-mute); margin-bottom:6px;}
+  .tp-champ{position:relative; display:block;}
+  .tpl-item.tp-ex .tp-champ input{width:100%; border:0; border-radius:14px; background:var(--surface); padding:12px 22px 12px 8px;
+    font-size:16px; text-align:center; box-shadow:var(--ombre-feuille), inset 0 0 0 1px var(--bord-doux); -moz-appearance:textfield;}
+  .tp-champ input::-webkit-inner-spin-button, .tp-champ input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  .tp-crans{position:absolute; right:6px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:3px;}
+  .tp-crans button{width:18px; height:14px; border:0; background:none; padding:0; color:var(--ink-mute); display:flex; align-items:center; justify-content:center;}
+  .tp-crans svg{width:9px; height:6px;}
   .tpl-item .cfg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:9px;}
   .tpl-item .cfg label{display:block;}
   .tpl-item .cfg .label{margin-bottom:4px; display:block;}
@@ -4299,6 +4345,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Touche un jour pour modifier tes repas.":"Tap a day to edit your meals.",
   "＋ Ajouter un exercice":"＋ Add an exercise",
   "Précise si un aliment est garni ou fourré":"Say if a food is stuffed or filled",
   "Prendre mon plat en photo":"Take a photo of my meal",
@@ -7563,6 +7610,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Touche un jour pour modifier tes repas.":"Toca un día para editar tus comidas.",
   "＋ Ajouter un exercice":"＋ Añadir un ejercicio",
   "Précise si un aliment est garni ou fourré":"Indica si un alimento está relleno",
   "Prendre mon plat en photo":"Hacer una foto de mi plato",
@@ -11043,6 +11091,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Touche un jour pour modifier tes repas.":"Toque em um dia para editar suas refeições.",
   "＋ Ajouter un exercice":"＋ Adicionar um exercício",
   "Précise si un aliment est garni ou fourré":"Indique se um alimento é recheado",
   "Prendre mon plat en photo":"Fotografar meu prato",
@@ -18069,7 +18118,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 14h22 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 14h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19225,6 +19274,8 @@ const TABS = [["seance","Séance"],["eat","Alimentation"],["prg","Progression"]]
 const IC_BAISSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17 13.5 8.5 8.5 13.5 2 7"/><path d="M16 17h6v-6"/></svg>';
 const IC_STOP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3"></rect></svg>';
 const IC_MONTRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5.6"/><path d="M12 9.6V12l1.7 1.1"/><path d="M9 6.6 9.4 3h5.2l.4 3.6M9 17.4 9.4 21h5.2l.4-3.6"/></svg>';
+const TRI_H = '<svg viewBox="0 0 10 6" aria-hidden="true"><path d="M5 0L10 6H0z" fill="currentColor"/></svg>';
+const TRI_B = '<svg viewBox="0 0 10 6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor"/></svg>';
 const IC_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 const IC_COUREUR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="15.5" cy="4.2" r="1.8"/><path d="M13.2 21l1.6-5.2-3-2.6-1 4.2"/><path d="M8.4 10.6l3.7-2.4 2.6 1.4 2.6 1"/><path d="M14.8 15.8l3 5.2"/><path d="M4.6 13.4h3"/></svg>';
 const IC_LIVRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.6C10.4 5.2 8.2 4.6 4.5 4.6v13c3.7 0 5.9.6 7.5 2 1.6-1.4 3.8-2 7.5-2v-13c-3.7 0-5.9.6-7.5 2Z"/><path d="M12 6.6v14"/></svg>';
@@ -19290,6 +19341,7 @@ const IC_CURSEURS = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none"
   + ' stroke-width="1.9" stroke-linecap="round" aria-hidden="true">'
   + '<path d="M3.5 8h5M12.5 8h8M3.5 16h9M16.5 16h4"/>'
   + '<circle cx="10.5" cy="8" r="2"/><circle cx="14.5" cy="16" r="2"/></svg>';
+const IC_COURONNE_CAL = '<svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 6l5 4 5-8 5 8 5-4-2 11H4z" fill="#FFC21A" stroke="#E59A00" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 const IC_CIBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
   + '<path d="M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2zm0 3a7.1 7.1 0 1 1 0 14.2 7.1 7.1 0 0 1 0-14.2z"/>'
   + '<path d="M12 7.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8zm0 2.6a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/>'
@@ -19736,6 +19788,9 @@ function allerOnglet(id){
   if(curTab === "seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
   if(curTab === "eat") jourCur = null;
   protAnimee = false;                 /* on revient sur Progression : les barres remontent */
+  /* et les chiffres et jauges de l'onglet (Nutrition : proteines, kcal) partent de zero,
+     a l'arrivee seulement — ensuite ils vont de l'ancienne valeur a la nouvelle */
+  depuisZero = true;
   curTab = id; render();
 }
 function renderTabs(){
@@ -19797,8 +19852,14 @@ function render(){
    coup repartent d ou le chiffre en est, au lieu de sauter a l arrivee du premier. */
 const chiffresVus = {};
 const DUREE_COMPTE = 550;
+let depuisZero = false;
 function animerChiffres(){
   const sobre = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  if(depuisZero){
+    depuisZero = false;
+    document.querySelectorAll("[data-compte]").forEach(el=>{ chiffresVus[el.dataset.compte] = 0; });
+    document.querySelectorAll("[data-jauge]").forEach(el=>{ chiffresVus["jauge:" + el.dataset.jauge] = 0; });
+  }
   document.querySelectorAll("[data-compte]").forEach(el=>{
     const cle = el.dataset.compte, vers = parseFloat(el.dataset.valeur);
     const de = chiffresVus[cle];
@@ -24333,7 +24394,7 @@ function renderSeance(app){
       </div>
     </div>
     <div id="start-zone"></div>
-    ${db.history.length? `<button class="recup-card" id="recup-btn">
+    ${db.history.length? `<button class="recup-card" id="recup-btn" data-etat="${(()=>{ const g = recuperation().global; return g>=85? "frais" : (g>=50? "recup":"fatigue"); })()}">
       ${(()=>{ const r = recuperation();
         const c = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
         /* d'apres la maquette du 21 septembre : l'anneau en grand, le titre et une phrase,
@@ -25770,7 +25831,10 @@ function majNumerosApercu(){
    que le centre de la carte dépasse celui d'une voisine, puis on recale le décalage
    pour que la carte ne bouge pas sous le doigt — sinon elle sauterait d'une hauteur
    de carte à chaque échange. */
-function trierParGlisse(liste, onFin){
+/* `classe` : les cartes qu'on deplace (celles de l'apercu par defaut) — l'editeur de
+   seance s'en sert aussi. */
+function trierParGlisse(liste, onFin, classe){
+  classe = classe || "pv-ex";
   if(!liste) return;
   let el = null, y0 = 0, dy = 0, pid = null, doigtY = 0, boucle = null;
   let zone = null, maxDefile = 0;
@@ -25794,11 +25858,11 @@ function trierParGlisse(liste, onFin){
     el.style.transform = `translateY(${dy}px)`;
     const r = el.getBoundingClientRect(), centre = r.top + r.height/2;
     const prec = el.previousElementSibling, suiv = el.nextElementSibling;
-    if(prec && prec.classList.contains("pv-ex")){
+    if(prec && prec.classList.contains(classe)){
       const rp = prec.getBoundingClientRect();
       if(centre < rp.top + rp.height/2){ echanger(el, prec, true, clientY); return; }
     }
-    if(suiv && suiv.classList.contains("pv-ex")){
+    if(suiv && suiv.classList.contains(classe)){
       const rs = suiv.getBoundingClientRect();
       if(centre > rs.top + rs.height/2){ echanger(el, suiv, false, clientY); return; }
     }
@@ -25869,14 +25933,14 @@ function trierParGlisse(liste, onFin){
     el = null; pid = null; zone = null;
     if(boucle){ cancelAnimationFrame(boucle); boucle = null; }
     finir();
-    onFin([...liste.querySelectorAll(".pv-ex")].map(c=>Number(c.dataset.ord)));
+    onFin([...liste.querySelectorAll("." + classe)].map(c=>Number(c.dataset.ord)));
   };
   liste.querySelectorAll("[data-poignee]").forEach(p=>{
     p.addEventListener("pointerdown", e=>{
       if(e.pointerType === "mouse" && e.button !== 0) return;
       /* un glissement resté coincé ne doit pas empêcher le suivant */
       if(el) lacher(null);
-      el = p.closest(".pv-ex");
+      el = p.closest("." + classe);
       if(!el) return;
       pid = e.pointerId;
       y0 = e.clientY; dy = 0; doigtY = e.clientY;
@@ -27516,10 +27580,11 @@ function confettis(canvas, duree){
 }
 function openFinSeance(r){
   const mn = Math.round(r.duree/60000);
+  /* le poussin de l'utilisateur, habille, dans sa pose de fete — a la place des
+     confettis et de l'emoji (Nico) */
   openSheet(`<div style="position:relative;">
-    <canvas id="fin-conf" style="position:absolute; inset:-18px -16px auto; width:calc(100% + 32px); height:230px; pointer-events:none; z-index:2;"></canvas>
     <div style="text-align:center; position:relative; z-index:1;">
-      <div style="font-size:42px; line-height:1;">🎉</div>
+      <div class="fin-poussin-zone">${poussinHtml("fin-poussin", "fete")}</div>
       <h3 class="fin-titre" style="margin:8px 0 2px;">${TR("Félicitations !")}<svg class="fin-souligne" viewBox="0 0 120 8" aria-hidden="true"><path d="M3 6 Q60 -2 117 5" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round"/></svg></h3>
       <div style="font-size:14px; color:var(--ink-soft); margin-top:8px;">${esc(r.nom)} ${TR("— c'est dans la boîte.")}</div>
     </div>
@@ -27548,7 +27613,7 @@ function openFinSeance(r){
       <button data-feel="dur"><img class="fe" src="img/humeur-tres-fatigue.png" alt="">${TR("Très fatigué")}</button>
     </div>
   </div>`}
-  <button class="btn" id="fin-partager" style="width:100%; margin-bottom:10px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
+  <button class="btn fin-partager" id="fin-partager" style="width:100%; margin-bottom:10px;">${IC_PARTAGE} ${TR("Partager la séance")}</button>
   <button class="btn btn-accent fin-ok" id="fin-ok" style="width:100%;"><span class="grow">${TR("Terminé")}</span>${CHEV_MP}</button>`);
   document.getElementById("fin-partager").onclick = ()=>{
     const h = (db.history || []).find(x=>x.id === r.id);
@@ -27566,8 +27631,6 @@ function openFinSeance(r){
     vibrer(8);
   });
   document.getElementById("fin-ok").onclick = closeSheet;
-  const cv = document.getElementById("fin-conf");
-  if(cv) setTimeout(()=>confettis(cv, 2600), 60);
 }
 
 /* ================================================================== la carte a partager
@@ -28033,10 +28096,13 @@ function openPicker(cb, variante){
 function openTplEditor(id){
   let tpl = id ? JSON.parse(JSON.stringify(db.templates.find(t=>t.id===id))) : {id:uid(), name:"", items:[]};
   const draw = ()=>{
-    openSheet(`<h3>${TR(id? "Modifier la séance" : "Nouvelle séance")}</h3>
+    /* d'apres la maquette de Nico : titre centre (la croix est celle de la fiche), le nom dans une pilule avec
+       l'haltere, une carte blanche par exercice — sa poignee a gauche pour le glisser
+       (plus de fleches), son numero, sa croix rouge, et trois champs a crans */
+    openSheet(`<h3 style="text-align:center;">${TR(id? "Modifier la séance" : "Nouvelle séance")}</h3>
       <div class="stack">
         <div><span class="f-lab">${TR("Nom de la séance")}</span>
-        <input id="tp-name" placeholder="${TR("Ex : Push, Haut du corps…")}" value="${esc(TR(tpl.name))}"></div>
+        <label class="tp-nom"><span class="ic">${ICONS.seance}</span><input id="tp-name" placeholder="${TR("Ex : Push, Haut du corps…")}" value="${esc(TR(tpl.name))}"></label></div>
         <div><span class="f-lab">${TR("Exercices")}</span><div id="tp-items"></div>
         <button class="btn-dash" id="tp-add">＋ ${TR("Ajouter un exercice")}</button></div>
         <div>${tpl.cardio ? `<span class="f-lab">${TR("Sortie cardio en fin de séance")}</span>
@@ -28060,33 +28126,57 @@ function openTplEditor(id){
       </div>`);
     const itemsEl = document.getElementById("tp-items");
     itemsEl.innerHTML = tpl.items.length? "" : `<div class="tpl-vide">${TR("Aucun exercice pour l'instant.")}</div>`;
+    /* un champ et ses deux crans ▲ ▼ : on regle sans ouvrir le clavier */
+    const crans = f => `<span class="tp-crans"><button type="button" data-pas="${f}|1" aria-label="${TR("Plus")}">${TRI_H}</button><button type="button" data-pas="${f}|-1" aria-label="${TR("Moins")}">${TRI_B}</button></span>`;
     tpl.items.forEach((it,i)=>{
       const ex = getEx(it.exId);
       const d = document.createElement("div");
-      d.className="tpl-item";
+      d.className="tpl-item tp-ex";
+      d.dataset.ord = i;
       d.innerHTML = `
-        <div class="row" style="align-items:flex-start;">
-          <div class="grow" style="font-weight:700; font-size:13.5px; line-height:1.3;">${i+1}. ${esc(nomEx(ex))}</div>
-          <div style="display:flex; flex-direction:column; gap:1px;">
-            <button class="icon-btn" data-up style="width:24px;height:18px; font-size:11px;">▲</button>
-            <button class="icon-btn" data-dn style="width:24px;height:18px; font-size:11px;">▼</button>
-          </div>
-          <button class="icon-btn" data-rm style="width:26px;height:26px;color:#fff;background:var(--bad);border-radius:7px;font-size:13px;">✕</button>
+        <div class="tp-l">
+          <span class="poig" data-poignee aria-label="${TR("Déplacer cet exercice")}">⠿</span>
+          <span class="tp-num">${i+1}</span>
+          <b class="grow">${esc(nomEx(ex))}</b>
+          <button class="tp-rm" data-rm aria-label="${TR("Retirer cet exercice")}">${IC_CROIX}</button>
         </div>
         <div class="cfg">
-          <label><span class="label">${TR("Séries")}</span><input type="number" inputmode="numeric" min="1" value="${it.sets}" data-f="sets"></label>
-          <label><span class="label">Reps</span><input type="text" placeholder="8-12" value="${esc(String(it.reps||""))}" data-f="reps"></label>
-          <label><span class="label">${TR("Repos (sec)")}</span><input type="number" inputmode="numeric" min="0" step="15" value="${it.rest}" data-f="rest"></label>
+          <label><span class="label">${TR("Séries")}</span><span class="tp-champ"><input type="number" inputmode="numeric" min="1" value="${it.sets}" data-f="sets">${crans("sets")}</span></label>
+          <label><span class="label">Reps</span><span class="tp-champ"><input type="text" placeholder="8-12" value="${esc(String(it.reps||""))}" data-f="reps">${crans("reps")}</span></label>
+          <label><span class="label">${TR("Repos (sec)")}</span><span class="tp-champ"><input type="number" inputmode="numeric" min="0" step="15" value="${it.rest}" data-f="rest">${crans("rest")}</span></label>
         </div>`;
-      d.querySelector("[data-up]").onclick=()=>{ if(i>0){ tpl.items.splice(i-1,0,tpl.items.splice(i,1)[0]); tpl.name=document.getElementById("tp-name").value; draw(); } };
-      d.querySelector("[data-dn]").onclick=()=>{ if(i<tpl.items.length-1){ tpl.items.splice(i+1,0,tpl.items.splice(i,1)[0]); tpl.name=document.getElementById("tp-name").value; draw(); } };
       d.querySelector("[data-rm]").onclick=()=>{ tpl.items.splice(i,1); tpl.name=document.getElementById("tp-name").value; draw(); };
       d.querySelectorAll("[data-f]").forEach(inp=>inp.oninput=()=>{
         const f = inp.dataset.f;
         it[f] = f==="reps"? inp.value : (parseInt(inp.value)||0);
       });
+      /* series : 1 par 1 (au moins 1) ; repos : 15 s par 15 s ; reps : les deux bornes
+         d'une fourchette bougent ensemble (8-12 → 9-13), au moins 1 */
+      d.querySelectorAll("[data-pas]").forEach(b=>b.onclick=()=>{
+        const [f, sens] = b.dataset.pas.split("|"), n = Number(sens);
+        const inp = d.querySelector(`[data-f="${f}"]`);
+        if(f === "reps"){
+          const v = String(inp.value || it.reps || "8-12");
+          inp.value = v.replace(/\d+/g, x=>Math.max(1, Number(x) + n));
+        } else if(f === "sets") inp.value = Math.max(1, (parseInt(inp.value) || 0) + n);
+        else inp.value = Math.max(0, (parseInt(inp.value) || 0) + 15 * n);
+        inp.dispatchEvent(new Event("input"));
+        vibrer(8);
+      });
       itemsEl.appendChild(d);
     });
+    /* glisser par la poignee, comme dans l'apercu d'une seance : la fiche defile toute
+       seule quand on approche du bord, pour poser un exercice en 8e place */
+    trierParGlisse(itemsEl, ordre=>{
+      tpl.name = document.getElementById("tp-name").value;
+      const avant = ordre.join(",") === tpl.items.map((_, k)=>k).join(",");
+      if(avant) return;
+      tpl.items = ordre.map(k=>tpl.items[k]);
+      /* openSheet remet la fiche en haut : on la replace ou on l'avait laissee */
+      const haut = sheet.scrollTop;
+      draw();
+      sheet.scrollTop = haut;
+    }, "tp-ex");
     document.getElementById("tp-add").onclick=()=>{
       tpl.name = document.getElementById("tp-name").value;
       openPicker(exId=>{ tpl.items.push({exId, sets:4, reps:"8-12", rest:db.settings.rest}); draw(); });
@@ -30752,7 +30842,18 @@ function dessineCalendrier(){
   /* la semaine commence le lundi en français, le dimanche en anglais */
   const lundi = langue() !== "en";
   const decal = lundi ? (premier.getDay() + 6) % 7 : premier.getDay();
-  const noms = lundi ? ["L","M","M","J","V","S","D"] : ["S","M","T","W","T","F","S"];
+  /* « Lun, Mar… » / « Mon, Tue… » : le nom court de la langue, sans son point */
+  const noms = Array.from({length:7}, (_, i)=>{
+    const n = new Date(2024, 0, (lundi ? 1 : 7) + i).toLocaleDateString(loc(), {weekday:"short"}).replace(/\.$/, "");
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  });
+  /* la couronne : les trois meilleurs jours du mois parmi ceux au quota (maquette de Nico) */
+  const auQuota = [];
+  for(let j = 1; j <= nbJours; j++){
+    const k = dayKey(new Date(an, mois, j));
+    if(k <= dayKey()){ const v = dayProt(k); if(cible && v >= cible) auQuota.push(v); }
+  }
+  const seuilCouronne = auQuota.length ? auQuota.sort((a, b)=>b - a)[Math.min(2, auQuota.length - 1)] : Infinity;
   const auj = dayKey();
   const cases = [];
   for(let i = 0; i < decal; i++) cases.push(`<div class="cal-c vide"></div>`);
@@ -30761,8 +30862,9 @@ function dessineCalendrier(){
     const p = dayProt(key);
     const futur = key > auj;
     const cl = futur ? "futur rien" : (p <= 0 ? "rien" : (p >= cible ? "atteint" : "partiel"));
+    const couronne = cl === "atteint" && p >= seuilCouronne;
     cases.push(`<button class="cal-c ${cl}${key === auj ? " auj" : ""}" ${futur ? "disabled" : `data-cal="${key}"`}>
-      <span class="d">${j}</span><span class="p">${p > 0 ? p + " g" : "·"}</span></button>`);
+      ${couronne ? `<i class="cal-cour">${IC_COURONNE_CAL}</i>` : ""}<span class="d">${j}</span><span class="p">${p > 0 ? p + " g" : "·"}</span></button>`);
   }
   /* on ne remonte pas avant la première journée enregistrée, ni au-delà du mois en cours */
   const jours = Object.keys(db.habitSel || {}).sort();
@@ -30778,12 +30880,13 @@ function dessineCalendrier(){
     <div class="cal-jours">${noms.map(n=>`<span>${n}</span>`).join("")}</div>
     <div class="cal-grille">${cases.join("")}</div>
     <div class="cal-leg">
-      <span><i style="background:var(--good);"></i>${TR("Objectif atteint")}</span>
-      <span><i style="background:var(--accent);"></i>${TR("En dessous")}</span>
-      <span><i style="background:var(--surface2);"></i>${TR("Rien de noté")}</span>
+      <span><i class="v"></i>${TR("Objectif atteint")}</span>
+      <span><i class="o"></i>${TR("En dessous")}</span>
+      <span><i class="g"></i>${TR("Rien de noté")}</span>
     </div>
-    <div style="font-size:11.5px; color:var(--ink-mute); text-align:center; margin-top:10px; line-height:1.5;">${
-      TR("Objectif : {n} g par jour. Touche un jour pour corriger ses repas.").replace("{n}", cible)}</div>
+    <div class="cal-obj"><span class="ic">${IC_CIBLE}</span>
+      <div><small>${TR("Objectif du jour")}</small><b>${cible} g</b></div>
+      <p>${TR("Touche un jour pour modifier tes repas.")}</p></div>
     <button class="btn btn-accent" id="cal-ok" style="width:100%; margin-top:14px;">${TR("Fermer")}</button>`);
   const prec = document.getElementById("cal-prec"), suiv = document.getElementById("cal-suiv");
   if(!prec.disabled) prec.onclick = ()=>{ calMois = new Date(an, mois - 1, 1); dessineCalendrier(); };
