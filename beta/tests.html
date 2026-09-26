@@ -7823,6 +7823,76 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre : la course par etapes */
+  grp("La séance de course par étapes");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const pause = ms => new Promise(r=>setTimeout(r, ms));
+    DB.parcours = []; DB.courseEnCours = null; DB.cardio = [];
+    /* le calcul : distance estimee = vitesse × duree */
+    const et = [{type:"course", min:15, v:10}, {type:"marche", min:5, v:6}, {type:"course", min:10, v:10}, {type:"marche", min:5, v:6}];
+    const tot = F.parcoursTotaux(et);
+    vrai("Durée totale : 35 min", tot.min === 35, tot.min);
+    pres("Distance estimée : 15 min à 10 km/h + 5 à 6 + 10 à 10 + 5 à 6", tot.km, 2.5 + 0.5 + 10/6 + 0.5, 0.001);
+    vrai("Les calories viennent de l'équation des sorties", tot.kcal > 0);
+    /* ou en est-on, a partir de l'heure de depart seulement */
+    const c = {etapes:et, debut:Date.now() - 16 * 60e3, pauseCumul:0, pauseA:null};
+    const st = F.courseEtat(c);
+    vrai("16 min après le départ : 2e étape", st.i === 1, st.i);
+    pres("…commencée depuis 1 min", st.dans, 60, 1.5);
+    c.pauseCumul = 2 * 60e3;
+    vrai("Les pauses ne comptent pas (14 min courues : 1re étape)", F.courseEtat(c).i === 0);
+    c.debut = Date.now() - 40 * 60e3; c.pauseCumul = 0;
+    vrai("Au-delà de la durée totale, la séance est finie", F.courseEtat(c).fini === true);
+    /* arretee en cours de route : on garde ce qui a ete fait */
+    c.debut = Date.now() - 17 * 60e3;
+    const faites = F.etapesFaites(c, false);
+    vrai("Arrêtée à 17 min : 15 min de course puis 2 de marche", faites.length === 2 && faites[1].min === 2, JSON.stringify(faites));
+    /* l'editeur : l'exemple de Nico, puis enregistrer */
+    F.openParcoursListe();
+    await attendre(()=>D2.querySelectorAll(".pc-et").length === 4, 1500);
+    vrai("Sans séance enregistrée, l'éditeur s'ouvre sur l'exemple (4 étapes)", D2.querySelectorAll(".pc-et").length === 4);
+    D2.querySelector(".pc-et [data-pas='min|1']").click();
+    vrai("Le cran ajoute une minute à l'étape", D2.querySelector(".pc-et [data-f='min']").value === "16");
+    D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").click();
+    vrai("On change le type d'une étape", D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").classList.contains("on"));
+    D2.getElementById("pc-add").click();
+    vrai("Ajouter une étape", D2.querySelectorAll(".pc-et").length === 5);
+    D2.getElementById("pc-save").click();
+    vrai("La séance est enregistrée", DB.parcours.length === 1 && DB.parcours[0].etapes.length === 5 && DB.parcours[0].etapes[0].min === 16);
+    F.hideSheet();
+    /* la lancer, puis la finir : elle devient une sortie */
+    F.demarrerCourse(DB.parcours[0].id);
+    await attendre(()=>!!D2.querySelector(".cr-c.encours"), 1500);
+    vrai("Lancée, l'étape en cours est au centre", !!D2.querySelector(".cr-c.encours") && D2.querySelectorAll(".cr-c.avenir").length === 4);
+    vrai("La barre d'onglets s'efface", D2.body.classList.contains("en-course"));
+    vrai("Les commandes sont hors de la page animée", !!D2.querySelector("body > #cr-hors .cr-pause"));
+    DB.courseEnCours.debut = Date.now() - (16 * 60 - 2) * 1000;
+    await attendre(()=>!D2.getElementById("cr-dec").hidden, 1500);
+    vrai("Juste avant la fin d'une étape : « Prochaine étape » et le décompte", !D2.getElementById("cr-dec").hidden && /Prochaine/.test(D2.getElementById("cr-dec").textContent));
+    await attendre(()=>!!D2.querySelector(".cr-c.fait"), 4000);
+    vrai("L'étape finie remonte, grisée", !!D2.querySelector(".cr-c.fait") && D2.querySelector(".cr-c.encours").dataset.i === "1");
+    D2.getElementById("cr-pause").click();
+    vrai("Pause", !!DB.courseEnCours.pauseA);
+    D2.getElementById("cr-pause").click();
+    vrai("…et reprise", !DB.courseEnCours.pauseA);
+    DB.courseEnCours.debut = Date.now() - 20 * 60e3; DB.courseEnCours.pauseCumul = 0;
+    F.finirCourse(false);
+    const s2 = DB.cardio[DB.cardio.length - 1];
+    /* l'etape 2 est passee en course plus haut : 20 min, toutes courues */
+    vrai("Arrêtée, elle devient une sortie (20 min de course)", s2 && Math.round(s2.min) === 20 && s2.type === "course" && s2.runMin === 20 && s2.estime === true, JSON.stringify(s2));
+    vrai("…et plus rien n'est en cours", DB.courseEnCours === null && !D2.getElementById("cr-hors") && !D2.body.classList.contains("en-course"));
+    await attendre(()=>!!D2.getElementById("fc-ok"), 1500);
+    D2.getElementById("fc-km").value = "3.1"; D2.getElementById("fc-ok").click();
+    vrai("La vraie distance remplace l'estimation", Math.abs(s2.km - (F.estImperial() ? 3.1 / 0.621371 : 3.1)) < 0.02 && s2.estime === false, s2.km);
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.parcours = []; DB.cardio = []; DB.courseEnCours = null;
+    F.eval("render()");
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
   bilan.innerHTML = echecs === 0
