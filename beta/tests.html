@@ -7482,6 +7482,9 @@ async function lancer(){
        supposant des séries, une entrée vide y ferait des dégâts */
     vrai("Aucune entrée vide dans l'historique",
       (s2.entries || []).every(en=>en.sets && en.sets.length));
+    /* le recapitulatif « Felicitations » s'ouvre 260 ms apres : on l'attend avant de
+       fermer, sinon il arrive plus tard par-dessus la fiche d'un autre groupe */
+    await attendre(()=>!!F.document.querySelector("#sheet .fin-titre"), 2000);
     F.hideSheet();
   })();
   neuf();
@@ -7767,7 +7770,7 @@ async function lancer(){
     poig.dispatchEvent(new F.PointerEvent("pointerdown", {pointerId:9, clientX:x, clientY:y0, bubbles:true, button:0, pointerType:"touch"}));
     for(let i = 1; i <= 24; i++){
       F.dispatchEvent(new F.PointerEvent("pointermove", {pointerId:9, clientX:x, clientY:y0 + (y1-y0)*i/24, bubbles:true, pointerType:"touch"}));
-      await new Promise(r=>F.requestAnimationFrame(r));
+      await new Promise(r=>{ F.requestAnimationFrame(r); setTimeout(r, 50); });   /* un cadre hors ecran peut ne plus recevoir d'images */
     }
     F.dispatchEvent(new F.PointerEvent("pointerup", {pointerId:9, clientX:x, clientY:y1, bubbles:true, pointerType:"touch"}));
     await pause(150);
@@ -8295,6 +8298,23 @@ async function lancer(){
   neuf();
 
   /* Nico, 26 septembre : annuler un aliment retire par megarde ; titre et icones de la course */
+  grp("L'astuce après un scan");
+  neuf();
+  {
+    const garde = DB.profile;
+    DB.profile = Object.assign({}, garde || {}, {aim:"masse"});
+    vrai("Prise de muscle, repas pauvre en protéines : compléter avec une source de protéines",
+      /source de protéines/.test(F.astuceScan({kcal:400, prot:5, gluc:60})));
+    vrai("Riche en protéines : un mot d'encouragement", /Belle dose de protéines/.test(F.astuceScan({kcal:450, prot:40, gluc:30})));
+    vrai("Petite portion en prise de muscle : de quoi compléter", /Petite portion/.test(F.astuceScan({kcal:120, prot:3, gluc:10})));
+    DB.profile.aim = "seche";
+    vrai("Perte de poids, pauvre en protéines : légumes et protéines pour rassasier", /légumes et une source de protéines/.test(F.astuceScan({kcal:400, prot:5, gluc:60})));
+    vrai("Perte de poids, repas copieux : les légumes pour la suite", /Repas copieux/.test(F.astuceScan({kcal:700, prot:20, gluc:40})));
+    vrai("Jamais de « bon » ni de « mauvais » aliment", !/mauvais|bon aliment|interdit/i.test(F.astuceScan({kcal:900, prot:2, gluc:120})));
+    DB.profile = garde;
+  }
+  neuf();
+
   grp("Annuler un aliment retiré, et les icônes de la course");
   neuf();
   await (async ()=>{
