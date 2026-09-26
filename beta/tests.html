@@ -3495,6 +3495,52 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre : prendre un plat en photo en moins de gestes */
+  grp("Le plat en photo, plus vite");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const fermerCam = () => { const c = D2.querySelector(".cam"); if(c){ const x = c.querySelector("[data-non]"); if(x) x.click(); } };
+    const avant = {abo:DB.abo, aboVia:DB.aboVia, photos:DB.photos, res:DB.scansReserve, cam:DB.settings.camMode};
+    DB.abo = true; DB.aboVia = "code"; DB.photos = null; DB.scansReserve = 0;
+    /* 1. la camera retient son mode */
+    DB.settings.camMode = "plat";
+    F.lancerScan("midi");
+    await attendre(()=>!!D2.querySelector(".cam"), 1500);
+    vrai("La caméra rouvre sur le mode de la dernière fois (plat)", !!D2.querySelector(".cam.plat"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    DB.settings.camMode = "code";
+    F.lancerScan("midi");
+    await attendre(()=>!!D2.querySelector(".cam"), 1500);
+    vrai("…ou sur le code-barres", !!D2.querySelector(".cam.code"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* 2. la pastille photo de l'onglet Alimentation ouvre la camera en mode plat */
+    F.eval("curTab = 'eat'; render()");
+    const pastille = D2.getElementById("hero-scans");
+    vrai("La pastille photo est là", !!pastille);
+    pastille.click();
+    await attendre(()=>!!D2.querySelector(".cam"), 1500);
+    vrai("…et ouvre directement la caméra en mode plat", !!D2.querySelector(".cam.plat"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* 3. le raccourci de l'icone : la photo directement */
+    DB.settings.camMode = "code";
+    F.executerRaccourci("scan");
+    await attendre(()=>!!D2.querySelector(".cam"), 2000);
+    vrai("Le raccourci « Scanner mon repas » ouvre le mode photo", !!D2.querySelector(".cam.plat"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* sans photo restante : la pastille propose d'en racheter, pas une camera morte */
+    DB.photos = {jour:F.dayKey(), n:99};
+    F.eval("render()");
+    D2.getElementById("hero-scans").click();
+    await new Promise(r=>setTimeout(r, 400));
+    vrai("À 0 photo, la pastille ouvre la fenêtre d'achat au lieu de la caméra", !D2.querySelector(".cam"));
+    F.hideSheet(); const f = D2.getElementById("abo-fenetre"); if(f) f.remove();
+    Object.assign(DB, {abo:avant.abo, aboVia:avant.aboVia, photos:avant.photos, scansReserve:avant.res});
+    DB.settings.camMode = avant.cam;
+    F.eval("curTab = 'seance'; render()");
+  })();
+  neuf();
+
   grp("Créer une variante d'un exercice");
   neuf();
   await (async ()=>{

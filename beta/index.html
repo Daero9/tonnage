@@ -305,12 +305,9 @@
   .hero-essai{height:28px; padding:0 11px; border-radius:14px; background:var(--accent); color:#fff;
     font-size:12px; font-weight:800; letter-spacing:.01em; white-space:nowrap;}
   /* la pastille des photos d'assiette (Alimentation) : l'appareil et le nombre qu'il reste */
-  /* la pastille des photos d'assiette : noire, pour se detacher de la photo de l'en-tete
-     sans crier comme un bouton d'action */
+  /* la pastille des photos d'assiette : orange, c'est un bouton d'action — elle ouvre
+     directement l'appareil photo (Nico) ; le chiffre dit ce qu'il reste */
   .hero-scans{display:inline-flex; align-items:center; gap:5px; padding:0 10px 0 8px;}
-  /* deux classes : la regle commune des boutons orange (plus bas dans la page) pose un
-     degrade en background-image, qui passait par-dessus une simple couleur de fond */
-  .hero-essai.hero-scans{background:#141416;}
   .hero-scans svg{width:15px; height:15px;} .hero-scans b{font-size:13px;}
   .hero-h{position:relative; z-index:2; text-align:center; margin-top:11%;}
   /* Sur une photo, le voile d'ensemble s'est allege (Nico) : un halo sombre et flou,
@@ -4238,6 +4235,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Prendre mon plat en photo":"Take a photo of my meal",
   "Sport":"Training",
   "Variante de quel exercice ?":"Variation of which exercise?",
   "＋ Exercice perso":"＋ Custom exercise",
@@ -7499,6 +7497,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Prendre mon plat en photo":"Hacer una foto de mi plato",
   "Sport":"Deporte",
   "Variante de quel exercice ?":"¿Variante de qué ejercicio?",
   "＋ Exercice perso":"＋ Ejercicio propio",
@@ -10976,6 +10975,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Prendre mon plat en photo":"Fotografar meu prato",
   "Sport":"Esporte",
   "Variante de quel exercice ?":"Variação de qual exercício?",
   "＋ Exercice perso":"＋ Exercício próprio",
@@ -17994,7 +17994,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 03h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 11h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18190,7 +18190,9 @@ function executerRaccourci(action){
   if(action === "scan"){
     allerOnglet("eat");
     if(verrouille("eat")){ setTimeout(openAbonnement, 300); return true; }
-    setTimeout(()=>lancerScan(mealParHeure()), 250);
+    /* directement la photo du plat (Nico) ; sans photo restante, le code-barres, gratuit,
+       plutot qu'une fenetre d'achat — les rappels de repas passent aussi par ici */
+    setTimeout(()=>lancerScan(mealParHeure(), photosRestantes() > 0 ? "plat" : "code"), 250);
     return true;
   }
   if(action === "seance"){
@@ -19393,7 +19395,7 @@ function hero(inner, opts){
         : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}" style="position:relative;">${IC_USER}${
           accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}</button>
-        <span class="hero-droite">${o.scans ? `<button class="hero-essai hero-scans" id="hero-scans" aria-label="${TR("Photos d'assiette restantes")}">${IC_PHOTO}<b>${photosRestantes()}</b></button>` : ""}${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
+        <span class="hero-droite">${o.scans ? `<button class="hero-essai hero-scans" id="hero-scans" aria-label="${TR("Prendre mon plat en photo")}">${IC_PHOTO}<b>${photosRestantes()}</b></button>` : ""}${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
           TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
       </div>
       <div class="hero-h">${inner}</div>${o.apres || ""}
@@ -19488,7 +19490,12 @@ function wireTopbar(){
   const g = document.getElementById("tb-settings"); if(g) g.onclick = openSettings;
   const es = document.getElementById("hero-essai"); if(es) es.onclick = openAbonnement;   /* voir les forfaits, sans attendre */
   /* la pastille des photos : le compte du jour + la reserve ; on touche, on voit le detail et les packs */
-  const sc = document.getElementById("hero-scans"); if(sc) sc.onclick = ()=>{ if(db.abo === true || essaiEnCours()) openScans(); else openAbonnement(); };
+  /* Il reste des photos : la camera s'ouvre tout de suite, en mode plat, sur le repas
+     affiche. Plus aucune : la fenetre qui propose d'en racheter (packs ou abonnement). */
+  const sc = document.getElementById("hero-scans"); if(sc) sc.onclick = ()=>{
+    if(photosRestantes() > 0){ lancerScan(mealCur || mealParHeure(), "plat"); return; }
+    if(db.abo === true || essaiEnCours()) openScans(); else openAbonnement();
+  };
   const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
   const x = document.getElementById("tb-close");
   if(x) x.onclick = ()=>allerOnglet("seance");
@@ -21630,6 +21637,8 @@ function ouvrirCamera(mode, titre){
       /* on ne reecrit pas className : « pret », « sans-flux », « epuise » doivent survivre
          au changement de mode — sinon la video redevenait invisible et l'anneau tournait */
       mode = m; boite.classList.remove("code", "plat"); boite.classList.add(mode);
+      /* retenu pour la prochaine fois : qui photographie ses plats n'a plus a rebasculer */
+      db.settings.camMode = m; save();
       boite.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("on", b.dataset.mode === m));
       q(".repere").hidden = true; texte.hidden = false; codeRepere = null;
       consigne(); relancerBoucle();
@@ -22111,12 +22120,15 @@ function openProduitScanne(meal, p){
    d'achat — a ouvert sa propre fiche, ou dit pourquoi. */
 async function lancerScan(meal, mode){
   if(mode === "plat" && photosRestantes() <= 0){ proposerPhotos(meal); return true; }
-  /* toujours le code-barres d'abord : c'est le geste exact et gratuit ; le plat est
-     a un glissement de la */
-  const r = await ouvrirCamera(mode || "code", TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
+  /* Sans mode impose, la camera rouvre sur celui de la derniere fois (Nico) : le
+     code-barres par defaut, le plat pour qui photographie ses assiettes — tant qu'il
+     reste des photos, sinon on ne rouvre pas sur un mode epuise. */
+  if(!mode) mode = (db.settings.camMode === "plat" && photosRestantes() > 0) ? "plat" : "code";
+  const r = await ouvrirCamera(mode, TR("Ajouter — {}").replace("{}", TR((MEALS.find(m=>m[0] === meal) || ["", ""])[1])));
   if(!r) return false;
   if(r.type === "scans"){ proposerPhotos(meal); return true; }
   if(r.type === "photo"){
+    db.settings.camMode = "plat";
     photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
     lancerAnalysePhoto("");
     return true;
