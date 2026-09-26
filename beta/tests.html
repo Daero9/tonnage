@@ -69,6 +69,13 @@ async function lancer(){
     Object.keys(F.eval("GUIDES")).forEach(g=>{ DB.seen["guide-" + g] = true; });
   };
   const id = n => F.libId(n);
+  /* L'iframe est cachee (display:none) : aucune mise en page, toutes les mesures y
+     valent 0. Les tests qui mesurent (glisser, recouvrir) la posent hors de l'ecran,
+     a la taille d'un telephone, le temps de mesurer. */
+  const mesurable = on => {
+    document.getElementById("app").style.cssText = on
+      ? "display:block; position:fixed; left:-10000px; top:0; width:375px; height:812px; border:0;" : "";
+  };
   /* Attendre une CONDITION, jamais un délai : la bulle d'une visite se remplit dans un
      requestAnimationFrame, et un onglet en arrière-plan les met en sommeil. */
   const attendre = async (cond, max)=>{ const t0 = Date.now();
@@ -6289,10 +6296,19 @@ async function lancer(){
     await attendre(()=>dits.length > 0, 1500);
     vrai("Sans Google Play, l'appui renvoie vers l'app Android ou le code", /app Android/.test(dits.join(" ")), dits.join(" | "));
     F.toast = vraiToast;
-    /* c'est une fenetre, pas une fiche : la barre d'onglets reste sous elle, et la
-       croix ramene a Seance */
-    vrai("La fenêtre passe sous la barre d'onglets",
-      +F.getComputedStyle(D2.getElementById("abo-fenetre")).zIndex < +F.getComputedStyle(D2.querySelector(".tabbar")).zIndex);
+    /* c'est une fenetre, pas une fiche : le voile assombrit tout l'ecran (Nico, 26
+       septembre), mais la barre d'onglets reste touchable a travers lui, et la carte
+       ne la recouvre pas */
+    mesurable(true);
+    /* le temps que la page prenne sa taille, et la fenetre sa place */
+    await new Promise(r=>setTimeout(r, 400));
+    (()=>{
+      const tb = D2.querySelector(".tabbar").getBoundingClientRect();
+      const sous = D2.elementFromPoint(tb.left + tb.width/2, tb.top + tb.height/2);
+      vrai("La barre d'onglets reste touchable à travers le voile", !!(sous && sous.closest(".tabbar")), sous && sous.className);
+      vrai("…et la carte ne la recouvre pas", D2.querySelector(".abo-carte-f").getBoundingClientRect().bottom <= tb.top + 1);
+    })();
+    mesurable(false);
     F.fermerAbonnement();
     await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
     vrai("…et se ferme sans laisser de trace", !D2.getElementById("abo-fenetre"));
@@ -7689,6 +7705,121 @@ async function lancer(){
     vrai("…et la fiche est toujours là", !!F.document.getElementById("ot-ok"));
     vrai("…et elle est retenue comme vue", !!DB.seen["guide-ajoutAliment"]);
     F.hideSheet();
+  })();
+  neuf();
+
+  /* Nico, 26 septembre (apres-midi) : maquettes, glisser, flamme, clavier */
+  grp("Les retouches de l'après-midi du 26 septembre");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const pause = ms => new Promise(r=>setTimeout(r, ms));
+    mesurable(true); await pause(400);
+    /* 1. Modifier la seance : une poignee, plus de fleches, des crans */
+    const ids = F.allEx().slice(0, 9).map(e=>e.id);
+    DB.templates.push({id:"t-glisse", name:"Glisse", items: ids.map(x=>({exId:x, sets:4, reps:"8-12", rest:150}))});
+    F.openTplEditor("t-glisse");
+    await attendre(()=>D2.querySelectorAll(".tp-ex").length === 9, 1500);
+    vrai("Chaque exercice a sa poignée", D2.querySelectorAll(".tp-ex [data-poignee]").length === 9);
+    vrai("…et plus de flèches haut / bas", D2.querySelectorAll("#tp-items [data-up], #tp-items [data-dn]").length === 0);
+    const c0 = D2.querySelector(".tp-ex");
+    c0.querySelector('[data-pas="reps|1"]').click();
+    vrai("Le cran des reps décale la fourchette (8-12 → 9-13)", c0.querySelector('[data-f="reps"]').value === "9-13");
+    c0.querySelector('[data-pas="rest|-1"]').click();
+    vrai("Le cran du repos va de 15 s en 15 s", c0.querySelector('[data-f="rest"]').value === "135");
+    const nom0 = c0.querySelector("b").textContent;
+    const cartes = [...D2.querySelectorAll(".tp-ex")];
+    const poig = cartes[0].querySelector("[data-poignee]"), r0 = poig.getBoundingClientRect();
+    /* en 2e place : un trajet plus long approche le bord de la fiche et declenche le
+       defilement automatique, qu'on n'eprouve pas ici */
+    const y0 = r0.top + r0.height/2, x = r0.left + 4, rc = cartes[1].getBoundingClientRect(), y1 = rc.top + rc.height*0.75;
+    poig.dispatchEvent(new F.PointerEvent("pointerdown", {pointerId:9, clientX:x, clientY:y0, bubbles:true, button:0, pointerType:"touch"}));
+    for(let i = 1; i <= 24; i++){
+      F.dispatchEvent(new F.PointerEvent("pointermove", {pointerId:9, clientX:x, clientY:y0 + (y1-y0)*i/24, bubbles:true, pointerType:"touch"}));
+      await new Promise(r=>F.requestAnimationFrame(r));
+    }
+    F.dispatchEvent(new F.PointerEvent("pointerup", {pointerId:9, clientX:x, clientY:y1, bubbles:true, pointerType:"touch"}));
+    await pause(150);
+    const noms = [...D2.querySelectorAll(".tp-ex b")].map(b=>b.textContent);
+    /* la place exacte depend de la fiche qui finit de monter : on verifie qu'il est
+       descendu, et qu'il a garde ses reglages a sa nouvelle place */
+    const place = noms.indexOf(nom0);
+    vrai("Glisser le 1er exercice par sa poignée le fait descendre", place > 0 && place < 5, place + 1);
+    vrai("…les numéros se recalculent", [...D2.querySelectorAll(".tp-num")].map(n=>n.textContent).join("") === "123456789");
+    vrai("…et il garde ses réglages", D2.querySelectorAll(".tp-ex")[Math.max(0, place)].querySelector('[data-f="reps"]').value === "9-13");
+    F.hideSheet();
+    DB.templates = DB.templates.filter(t=>t.id !== "t-glisse");
+
+    /* 2. le calendrier des proteines remonte meme sans repas plus anciens */
+    F.eval("calMois = null");
+    F.openCalendrier();
+    await attendre(()=>!!D2.getElementById("cal-prec"), 1500);
+    vrai("Le mois précédent est accessible sans données plus anciennes", !D2.getElementById("cal-prec").disabled);
+    vrai("Le mois suivant reste fermé sur le mois en cours", D2.getElementById("cal-suiv").disabled);
+    const m0 = D2.querySelector(".cal-top .m").textContent;
+    D2.getElementById("cal-prec").click();
+    vrai("…et on y va", D2.querySelector(".cal-top .m").textContent !== m0);
+    vrai("La carte « Objectif du jour » est là", !!D2.querySelector(".cal-obj"));
+    F.hideSheet(); F.eval("calMois = null");
+
+    /* 3. la flamme attend la fin du recapitulatif */
+    const sj = F.serieJours;
+    F.serieJours = ()=>({n:5, force:""}); DB.flammeVue = 4;
+    DB.history.push(seance(30, [])); F.eval("curTab = 'seance'; flammeRetenue = true; render()");
+    let fl = D2.querySelector(".hero-flamme");
+    vrai("Pendant le récapitulatif, la flamme garde l'ancien chiffre", fl && fl.textContent.trim() === "4" && !fl.classList.contains("grandit"), fl && fl.textContent);
+    vrai("…et rien n'est noté comme vu", DB.flammeVue === 4);
+    F.eval("libererFlamme()");
+    await attendre(()=>{ const f = D2.querySelector(".hero-flamme"); return f && f.classList.contains("grandit"); }, 1500);
+    fl = D2.querySelector(".hero-flamme");
+    vrai("Libérée, elle grandit (4 → 5)", fl && fl.classList.contains("grandit"));
+    F.serieJours = sj; DB.flammeVue = 0; DB.history = [];
+
+    /* 4. un aliment : la quantite en pilule, comme un produit scanne */
+    F.openModifAliment("midi", "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)");
+    await attendre(()=>!!D2.querySelector("#sheet .ps-gros #ma-n"), 1500);
+    D2.querySelector('[data-mapas="1"]').click();
+    vrai("Le + d'un aliment ajoute 10 g (150 → 160)", D2.getElementById("ma-n").value === "160");
+    vrai("…avec son unité à côté", D2.getElementById("ma-uni").textContent === "g");
+    F.hideSheet();
+
+    /* 5. a la piece : « 1 » se met tout seul, sans clavier */
+    F.openAjoutAliment("midi");
+    await attendre(()=>!!D2.getElementById("ot-q"), 1500);
+    const q = D2.getElementById("ot-q");
+    q.value = "Kiwi"; q.dispatchEvent(new F.Event("input"));
+    await attendre(()=>[...D2.querySelectorAll("#ot-liste [data-food]")].some(b=>/kiwi/i.test(b.textContent)), 1500);
+    const kiwi = [...D2.querySelectorAll("#ot-liste [data-food]")].find(b=>/kiwi/i.test(b.textContent));
+    if(kiwi) kiwi.click();
+    await pause(80);
+    vrai("Un fruit à la pièce se remplit à 1", D2.getElementById("ot-g").value === "1", D2.getElementById("ot-g").value);
+    vrai("…sans ouvrir le clavier", D2.activeElement !== D2.getElementById("ot-g"));
+    /* « Rechercher » / « Entrée » ferme le clavier */
+    q.focus();
+    q.dispatchEvent(new F.KeyboardEvent("keydown", {key:"Enter", keyCode:13, bubbles:true}));
+    await pause(30);
+    vrai("« Rechercher » sur le clavier le referme", D2.activeElement !== q);
+    const g = D2.getElementById("ot-g"); g.focus();
+    g.dispatchEvent(new F.KeyboardEvent("keydown", {key:"Enter", keyCode:13, bubbles:true}));
+    await pause(30);
+    vrai("…et « OK » sur le clavier des grammes aussi", D2.activeElement !== g);
+    F.hideSheet();
+
+    /* 6. les boutons gris : blancs, un liseré fin */
+    const b = D2.createElement("button"); b.className = "btn"; D2.getElementById("app").appendChild(b);
+    const cs = F.getComputedStyle(b);
+    vrai("Un bouton ordinaire est blanc (ou la surface en sombre)", cs.backgroundColor === F.getComputedStyle(D2.body).getPropertyValue("--surface").trim() || cs.backgroundColor === "rgb(255, 255, 255)" || cs.backgroundColor === "rgb(31, 31, 34)", cs.backgroundColor);
+    vrai("…cerné d'un liseré très fin", /inset/.test(cs.boxShadow) && /1px/.test(cs.boxShadow), cs.boxShadow);
+    b.remove();
+
+    /* 7. le voile d'Analyse couvre tout l'ecran, sans bloquer les barres */
+    F.openAbonnement();
+    const f = D2.getElementById("abo-fenetre"), rf = f.getBoundingClientRect();
+    vrai("Le voile d'Analyse couvre tout l'écran", F.innerHeight > 0 && rf.top <= 0 && Math.round(rf.bottom) >= F.innerHeight - 1, rf.top + " / " + rf.bottom);
+    vrai("…et laisse passer le doigt hors de la carte", F.getComputedStyle(f).pointerEvents === "none"
+      && F.getComputedStyle(f.querySelector(".abo-carte-f")).pointerEvents === "auto");
+    F.fermerAbonnement();
+    mesurable(false);
   })();
   neuf();
 
