@@ -4528,6 +4528,7 @@
   .oc-c .ic svg{width:20px; height:20px;} .oc-c .ic .icm{background-color:var(--accent);}
   .oc-c b{font-size:13.5px; font-weight:800; line-height:1.25;}
   .oc-c.on{box-shadow:inset 0 0 0 2px var(--accent); background:rgba(245,130,32,.06);}
+  .oc-c .oc-pause{font-size:11.5px; font-weight:700; color:var(--accent); margin-top:-4px;}
   .oc-note{font-size:12.5px; color:var(--ink-mute); line-height:1.5; margin:0;}
   .oc-etapes{display:flex; flex-direction:column; gap:6px;}
   /* les etapes : fond blanc, liseré gris fin, comme les autres cartes (Nico) */
@@ -4598,6 +4599,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "En pause · {}":"Paused · {}",
+  "Reprendre cet objectif":"Resume this goal",
   "Noter une sortie déjà faite":"Log a past workout",
   "Course, marche, vélo… après coup":"Run, walk, bike… after the fact",
   "Masquer le détail des muscles":"Hide muscle details",
@@ -4688,7 +4691,7 @@ const TRAD = {en:{
   "Séances par semaine":"Workouts per week",
   "Ta course facile":"Your easy run",
   "Ta marche":"Your walk",
-  "Ta progression sur cet objectif sera oubliée. Tes sorties restent.":"Your progress on this goal will be lost. Your runs stay.",
+  "Tu pourras le reprendre là où tu en étais. Tes sorties restent.":"You can pick it up where you left off. Your runs stay.",
   "Ton objectif":"Your goal",
   "Ton objectif de course":"Your running goal",
   "Ton objectif est la régularité : des footings faciles, que tu peux enchaîner plusieurs fois par semaine. La durée s'allonge un peu au fil des séances.":"Your goal is consistency: easy jogs you can repeat several times a week. The duration grows a little over the sessions.",
@@ -7996,6 +7999,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "En pause · {}":"En pausa · {}",
+  "Reprendre cet objectif":"Retomar este objetivo",
   "Noter une sortie déjà faite":"Anotar una salida ya hecha",
   "Course, marche, vélo… après coup":"Carrera, caminata, bici… a posteriori",
   "Masquer le détail des muscles":"Ocultar el detalle de los músculos",
@@ -8086,7 +8091,7 @@ es:{
   "Séances par semaine":"Entrenamientos por semana",
   "Ta course facile":"Tu carrera fácil",
   "Ta marche":"Tu caminata",
-  "Ta progression sur cet objectif sera oubliée. Tes sorties restent.":"Se perderá tu progreso en este objetivo. Tus salidas se quedan.",
+  "Tu pourras le reprendre là où tu en étais. Tes sorties restent.":"Podrás retomarlo donde lo dejaste. Tus salidas se quedan.",
   "Ton objectif":"Tu objetivo",
   "Ton objectif de course":"Tu objetivo de carrera",
   "Ton objectif est la régularité : des footings faciles, que tu peux enchaîner plusieurs fois par semaine. La durée s'allonge un peu au fil des séances.":"Tu objetivo es la regularidad: rodajes fáciles que puedes encadenar varias veces por semana. La duración aumenta un poco con las sesiones.",
@@ -11610,6 +11615,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "En pause · {}":"Em pausa · {}",
+  "Reprendre cet objectif":"Retomar este objetivo",
   "Noter une sortie déjà faite":"Registrar uma saída já feita",
   "Course, marche, vélo… après coup":"Corrida, caminhada, bicicleta… depois",
   "Masquer le détail des muscles":"Ocultar o detalhe dos músculos",
@@ -11700,7 +11707,7 @@ pt:{
   "Séances par semaine":"Treinos por semana",
   "Ta course facile":"Sua corrida leve",
   "Ta marche":"Sua caminhada",
-  "Ta progression sur cet objectif sera oubliée. Tes sorties restent.":"Seu progresso neste objetivo será perdido. Suas saídas continuam.",
+  "Tu pourras le reprendre là où tu en étais. Tes sorties restent.":"Você poderá retomá-lo de onde parou. Suas saídas continuam.",
   "Ton objectif":"Seu objetivo",
   "Ton objectif de course":"Seu objetivo de corrida",
   "Ton objectif est la régularité : des footings faciles, que tu peux enchaîner plusieurs fois par semaine. La durée s'allonge un peu au fil des séances.":"Seu objetivo é a regularidade: trotes leves que você pode repetir várias vezes por semana. A duração aumenta um pouco ao longo dos treinos.",
@@ -18770,7 +18777,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 18h57 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 19h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -18901,6 +18908,7 @@ function applyDefaults(){
   if(!db.parcours) db.parcours = [];              /* les seances de course composees */
   if(db.courseEnCours === undefined) db.courseEnCours = null;
   if(db.objCourse === undefined) db.objCourse = null;       /* l'objectif de course choisi */
+  if(!db.objPauses) db.objPauses = {};                      /* les objectifs quittes, par type */
   if(!("active" in db)) db.active = null;
 }
 applyDefaults();
@@ -28860,7 +28868,7 @@ const IC_REPERE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 /* Vitesses proposees par defaut, modifiables etape par etape : celles de la maquette de
    Nico. Ce ne sont pas des recommandations — chacun met les siennes, et l'app reprend
    ensuite celles de sa derniere seance. */
-const COURSE_V_DEFAUT = {course:10, marche:6};
+const COURSE_V_DEFAUT = {course:8, marche:4};   /* Nico, 26 septembre : 10 et 6 etaient trop hauts pour un debut */
 function vitesseDefaut(type){
   const l = (db.parcours || []).slice().reverse();
   for(const p of l){ const e = (p.etapes || []).find(x=>x.type === type && x.v > 0); if(e) return e.v; }
@@ -29564,11 +29572,14 @@ function openObjectifCourse(){
   const vAff = v => Math.round((imp ? v * 0.621371 : v) * 10) / 10;
   const vKmh = x => imp ? x / 0.621371 : x;
   const draw = ()=>{
-    const d = cur && cur.type === type ? cur : nouvelObjectif(type);
+    /* un objectif quitte plus tot reprend la ou il en etait : niveau, jauge, reglages */
+    const enPause = (db.objPauses || {})[type];
+    const d = cur && cur.type === type ? cur : (enPause || nouvelObjectif(type));
     openSheet(`<div class="pr-tete"><h3>${TR("Ton objectif de course")}</h3>
         <p>${TR("L'app prépare chaque séance et l'adapte à ton ressenti.")}</p></div>
       <div class="oc-choix">${Object.keys(OBJ_COURSE).map(k=>`<button class="oc-c ${k === type ? "on" : ""}" data-oc="${k}">
-          <span class="ic">${icObjectif(k)}</span><b>${TR(OBJ_COURSE[k].nom)}</b></button>`).join("")}</div>
+          <span class="ic">${icObjectif(k)}</span><b>${TR(OBJ_COURSE[k].nom)}</b>${
+          (db.objPauses || {})[k] && !(cur && cur.type === k) ? `<small class="oc-pause">${TR("En pause · {}").replace("{}", esc(avancementObjectif(db.objPauses[k]).txt))}</small>` : ""}</button>`).join("")}</div>
       <div class="stack" style="margin-top:14px;">
         ${type === "distance" ? `<div><span class="f-lab">${TR("Distance visée")}</span>
           <div class="chips oc-km">${[3, 5, 10, 21.1].map(k=>`<button class="chip ${Math.abs(d.cible - k) < 0.05 ? "on" : ""}" data-km="${k}">${kmTxt(k)}</button>`).join("")}</div></div>` : ""}
@@ -29584,7 +29595,7 @@ function openObjectifCourse(){
           <label class="grow"><span class="f-lab">${TR("Ta marche")} (${imp ? "mph" : "km/h"})</span><input type="number" inputmode="decimal" step="0.5" min="2" id="oc-vm" value="${vAff(d.vMarche)}"></label>
         </div>
         <p class="oc-note">${TR("Ces vitesses servent à estimer les distances. Une course « facile », c'est une allure où tu peux encore parler.")}</p>
-        <button class="btn btn-accent btn-rond" id="oc-ok">${TR(cur && cur.type === type ? "Enregistrer" : "Commencer cet objectif")}</button>
+        <button class="btn btn-accent btn-rond" id="oc-ok">${TR(cur && cur.type === type ? "Enregistrer" : (enPause ? "Reprendre cet objectif" : "Commencer cet objectif"))}</button>
         ${cur ? `<button class="pp-lien-sup" id="oc-stop">${TR("Arrêter cet objectif")}</button>` : ""}
       </div>`);
     let ps = d.parSemaine, km = d.cible;
@@ -29600,11 +29611,26 @@ function openObjectifCourse(){
         if(cible !== undefined) cur.cible = cible;
         if(type === "distance") cur.longue = Math.min(cur.longue, cur.cible);
         if(type === "frequence") cur.cible = ps;
-      } else db.objCourse = nouvelObjectif(type, {parSemaine:ps, vCourse:vc, vMarche:vm, cible});
+      } else {
+        /* l'objectif en cours part en pause ; celui qu'on choisit sort de pause s'il y etait */
+        if(!db.objPauses) db.objPauses = {};
+        if(cur) db.objPauses[cur.type] = cur;
+        const repris = db.objPauses[type];
+        delete db.objPauses[type];
+        if(repris){
+          Object.assign(repris, {parSemaine:ps, vCourse:vc, vMarche:vm});
+          if(cible !== undefined) repris.cible = cible;
+          if(type === "distance") repris.longue = Math.min(repris.longue, repris.cible);
+          if(type === "frequence") repris.cible = ps;
+          db.objCourse = repris;
+        } else db.objCourse = nouvelObjectif(type, {parSemaine:ps, vCourse:vc, vMarche:vm, cible});
+      }
       save(); openParcoursListe(); toast(TR("Objectif enregistré"));
     };
     const stop = document.getElementById("oc-stop");
-    if(stop) stop.onclick = ()=>askConfirm(TR("Arrêter cet objectif ?"), TR("Ta progression sur cet objectif sera oubliée. Tes sorties restent."), TR("Arrêter"), true, ()=>{
+    if(stop) stop.onclick = ()=>askConfirm(TR("Arrêter cet objectif ?"), TR("Tu pourras le reprendre là où tu en étais. Tes sorties restent."), TR("Arrêter"), true, ()=>{
+      if(!db.objPauses) db.objPauses = {};
+      db.objPauses[cur.type] = cur;               /* arrete, mais pas oublie */
       db.objCourse = null; save(); openParcoursListe();
     });
   };

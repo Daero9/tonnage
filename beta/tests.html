@@ -58,6 +58,12 @@ async function lancer(){
     DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
+    /* la course : une seance laissee en cours par un essai precedent ouvrirait l'onglet
+       Sport sur l'ecran de course, et tous les tests de l'accueil tomberaient */
+    DB.courseEnCours = null; DB.parcours = []; DB.objCourse = null; DB.objPauses = {};
+    /* …et ce qu'elle avait pose a l'ecran : barre d'onglets masquee, commandes du bas */
+    F.document.body.classList.remove("en-course");
+    try{ F.eval("arreterTicCourse(); retirerCommandesCourse(); arreterServiceRepos()"); }catch(e){}
     DB.abo = true;           /* les écrans payants s'ouvrent en clair ; le voile a son propre groupe */
     DB.essaiDebut = new Date(Date.now() - 30 * 864e5).toISOString();   /* essai fini depuis longtemps */
     /* Une visite se joue sur un voile plein écran : elle passerait devant les boutons
@@ -6299,13 +6305,18 @@ async function lancer(){
     /* c'est une fenetre, pas une fiche : le voile assombrit tout l'ecran (Nico, 26
        septembre), mais la barre d'onglets reste touchable a travers lui, et la carte
        ne la recouvre pas */
+    /* une fiche laissee ouverte par un groupe precedent couvrirait la barre : on mesure
+       la fenetre d'abonnement seule */
+    if(F.document.getElementById("overlay").classList.contains("show")){ F.hideSheet(); }
     mesurable(true);
-    /* le temps que la page prenne sa taille, et la fenetre sa place */
+    /* le temps que la page prenne sa taille, et que la carte finisse de monter : son
+       animation d'entree ne demarre qu'une fois l'iframe visible (480 ms) */
     await new Promise(r=>setTimeout(r, 400));
+    await attendre(()=>{ const c = D2.querySelector(".abo-carte-f"); return c && F.getComputedStyle(c).animationName === "none" || (c && c.getAnimations && c.getAnimations().length === 0); }, 1500);
     (()=>{
       const tb = D2.querySelector(".tabbar").getBoundingClientRect();
       const sous = D2.elementFromPoint(tb.left + tb.width/2, tb.top + tb.height/2);
-      vrai("La barre d'onglets reste touchable à travers le voile", !!(sous && sous.closest(".tabbar")), sous && sous.className);
+      vrai("La barre d'onglets reste touchable à travers le voile", !!(sous && sous.closest(".tabbar")), sous && sous.outerHTML.slice(0, 60));
       vrai("…et la carte ne la recouvre pas", D2.querySelector(".abo-carte-f").getBoundingClientRect().bottom <= tb.top + 1);
     })();
     mesurable(false);
@@ -7744,7 +7755,9 @@ async function lancer(){
     /* la place exacte depend de la fiche qui finit de monter : on verifie qu'il est
        descendu, et qu'il a garde ses reglages a sa nouvelle place */
     const place = noms.indexOf(nom0);
-    vrai("Glisser le 1er exercice par sa poignée le fait descendre", place > 0 && place < 5, place + 1);
+    /* jusqu'ou : cela depend de la vitesse de la machine (le defilement automatique
+       prend le relais pres du bord) ; ce qui compte, c'est qu'il descende */
+    vrai("Glisser le 1er exercice par sa poignée le fait descendre", place > 0, place + 1);
     vrai("…les numéros se recalculent", [...D2.querySelectorAll(".tp-num")].map(n=>n.textContent).join("") === "123456789");
     vrai("…et il garde ses réglages", D2.querySelectorAll(".tp-ex")[Math.max(0, place)].querySelector('[data-f="reps"]').value === "9-13");
     F.hideSheet();
@@ -8144,6 +8157,47 @@ async function lancer(){
     DB.templates = gardeT;
   })();
   neuf();
+
+  /* Nico, 26 septembre : vitesses de depart, et changer d'objectif sans perdre sa progression */
+  grp("Changer d'objectif de course sans perdre sa progression");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.parcours = []; DB.objPauses = {}; DB.cardio = [];
+    const o = F.nouvelObjectif("30min");
+    vrai("Sans séance enregistrée : course facile 8 km/h, marche 4 km/h", o.vCourse === 8 && o.vMarche === 4, o.vCourse + " / " + o.vMarche);
+    DB.objCourse = o; DB.objCourse.niveau = 1; DB.objCourse.jauges = {niveau:0.5};
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-ok"), 1500);
+    D2.querySelector('[data-oc="distance"]').click();
+    D2.getElementById("oc-ok").click();
+    vrai("Passer à un autre objectif met le précédent en pause", DB.objCourse.type === "distance" && DB.objPauses["30min"] && DB.objPauses["30min"].niveau === 1);
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-ok"), 1500);
+    vrai("Le choix des objectifs montre « En pause · Niveau 2 / 10 »", /En pause · Niveau 2 \/ 10/.test(D2.querySelector('[data-oc="30min"]').textContent));
+    D2.querySelector('[data-oc="30min"]').click();
+    vrai("…et propose de le reprendre", /Reprendre/.test(D2.getElementById("oc-ok").textContent));
+    D2.getElementById("oc-ok").click();
+    vrai("Repris : même niveau, même jauge", DB.objCourse.type === "30min" && DB.objCourse.niveau === 1 && DB.objCourse.jauges.niveau === 0.5);
+    vrai("…et l'objectif distance attend à son tour", !!DB.objPauses.distance && !DB.objPauses["30min"]);
+    /* arreter ne fait plus rien oublier */
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-stop"), 1500);
+    D2.getElementById("oc-stop").click();
+    await attendre(()=>!!D2.querySelector(".pp-modal #cf-yes"), 1500);
+    D2.querySelector(".pp-modal #cf-yes").click();
+    vrai("Arrêter un objectif le met en pause, sans rien perdre", DB.objCourse === null && DB.objPauses["30min"] && DB.objPauses["30min"].niveau === 1);
+    F.hideSheet();
+    DB.objCourse = null; DB.objPauses = {};
+  })();
+  neuf();
+
+  /* Les tests de course lancent de vraies seances, que l'app enregistre : on n'en laisse
+     aucune « en cours » derriere nous, sinon le prochain passage s'ouvrirait sur l'ecran
+     de course et les tests de l'accueil tomberaient. */
+  DB.courseEnCours = null; DB.objCourse = null; DB.objPauses = {}; DB.parcours = [];
+  try{ F.eval("arreterTicCourse(); retirerCommandesCourse(); save()"); }catch(e){}
+  F.document.body.classList.remove("en-course");
 
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
