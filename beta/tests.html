@@ -7870,21 +7870,32 @@ async function lancer(){
     F.openParcoursListe();
     await attendre(()=>!!D2.getElementById("pc-nouv"), 1500);
     D2.getElementById("pc-nouv").click();
-    await attendre(()=>D2.querySelectorAll(".pc-et").length === 4, 1500);
-    vrai("Une nouvelle séance part de l'exemple (4 étapes)", D2.querySelectorAll(".pc-et").length === 4);
+    await attendre(()=>D2.querySelectorAll(".pc-et").length === 2, 1500);
+    vrai("Une nouvelle séance part d'une course et d'une marche", D2.querySelectorAll(".pc-et").length === 2
+      && D2.querySelectorAll(".pc-et")[0].querySelector("[data-t='course']").classList.contains("on")
+      && D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='marche']").classList.contains("on"));
+    vrai("Au repos, un réglage ne montre que sa valeur", D2.querySelector(".pc-et .pc-pas").classList.contains("ferme"));
+    D2.querySelector(".pc-et .pc-pas").click();
+    vrai("Un appui fait apparaître − et +", !D2.querySelector(".pc-et .pc-pas").classList.contains("ferme")
+      && !D2.querySelector(".pc-et [data-f='min']").readOnly);
     D2.querySelector(".pc-et [data-pas='min|1']").click();
     vrai("Le cran ajoute une minute à l'étape", D2.querySelector(".pc-et [data-f='min']").value === "16");
     D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").click();
     vrai("On change le type d'une étape", D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").classList.contains("on"));
-    D2.getElementById("pc-add").click();
-    vrai("Ajouter une étape", D2.querySelectorAll(".pc-et").length === 5);
+    D2.getElementById("pc-add-course").click();
+    const ets = D2.querySelectorAll(".pc-et");
+    vrai("Ajouter une course copie la dernière course", ets.length === 3 && ets[2].querySelector("[data-t='course']").classList.contains("on")
+      && ets[2].querySelector("[data-f='min']").value === ets[1].querySelector("[data-f='min']").value);
+    D2.getElementById("pc-add-marche").click();
+    vrai("Ajouter une marche (aucune marche : les réglages par défaut)", D2.querySelectorAll(".pc-et").length === 4);
     D2.getElementById("pc-save").click();
-    vrai("La séance est enregistrée", DB.parcours.length === 1 && DB.parcours[0].etapes.length === 5 && DB.parcours[0].etapes[0].min === 16);
+    vrai("La séance est enregistrée", DB.parcours.length === 1 && DB.parcours[0].etapes.length === 4 && DB.parcours[0].etapes[0].min === 16);
+    vrai("…et la copie est indépendante", DB.parcours[0].etapes[2] !== DB.parcours[0].etapes[1]);
     F.hideSheet();
     /* la lancer, puis la finir : elle devient une sortie */
     F.demarrerCourse(DB.parcours[0].id);
     await attendre(()=>!!D2.querySelector(".cr-c.encours"), 1500);
-    vrai("Lancée, l'étape en cours est en tête", !!D2.querySelector(".cr-c.encours") && D2.querySelectorAll(".cr-c.avenir").length === 4);
+    vrai("Lancée, l'étape en cours est en tête", !!D2.querySelector(".cr-c.encours") && D2.querySelectorAll(".cr-c.avenir").length === 3);
     vrai("…et la page ne descend pas au départ : le haut reste en place", F.scrollY === 0);
     vrai("La barre d'onglets s'efface", D2.body.classList.contains("en-course"));
     vrai("Les commandes sont hors de la page animée", !!D2.querySelector("body > #cr-hors .cr-pause"));

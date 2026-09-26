@@ -4483,6 +4483,15 @@
     color:var(--ink); box-shadow:none; -moz-appearance:textfield;}
   .pc-pas input::-webkit-inner-spin-button, .pc-pas input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
   .pc-pas label span{font-size:9.5px; font-weight:700; color:var(--ink-mute);}
+  /* ferme : juste la valeur, a toucher ; ouvert : − et + autour, cerne d'orange */
+  .pc-pas{min-height:34px; cursor:pointer; transition:box-shadow .15s ease;}
+  .pc-pas.ferme > button{display:none;}
+  .pc-pas.ferme input{pointer-events:none;}
+  .pc-pas:not(.ferme){box-shadow:inset 0 0 0 2px var(--accent);}
+  @media (prefers-reduced-motion:no-preference){ .pc-pas:not(.ferme) > button{animation:popEntree .2s ease-out;} }
+  .pc-ajouts{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .pc-ajouts .btn-dash{margin:0; min-width:0; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:6px; padding-inline:6px; white-space:nowrap;}
+  .pc-ajouts .icm{background-color:currentColor;}
   /* ---- la course dans Progression ---- */
   .co-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:6px 0 12px;}
   .co-tuiles > div{background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); border-radius:14px; padding:10px 8px; text-align:center;}
@@ -4740,6 +4749,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Ajouter une course":"Add a run",
+  "Ajouter une marche":"Add a walk",
   "Cardio":"Cardio",
   "Ajouter à ta séance":"Add to your workout",
   "Qu'est-ce qu'on|ajoute ?":"What do you|want to add?",
@@ -8170,6 +8181,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Ajouter une course":"Añadir carrera",
+  "Ajouter une marche":"Añadir caminata",
   "Cardio":"Cardio",
   "Ajouter à ta séance":"Añadir a tu sesión",
   "Qu'est-ce qu'on|ajoute ?":"¿Qué|añadimos?",
@@ -11816,6 +11829,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Ajouter une course":"Adicionar corrida",
+  "Ajouter une marche":"Adicionar caminhada",
   "Cardio":"Cardio",
   "Ajouter à ta séance":"Adicionar ao seu treino",
   "Qu'est-ce qu'on|ajoute ?":"O que vamos|adicionar?",
@@ -19008,7 +19023,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 23h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 23h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -29279,19 +29294,20 @@ function crResume(tot){
 /* ---- composer une seance ---- */
 function openParcoursEditeur(id){
   const src = id ? (db.parcours || []).find(p=>p.id === id) : null;
-  /* une nouvelle seance part de l'exemple de Nico : on l'ajuste plutot que de partir de rien */
+  /* une nouvelle seance part d'une course et d'une marche ; chaque etape ajoutee copie
+     la derniere du meme type (Nico : « course 15 min → une copie de course 15 min »),
+     puis vit sa vie : c'est une copie, pas un lien */
   const p = src ? JSON.parse(JSON.stringify(src)) : {id:uid(), nom:"", etapes:[
-    {type:"course", min:15, v:vitesseDefaut("course")}, {type:"marche", min:5, v:vitesseDefaut("marche")},
-    {type:"course", min:10, v:vitesseDefaut("course")}, {type:"marche", min:5, v:vitesseDefaut("marche")}]};
+    {type:"course", min:15, v:vitesseDefaut("course")}, {type:"marche", min:5, v:vitesseDefaut("marche")}]};
   const imp = estImperial();
   const vAff = v => Math.round((imp ? v * 0.621371 : v) * 10) / 10;
   const vKmh = x => imp ? x / 0.621371 : x;
   const nomEl = ()=>document.getElementById("pc-nom");
-  /* un reglage : − et + de part et d'autre du nombre, assez grands pour le pouce. Les
-     petites fleches dans le champ ouvraient le clavier une fois sur deux (Nico). */
+  /* un reglage : au repos, juste la valeur. Un appui fait apparaitre − et + autour du
+     nombre ; un appui sur le nombre, une fois ouvert, fait venir le clavier (Nico). */
   const pas = (f, val, unite, lab, attrs) => `<div class="pc-reg"><span class="label">${lab}</span>
-    <div class="pc-pas"><button type="button" data-pas="${f}|-1" aria-label="${TR("Moins")}">−</button>
-      <label><input type="number" inputmode="decimal" ${attrs} value="${val}" data-f="${f}"><span>${unite}</span></label>
+    <div class="pc-pas ferme"><button type="button" data-pas="${f}|-1" aria-label="${TR("Moins")}">−</button>
+      <label><input type="number" inputmode="decimal" readonly ${attrs} value="${val}" data-f="${f}"><span>${unite}</span></label>
       <button type="button" data-pas="${f}|1" aria-label="${TR("Plus")}">＋</button></div></div>`;
   const draw = ()=>{
     openSheet(`<div class="pc-tete"><button class="cr-rond" id="pc-retour" aria-label="${TR("Retour")}">${IC_RETOUR}</button>
@@ -29301,7 +29317,10 @@ function openParcoursEditeur(id){
           <label class="tp-nom"><span class="ic">${icoM("course", 24)}</span><input id="pc-nom" placeholder="${TR("Ex : Course et marche")}" value="${esc(p.nom)}"></label></div>
         <div id="pc-resume">${crResume(parcoursTotaux(p.etapes))}</div>
         <div><span class="f-lab">${TR("Étapes")}</span><div id="pc-etapes"></div>
-          <button class="btn-dash" id="pc-add">＋ ${TR("Ajouter une étape")}</button></div>
+          <div class="pc-ajouts">
+            <button class="btn-dash" id="pc-add-course">＋ ${icoM("course", 16)}${TR("Course")}</button>
+            <button class="btn-dash" id="pc-add-marche">＋ ${icoF("walk-1", 16)}${TR("Marche")}</button>
+          </div></div>
         <div class="row" style="gap:9px;">
           <button class="btn grow btn-rond" id="pc-save">${TR("Enregistrer")}</button>
           <button class="btn btn-accent grow btn-rond" id="pc-go">${IC_LECTURE}${TR("Commencer")}</button>
@@ -29362,14 +29381,29 @@ function openParcoursEditeur(id){
       p.etapes = ordre.map(k=>p.etapes[k]);
       const haut = sheet.scrollTop; draw(); sheet.scrollTop = haut;
     }, "pc-et");
-    document.getElementById("pc-add").onclick = ()=>{
+    const ajouter = type => {
       p.nom = nomEl().value;
-      /* on alterne : apres une course, une marche, et inversement */
-      const der = p.etapes[p.etapes.length - 1];
-      const type = der && der.type === "course" ? "marche" : "course";
-      p.etapes.push({type, min:type === "course" ? 10 : 5, v:vitesseDefaut(type)});
+      /* la copie de la derniere etape du meme type : duree, vitesse, pente */
+      const modele = p.etapes.slice().reverse().find(e=>e.type === type);
+      p.etapes.push(modele ? JSON.parse(JSON.stringify(modele)) : {type, min:type === "course" ? 10 : 5, v:vitesseDefaut(type)});
       const haut = sheet.scrollTop; draw(); sheet.scrollTop = haut + 200;
     };
+    document.getElementById("pc-add-course").onclick = ()=>ajouter("course");
+    document.getElementById("pc-add-marche").onclick = ()=>ajouter("marche");
+    /* ouvrir un reglage ferme les autres ; toucher ailleurs les ferme tous */
+    const fermerPas = sauf => document.querySelectorAll(".pc-pas").forEach(x=>{
+      if(x === sauf) return;
+      x.classList.add("ferme");
+      const i = x.querySelector("input"); i.readOnly = true; if(document.activeElement === i) i.blur();
+    });
+    document.querySelectorAll(".pc-pas").forEach(x=>x.addEventListener("click", ()=>{
+      if(!x.classList.contains("ferme")) return;
+      fermerPas(x);
+      x.classList.remove("ferme");
+      x.querySelector("input").readOnly = false;
+      vibrer(6);
+    }));
+    document.querySelector("#sheet .stack").addEventListener("click", e=>{ if(!e.target.closest(".pc-pas")) fermerPas(null); });
     const enregistrer = ()=>{
       const t = parcoursTotaux(p.etapes);
       p.nom = nomEl().value.trim() || (TR("Course") + " · " + minTxt(t.min));
