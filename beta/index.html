@@ -4498,6 +4498,15 @@
   .ca-defi b span{font-size:16px; margin-left:4px;}
   .ca-defi small{display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
   .btn.ca-oui{background:linear-gradient(180deg, #7ACB45, #5CB22E); color:#fff; box-shadow:none;}
+  /* la course dans une seance de musculation */
+  .ex-card.co-muscu .co-ic{display:flex; align-items:center; justify-content:center; background:rgba(245,130,32,.14);}
+  .ex-card.co-muscu .co-ic .icm{background-color:var(--accent);}
+  .ex-card.co-muscu .co-sous{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .ex-card.co-muscu .co-lancer{width:100%; margin-top:12px;}
+  .ex-card.co-muscu.fini{opacity:.72;}
+  .ex-card.co-muscu.fini .co-ic .icm{background-color:var(--good);}
+  .tp-course select{width:100%;}
+  .co-avis{margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(245,130,32,.10); color:var(--ink-soft);}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4599,6 +4608,18 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Séance de course introuvable":"Running workout not found",
+  "Lancer la course":"Start the run",
+  "Échauffement":"Warm-up",
+  "Retour à la séance":"Back to the workout",
+  "{km} de course et marche · {m}":"{km} of running and walking · {m}",
+  "Séance du jour de mon objectif":"Today's workout for my goal",
+  "À la fin":"At the end",
+  "Au début · échauffement":"At the start · warm-up",
+  "Au début, préfère une course courte et facile : une course longue ou rapide juste avant les poids fait baisser ta force pendant la séance.":"At the start, prefer a short, easy run: a long or fast run right before lifting lowers your strength during the workout.",
+  "Retirer la course":"Remove the run",
+  "Ajouter une séance de course":"Add a running workout",
+  "Crée d'abord une séance de course ou choisis un objectif (menu +).":"First create a running workout or pick a goal (+ menu).",
   "En pause · {}":"Paused · {}",
   "Reprendre cet objectif":"Resume this goal",
   "Noter une sortie déjà faite":"Log a past workout",
@@ -7999,6 +8020,18 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Séance de course introuvable":"Entrenamiento de carrera no encontrado",
+  "Lancer la course":"Empezar la carrera",
+  "Échauffement":"Calentamiento",
+  "Retour à la séance":"Volver al entrenamiento",
+  "{km} de course et marche · {m}":"{km} de carrera y caminata · {m}",
+  "Séance du jour de mon objectif":"Entrenamiento del día de mi objetivo",
+  "À la fin":"Al final",
+  "Au début · échauffement":"Al principio · calentamiento",
+  "Au début, préfère une course courte et facile : une course longue ou rapide juste avant les poids fait baisser ta force pendant la séance.":"Al principio, mejor una carrera corta y fácil: una carrera larga o rápida justo antes de las pesas reduce tu fuerza durante la sesión.",
+  "Retirer la course":"Quitar la carrera",
+  "Ajouter une séance de course":"Añadir un entrenamiento de carrera",
+  "Crée d'abord une séance de course ou choisis un objectif (menu +).":"Primero crea un entrenamiento de carrera o elige un objetivo (menú +).",
   "En pause · {}":"En pausa · {}",
   "Reprendre cet objectif":"Retomar este objetivo",
   "Noter une sortie déjà faite":"Anotar una salida ya hecha",
@@ -11615,6 +11648,18 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Séance de course introuvable":"Treino de corrida não encontrado",
+  "Lancer la course":"Começar a corrida",
+  "Échauffement":"Aquecimento",
+  "Retour à la séance":"Voltar ao treino",
+  "{km} de course et marche · {m}":"{km} de corrida e caminhada · {m}",
+  "Séance du jour de mon objectif":"Treino do dia do meu objetivo",
+  "À la fin":"No final",
+  "Au début · échauffement":"No início · aquecimento",
+  "Au début, préfère une course courte et facile : une course longue ou rapide juste avant les poids fait baisser ta force pendant la séance.":"No início, prefira uma corrida curta e leve: uma corrida longa ou rápida logo antes dos pesos diminui sua força durante o treino.",
+  "Retirer la course":"Remover a corrida",
+  "Ajouter une séance de course":"Adicionar um treino de corrida",
+  "Crée d'abord une séance de course ou choisis un objectif (menu +).":"Primeiro crie um treino de corrida ou escolha um objetivo (menu +).",
   "En pause · {}":"Em pausa · {}",
   "Reprendre cet objectif":"Retomar este objetivo",
   "Noter une sortie déjà faite":"Registrar uma saída já feita",
@@ -18777,7 +18822,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 19h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 20h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27067,6 +27112,7 @@ function startWorkout(tplId, lieu, courte){
     entries[0].sets.unshift(serieEchauffement(entries[0].exId, entries[0].target && entries[0].target.reps));
   }
   db.active = {name: tpl? tpl.name : TR("Séance libre"), templateId:tplId, start:Date.now(), entries};
+  if(tpl && tpl.course) db.active.course = {ref:tpl.course.ref, place:tpl.course.place || "fin", fait:false};
   if(tpl && tpl.cardio){
     const o = objectifCardio(tpl.cardio);
     db.active.cardio = {machine: tpl.cardio.machine || "course", min:o.min, km:o.km, pente:o.pente, fait:false,
@@ -27317,8 +27363,8 @@ function kcalSortieActive(a){
 function toutEstFait(a){
   if(!a || !a.entries.length) return false;
   const restant = a.entries.some(en=>en.sets.some(s=>!s.done && !s.warm));
-  const cardioReste = !!(a.cardio && !a.cardio.fait);
-  const auMoinsUne = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait);
+  const cardioReste = !!(a.cardio && !a.cardio.fait) || !!(a.course && !a.course.fait && courseDeSeance(a.course));
+  const auMoinsUne = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait) || (a.course && a.course.fait);
   return !restant && !cardioReste && !!auMoinsUne;
 }
 function proposerFin(){
@@ -28061,6 +28107,22 @@ function renderActive(app){
     });
     list.appendChild(q);
   }
+  if(a.course){
+    const co = a.course, pc = courseDeSeance(co);
+    const el = document.createElement("div");
+    el.className = "ex-card co-muscu" + (co.fait ? " fini" : "");
+    const tot = pc ? parcoursTotaux(pc.etapes) : null;
+    el.innerHTML = `<div class="ex-head" style="align-items:center; gap:10px;">
+        <span class="ex-ico co-ic">${icoM("course", 24)}</span>
+        <div class="grow"><div class="ex-name">${co.fait ? "✓ " : ""}${esc(pc ? pc.nom : TR("Séance de course"))}</div>
+          <div class="co-sous">${co.fait ? `${kmTxt(co.km)} · ${minTxt(co.min)}`
+            : (pc ? `${co.place === "debut" ? TR("Échauffement") + " · " : ""}${minTxt(tot.min)} · ${kmTxt(tot.km)} (${TR("est.")}) · ${pc.etapes.length} ${TR(pc.etapes.length > 1 ? "étapes" : "étape")}`
+                  : TR("Séance de course introuvable"))}</div></div></div>
+      ${!co.fait && pc ? `<button class="btn btn-accent btn-rond co-lancer" data-lancer-course>${IC_LECTURE}${TR("Lancer la course")}</button>` : ""}`;
+    const bl = el.querySelector("[data-lancer-course]");
+    if(bl) bl.onclick = ()=>demarrerCourse(courseDeSeance(co), {muscu:true});
+    if(co.place === "debut") list.insertBefore(el, list.firstChild); else list.appendChild(el);
+  }
   if(a.cardio){
     const c = a.cardio;
     const cc = document.createElement("div");
@@ -28162,9 +28224,10 @@ function renderActive(app){
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
     const cardioFait = !!(a.cardio && a.cardio.fait && (a.cardio.min > 0 || a.cardio.km > 0));
-    if(!doneSets && !cardioFait){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
+    const courseFaite = !!(a.course && a.course.fait);
+    if(!doneSets && !cardioFait && !courseFaite){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
-    const kcal = liftKcal(a);
+    const kcal = liftKcal(a) + (courseFaite ? (a.course.kcal || 0) : 0);
     /* d'apres la maquette du 21 septembre : la coche verte dans son rond, la question,
        trois tuiles (series, tonnage, calories) et « On enregistre ? » */
     const tuile = (ic, classe, v, l) => `<div class="tf"><span class="ic ${classe}">${ic}</span><b>${v}</b><small>${l}</small></div>`;
@@ -28199,8 +28262,16 @@ function renderActive(app){
         recap.kcal = kcal + kcalSortieActive(a);
         recap.cardio = texteSortie(sortie);
       }
+      /* la course faite pendant la seance : deja une sortie (elle compte pour la semaine,
+         l'objectif et Progression) ; on la rattache a la seance et on la resume */
+      if(courseFaite){
+        const so = (db.cardio || []).find(x=>x.id === a.course.sortieId);
+        if(so) so.seanceId = recap.id;
+        recap.course = TR("{km} de course et marche · {m}").replace("{km}", kmTxt(a.course.km)).replace("{m}", minTxt(a.course.min));
+      }
       db.history.push({
         id:recap.id, date:new Date().toISOString(), name:a.name, templateId:a.templateId,
+        course: courseFaite ? {sortieId:a.course.sortieId, km:a.course.km, min:a.course.min} : undefined,
         start:a.start, end:a.finForcee || (a.start + dureeSeance2(a)),
         cardio: cardioFait ? {machine:a.cardio.machine || "course", min:a.cardio.min || 0, km:a.cardio.km || 0, pente:a.cardio.pente || 0} : undefined,
         feel: (a.feel && a.feel !== "correct") ? a.feel : undefined,
@@ -28358,6 +28429,7 @@ function openFinSeance(r){
         leur visage, et « Terminé » avec son chevron */""}
   <div class="fin-serie"><span class="ic">${IC_BARRES}</span><span><b>${r.series}</b> ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} <b>${r.exos}</b> ${TR(r.exos>1 ? "exercices" : "exercice")}.</span></div>
   ${r.cardio ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.cardio)}</div>` : ""}
+  ${r.course ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.course)}</div>` : ""}
   ${r.records.length? `<div class="fin-rec">
     <div class="fr-tete"><span class="fr-ic">🏆</span><div><b>${TR(r.records.length>1? "Nouveaux records !":"Nouveau record !")}</b><small>${TR("Tu te dépasses !")}</small></div></div>
     ${r.records.map(x=>`<div class="fr-l"><div class="grow"><b>${esc(x.nom)}</b><small>${x.gain
@@ -29306,15 +29378,22 @@ function finirCourse(complete){
   if(complete){ const pp = (db.parcours || []).find(x=>x.id === c.pid); if(pp) pp.aProposer = true; }
   db.cardio.push(sortie);
   db.cardio.sort((a, b)=> new Date(a.date) - new Date(b.date));
-  /* la flamme attend la fin du recapitulatif, comme apres une seance de musculation */
-  flammeRetenue = true;
-  setTimeout(()=>{ if(!finOuverte) libererFlamme(); }, 2000);
+  /* dans une seance de musculation : la course est cochee, et c'est la fin de la
+     seance entiere qui fera le recapitulatif et la flamme */
+  if(c.muscu && db.active && db.active.course){
+    Object.assign(db.active.course, {fait:true, sortieId:sortie.id, km:sortie.km, min:sortie.min,
+      kcal:Math.round(sortieKcal(sortie, currentWeight() || 75))});
+  } else {
+    /* la flamme attend la fin du recapitulatif, comme apres une seance de musculation */
+    flammeRetenue = true;
+    setTimeout(()=>{ if(!finOuverte) libererFlamme(); }, 2000);
+  }
   save(); render(); syncWakeLock();
   if(complete && !pluginRepos()) bipRepos();
   vibrer([200, 100, 200, 100, 300]);
-  setTimeout(()=>openFinCourse(sortie), 260);
+  setTimeout(()=>openFinCourse(sortie, c.muscu), 260);
 }
-function openFinCourse(s){
+function openFinCourse(s, muscu){
   finOuverte = true;
   const kg = currentWeight() || 75;
   const kcal = Math.round(sortieKcal(s, kg));
@@ -29337,7 +29416,7 @@ function openFinCourse(s){
         <button data-rs="dur"><img class="fe" src="img/humeur-tres-fatigue.png" alt="">${TR("Dur")}</button>
       </div>
     </div>` : ""}
-    <button class="btn btn-accent fin-ok btn-rond" id="fc-ok" style="width:100%;"><span class="grow">${TR("Terminé")}</span>${CHEV_MP}</button>`);
+    <button class="btn btn-accent fin-ok btn-rond" id="fc-ok" style="width:100%;"><span class="grow">${TR(muscu ? "Retour à la séance" : "Terminé")}</span>${CHEV_MP}</button>`);
   /* la seance proposee suivante depend de cette reponse ; sans reponse, « correct »,
      comme pour la musculation */
   let rs = null;
@@ -29348,7 +29427,8 @@ function openFinCourse(s){
   });
   document.getElementById("fc-ok").onclick = ()=>{
     const v = parseFloat(String(document.getElementById("fc-km").value).replace(",", "."));
-    if(v > 0){ s.km = Math.round(versKm(v) * 100) / 100; s.estime = false; }
+    if(v > 0){ s.km = Math.round(versKm(v) * 100) / 100; s.estime = false;
+      if(db.active && db.active.course && db.active.course.sortieId === s.id) db.active.course.km = s.km; }
     let msg = null;
     if(s.propose){ s.ressenti = rs || "correct"; msg = appliquerRessenti(s.propose, s.ressenti, s.complete); }
     save();
@@ -29690,16 +29770,36 @@ function openParcoursListe(){
     document.getElementById("pq-ok").onclick = openParcoursListe;
   };
 }
-/* `quoi` : l'id d'une seance enregistree, ou la seance proposee elle-meme */
-function demarrerCourse(quoi){
-  if(db.active){ toast(TR("Termine d'abord ta séance en cours.")); return; }
+/* ---- une seance de course DANS une seance de musculation (Nico, 26 septembre) ----
+   La seance type porte `course = {ref, place}` : ref = l'id d'une seance de course
+   enregistree, ou « objectif » (la seance du jour de l'objectif, qui suit donc sa
+   progression) ; place = « fin » par defaut, ou « debut » en echauffement.
+   Ce qui est etabli : l'endurance faite JUSTE AVANT la musculation fait baisser la
+   force de cette seance (l'effet d'interference), surtout si elle est longue ou
+   intense ; quelques minutes faciles en echauffement ne posent pas ce probleme. D'ou
+   la fin par defaut, et un avertissement — pas un interdit — pour une course longue
+   ou rapide placee au debut. Le seuil de 15 minutes est un choix de conception. */
+function courseDeSeance(c){
+  if(!c) return null;
+  if(c.ref === "objectif") return db.objCourse ? seanceProposee() : null;
+  return (db.parcours || []).find(p=>p.id === c.ref) || null;
+}
+function courseTropDurePourDebut(p){
+  if(!p) return false;
+  return parcoursTotaux(p.etapes).min > 15 || p.etapes.some(e=>e.rythme === "rapide" || e.rythme === "soutenu");
+}
+/* `quoi` : l'id d'une seance enregistree, ou la seance proposee elle-meme.
+   `opts.muscu` : lancee depuis une seance de musculation, on y revient a la fin. */
+function demarrerCourse(quoi, opts){
+  const muscu = !!(opts && opts.muscu);
+  if(db.active && !muscu){ toast(TR("Termine d'abord ta séance en cours.")); return; }
   const p = typeof quoi === "object" ? quoi : (db.parcours || []).find(x=>x.id === quoi);
   if(!p || !p.etapes.length) return;
   closeSheet();
   ensureAudio();
   /* le depart est pose 5 s plus tard : « prepare-toi… » le temps de ranger le telephone (Nico) */
   db.courseEnCours = {pid:p.id, nom:p.nom, etapes:JSON.parse(JSON.stringify(p.etapes)), debut:Date.now() + PREPA_MS, pauseA:null, pauseCumul:0,
-    propose:p.propose || null};
+    propose:p.propose || null, muscu};
   save();
   courseVu = -1;
   curTab = "seance";
@@ -29893,6 +29993,18 @@ function openTplEditor(id){
             </div>
             <button class="icon-btn" id="tp-cardio-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la sortie")}</button>
           </div>` : `<button class="btn-dash" id="tp-cardio-add">${icoM("course", 16)} ${TR("Ajouter une sortie cardio")}</button>`}</div>
+        <div>${tpl.course ? (()=>{ const pc = courseDeSeance(tpl.course);
+          const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
+          return `<span class="f-lab">${TR("Séance de course")}</span>
+          <div class="tpl-item tp-course">
+            <select data-co="ref">${opts.map(([v, l])=>`<option value="${esc(v)}" ${v === tpl.course.ref ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+            <div class="pc-type" style="margin-top:8px;">
+              <button type="button" data-co-place="fin" class="${tpl.course.place !== "debut" ? "on" : ""}">${TR("À la fin")}</button>
+              <button type="button" data-co-place="debut" class="${tpl.course.place === "debut" ? "on" : ""}">${TR("Au début · échauffement")}</button>
+            </div>
+            ${tpl.course.place === "debut" && courseTropDurePourDebut(pc) ? `<p class="oc-note co-avis">${TR("Au début, préfère une course courte et facile : une course longue ou rapide juste avant les poids fait baisser ta force pendant la séance.")}</p>` : ""}
+            <button class="icon-btn" id="tp-course-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la course")}</button>
+          </div>`; })() : `<button class="btn-dash" id="tp-course-add">${icoM("course", 16)} ${TR("Ajouter une séance de course")}</button>`}</div>
         <div class="row" style="gap:9px;">
           <button class="btn grow" id="tp-cancel">${TR("Annuler")}</button>
           <button class="btn btn-accent grow" id="tp-save">${TR("Enregistrer")}</button>
@@ -29958,6 +30070,21 @@ function openTplEditor(id){
     };
     const cAdd = document.getElementById("tp-cardio-add");
     if(cAdd) cAdd.onclick = ()=>{ tpl.name = document.getElementById("tp-name").value; tpl.cardio = {machine:"course", min:30, km:0, pente:0}; draw(); };
+    /* la seance de course : l'une des tiennes, ou la seance du jour de ton objectif */
+    const coAdd = document.getElementById("tp-course-add");
+    if(coAdd) coAdd.onclick = ()=>{
+      tpl.name = document.getElementById("tp-name").value;
+      const ref = db.objCourse ? "objectif" : ((db.parcours || [])[0] || {}).id;
+      if(!ref){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
+      tpl.course = {ref, place:"fin"}; draw();
+    };
+    const coRm = document.getElementById("tp-course-rm");
+    if(coRm) coRm.onclick = ()=>{ tpl.name = document.getElementById("tp-name").value; delete tpl.course; draw(); };
+    const coSel = document.querySelector('[data-co="ref"]');
+    if(coSel) coSel.onchange = ()=>{ tpl.name = document.getElementById("tp-name").value; tpl.course.ref = coSel.value; draw(); };
+    document.querySelectorAll("[data-co-place]").forEach(b=>b.onclick = ()=>{
+      tpl.name = document.getElementById("tp-name").value; tpl.course.place = b.dataset.coPlace; draw();
+    });
     const cRm = document.getElementById("tp-cardio-rm");
     if(cRm) cRm.onclick = ()=>{ tpl.name = document.getElementById("tp-name").value; delete tpl.cardio; draw(); };
     document.querySelectorAll("[data-cf]").forEach(inp=>inp.oninput=()=>{

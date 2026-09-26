@@ -8192,6 +8192,59 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre : une seance de course dans une seance de musculation */
+  grp("Une séance de course dans une séance de musculation");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const gardeT = DB.templates;
+    DB.parcours = [{id:"pm", nom:"Tapis court", etapes:[{type:"marche", min:2, v:4}, {type:"course", min:10, v:8}]},
+                   {id:"pl", nom:"Longue", etapes:[{type:"course", min:30, v:9}]}];
+    DB.templates = [{id:"tm", name:"Push + course", items:[{exId:id("Développé couché"), sets:2, reps:"8-12", rest:90}]}];
+    F.openTplEditor("tm");
+    await attendre(()=>!!D2.getElementById("tp-course-add"), 1500);
+    D2.getElementById("tp-course-add").click();
+    vrai("L'éditeur propose d'ajouter une séance de course, placée à la fin par défaut",
+      !!D2.querySelector('[data-co="ref"]') && D2.querySelector("[data-co-place].on").dataset.coPlace === "fin");
+    const sel = D2.querySelector('[data-co="ref"]'); sel.value = "pl"; sel.dispatchEvent(new F.Event("change"));
+    D2.querySelector('[data-co-place="debut"]').click();
+    vrai("Une course longue placée au début est signalée (effet d'interférence), sans être interdite", !!D2.querySelector(".co-avis"));
+    D2.querySelector('[data-co="ref"]').value = "pm"; D2.querySelector('[data-co="ref"]').dispatchEvent(new F.Event("change"));
+    vrai("…une course courte et facile au début ne l'est pas", !D2.querySelector(".co-avis"));
+    D2.querySelector('[data-co-place="fin"]').click();
+    D2.getElementById("tp-save").click();
+    vrai("La séance garde sa course", DB.templates[0].course && DB.templates[0].course.ref === "pm" && DB.templates[0].course.place === "fin");
+    F.hideSheet();
+    F.startWorkout("tm");
+    await attendre(()=>!!D2.querySelector(".co-muscu"), 1500);
+    vrai("Pendant la séance : une carte « Lancer la course », après les exercices",
+      !!D2.querySelector(".co-muscu [data-lancer-course]") && D2.getElementById("ex-list").lastElementChild.classList.contains("co-muscu"));
+    DB.active.entries[0].sets.forEach(st=>{ st.done = true; st.w = 60; st.r = 10; });
+    D2.querySelector("[data-lancer-course]").click();
+    await attendre(()=>!!D2.querySelector(".cr"), 1500);
+    vrai("Lancer ouvre l'écran de course, la séance de musculation reste ouverte", !!D2.querySelector(".cr") && !!DB.active && DB.courseEnCours.muscu === true);
+    DB.courseEnCours.debut = Date.now() - 13 * 60e3;
+    await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
+    vrai("À la fin : « Retour à la séance »", /Retour à la séance/.test(D2.getElementById("fc-ok").textContent));
+    D2.getElementById("fc-ok").click();
+    await attendre(()=>!!D2.getElementById("finish-w"), 1500);
+    vrai("…on revient dans la séance, la course cochée", !!D2.getElementById("finish-w") && DB.active.course.fait === true && /✓/.test(D2.querySelector(".co-muscu").textContent));
+    const kc = F.liftKcal(DB.active) + DB.active.course.kcal;
+    D2.getElementById("finish-w").click();
+    await attendre(()=>!!D2.getElementById("cf-yes"), 1500);
+    vrai("Terminer : les calories comptent la musculation et la course", new RegExp("≈ " + kc + " kcal").test(D2.querySelector(".tf-tuiles").textContent));
+    D2.getElementById("cf-yes").click();
+    await attendre(()=>!DB.active, 1500);
+    const h = DB.history[DB.history.length - 1];
+    const so = DB.cardio.find(x=>x.id === (h.course || {}).sortieId);
+    vrai("La séance enregistrée garde sa course, et la sortie compte une seule fois", !!h.course && !!so && so.seanceId === h.id && DB.cardio.length === 1);
+    await attendre(()=>!!D2.getElementById("fin-ok"), 1500);
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.templates = gardeT; DB.parcours = []; DB.cardio = [];
+  })();
+  neuf();
+
   /* Les tests de course lancent de vraies seances, que l'app enregistre : on n'en laisse
      aucune « en cours » derriere nous, sinon le prochain passage s'ouvrirait sur l'ecran
      de course et les tests de l'accueil tomberaient. */
