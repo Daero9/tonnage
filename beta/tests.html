@@ -3477,6 +3477,39 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre : « Rowing machine » a poulie ou a pivot — une variante reprend
+     la carte d'un exercice sous un autre nom, et garde ses charges a part */
+  grp("Créer une variante d'un exercice");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.custom = [];
+    let choisi = null;
+    F.openPicker(id=>{ choisi = id; });
+    vrai("Deux boutons côte à côte : exercice perso ou variante",
+      !!D2.querySelector(".pk-creer #pk-new") && !!D2.querySelector(".pk-creer #pk-var"));
+    D2.getElementById("pk-var").click();
+    vrai("On choisit d'abord l'exercice de base", /Variante de quel exercice/.test(D2.querySelector("#sheet h3").textContent));
+    vrai("…sans les boutons de création", !D2.getElementById("pk-var"));
+    const base = F.libId("Rowing machine");
+    const champ = D2.getElementById("pk-search");
+    champ.value = "rowing machine"; champ.dispatchEvent(new F.Event("input"));
+    [...D2.querySelectorAll("#pk-list .pk-row")].find(x=>/Rowing machine/.test(x.textContent)).click();
+    vrai("Le nom part de celui de l'exercice", /^Rowing machine/.test(D2.getElementById("var-name").value));
+    D2.getElementById("var-name").value = "Rowing machine à pivot";
+    D2.getElementById("var-ok").click();
+    const v = DB.custom[DB.custom.length - 1];
+    eq("La variante porte le nouveau nom", F.nomEx(v), "Rowing machine à pivot");
+    eq("…a son propre identifiant, donc ses propres charges", v.id === base, false);
+    eq("…et c'est elle qui est choisie", choisi, v.id);
+    eq("Elle reprend les muscles de l'exercice de base",
+      JSON.stringify(F.eval("MUSCLE_WORK")[F.eval("nomCanon")(v)]), JSON.stringify(F.eval("MUSCLE_WORK")["Rowing machine"]));
+    vrai("…et son dessin", /rowing-machine/.test(F.eval("exIcon")(v)));
+    F.hideSheet();
+    DB.custom = [];
+  })();
+  neuf();
+
   grp("Les identifiants recalés");
   neuf();
   /* Deux exercices insérés au milieu de la bibliothèque les 4 et 5 septembre ont fait
