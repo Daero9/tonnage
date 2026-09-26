@@ -18013,7 +18013,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 12h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 12h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22226,7 +22226,15 @@ function photosJour(){
   return Math.max(0, quotaPhotos() - (p.jour === dayKey() ? (p.n || 0) : 0));
 }
 function scansReserve(){ return Math.max(0, Math.floor(Number(db.scansReserve) || 0)); }
-function crediterScans(n){ db.scansReserve = scansReserve() + n; save(); }
+function crediterScans(n){ db.scansReserve = scansReserve() + n; save(); majPastillePhotos(); }
+/* Le chiffre de la pastille photo n'etait ecrit qu'au dessin de la page : une photo
+   prise puis jetee, un pack achete ou un nouveau jour laissaient l'ancien nombre
+   pendant que la camera, elle, affichait le bon (Nico). On le reecrit a chaque fois que
+   le compte bouge, et quand l'app revient au premier plan. */
+function majPastillePhotos(){
+  document.querySelectorAll("#hero-scans b").forEach(b=>{ b.textContent = photosRestantes(); });
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible") majPastillePhotos(); });
 const CORRECTIONS_PAR_PHOTO = 2;
 const IC_PHOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function idAppareil(){
@@ -22242,6 +22250,7 @@ function compterPhoto(){
     db.photos.n++;
   }else if(scansReserve() > 0) db.scansReserve = scansReserve() - 1;
   save();
+  majPastillePhotos();
 }
 /* le fichier de l'appareil photo, reduit a 1 000 px et compresse : une photo de
    telephone fait 3 a 5 Mo, on n'en envoie que 60 a 150 Ko */
