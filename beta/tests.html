@@ -3565,6 +3565,34 @@ async function lancer(){
   })();
   neuf();
 
+  /* Nico, 26 septembre : ajouter un exercice a une seance adaptative (« les abdos ») */
+  grp("Ajouter un exercice à la séance proposée");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.materiel = null; DB.maison = null; DB.active = null;
+    DB.profile = Object.assign({}, DB.profile, {lieu:"salle"});
+    DB.templates = []; F.addCoachProgram("masse");
+    const t = DB.templates.find(x=>x.adaptatif === "pull") || DB.templates[0];
+    F.openPreview(t.id, true);
+    const avant = t.items.length;
+    vrai("Un bouton « Ajouter un exercice » sous la liste", !!D2.getElementById("pv-add"));
+    D2.getElementById("pv-add").click();
+    const champ = D2.getElementById("pk-search");
+    champ.value = "crunch"; champ.dispatchEvent(new F.Event("input"));
+    const ligne = [...D2.querySelectorAll("#pk-list .pk-row")].find(x=>/^\s*Crunch/.test(x.textContent));
+    ligne.click();
+    eq("L'exercice est ajouté à la séance", t.items.length, avant + 1);
+    const ajoute = t.items[t.items.length - 1];
+    eq("…avec des réglages d'abdos (12 à 15 reps)", ajoute.reps, "12-15");
+    vrai("…et on revient sur l'aperçu, qui le montre", !!D2.getElementById("pv-start") && /Crunch/.test(D2.getElementById("sheet").textContent));
+    F.openPreview(t.id, true);
+    eq("Il reste là quand on rouvre l'aperçu (la séance adaptative ne se refait pas)", t.items.length, avant + 1);
+    F.hideSheet();
+    DB.templates = [];
+  })();
+  neuf();
+
   grp("Créer une variante d'un exercice");
   neuf();
   await (async ()=>{

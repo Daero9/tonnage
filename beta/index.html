@@ -2632,6 +2632,7 @@
   .tpl-item .cfg input{text-align:center; padding:7px 4px; font-size:14px; background:var(--sheet);}
   .tpl-vide{text-align:center; font-size:13.5px; color:var(--ink-mute); padding:12px 0 14px;}
   /* les deux boutons de creation, cote a cote */
+  .pv-ajout{width:100%; margin-top:10px;}
   .pk-creer{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;}
   .pk-creer .btn-dash{margin:0; display:flex; align-items:center; justify-content:center; gap:6px;}
   .pk-creer .btn-dash svg{width:16px; height:16px;}
@@ -4251,6 +4252,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "＋ Ajouter un exercice":"＋ Add an exercise",
   "Précise si un aliment est garni ou fourré":"Say if a food is stuffed or filled",
   "Prendre mon plat en photo":"Take a photo of my meal",
   "Sport":"Training",
@@ -7514,6 +7516,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "＋ Ajouter un exercice":"＋ Añadir un ejercicio",
   "Précise si un aliment est garni ou fourré":"Indica si un alimento está relleno",
   "Prendre mon plat en photo":"Hacer una foto de mi plato",
   "Sport":"Deporte",
@@ -10993,6 +10996,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "＋ Ajouter un exercice":"＋ Adicionar um exercício",
   "Précise si un aliment est garni ou fourré":"Indique se um alimento é recheado",
   "Prendre mon plat en photo":"Fotografar meu prato",
   "Sport":"Esporte",
@@ -18013,7 +18017,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 12h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 12h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25962,6 +25966,8 @@ function openPreview(tplId, lieuFait){
           <button class="sup" data-pvdel="${i}" title="${TR("Retirer")}" aria-label="${TR("Retirer")}">✕</button>
         </span></div>`;
     }).join("")}</div>
+    <!-- ajouter un exercice a la seance, adaptative comprise (Nico : « ajouter les abdos ») -->
+    <button class="btn-dash pv-ajout" id="pv-add">${TR("＋ Ajouter un exercice")}</button>
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
         <span class="num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
@@ -26025,6 +26031,19 @@ function openPreview(tplId, lieuFait){
         if(t.items.length) setTimeout(()=>openPreview(tplId, true), 60);
       });
   });
+  /* Ajouter un exercice : on passe par la bibliotheque, puis on redescend sur l'apercu.
+     3 series, 8 a 12 reps et le repos habituel ; les abdos, 12 a 15 reps et 60 s —
+     un reglage de depart que l'on corrige ensuite, pas une prescription. Sur une seance
+     adaptative, l'ajout tient pour la journee, comme un exercice remplace ou retire. */
+  document.getElementById("pv-add").onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>openPicker(exId=>{
+    const abdos = muscleCanon(getEx(exId)) === "Abdos";
+    t.items.push({exId, sets:3, reps: abdos ? "12-15" : "8-12", rest: abdos ? 60 : (db.settings.rest || 90)});
+    t.retouche = Date.now();
+    /* en seance courte, l'exercice ajoute fait partie de ce qu'elle garde */
+    if(seanceCourte) t.courteIds = gardes.map(i=>t.items[i].exId).concat(exId);
+    save(); render();
+    retourFiche();
+  }));
   /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
   document.getElementById("pv-start").onclick=()=>{
     const courte = seanceCourte ? gardes.slice() : null;
