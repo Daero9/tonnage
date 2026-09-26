@@ -7937,6 +7937,15 @@ async function lancer(){
     DB.objCourse = F.nouvelObjectif("frequence", {parSemaine:3});
     DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:20, machine:"course"}];
     vrai("Régularité : les sorties de la semaine sont comptées", F.sortiesSemaine() === 1 && /1 \/ 3/.test(F.avancementObjectif(DB.objCourse).txt));
+    /* le nombre de seances par semaine n'est demande que pour l'objectif de regularite */
+    DB.objCourse = null;
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-ok"), 1500);
+    vrai("Objectif 30 min : on ne demande pas le nombre de séances par semaine", !D2.querySelector("[data-ps]"));
+    D2.querySelector('[data-oc="frequence"]').click();
+    vrai("Objectif de régularité : on le demande, c'est l'objectif lui-même", D2.querySelectorAll("[data-ps]").length === 4);
+    F.hideSheet();
+    DB.objCourse = F.nouvelObjectif("frequence", {parSemaine:3});
     /* la page Course : la carte de l'objectif et la seance du jour */
     F.openParcoursListe();
     await attendre(()=>!!D2.getElementById("oc-go"), 1500);
