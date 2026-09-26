@@ -4529,7 +4529,7 @@
   /* le titre de l'apercu : plus grand, centre */
   .ca-titre{text-align:center; padding:0 30px 14px;}
   .ca-titre h3{font-size:26px; font-weight:900; letter-spacing:-.01em; line-height:1.1; margin:0; padding:0; text-align:center;}
-  .ca-titre p{margin:4px 0 0; font-size:14px; color:var(--ink-soft);}
+  .ca-titre p{margin:6px 0 0; font-size:14px; line-height:1.4; color:var(--ink-soft);}
   /* les etapes : numero, icone dans son carre orange pale, nom en gras */
   .ca-et > div{gap:12px; padding:10px 12px; border-radius:16px;}
   .ca-et .n{width:30px; height:30px; font-size:14px;}
@@ -4566,6 +4566,7 @@
   .pv-ajouts{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;}
   .pv-ajouts .btn-dash{margin:0; display:flex; align-items:center; justify-content:center; gap:6px;}
   .pv-ajouts .icm{background-color:currentColor;}
+  .pv-ajouts.pv-ajouts3{display:flex; margin:0 0 10px;} .pv-ajouts3 .btn-dash{flex:1; min-width:0; padding-inline:6px; white-space:nowrap;}
   /* ---- les feuilles de choix (maquette de Nico) ---- */
   .sheet .pr-tete.ch-titre{padding-bottom:16px;}
   .sheet .pr-tete.ch-titre h3{font-size:32px; font-weight:900; letter-spacing:-.02em; line-height:1.02; margin-bottom:8px;}
@@ -4739,6 +4740,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Cardio":"Cardio",
+  "Ajouter à ta séance":"Add to your workout",
   "Qu'est-ce qu'on|ajoute ?":"What do you|want to add?",
   "Il s'ajoute à ta séance en cours.":"It's added to your current workout.",
   "Une séance de course":"A running workout",
@@ -8167,6 +8170,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Cardio":"Cardio",
+  "Ajouter à ta séance":"Añadir a tu sesión",
   "Qu'est-ce qu'on|ajoute ?":"¿Qué|añadimos?",
   "Il s'ajoute à ta séance en cours.":"Se añade a tu sesión en curso.",
   "Une séance de course":"Una sesión de carrera",
@@ -11811,6 +11816,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Cardio":"Cardio",
+  "Ajouter à ta séance":"Adicionar ao seu treino",
   "Qu'est-ce qu'on|ajoute ?":"O que vamos|adicionar?",
   "Il s'ajoute à ta séance en cours.":"Ele é adicionado ao seu treino em andamento.",
   "Une séance de course":"Um treino de corrida",
@@ -19001,7 +19008,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 23h01 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 23h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22519,7 +22526,7 @@ function dessineRepas(panel){
   const fab = document.getElementById("eat-add");
   if(fab){
     poserDegradeRepas(fab, mealCur, 180);
-    const lb = fab.parentElement.querySelector(".lb");
+    const lb = fab.closest(".eat-fab") && fab.closest(".eat-fab").querySelector(".lb");
     if(lb) lb.style.color = coul;
   }
 
@@ -27113,11 +27120,18 @@ function openPreview(tplId, lieuFait){
       ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries":"série"))}
       ${tuile(IC_CHRONO, "~"+mins, TR("minutes"))}
     </div>
+    ${/* Ajouter un exercice, une course, un cardio : EN HAUT, sur une ligne. En bas d'une
+         longue liste, ces boutons etaient durs a atteindre (Nico, 26 septembre). */""}
+    <div class="pv-ajouts pv-ajouts3">
+      <button class="btn-dash" id="pv-add">＋ ${TR("Exercice")}</button>
+      ${!t.course ? `<button class="btn-dash" id="pv-add-course">${icoM("course", 16)}${TR("Course")}</button>` : ""}
+      ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Cardio")}</button>` : ""}
+    </div>
     <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
       seanceCourte && ecartes.length
         ? TR("Mis de côté aujourd'hui : {}").replace("{}", ecartes.map(it=>esc(getEx(it.exId).name)).join(", "))
         : (items.length > 1 ? TR("Glisse ⠿ pour changer l'ordre des exercices.") : "")}</p>
-    <div class="pv-liste trie" style="max-height:min(34dvh, 300px); overflow-y:auto; margin-inline:-2px; padding-inline:2px;">${items.map((it,k)=>{
+    <div class="pv-liste trie">${items.map((it,k)=>{
       const i = gardes[k];
       const ex = getEx(it.exId);
       const last = lastPerf(it.exId);
@@ -27144,13 +27158,6 @@ function openPreview(tplId, lieuFait){
           <button class="sup" data-pvdel="${i}" title="${TR("Retirer")}" aria-label="${TR("Retirer")}">✕</button>
         </span></div>`;
     }).join("")}</div>
-    <!-- ajouter un exercice a la seance, adaptative comprise (Nico : « ajouter les abdos ») -->
-    <button class="btn-dash pv-ajout" id="pv-add">${TR("＋ Ajouter un exercice")}</button>
-    ${/* la course et la sortie cardio s'ajoutent d'ici aussi (Nico) — a la seance elle-meme */""}
-    ${!t.course || !t.cardio ? `<div class="pv-ajouts">
-      ${!t.course ? `<button class="btn-dash" id="pv-add-course">${icoM("course", 16)}${TR("Séance de course")}</button>` : ""}
-      ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Sortie cardio")}</button>` : ""}
-    </div>` : ""}
     ${t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex" style="margin-top:8px;">
         <span class="num pv-co-num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
@@ -27241,7 +27248,7 @@ function openPreview(tplId, lieuFait){
     const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
     if(!opts.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
     ouvrirParDessus(()=>openPreview(tplId, true), ()=>feuilleChoix({
-      titre:"Ajouter une|séance de course",
+      titre:"Ajouter une|séance de course", simple:true,
       sous:TR("Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance."),
       items:(db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
         .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
@@ -27257,7 +27264,7 @@ function openPreview(tplId, lieuFait){
   /* ajouter une sortie cardio : l'activite, puis l'objectif se regle comme d'habitude */
   const pvCa = document.getElementById("pv-add-cardio");
   if(pvCa) pvCa.onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>feuilleChoix({
-    titre:"Ajouter une|sortie cardio", grille:true,
+    titre:"Ajouter une|sortie cardio", grille:true, simple:true,
     sous:TR("Elle sera ajoutée à la fin de ta séance. Tu règles la durée en modifiant la séance."),
     items:MACHINES.map(m=>({v:m[0], ic:icMachine(m, 26), t:TR(m[1])})),
     sel:MACHINES[0][0], bouton:TR("Ajouter à la séance"),
@@ -28459,7 +28466,7 @@ function renderActive(app){
         return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; }));
     if(!items.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
     feuilleChoix({
-      titre:"Ajouter une|séance de course",
+      titre:"Ajouter une|séance de course", simple:true,
       sous:TR("Elle s'ajoute à la fin de ta séance."),
       items, sel:items[0].v, bouton:TR("Ajouter à la séance"),
       ok:v=>{
@@ -28470,7 +28477,7 @@ function renderActive(app){
     });
   };
   const ajouterCardio = ()=>feuilleChoix({
-    titre:"Ajouter une|sortie cardio", grille:true,
+    titre:"Ajouter une|sortie cardio", grille:true, simple:true,
     sous:TR("Elle s'ajoute à la fin de ta séance."),
     items:MACHINES.map(m=>({v:m[0], ic:icMachine(m, 26), t:TR(m[1])})),
     sel:MACHINES[0][0], bouton:TR("Ajouter à la séance"),
@@ -28492,7 +28499,7 @@ function renderActive(app){
     const ligne = (id2, ic, titre, sous) => `<button class="aj-l" id="${id2}">
       <span class="ic">${ic}</span><span class="tx"><span class="t">${titre}</span><span class="s">${sous}</span></span>
       <span class="fl">${IC_CHEVRON}</span></button>`;
-    openSheet(`${titreChoix("Qu'est-ce qu'on|ajoute ?", TR("Il s'ajoute à ta séance en cours."))}
+    openSheet(`<div class="ca-titre"><h3>${TR("Ajouter à ta séance")}</h3></div>
       ${ligne("ae-exo", IC_PLUS, TR("Un exercice"), TR("Depuis la bibliothèque"))}
       ${!a.course ? ligne("ae-course", icoM("course", 22), TR("Une séance de course"), TR("Ton objectif ou une de tes séances")) : ""}
       ${!a.cardio ? ligne("ae-cardio", IC_PLUS, TR("Une sortie cardio"), TR("En fin de séance, avec un objectif du jour")) : ""}`);
@@ -29952,7 +29959,7 @@ function icMachine(m, t){ return m[0] === "course" ? icoM("course", t) : `<span 
 /* choisir puis valider : la coche se deplace, le bouton du bas ajoute */
 function feuilleChoix(o){
   let sel = o.sel;
-  openSheet(`${titreChoix(o.titre, o.sous)}
+  openSheet(`${o.simple ? `<div class="ca-titre"><h3>${esc(TR(o.titre).replace("|", " "))}</h3>${o.sous ? `<p>${o.sous}</p>` : ""}</div>` : titreChoix(o.titre, o.sous)}
     <div class="${o.grille ? "ch-grille" : "ch-liste"}">${o.items.map(it=>carteChoix("data-ch", it.v, it.ic, it.t, it.s, it.v === sel)).join("")}</div>
     <button class="btn btn-accent btn-rond ch-go" id="ch-go">${esc(o.bouton)}${IC_CHEVRON}</button>`);
   document.querySelectorAll("[data-ch]").forEach(b=>b.onclick = ()=>{
