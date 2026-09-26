@@ -7879,7 +7879,8 @@ async function lancer(){
       && F.getComputedStyle(D2.querySelector(".cr-haut")).position === "fixed");
     vrai("…et la page perd sa marge haute pendant la course", F.getComputedStyle(D2.getElementById("app")).paddingTop === "0px");
     DB.courseEnCours.debut = Date.now() - (16 * 60 - 2) * 1000;
-    await attendre(()=>!!D2.querySelector(".cr-c.encours.annonce"), 1500);
+    /* la preparation de 5 s occupe d'abord la carte : on attend l'annonce qui suit */
+    await attendre(()=>!!D2.querySelector(".cr-c.encours.annonce:not(.prepa)"), 1500);
     /* l'annonce s'affiche DANS la carte en cours, a la place de son texte (Nico) */
     vrai("Juste avant la fin d'une étape : « Prochaine étape » et le décompte, dans la carte en cours",
       !!D2.querySelector(".cr-c.encours.annonce") && /Prochaine/.test(D2.querySelector(".cr-c.encours .cr-annonce").textContent)
@@ -7920,28 +7921,40 @@ async function lancer(){
       s.etapes.length === 13 && s.etapes[0].type === "marche" && s.etapes[1].type === "course" && s.etapes[1].min === 1 && s.etapes[12].min === 5);
     F.appliquerRessenti("niveau", "facile", true);
     vrai("Facile : niveau suivant", DB.objCourse.niveau === 1);
+    /* la jauge : une seance dure n'est pas un echec, elle remplit un quart */
     F.appliquerRessenti("niveau", "dur", true);
-    vrai("Dur : on refait le niveau", DB.objCourse.niveau === 1);
+    vrai("Dur : même niveau, mais la jauge avance d'un quart", DB.objCourse.niveau === 1 && DB.objCourse.jauges.niveau === 0.25);
+    F.appliquerRessenti("niveau", "correct", true);
+    vrai("Correct : la jauge avance de moitié (75 %)", DB.objCourse.niveau === 1 && DB.objCourse.jauges.niveau === 0.75);
+    vrai("…et la carte le montre : « Vers le niveau 3 »", /niveau 3/i.test(F.jaugeObjectif(DB.objCourse).txt) && F.jaugeObjectif(DB.objCourse).pct === 0.75);
+    F.appliquerRessenti("niveau", "correct", true);
+    vrai("Jauge pleine : niveau suivant, jauge remise à zéro", DB.objCourse.niveau === 2 && DB.objCourse.jauges.niveau === 0);
     F.appliquerRessenti("niveau", "facile", false);
-    vrai("Séance arrêtée avant la fin : on refait le niveau", DB.objCourse.niveau === 1);
-    DB.objCourse.niveau = 9;
+    vrai("Une séance arrêtée avant la fin : même niveau, jauge conservée", DB.objCourse.niveau === 2);
+    F.appliquerRessenti("niveau", "facile", false);
+    vrai("Deux de suite : on allège d'un cran", DB.objCourse.niveau === 1);
+    DB.objCourse.niveau = 0;
+    F.appliquerRessenti("niveau", "dur", false); F.appliquerRessenti("niveau", "dur", false);
+    s = F.seanceProposee();
+    vrai("Sous le niveau 1 : le niveau allégé, 30 s de course", DB.objCourse.niveau === -1 && s.etapes[1].min === 0.5 && /allégé|eased/.test(s.nom));
+    DB.objCourse.niveau = 9; DB.objCourse.jauges = {};
     s = F.seanceProposee();
     vrai("Dernier niveau : 30 min d'affilée", s.etapes.filter(e=>e.type === "course").length === 1 && s.etapes[1].min === 30);
-    F.appliquerRessenti("niveau", "correct", true);
-    vrai("…tenu : objectif atteint", !!DB.objCourse.atteint);
+    F.appliquerRessenti("niveau", "facile", true);
+    vrai("…tenu et facile : objectif atteint", !!DB.objCourse.atteint);
     /* distance : sortie longue puis footing ; la longue grandit de 10 % au plus */
     DB.objCourse = F.nouvelObjectif("distance", {cible:10, vCourse:10, vMarche:6});
     vrai("Sans sortie récente, la sortie longue part de 3 km", DB.objCourse.longue === 3);
     s = F.seanceProposee();
     vrai("D'abord la sortie longue", s.propose === "longue");
-    F.appliquerRessenti("longue", "correct", true);
-    vrai("Tenue : elle s'allonge d'environ 10 %", DB.objCourse.longue > 3 && DB.objCourse.longue <= 3.5, DB.objCourse.longue);
+    F.appliquerRessenti("longue", "facile", true);
+    vrai("Tenue et facile : elle s'allonge d'environ 10 %", DB.objCourse.longue > 3 && DB.objCourse.longue <= 3.5, DB.objCourse.longue);
     vrai("…et la suivante est un footing", F.seanceProposee().propose === "footing");
     /* allure : fractionne puis bloc soutenu, les repetitions montent */
     DB.objCourse = F.nouvelObjectif("allure", {vCourse:10, vMarche:6});
     s = F.seanceProposee();
     vrai("Allure : d'abord le fractionné, plus rapide que la course facile", s.propose === "fractionne" && s.etapes.some(e=>e.rythme === "rapide" && e.v > 10));
-    F.appliquerRessenti("fractionne", "correct", true);
+    F.appliquerRessenti("fractionne", "facile", true);
     vrai("…une répétition de plus", DB.objCourse.reps === 5);
     vrai("…puis le bloc soutenu", F.seanceProposee().propose === "soutenu");
     /* regularite : on compte les sorties de la semaine */
@@ -7968,7 +7981,12 @@ async function lancer(){
     /* au bout d'une seance proposee : la question du ressenti */
     DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
     F.demarrerCourse(F.seanceProposee());
-    await attendre(()=>!!D2.querySelector(".cr-c.encours"), 1500);
+    await attendre(()=>!!D2.querySelector(".cr-c.encours.prepa"), 1500);
+    /* « prepare-toi » : 5 s avant le vrai depart, dans la carte de la premiere etape */
+    vrai("Au lancement : « Prépare-toi à marcher 5 min à … » et un décompte, dans la première carte",
+      /Prépare-toi à marcher 5 min/.test(D2.querySelector(".cr-c.encours .cr-annonce").textContent)
+      && /[1-5]/.test(D2.querySelector(".cr-annonce .n").textContent));
+    vrai("…le chrono de l'étape ne part qu'après", DB.courseEnCours.debut > Date.now());
     DB.courseEnCours.debut = Date.now() - 27 * 60e3;
     await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
     vrai("À la fin d'une séance proposée : « Comment c'était ? »", D2.querySelectorAll("#sheet [data-rs]").length === 3);
