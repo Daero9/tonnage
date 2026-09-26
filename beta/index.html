@@ -18124,7 +18124,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 14h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 14h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19977,7 +19977,22 @@ function majVerrouPage(ficheEncore){
     || !!document.getElementById("abo-fenetre");
   document.documentElement.classList.toggle("fiche", devant);
 }
+/* ---- la flamme d'une seance qui vient de finir ----
+   Pendant le recapitulatif, l'accueil garde l'ancien chiffre. Quand on le ferme
+   (« Terminé », la croix ou un glissé), on remonte en haut de la page — on etait en
+   bas, sur la seance — puis la flamme grandit, un instant apres, sous les yeux. */
+let flammeRetenue = false, finOuverte = false;
+function libererFlamme(){
+  if(!flammeRetenue) return;
+  flammeRetenue = false;
+  try{ window.scrollTo({top:0, behavior:"smooth"}); }catch(e){ window.scrollTo(0, 0); }
+  /* la page a le temps de finir de remonter : la flamme ne grandit qu'une fois en vue.
+     Le render() de fin de seance remontait deja en haut, mais la fiche de confirmation
+     verrouillait encore la page (html.fiche) : sur telephone, on restait en bas. */
+  setTimeout(()=>{ if(!sheetOpen && curTab === "seance" && !db.active) render(); }, 700);
+}
 function hideSheet(){
+  if(finOuverte){ finOuverte = false; setTimeout(libererFlamme, 50); }
   sheet.style.transition = "";
   annulerFermeture();
   if(overlay.classList.contains("show")){
@@ -24374,10 +24389,12 @@ function renderSeance(app){
         /* la serie a grandi depuis la derniere fois qu'on l'a vue : la flamme rebondit et
            le chiffre monte (4 → 5) au lieu de sauter */
         const vue = Number(db.flammeVue) || 0;
-        const grandit = vue > 0 && fl.n > vue;
-        if(fl.n !== vue){ db.flammeVue = fl.n; setTimeout(save, 0); }
+        /* retenue : l'ancien chiffre reste affiche, rien n'est note comme vu */
+        const grandit = !flammeRetenue && vue > 0 && fl.n > vue;
+        if(!flammeRetenue && fl.n !== vue){ db.flammeVue = fl.n; setTimeout(save, 0); }
         return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}${grandit ? " grandit" : ""}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${
-          grandit ? `<span class="fl-avant">${vue}</span><span class="fl-apres">${fl.n}</span>` : fl.n}</b></div>`; })()}
+          grandit ? `<span class="fl-avant">${vue}</span><span class="fl-apres">${fl.n}</span>`
+            : (flammeRetenue && vue > 0 && fl.n > vue ? vue : fl.n)}</b></div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
@@ -27468,6 +27485,9 @@ function renderActive(app){
            `entries` en supposant des series, une entree vide y ferait des degats. */
         sautes: a.entries.filter(en=>!en.sets.some(s=>s.done && !s.warm)).map(en=>en.exId)
       });
+      /* la flamme attend la fin du recapitulatif : elle grandissait derriere lui (Nico) */
+      flammeRetenue = true;
+      setTimeout(()=>{ if(!finOuverte) libererFlamme(); }, 2000);   /* filet : pas de recap */
       db.active=null; arreterChronos(); save(); render();
       demarrerEssai();                       /* la premiere seance ouvre l'essai, si rien ne l'a fait */
       setTimeout(()=>openFinSeance(recap), 260);
@@ -27587,6 +27607,7 @@ function confettis(canvas, duree){
   requestAnimationFrame(boucle);
 }
 function openFinSeance(r){
+  finOuverte = true;
   const mn = Math.round(r.duree/60000);
   /* le poussin de l'utilisateur, habille, dans sa pose de fete — a la place des
      confettis et de l'emoji (Nico) */
