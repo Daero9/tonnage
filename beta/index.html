@@ -113,18 +113,21 @@
   .grow{flex:1; min-width:0;}
 
   /* les boutons gris portent exactement le gris du fond ; --surface2 reste la surface  en creux  */
-  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--btn); border:1px solid var(--border);
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; border-radius:12px; padding:13px 16px; background:var(--surface); border:1px solid var(--border);
+    /* blanc, un liseré gris tres fin (Nico) — en ombre interieure : la regle « pas de
+       contour sur les boutons », plus bas, retire les bordures */
+    box-shadow:inset 0 0 0 1px var(--bord-doux);
     transition:transform .3s cubic-bezier(.22,1,.36,1);}
   /* Vite a la descente, en s appuyant au retour : c est ce rapport-la qui fait
      « repondre » un bouton. La meme duree dans les deux sens le rend mou. */
   .btn:active{transform:scale(.98); transition-duration:.06s;}
   /* un SVG sans dimension s etire a toute la hauteur d un bouton en flex */
   .btn > svg{flex:0 0 auto; width:20px; height:20px;}
-  .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
-  .btn-ghost{background:none; border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
+  .btn-accent{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none;}
+  .btn-ghost{background:var(--surface); border:1px dashed var(--border); color:var(--ink-soft); font-weight:600;}
   .btn-danger{color:var(--bad);}
   .btn-sm{padding:8px 12px; font-size:14px; border-radius:10px;}
-  .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--btn); border:1px solid var(--border); flex:none; font-size:15px;}
+  .icon-btn{width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); border:1px solid var(--border); flex:none; font-size:15px;}
 
   .pill{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface2);
     border:1px solid var(--border); border-radius:99px; padding:3px 9px; white-space:nowrap;}
@@ -2808,7 +2811,7 @@
   .pp-deux{display:flex; gap:10px;} .pp-deux .btn{flex:1; margin:0;}
   /* Annuler / Rester : blanc, un contour gris leger (Nico) */
   .pp-deux .btn:first-child:not(.btn-accent):not(.btn-jeter){background:var(--surface); border:0; box-shadow:inset 0 0 0 1px var(--bord-doux);}
-  .btn-jeter{background:var(--bad); color:#fff;}
+  .btn-jeter{background:var(--bad); color:#fff; box-shadow:none;}
   .pp-lien-sup{display:block; width:100%; margin-top:10px; padding:10px; text-align:center;
     color:var(--bad); font-weight:700; font-size:14px; background:none;}
 
@@ -3073,10 +3076,10 @@
   .hd-btn{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:800; font-size:15px;}
   .hd-btn svg{width:18px; height:18px;}
   /* partager en noir, modifier en blanc cerne de gris, supprimer en rouge (Nico) */
-  #hd-partager{background:#141416; color:#fff; border:0;}
+  #hd-partager{background:#141416; color:#fff; border:0; box-shadow:none;}
   :root[data-theme="dark"] #hd-partager{background:#fff; color:#141416;}
   #hd-edit{background:var(--surface); border:0; box-shadow:inset 0 0 0 1px var(--bord-doux);}
-  .hd-btn.danger{background:var(--bad); color:#fff; border:0;}
+  .hd-btn.danger{background:var(--bad); color:#fff; border:0; box-shadow:none;}
   .he-tete{display:flex; align-items:center; gap:12px; padding:12px; border-radius:16px; background:var(--surface2); margin-bottom:10px;}
   .he-tete .ex-ico{border:0; background:rgba(245,130,32,.14);} .he-tete .ex-ico svg{width:28px; height:28px;}
   .he-tete b{display:block; font-size:16px; font-weight:800;} .he-tete span{display:block; font-size:13px; color:var(--ink-mute); text-transform:capitalize;}
@@ -4049,11 +4052,15 @@
      « Reglages », et comme #app est fige par .verrou, les deux boutons etaient morts —
      on arrivait sur Progression sans abonnement et on ne pouvait plus ni ouvrir les
      reglages (ou se trouvent le code d'acces et l'abonnement) ni voir son profil. */
-  .abo-fenetre{position:fixed; left:0; right:0; top:calc(44px + env(safe-area-inset-top));
-    bottom:calc(96px + env(safe-area-inset-bottom));
-    z-index:39; display:flex; align-items:center; justify-content:center; touch-action:none; overscroll-behavior:contain;
-    padding:10px 22px 18px;
+  /* Le voile couvre maintenant TOUT l'ecran, barre d'onglets comprise (Nico) — mais il
+     laisse passer le doigt : les boutons du haut et les onglets restent touchables a
+     travers lui. La page, elle, ne repond pas (#app.verrou) et ne defile pas (html.fiche).
+     Seule la carte capte le toucher. Les marges gardent la carte entre les deux barres. */
+  .abo-fenetre{position:fixed; inset:0;
+    z-index:41; display:flex; align-items:center; justify-content:center; pointer-events:none; overscroll-behavior:contain;
+    padding:calc(54px + env(safe-area-inset-top)) 22px calc(114px + env(safe-area-inset-bottom));
     background:rgba(0,0,0,.42);}
+  .abo-fenetre .abo-carte-f{pointer-events:auto;}
   .abo-carte-f{position:relative; width:100%; max-width:340px; max-height:100%; overflow-y:auto; touch-action:pan-y; overscroll-behavior:contain;
     background:var(--sheet); border-radius:22px; padding:18px 16px 14px;
     box-shadow:0 22px 60px rgba(0,0,0,.4); -webkit-overflow-scrolling:touch;}
@@ -4314,7 +4321,7 @@
   .btn, .btn-accent, .btn-ghost, .icon-btn, .chip, .cd-grille button, .fin-feel button, .al-cats .cat, .pn-chips .ch,
   .al-row, .al-c, .aj-l, .ot-carte, .pk, .abo-f, .rg-seg button, .sc-main, .vs-t, .mt-c, .af-o, .af-z, .onb-cartes .ct,
   .ps-rapide button, .fav-box, .pv-courte, .vd-card, .pk, .pk.mis, .vs-t, .vs-t.on{border:0;}
-  .btn-ghost{border:1px solid var(--border);}
+  .btn-ghost{border:0;}
   /* ce qui etait « selectionne » par un contour orange le reste par sa teinte de fond */
   .pk.mis, .vs-t.on, .pv-courte.on, .fav-box.on, .mt-c.on, .af-o.on, .onb-cartes .ct.on{box-shadow:inset 0 0 0 2px rgba(245,130,32,.35);}
 </style>
@@ -18137,7 +18144,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 15h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 17h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20004,6 +20011,15 @@ function libererFlamme(){
      verrouillait encore la page (html.fiche) : sur telephone, on restait en bas. */
   setTimeout(()=>{ if(!sheetOpen && curTab === "seance" && !db.active) render(); }, 500);
 }
+/* Sur le clavier du telephone, « Entree », « OK », « Rechercher » ou « Valider »
+   ferment le clavier, dans tout champ d'une ligne : on n'a plus a toucher a cote
+   (Nico). Apres les gestionnaires propres au champ, qui ont deja fait leur travail. */
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Enter" && e.keyCode !== 13) return;
+  const t = e.target;
+  if(!t || t.tagName !== "INPUT" || /^(checkbox|radio|button|submit)$/i.test(t.type)) return;
+  setTimeout(()=>{ if(document.activeElement === t) t.blur(); }, 0);
+});
 function hideSheet(){
   if(finOuverte){ finOuverte = false; setTimeout(libererFlamme, 50); }
   sheet.style.transition = "";
@@ -22884,12 +22900,16 @@ function openAjoutAliment(meal){
       foodEl.value = b.dataset.food;
       dessinerListe();
       calc();
-      /* choisi : on enchaîne directement sur la quantité */
-      if(b.dataset.food !== "manuel") setTimeout(()=>gEl.focus(), 30);
+      /* A la piece (une pomme, un oeuf) : « 1 » se met tout seul et le clavier reste
+         ferme — on ajuste avec − et + (Nico). Au poids : on enchaine sur la quantite. */
+      if(b.dataset.food === "manuel") return;
+      if(gEl.step === "1"){ gEl.value = 1; calc(); gEl.blur(); }
+      else setTimeout(()=>gEl.focus(), 30);
     });
   };
   qEl.oninput = dessinerListe;
-  qEl.onkeydown = e=>{ if(e.key === "Enter") e.preventDefault(); };
+  /* « Rechercher » sur le clavier : la liste est deja filtree, on ferme le clavier */
+  qEl.onkeydown = e=>{ if(e.key === "Enter"){ e.preventDefault(); qEl.blur(); } };
   document.querySelectorAll("#ot-cats [data-cat]").forEach(b=>b.onclick=()=>{
     cat = b.dataset.cat;
     document.querySelectorAll("#ot-cats [data-cat]").forEach(x=>x.classList.toggle("on", x === b));
@@ -28179,7 +28199,7 @@ function openTplEditor(id){
             <button class="icon-btn" id="tp-cardio-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la sortie")}</button>
           </div>` : `<button class="btn-dash" id="tp-cardio-add">${icoM("course", 16)} ${TR("Ajouter une sortie cardio")}</button>`}</div>
         <div class="row" style="gap:9px;">
-          <button class="btn grow" id="tp-cancel" style="background:var(--field); box-shadow:var(--ombre-carte);">${TR("Annuler")}</button>
+          <button class="btn grow" id="tp-cancel">${TR("Annuler")}</button>
           <button class="btn btn-accent grow" id="tp-save">${TR("Enregistrer")}</button>
         </div>
         ${id? `<button class="btn" id="tp-del" style="background:var(--bad); color:#fff; border-color:var(--bad);">${TR("Supprimer la séance")}</button>`:""}
