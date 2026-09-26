@@ -8002,6 +8002,22 @@ async function lancer(){
     await attendre(()=>!!D2.getElementById("pc-nouv"), 1500);
     vrai("La flèche ramène à la page Course", !!D2.getElementById("pc-nouv"));
     F.hideSheet();
+    /* hors de l'ecran : ce que la page confie au service natif (faux service ici) */
+    const vraiPlugin = F.pluginRepos;
+    const recu = {};
+    F.pluginRepos = ()=>({sequence: async o=>{ recu.seq = o; return {actif:true}; }, arreter: async ()=>({}), ecran: async o=>{ recu.ecran = o.allume; return o; }});
+    DB.courseEnCours = {pid:"x", nom:"T", etapes:[{type:"course", min:10, v:10, p:1}, {type:"marche", min:5, v:6}], debut:Date.now(), pauseA:null, pauseCumul:0};
+    await F.poserSequenceCourse();
+    vrai("Le service reçoit le décompte 3-2-1 à faire sonner écran éteint", recu.seq && recu.seq.decompte === true);
+    vrai("…et, pour chaque étape, ce qu'affiche le bandeau (étape, cadence, pente)", recu.seq && /1 \/ 2/.test(recu.seq.etapes[0].encours) && /pente/.test(recu.seq.etapes[0].details));
+    F.eval("ecranNatif = null");
+    await F.syncWakeLock();
+    vrai("Pendant la séance, la fenêtre de l'app reste allumée", recu.ecran === true);
+    DB.courseEnCours = null;
+    await F.syncWakeLock();
+    vrai("…et plus après", recu.ecran === false);
+    F.pluginRepos = vraiPlugin;
+    F.eval("ecranNatif = null");
     /* le carrousel montre les seances de course */
     DB.parcours = [{id:"pc1", nom:"Tapis", etapes:[{type:"course", min:10, v:10, p:1}, {type:"marche", min:5, v:6}]}];
     F.eval("curTab = 'seance'; render()");
