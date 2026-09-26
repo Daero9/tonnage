@@ -8051,6 +8051,27 @@ async function lancer(){
     await attendre(()=>!!D2.getElementById("ca-go"), 1500);
     vrai("La toucher ouvre son aperçu, avec Commencer", !!D2.getElementById("ca-go") && D2.querySelectorAll("#sheet .oc-etapes div").length === 2);
     F.hideSheet();
+    /* une seance composee tenue jusqu'au bout : a sa prochaine ouverture, un defi */
+    DB.parcours = [{id:"pd", nom:"Défi", etapes:[{type:"marche", min:5, v:6}, {type:"course", min:15, v:10}, {type:"marche", min:5, v:6}]}];
+    F.demarrerCourse("pd");
+    await attendre(()=>!!DB.courseEnCours, 1500);
+    DB.courseEnCours.debut = Date.now() - 26 * 60e3;
+    await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
+    D2.getElementById("fc-ok").click();
+    vrai("Une séance composée tenue jusqu'au bout garde un défi à proposer", DB.parcours[0].aProposer === true);
+    F.openCourseApercu("pd");
+    await attendre(()=>!!D2.querySelector(".ca-defi"), 1500);
+    vrai("À la prochaine ouverture : « Objectif », en vert, avec oui / non", !!D2.getElementById("ca-oui") && !!D2.getElementById("ca-non") && /\+/.test(D2.querySelector(".ca-defi b").textContent));
+    D2.getElementById("ca-non").click();
+    vrai("Non : la séance reste telle quelle, et on ne redemande pas", DB.parcours[0].etapes[1].min === 15 && !DB.parcours[0].aProposer && !D2.querySelector(".ca-defi"));
+    DB.parcours[0].aProposer = true;
+    F.openCourseApercu("pd");
+    await attendre(()=>!!D2.getElementById("ca-oui"), 1500);
+    D2.getElementById("ca-oui").click();
+    vrai("Oui : la plus longue étape de course gagne 1 à 2 min, même vitesse", DB.parcours[0].etapes[1].min === 17 && DB.parcours[0].etapes[1].v === 10 && !DB.parcours[0].aProposer);
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.cardio = [];
     /* l'objectif en cours a sa carte dans le carrousel : sa seance du jour */
     DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
     F.eval("render()");
