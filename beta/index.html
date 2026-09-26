@@ -4598,6 +4598,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Noter une sortie déjà faite":"Log a past workout",
+  "Course, marche, vélo… après coup":"Run, walk, bike… after the fact",
   "Masquer le détail des muscles":"Hide muscle details",
   "Afficher le détail des muscles":"Show muscle details",
   "Masquer le détail de la course":"Hide running details",
@@ -7994,6 +7996,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Noter une sortie déjà faite":"Anotar una salida ya hecha",
+  "Course, marche, vélo… après coup":"Carrera, caminata, bici… a posteriori",
   "Masquer le détail des muscles":"Ocultar el detalle de los músculos",
   "Afficher le détail des muscles":"Mostrar el detalle de los músculos",
   "Masquer le détail de la course":"Ocultar el detalle de la carrera",
@@ -11606,6 +11610,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Noter une sortie déjà faite":"Registrar uma saída já feita",
+  "Course, marche, vélo… après coup":"Corrida, caminhada, bicicleta… depois",
   "Masquer le détail des muscles":"Ocultar o detalhe dos músculos",
   "Afficher le détail des muscles":"Mostrar o detalhe dos músculos",
   "Masquer le détail de la course":"Ocultar o detalhe da corrida",
@@ -18764,7 +18770,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 18h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 18h57 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20442,19 +20448,31 @@ function allerOnglet(id){
   depuisZero = true;
   curTab = id; render();
 }
+/* Le dernier appui sur l'ecran : ou il a commence, et quand. Un « clic » qui arrive
+   sur un onglet alors que le doigt s'etait pose ailleurs (sur « Enregistrer » d'une
+   fiche qui vient de se refermer, par exemple) n'est pas une demande de changer
+   d'onglet : on l'ignore (Nico : « des fois ca bascule sur Progression »). */
+let dernierAppui = null;
+document.addEventListener("pointerdown", e=>{ dernierAppui = {el:e.target, t:Date.now()}; }, true);
+function appuiVenuDAilleurs(bouton){
+  return !!(dernierAppui && Date.now() - dernierAppui.t < 1000 && dernierAppui.el && !bouton.contains(dernierAppui.el));
+}
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
     `<button class="tab ${curTab===id?'on':''}" data-tab="${id}">${ICONS[id]}<span>${TR(lab)}</span></button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
     if(b.dataset.tab===curTab) return;
+    if(appuiVenuDAilleurs(b)) return;
     allerOnglet(b.dataset.tab);
   });
 }
 /* De quel ecran on vient. Ce n'est pas tout a fait l'onglet : lancer ou terminer une
    seance change tout l'ecran sans changer d'onglet, et merite le meme fondu. */
 let ecranPrecedent = null;
+let carrouselCible = null;        /* selecteur de la carte a montrer au prochain rendu */
 function render(){
   renderTabs();
+  majVerrouPage();
   const app = document.getElementById("app");
   const ecran = (curTab === "seance" && db.active) ? "seanceActive" : curTab;
   const changeEcran = ecran !== ecranPrecedent;
@@ -25209,6 +25227,16 @@ function renderSeance(app){
     let raf = null;
     car.addEventListener("scroll", ()=>{ if(raf) return; raf = requestAnimationFrame(()=>{ raf=null; majCentre(); }); }, {passive:true});
     requestAnimationFrame(majCentre);
+    /* une seance vient d'etre creee ou modifiee : le carrousel glisse jusqu'a elle */
+    if(carrouselCible){
+      const cible = car.querySelector(carrouselCible);
+      carrouselCible = null;
+      const slot = cible && cible.closest(".prog-slot");
+      if(slot) setTimeout(()=>{
+        try{ car.scrollTo({left:Math.max(0, slot.offsetLeft - (car.clientWidth - slot.offsetWidth) / 2), behavior:"smooth"}); }
+        catch(e){ car.scrollLeft = slot.offsetLeft; }
+      }, 350);
+    }
     car.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{
       if(e.target.closest("[data-edit]")) return;
       if(e.target.closest("[data-adapt]")) return;   /* l'étiquette a sa propre fiche */
@@ -26482,17 +26510,20 @@ function openAjout(){
             TR("Laisse l'app choisir pour toi"), "vedette")}
     ${ligne("aj-seance", IC_PLUS, TR("Nouvelle séance"), TR("Je choisis les exercices"))}
     ${ligne("aj-course", icoM("course", 22), TR("Séance de course"), TR("Course et marche, étape par étape"))}
-    ${ligne("aj-cardio", icoM("course", 22), TR("Sortie cardio"), TR("Course, marche, vélo…"))}
-    ${ligne("aj-lib", IC_LIVRE, TR("Bibliothèque d'exercices"), TR("Tous les exercices de l'app"))}
+    ${/* sous le trait : ce qui est deja fait (une sortie passee) et ce qu'on consulte.
+         La sortie cardio ressemblait trop a la seance de course ; la « seance libre »,
+         trop a une nouvelle seance (Nico, 26 septembre). */""}
     <div class="aj-sep"></div>
-    ${ligne("aj-libre", IC_LECTURE, TR("Démarrer une séance libre"),
-            TR("Sans programme, sans suivi"), "discret")}`);
+    ${ligne("aj-cardio", IC_CALENDRIER, TR("Noter une sortie déjà faite"), TR("Course, marche, vélo… après coup"))}
+    ${ligne("aj-lib", IC_LIVRE, TR("Bibliothèque d'exercices"), TR("Tous les exercices de l'app"))}`);
   document.getElementById("aj-propose").onclick=()=>openPropose();
-  document.getElementById("aj-seance").onclick=()=>{ closeSheet(); setTimeout(()=>openTplEditor(null), 60); };
-  document.getElementById("aj-cardio").onclick=()=>{ closeSheet(); setTimeout(openCardioAdd, 60); };
-  document.getElementById("aj-course").onclick=()=>{ closeSheet(); setTimeout(openParcoursListe, 60); };
-  document.getElementById("aj-lib").onclick=()=>{ closeSheet(); setTimeout(()=>openPicker(null), 60); };
-  document.getElementById("aj-libre").onclick=()=>{ closeSheet(); startWorkout(null); };
+  /* d'une fiche a l'autre SUR PLACE, sans fermer : fermer passe par un « retour » du
+     navigateur qui arrive quand il veut — rouvrir 60 ms plus tard le laissait en vol,
+     et il pouvait refermer la fiche suivante ou decaler l'historique */
+  document.getElementById("aj-seance").onclick=()=>openTplEditor(null);
+  document.getElementById("aj-cardio").onclick=()=>openCardioAdd();
+  document.getElementById("aj-course").onclick=()=>openParcoursListe();
+  document.getElementById("aj-lib").onclick=()=>openPicker(null);
 }
 
 /* détail d'une séance passée, depuis le bandeau historique */
@@ -28972,7 +29003,7 @@ function openParcoursEditeur(id){
       if(k >= 0) db.parcours[k] = p; else db.parcours.push(p);
       save();
     };
-    document.getElementById("pc-save").onclick = ()=>{ enregistrer(); closeSheet(); toast(TR("Séance de course enregistrée")); };
+    document.getElementById("pc-save").onclick = ()=>{ enregistrer(); carrouselCible = `[data-course="${p.id}"]`; closeSheet(); render(); toast(TR("Séance de course enregistrée")); };
     document.getElementById("pc-go").onclick = ()=>{ enregistrer(); demarrerCourse(p.id); };
     const del = document.getElementById("pc-del");
     if(del) del.onclick = ()=>askConfirm(TR("Supprimer cette séance ?"), TR("{} disparaîtra de tes séances de course. Les sorties déjà faites restent.").replace("{}", p.nom || TR("Cette séance")), TR("Supprimer"), true, ()=>{
@@ -29922,6 +29953,7 @@ function openTplEditor(id){
       tpl.name = document.getElementById("tp-name").value.trim() || TR("Séance sans nom");
       const idx = db.templates.findIndex(t=>t.id===tpl.id);
       if(idx>=0) db.templates[idx]=tpl; else db.templates.push(tpl);
+      carrouselCible = `[data-open="${tpl.id}"]`;       /* le carrousel ira la montrer */
       save(); closeSheet(); render();
     };
   };
