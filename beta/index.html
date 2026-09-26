@@ -18673,7 +18673,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 18h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 18h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -28919,13 +28919,17 @@ async function poserSequenceCourse(){
   for(let k = st.i; k < c.etapes.length; k++){
     const e = c.etapes[k], suite = c.etapes[k + 1];
     etapes.push({
+      /* le bandeau pendant l'etape : ou l'on en est, et la cadence a tenir */
+      encours: TR("Étape {i} / {n}").replace("{i}", k + 1).replace("{n}", c.etapes.length) + " · " + nomEtape(e),
+      details: vitPente(e),
       sec: k === st.i ? Math.max(0.5, st.reste) : e.min * 60,
       titre: TR(e.type === "course" ? "Course terminée" : "Marche terminée"),
       corps: suite ? TR("À toi : {m} de {t} à {v}").replace("{m}", minTxt(suite.min)).replace("{t}", nomEtape(suite).toLowerCase()).replace("{v}", vitPente(suite))
                    : TR("Séance terminée, bravo !")
     });
   }
-  try{ await pl.sequence({etapes, son: db.settings.son !== false}); return true; }
+  /* decompte : trois bips avant chaque changement, entendus ecran eteint */
+  try{ await pl.sequence({etapes, son: db.settings.son !== false, decompte:true}); return true; }
   catch(e){ return false; }
 }
 let courseTic = null, courseVu = -1, courseDecompte = -1;
@@ -29064,7 +29068,9 @@ function ticCourse(){
     const suite = c.etapes[st.i + 1];
     if(s !== courseDecompte){
       courseDecompte = s;
-      bipDecompte(); vibrer(40);
+      /* dans l'app Android, le service bippe deja le decompte : on ne double pas le son */
+      if(!pluginRepos()) bipDecompte();
+      vibrer(40);
       an.innerHTML = `<div class="an-tx"><span class="t">${suite ? TR("Prochaine étape") : TR("Fin de la séance")}</span>
           ${suite ? `<b class="q">${icEtape(suite, 26)}${nomEtape(suite)}</b><span class="v">${vitPente(suite)}</span>` : `<b class="q">${TR("Bravo !")}</b>`}</div>
         <b class="n">${s}</b>`;
@@ -32557,8 +32563,16 @@ function drawChart(wrap, pts, unit, goal, fmt){
 /* ================= WAKE LOCK (écran allumé pendant la séance) ================= */
 let wakeLock = null;
 let wakeEtat = ("wakeLock" in navigator) ? TR("en attente") : TR("non supporté par ce navigateur");
+let ecranNatif = null;          /* ce que la fenetre Android garde, pour ne pas le redire a chaque rendu */
 async function syncWakeLock(){
   const voulu = (!!db.active || !!db.courseEnCours) && db.settings.ecranAllume !== false;
+  /* Dans l'app Android, c'est la fenetre elle-meme qui reste allumee : la WebView ne
+     tient pas toujours le Wake Lock du navigateur. On ne le redit qu'au changement. */
+  const pl = pluginRepos();
+  if(pl && ecranNatif !== voulu){
+    ecranNatif = voulu;
+    try{ await pl.ecran({allume: voulu}); if(voulu) wakeEtat = "actif"; }catch(e){ ecranNatif = null; }
+  }
   if(!("wakeLock" in navigator)) return;
   try{
     if(voulu){
