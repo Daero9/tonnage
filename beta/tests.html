@@ -3518,10 +3518,24 @@ async function lancer(){
     F.eval("curTab = 'eat'; render()");
     const pastille = D2.getElementById("hero-scans");
     vrai("La pastille photo est là", !!pastille);
+    /* une precision tapee avant la photo : « cordon bleu », pas « poulet frit » */
     pastille.click();
     await attendre(()=>!!D2.querySelector(".cam"), 1500);
     vrai("…et ouvre directement la caméra en mode plat", !!D2.querySelector(".cam.plat"));
+    vrai("En mode plat, un champ pour préciser le plat avant la photo", !!D2.querySelector(".cam.plat #cam-indice"));
+    vrai("…à la place de la consigne « Toute l'assiette dans le cadre »",
+      !/Toute l'assiette/.test(D2.querySelector(".cam .t").textContent));
     fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* la precision part avec la premiere analyse, et la photo compte comme une photo */
+    const vraie = F.eval("analyserPhoto");
+    F.eval("analyserPhoto = async (b, i) => { window.__indice = i; return {aliments:[], remarque:'test'}; }");
+    const avantN = F.eval("photosRestantes()");
+    F.eval("photoEnCours = {meal:'midi', b64:'x', apercu:'img/hero-alimentation-2.webp', corrections:0}");
+    await F.eval("lancerAnalysePhoto('cordon bleu', true)");
+    eq("La précision part avec la photo", F.eval("window.__indice"), "cordon bleu");
+    eq("…et la photo est décomptée comme toute photo", F.eval("photosRestantes()"), avantN - 1);
+    F.analyserPhoto = vraie;           /* la vraie analyse revient */
+    F.hideSheet();
     /* 3. le raccourci de l'icone : la photo directement */
     DB.settings.camMode = "code";
     F.executerRaccourci("scan");
