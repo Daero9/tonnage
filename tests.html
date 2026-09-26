@@ -1370,11 +1370,11 @@ async function lancer(){
     vrai("…et le prénom", /Nico/.test(D2.querySelector(".hero-accueil h1").textContent));
     eq("Le titre se lit à gauche",
       F.getComputedStyle(D2.querySelector(".hero-accueil .hero-h")).textAlign, "left");
-    vrai("Le nom de la séance ressort", !!D2.querySelector(".hero-accueil .sub .hl"));
-    eq("…en orange",
-      F.getComputedStyle(D2.querySelector(".hero-accueil .sub .hl")).color, "rgb(245, 130, 32)");
-    eq("…et c'est bien la séance conseillée",
-      D2.querySelector(".hero-accueil .sub .hl").textContent, "Pull-up");
+    /* Nico, 25 septembre : plus le nom de la séance (« prise de masse »), juste la question */
+    eq("La question, sans le nom de la séance",
+      D2.querySelector(".hero-accueil .sub").textContent.trim(), "Prêt pour ta séance ?");
+    vrai("L'en-tête porte sa photo, comme Nutrition et Progression",
+      !!D2.querySelector(".hero-accueil .hero-bg image[href*='hero-seance']"));
     /* le bloc est centre dans le bandeau, son texte reste aligne a gauche */
     (()=>{
       const hb = D2.querySelector(".hero-accueil").getBoundingClientRect();
@@ -1674,8 +1674,13 @@ async function lancer(){
         DB.avatar = {acc:["casque-noir", "bandeau"]};   /* enfiles dans l'autre sens */
         r = rang();
         vrai("…même quand on les met dans l'autre ordre", r.casque > r.bandeau, r.src.join(" | "));
-        eq("Les lunettes passent devant ce qui couvre la tête",
-           F.eval("plan('lunettes-aviateur') > plan('casque-noir') && plan('casque-noir') > plan('bandeau')"), true);
+        /* Nico, 26 septembre : les lunettes passent SOUS ce qui couvre la tete (casque,
+           casquette, bonnet), au-dessus du seul bandeau. Le plan se lit sur l'identifiant
+           d'une TEINTE : les lunettes s'appellent « lunette-noir », comme leur fichier. */
+        eq("Les lunettes passent sous le casque, la casquette et le bonnet",
+           F.eval("plan('lunette-noir') < plan('casque-noir') && plan('lunette-noir') < plan('casquette-noir') && plan('lunette-noir') < plan('bonnet-blanc') && plan('lunette-noir') > plan('bandeau')"), true);
+        vrai("…et se portent toujours avec le casque (zones distinctes)",
+           !F.eval("memeEndroit(familleAcc('lunette-noir'), familleAcc('casque-noir'))"));
         eq("Chaque accessoire a son plan",
            F.eval("ACCESSOIRES.filter(a=>a.plan === undefined && !a.arriere).length"), 0);
         delete DB.avatar; F.eval("save()"); toutVu(); F.render(); F.openVestiaire();
@@ -1809,9 +1814,18 @@ async function lancer(){
     F.render();
     const D2 = F.document;
     /* l'en-tete annonce la journee */
-    vrai("Le soleil est en tête de page", !!D2.querySelector(".hero-h .ico svg"));
-    eq("…au-dessus du titre, pas à côté",
-      D2.querySelector(".hero-h .ico").nextElementSibling.className, "big");
+    /* D'apres la maquette de Nico : plus de soleil centre, mais une photo dans l'en-tete
+       et le texte a gauche, sur trois etages — sur-titre, titre, phrase. */
+    vrai("L'en-tête porte sa photo", !!D2.querySelector(".hero.hero-photo .hero-bg image[href*='hero-alimentation']"));
+    /* Nico trouvait les photos zoomees : calees sur toute la boite (1000 de haut) alors que
+       l'en-tete n'en montre que 790, elles etaient agrandies de 22 %. Elles se calent sur
+       la bande visible. */
+    eq("La photo se cale sur la bande visible de l'en-tête, pas sur toute la boîte",
+      D2.querySelector(".hero.hero-photo .hero-bg image[href*='hero-alimentation']").getAttribute("height"), "920");   /* meme hauteur d'en-tete que Seance (Nico) */
+    vrai("…sans l'anneau fin ni le disque découpé", !D2.querySelector(".hero.hero-photo #hero-m circle"));
+    const sur = D2.querySelector(".hero-h .sur");
+    vrai("Un sur-titre au-dessus du titre", !!sur && sur.nextElementSibling && sur.nextElementSibling.className === "big");
+    eq("…aligné à gauche", F.getComputedStyle(D2.querySelector(".hero-photo .hero-h")).textAlign, "left");
     vrai("Le sous-titre est là", /Vue d'ensemble/.test(D2.querySelector(".hero-h .sub").textContent));
     /* Ancre par le BAS du bandeau : pousse depuis le haut, le bloc suivait l'encoche du
        telephone et passait sous les cartes — le sous-titre disparaissait. */
@@ -2382,6 +2396,16 @@ async function lancer(){
       ["ajout d'aliment", ()=>F.openAjoutAliment("midi")],
       ["produit scanné", ()=>F.openProduitScanne("midi", {code:"1", nom:"Test", marque:"M",
         prot100:5, kcal100:50, gluc100:3, lip100:1, portion:25, liquide:true})]];
+    /* Nico, 25 septembre : toutes les pages qui s'ouvrent sont blanches, plus beiges */
+    /* et le fond de l'app aussi (Nico, 25 septembre) : « vraiment tout » */
+    eq("Le fond de l'app est blanc",
+      F.document.documentElement.dataset.theme === "dark" ? "rgb(255, 255, 255)"
+        : F.getComputedStyle(D2.body).backgroundColor, "rgb(255, 255, 255)");
+    F.openAjoutAliment("midi");
+    eq("La page qui s'ouvre est blanche",
+      F.document.documentElement.dataset.theme === "dark" ? "rgb(255, 255, 255)"
+        : F.getComputedStyle(D2.getElementById("sheet")).backgroundColor, "rgb(255, 255, 255)");
+    F.hideSheet();
     fiches.forEach(([nom, ouvrir])=>{
       ouvrir();
       const perdus = invisibles(D2.getElementById("sheet"));
@@ -2413,7 +2437,13 @@ async function lancer(){
     DB.templates = [];
     F.showPlan(false);
     const D2 = F.document;
-    vrai("Le plan s'annonce", /plan personnalisé/i.test(D2.querySelector(".pn-sous").textContent));
+    vrai("Le plan s'annonce", /plan simple et personnalisé/i.test(D2.querySelector(".pn-sous").textContent));
+    /* d'apres la maquette de Nico : trois reperes du programme, lus dans ses seances */
+    eq("Trois repères du programme", D2.querySelectorAll(".pn-mini .m").length, 3);
+    vrai("…dont les répétitions des gros mouvements, prises dans les séances",
+      /\d+ à \d+ répétitions/.test(D2.querySelector(".pn-mini .m.orange b").textContent));
+    vrai("« Pour y arriver » : les calories et les protéines, puis une phrase simple",
+      !!D2.querySelector(".pn-obj .pr") && D2.querySelectorAll(".pn-obj .li").length === 2 && !!D2.querySelector(".pn-obj .tx p"));
     eq("Deux étiquettes en tête", D2.querySelectorAll(".pn-chips .ch").length, 2);
     vrai("La première porte l'haltère", !!D2.querySelector(".pn-chips .ch.on svg"));
     /* l'objectif en clair, avec le délai */
@@ -2720,7 +2750,6 @@ async function lancer(){
     /* L intitule ne porte plus l unite — elle est ecrite dans le champ. Ce qui dit
        qu on boit au lieu de manger est l etiquette, a cote de la marque. */
     eq("On boit une boisson", F.document.querySelector(".ps-type").textContent, "Boisson");
-    eq("L intitulé est le même pour tout", lab(), "Quantité consommée");
     eq("La portion de l'étiquette est reprise", F.document.getElementById("ps-g").value, "33");
     eq("Le champ avance par gorgées", F.document.getElementById("ps-g").step, "5");
     /* les valeurs d'Open Food Facts sont pour 100 ml, donc pour 10 cl : 33 cl = 3,3 fois */
@@ -2731,20 +2760,16 @@ async function lancer(){
     eq("Les quatre libellés",
       [...D2ps().querySelectorAll(".ps-tuiles .l")].map(e=>e.textContent).join("|"),
       "kcal|protéines|glucides|lipides");
-    eq("Les glucides sont repris de l'étiquette",
-      D2ps().querySelectorAll(".ps-tuiles .v")[2].textContent.replace(/\s/g,""), "12g");
+    /* comme la page d'un plat photographié, les tuiles donnent ce qu'on consomme :
+       12 g de glucides pour 100 ml, 33 cl bus = 40 g */
+    eq("Les glucides suivent la quantité",
+      D2ps().querySelectorAll(".ps-tuiles .v")[2].textContent.replace(/\s/g,""), "40g");
     /* le compteur pas à pas */
     F.document.getElementById("ps-plus").click();
     eq("Le + avance de 5 cl", F.document.getElementById("ps-g").value, "38");
     F.document.getElementById("ps-moins").click();
     eq("Le − revient", F.document.getElementById("ps-g").value, "33");
-    /* la bascule cl / ml convertit au lieu de remettre à zéro */
-    F.document.getElementById("ps-unite").click();
-    eq("33 cl font 330 ml", F.document.getElementById("ps-g").value, "330");
-    eq("L'unité du champ suit", F.document.getElementById("ps-uni").textContent, "ml");
-    eq("Les calories ne bougent pas", F.document.getElementById("ps-kcal").textContent, "139");
-    F.document.getElementById("ps-unite").click();
-    eq("…et le retour aussi", F.document.getElementById("ps-g").value, "33");
+    eq("L'unité est écrite à côté du chiffre", F.document.getElementById("ps-uni").textContent, "cl");
     eq("Le libellé est en centilitres",
       (DB.habitSel[jour]||{}).matin[0], "Cola 33 cl (~0 g prot. · 139 kcal)");
     /* Le libellé ne peut pas porter les macros : c'est lui qu'on relit partout. Elles
@@ -2813,8 +2838,10 @@ async function lancer(){
     vrai("…et elle est bien celle du produit",
       avecPhoto.querySelector("img").getAttribute("src")
         .indexOf("https://images.openfoodfacts.org/images/") === 0);
-    vrai("Elle est à gauche du nom",
-      avecPhoto.nextElementSibling.classList.contains("ps-titre"));
+    /* depuis la maquette de Nico : la photo occupe le haut de la page, au-dessus du nom */
+    vrai("Elle est en haut de la page, au-dessus du nom",
+      avecPhoto.classList.contains("ph-bandeau") && avecPhoto.nextElementSibling.classList.contains("pp-titre"));
+    vrai("Le repas se choisit en haut à gauche", !!D2.querySelector("#sheet .pp-repas [data-repas='soir']"));
 
     /* sans photo : un signe, jamais une case vide */
     const boisson = fiche({liquide:true, photo:""});
@@ -2852,70 +2879,58 @@ async function lancer(){
     F.hideSheet();
     F.openProduitScanne("midi", {code:"9", nom:"Boisson test", marque:"M",
       prot100:0.8, kcal100:40, gluc100:8.9, lip100:0, portion:25, liquide:true, photo:""});
-    vrai("Les valeurs sont sous le nom, à droite de la photo",
-      !!D2.querySelector(".ps-titre .ps-tuiles"));
+    /* depuis le 25 septembre, la même page que celle d'un plat photographié : les
+       tuiles colorées, puis la liste des aliments avec sa carte */
+    vrai("Les tuiles colorées de la page photo", !!D2.querySelector("#sheet .ps-tuiles.ph-tuiles .tu.kcal"));
+    /* le nom est en titre : pas de « liste des aliments » pour un seul produit */
+    eq("Pas de liste d'un seul aliment", D2.querySelectorAll("#sheet .pp-grille").length, 0);
+    vrai("La quantité, en grand, juste sous les tuiles",
+      D2.querySelector("#sheet .ph-tuiles").nextElementSibling.classList.contains("ps-gros"));
     eq("Quatre valeurs", D2.querySelectorAll(".ps-tuiles .tu").length, 4);
     eq("Aucune tuile ne répète la référence", D2.querySelectorAll(".ps-tuiles .r").length, 0);
-    eq("Elle est écrite une seule fois, dessous",
-      D2.querySelector(".ps-ref").textContent, "Informations pour 100 ml");
+    eq("La référence est écrite une seule fois, dessous",
+      D2.querySelector(".ps-ref").textContent, "Pour 25 cl · valeurs de l'emballage, pour 100 ml : 40 kcal");
     /* un solide se mesure en grammes */
     F.hideSheet();
     F.openProduitScanne("midi", {code:"8", nom:"Aliment test", marque:"M",
       prot100:5, kcal100:100, gluc100:2, lip100:1, portion:100, liquide:false, photo:""});
     eq("…et en grammes pour un aliment",
-      D2.querySelector(".ps-ref").textContent, "Informations pour 100 g");
+      D2.querySelector(".ps-ref").textContent, "Pour 100 g · valeurs de l'emballage, pour 100 g : 100 kcal");
 
     /* ---- boisson ou aliment, dit en toutes lettres ---- */
     /* L'étiquette explique pourquoi la quantité se compte en grammes ici et en
        centilitres ailleurs : sans elle, le changement d'unité paraît arbitraire. */
     eq("Un aliment le dit", D2.querySelector(".ps-type").textContent, "Aliment");
 
-    /* ---- les quantités courantes ---- */
-    const rapides = () => [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent);
-    eq("Cinq quantités pour un aliment", rapides().join(" · "),
-      "30 g · 50 g · 100 g · 150 g · 200 g");
+    /* ---- la quantité tapée dans le grand cadre ---- */
+    /* Nico, 25 septembre : plus de raccourcis 30 / 50 / 100 g, la quantité se règle
+       dans le grand cadre sous les valeurs */
+    vrai("Plus de raccourcis de quantité", !D2.getElementById("ps-rapide") && !D2.querySelector(".ps-bloc"));
     const gEl = D2.getElementById("ps-g");
-    D2.querySelector('#ps-rapide [data-q="150"]').click();
-    eq("Un raccourci remplit le champ", gEl.value, "150");
-    eq("…et se marque comme choisi",
-      [...D2.querySelectorAll("#ps-rapide button.on")].map(b=>b.textContent).join(""), "150 g");
+    gEl.value = "150"; gEl.dispatchEvent(new F.Event("input"));
     eq("Les calories suivent", D2.getElementById("ps-kcal").textContent, "150");
     /* les trois macros de l'aperçu, arrondies comme elles seront enregistrées */
     eq("Les protéines de l'aperçu", D2.getElementById("ps-prot").textContent, "8");
     eq("Les glucides", D2.getElementById("ps-gluc").textContent, "3");
     eq("Les lipides", D2.getElementById("ps-lip").textContent, "2");
-    eq("L'intitulé ne répète plus l'unité",
-      D2.getElementById("ps-lab").textContent, "Quantité consommée");
-    /* le compteur et l aperçu se lisent d un même regard : ils ne se séparent jamais.
-       On lit la règle et non la géométrie — le cadre de test n a aucune largeur. */
-    eq("Le compteur et l'aperçu restent sur une ligne",
-      F.getComputedStyle(D2.querySelector(".ps-qrow")).flexWrap, "nowrap");
-    /* toute la quantité dans un cadre : le produit, la quantité et les boutons sont
-       trois plans distincts, et se lisent comme tels */
-    const cadre = D2.querySelector(".ps-bloc");
-    vrai("La quantité vit dans son cadre",
-      !!cadre && !!cadre.querySelector(".ps-qh") && !!cadre.querySelector(".ps-qrow"));
-    vrai("…qui se distingue du fond de la fiche",
-      F.getComputedStyle(cadre).backgroundColor !== F.getComputedStyle(D2.getElementById("sheet")).backgroundColor);
+    /* Nico : le nombre n'etait pas centre, et 1000 g etait coupe. Le champ prend la
+       largeur de ce qui est ecrit (on lit la regle : le cadre de test n'a pas de largeur) */
+    gEl.value = "1000"; gEl.dispatchEvent(new F.Event("input"));
+    eq("Le champ s'élargit pour 1000 g", gEl.style.width, "4.4ch");
+    eq("…et le nombre reste centré", F.getComputedStyle(gEl).textAlign, "center");
+    gEl.value = "150"; gEl.dispatchEvent(new F.Event("input"));
+    vrai("Le compteur vit dans le grand cadre",
+      !!D2.querySelector(".ps-gros #ps-g") && !!D2.querySelector(".ps-gros #ps-plus"));
+    /* d'apres la reference de Nico : une pilule blanche aux bouts ronds, detachee par un contour */
+    vrai("…une pilule aux bouts ronds, détachée par un léger contour",
+      parseFloat(F.getComputedStyle(D2.querySelector(".ps-gros")).borderTopWidth) > 0
+      && F.getComputedStyle(D2.querySelector(".ps-gros")).borderTopLeftRadius === "999px");
 
     /* une boisson se compte en canettes et en bouteilles */
     F.hideSheet();
     F.openProduitScanne("midi", {code:"7", nom:"Soda test", marque:"M",
       prot100:0, kcal100:48, gluc100:12, lip100:0, portion:25, liquide:true, photo:""});
     eq("Une boisson le dit aussi", D2.querySelector(".ps-type").textContent, "Boisson");
-    eq("Cinq volumes pour une boisson",
-      [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent).join(" · "),
-      "10 cl · 25 cl · 33 cl · 50 cl · 1 L");
-    /* cent centilitres se lisent « 1 L » : personne n'écrit « 100 cl » */
-    vrai("Le litre s'écrit en litre",
-      !!D2.querySelector('#ps-rapide [data-q="100"]') &&
-      D2.querySelector('#ps-rapide [data-q="100"]').textContent === "1 L");
-    /* en millilitres, les volumes suivent */
-    D2.getElementById("ps-unite").click();
-    eq("Les volumes suivent le changement d'unité",
-      [...D2.querySelectorAll("#ps-rapide button")].map(b=>b.textContent).join(" · "),
-      "100 ml · 250 ml · 330 ml · 500 ml · 1 L");
-    D2.getElementById("ps-unite").click();
 
     /* ---- les deux gestes secondaires, côte à côte ---- */
     eq("Deux boutons de même poids", D2.querySelectorAll(".ps-actions .ps-opts").length, 2);
@@ -3127,7 +3142,13 @@ async function lancer(){
     /* dix avec la ligne Notifications du 20 septembre */
     vrai("Dix réglages", lignes.length === 10, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
-    vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-abo") && D2.querySelector("#sheet .rg-abo").id === "st-abo");
+    vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-an") && D2.querySelector("#sheet .rg-an").id === "st-abo");
+    /* la carte d'apres la maquette de Nico : le poussin, trois atouts, un seul bouton */
+    vrai("La carte Analyse porte son poussin", !!D2.querySelector("#sheet .rg-an .an-perso img[src*='analyse-perso']"));
+    eq("…et ses trois atouts", D2.querySelectorAll("#sheet .rg-an .an-atouts > span").length, 3);
+    vrai("Sans abonnement : « Voir les forfaits » et sa flèche",
+      F.eval("db.abo") === true || (/Voir les forfaits|Essai/.test(D2.querySelector("#sheet .an-btn").textContent)
+        && !D2.querySelector("#sheet .an-btn").classList.contains("fait")));
     vrai("Chacun porte son signe",
       lignes.every(l => !!l.querySelector(":scope > .rgi svg, :scope > .rgi img")),
       lignes.filter(l => !l.querySelector(".rgi svg, .rgi img")).length + " sans icône");
@@ -3345,6 +3366,147 @@ async function lancer(){
     vrai("Sans heure enregistrée, la règle ne s'applique pas",
       F.suggestFor(dc, cible).mode !== "hold");
     DB.history = [];
+  })();
+  neuf();
+
+  /* Nico : 36 tractions quand elles ouvrent la séance, 28 quand elles viennent après
+     un rowing. Les deux chiffres ne se comparent pas entre eux. */
+  grp("La place de l'exercice dans la séance");
+  neuf();
+  (()=>{
+    const tr = id("Tractions"), trs = id("Tractions supination"), row = id("Rowing barre");
+    const dc = id("Développé couché"), pmp = id("Pompes");
+    DB.plafond = {};
+    const jours = j => new Date(Date.now() - j*864e5).toISOString();
+    const sess = (j, entries) => ({id:"pos"+j+Math.random(), date:jours(j), name:"x", templateId:"x",
+      start:0, end:0, entries});
+    const tractions = (r, n) => ({exId:tr, sets:Array.from({length:n || 3}, (_, i)=>serie(0, i ? r - 2 : r, 1))});
+    const rowing = {exId:row, sets:[serie(60,10,2), serie(60,10,2), serie(60,10,2), serie(60,10,2)]};
+
+    eq("Des tractions après quatre séries de rowing sont entamées",
+      F.eval("estEntame")(F.eval("prefatigue")([{exId:row, series:4}], tr)), true);
+    eq("…après un développé couché, elles restent fraîches",
+      F.eval("estEntame")(F.eval("prefatigue")([{exId:dc, series:4}], tr)), false);
+    /* l'ordre réel, lu à l'heure des séries : un exercice avancé compte tel qu'il a été fait */
+    const t = Date.now() - 864e5;
+    const ent = [{exId:tr, sets:[Object.assign(serie(0,30,1), {t:t})]},
+                 {exId:row, sets:[Object.assign(serie(60,10,2), {t:t + 3e5}), Object.assign(serie(60,10,2), {t:t + 6e5})]}];
+    eq("Faites en premier alors qu'elles étaient en bas de la liste, elles restent fraîches",
+      F.eval("prefatigueDans")([ent[1], ent[0]], 1), 0);
+
+    /* 1. comparer ce qui est comparable */
+    DB.history = [sess(10, [tractions(36)]), sess(3, [rowing, tractions(28)])];
+    const frais = F.suggestFor(tr, {reps:"8-12"}, 0);
+    eq("En ouverture, on se compare aux 36 d'ouverture, pas aux 28 d'après rowing",
+      Math.max(...frais.ref.sets.map(x=>x.r)), 36);
+    vrai("…et on dit pourquoi on remonte plus loin", /début|ouvrait/.test(frais.why), frais.why);
+    const apres = F.suggestFor(tr, {reps:"8-12"}, 4);
+    eq("En second, on se compare aux 28 d'après rowing", Math.max(...apres.ref.sets.map(x=>x.r)), 28);
+    eq("Sans position (séance libre, ancien appel), rien ne change : la dernière fois",
+      Math.max(...F.lastPerf(tr).sets.map(x=>x.r)), 28);
+
+    /* 2. rien de comparable, et aucun écart mesuré : on ne cherche pas à battre */
+    DB.history = [sess(3, [tractions(36)])];
+    const sans = F.suggestFor(tr, {reps:"8-12"}, 4);
+    eq("Plus entamé qu'à la dernière fois, sans écart mesuré : on tient", sans.mode, "hold");
+    vrai("…sans fixer un chiffre qu'on n'a pas mesuré", !!sans.sansCible && !sans.reps, JSON.stringify(sans));
+    eq("…et l'objectif du jour ne réaffiche pas la fourchette du plan",
+      F.eval("objectifDuJour")(tr, {reps:"8-12"}, 4).reps, "");
+    /* 2 bis. son propre écart, mesuré sur un exercice du même muscle */
+    DB.history = [sess(12, [{exId:trs, sets:[serie(0,20,1)]}]), sess(8, [rowing, {exId:trs, sets:[serie(0,16,1)]}]),
+                  sess(3, [tractions(36)])];
+    const ec = F.eval("ecartPerso")(tr, "reps");
+    vrai("Son écart se lit sur ses tractions supination (20 → 16)", ec && Math.abs(ec.r - 0.8) < 1e-9 && ec.source === "muscle",
+      JSON.stringify(ec));
+    const vise = F.suggestFor(tr, {reps:"8-12"}, 4);
+    eq("…et fixe la cible du jour : 36 × 0,8", vise.reps, 29);
+    vrai("…en le disant", /20 %/.test(vise.why), vise.why);
+
+    /* le sens inverse : plus frais qu'à la dernière fois, un raté ne fait pas baisser */
+    DB.history = [sess(3, [{exId:pmp, sets:[serie(0,20,1), serie(0,18,1), serie(0,16,1)]},
+      {exId:dc, sets:[serie(80,8,0), serie(80,7,0), serie(80,6,0), serie(80,5,0)]}])];
+    eq("Le même raté, sans position, fait baisser", F.suggestFor(dc, {reps:"10-12"}).mode, "down");
+    const plusTot = F.suggestFor(dc, {reps:"10-12"}, 0);
+    vrai("En ouverture aujourd'hui, on ne baisse pas", plusTot.mode === "hold" && plusTot.w === 80, JSON.stringify(plusTot));
+    /* et ce qui venait d'une ouverture ne pousse pas à monter quand l'exercice arrive tard */
+    DB.history = [sess(3, [{exId:dc, sets:[serie(80,12,3), serie(80,12,3), serie(80,12,3)]}])];
+    eq("« Monte » en ouverture…", F.suggestFor(dc, {reps:"10-12"}, 0).mode, "up");
+    eq("…devient « tiens » après des pompes", F.suggestFor(dc, {reps:"10-12"}, 3).mode, "hold");
+
+    /* 3. une baisse due à la place n'est pas une stagnation */
+    DB.history = [sess(20, [tractions(30)]), sess(17, [rowing, tractions(26)]), sess(14, [tractions(32)]),
+                  sess(10, [rowing, tractions(27)]), sess(7, [tractions(34)]), sess(3, [rowing, tractions(28)]),
+                  sess(1, [tractions(36)])];
+    const perf = F.eval("progressionParExo")();
+    vrai("Ses tractions montent : on les compare entre ouvertures", perf["Tractions"] > 0.02, perf["Tractions"]);
+    DB.history = [];
+  })();
+  neuf();
+
+  /* Nico, 25 septembre : la seance en cours et sa fiche d'exercice */
+  grp("La séance en cours, d'après les retours de Nico");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.materiel = null; DB.maison = null; DB.active = null;
+    DB.templates = []; F.addCoachProgram("masse");
+    const t = DB.templates[0];
+    F.startWorkout(t.id);
+    F.eval("curTab = 'seance'; render()");
+    vrai("Une flèche retour en haut à gauche", !!D2.getElementById("tb-retour"));
+    D2.getElementById("tb-retour").click();
+    vrai("…qui demande avant de quitter", /quitter la séance/i.test((D2.querySelector(".pp-modal h3") || {}).textContent || ""));
+    D2.querySelector('.pp-modal [data-q="rester"]').click();
+    vrai("« Rester » garde la séance", !!DB.active && !D2.querySelector(".pp-modal"));
+    vrai("Le réglage de l'exercice a une roue dentée, plus un menu burger",
+      !!D2.querySelector("[data-hist-ex] svg") && D2.querySelector("[data-hist-ex]").getAttribute("aria-label") === "Réglages de l'exercice");
+    F.openHistoExo(0);
+    vrai("La fiche d'exercice n'a plus la case « charge fixe »", !D2.getElementById("hx-plafond"));
+    vrai("…mais garde « un bras à la fois » ou sa note", !!(D2.getElementById("hx-unilat") || D2.querySelector(".hx2 .note")));
+    F.hideSheet();
+    D2.getElementById("tb-retour").click();
+    D2.querySelector('.pp-modal [data-q="quitter"]').click();
+    eq("« Quitter » abandonne la séance", DB.active, null);
+    /* la seance courte se reordonne : ce qu'elle garde ne change pas pour autant */
+    const longue = {items:[0,1,2,3,4].map(i=>({exId:"x"+i, sets:3, reps:"8-12", rest:90}))};
+    longue.courteIds = ["x4", "x1", "x2"];
+    eq("La séance courte retient les exercices qu'elle gardait", F.eval("gardesCourte")(longue).join(","), "1,2,4");
+    longue.items.splice(1, 1);
+    vrai("…et refait son choix si la séance a changé depuis", F.eval("gardesCourte")(longue).length >= 3);
+    DB.templates = [];
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : « Rowing machine » a poulie ou a pivot — une variante reprend
+     la carte d'un exercice sous un autre nom, et garde ses charges a part */
+  grp("Créer une variante d'un exercice");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.custom = [];
+    let choisi = null;
+    F.openPicker(id=>{ choisi = id; });
+    vrai("Deux boutons côte à côte : exercice perso ou variante",
+      !!D2.querySelector(".pk-creer #pk-new") && !!D2.querySelector(".pk-creer #pk-var"));
+    D2.getElementById("pk-var").click();
+    vrai("On choisit d'abord l'exercice de base", /Variante de quel exercice/.test(D2.querySelector("#sheet h3").textContent));
+    vrai("…sans les boutons de création", !D2.getElementById("pk-var"));
+    const base = F.libId("Rowing machine");
+    const champ = D2.getElementById("pk-search");
+    champ.value = "rowing machine"; champ.dispatchEvent(new F.Event("input"));
+    [...D2.querySelectorAll("#pk-list .pk-row")].find(x=>/Rowing machine/.test(x.textContent)).click();
+    vrai("Le nom part de celui de l'exercice", /^Rowing machine/.test(D2.getElementById("var-name").value));
+    D2.getElementById("var-name").value = "Rowing machine à pivot";
+    D2.getElementById("var-ok").click();
+    const v = DB.custom[DB.custom.length - 1];
+    eq("La variante porte le nouveau nom", F.nomEx(v), "Rowing machine à pivot");
+    eq("…a son propre identifiant, donc ses propres charges", v.id === base, false);
+    eq("…et c'est elle qui est choisie", choisi, v.id);
+    eq("Elle reprend les muscles de l'exercice de base",
+      JSON.stringify(F.eval("MUSCLE_WORK")[F.eval("nomCanon")(v)]), JSON.stringify(F.eval("MUSCLE_WORK")["Rowing machine"]));
+    vrai("…et son dessin", /rowing-machine/.test(F.eval("exIcon")(v)));
+    F.hideSheet();
+    DB.custom = [];
   })();
   neuf();
 
@@ -4103,6 +4265,86 @@ async function lancer(){
      des candidats se faisait sur la charge qu'un mouvement supporte, et un soulevé de
      terre à l'élastique y valait autant que le même à la barre — le leg curl sur ballon
      (42) passait même devant le leg curl de la machine (25). */
+  /* Trois bugs de séance remontés par Nico. Chacun venait d'un recalcul qui passait
+     derrière l'utilisateur et défaisait ce qu'il venait de faire. */
+  grp("Ce qu'on retouche à la main tient");
+  neuf();
+  await (async ()=>{
+    DB.materiel = null; DB.maison = null; DB.active = null;
+    DB.profile = Object.assign({}, DB.profile, {lieu:"salle"});
+    DB.templates = []; F.addCoachProgram("masse");
+    const t = DB.templates.find(x=>x.adaptatif === "pull");
+    /* 1. Remplacer : l'aperçu recalculait la séance à chaque redessin et effaçait le choix */
+    F.openPreview(t.id, true);
+    const autre = F.eval("LIB").find(e=>e.name && !t.items.some(i=>i.exId === e.id) && /Tirage vertical/.test(e.name));
+    t.items[0].exId = autre.id; t.retouche = Date.now();
+    F.openPreview(t.id, true);          /* le retour sur l'aperçu, comme après une fiche d'info */
+    eq("Un exercice remplacé survit au retour sur l'aperçu", t.items[0].exId, autre.id);
+    F.eval("closeSheet()");
+    /* 2. ↻ d'une ligne : il relançait tout le tirage */
+    F.eval("apercuProposition('pull')");
+    const lire = () => [...F.document.querySelectorAll("#sheet [data-ppswap]")]
+      .map(b=>b.closest(".card").querySelector("div[style*='font-weight:800']").textContent.trim());
+    const avant = lire();
+    F.document.querySelector("#sheet [data-ppswap='2']").click();
+    const apres = lire();
+    eq("↻ ne change que sa ligne",
+       avant.map((x, i)=>i === 2 ? "*" : x).join("|"), apres.map((x, i)=>i === 2 ? "*" : x).join("|"));
+    vrai("…et la change vraiment", avant[2] !== apres[2], avant[2] + " → " + apres[2]);
+    F.eval("hideSheet()");
+    DB.templates = [];
+  })();
+  neuf();
+
+  /* Le résultat d'une photo : une page pleine, qu'on ne quitte pas sans le vouloir. */
+  grp("La page de résultat d'une photo");
+  neuf();
+  await (async ()=>{
+    const res = {plat:"saumon et riz", aliments:[
+      {nom:"saumon grillé", grammes:150, confiance:"haute", kcal100:208, prot100:22, gluc100:0, lip100:13},
+      {nom:"riz blanc cuit", grammes:150, confiance:"basse", kcal100:130, prot100:2.7, gluc100:28, lip100:0.3}]};
+    const ouvrir = () => { F.eval("photoEnCours = {apercu:'img/hero-alimentation-2.webp', meal:'midi', corrections:0}"); F.openResultatPhoto("midi", res); };
+    ouvrir();
+    const D2 = F.document;
+    vrai("C'est une page pleine", D2.getElementById("sheet").classList.contains("plein"));
+    vrai("Plus de « Changer la photo » ni de « Refaire une photo »",
+      !D2.getElementById("ph-changer") && !D2.getElementById("ph-refaire"));
+    eq("Un titre simple : le nom du plat", D2.querySelector(".pp-titre h2").textContent, "Saumon et riz");
+    vrai("…avec l'icône « Modifier » à côté", !!D2.querySelector(".pp-titre #ph-preciser"));
+    eq("Une carte par aliment", D2.querySelectorAll(".pp-al").length, 2);
+    vrai("« Ajouter à ce repas » vit dans le pied collé en bas", !!D2.querySelector(".pp-pied #ph-ok"));
+    /* le détail d'un aliment : rien n'est écrit avant « Enregistrer » */
+    D2.querySelector("[data-ouvre='0']").click();
+    D2.querySelector(".pp-modal [data-dp]").click();
+    D2.querySelector(".pp-modal").click();            /* on tape à côté : annulé */
+    eq("Fermer le détail sans enregistrer ne change rien",
+       D2.querySelector("[data-ouvre='0'] .pp-st b").textContent, "150g");
+    D2.querySelector("[data-ouvre='0']").click();
+    D2.querySelector(".pp-modal [data-dp]").click();
+    D2.querySelector(".pp-modal [data-dok]").click();
+    eq("« Enregistrer et quitter » applique les grammes",
+       D2.querySelector("[data-ouvre='0'] .pp-st b").textContent, "160g");
+    /* la croix demande confirmation */
+    D2.getElementById("ph-x").click();
+    vrai("La croix demande confirmation", /Quitter/.test((D2.querySelector(".pp-modal h3") || {}).textContent || ""));
+    D2.querySelector("[data-pp='rester']").click();
+    vrai("« Rester » garde la page", F.eval("overlay.classList.contains('show')") && !D2.querySelector(".pp-modal"));
+    vrai("Le geste retour passe par la même confirmation", F.eval("typeof gardeFermeture === 'function'"));
+    D2.getElementById("ph-x").click();
+    D2.querySelector("[data-pp='jeter']").click();
+    await attendre(()=>!F.eval("overlay.classList.contains('show')"), 2000);
+    vrai("« Jeter » ferme la page", !F.eval("overlay.classList.contains('show')"));
+    /* enregistrer ne demande rien */
+    ouvrir();
+    F.eval("history.back = (()=>{})");               /* pas de popstate : on teste le filet */
+    D2.getElementById("ph-ok").click();
+    await attendre(()=>!F.eval("overlay.classList.contains('show')"), 2000);
+    vrai("Ajouter au repas ferme la page sans confirmation, même si le retour ne répond pas",
+      !F.eval("overlay.classList.contains('show')") && !D2.querySelector(".pp-modal"));
+    F.eval("delete history.back");
+  })();
+  neuf();
+
   grp("En salle, les remplaçants passent derrière");
   neuf();
   (()=>{
@@ -7029,6 +7271,18 @@ async function lancer(){
     F.eval("curTab = 'prg'; render()");
     await attendre(()=>!!F.document.getElementById("prot-sec"), 3000);
     vrai("…et le repère revient", !!F.document.querySelector("#prot-sec .pr-target"));
+    /* Nico : une journee au quota restait sous le trait. Les barres et la ligne doivent
+       partager la meme reserve au-dessus d'elles (15 px) — on lit la regle, le cadre de
+       test n'a pas de hauteur. */
+    /* un commentaire de code glisse dans un gabarit s'affichait en toutes lettres
+       sous l'en-tete de Progression (« meme calage que le soleil… ») */
+    vrai("Aucun commentaire de code ne s'affiche sur la page",
+      !/\/\*|\*\//.test(F.document.getElementById("app").textContent));
+    /* les kilos du bilan debordaient de leur tuile : le chiffre retrecit avec sa longueur */
+    vrai("Le chiffre d'une tuile du bilan rétrécit quand il s'allonge",
+      F.eval("tailleBl")("0 kg") > F.eval("tailleBl")("12 450 kg"));
+    eq("Les barres ont la même échelle que la ligne d'objectif",
+      F.getComputedStyle(F.document.querySelector("#prot-sec .pt-plot .pr-col .pr-val")).height, "15px");
   })();
   neuf();
 
