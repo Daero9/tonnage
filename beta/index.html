@@ -4801,6 +4801,9 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.":"Marathon: your longest training run will go up to 32 km, not 42. That's how marathon plans usually work; this exact cap is Tonnup's choice.",
+  "Prêt pour ton marathon !":"Ready for your marathon!",
+  "Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.":"For a marathon, the longest training run stops around 32 km: that's common practice in plans, not a proven rule.",
   "Mes séances du mois":"My workouts this month",
   "Le calendrier, jour par jour":"The calendar, day by day",
   "Musculation":"Strength",
@@ -8248,6 +8251,9 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.":"Maratón: tu salida más larga de preparación llegará a 32 km, no a 42. Es lo habitual en los planes de maratón; este límite exacto es elección de Tonnup.",
+  "Prêt pour ton marathon !":"¡Listo para tu maratón!",
+  "Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.":"Para un maratón, la salida más larga de preparación se queda en unos 32 km: es lo habitual en los planes, no una regla demostrada.",
   "Mes séances du mois":"Mis sesiones del mes",
   "Le calendrier, jour par jour":"El calendario, día a día",
   "Musculation":"Musculación",
@@ -11911,6 +11917,9 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.":"Maratona: sua saída mais longa de preparação vai até 32 km, não 42. É o costume dos planos de maratona; esse limite exato é escolha do Tonnup.",
+  "Prêt pour ton marathon !":"Pronto para a sua maratona!",
+  "Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.":"Para uma maratona, a saída mais longa de preparação para por volta de 32 km: é o costume dos planos, não uma regra comprovada.",
   "Mes séances du mois":"Meus treinos do mês",
   "Le calendrier, jour par jour":"O calendário, dia a dia",
   "Musculation":"Musculação",
@@ -19128,7 +19137,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 00h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 00h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -29989,7 +29998,7 @@ function plusLongueRecente(){
 function nouvelObjectif(type, o){
   const obj = Object.assign({type, debut:new Date().toISOString(), parSemaine:3, niveau:0,
     vCourse:vitesseDefaut("course"), vMarche:vitesseDefaut("marche"), dernier:null}, o || {});
-  if(type === "distance"){ obj.cible = obj.cible || 5; obj.longue = Math.min(obj.cible, Math.max(2, arrondi05(plusLongueRecente() || 3))); }
+  if(type === "distance"){ obj.cible = obj.cible || 5; obj.longue = Math.min(longueMax(obj), Math.max(2, arrondi05(plusLongueRecente() || 3))); }
   if(type === "allure"){ obj.cible = obj.cible || arrondi05(obj.vCourse + 1.5); obj.vRapide = arrondi05(obj.vCourse + 1.5); obj.reps = 4;
     obj.vSoutenu = arrondi05(obj.vCourse + 0.5); obj.soutenu = 10; }
   if(type === "frequence"){ obj.cible = obj.parSemaine; obj.footing = 25; }
@@ -30016,7 +30025,8 @@ function seanceProposee(obj){
       const min = Math.max(10, Math.round(obj.longue / obj.vCourse * 60));
       E.push(marche(5, obj), course(min, obj), marche(5, obj));
       genre = "longue"; nom = TR("Sortie longue · {}").replace("{}", kmTxt(obj.longue));
-      pourquoi = TR("La sortie longue, à allure facile, fait grandir la distance que tu tiens. On évite les grands sauts d'une fois sur l'autre : la règle des « 10 % par semaine » n'a pas prouvé qu'elle évite les blessures, mais la prudence reste raisonnable.");
+      pourquoi = TR("La sortie longue, à allure facile, fait grandir la distance que tu tiens. On évite les grands sauts d'une fois sur l'autre : la règle des « 10 % par semaine » n'a pas prouvé qu'elle évite les blessures, mais la prudence reste raisonnable.")
+        + (obj.cible >= 42 ? " " + TR("Pour un marathon, la plus longue sortie de préparation s'arrête vers 32 km : c'est l'usage des plans, pas une règle démontrée.") : "");
     } else {
       const min = Math.max(15, Math.min(40, Math.round(obj.longue / obj.vCourse * 60 * 0.6)));
       E.push(marche(5, obj), course(min, obj), marche(5, obj));
@@ -30065,8 +30075,9 @@ function palier(obj, genre, sens){
   }
   if(genre === "longue"){
     if(sens > 0){
-      if(obj.longue >= obj.cible){ obj.atteint = new Date().toISOString(); return TR("Objectif atteint : {} !").replace("{}", kmTxt(obj.cible)); }
-      obj.longue = Math.min(obj.cible, arrondi05(obj.longue * 1.1 + 0.25));
+      if(obj.longue >= longueMax(obj)){ obj.atteint = new Date().toISOString();
+        return obj.cible >= 42 ? TR("Prêt pour ton marathon !") : TR("Objectif atteint : {} !").replace("{}", kmTxt(obj.cible)); }
+      obj.longue = Math.min(longueMax(obj), arrondi05(obj.longue * 1.1 + 0.25));
       return TR("Prochaine sortie longue : {}").replace("{}", kmTxt(obj.longue));
     }
     obj.longue = Math.max(1, arrondi05(obj.longue * 0.9));
@@ -30128,7 +30139,7 @@ function jaugeObjectif(obj){
 /* l'avancement de l'objectif, en une ligne et une jauge */
 function avancementObjectif(obj){
   if(obj.type === "30min") return {txt:obj.niveau < 0 ? TR("Niveau 1 · allégé") : TR("Niveau {k} / {n}").replace("{k}", Math.min(obj.niveau + 1, NIVEAUX_30.length)).replace("{n}", NIVEAUX_30.length), pct:Math.max(0, obj.niveau) / (NIVEAUX_30.length - 1)};
-  if(obj.type === "distance") return {txt:TR("Sortie longue : {a} sur {b}").replace("{a}", kmTxt(obj.longue)).replace("{b}", kmTxt(obj.cible)), pct:obj.longue / obj.cible};
+  if(obj.type === "distance") return {txt:TR("Sortie longue : {a} sur {b}").replace("{a}", kmTxt(obj.longue)).replace("{b}", kmTxt(longueMax(obj))), pct:obj.longue / longueMax(obj)};
   if(obj.type === "allure") return {txt:TR("Allure soutenue : {a} sur {b}").replace("{a}", affVit(obj.vSoutenu)).replace("{b}", affVit(obj.cible)), pct:Math.min(1, (obj.vSoutenu - obj.vCourse) / Math.max(0.5, obj.cible - obj.vCourse))};
   const n = sortiesSemaine();
   return {txt:TR("Cette semaine : {n} / {c}").replace("{n}", n).replace("{c}", obj.parSemaine), pct:Math.min(1, n / obj.parSemaine)};
@@ -30141,10 +30152,13 @@ function icObjectif(t){
    Grand titre sur deux lignes (la 2e en orange), des cartes blanches cernees de gris,
    l'icone blanche dans un carre orange, la carte choisie cernee d'orange avec sa coche.
    Le titre porte un « | » dans chaque langue : c'est la que la ligne se coupe. */
+/* Marathon : la sortie longue de preparation plafonne a 32 km. Aucune etude ne fixe ce
+   chiffre ; c'est l'usage courant des plans (entre 30 et 35 km), la course fait le reste. */
+const LONGUE_MAX_MARATHON = 32;
+function longueMax(obj){ return obj.cible >= 42 ? LONGUE_MAX_MARATHON : obj.cible; }
 function titreChoix(cle, sous){
-  const [a, b] = TR(cle).split("|");
-  return `<div class="pr-tete ch-titre"><div><h3>${esc(a)}${b ? `<br><span class="hl">${esc(b)}</span>` : ""}</h3>
-    ${sous ? `<p>${sous}</p>` : ""}</div></div>`;
+  /* noir et centre, le sous-titre dessous (Nico) : plus de seconde ligne orange */
+  return `<div class="ca-titre"><h3>${esc(TR(cle).replace("|", " "))}</h3>${sous ? `<p>${sous}</p>` : ""}</div>`;
 }
 function carteChoix(attr, v, ic, titre, sous, on){
   return `<button type="button" class="ch-c ${on ? "on" : ""}" ${attr}="${esc(v)}">
@@ -30198,7 +30212,9 @@ function openObjectifCourse(){
           k === type)).join("")}</div>
       <div class="stack" style="margin-top:14px;">
         ${type === "distance" ? `<div><span class="f-lab">${TR("Distance visée")}</span>
-          <div class="chips oc-km">${[3, 5, 10, 21.1].map(k=>`<button class="chip ${Math.abs(d.cible - k) < 0.05 ? "on" : ""}" data-km="${k}">${kmTxt(k)}</button>`).join("")}</div></div>` : ""}
+          <div class="chips oc-km">${[3, 5, 10, 21.1, 42.195].map(k=>`<button class="chip ${Math.abs(d.cible - k) < 0.05 ? "on" : ""}" data-km="${k}">${
+            k === 42.195 && !estImperial() ? (42.195).toLocaleString(loc(), {maximumFractionDigits:3}) + " km" : kmTxt(k)}</button>`).join("")}</div>
+          <p class="oc-note" id="oc-marathon" style="margin-top:8px;" ${Math.abs(d.cible - 42.195) < 0.05 ? "" : "hidden"}>${TR("Marathon : ta plus longue sortie de préparation montera jusqu'à 32 km, pas 42. C'est l'usage des plans de marathon ; ce plafond précis est le choix de Tonnup.")}</p></div>` : ""}
         ${type === "allure" ? `<div><span class="f-lab">${TR("Vitesse visée sur un bloc soutenu")} (${imp ? "mph" : "km/h"})</span>
           <input type="number" inputmode="decimal" step="0.5" min="4" id="oc-cible" value="${vAff(d.cible)}"></div>` : ""}
         ${/* Le nombre de seances par semaine ne changeait rien aux trois autres objectifs :
@@ -30217,7 +30233,8 @@ function openObjectifCourse(){
     let ps = d.parSemaine, km = d.cible;
     document.querySelectorAll("[data-oc]").forEach(b=>b.onclick = ()=>{ type = b.dataset.oc; draw(); });
     document.querySelectorAll("[data-ps]").forEach(b=>b.onclick = ()=>{ ps = Number(b.dataset.ps); document.querySelectorAll("[data-ps]").forEach(x=>x.classList.toggle("on", x === b)); });
-    document.querySelectorAll("[data-km]").forEach(b=>b.onclick = ()=>{ km = Number(b.dataset.km); document.querySelectorAll("[data-km]").forEach(x=>x.classList.toggle("on", x === b)); });
+    document.querySelectorAll("[data-km]").forEach(b=>b.onclick = ()=>{ km = Number(b.dataset.km); document.querySelectorAll("[data-km]").forEach(x=>x.classList.toggle("on", x === b));
+      const n = document.getElementById("oc-marathon"); if(n) n.hidden = Math.abs(km - 42.195) > 0.05; });
     document.getElementById("oc-ok").onclick = ()=>{
       const lire = id => { const x = parseFloat(String(document.getElementById(id).value).replace(",", ".")); return x > 0 ? vKmh(x) : null; };
       const vc = lire("oc-vc") || d.vCourse, vm = lire("oc-vm") || d.vMarche;
@@ -30225,7 +30242,7 @@ function openObjectifCourse(){
       if(cur && cur.type === type){
         Object.assign(cur, {parSemaine:ps, vCourse:vc, vMarche:vm});
         if(cible !== undefined) cur.cible = cible;
-        if(type === "distance") cur.longue = Math.min(cur.longue, cur.cible);
+        if(type === "distance") cur.longue = Math.min(cur.longue, longueMax(cur));
         if(type === "frequence") cur.cible = ps;
       } else {
         /* l'objectif en cours part en pause ; celui qu'on choisit sort de pause s'il y etait */
@@ -30236,7 +30253,7 @@ function openObjectifCourse(){
         if(repris){
           Object.assign(repris, {parSemaine:ps, vCourse:vc, vMarche:vm});
           if(cible !== undefined) repris.cible = cible;
-          if(type === "distance") repris.longue = Math.min(repris.longue, repris.cible);
+          if(type === "distance") repris.longue = Math.min(repris.longue, longueMax(repris));
           if(type === "frequence") repris.cible = ps;
           db.objCourse = repris;
         } else db.objCourse = nouvelObjectif(type, {parSemaine:ps, vCourse:vc, vMarche:vm, cible});
