@@ -1584,6 +1584,14 @@
   #app > .eat-fab{position:fixed; left:0; right:0; bottom:calc(96px + env(safe-area-inset-bottom));
     z-index:41; display:flex; flex-direction:column; align-items:center; gap:7px; pointer-events:none;}
   .eat-fab .fab{pointer-events:auto; box-shadow:0 0 0 7px var(--bg), 0 8px 20px rgba(0,0,0,.22);}
+  /* « Annuler », petit, a droite du « + » : seulement juste apres un retrait */
+  .eat-fab-l{position:relative; display:flex; justify-content:center;}
+  .eat-annuler{position:absolute; left:calc(100% + 16px); top:50%; transform:translateY(-50%); pointer-events:auto;
+    display:flex; align-items:center; gap:5px; white-space:nowrap; border:0; border-radius:99px; padding:7px 12px 7px 10px;
+    background:var(--surface); color:var(--ink); font-size:12.5px; font-weight:800;
+    box-shadow:inset 0 0 0 1px var(--bord-doux), 0 4px 12px rgba(0,0,0,.12);}
+  .eat-annuler svg{width:15px; height:15px; color:var(--accent);}
+  @media (prefers-reduced-motion:no-preference){ .eat-annuler{animation:popEntree .35s cubic-bezier(.2,1.1,.3,1);} }
   /* Le mot reçoit exactement le même traitement que le bouton : un FOND plein à la
      couleur de la page, comme l'anneau de 7 px du « + ». Le halo d'ombres qu'il portait
      avant se fondait trop pour détacher des capitales de dix pixels de ce qui défile
@@ -4507,6 +4515,22 @@
   .ex-card.co-muscu.fini .co-ic .icm{background-color:var(--good);}
   .tp-course select{width:100%;}
   .co-avis{margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(245,130,32,.10); color:var(--ink-soft);}
+  /* le coureur dessine par Nico (« run 2 ») remplace l'ancien signe, partout */
+  .icm-course{-webkit-mask-image:url(img/ic-run-2.webp); mask-image:url(img/ic-run-2.webp);}
+  .aj-l .ic .icm, .co-rec .ic .icm, .oc-c .ic .icm, .oc-tete .ic .icm{background-color:currentColor;}
+  /* la course et la sortie cardio dans l'editeur : blanc cerne de gris, bascule en pilule */
+  .tpl-item.tp-course, .tpl-item.tp-cardio{background:var(--surface); border:0; border-radius:16px; padding:12px;
+    box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .tp-bascule{display:flex; gap:4px; margin-top:10px; padding:4px; border-radius:99px; background:var(--surface);
+    box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .tp-bascule button{flex:1; border:0; border-radius:99px; background:none; padding:9px 8px; font-size:13px; font-weight:800;
+    color:var(--ink-soft); white-space:nowrap;}
+  .tp-bascule button.on{background:var(--accent-grad); color:#fff; box-shadow:0 3px 10px rgba(245,130,32,.3);}
+  .tp-retirer{display:inline-flex; align-items:center; gap:6px; margin-top:10px; border:0; border-radius:99px;
+    padding:8px 14px; background:var(--bad); color:#fff; font-size:12.5px; font-weight:800;}
+  .pv-ajouts{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;}
+  .pv-ajouts .btn-dash{margin:0; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .pv-ajouts .icm{background-color:currentColor;}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4608,6 +4632,10 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.":"It will be done at the end of the workout. You can move it to the warm-up by editing the workout.",
+  "À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.":"At the end of the workout. Set the duration and distance by editing the workout.",
+  "Aliment remis":"Food restored",
+  "Tes sorties de course et de marche.":"Your runs and walks.",
   "Séance de course introuvable":"Running workout not found",
   "Lancer la course":"Start the run",
   "Échauffement":"Warm-up",
@@ -8020,6 +8048,10 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.":"Se hará al final de la sesión. Podrás ponerla como calentamiento editando la sesión.",
+  "À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.":"Al final de la sesión. Ajusta la duración y la distancia editando la sesión.",
+  "Aliment remis":"Alimento restaurado",
+  "Tes sorties de course et de marche.":"Tus salidas de carrera y caminata.",
   "Séance de course introuvable":"Entrenamiento de carrera no encontrado",
   "Lancer la course":"Empezar la carrera",
   "Échauffement":"Calentamiento",
@@ -11648,6 +11680,10 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.":"Será feita no fim do treino. Você pode colocá-la como aquecimento editando o treino.",
+  "À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.":"No fim do treino. Ajuste a duração e a distância editando o treino.",
+  "Aliment remis":"Alimento restaurado",
+  "Tes sorties de course et de marche.":"Suas saídas de corrida e caminhada.",
   "Séance de course introuvable":"Treino de corrida não encontrado",
   "Lancer la course":"Começar a corrida",
   "Échauffement":"Aquecimento",
@@ -18822,7 +18858,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "26 septembre 2026 20h07 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "26 septembre 2026 20h30 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22240,11 +22276,21 @@ function renderEat(app){
     <div class="meal-panel" id="meal-panel"></div>
     <div style="height:34px;"></div>
     <div class="eat-fab">
-      <button class="fab" id="eat-add" style="${degradeRepas(mealCur, 180)}" aria-label="${TR("Ajouter un aliment")}">＋</button>
+      <div class="eat-fab-l">
+        <button class="fab" id="eat-add" style="${degradeRepas(mealCur, 180)}" aria-label="${TR("Ajouter un aliment")}">＋</button>
+        ${annulAliment && Date.now() - annulAliment.t < ANNUL_MS ? `<button class="eat-annuler" id="eat-annuler">${IC_ANNULER}${TR("Annuler")}</button>` : ""}
+      </div>
       <span class="lb" style="color:${coul};">${TR("Ajouter un aliment")}</span>
     </div>`;
   wireTopbar();
   document.getElementById("eat-add").onclick = ()=>openAjoutAliment(mealCur);
+  const bAnnul = document.getElementById("eat-annuler");
+  if(bAnnul){
+    bAnnul.onclick = annulerSuppression;
+    /* il s'efface de lui-meme au bout d'une minute */
+    const reste = ANNUL_MS - (Date.now() - annulAliment.t);
+    setTimeout(()=>{ const b = document.getElementById("eat-annuler"); if(b && (!annulAliment || Date.now() - annulAliment.t >= ANNUL_MS)) b.remove(); }, reste + 50);
+  }
   document.getElementById("eat-kinfo").onclick = ()=>openKcalInfo(plan);
   document.getElementById("eat-tips").onclick  = ()=>openKcalTips(enHausse? "up":"down", plan);
   document.getElementById("eat-macros").onclick = ()=>openMacros(k);
@@ -22364,16 +22410,38 @@ function reglerPortions(meal, socle, actuel, pas){
   const f = Math.round((facteurAliment(socle, actuel) + pas) * 100) / 100;
   if(!db.habitSel[k]) db.habitSel[k] = {};
   const reste = (db.habitSel[k][meal]||[]).filter(x=>x !== actuel);
+  if(f < 0.05) noterSuppression(k, meal);
   db.habitSel[k][meal] = f < 0.05 ? reste : reste.concat(libelleQuantite(socle, f));
   if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
   vibrer(8);
   save(); renderSurPlace();
+}
+/* ---- annuler une suppression d'aliment (Nico : « supprime sans faire expres ») ----
+   Avant chaque retrait, on garde le repas tel qu'il etait. Un petit bouton « Annuler »
+   apparait a droite du « + » pendant une minute, et seulement apres un retrait. */
+let annulAliment = null;
+const ANNUL_MS = 60000;
+function noterSuppression(k, meal){
+  annulAliment = {k, meal, avant:((db.habitSel[k] || {})[meal] || []).slice(),
+    fix: db.dayFix && db.dayFix[k] ? JSON.parse(JSON.stringify(db.dayFix[k])) : null, t:Date.now()};
+}
+function annulerSuppression(){
+  const a = annulAliment;
+  if(!a) return;
+  annulAliment = null;
+  if(!db.habitSel[a.k]) db.habitSel[a.k] = {};
+  db.habitSel[a.k][a.meal] = a.avant;
+  if(a.fix){ if(!db.dayFix) db.dayFix = {}; db.dayFix[a.k] = a.fix; }
+  save(); renderSurPlace();
+  vibrer(12);
+  toast(TR("Aliment remis"));
 }
 function basculerAliment(meal, label){
   const k = jourAlim();
   if(!db.habitSel[k]) db.habitSel[k] = {};
   const arr = db.habitSel[k][meal] || [];
   const enleve = arr.includes(label);
+  if(enleve) noterSuppression(k, meal);
   db.habitSel[k][meal] = enleve ? arr.filter(x=>x!==label) : arr.concat(label);
   if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
   /* Le geste le plus frequent de l'ecran ne repondait rien, alors que le « + » d'une
@@ -23777,6 +23845,7 @@ function openModifAliment(meal, label){
   /* le sortir d'ici : le geste qu'on vient chercher neuf fois sur dix */
   const off = document.getElementById("ma-off");
   if(off) off.onclick = ()=>{
+    noterSuppression(k, meal);
     if(db.habitSel[k]) db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).filter(x=>x!==label);
     if(db.dayFix[k]) delete db.dayFix[k];      /* la saisie manuelle reprend la main */
     save(); closeSheet(); render();
@@ -24705,6 +24774,7 @@ function demanderRetrait(label, grp, meal){
       db.hbMasque[grp] = (db.hbMasque[grp]||[]).concat(label);
     }
     if(sortDuRepas){
+      noterSuppression(k, meal);
       db.habitSel[k][meal] = (db.habitSel[k][meal]||[]).filter(x=>x!==label);
       if(db.dayFix[k]) delete db.dayFix[k];
     }
@@ -26567,7 +26637,7 @@ function openAjout(){
          La sortie cardio ressemblait trop a la seance de course ; la « seance libre »,
          trop a une nouvelle seance (Nico, 26 septembre). */""}
     <div class="aj-sep"></div>
-    ${ligne("aj-cardio", IC_CALENDRIER, TR("Noter une sortie déjà faite"), TR("Course, marche, vélo… après coup"))}
+    ${ligne("aj-cardio", icoF("calendar-1", 22), TR("Noter une sortie déjà faite"), TR("Course, marche, vélo… après coup"))}
     ${ligne("aj-lib", IC_LIVRE, TR("Bibliothèque d'exercices"), TR("Tous les exercices de l'app"))}`);
   document.getElementById("aj-propose").onclick=()=>openPropose();
   /* d'une fiche a l'autre SUR PLACE, sans fermer : fermer passe par un « retour » du
@@ -26930,6 +27000,19 @@ function openPreview(tplId, lieuFait){
     }).join("")}</div>
     <!-- ajouter un exercice a la seance, adaptative comprise (Nico : « ajouter les abdos ») -->
     <button class="btn-dash pv-ajout" id="pv-add">${TR("＋ Ajouter un exercice")}</button>
+    ${/* la course et la sortie cardio s'ajoutent d'ici aussi (Nico) — a la seance elle-meme */""}
+    ${!t.course || !t.cardio ? `<div class="pv-ajouts">
+      ${!t.course ? `<button class="btn-dash" id="pv-add-course">${icoM("course", 16)}${TR("Séance de course")}</button>` : ""}
+      ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Sortie cardio")}</button>` : ""}
+    </div>` : ""}
+    ${t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex" style="margin-top:8px;">
+        <span class="num">${icoM("course", 16)}</span>
+        <div class="grow" style="min-width:0;">
+          <div class="nm">${esc(pc ? pc.nom : TR("Séance de course introuvable"))}</div>
+          <div class="meta">${TR(t.course.place === "debut" ? "Au début · échauffement" : "À la fin")}${pc ? " · " + minTxt(parcoursTotaux(pc.etapes).min) : ""}</div>
+        </div>
+        <span class="act"><button class="sup" id="pv-course-rm" title="${TR("Retirer la course")}" aria-label="${TR("Retirer la course")}">✕</button></span>
+      </div>`; })() : ""}
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
         <span class="num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
@@ -27006,6 +27089,32 @@ function openPreview(tplId, lieuFait){
     save(); render();
     retourFiche();
   }));
+  /* ajouter une seance de course : une des tiennes, ou la seance du jour de l'objectif */
+  const pvCo = document.getElementById("pv-add-course");
+  if(pvCo) pvCo.onclick = ()=>{
+    const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
+    if(!opts.length){ toast(TR("Crée d'abord une séance de course ou choisis un objectif (menu +).")); return; }
+    ouvrirParDessus(()=>openPreview(tplId, true), ()=>{
+      openSheet(`<div class="pr-tete"><h3>${TR("Ajouter une séance de course")}</h3><p>${TR("Elle se fera à la fin de la séance. Tu pourras la placer en échauffement en modifiant la séance.")}</p></div>
+        <div class="pc-liste">${opts.map(([v, l])=>`<button class="pc-l pc-l-t" data-co-choix="${esc(v)}"><span class="ic">${icoM("course", 24)}</span><span class="tx"><b>${esc(l)}</b></span></button>`).join("")}</div>`);
+      document.querySelectorAll("[data-co-choix]").forEach(b=>b.onclick = ()=>{
+        t.course = {ref:b.dataset.coChoix, place:"fin"};
+        save(); retourFiche();
+      });
+    });
+  };
+  const pvCoRm = document.getElementById("pv-course-rm");
+  if(pvCoRm) pvCoRm.onclick = ()=>{ delete t.course; save(); openPreview(tplId, true); };
+  /* ajouter une sortie cardio : l'activite, puis l'objectif se regle comme d'habitude */
+  const pvCa = document.getElementById("pv-add-cardio");
+  if(pvCa) pvCa.onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>{
+    openSheet(`<div class="pr-tete"><h3>${TR("Ajouter une sortie cardio")}</h3><p>${TR("À la fin de la séance. Tu règles la durée et la distance en modifiant la séance.")}</p></div>
+      <div class="cd-grille">${MACHINES.map(([id, lab, ic])=>`<button data-ca-choix="${id}"><span class="ic">${ic}</span>${TR(lab)}</button>`).join("")}</div>`);
+    document.querySelectorAll("[data-ca-choix]").forEach(b=>b.onclick = ()=>{
+      t.cardio = {machine:b.dataset.caChoix, min:20, km:0, pente:0};
+      save(); retourFiche();
+    });
+  });
   /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
   document.getElementById("pv-start").onclick=()=>{
     const courte = seanceCourte ? gardes.slice() : null;
@@ -28971,12 +29080,19 @@ function minTxt(m){
   if(!mn) return s + " s";
   return mn + " " + TR("min") + " " + s + " s";
 }
-function icEtape(e, t){ return e.type === "course" ? icoM("course", t) : IC_MARCHE; }
+/* Les icones dessinees par Nico (dossier APP : run 2, walk, gps, chrono 2, calendar),
+   blanches sur fond transparent : posees en MASQUE, elles prennent la couleur de leur
+   place — blanc dans un carre orange, orange ailleurs, vert une fois fait. */
+const IC_ANNULER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+function icoF(nom, t){
+  return `<span class="icm" style="width:${t}px; height:${t}px; -webkit-mask-image:url(img/ic-${nom}.webp); mask-image:url(img/ic-${nom}.webp);" aria-hidden="true"></span>`;
+}
+function icEtape(e, t){ return e.type === "course" ? icoM("course", t) : icoF("walk-1", t); }
 /* les trois chiffres du haut : temps, distance, calories */
 function crResume(tot){
   return `<div class="cr-resume">
-    <div><span class="ic">${IC_CHRONO}</span><div><small>${TR("Temps total")}</small><b>${minTxt(tot.min)}</b></div></div>
-    <div><span class="ic">${IC_REPERE}</span><div><small>${TR("Distance (est.)")}</small><b>${kmTxt(tot.km)}</b></div></div>
+    <div><span class="ic">${icoF("chrono-2", 24)}</span><div><small>${TR("Temps total")}</small><b>${minTxt(tot.min)}</b></div></div>
+    <div><span class="ic">${icoF("gps-1", 24)}</span><div><small>${TR("Distance (est.)")}</small><b>${kmTxt(tot.km)}</b></div></div>
     <div><span class="ic">${icoM("flamme", 22)}</span><div><small>${TR("Calories (est.)")}</small><b>${tot.kcal} kcal</b></div></div>
   </div>`;
 }
@@ -29024,7 +29140,7 @@ function openParcoursEditeur(id){
         <div class="tp-l">
           <span class="poig" data-poignee aria-label="${TR("Déplacer cette étape")}">⠿</span>
           <span class="tp-num">${i + 1}</span>
-          <div class="pc-type grow"><button type="button" data-t="course" class="${e.type === "course" ? "on" : ""}">${icoM("course", 16)}${TR("Course")}</button><button type="button" data-t="marche" class="${e.type === "marche" ? "on" : ""}">${IC_MARCHE}${TR("Marche")}</button></div>
+          <div class="pc-type grow"><button type="button" data-t="course" class="${e.type === "course" ? "on" : ""}">${icoM("course", 16)}${TR("Course")}</button><button type="button" data-t="marche" class="${e.type === "marche" ? "on" : ""}">${icoF("walk-1", 16)}${TR("Marche")}</button></div>
           <button class="tp-rm" data-rm aria-label="${TR("Retirer cette étape")}">${IC_CROIX}</button>
         </div>
         <div class="pc-regs">
@@ -29642,7 +29758,7 @@ function avancementObjectif(obj){
   return {txt:TR("Cette semaine : {n} / {c}").replace("{n}", n).replace("{c}", obj.parSemaine), pct:Math.min(1, n / obj.parSemaine)};
 }
 function icObjectif(t){
-  return t === "30min" ? IC_CHRONO : t === "distance" ? IC_REPERE : t === "allure" ? icoM("course", 22) : IC_CALENDRIER;
+  return t === "30min" ? icoF("chrono-2", 22) : t === "distance" ? icoF("gps-1", 22) : t === "allure" ? icoM("course", 22) : icoF("calendar-1", 22);
 }
 /* ---- choisir ou regler un objectif ---- */
 function openObjectifCourse(){
@@ -29919,15 +30035,16 @@ function renderCourseSection(sec){
   };
   const div = document.createElement("div");
   div.innerHTML = `<div class="card co-card">
-    <div class="card-t">${icoTitre(IC_REPERE)}${TR("Course")}</div>
+    <div class="pt-tete" style="margin-bottom:12px;"><span class="pt-ic pt-ic-orange">${icoM("course", 26)}</span>
+      <div class="grow"><div class="pt-t">${TR("Course")}</div><div class="pt-obj">${TR("Tes sorties de course et de marche.")}</div></div></div>
     <div class="co-tuiles">
       <div><b>${kmTxt(kmMois)}</b><small>${TR("ce mois-ci")}</small></div>
       <div><b>${mois.length}</b><small>${TR(mois.length > 1 ? "sorties" : "sortie")}</small></div>
       <div><b>${minTxt(Math.round(minMois))}</b><small>${TR("de course et marche")}</small></div>
     </div>
     ${prgPlis.course ? `<div class="co-rec">
-      <div><span class="ic">${IC_REPERE}</span><span class="grow">${TR("Plus longue sortie")}</span><b>${kmTxt(longue.km)}${est(longue)}</b></div>
-      <div><span class="ic">${IC_CHRONO}</span><span class="grow">${TR("Plus longue durée")}</span><b>${minTxt(Math.round(duree.min))}</b></div>
+      <div><span class="ic">${icoF("gps-1", 18)}</span><span class="grow">${TR("Plus longue sortie")}</span><b>${kmTxt(longue.km)}${est(longue)}</b></div>
+      <div><span class="ic">${icoF("chrono-2", 18)}</span><span class="grow">${TR("Plus longue durée")}</span><b>${minTxt(Math.round(duree.min))}</b></div>
       ${rapide ? `<div><span class="ic">${icoM("course", 18)}</span><span class="grow">${TR("Meilleure vitesse moyenne")}</span><b>${affVit(vitesseSortie(rapide))}${est(rapide)}</b></div>` : ""}
     </div>
     <div class="co-seg"><button data-cg="km" class="${courseGraphe === "km" ? "on" : ""}">${TR("Distance par semaine")}</button><button data-cg="v" class="${courseGraphe === "v" ? "on" : ""}">${TR("Vitesse moyenne")}</button></div>
@@ -29981,7 +30098,7 @@ function openTplEditor(id){
         <div><span class="f-lab">${TR("Exercices")}</span><div id="tp-items"></div>
         <button class="btn-dash" id="tp-add">＋ ${TR("Ajouter un exercice")}</button></div>
         <div>${tpl.cardio ? `<span class="f-lab">${TR("Sortie cardio en fin de séance")}</span>
-          <div class="tpl-item">
+          <div class="tpl-item tp-cardio">
             <div class="cfg" style="grid-template-columns:1fr; margin-top:0;">
               <label><span class="label">${TR("Activité")}</span>
                 <select data-cf="machine">${MACHINES.map(m=>`<option value="${m[0]}" ${tpl.cardio.machine === m[0] ? "selected" : ""}>${m[2]} ${TR(m[1])}</option>`).join("")}</select></label>
@@ -29991,19 +30108,19 @@ function openTplEditor(id){
               <label><span class="label">${TR("Distance")} (${uDist()})</span><input type="number" inputmode="decimal" step="0.1" min="0" value="${tpl.cardio.km ? affDist(tpl.cardio.km).replace(",", ".") : ""}" placeholder="5" data-cf="km"></label>
               <label><span class="label">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" value="${tpl.cardio.pente || ""}" placeholder="0" data-cf="pente"></label>
             </div>
-            <button class="icon-btn" id="tp-cardio-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la sortie")}</button>
+            <button class="tp-retirer" id="tp-cardio-rm">✕ ${TR("Retirer la sortie")}</button>
           </div>` : `<button class="btn-dash" id="tp-cardio-add">${icoM("course", 16)} ${TR("Ajouter une sortie cardio")}</button>`}</div>
         <div>${tpl.course ? (()=>{ const pc = courseDeSeance(tpl.course);
           const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
           return `<span class="f-lab">${TR("Séance de course")}</span>
           <div class="tpl-item tp-course">
             <select data-co="ref">${opts.map(([v, l])=>`<option value="${esc(v)}" ${v === tpl.course.ref ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
-            <div class="pc-type" style="margin-top:8px;">
+            <div class="tp-bascule">
               <button type="button" data-co-place="fin" class="${tpl.course.place !== "debut" ? "on" : ""}">${TR("À la fin")}</button>
               <button type="button" data-co-place="debut" class="${tpl.course.place === "debut" ? "on" : ""}">${TR("Au début · échauffement")}</button>
             </div>
             ${tpl.course.place === "debut" && courseTropDurePourDebut(pc) ? `<p class="oc-note co-avis">${TR("Au début, préfère une course courte et facile : une course longue ou rapide juste avant les poids fait baisser ta force pendant la séance.")}</p>` : ""}
-            <button class="icon-btn" id="tp-course-rm" style="margin-top:8px; width:auto; padding:0 10px; height:28px; font-size:12.5px; color:var(--bad);">✕ ${TR("Retirer la course")}</button>
+            <button class="tp-retirer" id="tp-course-rm">✕ ${TR("Retirer la course")}</button>
           </div>`; })() : `<button class="btn-dash" id="tp-course-add">${icoM("course", 16)} ${TR("Ajouter une séance de course")}</button>`}</div>
         <div class="row" style="gap:9px;">
           <button class="btn grow" id="tp-cancel">${TR("Annuler")}</button>
