@@ -4693,7 +4693,12 @@
   .sc-astuce .co{flex:1; min-width:0;}
   .sc-astuce b{display:block; font-size:13px; font-weight:800; line-height:1.4; color:var(--ink);}
   .sc-astuce p{margin:4px 0 0; font-size:13px; line-height:1.45; color:var(--ink-soft);}
-  .sc-astuce b + p{margin-top:5px;}
+  .sc-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .sc-chips span{padding:4px 10px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px rgba(245,130,32,.25);
+    font-size:12.5px; font-weight:800; color:var(--ink); white-space:nowrap;}
+  .sc-chips + p{margin-top:7px; font-size:13.5px; font-weight:700; color:var(--ink);}
+  .sc-astuce .co > p:only-child{font-size:13.5px; font-weight:700; color:var(--ink); margin:0;}
+  .sc-astuce{align-items:center;}
   #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
@@ -4845,6 +4850,18 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Analyse de la photo en cours…":"Analyzing the photo…",
+  "{} % de tes protéines":"{} % of your protein",
+  "~{} kcal à trouver":"~{} kcal still to eat",
+  "~{} kcal restantes":"~{} kcal left",
+  "+{} kcal sur ta cible":"+{} kcal over your target",
+  "Ajoute des légumes et une source de protéines pour tenir plus longtemps.":"Add vegetables and a protein source to stay full longer.",
+  "Ajoute une source de protéines : œuf, yaourt, poulet…":"Add a protein source: egg, yogurt, chicken…",
+  "Peu de protéines : ajoutes-en une source.":"Low in protein: add a source.",
+  "Belle dose de protéines ! 💪":"Nice dose of protein! 💪",
+  "Bon choix avant l'entraînement, pour l'énergie.":"A good pick before training, for energy.",
+  "Repas copieux : mise sur les légumes ensuite.":"Hearty meal: go for vegetables next.",
+  "Petite portion : complète avec des noix ou des fruits secs.":"Small portion: add nuts or dried fruit.",
   "Accès développeur":"Developer access",
   "Réservé à l'équipe Tonnup.":"Reserved for the Tonnup team.",
   "Code":"Code",
@@ -8324,6 +8341,18 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Analyse de la photo en cours…":"Analizando la foto…",
+  "{} % de tes protéines":"{} % de tus proteínas",
+  "~{} kcal à trouver":"~{} kcal por comer",
+  "~{} kcal restantes":"~{} kcal restantes",
+  "+{} kcal sur ta cible":"+{} kcal sobre tu objetivo",
+  "Ajoute des légumes et une source de protéines pour tenir plus longtemps.":"Añade verduras y una fuente de proteína para aguantar más.",
+  "Ajoute une source de protéines : œuf, yaourt, poulet…":"Añade una fuente de proteína: huevo, yogur, pollo…",
+  "Peu de protéines : ajoutes-en une source.":"Poca proteína: añade una fuente.",
+  "Belle dose de protéines ! 💪":"¡Buena dosis de proteína! 💪",
+  "Bon choix avant l'entraînement, pour l'énergie.":"Buena opción antes de entrenar, para la energía.",
+  "Repas copieux : mise sur les légumes ensuite.":"Comida abundante: apuesta por verduras después.",
+  "Petite portion : complète avec des noix ou des fruits secs.":"Porción pequeña: completa con frutos secos.",
   "Accès développeur":"Acceso de desarrollador",
   "Réservé à l'équipe Tonnup.":"Reservado al equipo de Tonnup.",
   "Code":"Código",
@@ -12019,6 +12048,18 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Analyse de la photo en cours…":"Analisando a foto…",
+  "{} % de tes protéines":"{} % das suas proteínas",
+  "~{} kcal à trouver":"~{} kcal ainda a comer",
+  "~{} kcal restantes":"~{} kcal restantes",
+  "+{} kcal sur ta cible":"+{} kcal acima da meta",
+  "Ajoute des légumes et une source de protéines pour tenir plus longtemps.":"Adicione legumes e uma fonte de proteína para ficar saciado por mais tempo.",
+  "Ajoute une source de protéines : œuf, yaourt, poulet…":"Adicione uma fonte de proteína: ovo, iogurte, frango…",
+  "Peu de protéines : ajoutes-en une source.":"Pouca proteína: adicione uma fonte.",
+  "Belle dose de protéines ! 💪":"Boa dose de proteína! 💪",
+  "Bon choix avant l'entraînement, pour l'énergie.":"Boa escolha antes do treino, para a energia.",
+  "Repas copieux : mise sur les légumes ensuite.":"Refeição farta: aposte em legumes depois.",
+  "Petite portion : complète avec des noix ou des fruits secs.":"Porção pequena: complete com castanhas ou frutas secas.",
   "Accès développeur":"Acesso de desenvolvedor",
   "Réservé à l'équipe Tonnup.":"Reservado para a equipe Tonnup.",
   "Code":"Código",
@@ -19268,7 +19309,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 15h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 15h38 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22345,7 +22386,9 @@ document.getElementById("rest-pill").addEventListener("click", e=>{
 
 /* le minuteur se déplace : relâché au-dessus du milieu il se cale en haut, en dessous il revient en bas */
 const restDrag = {actif:false, bouge:false, y0:0, top0:0, tFin:0};
-function placerRest(){ restbar.classList.toggle("haut", db.settings.restHaut === true); }
+/* en haut par defaut (Nico) : en bas, il couvrait la bulle verte de la premiere seance
+   (« le chrono se lance tout seul »). Qui l'a glisse en bas l'y retrouve. */
+function placerRest(){ restbar.classList.toggle("haut", db.settings.restHaut !== false); }
 function restDragStart(y, cible){
   if(cible.closest("button")) return;
   const r = restbar.getBoundingClientRect();
@@ -23332,33 +23375,35 @@ function astuceScan(v){
   const pl = planFor(db.profile);
   const kcal = Math.round(v.kcal || 0), prot = Math.round(v.prot || 0), gluc = v.gluc || 0;
   const k = jourAlim();
+  /* Nico : « trop de phrases » — les reperes passent en deux pastilles, l'astuce en une
+     phrase courte */
   const reperes = [];
   const cibleP = proteinTarget();
-  if(cibleP && prot > 0) reperes.push(TR("Ce repas couvre {} % de tes protéines du jour.").replace("{}", Math.max(1, Math.round(prot / cibleP * 100))));
+  if(cibleP && prot > 0) reperes.push(TR("{} % de tes protéines").replace("{}", Math.max(1, Math.round(prot / cibleP * 100))));
   if(pl && kcal > 0){
     const reste = Math.round((pl.kcal - dayKcal(k) - kcal) / 10) * 10;
-    if(reste > 0) reperes.push(TR(pl.delta > 0 ? "Il te restera environ {} kcal à manger aujourd'hui." : "Il te restera environ {} kcal pour la journée.").replace("{}", reste.toLocaleString(loc())));
-    else if(reste < 0) reperes.push(TR("Avec ce repas, tu dépasses ta cible du jour d'environ {} kcal.").replace("{}", (-reste).toLocaleString(loc())));
+    if(reste > 0) reperes.push(TR(pl.delta > 0 ? "~{} kcal à trouver" : "~{} kcal restantes").replace("{}", reste.toLocaleString(loc())));
+    else if(reste < 0) reperes.push(TR("+{} kcal sur ta cible").replace("{}", (-reste).toLocaleString(loc())));
   }
   const muscle = aim === "masse" || aim === "force" || aim === "recomp";
   const seanceFaite = (db.history || []).some(h=>dayKey(new Date(h.date)) === dayKey());
   let astuce = "";
   if(kcal >= 200 && prot < 10){
-    astuce = aim === "seche" ? TR("Pour ton objectif, pense à associer cet aliment avec des légumes et une source de protéines pour un repas plus rassasiant.")
-      : muscle ? TR("Pour atteindre ton objectif, tu peux compléter ce repas avec une source de protéines : un œuf, un yaourt, du poulet…")
-      : TR("Ce repas apporte peu de protéines. Tu peux ajouter une source de protéines pour te rapprocher de ton objectif.");
+    astuce = aim === "seche" ? TR("Ajoute des légumes et une source de protéines pour tenir plus longtemps.")
+      : muscle ? TR("Ajoute une source de protéines : œuf, yaourt, poulet…")
+      : TR("Peu de protéines : ajoutes-en une source.");
   } else if(prot >= 25){
-    astuce = TR("Belle dose de protéines : ce repas te rapproche bien de ton objectif. 💪");
+    astuce = TR("Belle dose de protéines ! 💪");
   } else if(kcal >= 150 && gluc * 4 >= kcal * 0.55 && !seanceFaite && (muscle || aim === "entretien")){
-    astuce = TR("Cet aliment peut être intéressant avant l'entraînement pour apporter de l'énergie.");
+    astuce = TR("Bon choix avant l'entraînement, pour l'énergie.");
   } else if(aim === "seche" && kcal >= 600){
-    astuce = TR("Repas copieux pour ton objectif : pense aux légumes pour la suite de la journée, ils rassasient pour peu de calories.");
+    astuce = TR("Repas copieux : mise sur les légumes ensuite.");
   } else if(aim === "masse" && kcal > 0 && kcal < 250){
-    astuce = TR("Petite portion pour une prise de muscle : une poignée de noix ou un fruit sec peut compléter.");
+    astuce = TR("Petite portion : complète avec des noix ou des fruits secs.");
   }
   if(!reperes.length && !astuce) return "";
   return `<div class="sc-astuce"><span class="ic">${IC_AMPOULE}</span><div class="co">
-    ${reperes.length ? `<b>${reperes.join(" ")}</b>` : ""}${astuce ? `<p>${astuce}</p>` : ""}</div></div>`;
+    ${reperes.length ? `<div class="sc-chips">${reperes.map(r=>`<span>${r}</span>`).join("")}</div>` : ""}${astuce ? `<p>${astuce}</p>` : ""}</div></div>`;
 }
 function openProduitScanne(meal, p){
   const k = jourAlim();
@@ -23783,8 +23828,7 @@ function photographierRepas(meal){ lancerScan(meal, "plat"); }
 async function lancerAnalysePhoto(indice, premiere){
   const p = photoEnCours; if(!p) return;
   openSheet(`<div class="ph-attente"><div class="ph-scan"><img src="${p.apercu}" alt=""><i></i></div><div class="spin"></div>
-    <div class="t">${TR("Analyse de la photo…")}</div>
-    <div class="s">${TR("La photo part chez Anthropic pour l'analyse ; l'app ne la garde pas.")}</div></div>`);
+    <div class="t">${TR("Analyse de la photo en cours…")}</div></div>`);
   /* une correction de la meme photo est gratuite pour le quota (dans la limite) */
   const correction = !premiere && !!indice && (p.corrections || 0) < CORRECTIONS_PAR_PHOTO;
   if(correction) p.corrections = (p.corrections || 0) + 1;
