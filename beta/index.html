@@ -4844,6 +4844,14 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Mode démo":"Demo mode",
+  "Quitter le mode démo":"Leave demo mode",
+  "Tes vraies données reviennent.":"Your real data comes back.",
+  "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.":"A sample profile for your videos and screenshots. Your data stays safe.",
+  "Passer en mode démo ?":"Switch to demo mode?",
+  "L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app.":"The app shows a complete sample profile. Nothing you do in demo is saved, and your real data stays untouched. To go back: Settings, \u201cLeave demo mode\u201d, or close and reopen the app.",
+  "Passer en démo":"Switch to demo",
+  "Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir.":"Demo mode: your real data is safe. Settings to leave.",
   "Ce repas couvre {} % de tes protéines du jour.":"This meal covers {} % of your protein for the day.",
   "Il te restera environ {} kcal à manger aujourd'hui.":"You'll still have about {} kcal to eat today.",
   "Il te restera environ {} kcal pour la journée.":"You'll have about {} kcal left for the day.",
@@ -8311,6 +8319,14 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Mode démo":"Modo demo",
+  "Quitter le mode démo":"Salir del modo demo",
+  "Tes vraies données reviennent.":"Tus datos reales vuelven.",
+  "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.":"Un perfil de ejemplo para tus vídeos y capturas. Tus datos quedan a salvo.",
+  "Passer en mode démo ?":"¿Pasar al modo demo?",
+  "L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app.":"La app muestra un perfil de ejemplo completo. Nada de lo que hagas en demo se guarda, y tus datos reales no cambian. Para volver: Ajustes, «Salir del modo demo», o cierra y vuelve a abrir la app.",
+  "Passer en démo":"Pasar a demo",
+  "Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir.":"Modo demo: tus datos reales están a salvo. Ajustes para salir.",
   "Ce repas couvre {} % de tes protéines du jour.":"Esta comida cubre el {} % de tus proteínas del día.",
   "Il te restera environ {} kcal à manger aujourd'hui.":"Te quedarán unas {} kcal por comer hoy.",
   "Il te restera environ {} kcal pour la journée.":"Te quedarán unas {} kcal para el día.",
@@ -11994,6 +12010,14 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Mode démo":"Modo demo",
+  "Quitter le mode démo":"Sair do modo demo",
+  "Tes vraies données reviennent.":"Seus dados reais voltam.",
+  "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.":"Um perfil de exemplo para seus vídeos e capturas. Seus dados ficam protegidos.",
+  "Passer en mode démo ?":"Passar para o modo demo?",
+  "L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app.":"O app mostra um perfil de exemplo completo. Nada do que você fizer no demo é salvo, e seus dados reais não mudam. Para voltar: Ajustes, “Sair do modo demo”, ou feche e reabra o app.",
+  "Passer en démo":"Passar para demo",
+  "Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir.":"Modo demo: seus dados reais estão protegidos. Ajustes para sair.",
   "Ce repas couvre {} % de tes protéines du jour.":"Esta refeição cobre {} % das suas proteínas do dia.",
   "Il te restera environ {} kcal à manger aujourd'hui.":"Ainda vão faltar cerca de {} kcal para comer hoje.",
   "Il te restera environ {} kcal pour la journée.":"Vão sobrar cerca de {} kcal para o dia.",
@@ -19231,7 +19255,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 01h40 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 14h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19414,7 +19438,7 @@ function majWidget(){
 /* On ne redessine plus le widget pendant qu'on se sert de l'app : le lanceur qui
    repeint ses widgets peut figer l'ecran une ou deux secondes sur certains telephones,
    juste apres un enregistrement. Il sera a jour en quittant l'app (visibilitychange). */
-function majWidgetBientot(){ clearTimeout(widgetDelai); widgetDelai = setTimeout(()=>{ if(document.visibilityState === "hidden") majWidget(); }, 1500); }
+function majWidgetBientot(){ clearTimeout(widgetDelai); widgetDelai = setTimeout(()=>{ if(document.visibilityState === "hidden" && !demoEnCours) majWidget(); }, 1500); }
 setTimeout(majWidget, 1200);
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") majWidget(); });
 /* les rappels : reposes a chaque ouverture et a chaque passage en arriere-plan */
@@ -19578,7 +19602,7 @@ async function autoFileWrite(){
 function autoFileSchedule(){
   if(!autoFile.ok) return;
   if(autoFile.to) clearTimeout(autoFile.to);
-  autoFile.to = setTimeout(autoFileWrite, 2000);
+  autoFile.to = setTimeout(()=>{ if(!demoEnCours) autoFileWrite(); }, 2000);
 }
 async function autoFilePick(){
   try{
@@ -31309,6 +31333,7 @@ function driveSchedule(){
   if(!driveActif()) return;
   if(driveTo) clearTimeout(driveTo);
   driveTo = setTimeout(async ()=>{
+    if(demoEnCours) return;                       /* jamais les fausses donnees sur Drive */
     if(driveEmpreinte() === driveDernierEnvoi) return;
     if(await driveSauver(false)) return;
     /* Sur le web, le jeton vit une heure et Google n'en rend un nouveau que dans un
@@ -31645,10 +31670,100 @@ function dbDemo(){
 }
 /* Dessiner avec le faux profil, puis rendre le vrai — quoi qu'il arrive */
 function avecDemo(fn){
-  const vrai = db;
+  const vrai = db, avant = demoEnCours;
   db = dbDemo(); demoEnCours = true;
   try{ applyDefaults(); fn(); }
-  finally{ db = vrai; demoEnCours = false; }
+  finally{ db = vrai; demoEnCours = avant; }    /* en mode demo, on y reste */
+}
+/* ---- le mode demo, pour les videos et les captures (Nico, 27 septembre) ----
+   Un faux profil soigne remplace les donnees EN MEMOIRE : save() ne fait rien tant que
+   demoEnCours est vrai, et les envois deja programmes (Drive, fichier, widget) le
+   verifient aussi. Pour en sortir, on recharge l'app : les vraies donnees reviennent
+   de la memoire du telephone, intactes, et tous les minuteurs repartent de zero. */
+let modeDemo = false;
+function dbDemoVideo(){
+  const d = dbDemo();
+  const ex = n => libId(n), j = n => new Date(Date.now() - n * 864e5);
+  const serie = (w, r) => ({w, r, done:true, warm:false, rir:1});
+  const seance = (n, tid, name, entries) => ({id:"demo" + n, date:j(n).toISOString(), name, templateId:tid,
+    start:j(n).getTime() - 3.4e6, end:j(n).getTime(), entries:entries.filter(e=>e.exId)});
+  /* douze semaines de Push / Pull / Legs, qui progressent doucement */
+  const history = [];
+  for(let k = 11; k >= 0; k--){
+    const plus = (11 - k) * 1.25;
+    history.push(
+      seance(k*7 + 5, "demo-push", "Push", [
+        {exId:ex("Développé couché"), sets:[serie(65+plus,8),serie(65+plus,8),serie(65+plus,7),serie(65+plus,7)]},
+        {exId:ex("Développé militaire"), sets:[serie(35+plus/2,10),serie(35+plus/2,9),serie(35+plus/2,8)]},
+        {exId:ex("Extension poulie (barre)"), sets:[serie(22.5,12),serie(22.5,12),serie(22.5,11)]}]),
+      seance(k*7 + 3, "demo-pull", "Pull", [
+        {exId:ex("Tractions"), sets:[serie(0,8),serie(0,7),serie(0,7)]},
+        {exId:ex("Rowing barre"), sets:[serie(55+plus,10),serie(55+plus,10),serie(55+plus,9)]},
+        {exId:ex("Curl haltères"), sets:[serie(12+plus/5,12),serie(12+plus/5,11),serie(12+plus/5,10)]}]),
+      seance(k*7 + 1, "demo-legs", "Legs", [
+        {exId:ex("Squat"), sets:[serie(80+plus*1.5,6),serie(80+plus*1.5,6),serie(80+plus*1.5,6)]},
+        {exId:ex("Presse à cuisses"), sets:[serie(130+plus*2,10),serie(130+plus*2,10),serie(130+plus*2,10)]},
+        {exId:ex("Leg curl"), sets:[serie(32.5,12),serie(32.5,12),serie(32.5,11)]}])
+    );
+  }
+  history.sort((a, b)=>new Date(a.date) - new Date(b.date));
+  const it = (n, sets, reps, rest) => ({exId:ex(n), sets, reps, rest});
+  const templates = [
+    {id:"demo-push", name:"Push", items:[it("Développé couché", 4, "6-8", 150), it("Développé militaire", 3, "8-10", 120), it("Extension poulie (barre)", 3, "10-12", 60)].filter(x=>x.exId)},
+    {id:"demo-pull", name:"Pull", items:[it("Tractions", 3, "6-10", 120), it("Rowing barre", 3, "8-10", 120), it("Curl haltères", 3, "10-12", 60)].filter(x=>x.exId)},
+    {id:"demo-legs", name:"Legs", items:[it("Squat", 3, "5-6", 180), it("Presse à cuisses", 3, "8-10", 120), it("Leg curl", 3, "10-12", 60)].filter(x=>x.exId)}
+  ];
+  const weights = Array.from({length:12}, (_, i)=>({date:j((11 - i) * 7).toISOString(), kg:+(75 + i * 0.22).toFixed(1)}));
+  /* les repas : un mois complet, et aujourd'hui a moitie (le matin et le midi) */
+  const habitSel = {};
+  for(let n = 0; n < 30; n++){
+    const jour = {
+      matin:["Œuf", "Œuf", "Pain (1 tranche)", "Pain (1 tranche)", "Fromage blanc 0 % (200 g)", "Banane", "Avoine (60 g)"],
+      midi:["Poulet (1 filet, 130 g cuit)", "Riz (200 g cuit)", "Brocoli (200 g)"]};
+    if(n > 0){
+      /* la collation porte la whey : la plupart des jours atteignent l'objectif de proteines */
+      jour.collation = n % 3 ? ["Whey + lait (1 dose, 300 ml)", "Amandes / noix (30 g)"] : ["Fromage blanc 0 % (200 g)", "Fruits secs (30 g)", "Amandes / noix (30 g)"];
+      jour.soir = ["Saumon (1 pavé, 120 g cuit)", "Patates (250 g)", "Pâtes (200 g cuites)", "Salade verte (bol)"];
+    }
+    habitSel[dayKey(j(n))] = jour;
+  }
+  /* la course : quelques sorties de plus en plus longues, une seance composee */
+  const cardio = [20, 16, 12, 9, 6, 2].map((n, i)=>({id:"demo-c" + n, date:j(n).toISOString(), machine:"course",
+    km:+(2.4 + i * 0.35).toFixed(2), min:22 + i * 2, runMin:12 + i * 3, type:"mixte", pente:0, estime:false, parcours:"Course et marche"}));
+  const parcours = [{id:"demo-p1", nom:"Course et marche", etapes:[
+    {type:"course", min:15, v:8}, {type:"marche", min:5, v:4}, {type:"course", min:10, v:8.5}, {type:"marche", min:5, v:4}]}];
+  /* le poussin : tout ce que douze semaines ont debloque, deja vu ; une casquette sur la tete */
+  const variante = id => { const a = ACCESSOIRES.find(x=>x.id === id); return a ? (a.couleurs ? a.couleurs[0].id : a.id) : null; };
+  const acc = [variante("casquette"), variante("montre-connectee")].filter(Boolean);
+  return Object.assign(d, {
+    profile:Object.assign(d.profile, {name:"Alex"}),
+    settings:Object.assign(d.settings, {goal:80}),
+    history, templates, weights, habitSel, cardio, parcours,
+    objCourse:null, objPauses:{},
+    avatar:{acc, vus:ACCESSOIRES.map(a=>a.id)},
+    abo:true, lastBilan:j(8).toISOString(),
+    /* aucune bulle d'aide ni visite guidee pendant le tournage */
+    seen:new Proxy({}, {get:(o, k)=>typeof k === "string" ? true : undefined, has:()=>true})
+  });
+}
+function entrerModeDemo(){
+  if(modeDemo) return;
+  if(db.active || db.courseEnCours){ toast(TR("Termine d'abord ta séance en cours.")); return; }
+  /* ce qui devait partir vers Drive ou le fichier part AVANT, avec les vraies donnees */
+  modeDemo = true;
+  db = dbDemoVideo(); demoEnCours = true;
+  applyDefaults();
+  db.objCourse = nouvelObjectif("30min");
+  db.objCourse.niveau = 3;
+  curTab = "seance";
+  hideSheet();
+  document.querySelectorAll("body > .onb").forEach(x=>x.remove());   /* un accueil ouvert se referme */
+  render();
+  toast(TR("Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir."));
+}
+function quitterModeDemo(){
+  /* recharger : les vraies donnees reviennent de la memoire, rien de la demo ne reste */
+  location.reload();
 }
 /* l'economie de l'annuel, calculee — jamais ecrite en dur, les prix peuvent changer */
 function economieAnnuel(){
@@ -31959,6 +32074,12 @@ function openSettings(){
         <span class="rgi c-gris">${IC_BOUCLIER}</span>
         <span class="grow">${TR("Aide, confidentialité et conditions")}</span><span class="fl">${IC_CHEVRON}</span>
       </button>
+      <button class="rg-l" id="st-demo">
+        <span class="rgi c-ambre">${IC_PHOTO}</span>
+        <span class="grow">${TR(modeDemo ? "Quitter le mode démo" : "Mode démo")}
+          <em>${TR(modeDemo ? "Tes vraies données reviennent." : "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.")}</em></span>
+        <span class="fl">${IC_CHEVRON}</span>
+      </button>
     </div>
     <button class="btn btn-accent" id="st-ok" style="width:100%;">${TR("Fermer")}</button>
     <div class="rg-version">Tonnup · ${TR("version du")} ${BUILD}</div>`);
@@ -31970,6 +32091,12 @@ function openSettings(){
                   : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
   };
   /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
+  document.getElementById("st-demo").onclick = ()=>{
+    if(modeDemo){ quitterModeDemo(); return; }
+    askConfirm(TR("Passer en mode démo ?"),
+      TR("L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app."),
+      TR("Passer en démo"), false, entrerModeDemo);
+  };
   document.getElementById("st-abo").onclick = ()=>{
     if(db.abo === true && db.aboVia === "play"){ gererSurPlay(); return; }
     if(db.abo === true) return;                      /* debloque par code : rien a gerer */
