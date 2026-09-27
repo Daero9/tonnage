@@ -1858,6 +1858,7 @@
   /* pose sur le bord de la carte de la semaine : il est dans le meme bloc qu'elle, au-dessus */
   .under-hero{position:relative;}
   .hero-poussin{position:absolute; right:14px; bottom:calc(100% - 7px); width:112px; pointer-events:none; z-index:3;}
+  #app .under-hero > .hero-poussin{pointer-events:auto; cursor:pointer;}
   /* ---- le halo de la regularite : un disque en degrade radial derriere le poussin, qui
      pulse. Pas d'ombre portee (elle se coupe en carre sur certains Android). Il grandit
      et s'avive chaque semaine tenue, et passe a l'or a la quatrieme. ---- */
@@ -3515,9 +3516,11 @@
   .pr-rond img{position:absolute; inset:0; width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;}
   .pr-rond .vide{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--ink-mute);}
   .pr-rond .vide svg{width:46px; height:46px; opacity:.55;}
-  .pr-rond .crayon{position:absolute; right:-2px; bottom:-2px; width:32px; height:32px; border-radius:50%; background:var(--accent-grad); color:#fff;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px var(--sheet);}
-  .pr-rond .crayon svg{width:16px; height:16px;}
+  .pr-rond{background:rgba(245,130,32,.12); border:0; padding:0; cursor:pointer;}
+  .pr-rond .pr-po{position:absolute; inset:0; border-radius:50%; overflow:hidden;}
+  .pr-rond .pr-po .in{position:absolute; left:50%; top:-6%; width:128%; aspect-ratio:1/1.21; transform:translateX(-50%);}
+  .pr-rond .pr-po img{position:absolute; inset:0; width:100%; height:100%;}
+  .pr-rond .pastille{top:4px; right:4px;}
   .pr-sous{font-size:13.5px; color:var(--ink-mute); margin:0;}
   .pr-nom{font-size:22px; font-weight:800; margin-top:14px;}
   .pr-ligne{font-size:14px; color:var(--ink-mute); margin-top:2px;}
@@ -4713,6 +4716,7 @@
   .am-code small{display:block; font-size:12px; color:var(--ink-soft);} .am-code b{font-size:22px; font-weight:900; letter-spacing:.06em;}
   .am-ajout{display:flex; gap:8px; margin:12px 0 16px;}
   .am-ajout input, .am-in{flex:1; min-width:0; padding:12px 14px; border-radius:14px; border:0; background:var(--surface2); color:var(--ink); font:inherit; font-size:16px;}
+  .am-in{background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
   .am-ajout input{text-transform:uppercase; letter-spacing:.05em;}
   .am-ajout input::placeholder{text-transform:none; letter-spacing:0;}
   .am-in{width:100%; box-sizing:border-box;}
@@ -4758,7 +4762,7 @@
   .am-pied{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:20px;}
   .am-lien{border:0; background:none; font:inherit; font-size:14px; color:var(--ink-soft); padding:4px;}
   .am-lien b{color:var(--ink);} .am-supp{color:var(--bad); font-size:13px;}
-  .am-partage{padding:14px; border-radius:16px; background:var(--surface2); margin-bottom:16px;}
+  .am-partage{padding:14px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); margin-bottom:16px;}
   .am-partage > b{display:block; font-size:15px; margin-bottom:8px;}
   .am-partage > span{display:flex; align-items:center; gap:12px; font-size:14px; line-height:1.4;}
   .am-partage p{margin:10px 0 0; font-size:13px; color:var(--ink-soft);}
@@ -4917,6 +4921,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Le service Amis n'est pas encore prêt. Réessaie plus tard.":"The Friends service isn't ready yet. Try again later.",
   "En forme":"Feeling good",
   "Un peu fatigué":"A bit tired",
   "Au repos":"Resting",
@@ -8458,6 +8463,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Le service Amis n'est pas encore prêt. Réessaie plus tard.":"El servicio de amigos aún no está listo. Inténtalo más tarde.",
   "En forme":"En forma",
   "Un peu fatigué":"Un poco cansado",
   "Au repos":"Descansando",
@@ -12214,6 +12220,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Le service Amis n'est pas encore prêt. Réessaie plus tard.":"O serviço de amigos ainda não está pronto. Tente mais tarde.",
   "En forme":"Em forma",
   "Un peu fatigué":"Um pouco cansado",
   "Au repos":"Descansando",
@@ -19080,7 +19087,7 @@ function marquerAccessoireVu(a){
 /* la pastille suit la personne : l'icone du profil est dans la page, pas dans la fiche */
 function majPastilles(){
   const n = accessoiresNeufs().length;
-  document.querySelectorAll("#app #tb-user, #sheet #pr-avatar").forEach(b=>{
+  document.querySelectorAll("#app #tb-user, #sheet #pr-rond").forEach(b=>{
     const p = b.querySelector(".pastille");
     if(n && !p){ const i = document.createElement("i"); i.className = "pastille"; b.appendChild(i); }
     else if(!n && p) p.remove();
@@ -19437,6 +19444,7 @@ function majPoussins(){
   });
 }
 document.addEventListener("click", e=>{
+  if(!e.target.closest("#poussin-record") && e.target.closest("#app .hero-poussin")){ openVestiaire(); return; }
   const b = e.target.closest("#poussin-record");
   if(!b) return;
   const r = recordSignificatif();
@@ -19526,7 +19534,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 01h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 01h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21142,15 +21150,24 @@ function poseAmi(f){
 }
 const HUMEUR_AMI = {"en-forme":"En forme", fatigue:"Un peu fatigué", repos:"Au repos", danger:"Sa flamme va s'éteindre",
   record:"Vient de battre un record", fete:"En fête", muscle:"Au top de sa forme", seance:"En pleine séance"};
-function poussinAmi(acc, pose){
-  const po = POUSSIN[pose] ? pose : "en-forme", p = POUSSIN[po];
-  if(!p) return `<span class="am-po"></span>`;
+function calquesHtml(acc, po){
+  const p = POUSSIN[po];
   const mis = (Array.isArray(acc) ? acc : []).filter(a=>typeof a === "string" && p.acc.includes(a)).sort((x, y)=>plan(x) - plan(y));
   const der = a=>{ const f = familleAcc(a); return !!(f && f.arriere); };
   const img = a=>`<img src="img/poussin/${a}@${po}.webp" alt="">`;
+  return mis.filter(der).map(img).join("") + `<img src="img/poussin/${po}.webp" alt="">` + mis.filter(a=>!der(a)).map(img).join("");
+}
+function poussinAmi(acc, pose){
+  const po = POUSSIN[pose] ? pose : "en-forme", p = POUSSIN[po];
+  if(!p) return `<span class="am-po"></span>`;
   /* la pose la plus haute tient dans le rond ; une pose couchee s'elargit */
   const l = Math.min(84, 88 / p.ratio);
-  return `<span class="am-po"><span class="in" style="width:${l.toFixed(1)}%; aspect-ratio:1/${p.ratio};">${mis.filter(der).map(img).join("")}<img src="img/poussin/${po}.webp" alt="">${mis.filter(a=>!der(a)).map(img).join("")}</span></span>`;
+  return `<span class="am-po"><span class="in" style="width:${l.toFixed(1)}%; aspect-ratio:1/${p.ratio};">${calquesHtml(acc, po)}</span></span>`;
+}
+/* ma tete de profil : le compagnon « en forme » avec ses accessoires, cadre sur la tete (Nico) */
+function teteCompagnon(){
+  if(!POUSSIN["en-forme"]) return `<span class="vide">${IC_USER}</span>`;
+  return `<span class="pr-po"><span class="in">${calquesHtml(poussinEtat("en-forme").acc, "en-forme")}</span></span>`;
 }
 /* la flamme d'un ami s'eteint, comme la tienne, apres plus de 3 jours sans activite */
 function flammeAmi(f){
@@ -21288,7 +21305,7 @@ function openAmisDebut(modif){
       if(modif){ db.amis.pseudo = ps; save(); await publierAmi(true); }
       else await activerAmis(ps);
       openAmis();
-    }catch(e){ go.disabled = false; toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+    }catch(e){ go.disabled = false; toast(TR(e.status === 403 ? "Le service Amis n'est pas encore prêt. Réessaie plus tard." : "Pas de connexion. Réessaie plus tard."), "erreur"); }
   };
 }
 function openProfil(){
@@ -21314,10 +21331,8 @@ function openProfil(){
     <div class="l">${lab}</div>${bas? `<div class="b">${bas}</div>`:""}</div>`;
   const protPct = (pl && kg) ? Math.min(100, Math.round(pl.prot / (2.2 * kg) * 100)) : 0;   /* 2,2 g/kg = le haut de la fourchette */
   openSheet(`<div class="pr-tete">
-      <button class="pr-rond ${p.photo ? "avec" : ""}" id="pr-rond" aria-label="${TR("Ma photo")}">
-        ${p.photo ? `<img src="${p.photo}" alt="">` : `<span class="vide">${IC_USER}</span>`}
-        <span class="crayon">${IC_CRAYON}</span></button>
-      <input type="file" accept="image/*" id="pr-photo" style="display:none;">
+      <button class="pr-rond" id="pr-rond" aria-label="${TR("Personnaliser mon compagnon")}">${teteCompagnon()}${
+        accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}</button>
       <div class="grow">
         <h3>${TR("Mon profil")}</h3>
         <div class="pr-sous">${TR("Tes infos de base et tes objectifs.")}</div>
@@ -21340,31 +21355,14 @@ function openProfil(){
         <span class="fl">${IC_CHEVRON}</span></button>
       <button class="btn pr-l" id="pr-edit"><span class="pic">${IC_CRAYON}</span>${TR("Modifier mon profil")}
         <span class="fl">${IC_CHEVRON}</span></button>
-      ${POUSSIN.repos ? `<button class="btn pr-l" id="pr-avatar"><span class="pic">${icoM("compagnon", 23)}</span>${TR("Personnaliser mon compagnon")}${
-        accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}
-        <span class="fl">${IC_CHEVRON}</span></button>` : ""}
       <button class="btn pr-l" id="pr-amis"><span class="pic">${IC_AMIS}</span>${TR("Mes amis")}
         <span class="fl">${IC_CHEVRON}</span></button>
     </div>`);
   /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
   document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
   document.getElementById("pr-edit").onclick = ()=>{ closeSheet(); openOnboarding(false); };
-  const bAv = document.getElementById("pr-avatar");
-  if(bAv) bAv.onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
+  document.getElementById("pr-rond").onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
   document.getElementById("pr-amis").onclick = ()=>ouvrirParDessus(openProfil, openAmis);
-  /* la photo de la personne : choisie dans la galerie, reduite a 256 px, gardee sur le
-     telephone avec le reste (une vingtaine de Ko). Elle ne part nulle part. */
-  const fichier = document.getElementById("pr-photo");
-  document.getElementById("pr-rond").onclick = ()=>fichier.click();
-  fichier.onchange = async ()=>{
-    const f = fichier.files && fichier.files[0]; fichier.value = "";
-    if(!f) return;
-    try{
-      db.profile = db.profile || {};
-      db.profile.photo = await photoProfilCarree(f);
-      save(); openProfil();
-    }catch(e){ toast(TR("Photo illisible."), "erreur"); }
-  };
   const prOk = document.getElementById("pr-ok"); if(prOk) prOk.onclick = closeSheet;
 }
 /* le salut de l'accueil sur une seule ligne : on reduit le corps jusqu'a ce qu'il tienne
