@@ -8349,6 +8349,30 @@ async function lancer(){
   }
   neuf();
 
+  grp("Mes amis : ce qui part, et comment on le lit");
+  neuf();
+  {
+    const rt = F.fbObjet(F.fbChamps({p:"Léa", n:12, l:["bandeau", 3], z:null, b:false}));
+    vrai("Aller-retour au format Firestore sans perte", rt.p === "Léa" && rt.n === 12 && rt.l[0] === "bandeau" && rt.l[1] === 3 && rt.z === null && rt.b === false);
+    const c = F.nouveauCode();
+    vrai("Code ami : 8 caractères sans 0, O, 1 ni I", /^[A-HJ-NP-Z2-9]{8}$/.test(c), c);
+    eq("Code saisi avec tiret, minuscules et espaces", F.codeSaisi(" tnp4-k7q2 "), "TNP4K7Q2");
+    DB.amis = {pseudo:"Léa", actif:false};
+    const f = F.ficheAmi();
+    eq("La fiche ne contient que les cinq champs prévus",
+      Object.keys(f).sort().join(","), "acc,derniere,flamme,nAct,pseudo");
+    vrai("Ni poids, ni repas, ni charges dans la fiche", !/weight|kg|meal|sets|kcal/i.test(JSON.stringify(f)));
+    delete DB.amis;
+    const po = F.poussinAmi(["bandeau", "../../evil", "<img onerror=x>", 42]);
+    vrai("Compagnon d'un ami : seuls les accessoires connus sont dessinés",
+      /bandeau@en-forme/.test(po) && !/evil|onerror/.test(po));
+    const vieux = Date.now() - 6 * 864e5, recent = Date.now() - 3600e3;
+    eq("La flamme d'un ami s'éteint après plus de 3 jours", F.flammeAmi({flamme:9, derniere:vieux}), 0);
+    eq("… et reste allumée s'il s'est entraîné récemment", F.flammeAmi({flamme:9, derniere:recent}), 9);
+    vrai("Un pseudo piégé est échappé", !/<b>x<\/b>/.test(F.ligneAmi({uid:"u", pseudo:"<b>x</b>", acc:[], nAct:2, flamme:1, derniere:recent})));
+  }
+  neuf();
+
   grp("Annuler un aliment retiré, et les icônes de la course");
   neuf();
   await (async ()=>{
