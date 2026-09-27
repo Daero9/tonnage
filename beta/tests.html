@@ -8318,6 +8318,18 @@ async function lancer(){
     vrai("En démo, rien n'est écrit dans la mémoire du téléphone", F.localStorage.getItem(F.eval("KEY")) === avant);
     F.eval("demoEnCours = false"); DB.weights.pop(); F.save();
   }
+  /* en demo, une photo ne part jamais au serveur : sinon, des scans gratuits en boucle */
+  await (async ()=>{
+    let appels = 0;
+    const vraiFetch = F.fetch;
+    F.fetch = (...a)=>{ appels++; return vraiFetch(...a); };
+    F.eval("demoEnCours = true");
+    const r = await F.analyserPhoto("x", "");
+    F.eval("demoEnCours = false");
+    F.fetch = vraiFetch;
+    vrai("En démo, la photo ne part pas au serveur", appels === 0, appels + " appel(s)");
+    eq("…elle rend le plat d'exemple", r.plat, "Poulet, riz et brocolis");
+  })();
   neuf();
 
   grp("L'astuce après un scan");

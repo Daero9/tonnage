@@ -19255,7 +19255,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 14h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 14h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -23682,7 +23682,16 @@ function reduirePhoto(fichier){
   });
 }
 const ANALYSE_MAX_MS = 45000;                    /* au-dela, on rend la main : rien ne doit tourner sans fin */
+/* En mode demo, la photo ne part JAMAIS au serveur (Nico) : chaque entree en demo
+   repartait avec un compteur neuf et un nouvel appareil — des scans gratuits en boucle,
+   payes par le compte d'API. On joue l'attente habituelle, puis un plat d'exemple. */
+const PLAT_DEMO = {plat:"Poulet, riz et brocolis", remarque:"",
+  aliments:[
+    {nom:"Blanc de poulet grillé", grammes:150, confiance:"haute", prot100:31, kcal100:165, gluc100:0, lip100:3.6},
+    {nom:"Riz blanc cuit", grammes:180, confiance:"haute", prot100:2.7, kcal100:130, gluc100:28, lip100:0.3},
+    {nom:"Brocolis vapeur", grammes:120, confiance:"moyenne", prot100:2.8, kcal100:35, gluc100:4, lip100:0.4}]};
 async function analyserPhoto(b64, indice){
+  if(demoEnCours){ await new Promise(r=>setTimeout(r, 2600)); return JSON.parse(JSON.stringify(PLAT_DEMO)); }
   const ctrl = new AbortController();
   const garde = setTimeout(()=>ctrl.abort(), ANALYSE_MAX_MS);
   let r;
