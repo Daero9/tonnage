@@ -3173,7 +3173,7 @@ async function lancer(){
     /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
     /* neuf lignes depuis le 19 septembre : l'abonnement est une carte a part, au-dessus */
     /* dix avec la ligne Notifications du 20 septembre */
-    vrai("Dix réglages", lignes.length === 10, String(lignes.length));
+    vrai("Onze réglages (dont le mode démo)", lignes.length === 11, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
     vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-an") && D2.querySelector("#sheet .rg-an").id === "st-abo");
     /* la carte d'apres la maquette de Nico : le poussin, trois atouts, un seul bouton */
@@ -8298,6 +8298,28 @@ async function lancer(){
   neuf();
 
   /* Nico, 26 septembre : annuler un aliment retire par megarde ; titre et icones de la course */
+  grp("Le mode démo, pour les vidéos");
+  neuf();
+  {
+    const d = F.dbDemoVideo();
+    eq("Trois séances types dans le carrousel", d.templates.map(x=>x.name).join(","), "Push,Pull,Legs");
+    vrai("…chacune avec ses exercices", d.templates.every(x=>x.items.length === 3));
+    eq("Douze semaines de séances", d.history.length, 36);
+    vrai("Les aliments du profil existent tous (aucun ne compte pour 0)",
+      Object.values(d.habitSel).every(j=>Object.values(j).flat().every(l=>F.kcalOf(l) > 0)));
+    vrai("Pas de bulle d'aide pendant le tournage", d.seen["guide-nimporte-quoi"] === true);
+    vrai("L'abonnement Analyse est débloqué", d.abo === true);
+    /* l'apercu floute de l'abonnement ne doit pas couper un mode demo en cours */
+    F.eval("demoEnCours = true"); F.avecDemo(()=>{});
+    vrai("L'aperçu flouté laisse le mode démo en place", F.eval("demoEnCours") === true);
+    F.eval("demoEnCours = false");
+    const avant = F.localStorage.getItem(F.eval("KEY"));
+    F.eval("demoEnCours = true"); DB.weights.push({date:new Date().toISOString(), kg:99.9}); F.save();
+    vrai("En démo, rien n'est écrit dans la mémoire du téléphone", F.localStorage.getItem(F.eval("KEY")) === avant);
+    F.eval("demoEnCours = false"); DB.weights.pop(); F.save();
+  }
+  neuf();
+
   grp("L'astuce après un scan");
   neuf();
   {
