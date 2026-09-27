@@ -4694,6 +4694,7 @@
   .sc-astuce b{display:block; font-size:13px; font-weight:800; line-height:1.4; color:var(--ink);}
   .sc-astuce p{margin:4px 0 0; font-size:13px; line-height:1.45; color:var(--ink-soft);}
   .sc-astuce b + p{margin-top:5px;}
+  #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4844,6 +4845,10 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Accès développeur":"Developer access",
+  "Réservé à l'équipe Tonnup.":"Reserved for the Tonnup team.",
+  "Code":"Code",
+  "Code incorrect":"Wrong code",
   "Mode démo":"Demo mode",
   "Quitter le mode démo":"Leave demo mode",
   "Tes vraies données reviennent.":"Your real data comes back.",
@@ -8319,6 +8324,10 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Accès développeur":"Acceso de desarrollador",
+  "Réservé à l'équipe Tonnup.":"Reservado al equipo de Tonnup.",
+  "Code":"Código",
+  "Code incorrect":"Código incorrecto",
   "Mode démo":"Modo demo",
   "Quitter le mode démo":"Salir del modo demo",
   "Tes vraies données reviennent.":"Tus datos reales vuelven.",
@@ -12010,6 +12019,10 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Accès développeur":"Acesso de desenvolvedor",
+  "Réservé à l'équipe Tonnup.":"Reservado para a equipe Tonnup.",
+  "Code":"Código",
+  "Code incorrect":"Código incorreto",
   "Mode démo":"Modo demo",
   "Quitter le mode démo":"Sair do modo demo",
   "Tes vraies données reviennent.":"Seus dados reais voltam.",
@@ -19255,7 +19268,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 14h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 14h58 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31758,7 +31771,6 @@ function dbDemoVideo(){
 function entrerModeDemo(){
   if(modeDemo) return;
   if(db.active || db.courseEnCours){ toast(TR("Termine d'abord ta séance en cours.")); return; }
-  /* ce qui devait partir vers Drive ou le fichier part AVANT, avec les vraies donnees */
   modeDemo = true;
   db = dbDemoVideo(); demoEnCours = true;
   applyDefaults();
@@ -31769,6 +31781,28 @@ function entrerModeDemo(){
   document.querySelectorAll("body > .onb").forEach(x=>x.remove());   /* un accueil ouvert se referme */
   render();
   toast(TR("Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir."));
+}
+/* L'acces developpeur : un code ouvre le mode demo (Nico). Comme les codes d'acces, il
+   n'est pas ecrit dans l'app : seule son empreinte SHA-256 l'est, calculee sur le code
+   en majuscules, sans espaces — la casse ne compte pas. */
+const CODE_DEV = "83c8f38f2d34fd27a135bd90fdb87532642c89aedea1425b0fc60eb3d716130b";
+function openAccesDev(){
+  openSheet(`<div class="ca-titre"><h3>${TR("Accès développeur")}</h3><p>${TR("Réservé à l'équipe Tonnup.")}</p></div>
+    <input id="dev-code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${TR("Code")}" style="margin-top:14px; text-align:center;">
+    <button class="btn btn-accent" id="dev-ok" style="width:100%; margin-top:12px;">${TR("Valider")}</button>`);
+  const inp = document.getElementById("dev-code");
+  const valider = async ()=>{
+    const code = String(inp.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    let bon = false;
+    try{ bon = (await empreinte(code)) === CODE_DEV; }catch(e){}
+    if(bon){ inp.blur(); entrerModeDemo(); return; }
+    inp.classList.remove("ko"); void inp.offsetWidth; inp.classList.add("ko");
+    vibrer([40, 60, 40]);
+    toast(TR("Code incorrect"));
+  };
+  document.getElementById("dev-ok").onclick = valider;
+  inp.onkeydown = e=>{ if(e.key === "Enter") valider(); };
+  setTimeout(()=>inp.focus(), 300);
 }
 function quitterModeDemo(){
   /* recharger : les vraies donnees reviennent de la memoire, rien de la demo ne reste */
@@ -32084,9 +32118,9 @@ function openSettings(){
         <span class="grow">${TR("Aide, confidentialité et conditions")}</span><span class="fl">${IC_CHEVRON}</span>
       </button>
       <button class="rg-l" id="st-demo">
-        <span class="rgi c-ambre">${IC_PHOTO}</span>
-        <span class="grow">${TR(modeDemo ? "Quitter le mode démo" : "Mode démo")}
-          <em>${TR(modeDemo ? "Tes vraies données reviennent." : "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.")}</em></span>
+        <span class="rgi ${modeDemo ? "c-ambre" : "c-gris"}">${modeDemo ? IC_PHOTO : IC_CADENAS_MINI}</span>
+        <span class="grow">${TR(modeDemo ? "Quitter le mode démo" : "Accès développeur")}
+          ${modeDemo ? `<em>${TR("Tes vraies données reviennent.")}</em>` : ""}</span>
         <span class="fl">${IC_CHEVRON}</span>
       </button>
     </div>
@@ -32102,9 +32136,7 @@ function openSettings(){
   /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
   document.getElementById("st-demo").onclick = ()=>{
     if(modeDemo){ quitterModeDemo(); return; }
-    askConfirm(TR("Passer en mode démo ?"),
-      TR("L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app."),
-      TR("Passer en démo"), false, entrerModeDemo);
+    openAccesDev();
   };
   document.getElementById("st-abo").onclick = ()=>{
     if(db.abo === true && db.aboVia === "play"){ gererSurPlay(); return; }
