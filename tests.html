@@ -58,6 +58,12 @@ async function lancer(){
     DB.history = []; DB.weights = [{date:new Date().toISOString(), kg:74}];
     DB.habitSel = {}; DB.cardio = []; DB.unilat = {}; DB.plafond = {}; DB.dayFix = {};
     DB.materiel = null;      /* sinon un essai enregistré sur ce domaine fausse les tirages */
+    /* la course : une seance laissee en cours par un essai precedent ouvrirait l'onglet
+       Sport sur l'ecran de course, et tous les tests de l'accueil tomberaient */
+    DB.courseEnCours = null; DB.parcours = []; DB.objCourse = null; DB.objPauses = {};
+    /* …et ce qu'elle avait pose a l'ecran : barre d'onglets masquee, commandes du bas */
+    F.document.body.classList.remove("en-course");
+    try{ F.eval("arreterTicCourse(); retirerCommandesCourse(); arreterServiceRepos()"); }catch(e){}
     DB.abo = true;           /* les écrans payants s'ouvrent en clair ; le voile a son propre groupe */
     DB.essaiDebut = new Date(Date.now() - 30 * 864e5).toISOString();   /* essai fini depuis longtemps */
     /* Une visite se joue sur un voile plein écran : elle passerait devant les boutons
@@ -69,6 +75,13 @@ async function lancer(){
     Object.keys(F.eval("GUIDES")).forEach(g=>{ DB.seen["guide-" + g] = true; });
   };
   const id = n => F.libId(n);
+  /* L'iframe est cachee (display:none) : aucune mise en page, toutes les mesures y
+     valent 0. Les tests qui mesurent (glisser, recouvrir) la posent hors de l'ecran,
+     a la taille d'un telephone, le temps de mesurer. */
+  const mesurable = on => {
+    document.getElementById("app").style.cssText = on
+      ? "display:block; position:fixed; left:-10000px; top:0; width:375px; height:812px; border:0;" : "";
+  };
   /* Attendre une CONDITION, jamais un délai : la bulle d'une visite se remplit dans un
      requestAnimationFrame, et un onglet en arrière-plan les met en sommeil. */
   const attendre = async (cond, max)=>{ const t0 = Date.now();
@@ -2089,6 +2102,23 @@ async function lancer(){
     F.lancerSeqIso(0);
     F.arreterChronos();
     vrai("…et le décompte de départ avec", !F.eval("preIso"));
+    /* « Démarrer » ouvre maintenant le lecteur de course : tenues et repos en cartes */
+    DB.active.entries[0].sets.forEach(st=>{ st.r = 40; st.done = false; });
+    F.demarrerIso(0);
+    vrai("Démarrer ouvre le lecteur, tenues et repos en étapes", !!DB.courseEnCours && DB.courseEnCours.iso
+      && DB.courseEnCours.etapes.map(x=>x.type).join(",") === "tenue,repos,tenue,repos,tenue,repos,tenue");
+    vrai("…avec les 5 s de mise en position", DB.courseEnCours.debut > Date.now() + 3000);
+    /* arrete au milieu du 2e repos : les deux premieres tenues sont validees, pas la suite */
+    DB.courseEnCours.debut = Date.now() - (40 + 60 + 40 + 30) * 1000;
+    F.finirIso(false);
+    eq("Arrêté en route : seules les tenues menées au bout sont validées",
+      DB.active.entries[0].sets.map(st=>st.done ? 1 : 0).join(""), "1100");
+    vrai("…et on revient à la séance", !DB.courseEnCours && !!DB.active);
+    DB.active.entries[0].sets.forEach(st=>{ st.done = false; });
+    F.demarrerIso(0);
+    F.finirIso(true);
+    eq("Mené au bout : toutes les séries sont validées", DB.active.entries[0].sets.map(st=>st.done ? 1 : 0).join(""), "1111");
+    F.arreterTicCourse(); F.syncWakeLock();
     DB.active = null; DB.templates = [];
     F.render();
   })();
@@ -2288,8 +2318,11 @@ async function lancer(){
     vrai("Le signe ouvre le titre",
       titres.every(t=>t.firstElementChild && t.firstElementChild.classList.contains("ic-t")));
     /* et il prend l'orange de l'app */
-    eq("Il est orange",
+    /* toutes les cartes ont maintenant l'en-tete a carre orange (pt-t / pd-t) : la carte
+       Course etait la derniere a l'ancien titre (Nico, 26 septembre) */
+    if(titres.length) eq("Il est orange",
       F.getComputedStyle(titres[0].querySelector(".ic-t")).color, "rgb(245, 130, 32)");
+    else vrai("Toutes les cartes ont l'en-tête à carré orange", F.document.querySelectorAll("#app .pt-ic, #app .pd-ic").length >= 3);
     DB.weights = []; DB.history = []; DB.cardio = []; DB.habitSel = {};
     F.eval("curTab = 'seance';");
     F.render();
@@ -3492,6 +3525,104 @@ async function lancer(){
       cs.backgroundColor !== fond || (cs.boxShadow && cs.boxShadow !== "none") || parseFloat(cs.borderTopWidth) > 0);
     const f2 = D2.getElementById("abo-fenetre"); if(f2) f2.remove();
     F.eval("typeof majVerrouPage === 'function' && majVerrouPage()");
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : prendre un plat en photo en moins de gestes */
+  grp("Le plat en photo, plus vite");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const fermerCam = () => { const c = D2.querySelector(".cam"); if(c){ const x = c.querySelector("[data-non]"); if(x) x.click(); } };
+    const avant = {abo:DB.abo, aboVia:DB.aboVia, photos:DB.photos, res:DB.scansReserve, cam:DB.settings.camMode};
+    DB.abo = true; DB.aboVia = "code"; DB.photos = null; DB.scansReserve = 0;
+    /* 1. la camera retient son mode */
+    DB.settings.camMode = "plat";
+    F.lancerScan("midi");
+    await attendre(()=>!!D2.querySelector(".cam"), 1500);
+    vrai("La caméra rouvre sur le mode de la dernière fois (plat)", !!D2.querySelector(".cam.plat"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    DB.settings.camMode = "code";
+    F.lancerScan("midi");
+    await attendre(()=>!!D2.querySelector(".cam"), 1500);
+    vrai("…ou sur le code-barres", !!D2.querySelector(".cam.code"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* 2. la pastille photo de l'onglet Alimentation ouvre la camera en mode plat */
+    F.eval("curTab = 'eat'; render()");
+    const pastille = D2.getElementById("hero-scans");
+    vrai("La pastille photo est là", !!pastille);
+    /* une precision tapee avant la photo : « cordon bleu », pas « poulet frit » */
+    pastille.click();
+    await attendre(()=>!!D2.querySelector(".cam"), 1500);
+    vrai("…et ouvre directement la caméra en mode plat", !!D2.querySelector(".cam.plat"));
+    vrai("En mode plat, un champ pour préciser le plat avant la photo", !!D2.querySelector(".cam.plat #cam-indice"));
+    vrai("…à la place de la consigne « Toute l'assiette dans le cadre »",
+      !/Toute l'assiette/.test(D2.querySelector(".cam .t").textContent));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* la precision part avec la premiere analyse, et la photo compte comme une photo */
+    const vraie = F.eval("analyserPhoto");
+    F.eval("analyserPhoto = async (b, i) => { window.__indice = i; return {aliments:[], remarque:'test'}; }");
+    const avantN = F.eval("photosRestantes()");
+    F.eval("photoEnCours = {meal:'midi', b64:'x', apercu:'img/hero-alimentation-2.webp', corrections:0}");
+    await F.eval("lancerAnalysePhoto('cordon bleu', true)");
+    eq("La précision part avec la photo", F.eval("window.__indice"), "cordon bleu");
+    eq("…et la photo est décomptée comme toute photo", F.eval("photosRestantes()"), avantN - 1);
+    F.analyserPhoto = vraie;           /* la vraie analyse revient */
+    F.hideSheet();
+    /* 3. le raccourci de l'icone : la photo directement */
+    DB.settings.camMode = "code";
+    F.executerRaccourci("scan");
+    await attendre(()=>!!D2.querySelector(".cam"), 2000);
+    vrai("Le raccourci « Scanner mon repas » ouvre le mode photo", !!D2.querySelector(".cam.plat"));
+    fermerCam(); await attendre(()=>!D2.querySelector(".cam"), 1500);
+    /* Nico : le chiffre de la pastille restait l'ancien apres une photo jetee — il ne se
+       reecrivait qu'au dessin de la page */
+    F.eval("curTab = 'eat'; render()");
+    const chiffre = () => D2.querySelector("#hero-scans b").textContent;
+    const avantPhoto = Number(chiffre());
+    F.compterPhoto();                  /* une photo analysee, sans redessiner la page */
+    eq("La pastille suit le compte dès qu'une photo est prise", Number(chiffre()), avantPhoto - 1);
+    F.crediterScans(20);
+    eq("…et dès qu'un pack est crédité", Number(chiffre()), avantPhoto - 1 + 20);
+    DB.scansReserve = 0; DB.photos = null;
+    /* sans photo restante : la pastille propose d'en racheter, pas une camera morte */
+    DB.photos = {jour:F.dayKey(), n:99};
+    F.eval("render()");
+    D2.getElementById("hero-scans").click();
+    await new Promise(r=>setTimeout(r, 400));
+    vrai("À 0 photo, la pastille ouvre la fenêtre d'achat au lieu de la caméra", !D2.querySelector(".cam"));
+    F.hideSheet(); const f = D2.getElementById("abo-fenetre"); if(f) f.remove();
+    Object.assign(DB, {abo:avant.abo, aboVia:avant.aboVia, photos:avant.photos, scansReserve:avant.res});
+    DB.settings.camMode = avant.cam;
+    F.eval("curTab = 'seance'; render()");
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : ajouter un exercice a une seance adaptative (« les abdos ») */
+  grp("Ajouter un exercice à la séance proposée");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.materiel = null; DB.maison = null; DB.active = null;
+    DB.profile = Object.assign({}, DB.profile, {lieu:"salle"});
+    DB.templates = []; F.addCoachProgram("masse");
+    const t = DB.templates.find(x=>x.adaptatif === "pull") || DB.templates[0];
+    F.openPreview(t.id, true);
+    const avant = t.items.length;
+    vrai("Un bouton « Ajouter un exercice » sous la liste", !!D2.getElementById("pv-add"));
+    D2.getElementById("pv-add").click();
+    const champ = D2.getElementById("pk-search");
+    champ.value = "crunch"; champ.dispatchEvent(new F.Event("input"));
+    const ligne = [...D2.querySelectorAll("#pk-list .pk-row")].find(x=>/^\s*Crunch/.test(x.textContent));
+    ligne.click();
+    eq("L'exercice est ajouté à la séance", t.items.length, avant + 1);
+    const ajoute = t.items[t.items.length - 1];
+    eq("…avec des réglages d'abdos (12 à 15 reps)", ajoute.reps, "12-15");
+    vrai("…et on revient sur l'aperçu, qui le montre", !!D2.getElementById("pv-start") && /Crunch/.test(D2.getElementById("sheet").textContent));
+    F.openPreview(t.id, true);
+    eq("Il reste là quand on rouvre l'aperçu (la séance adaptative ne se refait pas)", t.items.length, avant + 1);
+    F.hideSheet();
+    DB.templates = [];
   })();
   neuf();
 
@@ -6191,10 +6322,24 @@ async function lancer(){
     await attendre(()=>dits.length > 0, 1500);
     vrai("Sans Google Play, l'appui renvoie vers l'app Android ou le code", /app Android/.test(dits.join(" ")), dits.join(" | "));
     F.toast = vraiToast;
-    /* c'est une fenetre, pas une fiche : la barre d'onglets reste sous elle, et la
-       croix ramene a Seance */
-    vrai("La fenêtre passe sous la barre d'onglets",
-      +F.getComputedStyle(D2.getElementById("abo-fenetre")).zIndex < +F.getComputedStyle(D2.querySelector(".tabbar")).zIndex);
+    /* c'est une fenetre, pas une fiche : le voile assombrit tout l'ecran (Nico, 26
+       septembre), mais la barre d'onglets reste touchable a travers lui, et la carte
+       ne la recouvre pas */
+    /* une fiche laissee ouverte par un groupe precedent couvrirait la barre : on mesure
+       la fenetre d'abonnement seule */
+    if(F.document.getElementById("overlay").classList.contains("show")){ F.hideSheet(); }
+    mesurable(true);
+    /* le temps que la page prenne sa taille, et que la carte finisse de monter : son
+       animation d'entree ne demarre qu'une fois l'iframe visible (480 ms) */
+    await new Promise(r=>setTimeout(r, 400));
+    await attendre(()=>{ const c = D2.querySelector(".abo-carte-f"); return c && F.getComputedStyle(c).animationName === "none" || (c && c.getAnimations && c.getAnimations().length === 0); }, 1500);
+    (()=>{
+      const tb = D2.querySelector(".tabbar").getBoundingClientRect();
+      const sous = D2.elementFromPoint(tb.left + tb.width/2, tb.top + tb.height/2);
+      vrai("La barre d'onglets reste touchable à travers le voile", !!(sous && sous.closest(".tabbar")), sous && sous.outerHTML.slice(0, 60));
+      vrai("…et la carte ne la recouvre pas", D2.querySelector(".abo-carte-f").getBoundingClientRect().bottom <= tb.top + 1);
+    })();
+    mesurable(false);
     F.fermerAbonnement();
     await attendre(()=>!D2.getElementById("abo-fenetre"), 2000);
     vrai("…et se ferme sans laisser de trace", !D2.getElementById("abo-fenetre"));
@@ -7337,6 +7482,9 @@ async function lancer(){
        supposant des séries, une entrée vide y ferait des dégâts */
     vrai("Aucune entrée vide dans l'historique",
       (s2.entries || []).every(en=>en.sets && en.sets.length));
+    /* le recapitulatif « Felicitations » s'ouvre 260 ms apres : on l'attend avant de
+       fermer, sinon il arrive plus tard par-dessus la fiche d'un autre groupe */
+    await attendre(()=>!!F.document.querySelector("#sheet .fin-titre"), 2000);
     F.hideSheet();
   })();
   neuf();
@@ -7593,6 +7741,613 @@ async function lancer(){
     F.hideSheet();
   })();
   neuf();
+
+  /* Nico, 26 septembre (apres-midi) : maquettes, glisser, flamme, clavier */
+  grp("Les retouches de l'après-midi du 26 septembre");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const pause = ms => new Promise(r=>setTimeout(r, ms));
+    mesurable(true); await pause(400);
+    /* 1. Modifier la seance : une poignee, plus de fleches, des crans */
+    const ids = F.allEx().slice(0, 9).map(e=>e.id);
+    DB.templates.push({id:"t-glisse", name:"Glisse", items: ids.map(x=>({exId:x, sets:4, reps:"8-12", rest:150}))});
+    F.openTplEditor("t-glisse");
+    await attendre(()=>D2.querySelectorAll(".tp-ex").length === 9, 1500);
+    vrai("Chaque exercice a sa poignée", D2.querySelectorAll(".tp-ex [data-poignee]").length === 9);
+    vrai("…et plus de flèches haut / bas", D2.querySelectorAll("#tp-items [data-up], #tp-items [data-dn]").length === 0);
+    const c0 = D2.querySelector(".tp-ex");
+    c0.querySelector('[data-pas="reps|1"]').click();
+    vrai("Le cran des reps décale la fourchette (8-12 → 9-13)", c0.querySelector('[data-f="reps"]').value === "9-13");
+    c0.querySelector('[data-pas="rest|-1"]').click();
+    vrai("Le cran du repos va de 15 s en 15 s", c0.querySelector('[data-f="rest"]').value === "135");
+    const nom0 = c0.querySelector("b").textContent;
+    const cartes = [...D2.querySelectorAll(".tp-ex")];
+    const poig = cartes[0].querySelector("[data-poignee]"), r0 = poig.getBoundingClientRect();
+    /* en 2e place : un trajet plus long approche le bord de la fiche et declenche le
+       defilement automatique, qu'on n'eprouve pas ici */
+    const y0 = r0.top + r0.height/2, x = r0.left + 4, rc = cartes[1].getBoundingClientRect(), y1 = rc.top + rc.height*0.75;
+    poig.dispatchEvent(new F.PointerEvent("pointerdown", {pointerId:9, clientX:x, clientY:y0, bubbles:true, button:0, pointerType:"touch"}));
+    for(let i = 1; i <= 24; i++){
+      F.dispatchEvent(new F.PointerEvent("pointermove", {pointerId:9, clientX:x, clientY:y0 + (y1-y0)*i/24, bubbles:true, pointerType:"touch"}));
+      await new Promise(r=>{ F.requestAnimationFrame(r); setTimeout(r, 50); });   /* un cadre hors ecran peut ne plus recevoir d'images */
+    }
+    F.dispatchEvent(new F.PointerEvent("pointerup", {pointerId:9, clientX:x, clientY:y1, bubbles:true, pointerType:"touch"}));
+    await pause(150);
+    const noms = [...D2.querySelectorAll(".tp-ex b")].map(b=>b.textContent);
+    /* la place exacte depend de la fiche qui finit de monter : on verifie qu'il est
+       descendu, et qu'il a garde ses reglages a sa nouvelle place */
+    const place = noms.indexOf(nom0);
+    /* jusqu'ou : cela depend de la vitesse de la machine (le defilement automatique
+       prend le relais pres du bord) ; ce qui compte, c'est qu'il descende */
+    vrai("Glisser le 1er exercice par sa poignée le fait descendre", place > 0, place + 1);
+    vrai("…les numéros se recalculent", [...D2.querySelectorAll(".tp-num")].map(n=>n.textContent).join("") === "123456789");
+    vrai("…et il garde ses réglages", D2.querySelectorAll(".tp-ex")[Math.max(0, place)].querySelector('[data-f="reps"]').value === "9-13");
+    F.hideSheet();
+    DB.templates = DB.templates.filter(t=>t.id !== "t-glisse");
+
+    /* 2. le calendrier des proteines remonte meme sans repas plus anciens */
+    F.eval("calMois = null");
+    F.openCalendrier();
+    await attendre(()=>!!D2.getElementById("cal-prec"), 1500);
+    vrai("Le mois précédent est accessible sans données plus anciennes", !D2.getElementById("cal-prec").disabled);
+    vrai("Le mois suivant reste fermé sur le mois en cours", D2.getElementById("cal-suiv").disabled);
+    const m0 = D2.querySelector(".cal-top .m").textContent;
+    D2.getElementById("cal-prec").click();
+    vrai("…et on y va", D2.querySelector(".cal-top .m").textContent !== m0);
+    vrai("La carte « Objectif du jour » est là", !!D2.querySelector(".cal-obj"));
+    F.hideSheet(); F.eval("calMois = null");
+
+    /* 3. la flamme attend la fin du recapitulatif */
+    const sj = F.serieJours;
+    F.serieJours = ()=>({n:5, force:""}); DB.flammeVue = 4;
+    DB.history.push(seance(30, [])); F.eval("curTab = 'seance'; flammeRetenue = true; render()");
+    let fl = D2.querySelector(".hero-flamme");
+    vrai("Pendant le récapitulatif, la flamme garde l'ancien chiffre", fl && fl.textContent.trim() === "4" && !fl.classList.contains("grandit"), fl && fl.textContent);
+    vrai("…et rien n'est noté comme vu", DB.flammeVue === 4);
+    F.eval("libererFlamme()");
+    await attendre(()=>{ const f = D2.querySelector(".hero-flamme"); return f && f.classList.contains("grandit"); }, 1500);
+    fl = D2.querySelector(".hero-flamme");
+    vrai("Libérée, elle grandit (4 → 5)", fl && fl.classList.contains("grandit"));
+    F.serieJours = sj; DB.flammeVue = 0; DB.history = [];
+
+    /* 4. un aliment : la quantite en pilule, comme un produit scanne */
+    F.openModifAliment("midi", "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)");
+    await attendre(()=>!!D2.querySelector("#sheet .ps-gros #ma-n"), 1500);
+    D2.querySelector('[data-mapas="1"]').click();
+    vrai("Le + d'un aliment ajoute 10 g (150 → 160)", D2.getElementById("ma-n").value === "160");
+    vrai("…avec son unité à côté", D2.getElementById("ma-uni").textContent === "g");
+    F.hideSheet();
+
+    /* 5. a la piece : « 1 » se met tout seul, sans clavier */
+    F.openAjoutAliment("midi");
+    await attendre(()=>!!D2.getElementById("ot-q"), 1500);
+    const q = D2.getElementById("ot-q");
+    q.value = "Kiwi"; q.dispatchEvent(new F.Event("input"));
+    await attendre(()=>[...D2.querySelectorAll("#ot-liste [data-food]")].some(b=>/kiwi/i.test(b.textContent)), 1500);
+    const kiwi = [...D2.querySelectorAll("#ot-liste [data-food]")].find(b=>/kiwi/i.test(b.textContent));
+    if(kiwi) kiwi.click();
+    await pause(80);
+    vrai("Un fruit à la pièce se remplit à 1", D2.getElementById("ot-g").value === "1", D2.getElementById("ot-g").value);
+    vrai("…sans ouvrir le clavier", D2.activeElement !== D2.getElementById("ot-g"));
+    /* « Rechercher » / « Entrée » ferme le clavier */
+    q.focus();
+    q.dispatchEvent(new F.KeyboardEvent("keydown", {key:"Enter", keyCode:13, bubbles:true}));
+    await pause(30);
+    vrai("« Rechercher » sur le clavier le referme", D2.activeElement !== q);
+    const g = D2.getElementById("ot-g"); g.focus();
+    g.dispatchEvent(new F.KeyboardEvent("keydown", {key:"Enter", keyCode:13, bubbles:true}));
+    await pause(30);
+    vrai("…et « OK » sur le clavier des grammes aussi", D2.activeElement !== g);
+    F.hideSheet();
+
+    /* 6. les boutons gris : blancs, un liseré fin */
+    const b = D2.createElement("button"); b.className = "btn"; D2.getElementById("app").appendChild(b);
+    const cs = F.getComputedStyle(b);
+    vrai("Un bouton ordinaire est blanc (ou la surface en sombre)", cs.backgroundColor === F.getComputedStyle(D2.body).getPropertyValue("--surface").trim() || cs.backgroundColor === "rgb(255, 255, 255)" || cs.backgroundColor === "rgb(31, 31, 34)", cs.backgroundColor);
+    vrai("…cerné d'un liseré très fin", /inset/.test(cs.boxShadow) && /1px/.test(cs.boxShadow), cs.boxShadow);
+    b.remove();
+
+    /* 7. le voile d'Analyse couvre tout l'ecran, sans bloquer les barres */
+    F.openAbonnement();
+    const f = D2.getElementById("abo-fenetre"), rf = f.getBoundingClientRect();
+    vrai("Le voile d'Analyse couvre tout l'écran", F.innerHeight > 0 && rf.top <= 0 && Math.round(rf.bottom) >= F.innerHeight - 1, rf.top + " / " + rf.bottom);
+    vrai("…et laisse passer le doigt hors de la carte", F.getComputedStyle(f).pointerEvents === "none"
+      && F.getComputedStyle(f.querySelector(".abo-carte-f")).pointerEvents === "auto");
+    F.fermerAbonnement();
+    mesurable(false);
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : la course par etapes */
+  grp("La séance de course par étapes");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const pause = ms => new Promise(r=>setTimeout(r, ms));
+    DB.parcours = []; DB.courseEnCours = null; DB.cardio = [];
+    /* le calcul : distance estimee = vitesse × duree */
+    const et = [{type:"course", min:15, v:10}, {type:"marche", min:5, v:6}, {type:"course", min:10, v:10}, {type:"marche", min:5, v:6}];
+    const tot = F.parcoursTotaux(et);
+    vrai("Durée totale : 35 min", tot.min === 35, tot.min);
+    pres("Distance estimée : 15 min à 10 km/h + 5 à 6 + 10 à 10 + 5 à 6", tot.km, 2.5 + 0.5 + 10/6 + 0.5, 0.001);
+    vrai("Les calories viennent de l'équation des sorties", tot.kcal > 0);
+    /* ou en est-on, a partir de l'heure de depart seulement */
+    const c = {etapes:et, debut:Date.now() - 16 * 60e3, pauseCumul:0, pauseA:null};
+    const st = F.courseEtat(c);
+    vrai("16 min après le départ : 2e étape", st.i === 1, st.i);
+    pres("…commencée depuis 1 min", st.dans, 60, 1.5);
+    c.pauseCumul = 2 * 60e3;
+    vrai("Les pauses ne comptent pas (14 min courues : 1re étape)", F.courseEtat(c).i === 0);
+    c.debut = Date.now() - 40 * 60e3; c.pauseCumul = 0;
+    vrai("Au-delà de la durée totale, la séance est finie", F.courseEtat(c).fini === true);
+    /* arretee en cours de route : on garde ce qui a ete fait */
+    c.debut = Date.now() - 17 * 60e3;
+    const faites = F.etapesFaites(c, false);
+    vrai("Arrêtée à 17 min : 15 min de course puis 2 de marche", faites.length === 2 && faites[1].min === 2, JSON.stringify(faites));
+    /* l'editeur : l'exemple de Nico, puis enregistrer */
+    /* la page Course (objectif, puis mes seances) ; « Nouvelle seance » ouvre l'editeur */
+    F.openParcoursListe();
+    await attendre(()=>!!D2.getElementById("pc-nouv"), 1500);
+    D2.getElementById("pc-nouv").click();
+    await attendre(()=>D2.querySelectorAll(".pc-et").length === 2, 1500);
+    vrai("Une nouvelle séance part d'une course et d'une marche", D2.querySelectorAll(".pc-et").length === 2
+      && D2.querySelectorAll(".pc-et")[0].querySelector("[data-t='course']").classList.contains("on")
+      && D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='marche']").classList.contains("on"));
+    vrai("Au repos, un réglage ne montre que sa valeur", D2.querySelector(".pc-et .pc-pas").classList.contains("ferme"));
+    D2.querySelector(".pc-et .pc-pas").click();
+    vrai("Un appui fait apparaître − et +", !D2.querySelector(".pc-et .pc-pas").classList.contains("ferme")
+      && !D2.querySelector(".pc-et [data-f='min']").readOnly);
+    D2.querySelector(".pc-et [data-pas='min|1']").click();
+    vrai("Le cran ajoute une minute à l'étape", D2.querySelector(".pc-et [data-f='min']").value === "16");
+    D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").click();
+    vrai("On change le type d'une étape", D2.querySelectorAll(".pc-et")[1].querySelector("[data-t='course']").classList.contains("on"));
+    D2.getElementById("pc-add-course").click();
+    const ets = D2.querySelectorAll(".pc-et");
+    vrai("Ajouter une course copie la dernière course", ets.length === 3 && ets[2].querySelector("[data-t='course']").classList.contains("on")
+      && ets[2].querySelector("[data-f='min']").value === ets[1].querySelector("[data-f='min']").value);
+    D2.getElementById("pc-add-marche").click();
+    vrai("Ajouter une marche (aucune marche : les réglages par défaut)", D2.querySelectorAll(".pc-et").length === 4);
+    D2.getElementById("pc-save").click();
+    vrai("La séance est enregistrée", DB.parcours.length === 1 && DB.parcours[0].etapes.length === 4 && DB.parcours[0].etapes[0].min === 16);
+    vrai("…et la copie est indépendante", DB.parcours[0].etapes[2] !== DB.parcours[0].etapes[1]);
+    F.hideSheet();
+    /* la lancer, puis la finir : elle devient une sortie */
+    F.demarrerCourse(DB.parcours[0].id);
+    await attendre(()=>!!D2.querySelector(".cr-c.encours"), 1500);
+    vrai("Lancée, l'étape en cours est en tête", !!D2.querySelector(".cr-c.encours") && D2.querySelectorAll(".cr-c.avenir").length === 3);
+    vrai("…et la page ne descend pas au départ : le haut reste en place", F.scrollY === 0);
+    vrai("La barre d'onglets s'efface", D2.body.classList.contains("en-course"));
+    vrai("Les commandes sont hors de la page animée", !!D2.querySelector("body > #cr-hors .cr-pause"));
+    /* le haut aussi, fixe en haut de l'ecran : dans la page il descendait sous sa marge
+       (encoche comptee deux fois sur iPhone — capture de Nico) */
+    vrai("Le haut (retour, titre, temps / distance / calories) est fixe, hors de la page",
+      !!D2.querySelector("body > #cr-hors .cr-haut") && !D2.querySelector("#app .cr-haut")
+      && F.getComputedStyle(D2.querySelector(".cr-haut")).position === "fixed");
+    vrai("…et la page perd sa marge haute pendant la course", F.getComputedStyle(D2.getElementById("app")).paddingTop === "0px");
+    DB.courseEnCours.debut = Date.now() - (16 * 60 - 2) * 1000;
+    /* la preparation de 5 s occupe d'abord la carte : on attend l'annonce qui suit */
+    await attendre(()=>!!D2.querySelector(".cr-c.encours.annonce:not(.prepa)"), 1500);
+    /* l'annonce s'affiche DANS la carte en cours, a la place de son texte (Nico) */
+    vrai("Juste avant la fin d'une étape : « Prochaine étape » et le décompte, dans la carte en cours",
+      !!D2.querySelector(".cr-c.encours.annonce") && /Prochaine/.test(D2.querySelector(".cr-c.encours .cr-annonce").textContent)
+      && /[123]/.test(D2.querySelector(".cr-annonce .n").textContent));
+    vrai("…et plus de bandeau séparé", !D2.getElementById("cr-dec"));
+    await attendre(()=>!!D2.querySelector(".cr-c.fait"), 4000);
+    vrai("L'étape finie remonte, grisée", !!D2.querySelector(".cr-c.fait") && D2.querySelector(".cr-c.encours").dataset.i === "1");
+    D2.getElementById("cr-pause").click();
+    vrai("Pause", !!DB.courseEnCours.pauseA);
+    D2.getElementById("cr-pause").click();
+    vrai("…et reprise", !DB.courseEnCours.pauseA);
+    DB.courseEnCours.debut = Date.now() - 20 * 60e3; DB.courseEnCours.pauseCumul = 0;
+    F.finirCourse(false);
+    const s2 = DB.cardio[DB.cardio.length - 1];
+    /* l'etape 2 est passee en course plus haut : 20 min, toutes courues */
+    vrai("Arrêtée, elle devient une sortie (20 min de course)", s2 && Math.round(s2.min) === 20 && s2.type === "course" && s2.runMin === 20 && s2.estime === true, JSON.stringify(s2));
+    vrai("…et plus rien n'est en cours", DB.courseEnCours === null && !D2.getElementById("cr-hors") && !D2.body.classList.contains("en-course"));
+    await attendre(()=>!!D2.getElementById("fc-ok"), 1500);
+    D2.getElementById("fc-km").value = "3.1"; D2.getElementById("fc-ok").click();
+    vrai("La vraie distance remplace l'estimation", Math.abs(s2.km - (F.estImperial() ? 3.1 / 0.621371 : 3.1)) < 0.02 && s2.estime === false, s2.km);
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.parcours = []; DB.cardio = []; DB.courseEnCours = null;
+    F.eval("render()");
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : objectifs de course et seances proposees */
+  grp("Les objectifs de course");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.objCourse = null; DB.cardio = []; DB.parcours = [];
+    /* 30 min sans s'arreter : on n'avance que si c'etait tenu et facile ou correct */
+    DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
+    let s = F.seanceProposee();
+    vrai("Niveau 1 : 6 × (1 min de course, 2 de marche), entre deux marches de 5 min",
+      s.etapes.length === 13 && s.etapes[0].type === "marche" && s.etapes[1].type === "course" && s.etapes[1].min === 1 && s.etapes[12].min === 5);
+    F.appliquerRessenti("niveau", "facile", true);
+    vrai("Facile : niveau suivant", DB.objCourse.niveau === 1);
+    /* la jauge : une seance dure n'est pas un echec, elle remplit un quart */
+    F.appliquerRessenti("niveau", "dur", true);
+    vrai("Dur : même niveau, mais la jauge avance d'un quart", DB.objCourse.niveau === 1 && DB.objCourse.jauges.niveau === 0.25);
+    F.appliquerRessenti("niveau", "correct", true);
+    vrai("Correct : la jauge avance de moitié (75 %)", DB.objCourse.niveau === 1 && DB.objCourse.jauges.niveau === 0.75);
+    vrai("…et la carte le montre : « Vers le niveau 3 »", /niveau 3/i.test(F.jaugeObjectif(DB.objCourse).txt) && F.jaugeObjectif(DB.objCourse).pct === 0.75);
+    F.appliquerRessenti("niveau", "correct", true);
+    vrai("Jauge pleine : niveau suivant, jauge remise à zéro", DB.objCourse.niveau === 2 && DB.objCourse.jauges.niveau === 0);
+    F.appliquerRessenti("niveau", "facile", false);
+    vrai("Une séance arrêtée avant la fin : même niveau, jauge conservée", DB.objCourse.niveau === 2);
+    F.appliquerRessenti("niveau", "facile", false);
+    vrai("Deux de suite : on allège d'un cran", DB.objCourse.niveau === 1);
+    DB.objCourse.niveau = 0;
+    F.appliquerRessenti("niveau", "dur", false); F.appliquerRessenti("niveau", "dur", false);
+    s = F.seanceProposee();
+    vrai("Sous le niveau 1 : le niveau allégé, 30 s de course", DB.objCourse.niveau === -1 && s.etapes[1].min === 0.5 && /allégé|eased/.test(s.nom));
+    DB.objCourse.niveau = 9; DB.objCourse.jauges = {};
+    s = F.seanceProposee();
+    vrai("Dernier niveau : 30 min d'affilée", s.etapes.filter(e=>e.type === "course").length === 1 && s.etapes[1].min === 30);
+    F.appliquerRessenti("niveau", "facile", true);
+    vrai("…tenu et facile : objectif atteint", !!DB.objCourse.atteint);
+    /* distance : sortie longue puis footing ; la longue grandit de 10 % au plus */
+    DB.objCourse = F.nouvelObjectif("distance", {cible:10, vCourse:10, vMarche:6});
+    vrai("Sans sortie récente, la sortie longue part de 3 km", DB.objCourse.longue === 3);
+    s = F.seanceProposee();
+    vrai("D'abord la sortie longue", s.propose === "longue");
+    F.appliquerRessenti("longue", "facile", true);
+    vrai("Tenue et facile : elle s'allonge d'environ 10 %", DB.objCourse.longue > 3 && DB.objCourse.longue <= 3.5, DB.objCourse.longue);
+    vrai("…et la suivante est un footing", F.seanceProposee().propose === "footing");
+    /* allure : fractionne puis bloc soutenu, les repetitions montent */
+    DB.objCourse = F.nouvelObjectif("allure", {vCourse:10, vMarche:6});
+    s = F.seanceProposee();
+    vrai("Allure : d'abord le fractionné, plus rapide que la course facile", s.propose === "fractionne" && s.etapes.some(e=>e.rythme === "rapide" && e.v > 10));
+    F.appliquerRessenti("fractionne", "facile", true);
+    vrai("…une répétition de plus", DB.objCourse.reps === 5);
+    vrai("…puis le bloc soutenu", F.seanceProposee().propose === "soutenu");
+    /* regularite : on compte les sorties de la semaine */
+    DB.objCourse = F.nouvelObjectif("frequence", {parSemaine:3});
+    DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:20, machine:"course"}];
+    vrai("Régularité : les sorties de la semaine sont comptées", F.sortiesSemaine() === 1 && /1 \/ 3/.test(F.avancementObjectif(DB.objCourse).txt));
+    /* le nombre de seances par semaine n'est demande que pour l'objectif de regularite */
+    DB.objCourse = null;
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-ok"), 1500);
+    vrai("Objectif 30 min : on ne demande pas le nombre de séances par semaine", !D2.querySelector("[data-ps]"));
+    D2.querySelector('[data-oc="frequence"]').click();
+    vrai("Objectif de régularité : on le demande, c'est l'objectif lui-même", D2.querySelectorAll("[data-ps]").length === 4);
+    F.hideSheet();
+    DB.objCourse = F.nouvelObjectif("frequence", {parSemaine:3});
+    /* la page Course : la carte de l'objectif et la seance du jour */
+    F.openParcoursListe();
+    await attendre(()=>!!D2.getElementById("oc-go"), 1500);
+    vrai("La page Course montre l'objectif et la séance du jour", !!D2.querySelector(".oc-carte") && !!D2.getElementById("oc-go"));
+    D2.getElementById("oc-pq").click();
+    await attendre(()=>!!D2.getElementById("pq-ok"), 1500);
+    vrai("« Pourquoi cette séance ? » explique et détaille les étapes", D2.querySelectorAll(".oc-etapes div").length > 0);
+    F.hideSheet();
+    /* au bout d'une seance proposee : la question du ressenti */
+    DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
+    F.demarrerCourse(F.seanceProposee());
+    await attendre(()=>!!D2.querySelector(".cr-c.encours.prepa"), 1500);
+    /* « prepare-toi » : 5 s avant le vrai depart, dans la carte de la premiere etape */
+    vrai("Au lancement : « Prépare-toi à marcher 5 min à … » et un décompte, dans la première carte",
+      /Prépare-toi à marcher 5 min/.test(D2.querySelector(".cr-c.encours .cr-annonce").textContent)
+      && /[1-5]/.test(D2.querySelector(".cr-annonce .n").textContent));
+    vrai("…le chrono de l'étape ne part qu'après", DB.courseEnCours.debut > Date.now());
+    DB.courseEnCours.debut = Date.now() - 27 * 60e3;
+    await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
+    vrai("À la fin d'une séance proposée : « Comment c'était ? »", D2.querySelectorAll("#sheet [data-rs]").length === 3);
+    D2.querySelector('#sheet [data-rs="facile"]').click();
+    D2.getElementById("fc-ok").click();
+    /* la sortie est datee de son depart : on la retrouve par son genre, pas par sa place */
+    const faite = DB.cardio.find(c=>c.propose === "niveau");
+    vrai("…la réponse fait avancer l'objectif", DB.objCourse.niveau === 1 && faite && faite.ressenti === "facile", DB.objCourse.niveau + " / " + (faite && faite.ressenti));
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.objCourse = null; DB.cardio = []; DB.parcours = []; DB.courseEnCours = null;
+    F.eval("render()");
+  })();
+  neuf();
+
+  /* Nico, 26 septembre (soir) : retouches de la course, carrousel, suivi */
+  grp("La course : pente, carrousel et suivi");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.parcours = []; DB.cardio = []; DB.objCourse = null; DB.courseEnCours = null;
+    /* la pente compte dans les calories */
+    const plat = F.parcoursTotaux([{type:"course", min:20, v:10}]).kcal;
+    const cote = F.parcoursTotaux([{type:"course", min:20, v:10, p:3}]).kcal;
+    vrai("Une pente de 3 % coûte plus de calories qu'à plat", cote > plat, plat + " / " + cote);
+    vrai("Durée d'étape : 30 s s'affiche « 0:30 », 1 min 30 « 1:30 », 15 min « 15 »",
+      F.dureeAff(0.5) === "0:30" && F.dureeAff(1.5) === "1:30" && F.dureeAff(15) === "15");
+    vrai("…et se lit « 1:30 » comme « 1,5 »", Math.abs(F.dureeLue("1:30") - 1.5) < 1e-9 && Math.abs(F.dureeLue("1,5") - 1.5) < 1e-9);
+    vrai("Les crans : 15 s sous 2 min, 30 s jusqu'à 5 min, puis la minute",
+      F.dureeAff(F.dureePas(1, 1)) === "1:15" && F.dureeAff(F.dureePas(2, 1)) === "2:30"
+      && F.dureeAff(F.dureePas(2, -1)) === "1:45" && F.dureeAff(F.dureePas(5, 1)) === "6" && F.dureeAff(F.dureePas(5, -1)) === "4:30");
+    vrai("…sans descendre sous 15 s", F.dureePas(0.25, -1) === 0.25);
+    vrai("Une étape de 30 s dure 30 s dans le minuteur", F.minTxt(0.5) === "30 s");
+    vrai("La pente s'affiche à côté de la vitesse", /3/.test(F.vitPente({v:10, p:3})) && !/%/.test(F.vitPente({v:10, p:0})));
+    /* l'editeur : la fleche de retour, des boutons − / + hors du champ */
+    F.openParcoursEditeur(null);
+    await attendre(()=>!!D2.getElementById("pc-retour"), 1500);
+    vrai("L'éditeur a sa flèche de retour", !!D2.getElementById("pc-retour"));
+    const et = D2.querySelector(".pc-et");
+    vrai("Trois réglages par étape : durée, vitesse, pente", et.querySelectorAll(".pc-reg").length === 3);
+    et.querySelector('[data-pas="p|1"]').click(); et.querySelector('[data-pas="p|1"]').click();
+    vrai("Le + de la pente ajoute 0,5 %", et.querySelector('[data-f="p"]').value === "1");
+    vrai("…sans ouvrir le clavier", D2.activeElement === D2.body || D2.activeElement.tagName !== "INPUT");
+    D2.getElementById("pc-retour").click();
+    await attendre(()=>!!D2.getElementById("pc-nouv"), 1500);
+    vrai("La flèche ramène à la page Course", !!D2.getElementById("pc-nouv"));
+    F.hideSheet();
+    /* hors de l'ecran : ce que la page confie au service natif (faux service ici) */
+    const vraiPlugin = F.pluginRepos;
+    const recu = {};
+    F.pluginRepos = ()=>({sequence: async o=>{ recu.seq = o; return {actif:true}; }, arreter: async ()=>({}), ecran: async o=>{ recu.ecran = o.allume; return o; }});
+    DB.courseEnCours = {pid:"x", nom:"T", etapes:[{type:"course", min:10, v:10, p:1}, {type:"marche", min:5, v:6}], debut:Date.now(), pauseA:null, pauseCumul:0};
+    await F.poserSequenceCourse();
+    vrai("Le service reçoit le décompte 3-2-1 à faire sonner écran éteint", recu.seq && recu.seq.decompte === true);
+    vrai("…et, pour chaque étape, ce qu'affiche le bandeau (étape, cadence, pente)", recu.seq && /1 \/ 2/.test(recu.seq.etapes[0].encours) && /pente/.test(recu.seq.etapes[0].details));
+    F.eval("ecranNatif = null");
+    await F.syncWakeLock();
+    vrai("Pendant la séance, la fenêtre de l'app reste allumée", recu.ecran === true);
+    DB.courseEnCours = null;
+    await F.syncWakeLock();
+    vrai("…et plus après", recu.ecran === false);
+    F.pluginRepos = vraiPlugin;
+    F.eval("ecranNatif = null");
+    /* le carrousel montre les seances de course */
+    DB.parcours = [{id:"pc1", nom:"Tapis", etapes:[{type:"course", min:10, v:10, p:1}, {type:"marche", min:5, v:6}]}];
+    F.eval("curTab = 'seance'; render()");
+    await attendre(()=>!!D2.querySelector('.prog-card.course'), 1500);
+    vrai("Une séance de course apparaît dans le carrousel", !!D2.querySelector('.prog-card[data-course="pc1"]'));
+    D2.querySelector('.prog-card[data-course="pc1"]').click();
+    await attendre(()=>!!D2.getElementById("ca-go"), 1500);
+    vrai("La toucher ouvre son aperçu, avec Commencer", !!D2.getElementById("ca-go") && D2.querySelectorAll("#sheet .oc-etapes div").length === 2);
+    F.hideSheet();
+    /* une seance composee tenue jusqu'au bout : a sa prochaine ouverture, un defi */
+    DB.parcours = [{id:"pd", nom:"Défi", etapes:[{type:"marche", min:5, v:6}, {type:"course", min:15, v:10}, {type:"marche", min:5, v:6}]}];
+    F.demarrerCourse("pd");
+    await attendre(()=>!!DB.courseEnCours, 1500);
+    DB.courseEnCours.debut = Date.now() - 26 * 60e3;
+    await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
+    D2.getElementById("fc-ok").click();
+    vrai("Une séance composée tenue jusqu'au bout garde un défi à proposer", DB.parcours[0].aProposer === true);
+    F.openCourseApercu("pd");
+    await attendre(()=>!!D2.querySelector(".ca-defi"), 1500);
+    vrai("À la prochaine ouverture : « Objectif », en vert, avec oui / non", !!D2.getElementById("ca-oui") && !!D2.getElementById("ca-non") && /\+/.test(D2.querySelector(".ca-defi b").textContent));
+    D2.getElementById("ca-non").click();
+    vrai("Non : la séance reste telle quelle, et on ne redemande pas", DB.parcours[0].etapes[1].min === 15 && !DB.parcours[0].aProposer && !D2.querySelector(".ca-defi"));
+    DB.parcours[0].aProposer = true;
+    F.openCourseApercu("pd");
+    await attendre(()=>!!D2.getElementById("ca-oui"), 1500);
+    D2.getElementById("ca-oui").click();
+    /* 3,5 km : +200 m, a 10 km/h → 1 min 12 s de plus (15 → 16 min 12 s) */
+    vrai("Oui : +200 m pile, en allongeant la plus longue étape de course à la même vitesse",
+      Math.abs(DB.parcours[0].etapes[1].min - 16.2) < 0.01 && DB.parcours[0].etapes[1].v === 10 && !DB.parcours[0].aProposer, DB.parcours[0].etapes[1].min);
+    vrai("…et la durée s'écrit à la seconde : « 16 min 12 s »", F.minTxt(DB.parcours[0].etapes[1].min) === "16 min 12 s" || /16 min 12 s/.test(F.minTxt(16.2)));
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.cardio = [];
+    /* l'objectif en cours a sa carte dans le carrousel : sa seance du jour */
+    DB.objCourse = F.nouvelObjectif("30min", {vCourse:10, vMarche:6});
+    F.eval("render()");
+    await attendre(()=>!!D2.querySelector("[data-cobj]"), 1500);
+    vrai("L'objectif commencé a sa carte dans le carrousel", !!D2.querySelector("[data-cobj]") && /Niveau 1/.test(D2.querySelector("[data-cobj]").textContent));
+    D2.querySelector("[data-cobj]").click();
+    await attendre(()=>!!D2.getElementById("ca-go"), 1500);
+    vrai("…la toucher ouvre la séance du jour, prête à lancer", !!D2.getElementById("ca-go") && D2.querySelectorAll("#sheet .oc-etapes div").length === 13);
+    F.hideSheet();
+    DB.objCourse = null;
+    /* le suivi dans Progression */
+    const j = d => new Date(Date.now() - d * 864e5).toISOString();
+    DB.cardio = [
+      {id:"a", date:j(9), km:3, min:30, machine:"course", parcours:"Tapis", type:"course"},
+      {id:"b", date:j(2), km:3.5, min:30, machine:"course", parcours:"Tapis", type:"course", estime:true}];
+    const sec = D2.createElement("div"); D2.body.appendChild(sec);
+    /* repliee par defaut : seuls les chiffres du mois se voient */
+    vrai("Avec des sorties, la section Course s'affiche", F.renderCourseSection(sec) === true);
+    vrai("…repliée : les chiffres du mois, et une languette pour le reste", !!sec.querySelector(".co-tuiles") && !sec.querySelector(".co-rec") && !!sec.querySelector("#co-pli"));
+    sec.innerHTML = "";
+    F.eval("prgPlis.course = true");
+    F.renderCourseSection(sec);
+    vrai("…plus longue sortie : 3,5 km, marquée « est. »", /Plus longue sortie/.test(sec.textContent) && !!sec.querySelector(".co-rec .co-est"));
+    vrai("…la meilleure vitesse ne retient que les distances réelles (6 km/h)", /6,0 km\/h|3,7 mph/.test(sec.querySelector(".co-rec").textContent));
+    vrai("…chaque sortie comparée à la précédente de la même séance (+0,5)", /\+0,5|\+0,3/.test(sec.querySelector(".co-der").textContent));
+    sec.remove();
+    F.eval("prgPlis.course = false");
+    DB.cardio = [];
+    vrai("Sans sortie de course, pas de section", F.renderCourseSection(D2.createElement("div")) === false);
+    /* la bulle d'une courbe de distance ne passe plus par le formateur des poids */
+    const w = D2.createElement("div"); D2.body.appendChild(w);
+    F.drawChart(w, [{date:j(7), v:10}, {date:j(0), v:12}], "km", null, v=>String(v));
+    vrai("La bulle d'une courbe de distance garde sa valeur (12 km, pas 26)", [...w.querySelectorAll("text")].some(t=>t.textContent === "12 km"));
+    w.remove();
+    DB.parcours = []; F.eval("render()");
+  })();
+  neuf();
+
+  /* Nico, 26 septembre (soir) : le menu +, le carrousel, les appuis fantomes */
+  grp("Le menu +, le carrousel et les onglets");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const gardeT = DB.templates;
+    F.openAjout();
+    await attendre(()=>!!D2.getElementById("aj-seance"), 1500);
+    const ordre = [...D2.querySelectorAll("#sheet .aj-l, #sheet .aj-sep")].map(e=>e.id || "—");
+    vrai("Le menu + : proposer, nouvelle séance, course, puis sous le trait la sortie passée et la bibliothèque",
+      ordre.join(",") === "aj-propose,aj-seance,aj-course,—,aj-cardio,aj-lib", ordre.join(","));
+    vrai("…et plus de « séance libre »", !D2.getElementById("aj-libre"));
+    D2.getElementById("aj-seance").click();
+    vrai("« Nouvelle séance » ouvre l'éditeur sur place, sans refermer la fiche", !!D2.getElementById("tp-save") && F.eval("sheetOpen") === true);
+    D2.getElementById("tp-name").value = "Créée";
+    D2.getElementById("tp-save").click();
+    const creee = DB.templates[DB.templates.length - 1];
+    vrai("Enregistrée, le carrousel sait qu'il doit aller la montrer", creee.name === "Créée");
+    F.hideSheet();
+    /* un clic qui arrive sur un onglet alors que l'appui avait commence ailleurs */
+    F.eval("curTab = 'seance'; render()");
+    F.eval("dernierAppui = {el: document.getElementById('app'), t: Date.now()}");
+    D2.querySelector('[data-tab="prg"]').click();
+    vrai("Un clic sur un onglet venu d'un appui commencé ailleurs est ignoré", F.eval("curTab") === "seance");
+    F.eval("dernierAppui = null");
+    D2.querySelector('[data-tab="prg"]').click();
+    vrai("…un vrai appui sur l'onglet, lui, change d'onglet", F.eval("curTab") === "prg");
+    F.eval("curTab = 'seance'; render()");
+    DB.templates = gardeT;
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : vitesses de depart, et changer d'objectif sans perdre sa progression */
+  grp("Changer d'objectif de course sans perdre sa progression");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    DB.parcours = []; DB.objPauses = {}; DB.cardio = [];
+    const o = F.nouvelObjectif("30min");
+    vrai("Sans séance enregistrée : course facile 8 km/h, marche 4 km/h", o.vCourse === 8 && o.vMarche === 4, o.vCourse + " / " + o.vMarche);
+    DB.objCourse = o; DB.objCourse.niveau = 1; DB.objCourse.jauges = {niveau:0.5};
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-ok"), 1500);
+    D2.querySelector('[data-oc="distance"]').click();
+    D2.getElementById("oc-ok").click();
+    vrai("Passer à un autre objectif met le précédent en pause", DB.objCourse.type === "distance" && DB.objPauses["30min"] && DB.objPauses["30min"].niveau === 1);
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-ok"), 1500);
+    vrai("Le choix des objectifs montre « En pause · Niveau 2 / 10 »", /En pause · Niveau 2 \/ 10/.test(D2.querySelector('[data-oc="30min"]').textContent));
+    D2.querySelector('[data-oc="30min"]').click();
+    vrai("…et propose de le reprendre", /Reprendre/.test(D2.getElementById("oc-ok").textContent));
+    D2.getElementById("oc-ok").click();
+    vrai("Repris : même niveau, même jauge", DB.objCourse.type === "30min" && DB.objCourse.niveau === 1 && DB.objCourse.jauges.niveau === 0.5);
+    vrai("…et l'objectif distance attend à son tour", !!DB.objPauses.distance && !DB.objPauses["30min"]);
+    /* arreter ne fait plus rien oublier */
+    F.openObjectifCourse();
+    await attendre(()=>!!D2.getElementById("oc-stop"), 1500);
+    D2.getElementById("oc-stop").click();
+    await attendre(()=>!!D2.querySelector(".pp-modal #cf-yes"), 1500);
+    D2.querySelector(".pp-modal #cf-yes").click();
+    vrai("Arrêter un objectif le met en pause, sans rien perdre", DB.objCourse === null && DB.objPauses["30min"] && DB.objPauses["30min"].niveau === 1);
+    F.hideSheet();
+    DB.objCourse = null; DB.objPauses = {};
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : une seance de course dans une seance de musculation */
+  grp("Une séance de course dans une séance de musculation");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const gardeT = DB.templates;
+    DB.parcours = [{id:"pm", nom:"Tapis court", etapes:[{type:"marche", min:2, v:4}, {type:"course", min:10, v:8}]},
+                   {id:"pl", nom:"Longue", etapes:[{type:"course", min:30, v:9}]}];
+    DB.templates = [{id:"tm", name:"Push + course", items:[{exId:id("Développé couché"), sets:2, reps:"8-12", rest:90}]}];
+    F.openTplEditor("tm");
+    await attendre(()=>!!D2.getElementById("tp-course-add"), 1500);
+    D2.getElementById("tp-course-add").click();
+    await attendre(()=>!!D2.getElementById("ch-creer"), 1500);
+    vrai("Ajouter une course : tes séances, et « Créer une nouvelle séance »", D2.querySelectorAll("[data-ch]").length === 2 && !!D2.getElementById("ch-creer"));
+    D2.getElementById("ch-creer").click();
+    await attendre(()=>!!D2.getElementById("pc-add-course"), 1500);
+    vrai("…qui ouvre l'éditeur de course, avec « Créer et ajouter »", !D2.getElementById("pc-go") && !!D2.getElementById("pc-save"));
+    D2.getElementById("pc-nom").value = "Neuve";
+    D2.getElementById("pc-save").click();
+    await attendre(()=>!!D2.querySelector('[data-co="ref"]'), 1500);
+    const neuve = DB.parcours.find(q=>q.nom === "Neuve");
+    vrai("Créée, enregistrée, et ajoutée à la séance", !!neuve && D2.querySelector('[data-co="ref"]').value === neuve.id);
+    vrai("L'éditeur propose d'ajouter une séance de course, placée à la fin par défaut",
+      !!D2.querySelector('[data-co="ref"]') && D2.querySelector("[data-co-place].on").dataset.coPlace === "fin");
+    const sel = D2.querySelector('[data-co="ref"]'); sel.value = "pl"; sel.dispatchEvent(new F.Event("change"));
+    D2.querySelector('[data-co-place="debut"]').click();
+    vrai("Une course longue placée au début est signalée (effet d'interférence), sans être interdite", !!D2.querySelector(".co-avis"));
+    D2.querySelector('[data-co="ref"]').value = "pm"; D2.querySelector('[data-co="ref"]').dispatchEvent(new F.Event("change"));
+    vrai("…une course courte et facile au début ne l'est pas", !D2.querySelector(".co-avis"));
+    D2.querySelector('[data-co-place="fin"]').click();
+    D2.getElementById("tp-save").click();
+    vrai("La séance garde sa course", DB.templates[0].course && DB.templates[0].course.ref === "pm" && DB.templates[0].course.place === "fin");
+    F.hideSheet();
+    F.startWorkout("tm");
+    await attendre(()=>!!D2.querySelector(".co-muscu"), 1500);
+    vrai("Pendant la séance : une carte « Lancer la course », après les exercices",
+      !!D2.querySelector(".co-muscu [data-lancer-course]") && D2.getElementById("ex-list").lastElementChild.classList.contains("co-muscu"));
+    DB.active.entries[0].sets.forEach(st=>{ st.done = true; st.w = 60; st.r = 10; });
+    D2.querySelector("[data-lancer-course]").click();
+    await attendre(()=>!!D2.querySelector(".cr"), 1500);
+    vrai("Lancer ouvre l'écran de course, la séance de musculation reste ouverte", !!D2.querySelector(".cr") && !!DB.active && DB.courseEnCours.muscu === true);
+    DB.courseEnCours.debut = Date.now() - 13 * 60e3;
+    await attendre(()=>!!D2.getElementById("fc-ok"), 3000);
+    vrai("À la fin : « Retour à la séance »", /Retour à la séance/.test(D2.getElementById("fc-ok").textContent));
+    D2.getElementById("fc-ok").click();
+    await attendre(()=>!!D2.getElementById("finish-w"), 1500);
+    vrai("…on revient dans la séance, la course cochée", !!D2.getElementById("finish-w") && DB.active.course.fait === true && /✓/.test(D2.querySelector(".co-muscu").textContent));
+    const kc = F.liftKcal(DB.active) + DB.active.course.kcal;
+    D2.getElementById("finish-w").click();
+    await attendre(()=>!!D2.getElementById("cf-yes"), 1500);
+    vrai("Terminer : les calories comptent la musculation et la course", new RegExp("≈ " + kc + " kcal").test(D2.querySelector(".tf-tuiles").textContent));
+    D2.getElementById("cf-yes").click();
+    await attendre(()=>!DB.active, 1500);
+    const h = DB.history[DB.history.length - 1];
+    const so = DB.cardio.find(x=>x.id === (h.course || {}).sortieId);
+    vrai("La séance enregistrée garde sa course, et la sortie compte une seule fois", !!h.course && !!so && so.seanceId === h.id && DB.cardio.length === 1);
+    await attendre(()=>!!D2.getElementById("fin-ok"), 1500);
+    F.hideSheet();
+    F.eval("flammeRetenue = false; finOuverte = false");
+    DB.templates = gardeT; DB.parcours = []; DB.cardio = [];
+  })();
+  neuf();
+
+  /* Nico, 26 septembre : annuler un aliment retire par megarde ; titre et icones de la course */
+  grp("L'astuce après un scan");
+  neuf();
+  {
+    const garde = DB.profile;
+    DB.profile = Object.assign({}, garde || {}, {aim:"masse"});
+    vrai("Prise de muscle, repas pauvre en protéines : compléter avec une source de protéines",
+      /source de protéines/.test(F.astuceScan({kcal:400, prot:5, gluc:60})));
+    vrai("Riche en protéines : un mot d'encouragement", /Belle dose de protéines/.test(F.astuceScan({kcal:450, prot:40, gluc:30})));
+    vrai("Petite portion en prise de muscle : de quoi compléter", /Petite portion/.test(F.astuceScan({kcal:120, prot:3, gluc:10})));
+    DB.profile.aim = "seche";
+    vrai("Perte de poids, pauvre en protéines : légumes et protéines pour rassasier", /légumes et une source de protéines/.test(F.astuceScan({kcal:400, prot:5, gluc:60})));
+    vrai("Perte de poids, repas copieux : les légumes pour la suite", /Repas copieux/.test(F.astuceScan({kcal:700, prot:20, gluc:40})));
+    vrai("Jamais de « bon » ni de « mauvais » aliment", !/mauvais|bon aliment|interdit/i.test(F.astuceScan({kcal:900, prot:2, gluc:120})));
+    DB.profile = garde;
+  }
+  neuf();
+
+  grp("Annuler un aliment retiré, et les icônes de la course");
+  neuf();
+  await (async ()=>{
+    const D2 = F.document;
+    const k = F.jourAlim(), meal = "midi";
+    DB.habitSel[k] = {midi:["Œuf (1 œuf) (~6 g prot. · 78 kcal)", "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)"]};
+    F.eval("mealCur = 'midi'; curTab = 'eat'; annulAliment = null; render()");
+    vrai("Sans retrait, pas de bouton « Annuler »", !D2.getElementById("eat-annuler"));
+    F.basculerAliment(meal, DB.habitSel[k].midi[0]);
+    F.eval("render()");
+    vrai("Un aliment retiré : « Annuler » apparaît à côté du +", !!D2.getElementById("eat-annuler") && DB.habitSel[k].midi.length === 1);
+    D2.getElementById("eat-annuler").click();
+    vrai("…et le remet, puis s'efface", DB.habitSel[k].midi.length === 2 && !D2.getElementById("eat-annuler"));
+    F.reglerPortions(meal, "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)", "Riz basmati (150 g cuit) (~4 g prot. · 190 kcal)", -1);
+    F.eval("render()");
+    vrai("Le − sous une portion qui retire l'aliment se rattrape aussi", !!D2.getElementById("eat-annuler"));
+    F.eval("annulAliment = null; curTab = 'seance'; render()");
+    /* la carte Course de Progression : le carre orange et le signe blanc des autres titres */
+    DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:30, machine:"course", type:"course"}];
+    const sec = D2.createElement("div"); D2.body.appendChild(sec);
+    F.renderCourseSection(sec);
+    vrai("La carte Course a le titre des autres cartes (carré orange, coureur blanc)", !!sec.querySelector(".pt-tete .pt-ic.pt-ic-orange .icm-course"));
+    sec.remove(); DB.cardio = [];
+    vrai("Les icônes dessinées par Nico sont posées en masque", /ic-walk-1\.webp/.test(F.icEtape({type:"marche"}, 20)) && /ic-gps-1/.test(F.crResume({min:10, km:1, kcal:50})));
+  })();
+  neuf();
+
+  /* Les tests de course lancent de vraies seances, que l'app enregistre : on n'en laisse
+     aucune « en cours » derriere nous, sinon le prochain passage s'ouvrirait sur l'ecran
+     de course et les tests de l'accueil tomberaient. */
+  DB.courseEnCours = null; DB.objCourse = null; DB.objPauses = {}; DB.parcours = [];
+  try{ F.eval("arreterTicCourse(); retirerCommandesCourse(); save()"); }catch(e){}
+  F.document.body.classList.remove("en-course");
 
   /* ---------------------------------------------------------- bilan */
   const bilan = document.getElementById("bilan");
