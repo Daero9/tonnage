@@ -1924,9 +1924,13 @@
   .rl-fl img{width:100%; height:100%; object-fit:contain; filter:grayscale(1) brightness(.85); opacity:.8;}
   .rl-fl b{position:absolute; left:0; right:0; top:50%; text-align:center; color:#fff; font-size:28px; font-weight:900;
     font-family:"Fredoka Chiffres", -apple-system, sans-serif; paint-order:stroke; -webkit-text-stroke:3px rgba(0,0,0,.35);}
-  .rl-t{font-size:15px; line-height:1.5; color:var(--ink-soft); text-align:center; margin:0 0 16px;}
-  .rl-s{display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; color:var(--ink-mute); text-align:center; margin:10px 0 0;}
-  .rl-s svg{width:14px; height:14px;}
+  .rl-s{font-size:13px; color:var(--ink-mute); text-align:center; margin:10px 0 0;}
+  #rl-go svg{width:16px; height:16px; vertical-align:-2px;}
+  /* la fenetre posee au milieu : sa croix, ses choix empiles */
+  .pp-boite.fen{position:relative; padding-top:22px;}
+  .fen-x{position:absolute; top:10px; right:10px; width:32px; height:32px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink); font-size:14px;}
+  .fen-choix{display:flex; flex-direction:column; gap:8px;}
+  .fen-choix .btn{width:100%; margin:0;}
   /* Le chiffre de la flamme dans une police ronde et pleine (Fredoka, licence OFL) : seuls
      les dix chiffres sont embarques, 1,7 Ko, pas de reseau. */
   @font-face{font-family:"Fredoka Chiffres"; font-weight:700; font-display:block; unicode-range:U+30-39;
@@ -2740,6 +2744,15 @@
   .grab{width:44px; height:5px; border-radius:3px; background:var(--ink-mute); opacity:.55; margin:0 auto 6px;}
   .grab::after{content:""; display:block; height:14px;}   /* zone de préhension plus large au doigt */
   .sheet{touch-action:pan-y;}
+  /* la fenetre du milieu (amis) : une carte au centre, qui defile a l'interieur */
+  .overlay.milieu{align-items:center; padding:16px;}
+  .sheet.milieu{border-radius:24px; max-width:440px; max-height:86dvh; border-top:0; padding:16px 16px 18px;
+    box-shadow:0 22px 60px rgba(0,0,0,.3); background:var(--surface);}
+  .sheet.milieu .grab, .sheet.milieu .sheet-x{display:none;}
+  .overlay.milieu.show > .sheet{animation:fenIn .3s cubic-bezier(.22,1,.36,1) backwards;}
+  .overlay.milieu.part > .sheet{animation:fenOut .2s ease forwards;}
+  @keyframes fenIn{from{opacity:0; transform:scale(.94);}}
+  @keyframes fenOut{to{opacity:0; transform:scale(.96);}}
   /* ---- les pages pleines : le resultat d'un scan, plat ou code-barres ----
      Une page entiere et BLANCHE : la fiche grise qui remontait du bas laissait voir
      l'app derriere, et la moitie de l'ecran servait a rien. */
@@ -4725,9 +4738,26 @@
   .sc-astuce{align-items:center;}
   #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
   /* ---- mes amis ---- */
-  .am-code{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:16px; background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 1px rgba(245,130,32,.2);}
-  .am-code small{display:block; font-size:12px; color:var(--ink-soft);} .am-code b{font-size:22px; font-weight:900; letter-spacing:.06em;}
-  .am-ajout{display:flex; gap:8px; margin:12px 0 16px;}
+  .am-tete{display:flex; align-items:center; gap:10px; margin:4px 0 8px;}
+  .am-tete h2{flex:1; margin:0; font-size:26px; font-weight:900;}
+  .am-plus{width:42px; height:42px; border:0; border-radius:50%; background:rgba(245,130,32,.12); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background .2s, color .2s;}
+  .am-plus svg{width:24px; height:24px;} .am-plus.on{background:var(--accent-grad); color:#fff;}
+  .am-moi{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
+  .am-moi b{color:var(--ink); font-weight:800;} .am-moi .sep{color:var(--ink-mute);}
+  .am-share{width:30px; height:30px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; margin-left:auto;}
+  .am-share svg{width:15px; height:15px;}
+  .am-tiroir{display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s cubic-bezier(.22,1,.36,1);}
+  .am-tiroir.ouvert{grid-template-rows:1fr;} .am-tiroir > .in{overflow:hidden;}
+  .am-res{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
+  .am-sec{font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-mute); margin:6px 0 8px;}
+  #am-dem .am-l{margin-bottom:8px;}
+  .am-d{cursor:default;} .am-d .btn-sm{flex:none;}
+  .am-etat{flex:none; font-size:12.5px; font-weight:700; color:var(--ink-mute);}
+  .am-non{flex:none; width:34px; height:34px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink-soft); font-size:13px;}
+  .am-intro{font-size:14.5px; color:var(--ink-soft); margin:0 0 14px;}
+  .amd-actions{display:flex; justify-content:center; flex-wrap:wrap; gap:4px 18px; margin:18px 0 24px;}
+  .am-ajout{display:flex; gap:8px; margin:8px 0 12px;}
+  .am-ajout .btn-sm svg{width:18px; height:18px;}
   .am-ajout input, .am-in{flex:1; min-width:0; padding:12px 14px; border-radius:14px; border:0; background:var(--surface2); color:var(--ink); font:inherit; font-size:16px;}
   .am-in{background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
   .am-ajout input{text-transform:uppercase; letter-spacing:.05em;}
@@ -4771,6 +4801,8 @@
   .amd-lignes .ic{flex:none; width:20px; display:flex; justify-content:center; color:var(--accent);}
   .amd-lignes .ic svg{width:18px; height:18px; fill:currentColor; stroke:currentColor;} .amd-lignes .ic .icm{background-color:currentColor;}
   .amd-lignes b{font-weight:800; text-align:right; max-width:60%;}
+  .amd-lignes b small{display:block; font-size:12px; font-weight:600; color:var(--ink-mute);}
+  .amd-x{position:absolute; top:14px; right:14px; border:0; z-index:2;}
   .am-vide{padding:18px 8px; text-align:center; font-size:14px; color:var(--ink-soft);}
   .am-pied{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:20px;}
   .am-lien{border:0; background:none; font:inherit; font-size:14px; color:var(--ink-soft); padding:4px;}
@@ -4934,6 +4966,41 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Toi":"You",
+  "Partager mon code":"Share my code",
+  "Ajouter un ami":"Add a friend",
+  "Pseudo ou code ami":"Nickname or friend code",
+  "Mon pseudo et ma visibilité":"My nickname and visibility",
+  "Pas encore d'amis. Touche le bouton en haut pour en ajouter.":"No friends yet. Tap the button at the top to add some.",
+  "Demandes d'ami":"Friend requests",
+  "veut être ton ami":"wants to be your friend",
+  "Accepter":"Accept",
+  "Refuser":"Decline",
+  "Vous êtes amis !":"You're friends!",
+  "Refuser la demande ?":"Decline the request?",
+  "Refuser et bloquer":"Decline and block",
+  "Bloqué.":"Blocked.",
+  "Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}":"Add me on Tonnup! My nickname: {p} · my friend code: {c}",
+  "Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.":"Nobody with this nickname. Check the spelling, or ask for their code.",
+  "Ami":"Friend",
+  "Demande envoyée":"Request sent",
+  "Impossible d'envoyer une demande à cette personne.":"Can't send a request to this person.",
+  "Bloquer":"Block",
+  "Signaler":"Report",
+  "Bloquer {} ?":"Block {}?",
+  "Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter.":"You'll no longer be friends, and this person won't be able to add you.",
+  "Signaler {}":"Report {}",
+  "Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.":"Tell us what's wrong. Nobody else will see this report.",
+  "Pseudo inapproprié":"Inappropriate nickname",
+  "Se fait passer pour quelqu'un":"Pretending to be someone",
+  "Autre chose":"Something else",
+  "Merci, c'est signalé.":"Thanks, it's been reported.",
+  "Ton numéro actuel : #{}. Il change si tu changes de pseudo.":"Your current number: #{}. It changes if you change your nickname.",
+  "Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.":"A number is added to your nickname (e.g. Lea#4821): two people can share the same name.",
+  "Les autres peuvent me trouver par mon pseudo":"Others can find me by my nickname",
+  "Rallumer avec Tonnup Analyse":"Relight with Tonnup Analyze",
+  "Ta flamme protégée":"Your streak, protected",
+  "Rallume-la 2 fois par mois si elle s'éteint.":"Relight it twice a month if it goes out.",
   "Rallumer ma flamme":"Relight my streak",
   "Ta flamme s'est éteinte":"Your streak went out",
   "Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.":"You had {} activities in a row. Relight it to keep your streak: you'll then have 3 days for your next session.",
@@ -8486,6 +8553,41 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Toi":"Tú",
+  "Partager mon code":"Compartir mi código",
+  "Ajouter un ami":"Añadir un amigo",
+  "Pseudo ou code ami":"Apodo o código de amigo",
+  "Mon pseudo et ma visibilité":"Mi apodo y mi visibilidad",
+  "Pas encore d'amis. Touche le bouton en haut pour en ajouter.":"Aún no tienes amigos. Toca el botón de arriba para añadir.",
+  "Demandes d'ami":"Solicitudes de amistad",
+  "veut être ton ami":"quiere ser tu amigo",
+  "Accepter":"Aceptar",
+  "Refuser":"Rechazar",
+  "Vous êtes amis !":"¡Ya sois amigos!",
+  "Refuser la demande ?":"¿Rechazar la solicitud?",
+  "Refuser et bloquer":"Rechazar y bloquear",
+  "Bloqué.":"Bloqueado.",
+  "Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}":"¡Agrégame en Tonnup! Mi apodo: {p} · mi código de amigo: {c}",
+  "Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.":"Nadie con este apodo. Revisa la ortografía o pide su código.",
+  "Ami":"Amigo",
+  "Demande envoyée":"Solicitud enviada",
+  "Impossible d'envoyer une demande à cette personne.":"No se puede enviar una solicitud a esta persona.",
+  "Bloquer":"Bloquear",
+  "Signaler":"Denunciar",
+  "Bloquer {} ?":"¿Bloquear a {}?",
+  "Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter.":"Dejaréis de ser amigos y esta persona no podrá añadirte.",
+  "Signaler {}":"Denunciar a {}",
+  "Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.":"Dinos qué pasa. Nadie más verá esta denuncia.",
+  "Pseudo inapproprié":"Apodo inapropiado",
+  "Se fait passer pour quelqu'un":"Se hace pasar por otra persona",
+  "Autre chose":"Otra cosa",
+  "Merci, c'est signalé.":"Gracias, se ha denunciado.",
+  "Ton numéro actuel : #{}. Il change si tu changes de pseudo.":"Tu número actual: #{}. Cambia si cambias de apodo.",
+  "Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.":"Se añade un número a tu apodo (ej.: Lea#4821): dos personas pueden llamarse igual.",
+  "Les autres peuvent me trouver par mon pseudo":"Otros pueden encontrarme por mi apodo",
+  "Rallumer avec Tonnup Analyse":"Reavivar con Tonnup Analyze",
+  "Ta flamme protégée":"Tu racha protegida",
+  "Rallume-la 2 fois par mois si elle s'éteint.":"Reavívala 2 veces al mes si se apaga.",
   "Rallumer ma flamme":"Reavivar mi racha",
   "Ta flamme s'est éteinte":"Tu racha se apagó",
   "Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.":"Tenías {} actividades seguidas. Reavívala para mantener tu racha: luego tendrás 3 días para tu próxima sesión.",
@@ -12253,6 +12355,41 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Toi":"Você",
+  "Partager mon code":"Compartilhar meu código",
+  "Ajouter un ami":"Adicionar um amigo",
+  "Pseudo ou code ami":"Apelido ou código de amigo",
+  "Mon pseudo et ma visibilité":"Meu apelido e visibilidade",
+  "Pas encore d'amis. Touche le bouton en haut pour en ajouter.":"Ainda sem amigos. Toque no botão no topo para adicionar.",
+  "Demandes d'ami":"Pedidos de amizade",
+  "veut être ton ami":"quer ser seu amigo",
+  "Accepter":"Aceitar",
+  "Refuser":"Recusar",
+  "Vous êtes amis !":"Vocês são amigos!",
+  "Refuser la demande ?":"Recusar o pedido?",
+  "Refuser et bloquer":"Recusar e bloquear",
+  "Bloqué.":"Bloqueado.",
+  "Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}":"Me adicione no Tonnup! Meu apelido: {p} · meu código de amigo: {c}",
+  "Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.":"Ninguém com esse apelido. Confira a grafia ou peça o código.",
+  "Ami":"Amigo",
+  "Demande envoyée":"Pedido enviado",
+  "Impossible d'envoyer une demande à cette personne.":"Não é possível enviar um pedido a essa pessoa.",
+  "Bloquer":"Bloquear",
+  "Signaler":"Denunciar",
+  "Bloquer {} ?":"Bloquear {}?",
+  "Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter.":"Vocês deixarão de ser amigos e essa pessoa não poderá te adicionar.",
+  "Signaler {}":"Denunciar {}",
+  "Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.":"Diga o que está errado. Ninguém mais verá esta denúncia.",
+  "Pseudo inapproprié":"Apelido impróprio",
+  "Se fait passer pour quelqu'un":"Se passa por outra pessoa",
+  "Autre chose":"Outra coisa",
+  "Merci, c'est signalé.":"Obrigado, foi denunciado.",
+  "Ton numéro actuel : #{}. Il change si tu changes de pseudo.":"Seu número atual: #{}. Ele muda se você mudar de apelido.",
+  "Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.":"Um número é adicionado ao seu apelido (ex.: Lea#4821): duas pessoas podem ter o mesmo nome.",
+  "Les autres peuvent me trouver par mon pseudo":"Outros podem me encontrar pelo apelido",
+  "Rallumer avec Tonnup Analyse":"Reacender com o Tonnup Analyze",
+  "Ta flamme protégée":"Sua sequência protegida",
+  "Rallume-la 2 fois par mois si elle s'éteint.":"Reacenda 2 vezes por mês se ela se apagar.",
   "Rallumer ma flamme":"Reacender minha sequência",
   "Ta flamme s'est éteinte":"Sua sequência se apagou",
   "Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.":"Você tinha {} atividades seguidas. Reacenda para manter sua sequência: depois terá 3 dias para a próxima sessão.",
@@ -19183,22 +19320,21 @@ function openRallumer(){
   if(!r) return;
   const bloque = verrouille("rallumer"), reste = rallumagesRestants();
   const prochain = new Date(); prochain.setMonth(prochain.getMonth() + 1, 1);
-  openSheet(`<div class="rl-fl"><img src="img/flamme-24b.webp" alt=""><b>${r.n}</b></div>
-    <h3 style="text-align:center;">${TR("Ta flamme s'est éteinte")}</h3>
-    <p class="rl-t">${TR("Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.").replace("{}", r.n)}</p>
-    ${bloque ? `<p class="rl-s">${IC_CADENAS_MINI}${TR("Rallumer ta flamme fait partie de Tonnup Analyse.")}</p>
-      <button class="btn btn-accent" id="rl-go" style="width:100%;">${TR("Découvrir Analyse")}</button>`
+  const w = fenetre(`<div class="rl-fl"><img src="img/flamme-24b.webp" alt=""><b>${r.n}</b></div>
+    <h3>${TR("Ta flamme s'est éteinte")}</h3>
+    <p>${TR("Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.").replace("{}", r.n)}</p>
+    ${bloque ? `<button class="btn btn-accent" id="rl-go" style="width:100%;">${IC_CADENAS_MINI} ${TR("Rallumer avec Tonnup Analyse")}</button>`
     : reste > 0 ? `<button class="btn btn-accent" id="rl-go" style="width:100%;">🔥 ${TR("Rallumer ma flamme")}</button>
-      <p class="rl-s">${TR(reste > 1 ? "Encore {} rallumages ce mois-ci." : "Encore {} rallumage ce mois-ci.").replace("{}", reste)}</p>`
-    : `<p class="rl-s">${TR("Tu as utilisé tes rallumages du mois. Les prochains arrivent le {}.")
-        .replace("{}", prochain.toLocaleDateString(loc(), {day:"numeric", month:"long"}))}</p>`}
-    <button class="am-lien" id="rl-non" style="display:block; margin:10px auto 0;">${TR("La laisser éteinte")}</button>`);
-  const go = document.getElementById("rl-go");
+      <div class="rl-s">${TR(reste > 1 ? "Encore {} rallumages ce mois-ci." : "Encore {} rallumage ce mois-ci.").replace("{}", reste)}</div>`
+    : `<div class="rl-s">${TR("Tu as utilisé tes rallumages du mois. Les prochains arrivent le {}.")
+        .replace("{}", prochain.toLocaleDateString(loc(), {day:"numeric", month:"long"}))}</div>`}
+    <button class="am-lien" id="rl-non" style="display:block; margin:8px auto 0;">${TR("La laisser éteinte")}</button>`);
+  const go = w.el.querySelector("#rl-go");
   if(go) go.onclick = ()=>{
-    if(bloque){ openAbonnement(); return; }
-    if(rallumerFlamme()){ closeSheet(); vibrer(20); toast(TR("Ta flamme est rallumée ! 🔥")); render(); }
+    if(bloque){ w.fermer(); openAbonnement(); return; }
+    if(rallumerFlamme()){ w.fermer(); vibrer(20); toast(TR("Ta flamme est rallumée ! 🔥")); render(); }
   };
-  document.getElementById("rl-non").onclick = ()=>{ db.flammeLaissee = r.de; save(); closeSheet(); render(); };
+  w.el.querySelector("#rl-non").onclick = ()=>{ db.flammeLaissee = r.de; save(); w.fermer(); render(); };
 }
 /* la meilleure serie de semaines jamais tenue, sur tout l'historique */
 /* La meilleure flamme jamais tenue : la plus longue suite de jours d'activite ou deux
@@ -19648,7 +19784,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 01h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 01h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21182,6 +21318,22 @@ function publierAmiBientot(){
   clearTimeout(amiPubliMinuterie);
   amiPubliMinuterie = setTimeout(()=>publierAmi(false).catch(()=>{}), 4000);
 }
+/* ---- le pseudo et son numero (Nico : « Tom#4821 », comme Discord) ----
+   Deux personnes peuvent s'appeler Tom ; le numero les distingue. Le couple nom+numero
+   est reserve dans tags/{nom_numero} : Firebase garantit qu'il n'existe qu'une fois.
+   Le nom compare est le pseudo en minuscules — les regles le verifient (p.lower()). */
+function pseudoNorm(p){ return String(p || "").toLowerCase(); }
+function pseudoValide(p){ return /^[\p{L}\p{N}][\p{L}\p{N} _.'-]{1,19}$/u.test(p); }
+function nomComplet(o){ return o && o.tag ? o.pseudo + "#" + o.tag : ((o && o.pseudo) || ""); }
+async function reserverTag(pseudo){
+  const n = pseudoNorm(pseudo);
+  for(let i = 0; i < 8; i++){
+    const t = String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, "0");
+    try{ await fbReq("POST", `/tags?documentId=${encodeURIComponent(n + "_" + t)}`, {fields:fbChamps({uid:db.amis.uid})}); return t; }
+    catch(e){ if(e.status !== 409 && e.status !== 403) throw e; }
+  }
+  throw new Error("tag");
+}
 /* une ecriture seulement si quelque chose a change : c'est ce qui garde Firebase gratuit */
 async function publierAmi(force){
   const a = db.amis;
@@ -21190,29 +21342,56 @@ async function publierAmi(force){
   if(!force && cle === a.envoye) return;
   await fbConnexion();
   await fbReq("PATCH", `/profils/${a.uid}`, {fields:fbChamps(Object.assign({}, f, {maj:new Date()}))});
+  /* l'annuaire, pour la recherche : le nom, le numero et le compagnon — rien d'autre, et
+     seulement pour qui a choisi d'etre trouvable */
+  if(a.tag){
+    const ann = {n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag, acc:f.acc};
+    const cleA = a.visible === false ? "invisible" : JSON.stringify(ann);
+    if(force || cleA !== a.envoyeAnn){
+      if(a.visible === false) await fbReq("DELETE", `/annuaire/${a.uid}`).catch(()=>{});
+      else await fbReq("PATCH", `/annuaire/${a.uid}`, {fields:fbChamps(ann)});
+      a.envoyeAnn = cleA;
+    }
+  }
   a.envoye = cle; save();
 }
-async function activerAmis(pseudo){
+async function activerAmis(pseudo, visible){
   await fbConnexion();
   const a = db.amis;
-  a.pseudo = pseudo;
   for(let i = 0; i < 5 && !a.code; i++){
     const c = nouveauCode();
     try{ await fbReq("POST", `/codes?documentId=${c}`, {fields:fbChamps({uid:a.uid})}); a.code = c; }
     catch(e){ if(i === 4) throw e; }
   }
+  a.pseudo = pseudo; a.visible = visible !== false;
+  if(!a.tag) a.tag = await reserverTag(pseudo);
   a.actif = true; a.age15 = true; save();
   await publierAmi(true);
 }
-/* la liste : les amities dans les deux sens, puis la fiche de chacun. Relue au plus
-   toutes les deux minutes — chaque fiche lue compte dans le quota gratuit. */
+/* changer de pseudo (ou de visibilite) : un nouveau numero si le nom change */
+async function changerPseudo(pseudo, visible){
+  const a = db.amis, avant = a.tag ? pseudoNorm(a.pseudo) + "_" + a.tag : null;
+  if(!a.tag || pseudoNorm(pseudo) !== pseudoNorm(a.pseudo)){
+    a.tag = await reserverTag(pseudo);
+    if(avant) fbReq("DELETE", `/tags/${encodeURIComponent(avant)}`).catch(()=>{});
+  }
+  a.pseudo = pseudo;
+  if(visible !== undefined) a.visible = visible;
+  save();
+  await publierAmi(true);
+}
+/* ---- lire : les amities dans les deux sens, puis la fiche de chacun. Relue au plus
+   toutes les deux minutes — chaque fiche lue compte dans le quota gratuit. ---- */
 let amisCache = null, amisCacheT = 0;
+function fbRequete(coll, champ, val, limite){
+  return fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:coll}],
+    where:{fieldFilter:{field:{fieldPath:champ}, op:"EQUAL", value:{stringValue:val}}}, limit:limite || 300}})
+    .then(r=>r.filter(x=>x.document).map(x=>Object.assign({nom:x.document.name}, fbObjet(x.document.fields))));
+}
 async function liensAmis(){
   const me = db.amis.uid;
-  const q = champ => fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:"amities"}],
-    where:{fieldFilter:{field:{fieldPath:champ}, op:"EQUAL", value:{stringValue:me}}}, limit:300}});
-  const [r1, r2] = await Promise.all([q("de"), q("a")]);
-  return r1.concat(r2).filter(x=>x.document).map(x=>Object.assign({nom:x.document.name}, fbObjet(x.document.fields)));
+  const [r1, r2] = await Promise.all([fbRequete("amities", "de", me), fbRequete("amities", "a", me)]);
+  return r1.concat(r2);
 }
 async function chargerAmis(force){
   if(!force && amisCache && Date.now() - amisCacheT < 120000) return amisCache;
@@ -21226,31 +21405,74 @@ async function chargerAmis(force){
   amisCacheT = Date.now();
   return amisCache;
 }
+/* ajouter avec un code : immediat — donner son code, c'est accepter */
 async function ajouterAmi(saisie){
   const c = codeSaisi(saisie);
   if(c.length !== 8) throw new Error(TR("Un code ami a 8 caractères."));
   if(c === db.amis.code) throw new Error(TR("C'est ton propre code !"));
   let d;
   try{ d = await fbReq("GET", `/codes/${c}`); }
-  catch(e){ if(e.status === 404) throw new Error(TR("Aucun compte avec ce code.")); throw e; }
+  catch(e){ if(e.status === 404) throw Object.assign(new Error(TR("Aucun compte avec ce code.")), {introuvable:true}); throw e; }
   const uid = fbObjet(d.fields).uid;
   if((amisCache || []).some(f=>f.uid === uid)) throw new Error(TR("Vous êtes déjà amis."));
   await fbReq("PATCH", `/amities/${db.amis.uid}_${uid}`, {fields:fbChamps({de:db.amis.uid, a:uid, code:c, quand:new Date()})});
   amisCache = null;
 }
+/* chercher un pseudo : « tom » trouve les Tom, « tom#48 » resserre sur le numero */
+async function chercherPseudos(q){
+  const m = String(q || "").trim().match(/^(.*?)(?:#(\d{0,4}))?$/);
+  const n = pseudoNorm((m[1] || "").trim()), tag = m[2] || "";
+  if(n.length < 2) return [];
+  const r = await fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:"annuaire"}],
+    where:{compositeFilter:{op:"AND", filters:[
+      {fieldFilter:{field:{fieldPath:"n"}, op:"GREATER_THAN_OR_EQUAL", value:{stringValue:n}}},
+      {fieldFilter:{field:{fieldPath:"n"}, op:"LESS_THAN", value:{stringValue:n + "\uf8ff"}}}]}},
+    orderBy:[{field:{fieldPath:"n"}}], limit:10}});
+  return r.filter(x=>x.document).map(x=>Object.assign({uid:x.document.name.split("/").pop()}, fbObjet(x.document.fields)))
+    .map(x=>Object.assign(x, {pseudo:x.p}))
+    .filter(x=>x.uid !== db.amis.uid && (!tag || String(x.tag).startsWith(tag)));
+}
+/* une demande : l'autre accepte ou refuse. Elle porte le nom et le compagnon de celui
+   qui la fait — les regles verifient que le nom et le numero sont bien les siens. */
+async function demanderAmi(uid){
+  const a = db.amis;
+  await fbReq("PATCH", `/demandes/${a.uid}_${uid}`, {fields:fbChamps({de:a.uid, a:uid, n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag,
+    acc:ficheAmi().acc, quand:new Date()})});
+}
+async function accepterDemande(d){
+  await fbReq("PATCH", `/amities/${db.amis.uid}_${d.de}`, {fields:fbChamps({de:db.amis.uid, a:d.de, quand:new Date()})});
+  await fbReq("DELETE", `/demandes/${d.de}_${db.amis.uid}`).catch(()=>{});
+  amisCache = null;
+}
+function refuserDemande(d){ return fbReq("DELETE", `/demandes/${d.de}_${db.amis.uid}`); }
 async function retirerAmi(uid){
   const me = db.amis.uid;
   await Promise.all([`${me}_${uid}`, `${uid}_${me}`].map(id=>fbReq("DELETE", `/amities/${id}`).catch(()=>{})));
   amisCache = null;
 }
-/* tout effacer : les amities, le code, la fiche, puis l'identite elle-meme */
+/* bloquer : plus d'amitie, plus de demande, et il ne peut plus t'ajouter ni te redemander */
+async function bloquerAmi(uid){
+  const me = db.amis.uid;
+  await fbReq("PATCH", `/blocages/${me}_${uid}`, {fields:fbChamps({de:me, a:uid, quand:new Date()})});
+  await Promise.all([`/amities/${me}_${uid}`, `/amities/${uid}_${me}`, `/demandes/${uid}_${me}`, `/demandes/${me}_${uid}`]
+    .map(x=>fbReq("DELETE", x).catch(()=>{})));
+  amisCache = null;
+}
+/* signaler : une ligne pour Nico, lisible seulement dans la console Firebase */
+function signalerAmi(uid, raison){
+  return fbReq("POST", "/signalements", {fields:fbChamps({de:db.amis.uid, cible:uid, raison, quand:new Date()})});
+}
+/* tout effacer : amities, demandes, blocages, annuaire, numero, code, fiche, identite */
 async function supprimerAmis(){
   const a = db.amis;
   if(a && a.uid && a.refresh){
-    const liens = await liensAmis();
-    await Promise.all(liens.map(l=>fbReq("DELETE", "https://firestore.googleapis.com/v1/" + l.nom).catch(()=>{})));
+    const me = a.uid;
+    const [l1, l2, l3, l4] = await Promise.all([liensAmis(), fbRequete("demandes", "de", me), fbRequete("demandes", "a", me), fbRequete("blocages", "de", me)]);
+    await Promise.all(l1.concat(l2, l3, l4).map(l=>fbReq("DELETE", "https://firestore.googleapis.com/v1/" + l.nom).catch(()=>{})));
+    await fbReq("DELETE", `/annuaire/${me}`).catch(()=>{});
+    if(a.tag) await fbReq("DELETE", `/tags/${encodeURIComponent(pseudoNorm(a.pseudo) + "_" + a.tag)}`).catch(()=>{});
     if(a.code) await fbReq("DELETE", `/codes/${a.code}`).catch(()=>{});
-    await fbReq("DELETE", `/profils/${a.uid}`).catch(()=>{});
+    await fbReq("DELETE", `/profils/${me}`).catch(()=>{});
     await fbPost(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${FB.cle}`, {idToken:await fbConnexion()});
   }
   db.amis = null; fbJeton = null; amisCache = null; save();
@@ -21310,12 +21532,31 @@ function ligneAmi(f){
       ${pastillesAmi(f)}
       <small>${derniereAmi(f)}</small></span></button>`;
 }
+/* une petite fenetre posee au milieu de l'ecran (Nico : pas une fiche qui remonte) */
+function fenetre(html){
+  document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
+  const m = document.createElement("div");
+  m.className = "pp-modal";
+  m.innerHTML = `<div class="pp-boite fen" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${TR("Fermer")}">✕</button>${html}</div>`;
+  document.body.appendChild(m);
+  const fermer = ()=>m.remove();
+  m.onclick = e=>{ if(e.target === m) fermer(); };
+  m.querySelector(".fen-x").onclick = fermer;
+  return {el:m, fermer};
+}
+const IC_AMI_PLUS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9.5" cy="8" r="3.6"/><path d="M2.8 19.4c.5-3.8 3.4-5.7 6.7-5.7s6.2 1.9 6.7 5.7z"/><path d="M18.5 7.5v7M15 11h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+/* la tete d'une page pleine : le titre, un bouton a droite, la croix */
+function teteAmis(titre, droite){
+  return `<div class="am-tete"><h2>${titre}</h2>${droite || ""}<button type="button" class="pp-x" id="am-x" aria-label="${TR("Fermer")}">✕</button></div>`;
+}
+function brancherCroix(){ const x = document.getElementById("am-x"); if(x) x.onclick = closeSheet; }
 /* la fiche d'un ami : ce qu'on n'a pas voulu mettre dans la liste */
 function openAmiDetail(f, retour){
-  const fl = flammeAmi(f), po = poseAmi(f), cette = semAmi(f) !== 0 || (f.semDebut && Math.abs(f.semDebut - weekStartDate().getTime()) < 36e5);
+  const fl = flammeAmi(f), po = poseAmi(f), cette = f.semDebut && Math.abs(f.semDebut - weekStartDate().getTime()) < 36e5;
   const tuile = (ic, v, l) => `<div><span class="ic">${ic}</span><b>${v}</b><small>${l}</small></div>`;
   const hm = (m) => m >= 60 ? Math.floor(m / 60) + " h " + String(Math.round(m % 60)).padStart(2, "0") : Math.round(m) + " " + TR("min");
-  openSheet(`<div class="amd-tete">${poussinAmi(f.acc, po)}
+  openSheet(`<button type="button" class="pp-x amd-x" id="am-x" aria-label="${TR("Fermer")}">✕</button>
+    <div class="amd-tete">${poussinAmi(f.acc, po)}
       <div class="grow"><h3>${esc(f.pseudo || "?")}</h3><div class="amd-hu">${TR(HUMEUR_AMI[po] || "En forme")}</div></div></div>
     <div class="amd-sous">${TR("Cette semaine")}</div>
     <div class="amd-sem">${pastillesAmi(f)}</div>
@@ -21328,13 +21569,34 @@ function openAmiDetail(f, retour){
       <div><span class="ic">${icoM("flamme", 18)}</span><span class="grow">${TR("Flamme en cours")}</span><b>${fl}</b></div>
       <div><span class="ic">${IC_ETOILE}</span><span class="grow">${TR("Meilleure flamme")}</span><b>${f.best || fl}</b></div>
       <div><span class="ic">${ICONS.seance}</span><span class="grow">${TR("Séances au total")}</span><b>${f.nAct || 0}</b></div>
-      <div><span class="ic">${IC_CHRONO}</span><span class="grow">${TR("Dernière séance")}</span><b>${derniereAmi(f)}</b></div>
+      <div><span class="ic">${IC_CHRONO}</span><span class="grow">${TR("Dernière séance")}</span><b>${f.derniere ? derniereAmi(f).replace(/ · ([^·]*)$/, "<small>$1</small>") : derniereAmi(f)}</b></div>
     </div>
-    ${demoEnCours ? "" : `<button class="am-lien am-supp" id="amd-retirer" style="display:block; margin:18px auto 0;">${TR("Retirer de mes amis")}</button>`}`);
+    ${demoEnCours ? "" : `<div class="amd-actions"><button class="am-lien" id="amd-retirer">${TR("Retirer de mes amis")}</button>
+      <button class="am-lien am-supp" id="amd-bloquer">${TR("Bloquer")}</button>
+      <button class="am-lien am-supp" id="amd-signaler">${TR("Signaler")}</button></div>`}`, {milieu:true});
+  brancherCroix();
+  const erreur = ()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur");
   const r = document.getElementById("amd-retirer");
   if(r) r.onclick = ()=>askConfirm(TR("Retirer {} ?").replace("{}", f.pseudo), TR("Vous ne verrez plus vos séances l'un de l'autre."), TR("Retirer"), true, async ()=>{
-    try{ await retirerAmi(f.uid); }catch(e){ toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+    try{ await retirerAmi(f.uid); }catch(e){ erreur(); }
     retour();
+  });
+  const b = document.getElementById("amd-bloquer");
+  if(b) b.onclick = ()=>askConfirm(TR("Bloquer {} ?").replace("{}", f.pseudo), TR("Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter."), TR("Bloquer"), true, async ()=>{
+    try{ await bloquerAmi(f.uid); toast(TR("Bloqué.")); }catch(e){ erreur(); }
+    retour();
+  });
+  const sg = document.getElementById("amd-signaler");
+  if(sg) sg.onclick = ()=>openSignaler(f.uid, f.pseudo);
+}
+function openSignaler(uid, pseudo){
+  const RAISONS = [["pseudo", "Pseudo inapproprié"], ["usurpation", "Se fait passer pour quelqu'un"], ["autre", "Autre chose"]];
+  const w = fenetre(`<h3>${TR("Signaler {}").replace("{}", esc(pseudo || "?"))}</h3>
+    <p>${TR("Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.")}</p>
+    <div class="fen-choix">${RAISONS.map(([k, l])=>`<button class="btn" data-raison="${k}">${TR(l)}</button>`).join("")}</div>`);
+  w.el.querySelectorAll("[data-raison]").forEach(b=>b.onclick = async ()=>{
+    try{ await signalerAmi(uid, b.dataset.raison); w.fermer(); toast(TR("Merci, c'est signalé.")); }
+    catch(e){ toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
   });
 }
 /* en mode demo (la video) : trois amis dessines ici, sans reseau */
@@ -21348,46 +21610,103 @@ function amisDemo(){
     {uid:"d3", pseudo:"Max", acc:["bonnet-vert"], pose:"fatigue", nAct:31, flamme:3, best:9, derniere:h(70),
       derType:"muscu", derNom:"Legs", derMin:61, derKm:0, sem:passe & 0b0000001, semDebut:w0, semT:6100, semKm:0, semMin:61}];
 }
-function openAmis(){
+/* ---- la page « Mes amis » : une page entiere (Nico), la liste d'abord ----
+   En haut, une ligne discrete : ton nom et ton code, a partager. Le bouton « ami + »
+   fait glisser la barre d'ajout — un pseudo, ou un code. */
+function openAmis(tiroir){
   const a = db.amis;
   if(!demoEnCours && !(a && a.actif)){ openAmisDebut(); return; }
-  const code = demoEnCours ? "TNP4K7Q2" : a.code;
-  openSheet(`${aideTete(IC_AMIS, TR("Mes amis"), TR("Leur compagnon, leur flamme et leur dernière séance."))}
-    <div class="am-code"><div class="grow"><small>${TR("Ton code ami")}</small><b>${codeAff(code)}</b></div>
-      <button class="btn btn-accent btn-sm" id="am-partager">${TR("Partager")}</button></div>
-    <div class="am-ajout"><input id="am-saisie" placeholder="${TR("Code d'un ami")}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9">
-      <button class="btn btn-sm" id="am-ajouter">${TR("Ajouter")}</button></div>
+  if(!demoEnCours && !a.tag){ changerPseudo(a.pseudo).then(()=>openAmis(tiroir)).catch(()=>{}); }
+  const moi = demoEnCours ? {pseudo:"Nico", tag:"4821", code:"TNP4K7Q2"} : a;
+  openSheet(`${teteAmis(TR("Mes amis"), `<button class="am-plus${tiroir ? " on" : ""}" id="am-plus" aria-label="${TR("Ajouter un ami")}">${IC_AMI_PLUS}</button>`)}
+    <div class="am-moi"><span>${TR("Toi")} : <b>${esc(nomComplet(moi))}</b></span><span class="sep">·</span>
+      <span>${TR("Code")} <b>${codeAff(moi.code)}</b></span>
+      <button class="am-share" id="am-partager" aria-label="${TR("Partager mon code")}">${IC_PARTAGE}</button></div>
+    <div class="am-tiroir${tiroir ? " ouvert" : ""}" id="am-tiroir"><div class="in">
+      <div class="am-ajout"><input id="am-saisie" placeholder="${TR("Pseudo ou code ami")}" autocomplete="off" spellcheck="false" maxlength="25" enterkeyhint="search">
+        <button class="btn btn-accent btn-sm" id="am-ajouter">${IC_LOUPE}</button></div>
+      <div class="am-res" id="am-res"></div></div></div>
+    <div id="am-dem"></div>
     <div class="am-liste" id="am-liste"><div class="am-vide">${TR("Chargement…")}</div></div>
-    <div class="am-pied">${demoEnCours ? "" : `<button class="am-lien" id="am-pseudo">${TR("Mon pseudo")} : <b>${esc(a.pseudo)}</b></button>
-      <button class="am-lien am-supp" id="am-supp">${TR("Supprimer mes données d'amis")}</button>`}</div>`);
-  const liste = document.getElementById("am-liste");
+    ${demoEnCours ? "" : `<div class="am-pied"><button class="am-lien" id="am-pseudo">${TR("Mon pseudo et ma visibilité")}</button>
+      <button class="am-lien am-supp" id="am-supp">${TR("Supprimer mes données d'amis")}</button></div>`}`, {milieu:true});
+  brancherCroix();
+  const erreur = ()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur");
+  const liste = document.getElementById("am-liste"), dem = document.getElementById("am-dem");
+  const tir = document.getElementById("am-tiroir"), plus = document.getElementById("am-plus");
+  const ouvrir = o=>{ tir.classList.toggle("ouvert", o); plus.classList.toggle("on", o); if(o) setTimeout(()=>{ const i = document.getElementById("am-saisie"); if(i) i.focus({preventScroll:true}); }, 300); };
+  plus.onclick = ()=>ouvrir(!tir.classList.contains("ouvert"));
   const afficher = l=>{
     if(!document.body.contains(liste)) return;
     liste.innerHTML = l.length ? l.map(ligneAmi).join("")
-      : `<div class="am-vide">${TR("Pas encore d'amis. Partage ton code, ou ajoute celui d'un ami.")}</div>`;
+      : `<div class="am-vide">${TR("Pas encore d'amis. Touche le bouton en haut pour en ajouter.")}</div>`;
     liste.querySelectorAll("[data-ami]").forEach(b=>b.onclick = ()=>{
       const f = l.find(x=>x.uid === b.dataset.ami);
-      if(f) ouvrirParDessus(openAmis, ()=>openAmiDetail(f, openAmis));
+      if(f) ouvrirParDessus(()=>openAmis(), ()=>openAmiDetail(f, ()=>openAmis()));
+    });
+    if(!l.length && !tir.classList.contains("ouvert") && !demoEnCours) ouvrir(true);
+  };
+  /* les demandes recues, au-dessus de la liste */
+  const afficherDemandes = l=>{
+    if(!document.body.contains(dem) || !l.length){ if(dem) dem.innerHTML = ""; return; }
+    dem.innerHTML = `<div class="am-sec">${TR("Demandes d'ami")}</div>` + l.map((d, i)=>`<div class="am-l am-d">${poussinAmi(d.acc, "en-forme")}
+      <span class="tx"><b>${esc(nomComplet({pseudo:d.p, tag:d.tag}))}</b><small>${TR("veut être ton ami")}</small></span>
+      <button class="btn btn-accent btn-sm" data-ok="${i}">${TR("Accepter")}</button><button class="am-non" data-non="${i}" aria-label="${TR("Refuser")}">✕</button></div>`).join("");
+    dem.querySelectorAll("[data-ok]").forEach(b=>b.onclick = async ()=>{
+      b.disabled = true;
+      try{ await accepterDemande(l[b.dataset.ok]); vibrer(12); toast(TR("Vous êtes amis !")); openAmis(); }catch(e){ b.disabled = false; erreur(); }
+    });
+    dem.querySelectorAll("[data-non]").forEach(b=>b.onclick = ()=>{
+      const d = l[b.dataset.non];
+      const w = fenetre(`<h3>${TR("Refuser la demande ?")}</h3><p>${esc(nomComplet({pseudo:d.p, tag:d.tag}))}</p>
+        <div class="fen-choix"><button class="btn" id="fn-ref">${TR("Refuser")}</button>
+          <button class="btn btn-jeter" id="fn-blo">${TR("Refuser et bloquer")}</button></div>`);
+      w.el.querySelector("#fn-ref").onclick = async ()=>{ try{ await refuserDemande(d); }catch(e){ erreur(); } w.fermer(); openAmis(); };
+      w.el.querySelector("#fn-blo").onclick = async ()=>{ try{ await bloquerAmi(d.de); toast(TR("Bloqué.")); }catch(e){ erreur(); } w.fermer(); openAmis(); };
     });
   };
   if(demoEnCours) afficher(amisDemo());
-  else chargerAmis(false).then(afficher).catch(()=>{
-    if(document.body.contains(liste)) liste.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; });
+  else{
+    chargerAmis(false).then(afficher).catch(()=>{
+      if(document.body.contains(liste)) liste.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; });
+    fbRequete("demandes", "a", a.uid, 50).then(afficherDemandes).catch(()=>{});
+  }
   document.getElementById("am-partager").onclick = async ()=>{
-    const txt = TR("Ajoute-moi sur Tonnup ! Mon code ami : {}").replace("{}", codeAff(code)) + " https://daero9.github.io/tonnage/";
+    const txt = TR("Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}").replace("{p}", nomComplet(moi)).replace("{c}", codeAff(moi.code)) + " https://daero9.github.io/tonnage/";
     try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){ return; }
     try{ await navigator.clipboard.writeText(txt); toast(TR("Code copié !")); }catch(e){}
   };
-  const saisie = document.getElementById("am-saisie"), bAj = document.getElementById("am-ajouter");
+  /* la barre : un code ajoute tout de suite ; un pseudo cherche dans l'annuaire */
+  const saisie = document.getElementById("am-saisie"), bAj = document.getElementById("am-ajouter"), res = document.getElementById("am-res");
   bAj.onclick = async ()=>{
     if(demoEnCours) return;
+    const v = saisie.value.trim();
+    if(v.length < 2) return;
     bAj.disabled = true;
-    try{ await ajouterAmi(saisie.value); toast(TR("Ami ajouté !")); vibrer(12); openAmis(); }
-    catch(e){ bAj.disabled = false; toast(e.status ? TR("Pas de connexion. Réessaie plus tard.") : e.message, "erreur"); }
+    try{
+      if(/^[a-z2-9]{4}-?[a-z2-9]{4}$/i.test(v) && !/#/.test(v)){
+        try{ await ajouterAmi(v); toast(TR("Ami ajouté !")); vibrer(12); openAmis(); return; }
+        catch(e){ if(!e.introuvable) throw e; }        /* pas un code : peut-etre un pseudo */
+      }
+      const [trouves, envoyees, amis] = await Promise.all([chercherPseudos(v), fbRequete("demandes", "de", a.uid, 50), chargerAmis(false)]);
+      bAj.disabled = false;
+      if(!trouves.length){ res.innerHTML = `<div class="am-vide">${TR("Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.")}</div>`; return; }
+      res.innerHTML = trouves.map((x, i)=>{
+        const ami = amis.some(f=>f.uid === x.uid), env = envoyees.some(d=>d.a === x.uid);
+        return `<div class="am-l am-d">${poussinAmi(x.acc, "en-forme")}<span class="tx"><b>${esc(nomComplet(x))}</b></span>
+          ${ami ? `<span class="am-etat">${TR("Ami")}</span>` : env ? `<span class="am-etat">${TR("Demande envoyée")}</span>`
+            : `<button class="btn btn-accent btn-sm" data-dem="${i}">${TR("Ajouter")}</button>`}</div>`;
+      }).join("");
+      res.querySelectorAll("[data-dem]").forEach(b=>b.onclick = async ()=>{
+        b.disabled = true;
+        try{ await demanderAmi(trouves[b.dataset.dem].uid); b.outerHTML = `<span class="am-etat">${TR("Demande envoyée")}</span>`; vibrer(10); }
+        catch(e){ b.disabled = false; toast(e.status === 403 ? TR("Impossible d'envoyer une demande à cette personne.") : TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+      });
+    }catch(e){ bAj.disabled = false; toast(e.status ? TR("Pas de connexion. Réessaie plus tard.") : e.message, "erreur"); }
   };
   saisie.onkeydown = e=>{ if(e.key === "Enter") bAj.click(); };
   const bP = document.getElementById("am-pseudo");
-  if(bP) bP.onclick = ()=>openAmisDebut(true);
+  if(bP) bP.onclick = ()=>ouvrirParDessus(()=>openAmis(), ()=>openAmisDebut(true));
   const bS = document.getElementById("am-supp");
   if(bS) bS.onclick = ()=>askConfirm(TR("Supprimer mes données d'amis ?"),
     TR("Ton pseudo, ton code et tes amis seront effacés chez Firebase. Tes séances restent sur ton téléphone."), TR("Supprimer"), true, async ()=>{
@@ -21395,30 +21714,36 @@ function openAmis(){
       catch(e){ toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
     });
 }
-/* la premiere fois : ce qui sera partage, le pseudo, les 15 ans. `modif` : changer de pseudo */
+/* la premiere fois : ce qui sera partage, le pseudo, la recherche, les 15 ans.
+   `modif` : changer de pseudo ou de visibilite */
 function openAmisDebut(modif){
   const a = db.amis || {};
   const pseudo0 = modif ? a.pseudo : String((db.settings && db.settings.name) || "").slice(0, 20);
-  openSheet(`${aideTete(IC_AMIS, TR(modif ? "Mon pseudo" : "Mes amis"), modif ? "" : TR("Suis la régularité de tes amis, et eux la tienne."))}
-    ${modif ? "" : `<div class="am-partage"><b>${TR("Ce que tes amis verront")}</b>
+  openSheet(`${teteAmis(TR(modif ? "Mon pseudo" : "Mes amis"))}
+    ${modif ? "" : `<p class="am-intro">${TR("Suis la régularité de tes amis, et eux la tienne.")}</p>
+      <div class="am-partage"><b>${TR("Ce que tes amis verront")}</b>
       <span>${poussinAmi(poussinEtat().acc, poussinEtat().pose)}<span>${TR("Ton pseudo et ton compagnon, ta flamme, ton nombre de séances et l'heure de ta dernière séance.")}</span></span>
       <p>${TR("Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.")}</p></div>`}
     <span class="f-lab">${TR("Ton pseudo")}</span>
     <input class="am-in" id="am-p" maxlength="20" autocomplete="off" value="${esc(pseudo0 || "")}" placeholder="${TR("Ex : Léa")}">
+    <p class="am-note" style="margin-top:6px;">${modif && a.tag ? TR("Ton numéro actuel : #{}. Il change si tu changes de pseudo.").replace("{}", a.tag)
+      : TR("Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.")}</p>
+    <label class="am-age"><input type="checkbox" id="am-vis" ${a.visible === false ? "" : "checked"}><span>${TR("Les autres peuvent me trouver par mon pseudo")}</span></label>
     ${modif ? "" : `<label class="am-age"><input type="checkbox" id="am-age"><span>${TR("J'ai 15 ans ou plus")}</span></label>
     <p class="am-note">${TR("Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.")}
       <a href="https://daero9.github.io/tonnage/confidentialite.html" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>`}
-    <button class="btn btn-accent" id="am-go" style="width:100%; margin-top:14px;">${TR(modif ? "Enregistrer" : "Activer")}</button>`);
-  const inp = document.getElementById("am-p"), age = document.getElementById("am-age"), go = document.getElementById("am-go");
-  const maj = ()=>{ go.disabled = inp.value.trim().length < 2 || (age && !age.checked); };
+    <button class="btn btn-accent" id="am-go" style="width:100%; margin-top:16px;">${TR(modif ? "Enregistrer" : "Activer")}</button>`, {milieu:true});
+  brancherCroix();
+  const inp = document.getElementById("am-p"), age = document.getElementById("am-age"), vis = document.getElementById("am-vis"), go = document.getElementById("am-go");
+  const maj = ()=>{ go.disabled = !pseudoValide(inp.value.trim().replace(/\s+/g, " ")) || (age && !age.checked); };
   inp.oninput = maj; if(age) age.onchange = maj; maj();
   go.onclick = async ()=>{
     const ps = inp.value.trim().replace(/\s+/g, " ").slice(0, 20);
     go.disabled = true;
     try{
-      if(modif){ db.amis.pseudo = ps; save(); await publierAmi(true); }
-      else await activerAmis(ps);
-      openAmis();
+      if(modif) await changerPseudo(ps, vis.checked);
+      else await activerAmis(ps, vis.checked);
+      if(modif) closeSheet(); else openAmis(true);
     }catch(e){ go.disabled = false; toast(TR(e.status === 403 ? "Le service Amis n'est pas encore prêt. Réessaie plus tard." : "Pas de connexion. Réessaie plus tard."), "erreur"); }
   };
 }
@@ -21476,7 +21801,12 @@ function openProfil(){
   document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
   document.getElementById("pr-edit").onclick = ()=>{ closeSheet(); openOnboarding(false); };
   document.getElementById("pr-rond").onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
-  document.getElementById("pr-amis").onclick = ()=>ouvrirParDessus(openProfil, openAmis);
+  document.getElementById("pr-amis").onclick = ()=>ouvrirParDessus(openProfil, ()=>openAmis());
+  /* une demande d'ami en attente : la pastille sur « Mes amis » (une lecture, a l'ouverture du profil) */
+  if(db.amis && db.amis.actif && !demoEnCours) fbRequete("demandes", "a", db.amis.uid, 20).then(l=>{
+    const b = document.getElementById("pr-amis");
+    if(b && l.length && !b.querySelector(".pastille")) b.insertAdjacentHTML("beforeend", '<i class="pastille"></i>');
+  }).catch(()=>{});
   const prOk = document.getElementById("pr-ok"); if(prOk) prOk.onclick = closeSheet;
 }
 /* le salut de l'accueil sur une seule ligne : on reduit le corps jusqu'a ce qu'il tienne
@@ -21818,6 +22148,9 @@ function openSheet(html, opts){
   gardeFermeture = null;
   /* « plein » : une page entière et blanche plutôt qu'une fiche qui remonte du bas */
   sheet.classList.toggle("plein", !!(opts && opts.plein));
+  /* « milieu » : une fenetre posee au centre de l'ecran (Nico, pour les amis) */
+  sheet.classList.toggle("milieu", !!(opts && opts.milieu));
+  overlay.classList.toggle("milieu", !!(opts && opts.milieu));
   sheet.style.transition = ""; sheet.style.transform = "";
   sheet.scrollTop = 0;
   sheet.innerHTML = (sheetVerrou ? "" : `<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="${TR("Fermer")}">✕</button>`)+html;
@@ -32599,6 +32932,8 @@ function openAbonnement(){
           <span>${TR("Tes muscles, ta récupération et ton bilan de la semaine.")}</span></div></li>
         <li><span class="ic">${icoM("course", 22)}</span><div><b>${TR("Objectifs de course")}</b>
           <span>${TR("Des séances qui évoluent avec toi.")}</span></div></li>
+        <li><span class="ic">${icoM("flamme", 22)}</span><div><b>${TR("Ta flamme protégée")}</b>
+          <span>${TR("Rallume-la 2 fois par mois si elle s'éteint.")}</span></div></li>
       </ul>
     </div>
     <div class="abo-forfaits">
