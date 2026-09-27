@@ -4715,6 +4715,8 @@
   .oc-vide .ic .icm{background-color:#fff;}
   .oc-vide .tx{flex:1; min-width:0;} .oc-vide b{display:block; font-size:16px; font-weight:900;}
   .oc-vide small{display:block; font-size:12.5px; color:var(--ink-soft); line-height:1.4; margin-top:2px;}
+  .oc-vide .oc-cad{flex:none; width:30px; height:30px; border-radius:50%; background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .oc-vide .oc-cad svg{width:15px; height:15px;}
   .oc-vide > svg{width:18px; height:18px; color:var(--ink-mute); flex:none;}
   .oc-carte{background:var(--surface); border-radius:20px; box-shadow:var(--ombre-carte); padding:14px;}
   .oc-tete{display:flex; align-items:center; gap:12px;}
@@ -4858,6 +4860,9 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Objectifs de course":"Running goals",
+  "Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.":"Sessions that grow with you, level by level. With Tonnup Analyze.",
+  "Des séances qui évoluent avec toi.":"Sessions that grow with you.",
   "Tes muscles, ta récupération et ton bilan de la semaine.":"Your muscles, your recovery and your weekly review.",
   "Analyse de la photo en cours…":"Analyzing the photo…",
   "{} % de tes protéines":"{} % of your protein",
@@ -8350,6 +8355,9 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Objectifs de course":"Objetivos de carrera",
+  "Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.":"Sesiones que evolucionan contigo, nivel a nivel. Con Tonnup Analyze.",
+  "Des séances qui évoluent avec toi.":"Sesiones que evolucionan contigo.",
   "Tes muscles, ta récupération et ton bilan de la semaine.":"Tus músculos, tu recuperación y tu balance semanal.",
   "Analyse de la photo en cours…":"Analizando la foto…",
   "{} % de tes protéines":"{} % de tus proteínas",
@@ -12058,6 +12066,9 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Objectifs de course":"Objetivos de corrida",
+  "Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.":"Sessões que evoluem com você, nível a nível. Com o Tonnup Analyze.",
+  "Des séances qui évoluent avec toi.":"Sessões que evoluem com você.",
   "Tes muscles, ta récupération et ton bilan de la semaine.":"Seus músculos, sua recuperação e seu balanço da semana.",
   "Analyse de la photo en cours…":"Analisando a foto…",
   "{} % de tes protéines":"{} % das suas proteínas",
@@ -19322,7 +19333,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 23h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 23h59 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -30494,7 +30505,7 @@ function feuilleChoix(o){
    tiennes, ou en creer une nouvelle (Nico). Une seance creee ici est enregistree
    comme les autres, puis ajoutee directement. */
 function choisirCourse(c){
-  const items = (db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
+  const items = (objCourseActif() ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
     .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
       return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; }));
   feuilleChoix({
@@ -30505,6 +30516,7 @@ function choisirCourse(c){
   });
 }
 function openObjectifCourse(){
+  if(verrouille("objcourse")){ openAbonnement(); return; }
   const cur = db.objCourse;
   let type = cur ? cur.type : "30min";
   const imp = estImperial();
@@ -30580,7 +30592,7 @@ function openObjectifCourse(){
 /* ---- la page « Course » : l'objectif et la seance du jour, puis tes seances ---- */
 function openParcoursListe(){
   const l = db.parcours || [];
-  const obj = db.objCourse;
+  const obj = objCourseActif();
   const p = obj ? seanceProposee(obj) : null;
   const av = obj ? avancementObjectif(obj) : null;
   const carteObj = obj ? `<div class="oc-carte">
@@ -30599,6 +30611,8 @@ function openParcoursListe(){
       </div>
       <button class="oc-pq" id="oc-pq">${TR("Pourquoi cette séance ?")}</button>
     </div>`
+    : verrouille("objcourse") ? `<button class="oc-vide oc-verrou" id="oc-choisir"><span class="ic">${icoM("cible", 26)}</span>
+        <span class="tx"><b>${TR("Objectifs de course")}</b><small>${TR("Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.")}</small></span><span class="oc-cad">${IC_CADENAS_MINI}</span></button>`
     : `<button class="oc-vide" id="oc-choisir"><span class="ic">${icoM("cible", 26)}</span>
         <span class="tx"><b>${TR("Choisis un objectif")}</b><small>${TR("L'application prépare tes séances.")}</small></span>${IC_CHEVRON}</button>`;
   openSheet(`<div class="ca-titre"><h3>${TR("Course")}</h3></div>
@@ -30643,7 +30657,7 @@ function openParcoursListe(){
    ou rapide placee au debut. Le seuil de 15 minutes est un choix de conception. */
 function courseDeSeance(c){
   if(!c) return null;
-  if(c.ref === "objectif") return db.objCourse ? seanceProposee() : null;
+  if(c.ref === "objectif") return objCourseActif() ? seanceProposee() : null;
   return (db.parcours || []).find(p=>p.id === c.ref) || null;
 }
 function courseTropDurePourDebut(p){
@@ -30752,7 +30766,7 @@ function carteCourseCarrousel(p){
 }
 /* la carte de l'objectif : la seance du jour, en tete des seances de course */
 function carteObjectifCarrousel(){
-  const obj = db.objCourse;
+  const obj = objCourseActif();
   if(!obj) return "";
   const p = seanceProposee(obj), t = parcoursTotaux(p.etapes);
   return `<div class="prog-slot">
@@ -30915,7 +30929,7 @@ function openTplEditor(id){
         <div><span class="f-lab">${TR("Exercices")}</span><div id="tp-items"></div>
         <button class="btn-dash" id="tp-add">＋ ${TR("Ajouter un exercice")}</button></div>
         <div>${tpl.course ? (()=>{ const pc = courseDeSeance(tpl.course);
-          const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
+          const opts = (objCourseActif() ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
           return `<span class="f-lab">${TR("Séance de course")}</span>
           <div class="tpl-item tp-course">
             <select data-co="ref">${opts.map(([v, l])=>`<option value="${esc(v)}" ${v === tpl.course.ref ? "selected" : ""}>${esc(l)}</option>`).join("")}
@@ -31715,7 +31729,12 @@ function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
 /* Ce qui est derriere l'abonnement : la Progression et le Bilan — et, dans l'onglet
    Alimentation, la photo de l'assiette seulement (voir quotaPhotos). La seance et le
    journal a la main ou au code-barres restent gratuits de bout en bout : c'est la vitrine. */
-const ONGLETS_PAYANTS = ["prg", "bilan", "recup"];
+/* objcourse : les objectifs de course a niveaux (Nico, 27 septembre). Les seances de
+   course qu'on compose soi-meme restent gratuites. */
+const ONGLETS_PAYANTS = ["prg", "bilan", "recup", "objcourse"];
+/* l'objectif en cours, s'il est accessible : sans abonnement, il dort — rien n'est
+   efface, il revient tel quel a l'abonnement */
+function objCourseActif(){ return verrouille("objcourse") ? null : db.objCourse; }
 function verrouille(quoi){ return ONGLETS_PAYANTS.includes(quoi) && !estAbonne(); }
 /* Le profil de demonstration : un mois d'entrainement et de repas plausibles, pour que
    l'ecran floute ait l'air d'un vrai — chiffres, courbes, jauges remplies. Aucune
@@ -31919,6 +31938,8 @@ function openAbonnement(){
           <span>${TR("Tes charges, exercice par exercice.")}</span></div></li>
         <li><span class="ic"><span class="icm icm-muscle" style="width:22px; height:22px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
           <span>${TR("Tes muscles, ta récupération et ton bilan de la semaine.")}</span></div></li>
+        <li><span class="ic">${icoM("course", 22)}</span><div><b>${TR("Objectifs de course")}</b>
+          <span>${TR("Des séances qui évoluent avec toi.")}</span></div></li>
       </ul>
     </div>
     <div class="abo-forfaits">
