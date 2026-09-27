@@ -8359,16 +8359,20 @@ async function lancer(){
     eq("Code saisi avec tiret, minuscules et espaces", F.codeSaisi(" tnp4-k7q2 "), "TNP4K7Q2");
     DB.amis = {pseudo:"Léa", actif:false};
     const f = F.ficheAmi();
-    eq("La fiche ne contient que les cinq champs prévus",
-      Object.keys(f).sort().join(","), "acc,derniere,flamme,nAct,pseudo");
+    eq("La fiche ne contient que les champs prévus (et acceptés par firestore.rules)",
+      Object.keys(f).sort().join(","), "acc,best,derKm,derMin,derNom,derType,derniere,flamme,nAct,pose,pseudo,sem,semDebut,semKm,semMin,semT");
     vrai("Ni poids, ni repas, ni charges dans la fiche", !/weight|kg|meal|sets|kcal/i.test(JSON.stringify(f)));
     delete DB.amis;
-    const po = F.poussinAmi(["bandeau", "../../evil", "<img onerror=x>", 42]);
+    const po = F.poussinAmi(["bandeau", "../../evil", "<img onerror=x>", 42], "../x");
     vrai("Compagnon d'un ami : seuls les accessoires connus sont dessinés",
       /bandeau@en-forme/.test(po) && !/evil|onerror/.test(po));
     const vieux = Date.now() - 6 * 864e5, recent = Date.now() - 3600e3;
     eq("La flamme d'un ami s'éteint après plus de 3 jours", F.flammeAmi({flamme:9, derniere:vieux}), 0);
     eq("… et reste allumée s'il s'est entraîné récemment", F.flammeAmi({flamme:9, derniere:recent}), 9);
+    eq("Un ami inactif depuis plus de 3 jours : son compagnon dort", F.poseAmi({pose:"muscle", flamme:4, derniere:vieux}), "repos");
+    eq("Une humeur inconnue retombe sur « en forme »", F.poseAmi({pose:"<script>", flamme:4, derniere:recent}), "en-forme");
+    eq("La semaine d'un ami, publiée la semaine dernière, ne coche rien", F.semAmi({sem:127, semDebut:Date.now() - 8 * 864e5}), 0);
+    vrai("Un nom de séance piégé est échappé", !/<i>x/.test(F.derniereAmi({derniere:recent, derNom:"<i>x</i>", derType:"muscu", derMin:40})));
     vrai("Un pseudo piégé est échappé", !/<b>x<\/b>/.test(F.ligneAmi({uid:"u", pseudo:"<b>x</b>", acc:[], nAct:2, flamme:1, derniere:recent})));
   }
   neuf();
