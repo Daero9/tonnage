@@ -1446,7 +1446,8 @@ async function lancer(){
       DB.history = [seance(1, jour(4)), seance(2, jour(6))];
       vrai("Quatre jours sans séance : éteinte, à zéro", F.serieJours().n === 0 && F.serieJours().force === "eteinte");
       F.render();
-      vrai("…et plus de flamme à l'écran", !F.document.querySelector(".hero-flamme"));
+      vrai("…et plus de flamme allumée à l'écran", !F.document.querySelector(".hero-flamme:not(.eteinte)"));
+      vrai("…seulement une flamme grise, à rallumer", !!F.document.querySelector(".hero-flamme.eteinte#fl-rallumer"));
       DB.history = [seance(1, jour(0)), seance(2, jour(0)), seance(3, jour(1))];
       eq("Deux séances le même jour comptent pour un jour", F.serieJours().n, 2);
       DB.history = [seance(1, sem(1)), seance(3, sem(3)), seance(4, sem(4))];
@@ -8374,6 +8375,38 @@ async function lancer(){
     eq("La semaine d'un ami, publiée la semaine dernière, ne coche rien", F.semAmi({sem:127, semDebut:Date.now() - 8 * 864e5}), 0);
     vrai("Un nom de séance piégé est échappé", !/<i>x/.test(F.derniereAmi({derniere:recent, derNom:"<i>x</i>", derType:"muscu", derMin:40})));
     vrai("Un pseudo piégé est échappé", !/<b>x<\/b>/.test(F.ligneAmi({uid:"u", pseudo:"<b>x</b>", acc:[], nAct:2, flamme:1, derniere:recent})));
+  }
+  neuf();
+
+  grp("Rallumer sa flamme (abonnés)");
+  neuf();
+  {
+    const garde = {h:DB.history, c:DB.cardio, r:DB.rallumages, abo:DB.abo, l:DB.flammeLaissee};
+    const jour = n => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(0, 5, 0, 0); return d.toISOString(); };
+    const act = n => ({id:"r" + n, date:jour(n), entries:[]});
+    DB.cardio = []; DB.rallumages = []; delete DB.flammeLaissee;
+    DB.history = [act(10), act(9), act(8)];
+    eq("Huit jours sans activité : la flamme est éteinte", F.serieJours().n, 0);
+    const r = F.flammeRallumable();
+    vrai("…mais on peut la rallumer (flamme de 3)", r && r.n === 3, JSON.stringify(r));
+    F.eval("window._estAbo = estAbonne; estAbonne = () => false;");
+    vrai("Sans abonnement, pas de rallumage", F.rallumerFlamme() === false && F.serieJours().n === 0);
+    F.eval("estAbonne = () => true;");
+    vrai("Abonné : la flamme est rallumée", F.rallumerFlamme() === true);
+    eq("Elle garde sa série (le rallumage ne compte pas comme une activité)", F.serieJours().n, 3);
+    eq("Un rallumage de moins ce mois-ci", F.rallumagesRestants(), F.eval("RALLUMAGES_MOIS") - 1);
+    DB.history.push(act(0));
+    eq("Une séance le jour même : la série continue à 4", F.serieJours().n, 4);
+    vrai("La meilleure flamme en tient compte", F.meilleureFlamme() >= 4);
+    vrai("Un rallumage ne déclenche pas la fête d'un accessoire", DB.history.pop() && F.accessoireDuJour() === null);
+    DB.rallumages = []; DB.history = [act(20), act(19), act(18)];
+    eq("Éteinte depuis trop longtemps : plus de rallumage", F.flammeRallumable(), null);
+    DB.history = [act(9), act(8)]; DB.rallumages = [];
+    F.eval("db.flammeLaissee = " + (() => { const d = new Date(jour(8)); d.setHours(0, 0, 0, 0); return d.getTime(); })());
+    eq("« La laisser éteinte » : on ne la propose plus", F.flammeRallumable(), null);
+    F.eval("estAbonne = window._estAbo;");
+    DB.history = garde.h; DB.cardio = garde.c; DB.rallumages = garde.r; DB.abo = garde.abo;
+    if(garde.l === undefined) delete DB.flammeLaissee; else DB.flammeLaissee = garde.l;
   }
   neuf();
 
