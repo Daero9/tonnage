@@ -1523,8 +1523,8 @@ async function lancer(){
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@']"));
       F.openProfil();
-      vrai("Le profil propose « Personnaliser mon avatar »", !!F.document.getElementById("pr-avatar"));
-      F.document.getElementById("pr-avatar").click();
+      vrai("Le profil montre la tête du compagnon, qui ouvre le vestiaire", !!F.document.querySelector("#pr-rond .pr-po"));
+      F.document.getElementById("pr-rond").click();
       /* la tuile du bandeau, quelle que soit la couleur qu'elle montre */
       const tuileB = ()=>F.document.querySelector("#sheet .vs-t [data-acc^='bandeau']").closest(".vs-t");
       vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && tuileB().classList.contains("on"));
@@ -1662,7 +1662,7 @@ async function lancer(){
         const surPage = ()=>[...F.document.querySelectorAll("#app .hero-poussin img.acc")]
           .map(i=>i.getAttribute("src")).join(" ");
         vrai("Le poussin de l'accueil porte le bandeau noir", /bandeau@/.test(surPage()), surPage());
-        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        F.openProfil(); F.document.getElementById("pr-rond").click();
         F.document.querySelector("#sheet .cl[data-cl='bandeau-rose']").click();
         vrai("…et passe au rose sans attendre la fermeture",
           /bandeau-rose@/.test(surPage()) && !/bandeau@/.test(surPage()), surPage());
@@ -1706,8 +1706,8 @@ async function lancer(){
         vrai("Une pastille sur l'icône du profil quand un accessoire est neuf",
           pastille("#app #tb-user"), F.eval("accessoiresNeufs().map(a=>a.id).join(',')"));
         F.openProfil();
-        vrai("…et sur « Personnaliser mon compagnon »", pastille("#sheet #pr-avatar"));
-        F.document.getElementById("pr-avatar").click();
+        vrai("…et sur la tête du compagnon, dans le profil", pastille("#sheet #pr-rond"));
+        F.document.getElementById("pr-rond").click();
         vrai("…et sur la tuile de l'accessoire", pastille("#sheet .vs-t"));
         /* tant qu'on ne l'a pas ouvert, la tuile ne devoile rien : ni le dessin, ni les couleurs */
         const paquet = F.document.querySelector("#sheet .vs-t.neuf");
@@ -1741,7 +1741,7 @@ async function lancer(){
         F.hideSheet(); F.render();
         eq("La pastille du profil suit ce qu'il reste à découvrir",
           pastille("#app #tb-user"), reste > 0);
-        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        F.openProfil(); F.document.getElementById("pr-rond").click();
         /* tout vu : plus aucune pastille nulle part */
         F.eval("ACCESSOIRES.forEach(a=>{ if(accessoireGagne(a) && variantesDessinees(a).length) marquerAccessoireVu(a); })");
         F.hideSheet(); F.render();
