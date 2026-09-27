@@ -1696,6 +1696,11 @@
   .tab svg, .tab .icm{width:22px; height:22px; transition:transform .22s cubic-bezier(.22,.9,.35,1);}
   .tab:active svg, .tab:active .icm{transform:scale(.82); transition-duration:.06s;}
   .tab.on{color:var(--accent);}
+  .tab-ic{position:relative; display:flex;}
+  .tab .tab-cad{position:absolute; right:-9px; top:-6px; width:17px; height:17px; border-radius:50%;
+    background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 2px var(--surface);}
+  .tab .tab-cad svg{width:10px; height:10px; stroke-width:3;}
 
   /* rest timer */
   /* Le cadran deborde la barre de dix-sept pixels en haut comme en bas : il doit
@@ -19317,7 +19322,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 23h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 23h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21006,7 +21011,8 @@ function appuiVenuDAilleurs(bouton){
 }
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
-    `<button class="tab ${curTab===id?'on':''}" data-tab="${id}">${ICONS[id]}<span>${TR(lab)}</span></button>`).join("");
+    `<button class="tab ${curTab===id?'on':''}" data-tab="${id}"><span class="tab-ic">${ICONS[id]}${verrouille(id)
+      ? `<span class="tab-cad">${IC_CADENAS_MINI}</span>` : ""}</span><span>${TR(lab)}</span></button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
     if(b.dataset.tab===curTab) return;
     if(appuiVenuDAilleurs(b)) return;
