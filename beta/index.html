@@ -1211,6 +1211,7 @@
   .recup-card .rc-chev .chev{width:18px; height:18px; margin:0;}
   .recup-card .rc-cad{width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,.28); color:#fff; display:flex; align-items:center; justify-content:center;}
   .recup-card .rc-cad svg{width:15px; height:15px;}
+  .recup-card.verrou .rc-ring, .recup-card.verrou .rc-txt, .recup-card.verrou .rc-img{filter:blur(5px); pointer-events:none; user-select:none;}
   /* ---- la fiche de recuperation, d'apres la maquette du 21 septembre ---- */
   .rq-carte{background:#11181B; color:#fff; border-radius:18px; padding:14px; margin-bottom:14px;}
   .rq-haut{display:flex; align-items:center; gap:12px;}
@@ -19316,7 +19317,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 23h37 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "27 septembre 2026 23h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25771,13 +25772,13 @@ function renderSeance(app){
       </div>
     </div>
     <div id="start-zone"></div>
-    ${db.history.length? `<button class="recup-card" id="recup-btn" data-etat="${(()=>{ const g = recuperation().global; return g>=85? "frais" : (g>=50? "recup":"fatigue"); })()}">
-      ${(()=>{ const r = recuperation();
+    ${db.history.length? `<button class="recup-card${verrouille("recup") ? " verrou" : ""}" id="recup-btn" data-etat="${(()=>{ const g = verrouille("recup") ? 100 : recuperation().global; return g>=85? "frais" : (g>=50? "recup":"fatigue"); })()}">
+      ${(()=>{ const r = verrouille("recup") ? {global:100, muscles:{}} : recuperation();
         const c = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
         /* d'apres la maquette du 21 septembre : l'anneau en grand, le titre et une phrase,
            la montagne de Nico en bas a droite avec sa bulle, et le chevron */
         const etat = r.global>=85? "frais" : (r.global>=50? "recup":"fatigue");
-        const w = recupPire(r);
+        const w = verrouille("recup") ? {pct:100, nom:""} : recupPire(r);
         const sous = w.pct < 65 ? TR("{m} à {p} %").replace("{m}", esc(TR(w.nom))).replace("{p}", w.pct)
           : TR(etat === "frais" ? "Ton corps est au top !" : (etat === "recup" ? "Vas-y en douceur." : "Laisse tes muscles souffler."));
         return `<span class="rc-ring">${anneau(r.global, 60, c)}</span>
