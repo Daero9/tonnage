@@ -4738,6 +4738,10 @@
   .sc-astuce{align-items:center;}
   #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
   /* ---- mes amis ---- */
+  .am-envoyee{display:inline-flex; align-items:center; justify-content:center; gap:5px; flex:none; background:var(--surface2) !important;
+    color:var(--ink-soft) !important; box-shadow:none !important; cursor:default; white-space:nowrap;}
+  .am-envoyee svg{width:14px; height:14px; color:var(--good);}
+  .acc-po{display:flex; justify-content:center; margin:4px 0 10px;} .acc-po .am-po{width:96px; height:96px;}
   /* ---- Mon profil, d'apres la maquette (28 septembre) ---- */
   .sheet.milieu .pp-x{background:#fff; box-shadow:0 1px 5px rgba(0,0,0,.12), inset 0 0 0 1px var(--bord-doux); border:0;}
   .am-tete h2 .eclat, .mp-titre .eclat{width:22px; height:22px; vertical-align:top; margin-left:2px;}
@@ -5046,6 +5050,12 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Demande d'ami envoyée":"Friend request sent",
+  "{} a accepté ta demande d'ami !":"{} accepted your friend request!",
+  "Et 1 autre aussi.":"And 1 more too.",
+  "Et {} autres aussi.":"And {} more too.",
+  "Vous pouvez maintenant suivre la régularité l'un de l'autre.":"You can now follow each other's consistency.",
+  "Voir mes amis":"See my friends",
   "Personnes bloquées":"Blocked people",
   "Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.":"They can't send you a request or add you with your code.",
   "Personne bloquée":"Blocked person",
@@ -8675,6 +8685,12 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Demande d'ami envoyée":"Solicitud de amistad enviada",
+  "{} a accepté ta demande d'ami !":"¡{} aceptó tu solicitud de amistad!",
+  "Et 1 autre aussi.":"Y 1 más también.",
+  "Et {} autres aussi.":"Y {} más también.",
+  "Vous pouvez maintenant suivre la régularité l'un de l'autre.":"Ahora podéis seguir la constancia del otro.",
+  "Voir mes amis":"Ver mis amigos",
   "Personnes bloquées":"Personas bloqueadas",
   "Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.":"No pueden enviarte solicitudes ni añadirte con tu código.",
   "Personne bloquée":"Persona bloqueada",
@@ -12519,6 +12535,12 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Demande d'ami envoyée":"Pedido de amizade enviado",
+  "{} a accepté ta demande d'ami !":"{} aceitou seu pedido de amizade!",
+  "Et 1 autre aussi.":"E mais 1 também.",
+  "Et {} autres aussi.":"E mais {} também.",
+  "Vous pouvez maintenant suivre la régularité l'un de l'autre.":"Agora vocês podem acompanhar a regularidade um do outro.",
+  "Voir mes amis":"Ver meus amigos",
   "Personnes bloquées":"Pessoas bloqueadas",
   "Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.":"Elas não podem te enviar pedidos nem te adicionar com seu código.",
   "Personne bloquée":"Pessoa bloqueada",
@@ -19472,8 +19494,15 @@ function marquerAccessoireVu(a){
 }
 /* la pastille suit la personne : l'icone du profil est dans la page, pas dans la fiche */
 function majPastilles(){
-  const n = accessoiresNeufs().length;
-  document.querySelectorAll("#app #tb-user, #sheet #pr-rond").forEach(b=>{
+  const n = accessoiresNeufs().length, d = typeof demandesRecuesN === "number" ? demandesRecuesN : 0;
+  const poser = (b, oui)=>{
+    const p = b.querySelector(".pastille");
+    if(oui && !p){ const i = document.createElement("i"); i.className = "pastille"; b.appendChild(i); }
+    else if(!oui && p) p.remove();
+  };
+  document.querySelectorAll("#app #tb-user").forEach(b=>poser(b, n + d > 0));
+  document.querySelectorAll("#sheet #pr-amis").forEach(b=>poser(b, d > 0));
+  document.querySelectorAll("#sheet #pr-rond").forEach(b=>{
     const p = b.querySelector(".pastille");
     if(n && !p){ const i = document.createElement("i"); i.className = "pastille"; b.appendChild(i); }
     else if(!n && p) p.remove();
@@ -19510,7 +19539,7 @@ function flammeRallumable(){
   const auj = new Date(); auj.setHours(0,0,0,0);
   if(Math.round((auj - de) / 864e5) > 10) return null;           /* eteinte depuis plus de 7 jours */
   if(db.flammeLaissee === de) return null;                        /* « laisser eteinte » */
-  const n = serieJours(new Date(de + 12 * 3600e3)).n;
+  const n = serieJours(new Date(de + 864e5 - 1)).n;               /* a la fin de ce jour-la : une seance du soir compte */
   return n >= 2 ? {n, de} : null;
 }
 function rallumerFlamme(){
@@ -19990,7 +20019,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 13h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 13h15 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21398,7 +21427,7 @@ function hero(inner, opts){
         <button class="hero-ic" id="tb-close" title="Fermer" aria-label="${TR("Fermer")}">${IC_CROIX}</button>`
         : o.icones === false ? "<span></span><span></span>" : `
         <button class="hero-ic" id="tb-user" title="${TR("Mon profil")}" aria-label="${TR("Mon profil")}" style="position:relative;">${IC_USER}${
-          accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}</button>
+          accessoiresNeufs().length || (typeof demandesRecuesN === "number" && demandesRecuesN) ? `<i class="pastille"></i>` : ""}</button>
         <span class="hero-droite">${o.scans ? `<button class="hero-essai hero-scans" id="hero-scans" aria-label="${TR("Prendre mon plat en photo")}">${IC_PHOTO}<b>${photosRestantes()}</b></button>` : ""}${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
           TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
       </div>
@@ -21621,7 +21650,7 @@ async function liensAmis(){
   return r1.concat(r2);
 }
 async function chargerAmis(force){
-  if(!force && amisCache && Date.now() - amisCacheT < 120000) return amisCache;
+  if(!force && amisCache && Date.now() - amisCacheT < 20000) return amisCache;
   const me = db.amis.uid;
   const ids = [...new Set((await liensAmis()).map(l=>l.de === me ? l.a : l.de))];
   const liste = await Promise.all(ids.map(async uid=>{
@@ -21661,10 +21690,53 @@ async function chercherPseudos(q){
 }
 /* une demande : l'autre accepte ou refuse. Elle porte le nom et le compagnon de celui
    qui la fait — les regles verifient que le nom et le numero sont bien les siens. */
-async function demanderAmi(uid){
+/* `qui` : son nom et son compagnon, gardes sur le telephone pour dire « Untel a accepte »
+   (Nico). Rend « amis » si l'autre nous avait deja demande : on accepte sa demande. */
+async function demanderAmi(uid, qui){
   const a = db.amis;
+  try{ await fbReq("GET", `/demandes/${uid}_${a.uid}`); await accepterDemande({de:uid}); return "amis"; }
+  catch(e){ if(e.status !== 404 && e.status !== 403) throw e; }
   await fbReq("PATCH", `/demandes/${a.uid}_${uid}`, {fields:fbChamps({de:a.uid, a:uid, n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag,
     acc:ficheAmi().acc, quand:new Date()})});
+  a.envoyees = Object.assign({}, a.envoyees, {[uid]:{pseudo:(qui && qui.pseudo) || "", tag:(qui && qui.tag) || "", acc:(qui && qui.acc) || [], quand:Date.now()}});
+  save();
+  return "envoyee";
+}
+/* ---- ce qui a bouge chez les autres : demandes recues (la pastille) et demandes
+   acceptees (la fenetre). Une lecture au lancement puis au plus toutes les 5 minutes ;
+   la liste d'amis n'est relue que s'il y a une demande envoyee en attente. ---- */
+var demandesRecuesN = 0, suiviAmisT = 0;        /* var : lues par majPastilles avant cette ligne */
+function suivreAmisBientot(force){
+  if(!(db.amis && db.amis.actif) || demoEnCours) return;
+  if(!force && Date.now() - suiviAmisT < 300000) return;
+  suiviAmisT = Date.now();
+  setTimeout(()=>suivreAmis().catch(()=>{}), force ? 0 : 1500);
+}
+async function suivreAmis(){
+  const a = db.amis;
+  const recues = await fbRequete("demandes", "a", a.uid, 20);
+  demandesRecuesN = recues.length;
+  majPastilles();
+  const env = a.envoyees || {}, ids = Object.keys(env);
+  if(!ids.length) return;
+  const [amis, encore] = await Promise.all([chargerAmis(true), fbRequete("demandes", "de", a.uid, 50)]);
+  const acceptes = [];
+  ids.forEach(uid=>{
+    const f = amis.find(x=>x.uid === uid);
+    if(f){ acceptes.push(Object.assign({}, env[uid], {pseudo:f.pseudo || env[uid].pseudo, acc:f.acc || env[uid].acc})); delete env[uid]; }
+    else if(!encore.some(d=>d.a === uid)) delete env[uid];          /* refusee : on oublie, sans rien dire */
+  });
+  a.envoyees = env; save();
+  if(acceptes.length) montrerAcceptes(acceptes);
+}
+function montrerAcceptes(l){
+  const x = l[0];
+  const w = fenetre(`<div class="acc-po">${poussinAmi(x.acc, "en-forme")}</div>
+    <h3>${TR("{} a accepté ta demande d'ami !").replace("{}", esc(nomComplet(x)))}</h3>
+    ${l.length > 1 ? `<p>${TR(l.length > 2 ? "Et {} autres aussi." : "Et 1 autre aussi.").replace("{}", l.length - 1)}</p>` : `<p>${TR("Vous pouvez maintenant suivre la régularité l'un de l'autre.")}</p>`}
+    <button class="btn btn-accent" id="acc-voir" style="width:100%;">${TR("Voir mes amis")}</button>`);
+  vibrer(20);
+  w.el.querySelector("#acc-voir").onclick = ()=>{ w.fermer(); openAmis(); };
 }
 async function accepterDemande(d){
   await fbReq("PATCH", `/amities/${db.amis.uid}_${d.de}`, {fields:fbChamps({de:db.amis.uid, a:d.de, quand:new Date()})});
@@ -21850,6 +21922,11 @@ const IC_GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const IC_COPIE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v9A2.5 2.5 0 0 0 6.5 17H8"/></svg>';
 /* les deux petits traits orange de la maquette, apres un titre */
 const ECLAT = '<svg class="eclat" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M9 3 5.5 10.5M19 9.5l-7.5 3.5"/></svg>';
+/* une demande partie : un bouton grise qui le dit, et qui reste (Nico) */
+const DEMANDE_ENVOYEE_TXT = ()=>TR("Demande d'ami envoyée");
+function demandeEnvoyee(grand){
+  return `<span class="btn ${grand ? "" : "btn-sm "}am-envoyee"${grand ? ' style="width:100%;"' : ""} aria-disabled="true">${IC_COCHE}${DEMANDE_ENVOYEE_TXT()}</span>`;
+}
 const IC_AMI_PLUS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9.5" cy="8" r="3.6"/><path d="M2.8 19.4c.5-3.8 3.4-5.7 6.7-5.7s6.2 1.9 6.7 5.7z"/><path d="M18.5 7.5v7M15 11h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
 /* la tete d'une page pleine : le titre, un bouton a droite, la croix */
 function teteAmis(titre, droite, gauche){
@@ -21918,17 +21995,21 @@ async function openCartePublique(x, rang){
   const act = document.getElementById("cp-act");
   if(apercu || moi || demoEnCours || !act) return;
   try{
-    const [amis, env] = await Promise.all([chargerAmis(false), fbRequete("demandes", "de", db.amis.uid, 50)]);
+    const [amis, env] = await Promise.all([chargerAmis(true), fbRequete("demandes", "de", db.amis.uid, 50)]);
     if(!document.body.contains(act)) return;
     const ami = amis.find(f=>f.uid === x.uid);
     if(ami){ act.innerHTML = `<button class="btn btn-accent" id="cp-go" style="width:100%;">${TR("Voir sa fiche")}</button>`;
       document.getElementById("cp-go").onclick = ()=>openAmiDetail(ami, ()=>openClassement("tous")); return; }
-    if(env.some(d=>d.a === x.uid)){ act.innerHTML = `<div class="am-vide">${TR("Demande envoyée")}</div>`; return; }
+    if(env.some(d=>d.a === x.uid)){ act.innerHTML = demandeEnvoyee(true); return; }
     act.innerHTML = `<button class="btn btn-accent" id="cp-go" style="width:100%;">${IC_AMI_PLUS} ${TR("Ajouter en ami")}</button>`;
     const go = document.getElementById("cp-go");
     go.onclick = async ()=>{
       go.disabled = true;
-      try{ await demanderAmi(x.uid); act.innerHTML = `<div class="am-vide">${TR("Demande envoyée")}</div>`; vibrer(10); }
+      try{
+        const r = await demanderAmi(x.uid, x);
+        if(r === "amis"){ toast(TR("Vous êtes amis !")); vibrer(12); closeSheet(); return; }
+        act.innerHTML = demandeEnvoyee(true); vibrer(10);
+      }
       catch(e){ go.disabled = false; toast(e.status === 403 ? TR("Impossible d'envoyer une demande à cette personne.") : TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
     };
   }catch(e){ act.innerHTML = ""; }
@@ -22119,18 +22200,22 @@ function openAmis(tiroir){
         try{ await ajouterAmi(v); toast(TR("Ami ajouté !")); vibrer(12); openAmis(); return; }
         catch(e){ if(!e.introuvable) throw e; }        /* pas un code : peut-etre un pseudo */
       }
-      const [trouves, envoyees, amis] = await Promise.all([chercherPseudos(v), fbRequete("demandes", "de", a.uid, 50), chargerAmis(false)]);
+      const [trouves, envoyees, amis] = await Promise.all([chercherPseudos(v), fbRequete("demandes", "de", a.uid, 50), chargerAmis(true)]);
       bAj.disabled = false;
       if(!trouves.length){ res.innerHTML = `<div class="am-vide">${TR("Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.")}</div>`; return; }
       res.innerHTML = trouves.map((x, i)=>{
         const ami = amis.some(f=>f.uid === x.uid), env = envoyees.some(d=>d.a === x.uid);
         return `<div class="am-l am-d">${poussinAmi(x.acc, "en-forme")}<span class="tx"><b>${esc(nomComplet(x))}</b></span>
-          ${ami ? `<span class="am-etat">${TR("Ami")}</span>` : env ? `<span class="am-etat">${TR("Demande envoyée")}</span>`
+          ${ami ? `<span class="am-etat">${TR("Ami")}</span>` : env ? demandeEnvoyee()
             : `<button class="btn btn-accent btn-sm" data-dem="${i}">${TR("Ajouter")}</button>`}</div>`;
       }).join("");
       res.querySelectorAll("[data-dem]").forEach(b=>b.onclick = async ()=>{
         b.disabled = true;
-        try{ await demanderAmi(trouves[b.dataset.dem].uid); b.outerHTML = `<span class="am-etat">${TR("Demande envoyée")}</span>`; vibrer(10); }
+        try{
+          const r = await demanderAmi(trouves[b.dataset.dem].uid, trouves[b.dataset.dem]);
+          if(r === "amis"){ toast(TR("Vous êtes amis !")); vibrer(12); openAmis(); return; }
+          b.outerHTML = demandeEnvoyee(); vibrer(10);
+        }
         catch(e){ b.disabled = false; toast(e.status === 403 ? TR("Impossible d'envoyer une demande à cette personne.") : TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
       });
     }catch(e){ bAj.disabled = false; toast(e.status ? TR("Pas de connexion. Réessaie plus tard.") : e.message, "erreur"); }
@@ -22448,6 +22533,7 @@ let carrouselCible = null;        /* selecteur de la carte a montrer au prochain
 function render(){
   renderTabs();
   publierAmiBientot();
+  suivreAmisBientot();
   majVerrouPage();
   majOrientation();
   const app = document.getElementById("app");
