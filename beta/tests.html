@@ -8409,6 +8409,13 @@ async function lancer(){
     eq("Une séance le jour même : la série continue à 4", F.serieJours().n, 4);
     vrai("La meilleure flamme en tient compte", F.meilleureFlamme() >= 4);
     vrai("Un rallumage ne déclenche pas la fête d'un accessoire", DB.history.pop() && F.accessoireDuJour() === null);
+    /* une seance faite AVANT de rallumer : l'ancienne serie reste rallumable, et se relie */
+    DB.rallumages = []; DB.history = [act(12), act(11), act(10), act(9), act(8), act(7), act(1)];
+    eq("Reprise sans rallumer : la nouvelle flamme est à 1", F.serieJours().n, 1);
+    const r2 = F.flammeRallumable();
+    vrai("…l'ancienne série de 6 est encore proposée", r2 && r2.n === 6 && r2.cur === 1, JSON.stringify(r2));
+    vrai("…et en la rallumant, 6 + 1 = 7", F.rallumerFlamme() === true && F.serieJours().n === 7, String(F.serieJours().n));
+    eq("…plus rien à rallumer ensuite", F.flammeRallumable(), null);
     DB.rallumages = []; DB.history = [act(20), act(19), act(18)];
     eq("Éteinte depuis trop longtemps : plus de rallumage", F.flammeRallumable(), null);
     DB.history = [act(9), act(8)]; DB.rallumages = [];
