@@ -1932,6 +1932,11 @@
   .hero-flamme .fe{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
   /* eteinte, mais qu'on peut rallumer : grise, et on la touche */
   .hero-flamme.eteinte{border:0; padding:0; background:none; cursor:pointer; pointer-events:auto;}
+  /* une ancienne serie a rallumer : son chiffre en gris, dans le coin de la flamme allumee */
+  .hero-flamme.rallumable{cursor:pointer; pointer-events:auto;}
+  .hero-flamme .fl-ancienne{position:absolute; right:-10px; top:-4px; min-width:22px; height:22px; padding:0 5px; border-radius:99px;
+    background:#8d8d93; color:#fff; font:800 12px/22px -apple-system, "Segoe UI", Roboto, sans-serif; text-align:center;
+    box-shadow:0 0 0 2px #fff;}
   .hero-flamme.eteinte .fe{filter:grayscale(1) brightness(.85); opacity:.75;}
   .hero-flamme .fl-cad{position:absolute; right:-6px; top:2px; width:22px; height:22px; border-radius:50%; background:var(--accent-grad); color:#fff;
     display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--surface);}
@@ -5074,6 +5079,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Ta série de {} peut revenir":"Your {} streak can come back",
+  "Elle s'est éteinte avant ta reprise. Rallume-la : ta flamme passera de {a} à {b}.":"It went out before you came back. Relight it: your streak will go from {a} to {b}.",
   "Détail jour par jour":"Day-by-day detail",
   "Stable sur le mois.":"Stable over the month.",
   "{} sur le mois.":"{} over the month.",
@@ -8735,6 +8742,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Ta série de {} peut revenir":"Tu racha de {} puede volver",
+  "Elle s'est éteinte avant ta reprise. Rallume-la : ta flamme passera de {a} à {b}.":"Se apagó antes de que volvieras. Reavívala: tu racha pasará de {a} a {b}.",
   "Détail jour par jour":"Detalle día a día",
   "Stable sur le mois.":"Estable durante el mes.",
   "{} sur le mois.":"{} en el mes.",
@@ -12610,6 +12619,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Ta série de {} peut revenir":"Sua sequência de {} pode voltar",
+  "Elle s'est éteinte avant ta reprise. Rallume-la : ta flamme passera de {a} à {b}.":"Ela se apagou antes da sua volta. Reacenda: sua sequência passará de {a} para {b}.",
   "Détail jour par jour":"Detalhe dia a dia",
   "Stable sur le mois.":"Estável no mês.",
   "{} sur le mois.":"{} no mês.",
@@ -19631,22 +19642,37 @@ function rallumagesRestants(){
   return Math.max(0, RALLUMAGES_MOIS - (db.rallumages || []).filter(r=>r.quand >= m.getTime()).length);
 }
 /* la flamme qu'on pourrait rallumer : {n, de} — ou null */
+/* La flamme qu'on peut rallumer : {n, de, pont, cur}.
+   - eteinte : la derniere serie, ponte sur aujourd'hui ;
+   - deja repartie (Nico : une seance faite AVANT de rallumer) : l'ancienne serie, pontee
+     sur le premier jour de la nouvelle — 6 + 1 = 7. `cur` = la flamme en cours. */
 function flammeRallumable(){
-  if(serieJours().n > 0) return null;
-  const pts = pointsFlamme(Date.now()).filter(x=>x.act);
-  if(!pts.length) return null;
-  const de = pts[0].t;
   const auj = new Date(); auj.setHours(0,0,0,0);
+  const pts = pointsFlamme(Date.now()), cur = serieJours().n;
+  let de, pont;
+  if(cur === 0){
+    const acts = pts.filter(x=>x.act);
+    if(!acts.length) return null;
+    de = acts[0].t; pont = auj.getTime();
+  }else{
+    /* le debut de la serie en cours, puis le point d'avant la cassure */
+    let i = 0;
+    while(i + 1 < pts.length && lienFlamme(pts[i], pts[i + 1])) i++;
+    if(i + 1 >= pts.length) return null;
+    pont = pts[i].t;
+    const avant = pts.slice(i + 1).filter(x=>x.act);
+    if(!avant.length) return null;
+    de = avant[0].t;
+  }
   if(Math.round((auj - de) / 864e5) > 10) return null;           /* eteinte depuis plus de 7 jours */
   if(db.flammeLaissee === de) return null;                        /* « laisser eteinte » */
   const n = serieJours(new Date(de + 864e5 - 1)).n;               /* a la fin de ce jour-la : une seance du soir compte */
-  return n >= 2 ? {n, de} : null;
+  return n >= 2 ? {n, de, pont, cur} : null;
 }
 function rallumerFlamme(){
   const r = flammeRallumable();
   if(!r || verrouille("rallumer") || rallumagesRestants() < 1) return false;
-  const auj = new Date(); auj.setHours(0,0,0,0);
-  db.rallumages = (db.rallumages || []).concat([{jour:auj.getTime(), de:r.de, quand:Date.now()}]);
+  db.rallumages = (db.rallumages || []).concat([{jour:r.pont, de:r.de, quand:Date.now()}]);
   save();
   return true;
 }
@@ -19656,8 +19682,9 @@ function openRallumer(){
   const bloque = verrouille("rallumer"), reste = rallumagesRestants();
   const prochain = new Date(); prochain.setMonth(prochain.getMonth() + 1, 1);
   const w = fenetre(`<div class="rl-fl"><img src="img/flamme-24b.webp" alt=""><b>${r.n}</b></div>
-    <h3>${TR("Ta flamme s'est éteinte")}</h3>
-    <p>${TR("Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.").replace("{}", r.n)}</p>
+    <h3>${TR(r.cur ? "Ta série de {} peut revenir" : "Ta flamme s'est éteinte").replace("{}", r.n)}</h3>
+    <p>${r.cur ? TR("Elle s'est éteinte avant ta reprise. Rallume-la : ta flamme passera de {a} à {b}.").replace("{a}", r.cur).replace("{b}", r.cur + r.n)
+      : TR("Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.").replace("{}", r.n)}</p>
     ${bloque ? `<button class="btn btn-accent" id="rl-go" style="width:100%;">${IC_CADENAS_MINI} ${TR("Rallumer avec Tonnup Analyse")}</button>`
     : reste > 0 ? `<button class="btn btn-accent" id="rl-go" style="width:100%;">🔥 ${TR("Rallumer ma flamme")}</button>
       <div class="rl-s">${TR(reste > 1 ? "Encore {} rallumages ce mois-ci." : "Encore {} rallumage ce mois-ci.").replace("{}", reste)}</div>`
@@ -20119,7 +20146,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 14h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 14h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27525,9 +27552,10 @@ function renderSeance(app){
         /* retenue : l'ancien chiffre reste affiche, rien n'est note comme vu */
         const grandit = !flammeRetenue && vue > 0 && fl.n > vue;
         if(!flammeRetenue && fl.n !== vue){ db.flammeVue = fl.n; setTimeout(save, 0); }
-        return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}${grandit ? " grandit" : ""}" style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${
+        const ancienne = flammeRallumable();
+        return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}${grandit ? " grandit" : ""}${ancienne ? " rallumable" : ""}" ${ancienne ? `id="fl-rallumer" role="button"` : ""} style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${
           grandit ? `<span class="fl-avant">${vue}</span><span class="fl-apres">${fl.n}</span>`
-            : (flammeRetenue && vue > 0 && fl.n > vue ? vue : fl.n)}</b></div>`; })()}
+            : (flammeRetenue && vue > 0 && fl.n > vue ? vue : fl.n)}</b>${ancienne ? `<span class="fl-ancienne">${ancienne.n}</span>` : ""}</div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
