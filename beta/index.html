@@ -20282,7 +20282,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 16h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 01h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25607,7 +25607,7 @@ async function analyserPhoto(b64, indice){
     r = await fetch(RELAIS_PHOTO, {
       method:"POST",
       headers:{"Content-Type":"application/json", "X-Tonnup":RELAIS_JETON},
-      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || "", assiette:assietteChoisie()[0], assietteCm:assietteChoisie()[2]}),
+      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || "", assiette:assietteChoisie()[0], assietteCm:assietteChoisie()[2], langue:langue()}),
       signal: ctrl.signal
     });
   } finally { clearTimeout(garde); }
@@ -25717,7 +25717,7 @@ function openResultatPhoto(meal, res){
     const t = it ? par100DeTable(it) : null;
     /* le nom du modele reste celui qu'on affiche (« pomme de terre », pas « Patate ») :
        la table ne sert qu'aux valeurs */
-    const nom = majuscule(a.nom);
+    const nom = majuscule(a.nom_aff || a.nom);            /* dans la langue de l'app, quand le relais la connait */
     return {nom, g:a.grammes || 100, confiance:a.confiance, note:a.note,
       prot100: t ? t.prot100 : a.prot100, kcal100: t ? t.kcal100 : a.kcal100,
       gluc100: a.gluc100, lip100: a.lip100, source: t ? "table" : "estimation"};
