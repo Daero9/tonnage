@@ -5070,6 +5070,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Vue non abonné : jusqu'à la fermeture de l'app.":"Non-subscriber view: until the app is closed.",
+  "Vue normale.":"Normal view.",
   "7 jours":"7 days",
   "Mois":"Month",
   "Bilan de {}":"{} review",
@@ -8721,6 +8723,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Vue non abonné : jusqu'à la fermeture de l'app.":"Vista sin suscripción: hasta cerrar la app.",
+  "Vue normale.":"Vista normal.",
   "7 jours":"7 días",
   "Mois":"Mes",
   "Bilan de {}":"Balance de {}",
@@ -12587,6 +12591,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Vue non abonné : jusqu'à la fermeture de l'app.":"Visão sem assinatura: até fechar o app.",
+  "Vue normale.":"Visão normal.",
   "7 jours":"7 dias",
   "Mois":"Mês",
   "Bilan de {}":"Balanço de {}",
@@ -20087,7 +20093,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 13h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 14h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22403,7 +22409,7 @@ function wireTopbar(){
      affiche. Plus aucune : la fenetre qui propose d'en racheter (packs ou abonnement). */
   const sc = document.getElementById("hero-scans"); if(sc) sc.onclick = ()=>{
     if(photosRestantes() > 0){ lancerScan(mealCur || mealParHeure(), "plat"); return; }
-    if(db.abo === true || essaiEnCours()) openScans(); else openAbonnement();
+    if(aboActif() || essaiEnCours()) openScans(); else openAbonnement();
   };
   const u = document.getElementById("tb-user"); if(u) u.onclick = openProfil;
   const x = document.getElementById("tb-close");
@@ -25266,7 +25272,7 @@ const ASSIETTES = [
   ["sans",    "Sans assiette",      0]     /* a la piece : viennoiserie, fruit, sandwich, emballage */
 ];
 function assietteChoisie(){ return ASSIETTES.find(a=>a[0] === (db.settings && db.settings.assiette)) || ASSIETTES[1]; }
-function quotaPhotos(){ return db.abo === true ? PHOTOS_PAR_JOUR_ABONNE : (essaiRestant() > 0 ? PHOTOS_PAR_JOUR : 0); }
+function quotaPhotos(){ return aboActif() ? PHOTOS_PAR_JOUR_ABONNE : (essaiRestant() > 0 ? PHOTOS_PAR_JOUR : 0); }
 /* ce qui reste du compteur du jour, et la reserve des packs — les deux se lisent separement */
 function photosJour(){
   const p = db.photos || {};
@@ -33373,7 +33379,7 @@ async function rattraperPacks(){
    fenetre d'abonnement, qui porte aussi les packs. Elle rend a la camera, en mode
    code-barres, quand on la ferme. */
 function proposerPhotos(meal){
-  if(db.abo === true){ openScans(meal); return; }
+  if(aboActif()){ openScans(meal); return; }
   aboRetour = {fermer:()=>{ if(meal) lancerScan(meal, "code"); },
                achete:()=>{ if(meal) setTimeout(()=>lancerScan(meal, "plat"), 260); }};
   openAbonnement();
@@ -33419,14 +33425,20 @@ function demarrerEssai(){
   return true;
 }
 /* jours restants, entiers, 0 quand c'est fini ou pas commence */
+/* La vue non abonne (Nico, pour tester) : un mot dans l'acces developpeur fait comme si
+   l'abonnement et l'essai n'existaient pas. Rien n'est enregistre — l'app redevient
+   normale a sa fermeture. */
+let vueGratuite = false;
+function aboActif(){ return !vueGratuite && db.abo === true; }
 function essaiRestant(){
+  if(vueGratuite) return 0;
   if(!db.essaiDebut) return 0;
   const fin = new Date(db.essaiDebut).getTime() + ESSAI_JOURS * 864e5;
   if(isNaN(fin)) return 0;
   return Math.max(0, Math.ceil((fin - Date.now()) / 864e5));
 }
-function essaiEnCours(){ return db.abo !== true && essaiRestant() > 0; }
-function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
+function essaiEnCours(){ return !aboActif() && essaiRestant() > 0; }
+function estAbonne(){ return aboActif() || essaiRestant() > 0; }
 /* Ce qui est derriere l'abonnement : la Progression et le Bilan — et, dans l'onglet
    Alimentation, la photo de l'assiette seulement (voir quotaPhotos). La seance et le
    journal a la main ou au code-barres restent gratuits de bout en bout : c'est la vitrine. */
@@ -33571,6 +33583,7 @@ function entrerModeDemo(){
    n'est pas ecrit dans l'app : seule son empreinte SHA-256 l'est, calculee sur le code
    en majuscules, sans espaces — la casse ne compte pas. */
 const CODE_DEV = "83c8f38f2d34fd27a135bd90fdb87532642c89aedea1425b0fc60eb3d716130b";
+const CODE_VUE_GRATUITE = "fb6026659fd3ae0c0c79b21635330d32c345a4a166c5ed1388ce154c01b13845";
 function openAccesDev(){
   openSheet(`<div class="ca-titre"><h3>${TR("Accès développeur")}</h3><p>${TR("Réservé à l'équipe Tonnup.")}</p></div>
     <input id="dev-code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${TR("Code")}" style="margin-top:14px; text-align:center;">
@@ -33578,9 +33591,15 @@ function openAccesDev(){
   const inp = document.getElementById("dev-code");
   const valider = async ()=>{
     const code = String(inp.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    let bon = false;
-    try{ bon = (await empreinte(code)) === CODE_DEV; }catch(e){}
-    if(bon){ inp.blur(); entrerModeDemo(); return; }
+    let h = "";
+    try{ h = await empreinte(code); }catch(e){}
+    if(h === CODE_DEV){ inp.blur(); entrerModeDemo(); return; }
+    /* la vue non abonne : le meme mot l'active et la retire */
+    if(h === CODE_VUE_GRATUITE){
+      inp.blur(); vueGratuite = !vueGratuite; hideSheet(); render();
+      toast(TR(vueGratuite ? "Vue non abonné : jusqu'à la fermeture de l'app." : "Vue normale."));
+      return;
+    }
     inp.classList.remove("ko"); void inp.offsetWidth; inp.classList.add("ko");
     vibrer([40, 60, 40]);
     toast(TR("Code incorrect"));
@@ -33674,7 +33693,7 @@ function openAbonnement(){
     </div>
     <div class="abo-gratuit"><span class="ic">${IC_ECLAIR_ABO}</span><p>${db.essaiDebut && essaiRestant() === 0 ? `<b>${TR("Tes 7 jours d'essai sont terminés.")}</b>` : ""}${
       TR("Le scan des plats, la progression et le bilan sont sur abonnement. Tout le reste de l'app est gratuit, pour toujours.")}</p></div>
-    ${db.abo === true ? "" : `<div class="abo-packs"><div class="abo-packs-t">${TR("Juste des photos, sans abonnement ?")}</div>${boutonsPacks("")}</div>`}
+    ${aboActif() ? "" : `<div class="abo-packs"><div class="abo-packs-t">${TR("Juste des photos, sans abonnement ?")}</div>${boutonsPacks("")}</div>`}
     <button class="abo-restaurer" id="abo-restaurer">${TR("Déjà abonné ? Restaurer mes achats")}</button>
     <button class="abo-code-lien" id="abo-code-lien">${TR("J'ai un code d'accès")}</button>
     <p class="abo-legal">${TR("Renouvellement automatique, résiliable à tout moment dans Google Play.")} <a href="${URL_CGU}" target="_blank" rel="noopener">${TR("Conditions")}</a> · <a href="${URL_CONF}" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>
@@ -33817,11 +33836,11 @@ function openSettings(){
       </span>
       <!-- sans abonnement : « Voir les forfaits » et sa fleche ; abonne ou debloque :
            la coche prend la place de la fleche -->
-      <span class="an-btn${db.abo === true ? " fait" : ""}">${IC_COURONNE}<span>${db.abo === true
+      <span class="an-btn${aboActif() ? " fait" : ""}">${IC_COURONNE}<span>${aboActif()
           ? (db.aboVia === "play" ? TR("Abonné") : TR("Débloqué par code"))
           : essaiEnCours()
             ? (essaiRestant() > 1 ? TR("Essai · {} jours").replace("{}", essaiRestant()) : TR("Essai · dernier jour"))
-            : TR("Voir les forfaits")}</span>${db.abo === true ? IC_COCHE : IC_CHEVRON}</span>
+            : TR("Voir les forfaits")}</span>${aboActif() ? IC_COCHE : IC_CHEVRON}</span>
     </button>
     <div class="rg-t">${TR("Pendant la séance")}</div>
     <div class="rg-c">
@@ -33932,8 +33951,8 @@ function openSettings(){
     openAccesDev();
   };
   document.getElementById("st-abo").onclick = ()=>{
-    if(db.abo === true && db.aboVia === "play"){ gererSurPlay(); return; }
-    if(db.abo === true) return;                      /* debloque par code : rien a gerer */
+    if(aboActif() && db.aboVia === "play"){ gererSurPlay(); return; }
+    if(aboActif()) return;                      /* debloque par code : rien a gerer */
     hideSheet(); setTimeout(openAbonnement, 260);    /* en essai aussi : on peut voir les forfaits */
   };
   const bVibr = document.getElementById("st-vibr");
