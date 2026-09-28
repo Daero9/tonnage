@@ -5104,6 +5104,7 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.":"Loads compare your first session of the month with your heaviest set since, exercise by exercise.",
   "C'est fait : tu es passé à l'annuel.":"Done: you've switched to yearly.",
   "Ton essai Analyse se termine demain":"Your Analyze trial ends tomorrow",
   "Profite de tes derniers jours : photo de l'assiette, bilans, récupération.":"Enjoy your last days: meal photos, reviews, recovery.",
@@ -8803,6 +8804,7 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.":"Las cargas comparan tu primera sesión del mes con tu serie más pesada desde entonces, ejercicio por ejercicio.",
   "C'est fait : tu es passé à l'annuel.":"Hecho: te has pasado al plan anual.",
   "Ton essai Analyse se termine demain":"Tu prueba de Analyze termina mañana",
   "Profite de tes derniers jours : photo de l'assiette, bilans, récupération.":"Aprovecha tus últimos días: foto del plato, balances, recuperación.",
@@ -12716,6 +12718,7 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.":"As cargas comparam sua primeira sessão do mês com sua série mais pesada desde então, exercício por exercício.",
   "C'est fait : tu es passé à l'annuel.":"Pronto: você passou para o anual.",
   "Ton essai Analyse se termine demain":"Seu teste do Analyze termina amanhã",
   "Profite de tes derniers jours : photo de l'assiette, bilans, récupération.":"Aproveite os últimos dias: foto do prato, balanços, recuperação.",
@@ -20279,7 +20282,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 15h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 16h09 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27425,23 +27428,25 @@ function statsMois(an, mois){
   return {H, C, n:H.length + C.length, vol, km, min, jours, semA:semA.size, semT:semT.size, serie, d0, d1,
     complet:d1 <= now};
 }
-/* Les charges qui ont monte (Nico) : la plus lourde du mois contre la plus lourde du mois
-   d'avant, exercice par exercice — « Developpe couche 70 kg -> 80 kg ». Seuls les exercices
-   faits les deux mois, avec une charge ; tries par gain. */
+/* Les charges qui ont monte DANS le mois (Nico) : la serie la plus lourde de la premiere
+   seance du mois ou l'exercice apparait, contre la plus lourde des seances suivantes du
+   meme mois — « Developpe couche 70 kg -> 80 kg ». Il faut donc l'exercice au moins deux
+   fois dans le mois ; seuls ceux qui ont monte, tries par gain. */
 function progresMois(st){
-  const maxi = (liste)=>{
-    const m = {};
-    liste.forEach(h=>(h.entries || []).forEach(en=>workSets(en).forEach(x=>{
-      if(x.done === false || !(x.w > 0)) return;
-      if(x.w > (m[en.exId] || 0)) m[en.exId] = x.w;
-    })));
-    return m;
-  };
-  const d = st.d0, avant = statsMois(d.getFullYear(), d.getMonth() - 1);
-  const ce = maxi(st.H), prec = maxi(avant.H), out = [];
-  Object.keys(ce).forEach(exId=>{
-    const a = prec[exId], b = ce[exId];
-    if(a > 0 && b > a) out.push({nom:getEx(exId).name, avant:a, apres:b, gain:b - a, pct:(b - a) / a * 100});
+  const seances = st.H.slice().sort((a, b)=>new Date(a.date) - new Date(b.date));
+  const parExo = {};
+  seances.forEach(h=>(h.entries || []).forEach(en=>{
+    let m = 0;
+    workSets(en).forEach(x=>{ if(x.done !== false && x.w > m) m = x.w; });
+    if(!(m > 0)) return;
+    (parExo[en.exId] = parExo[en.exId] || []).push(m);
+  }));
+  const out = [];
+  Object.keys(parExo).forEach(exId=>{
+    const l = parExo[exId];
+    if(l.length < 2) return;
+    const a = l[0], b = Math.max(...l.slice(1));
+    if(b > a) out.push({nom:getEx(exId).name, avant:a, apres:b, gain:b - a, pct:(b - a) / a * 100});
   });
   return out.sort((x, y)=>y.gain - x.gain || y.pct - x.pct);
 }
@@ -27541,7 +27546,7 @@ function openBilanMois(ref){
       ${wins.map(w=>`<div class="bl-item"><span class="ic">${w[0]}</span><div class="grow"><b>${esc(w[1])}</b>${w[2] ? `<p>${esc(w[2])}</p>` : ""}</div></div>`).join("")}</div>` : ""}
     ${!st.n ? `<div class="am-vide">${TR("Aucune séance ce mois-ci.")}</div>` : ""}
     <div class="bl-sec bleu"><div class="bl-st"><span class="ic">${IC_AMPOULE}</span>${TR("À garder en tête")}</div>
-      <div class="bl-note">${TR("Les charges comparent ta série la plus lourde du mois à celle du mois d'avant, exercice par exercice.")}${
+      <div class="bl-note">${TR("Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.")}${
         corps.includes("icm-muscle") ? " " + TR("Les totaux d'un journal alimentaire sont en général sous-estimés de 20 à 30 %.") : ""}</div></div>
     <button class="btn btn-accent fin-ok bl-okb" id="bl-ok" style="width:100%; margin-top:4px;"><span class="grow">${TR("C'est noté !")}</span>${CHEV_MP}</button>`);
   document.getElementById("bl-ok").onclick = closeSheet;
