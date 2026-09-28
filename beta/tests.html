@@ -6752,7 +6752,7 @@ async function lancer(){
     delete DB.notifs; DB.templates = [];
     /* la fiche de reglage */
     F.openNotifs();
-    vrai("La fiche des notifications liste les quatre rappels", F.document.querySelectorAll("#nt-liste .nt-carte").length === 4);
+    vrai("La fiche des notifications liste les cinq rappels (dont la flamme)", F.document.querySelectorAll("#nt-liste .nt-carte").length === 5);
     vrai("…le repas en quatre colonnes, sans jours", F.document.querySelectorAll("#nt-liste .nt-carte[data-type='repas'] .nt-rep").length === 4 && !F.document.querySelector("#nt-liste .nt-carte[data-type='repas'] .nt-jours"));
     vrai("…chacun avec ses sept jours", F.document.querySelectorAll("#nt-liste .nt-carte:first-child .nt-jours button").length === 7);
     F.document.getElementById("nt-actif").click();
@@ -8424,6 +8424,29 @@ async function lancer(){
     F.eval("estAbonne = window._estAbo;");
     DB.history = garde.h; DB.cardio = garde.c; DB.rallumages = garde.r; DB.abo = garde.abo;
     if(garde.l === undefined) delete DB.flammeLaissee; else DB.flammeLaissee = garde.l;
+  }
+  neuf();
+
+  grp("Le rappel de la flamme");
+  neuf();
+  {
+    const garde = {h:DB.history, c:DB.cardio, n:DB.notifs, p:DB.profile, r:DB.rallumages};
+    const midi = n => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(10, 0, 0, 0); return d.toISOString(); };
+    DB.profile = Object.assign({}, garde.p || {}, {skipped:false}); DB.cardio = []; DB.rallumages = []; delete DB.notifs;
+    DB.history = [5, 4, 3, 2, 1].map(n=>({id:"rf" + n, date:midi(n), entries:[]}));
+    const now = new Date(); now.setHours(8, 0, 0, 0);
+    const liste = F.notifsAPlanifier(now);
+    /* la veille de l'extinction ; un abonne recoit aussi « tu peux la rallumer » le lendemain */
+    const fl = liste.filter(x=>x.action === "flamme" && !/rallume/i.test(x.corps));
+    vrai("Allumé par défaut, et un seul rappel « veille » sur la semaine", fl.length === 1, fl.length + "");
+    vrai("…la veille de l'extinction (3 jours sans activité)", fl.length && Math.round((new Date(fl[0].at).setHours(0,0,0,0) - new Date(midi(1)).setHours(0,0,0,0)) / 864e5) === 3);
+    vrai("…avec la flamme dans le texte", fl.length && /5/.test(fl[0].titre + fl[0].corps), fl.length ? fl[0].titre : "");
+    const jourFl = fl.length ? F.dayKey(fl[0].at) : "";
+    vrai("Ce jour-là, pas de rappel de séance en plus", !liste.some(x=>x.action === "seance" && F.dayKey(x.at) === jourFl));
+    DB.notifs.types.flamme.on = false;
+    eq("Coupé : plus de rappel de flamme", F.notifsAPlanifier(now).filter(x=>x.action === "flamme").length, 0);
+    DB.history = garde.h; DB.cardio = garde.c; DB.profile = garde.p; DB.rallumages = garde.r;
+    if(garde.n === undefined) delete DB.notifs; else DB.notifs = garde.n;
   }
   neuf();
 
