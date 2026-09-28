@@ -8361,8 +8361,14 @@ async function lancer(){
     DB.amis = {pseudo:"Léa", actif:false};
     const f = F.ficheAmi();
     eq("La fiche ne contient que les champs prévus (et acceptés par firestore.rules)",
-      Object.keys(f).sort().join(","), "acc,best,derKm,derMin,derNom,derType,derniere,flamme,nAct,pose,pseudo,sem,semDebut,semKm,semMin,semT");
+      Object.keys(f).sort().join(","), "acc,best,cache,derKm,derMin,derNom,derType,derniere,fin,flamme,nAct,pose,pseudo,sem,semDebut,semKm,semMin,semT");
     vrai("Ni poids, ni repas, ni charges dans la fiche", !/weight|kg|meal|sets|kcal/i.test(JSON.stringify(f)));
+    DB.amis = {pseudo:"Léa", actif:false, vis:{flammes:"moi", semaine:"moi", derniere:"moi"}};
+    const fc = F.ficheAmi();
+    vrai("« Moi seul » : flammes, semaine et dernière séance ne partent pas", fc.flamme === 0 && fc.best === 0 && fc.sem === 0 && fc.semT === 0
+      && fc.derniere === null && fc.derNom === "" && ["flammes", "semaine", "derniere"].every(k=>fc.cache.includes(k)));
+    DB.amis = {pseudo:"Léa", actif:false, vis:{profil:"amis", flammes:"public"}};
+    eq("Pas de flamme publique sans profil public", F.visAmis().flammes, "amis");
     delete DB.amis;
     const po = F.poussinAmi(["bandeau", "../../evil", "<img onerror=x>", 42], "../x");
     vrai("Compagnon d'un ami : seuls les accessoires connus sont dessinés",
