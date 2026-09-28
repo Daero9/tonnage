@@ -5162,7 +5162,7 @@ const TRAD = {en:{
   "Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.":"Nothing else: your loads, weight and meals stay on your phone.",
   "Ton pseudo":"Your nickname",
   "Ex : Léa":"E.g. Lea",
-  "J'ai 15 ans ou plus":"I am 15 or older",
+  "J'ai 16 ans ou plus":"I am 16 or older",
   "Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.":"This information is stored with Google Firebase, in Europe, until you delete it.",
   "Activer":"Turn on",
   "Un code ami a 8 caractères.":"A friend code has 8 characters.",
@@ -8783,7 +8783,7 @@ es:{
   "Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.":"Nada más: tus cargas, tu peso y tus comidas se quedan en tu teléfono.",
   "Ton pseudo":"Tu apodo",
   "Ex : Léa":"Ej.: Lea",
-  "J'ai 15 ans ou plus":"Tengo 15 años o más",
+  "J'ai 16 ans ou plus":"Tengo 16 años o más",
   "Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.":"Esta información se guarda en Google Firebase, en Europa, hasta que la elimines.",
   "Activer":"Activar",
   "Un code ami a 8 caractères.":"Un código de amigo tiene 8 caracteres.",
@@ -12619,7 +12619,7 @@ pt:{
   "Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.":"Nada mais: suas cargas, seu peso e suas refeições ficam no seu celular.",
   "Ton pseudo":"Seu apelido",
   "Ex : Léa":"Ex.: Lea",
-  "J'ai 15 ans ou plus":"Tenho 15 anos ou mais",
+  "J'ai 16 ans ou plus":"Tenho 16 anos ou mais",
   "Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.":"Essas informações ficam armazenadas no Google Firebase, na Europa, até você excluí-las.",
   "Activer":"Ativar",
   "Un code ami a 8 caractères.":"Um código de amigo tem 8 caracteres.",
@@ -19966,7 +19966,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 03h44 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 03h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22088,7 +22088,7 @@ function openAmisDebut(modif){
       : TR("Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.")}</p>
     ${modif ? "" : `<label class="am-age am-pub"><input type="checkbox" id="am-vis" checked><span><b>${TR("Profil public")}</b>
       <small>${TR("On peut te trouver par ton pseudo et te voir dans le classement de Tout Tonnup (ton compagnon, ton pseudo et tes flammes). Tu pourras le changer dans Mon profil.")}</small></span></label>`}
-    ${modif ? "" : `<label class="am-age"><input type="checkbox" id="am-age"><span>${TR("J'ai 15 ans ou plus")}</span></label>
+    ${modif ? "" : `<label class="am-age"><input type="checkbox" id="am-age"><span>${TR("J'ai 16 ans ou plus")}</span></label>
     <p class="am-note">${TR("Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.")}
       <a href="https://daero9.github.io/tonnage/confidentialite.html" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>`}
     <button class="btn btn-accent" id="am-go" style="width:100%; margin-top:16px;">${TR(modif ? "Enregistrer" : "Activer")}</button>`, {milieu:true});
@@ -33892,7 +33892,13 @@ function openSauvegarde(){
     };
   };
   document.getElementById("st-reset").onclick=()=>askConfirm(TR("Tout effacer ?"),TR("Programmes, historique et exercices persos seront définitivement supprimés de ce téléphone."),"Tout effacer",true,()=>{
+    /* « Mes amis » actif : on efface aussi ce qui est chez Firebase (la politique de
+       confidentialite le promet) — sans attendre le reseau pour vider le telephone */
+    const amis = db.amis && db.amis.actif && !demoEnCours ? db.amis : null;
     db = {custom:[], templates:[], history:[], settings:{rest:90, goal:80, name:db.settings.name}, active:null, seq:1, weights:[], cardio:[], habits:["Petit-déj complet","Déjeuner solide","Dîner solide","Shake ou collation en +"], habitLog:{}}; save(); render();
+    /* l'identite garde de quoi s'effacer ; supprimerAmis la retire une fois Firebase vide
+       (hors ligne : elle reste, et « Supprimer mes données d'amis » pourra reessayer) */
+    if(amis){ amis.actif = false; db.amis = amis; save(); supprimerAmis().catch(()=>{}); }
   });
 }
 
