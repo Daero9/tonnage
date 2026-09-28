@@ -4766,6 +4766,10 @@
   .sc-astuce .co > p:only-child{font-size:13.5px; font-weight:700; color:var(--ink); margin:0;}
   .sc-astuce{align-items:center;}
   #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
+  /* le salut, lettre par lettre a l'ouverture */
+  .ecr{opacity:0; animation:ecrIn .12s ease-out forwards;}
+  @keyframes ecrIn{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+  .wv.ecr{display:inline-block; animation:ecrIn .25s ease-out forwards;}   /* la main, juste apres la derniere lettre */
   /* ---- mes amis ---- */
   /* fin d'essai, annuel */
   .fe-logo{width:56px; height:56px; margin:0 auto 10px; border-radius:18px; background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;
@@ -20282,7 +20286,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 01h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 01h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22590,6 +22594,37 @@ function openProfil(){
   }).catch(()=>{});
   const prOk = document.getElementById("pr-ok"); if(prOk) prOk.onclick = closeSheet;
 }
+/* Le salut s'ecrit lettre par lettre a l'ouverture de l'app (Nico) : « Salut Nico, » puis
+   « Pret pour ta seance ? ». Chaque lettre est deja a sa place (invisible) : la mise en
+   page ne bouge pas, et ajusterSalut a mesure le texte entier. Rien si l'appareil demande
+   moins d'animations. */
+function ecrireSalut(){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const h1 = document.querySelector(".hero-accueil h1"), sous = document.querySelector(".hero-accueil .sub");
+  if(!h1) return;
+  let i = 0;
+  const PAS = 45;                        /* ms entre deux lettres */
+  const decouper = el=>{
+    const noeuds = [];
+    const marcher = n=>n.childNodes.forEach(c=>{ if(c.nodeType === 3) noeuds.push(c); else if(c.nodeType === 1 && !c.classList.contains("wv")) marcher(c); });
+    marcher(el);
+    noeuds.forEach(t=>{
+      const frag = document.createDocumentFragment();
+      Array.from(t.textContent).forEach(ch=>{
+        if(/\s/.test(ch)){ frag.appendChild(document.createTextNode(ch)); return; }
+        const sp = document.createElement("span");
+        sp.className = "ecr"; sp.textContent = ch; sp.style.animationDelay = (i++ * PAS) + "ms";
+        frag.appendChild(sp);
+      });
+      t.replaceWith(frag);
+    });
+    /* la main qui salue arrive juste apres la derniere lettre du titre */
+    el.querySelectorAll(".wv").forEach(w=>{ w.classList.add("ecr"); w.style.animationDelay = (i++ * PAS) + "ms"; });
+  };
+  decouper(h1);
+  i += 4;                                /* une courte pause avant la deuxieme ligne */
+  if(sous) decouper(sous);
+}
 /* le salut de l'accueil sur une seule ligne : on reduit le corps jusqu'a ce qu'il tienne
    dans la place laissee par le poussin (jamais sous 18 px) */
 function ajusterSalut(){
@@ -22802,7 +22837,9 @@ function renderTabs(){
    seance change tout l'ecran sans changer d'onglet, et merite le meme fondu. */
 let ecranPrecedent = null;
 let carrouselCible = null;        /* selecteur de la carte a montrer au prochain rendu */
+let rendus = 0;                    /* combien de fois l'ecran a ete dessine depuis l'ouverture */
 function render(){
+  rendus++;
   renderTabs();
   publierAmiBientot();
   suivreAmisBientot();
@@ -27805,6 +27842,7 @@ function renderSeance(app){
   document.getElementById("hist-all").onclick = ()=>allerOnglet("hist");
   wireTopbar();
   ajusterSalut();
+  if(rendus === 1) ecrireSalut();    /* a l'ouverture seulement, pas en revenant sur l'onglet */
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
