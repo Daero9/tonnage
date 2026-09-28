@@ -4742,6 +4742,25 @@
   .am-tete h2{flex:1; margin:0; font-size:26px; font-weight:900;}
   .am-plus{width:42px; height:42px; border:0; border-radius:50%; background:rgba(245,130,32,.12); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background .2s, color .2s;}
   .am-plus svg{width:24px; height:24px;} .am-plus.on{background:var(--accent-grad); color:#fff;}
+  .am-trophee{background:rgba(245,166,35,.16); color:#e59a0c;} .am-trophee svg{width:22px; height:22px;}
+  .cl-seg{display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--surface2); margin:4px 0 8px;}
+  .cl-seg button{flex:1; border:0; background:none; padding:9px 6px; border-radius:99px; font:inherit; font-size:14px; font-weight:800; color:var(--ink-soft);}
+  .cl-seg button.on{background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .cl-sous{font-size:12.5px; color:var(--ink-mute); text-align:center; margin:0 0 10px;}
+  .cl-liste{display:flex; flex-direction:column; gap:6px;}
+  .cl-moi{display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 10px; padding:10px 14px; border-radius:16px;
+    background:var(--accent-grad); color:#fff; font-size:14px; font-weight:700;}
+  .cl-moi:empty{display:none;}
+  .cl-moi b{font-size:24px; font-weight:900; line-height:1;} .cl-moi sup{font-size:12px; margin-left:1px;}
+  .cl-moi .cl-fl{color:#fff; font-size:16px;}
+  .cl-l{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .cl-l.moi{background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.45);}
+  .cl-l .am-po{width:44px; height:44px;}
+  .cl-rg{flex:none; width:28px; text-align:center; font-size:15px; font-weight:900; color:var(--ink-soft);}
+  .cl-rg.med{font-size:24px; line-height:1;}
+  .cl-l b{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cl-fl{flex:none; display:inline-flex; align-items:center; gap:3px; font-size:17px; font-weight:900; color:var(--accent);}
+  .cl-fl .icm{background-color:currentColor;}
   .am-moi{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
   .am-moi b{color:var(--ink); font-weight:800;} .am-moi .sep{color:var(--ink-mute);}
   .am-share{width:30px; height:30px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; margin-left:auto;}
@@ -4966,6 +4985,12 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Ta place":"Your rank",
+  "Allume ta flamme pour entrer au classement.":"Light your streak to join the leaderboard.",
+  "Classement":"Leaderboard",
+  "Tout Tonnup":"All of Tonnup",
+  "Par flamme en cours : les activités d'affilée.":"By current streak: activities in a row.",
+  "Personne n'a de flamme allumée pour l'instant.":"Nobody has a streak going right now.",
   "Toi":"You",
   "Partager mon code":"Share my code",
   "Ajouter un ami":"Add a friend",
@@ -8553,6 +8578,12 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Ta place":"Tu puesto",
+  "Allume ta flamme pour entrer au classement.":"Enciende tu racha para entrar en la clasificación.",
+  "Classement":"Clasificación",
+  "Tout Tonnup":"Todo Tonnup",
+  "Par flamme en cours : les activités d'affilée.":"Por racha actual: actividades seguidas.",
+  "Personne n'a de flamme allumée pour l'instant.":"Nadie tiene una racha activa por ahora.",
   "Toi":"Tú",
   "Partager mon code":"Compartir mi código",
   "Ajouter un ami":"Añadir un amigo",
@@ -12355,6 +12386,12 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Ta place":"Sua posição",
+  "Allume ta flamme pour entrer au classement.":"Acenda sua sequência para entrar na classificação.",
+  "Classement":"Classificação",
+  "Tout Tonnup":"Todo o Tonnup",
+  "Par flamme en cours : les activités d'affilée.":"Pela sequência atual: atividades seguidas.",
+  "Personne n'a de flamme allumée pour l'instant.":"Ninguém tem uma sequência ativa no momento.",
   "Toi":"Você",
   "Partager mon code":"Compartilhar meu código",
   "Ajouter un ami":"Adicionar um amigo",
@@ -19784,7 +19821,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 01h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 02h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21345,7 +21382,11 @@ async function publierAmi(force){
   /* l'annuaire, pour la recherche : le nom, le numero et le compagnon — rien d'autre, et
      seulement pour qui a choisi d'etre trouvable */
   if(a.tag){
-    const ann = {n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag, acc:f.acc};
+    /* la flamme, pour le classement : sa valeur, et le jour ou elle s'eteindra si rien ne
+       se passe (le dernier point de la serie + 4 jours — un rallumage compte) */
+    const pts = pointsFlamme(Date.now());
+    const ann = {n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag, acc:f.acc, fl:f.flamme, best:f.best,
+      fin:pts.length && f.flamme > 0 ? new Date(pts[0].t + 4 * 864e5) : null};
     const cleA = a.visible === false ? "invisible" : JSON.stringify(ann);
     if(force || cleA !== a.envoyeAnn){
       if(a.visible === false) await fbReq("DELETE", `/annuaire/${a.uid}`).catch(()=>{});
@@ -21532,6 +21573,61 @@ function ligneAmi(f){
       ${pastillesAmi(f)}
       <small>${derniereAmi(f)}</small></span></button>`;
 }
+/* ---- le classement (Nico) : le rang, le compagnon, le nom, la flamme — rien d'autre ----
+   « Mes amis » se calcule avec les fiches deja lues ; « Tout Tonnup » lit les 50 plus
+   grandes flammes de l'annuaire (seulement les personnes trouvables) et ecarte celles
+   qui se sont eteintes depuis. */
+function flammeVivante(x){ return x.fin && x.fin > Date.now() ? (x.fl || 0) : 0; }
+async function classementGlobal(){
+  const r = await fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:"annuaire"}],
+    where:{fieldFilter:{field:{fieldPath:"fl"}, op:"GREATER_THAN", value:{integerValue:"0"}}},
+    orderBy:[{field:{fieldPath:"fl"}, direction:"DESCENDING"}], limit:50}});
+  return r.filter(x=>x.document).map(x=>Object.assign({uid:x.document.name.split("/").pop()}, fbObjet(x.document.fields)))
+    .map(x=>Object.assign(x, {pseudo:x.p, flamme:flammeVivante(x)})).filter(x=>x.flamme > 0);
+}
+function ligneClassement(x, i, moi){
+  const med = ["🥇", "🥈", "🥉"][i];
+  return `<div class="cl-l${moi ? " moi" : ""}"><span class="cl-rg${med ? " med" : ""}">${med || (i + 1)}</span>${poussinAmi(x.acc, "en-forme")}
+    <b>${esc(nomComplet(x))}</b><span class="cl-fl">${icoM("flamme", 16)}${x.flamme}</span></div>`;
+}
+function openClassement(onglet){
+  onglet = onglet || "amis";
+  const a = db.amis || {};
+  openSheet(`${teteAmis(TR("Classement"))}
+    <div class="cl-seg"><button data-cl="amis" class="${onglet === "amis" ? "on" : ""}">${TR("Mes amis")}</button><button data-cl="tous" class="${onglet === "tous" ? "on" : ""}">${TR("Tout Tonnup")}</button></div>
+    <p class="cl-sous">${TR("Par flamme en cours : les activités d'affilée.")}</p>
+    <div class="cl-moi" id="cl-moi"></div>
+    <div class="cl-liste" id="cl-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
+  brancherCroix();
+  document.querySelectorAll("[data-cl]").forEach(b=>b.onclick = ()=>{ if(b.dataset.cl !== onglet) openClassement(b.dataset.cl); });
+  const el = document.getElementById("cl-liste");
+  const moi = {uid:a.uid || "moi", pseudo:a.pseudo || TR("Toi"), tag:a.tag, acc:ficheAmi2acc(), flamme:serieJours().n};
+  const afficher = l=>{
+    if(!document.body.contains(el)) return;
+    l = l.slice().sort((x, y)=>(y.flamme || 0) - (x.flamme || 0) || (y.best || 0) - (x.best || 0));
+    el.innerHTML = l.length ? l.map((x, i)=>ligneClassement(x, i, x.uid === moi.uid)).join("")
+      : `<div class="am-vide">${TR("Personne n'a de flamme allumée pour l'instant.")}</div>`;
+    /* ta place, en haut, toujours visible (Nico) */
+    const rang = l.findIndex(x=>x.uid === moi.uid), cm = document.getElementById("cl-moi");
+    if(cm) cm.innerHTML = !moi.flamme ? `<span>${TR("Allume ta flamme pour entrer au classement.")}</span>`
+      : rang >= 0 ? `<span>${TR("Ta place")}</span><b>#${rang + 1}</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`
+      : `<span>${TR("Ta place")}</span><b>50+</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`;
+  };
+  const erreur = ()=>{ if(document.body.contains(el)) el.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; };
+  if(demoEnCours){
+    const d = amisDemo().map(f=>Object.assign({}, f, {flamme:flammeAmi(f)}));
+    afficher(onglet === "amis" ? d.concat([Object.assign(moi, {flamme:9})])
+      : d.concat([{uid:"g1", pseudo:"Sarah", tag:"0712", acc:["casque-rouge"], flamme:64}, {uid:"g2", pseudo:"Karim", tag:"3380", acc:["bonnet-blanc"], flamme:41},
+          {uid:"g3", pseudo:"Tom", tag:"9921", acc:[], flamme:17}]));
+    return;
+  }
+  if(onglet === "amis") chargerAmis(false).then(l=>afficher(l.map(f=>Object.assign({}, f, {flamme:flammeAmi(f)})).concat([moi]))).catch(erreur);
+  else classementGlobal().then(l=>{
+    /* ta propre ligne vient de ton telephone : elle est a jour meme si l'annuaire ne l'est pas encore */
+    afficher(l.filter(x=>x.uid !== moi.uid).concat(a.visible !== false && moi.flamme > 0 ? [moi] : []).sort((x, y)=>y.flamme - x.flamme).slice(0, 50));
+  }).catch(erreur);
+}
+function ficheAmi2acc(){ return ((db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"]).filter(id=>{ const f = familleAcc(id); return f && accessoireGagne(f); }).slice(0, 12); }
 /* une petite fenetre posee au milieu de l'ecran (Nico : pas une fiche qui remonte) */
 function fenetre(html){
   document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
@@ -21618,7 +21714,7 @@ function openAmis(tiroir){
   if(!demoEnCours && !(a && a.actif)){ openAmisDebut(); return; }
   if(!demoEnCours && !a.tag){ changerPseudo(a.pseudo).then(()=>openAmis(tiroir)).catch(()=>{}); }
   const moi = demoEnCours ? {pseudo:"Nico", tag:"4821", code:"TNP4K7Q2"} : a;
-  openSheet(`${teteAmis(TR("Mes amis"), `<button class="am-plus${tiroir ? " on" : ""}" id="am-plus" aria-label="${TR("Ajouter un ami")}">${IC_AMI_PLUS}</button>`)}
+  openSheet(`${teteAmis(TR("Mes amis"), `<button class="am-plus am-trophee" id="am-top" aria-label="${TR("Classement")}">${IC_COURONNE}</button><button class="am-plus${tiroir ? " on" : ""}" id="am-plus" aria-label="${TR("Ajouter un ami")}">${IC_AMI_PLUS}</button>`)}
     <div class="am-moi"><span>${TR("Toi")} : <b>${esc(nomComplet(moi))}</b></span><span class="sep">·</span>
       <span>${TR("Code")} <b>${codeAff(moi.code)}</b></span>
       <button class="am-share" id="am-partager" aria-label="${TR("Partager mon code")}">${IC_PARTAGE}</button></div>
@@ -21636,6 +21732,7 @@ function openAmis(tiroir){
   const tir = document.getElementById("am-tiroir"), plus = document.getElementById("am-plus");
   const ouvrir = o=>{ tir.classList.toggle("ouvert", o); plus.classList.toggle("on", o); if(o) setTimeout(()=>{ const i = document.getElementById("am-saisie"); if(i) i.focus({preventScroll:true}); }, 300); };
   plus.onclick = ()=>ouvrir(!tir.classList.contains("ouvert"));
+  document.getElementById("am-top").onclick = ()=>ouvrirParDessus(()=>openAmis(), ()=>openClassement());
   const afficher = l=>{
     if(!document.body.contains(liste)) return;
     liste.innerHTML = l.length ? l.map(ligneAmi).join("")
