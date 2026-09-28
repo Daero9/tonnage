@@ -6334,6 +6334,9 @@ async function lancer(){
        animation d'entree ne demarre qu'une fois l'iframe visible (480 ms) */
     await new Promise(r=>setTimeout(r, 400));
     await attendre(()=>{ const c = D2.querySelector(".abo-carte-f"); return c && F.getComputedStyle(c).animationName === "none" || (c && c.getAnimations && c.getAnimations().length === 0); }, 1500);
+    /* hors de l'ecran, le navigateur peut mettre l'animation d'entree en pause : la carte
+       resterait en bas, sur la barre. On la mene a son terme avant de mesurer. */
+    { const c = D2.querySelector(".abo-carte-f"); if(c && c.getAnimations) c.getAnimations().forEach(x=>{ try{ x.finish(); }catch(e){} }); }
     (()=>{
       const tb = D2.querySelector(".tabbar").getBoundingClientRect();
       const sous = D2.elementFromPoint(tb.left + tb.width/2, tb.top + tb.height/2);
@@ -8413,6 +8416,28 @@ async function lancer(){
     F.eval("estAbonne = window._estAbo;");
     DB.history = garde.h; DB.cardio = garde.c; DB.rallumages = garde.r; DB.abo = garde.abo;
     if(garde.l === undefined) delete DB.flammeLaissee; else DB.flammeLaissee = garde.l;
+  }
+  neuf();
+
+  grp("Le bilan du mois");
+  neuf();
+  {
+    const garde = {h:DB.history, c:DB.cardio};
+    const ex = F.eval("libId")("Squat");
+    const s = (an, m, j, w, r) => ({id:"bm" + an + m + j, date:new Date(an, m, j, 10).toISOString(), name:"Legs",
+      start:new Date(an, m, j, 10).getTime(), end:new Date(an, m, j, 11).getTime(), entries:[{exId:ex, sets:[{w, r, done:true, warm:false}]}]});
+    DB.history = [s(2026, 6, 20, 100, 5), s(2026, 7, 3, 100, 5), s(2026, 7, 5, 105, 5), s(2026, 7, 26, 110, 5)];
+    DB.cardio = [{id:"bmc", date:new Date(2026, 7, 10, 9).toISOString(), km:5, min:30, machine:"course"}];
+    const st = F.statsMois(2026, 7);
+    eq("Août : 3 séances et 1 sortie", st.n, 4);
+    eq("Le temps : 3 h de muscu + 30 min de course", Math.round(st.min), 210);
+    eq("Les kilomètres du mois", st.km, 5);
+    vrai("Un mois passé est complet", st.complet === true);
+    const pr = F.progresMois(st);
+    vrai("Progrès : le meilleur 1RM estimé d'août dépasse celui de juillet", pr.length === 1 && pr[0].apres > pr[0].avant, JSON.stringify(pr));
+    DB.history = [s(2026, 7, 3, 100, 5)];
+    eq("Pas de progrès sans séance avant le mois pour comparer", F.progresMois(F.statsMois(2026, 7)).length, 0);
+    DB.history = garde.h; DB.cardio = garde.c;
   }
   neuf();
 
