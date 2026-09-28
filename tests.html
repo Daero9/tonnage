@@ -6305,7 +6305,8 @@ async function lancer(){
     await attendre(()=>!!F.document.getElementById("abo-mensuel"), 2000);
     const D2 = F.document;
     vrai("La fiche s'ouvre sur son bandeau", !!D2.querySelector(".abo-tete"));
-    eq("Cinq promesses (dont les objectifs de course et la flamme protégée)", D2.querySelectorAll(".abo-promesses li").length, 5);
+    eq("Trois promesses à côté du téléphone", D2.querySelectorAll(".abo-promesses li").length, 3);
+    eq("…et deux en dessous (objectifs de course, flamme protégée)", D2.querySelectorAll(".abo-plus > div").length, 2);
     vrai("Le mensuel porte son prix", /5,99/.test(D2.getElementById("abo-mensuel").textContent));
     vrai("…et le badge « le plus populaire »", !!D2.querySelector("#abo-mensuel .abo-populaire"));
     vrai("L'annuel porte son prix, son économie et son prix par mois",
@@ -6334,6 +6335,9 @@ async function lancer(){
        animation d'entree ne demarre qu'une fois l'iframe visible (480 ms) */
     await new Promise(r=>setTimeout(r, 400));
     await attendre(()=>{ const c = D2.querySelector(".abo-carte-f"); return c && F.getComputedStyle(c).animationName === "none" || (c && c.getAnimations && c.getAnimations().length === 0); }, 1500);
+    /* hors de l'ecran, le navigateur peut mettre l'animation d'entree en pause : la carte
+       resterait en bas, sur la barre. On la mene a son terme avant de mesurer. */
+    { const c = D2.querySelector(".abo-carte-f"); if(c && c.getAnimations) c.getAnimations().forEach(x=>{ try{ x.finish(); }catch(e){} }); }
     (()=>{
       const tb = D2.querySelector(".tabbar").getBoundingClientRect();
       const sous = D2.elementFromPoint(tb.left + tb.width/2, tb.top + tb.height/2);
@@ -6748,7 +6752,7 @@ async function lancer(){
     delete DB.notifs; DB.templates = [];
     /* la fiche de reglage */
     F.openNotifs();
-    vrai("La fiche des notifications liste les quatre rappels", F.document.querySelectorAll("#nt-liste .nt-carte").length === 4);
+    vrai("La fiche des notifications liste les cinq rappels (dont la flamme)", F.document.querySelectorAll("#nt-liste .nt-carte").length === 5);
     vrai("…le repas en quatre colonnes, sans jours", F.document.querySelectorAll("#nt-liste .nt-carte[data-type='repas'] .nt-rep").length === 4 && !F.document.querySelector("#nt-liste .nt-carte[data-type='repas'] .nt-jours"));
     vrai("…chacun avec ses sept jours", F.document.querySelectorAll("#nt-liste .nt-carte:first-child .nt-jours button").length === 7);
     F.document.getElementById("nt-actif").click();
@@ -8405,6 +8409,13 @@ async function lancer(){
     eq("Une séance le jour même : la série continue à 4", F.serieJours().n, 4);
     vrai("La meilleure flamme en tient compte", F.meilleureFlamme() >= 4);
     vrai("Un rallumage ne déclenche pas la fête d'un accessoire", DB.history.pop() && F.accessoireDuJour() === null);
+    /* une seance faite AVANT de rallumer : l'ancienne serie reste rallumable, et se relie */
+    DB.rallumages = []; DB.history = [act(12), act(11), act(10), act(9), act(8), act(7), act(1)];
+    eq("Reprise sans rallumer : la nouvelle flamme est à 1", F.serieJours().n, 1);
+    const r2 = F.flammeRallumable();
+    vrai("…l'ancienne série de 6 est encore proposée", r2 && r2.n === 6 && r2.cur === 1, JSON.stringify(r2));
+    vrai("…et en la rallumant, 6 + 1 = 7", F.rallumerFlamme() === true && F.serieJours().n === 7, String(F.serieJours().n));
+    eq("…plus rien à rallumer ensuite", F.flammeRallumable(), null);
     DB.rallumages = []; DB.history = [act(20), act(19), act(18)];
     eq("Éteinte depuis trop longtemps : plus de rallumage", F.flammeRallumable(), null);
     DB.history = [act(9), act(8)]; DB.rallumages = [];
@@ -8413,6 +8424,51 @@ async function lancer(){
     F.eval("estAbonne = window._estAbo;");
     DB.history = garde.h; DB.cardio = garde.c; DB.rallumages = garde.r; DB.abo = garde.abo;
     if(garde.l === undefined) delete DB.flammeLaissee; else DB.flammeLaissee = garde.l;
+  }
+  neuf();
+
+  grp("Le rappel de la flamme");
+  neuf();
+  {
+    const garde = {h:DB.history, c:DB.cardio, n:DB.notifs, p:DB.profile, r:DB.rallumages};
+    const midi = n => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(10, 0, 0, 0); return d.toISOString(); };
+    DB.profile = Object.assign({}, garde.p || {}, {skipped:false}); DB.cardio = []; DB.rallumages = []; delete DB.notifs;
+    DB.history = [5, 4, 3, 2, 1].map(n=>({id:"rf" + n, date:midi(n), entries:[]}));
+    const now = new Date(); now.setHours(8, 0, 0, 0);
+    const liste = F.notifsAPlanifier(now);
+    /* la veille de l'extinction ; un abonne recoit aussi « tu peux la rallumer » le lendemain */
+    const fl = liste.filter(x=>x.action === "flamme" && !/rallume/i.test(x.corps));
+    vrai("Allumé par défaut, et un seul rappel « veille » sur la semaine", fl.length === 1, fl.length + "");
+    vrai("…la veille de l'extinction (3 jours sans activité)", fl.length && Math.round((new Date(fl[0].at).setHours(0,0,0,0) - new Date(midi(1)).setHours(0,0,0,0)) / 864e5) === 3);
+    vrai("…avec la flamme dans le texte", fl.length && /5/.test(fl[0].titre + fl[0].corps), fl.length ? fl[0].titre : "");
+    const jourFl = fl.length ? F.dayKey(fl[0].at) : "";
+    vrai("Ce jour-là, pas de rappel de séance en plus", !liste.some(x=>x.action === "seance" && F.dayKey(x.at) === jourFl));
+    DB.notifs.types.flamme.on = false;
+    eq("Coupé : plus de rappel de flamme", F.notifsAPlanifier(now).filter(x=>x.action === "flamme").length, 0);
+    DB.history = garde.h; DB.cardio = garde.c; DB.profile = garde.p; DB.rallumages = garde.r;
+    if(garde.n === undefined) delete DB.notifs; else DB.notifs = garde.n;
+  }
+  neuf();
+
+  grp("Le bilan du mois");
+  neuf();
+  {
+    const garde = {h:DB.history, c:DB.cardio};
+    const ex = F.eval("libId")("Squat");
+    const s = (an, m, j, w, r) => ({id:"bm" + an + m + j, date:new Date(an, m, j, 10).toISOString(), name:"Legs",
+      start:new Date(an, m, j, 10).getTime(), end:new Date(an, m, j, 11).getTime(), entries:[{exId:ex, sets:[{w, r, done:true, warm:false}]}]});
+    DB.history = [s(2026, 6, 20, 100, 5), s(2026, 7, 3, 100, 5), s(2026, 7, 5, 105, 5), s(2026, 7, 26, 110, 5)];
+    DB.cardio = [{id:"bmc", date:new Date(2026, 7, 10, 9).toISOString(), km:5, min:30, machine:"course"}];
+    const st = F.statsMois(2026, 7);
+    eq("Août : 3 séances et 1 sortie", st.n, 4);
+    eq("Le temps : 3 h de muscu + 30 min de course", Math.round(st.min), 210);
+    eq("Les kilomètres du mois", st.km, 5);
+    vrai("Un mois passé est complet", st.complet === true);
+    const pr = F.progresMois(st);
+    vrai("Charges : 1re séance d'août 100 kg → la plus lourde ensuite 110 kg (juillet ignoré)", pr.length === 1 && pr[0].avant === 100 && pr[0].apres === 110, JSON.stringify(pr));
+    DB.history = [s(2026, 6, 20, 90, 5), s(2026, 7, 3, 100, 5)];
+    eq("Une seule séance dans le mois : rien à comparer", F.progresMois(F.statsMois(2026, 7)).length, 0);
+    DB.history = garde.h; DB.cardio = garde.c;
   }
   neuf();
 
