@@ -5046,6 +5046,14 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Personnes bloquées":"Blocked people",
+  "Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.":"They can't send you a request or add you with your code.",
+  "Personne bloquée":"Blocked person",
+  "Tu n'as bloqué personne.":"You haven't blocked anyone.",
+  "Débloquer":"Unblock",
+  "Débloquer {} ?":"Unblock {}?",
+  "Cette personne pourra de nouveau t'envoyer une demande d'ami.":"This person will be able to send you a friend request again.",
+  "Débloqué.":"Unblocked.",
   "Copier mon code":"Copy my code",
   "Public":"Public",
   "Public : on te trouve par ton pseudo et tu peux apparaître au classement.":"Public: people can find you by nickname and you can appear on the leaderboard.",
@@ -8667,6 +8675,14 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Personnes bloquées":"Personas bloqueadas",
+  "Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.":"No pueden enviarte solicitudes ni añadirte con tu código.",
+  "Personne bloquée":"Persona bloqueada",
+  "Tu n'as bloqué personne.":"No has bloqueado a nadie.",
+  "Débloquer":"Desbloquear",
+  "Débloquer {} ?":"¿Desbloquear a {}?",
+  "Cette personne pourra de nouveau t'envoyer une demande d'ami.":"Esta persona podrá volver a enviarte una solicitud de amistad.",
+  "Débloqué.":"Desbloqueado.",
   "Copier mon code":"Copiar mi código",
   "Public":"Público",
   "Public : on te trouve par ton pseudo et tu peux apparaître au classement.":"Público: te encuentran por tu apodo y puedes aparecer en la clasificación.",
@@ -12503,6 +12519,14 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Personnes bloquées":"Pessoas bloqueadas",
+  "Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.":"Elas não podem te enviar pedidos nem te adicionar com seu código.",
+  "Personne bloquée":"Pessoa bloqueada",
+  "Tu n'as bloqué personne.":"Você não bloqueou ninguém.",
+  "Débloquer":"Desbloquear",
+  "Débloquer {} ?":"Desbloquear {}?",
+  "Cette personne pourra de nouveau t'envoyer une demande d'ami.":"Essa pessoa poderá te enviar um pedido de amizade de novo.",
+  "Débloqué.":"Desbloqueado.",
   "Copier mon code":"Copiar meu código",
   "Public":"Público",
   "Public : on te trouve par ton pseudo et tu peux apparaître au classement.":"Público: podem te encontrar pelo apelido e você pode aparecer na classificação.",
@@ -19966,7 +19990,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 03h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 11h40 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21648,15 +21672,22 @@ async function accepterDemande(d){
   amisCache = null;
 }
 function refuserDemande(d){ return fbReq("DELETE", `/demandes/${d.de}_${db.amis.uid}`); }
+async function debloquerAmi(uid){
+  await fbReq("DELETE", `/blocages/${db.amis.uid}_${uid}`);
+  if(db.amis.bloques){ delete db.amis.bloques[uid]; save(); }
+}
 async function retirerAmi(uid){
   const me = db.amis.uid;
   await Promise.all([`${me}_${uid}`, `${uid}_${me}`].map(id=>fbReq("DELETE", `/amities/${id}`).catch(()=>{})));
   amisCache = null;
 }
 /* bloquer : plus d'amitie, plus de demande, et il ne peut plus t'ajouter ni te redemander */
-async function bloquerAmi(uid){
+/* `qui` : le nom et le compagnon, gardes SUR LE TELEPHONE pour la liste des personnes
+   bloquees — la fiche de blocage chez Firebase ne porte que les identifiants */
+async function bloquerAmi(uid, qui){
   const me = db.amis.uid;
   await fbReq("PATCH", `/blocages/${me}_${uid}`, {fields:fbChamps({de:me, a:uid, quand:new Date()})});
+  if(qui){ db.amis.bloques = Object.assign({}, db.amis.bloques, {[uid]:{pseudo:qui.pseudo || "", tag:qui.tag || "", acc:qui.acc || []}}); save(); }
   await Promise.all([`/amities/${me}_${uid}`, `/amities/${uid}_${me}`, `/demandes/${uid}_${me}`, `/demandes/${me}_${uid}`]
     .map(x=>fbReq("DELETE", x).catch(()=>{})));
   amisCache = null;
@@ -21862,7 +21893,7 @@ function openAmiDetail(f, retour){
   });
   const b = document.getElementById("amd-bloquer");
   if(b) b.onclick = ()=>askConfirm(TR("Bloquer {} ?").replace("{}", f.pseudo), TR("Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter."), TR("Bloquer"), true, async ()=>{
-    try{ await bloquerAmi(f.uid); toast(TR("Bloqué.")); }catch(e){ erreur(); }
+    try{ await bloquerAmi(f.uid, f); toast(TR("Bloqué.")); }catch(e){ erreur(); }
     retour();
   });
   const sg = document.getElementById("amd-signaler");
@@ -21902,6 +21933,36 @@ async function openCartePublique(x, rang){
     };
   }catch(e){ act.innerHTML = ""; }
 }
+/* ---- les personnes bloquees : la liste, et « Debloquer » ----
+   La liste vient de Firebase (la verite) ; le nom, du telephone, ou a defaut de
+   l'annuaire si la personne est publique. */
+async function openBloques(){
+  openSheet(`${teteAmis(TR("Personnes bloquées"))}
+    <p class="cl-sous" style="text-align:left;">${TR("Elles ne peuvent ni t'envoyer de demande, ni t'ajouter avec ton code.")}</p>
+    <div class="cl-liste" id="bl-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
+  brancherCroix();
+  const el = document.getElementById("bl-liste");
+  try{
+    const l = await fbRequete("blocages", "de", db.amis.uid, 100);
+    const connus = db.amis.bloques || {};
+    const gens = await Promise.all(l.map(async b=>{
+      if(connus[b.a]) return Object.assign({uid:b.a}, connus[b.a]);
+      try{ const x = fbObjet((await fbReq("GET", `/annuaire/${b.a}`)).fields); return {uid:b.a, pseudo:x.p, tag:x.tag, acc:x.acc}; }
+      catch(e){ return {uid:b.a, pseudo:TR("Personne bloquée"), tag:"", acc:[]}; }
+    }));
+    if(!document.body.contains(el)) return;
+    if(!gens.length){ el.innerHTML = `<div class="am-vide">${TR("Tu n'as bloqué personne.")}</div>`; return; }
+    el.innerHTML = gens.map((x, i)=>`<div class="cl-l">${poussinAmi(x.acc, "en-forme")}<b>${esc(nomComplet(x))}</b>
+      <button class="btn btn-sm" data-deb="${i}">${TR("Débloquer")}</button></div>`).join("");
+    el.querySelectorAll("[data-deb]").forEach(b=>b.onclick = ()=>{
+      const x = gens[b.dataset.deb];
+      askConfirm(TR("Débloquer {} ?").replace("{}", nomComplet(x)), TR("Cette personne pourra de nouveau t'envoyer une demande d'ami."), TR("Débloquer"), false, async ()=>{
+        try{ await debloquerAmi(x.uid); toast(TR("Débloqué.")); }catch(e){ toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+        openBloques();
+      });
+    });
+  }catch(e){ if(document.body.contains(el)) el.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; }
+}
 /* ---- mon profil : mon apercu, mon code, et qui voit quoi ---- */
 function openMonProfil(){
   const a = db.amis || {}, v = visAmis(), e = poussinEtat();
@@ -21930,6 +21991,7 @@ function openMonProfil(){
     <div class="mp-apercus"><button class="btn" id="mp-amis">${TR("Voir comme mes amis")}</button>
       <button class="btn" id="mp-tous" ${v.profil === "public" ? "" : "disabled"}>${TR("Voir comme tout le monde")}</button></div>
     ${demoEnCours ? "" : `<div class="am-pied"><button class="am-lien" id="am-pseudo">${TR("Changer de pseudo")}</button>
+      <button class="am-lien" id="am-bloques">${TR("Personnes bloquées")}</button>
       <button class="am-lien am-supp" id="am-supp">${TR("Supprimer mes données d'amis")}</button></div>`}`, {milieu:true});
   brancherCroix();
   document.querySelectorAll("[data-vis]").forEach(b=>b.onclick = ()=>{
@@ -21955,6 +22017,8 @@ function openMonProfil(){
   };
   const bP = document.getElementById("am-pseudo");
   if(bP) bP.onclick = ()=>ouvrirParDessus(openMonProfil, ()=>openAmisDebut(true));
+  const bB = document.getElementById("am-bloques");
+  if(bB) bB.onclick = ()=>ouvrirParDessus(openMonProfil, openBloques);
   const bS = document.getElementById("am-supp");
   if(bS) bS.onclick = ()=>askConfirm(TR("Supprimer mes données d'amis ?"),
     TR("Ton pseudo, ton code et tes amis seront effacés chez Firebase. Tes séances restent sur ton téléphone."), TR("Supprimer"), true, async ()=>{
@@ -22032,7 +22096,7 @@ function openAmis(tiroir){
         <div class="fen-choix"><button class="btn" id="fn-ref">${TR("Refuser")}</button>
           <button class="btn btn-jeter" id="fn-blo">${TR("Refuser et bloquer")}</button></div>`);
       w.el.querySelector("#fn-ref").onclick = async ()=>{ try{ await refuserDemande(d); }catch(e){ erreur(); } w.fermer(); openAmis(); };
-      w.el.querySelector("#fn-blo").onclick = async ()=>{ try{ await bloquerAmi(d.de); toast(TR("Bloqué.")); }catch(e){ erreur(); } w.fermer(); openAmis(); };
+      w.el.querySelector("#fn-blo").onclick = async ()=>{ try{ await bloquerAmi(d.de, {pseudo:d.p, tag:d.tag, acc:d.acc}); toast(TR("Bloqué.")); }catch(e){ erreur(); } w.fermer(); openAmis(); };
     });
   };
   if(demoEnCours) afficher(amisDemo());
