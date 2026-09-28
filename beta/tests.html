@@ -8465,9 +8465,9 @@ async function lancer(){
     eq("Les kilomètres du mois", st.km, 5);
     vrai("Un mois passé est complet", st.complet === true);
     const pr = F.progresMois(st);
-    vrai("Progrès : le meilleur 1RM estimé d'août dépasse celui de juillet", pr.length === 1 && pr[0].apres > pr[0].avant, JSON.stringify(pr));
-    DB.history = [s(2026, 7, 3, 100, 5)];
-    eq("Pas de progrès sans séance avant le mois pour comparer", F.progresMois(F.statsMois(2026, 7)).length, 0);
+    vrai("Charges : 1re séance d'août 100 kg → la plus lourde ensuite 110 kg (juillet ignoré)", pr.length === 1 && pr[0].avant === 100 && pr[0].apres === 110, JSON.stringify(pr));
+    DB.history = [s(2026, 6, 20, 90, 5), s(2026, 7, 3, 100, 5)];
+    eq("Une seule séance dans le mois : rien à comparer", F.progresMois(F.statsMois(2026, 7)).length, 0);
     DB.history = garde.h; DB.cardio = garde.c;
   }
   neuf();
