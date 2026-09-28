@@ -1446,7 +1446,8 @@ async function lancer(){
       DB.history = [seance(1, jour(4)), seance(2, jour(6))];
       vrai("Quatre jours sans séance : éteinte, à zéro", F.serieJours().n === 0 && F.serieJours().force === "eteinte");
       F.render();
-      vrai("…et plus de flamme à l'écran", !F.document.querySelector(".hero-flamme"));
+      vrai("…et plus de flamme allumée à l'écran", !F.document.querySelector(".hero-flamme:not(.eteinte)"));
+      vrai("…seulement une flamme grise, à rallumer", !!F.document.querySelector(".hero-flamme.eteinte#fl-rallumer"));
       DB.history = [seance(1, jour(0)), seance(2, jour(0)), seance(3, jour(1))];
       eq("Deux séances le même jour comptent pour un jour", F.serieJours().n, 2);
       DB.history = [seance(1, sem(1)), seance(3, sem(3)), seance(4, sem(4))];
@@ -1523,8 +1524,8 @@ async function lancer(){
       F.render();
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@']"));
       F.openProfil();
-      vrai("Le profil propose « Personnaliser mon avatar »", !!F.document.getElementById("pr-avatar"));
-      F.document.getElementById("pr-avatar").click();
+      vrai("Le profil montre la tête du compagnon, qui ouvre le vestiaire", !!F.document.querySelector("#pr-rond .pr-po"));
+      F.document.getElementById("pr-rond").click();
       /* la tuile du bandeau, quelle que soit la couleur qu'elle montre */
       const tuileB = ()=>F.document.querySelector("#sheet .vs-t [data-acc^='bandeau']").closest(".vs-t");
       vrai("…qui ouvre le vestiaire, le bandeau porté", /Mon compagnon/.test(F.document.querySelector("#sheet h3").textContent) && tuileB().classList.contains("on"));
@@ -1662,7 +1663,7 @@ async function lancer(){
         const surPage = ()=>[...F.document.querySelectorAll("#app .hero-poussin img.acc")]
           .map(i=>i.getAttribute("src")).join(" ");
         vrai("Le poussin de l'accueil porte le bandeau noir", /bandeau@/.test(surPage()), surPage());
-        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        F.openProfil(); F.document.getElementById("pr-rond").click();
         F.document.querySelector("#sheet .cl[data-cl='bandeau-rose']").click();
         vrai("…et passe au rose sans attendre la fermeture",
           /bandeau-rose@/.test(surPage()) && !/bandeau@/.test(surPage()), surPage());
@@ -1706,8 +1707,8 @@ async function lancer(){
         vrai("Une pastille sur l'icône du profil quand un accessoire est neuf",
           pastille("#app #tb-user"), F.eval("accessoiresNeufs().map(a=>a.id).join(',')"));
         F.openProfil();
-        vrai("…et sur « Personnaliser mon compagnon »", pastille("#sheet #pr-avatar"));
-        F.document.getElementById("pr-avatar").click();
+        vrai("…et sur la tête du compagnon, dans le profil", pastille("#sheet #pr-rond"));
+        F.document.getElementById("pr-rond").click();
         vrai("…et sur la tuile de l'accessoire", pastille("#sheet .vs-t"));
         /* tant qu'on ne l'a pas ouvert, la tuile ne devoile rien : ni le dessin, ni les couleurs */
         const paquet = F.document.querySelector("#sheet .vs-t.neuf");
@@ -1741,7 +1742,7 @@ async function lancer(){
         F.hideSheet(); F.render();
         eq("La pastille du profil suit ce qu'il reste à découvrir",
           pastille("#app #tb-user"), reste > 0);
-        F.openProfil(); F.document.getElementById("pr-avatar").click();
+        F.openProfil(); F.document.getElementById("pr-rond").click();
         /* tout vu : plus aucune pastille nulle part */
         F.eval("ACCESSOIRES.forEach(a=>{ if(accessoireGagne(a) && variantesDessinees(a).length) marquerAccessoireVu(a); })");
         F.hideSheet(); F.render();
@@ -3173,7 +3174,7 @@ async function lancer(){
     /* dix avec la ligne « Tonnup Analyse », en tête : c'est de là qu'on gérera l'abonnement */
     /* neuf lignes depuis le 19 septembre : l'abonnement est une carte a part, au-dessus */
     /* dix avec la ligne Notifications du 20 septembre */
-    vrai("Dix réglages", lignes.length === 10, String(lignes.length));
+    vrai("Onze réglages (dont le mode démo)", lignes.length === 11, String(lignes.length));
     vrai("…dont celui du retour vibrant", !!F.document.getElementById("st-vibr"));
     vrai("…et l'abonnement en carte, au-dessus", D2.querySelector("#sheet .rg-an") && D2.querySelector("#sheet .rg-an").id === "st-abo");
     /* la carte d'apres la maquette de Nico : le poussin, trois atouts, un seul bouton */
@@ -6304,7 +6305,7 @@ async function lancer(){
     await attendre(()=>!!F.document.getElementById("abo-mensuel"), 2000);
     const D2 = F.document;
     vrai("La fiche s'ouvre sur son bandeau", !!D2.querySelector(".abo-tete"));
-    eq("Trois promesses", D2.querySelectorAll(".abo-promesses li").length, 3);
+    eq("Cinq promesses (dont les objectifs de course et la flamme protégée)", D2.querySelectorAll(".abo-promesses li").length, 5);
     vrai("Le mensuel porte son prix", /5,99/.test(D2.getElementById("abo-mensuel").textContent));
     vrai("…et le badge « le plus populaire »", !!D2.querySelector("#abo-mensuel .abo-populaire"));
     vrai("L'annuel porte son prix, son économie et son prix par mois",
@@ -8298,6 +8299,40 @@ async function lancer(){
   neuf();
 
   /* Nico, 26 septembre : annuler un aliment retire par megarde ; titre et icones de la course */
+  grp("Le mode démo, pour les vidéos");
+  neuf();
+  {
+    const d = F.dbDemoVideo();
+    eq("Trois séances types dans le carrousel", d.templates.map(x=>x.name).join(","), "Push,Pull,Legs");
+    vrai("…chacune avec ses exercices", d.templates.every(x=>x.items.length === 3));
+    eq("Douze semaines de séances", d.history.length, 36);
+    vrai("Les aliments du profil existent tous (aucun ne compte pour 0)",
+      Object.values(d.habitSel).every(j=>Object.values(j).flat().every(l=>F.kcalOf(l) > 0)));
+    vrai("Pas de bulle d'aide pendant le tournage", d.seen["guide-nimporte-quoi"] === true);
+    vrai("L'abonnement Analyse est débloqué", d.abo === true);
+    /* l'apercu floute de l'abonnement ne doit pas couper un mode demo en cours */
+    F.eval("demoEnCours = true"); F.avecDemo(()=>{});
+    vrai("L'aperçu flouté laisse le mode démo en place", F.eval("demoEnCours") === true);
+    F.eval("demoEnCours = false");
+    const avant = F.localStorage.getItem(F.eval("KEY"));
+    F.eval("demoEnCours = true"); DB.weights.push({date:new Date().toISOString(), kg:99.9}); F.save();
+    vrai("En démo, rien n'est écrit dans la mémoire du téléphone", F.localStorage.getItem(F.eval("KEY")) === avant);
+    F.eval("demoEnCours = false"); DB.weights.pop(); F.save();
+  }
+  /* en demo, une photo ne part jamais au serveur : sinon, des scans gratuits en boucle */
+  await (async ()=>{
+    let appels = 0;
+    const vraiFetch = F.fetch;
+    F.fetch = (...a)=>{ appels++; return vraiFetch(...a); };
+    F.eval("demoEnCours = true");
+    const r = await F.analyserPhoto("x", "");
+    F.eval("demoEnCours = false");
+    F.fetch = vraiFetch;
+    vrai("En démo, la photo ne part pas au serveur", appels === 0, appels + " appel(s)");
+    eq("…elle rend le plat d'exemple", r.plat, "salade composée poulet mozzarella");
+  })();
+  neuf();
+
   grp("L'astuce après un scan");
   neuf();
   {
@@ -8312,6 +8347,72 @@ async function lancer(){
     vrai("Perte de poids, repas copieux : les légumes pour la suite", /Repas copieux/.test(F.astuceScan({kcal:700, prot:20, gluc:40})));
     vrai("Jamais de « bon » ni de « mauvais » aliment", !/mauvais|bon aliment|interdit/i.test(F.astuceScan({kcal:900, prot:2, gluc:120})));
     DB.profile = garde;
+  }
+  neuf();
+
+  grp("Mes amis : ce qui part, et comment on le lit");
+  neuf();
+  {
+    const rt = F.fbObjet(F.fbChamps({p:"Léa", n:12, l:["bandeau", 3], z:null, b:false}));
+    vrai("Aller-retour au format Firestore sans perte", rt.p === "Léa" && rt.n === 12 && rt.l[0] === "bandeau" && rt.l[1] === 3 && rt.z === null && rt.b === false);
+    const c = F.nouveauCode();
+    vrai("Code ami : 8 caractères sans 0, O, 1 ni I", /^[A-HJ-NP-Z2-9]{8}$/.test(c), c);
+    eq("Code saisi avec tiret, minuscules et espaces", F.codeSaisi(" tnp4-k7q2 "), "TNP4K7Q2");
+    DB.amis = {pseudo:"Léa", actif:false};
+    const f = F.ficheAmi();
+    eq("La fiche ne contient que les champs prévus (et acceptés par firestore.rules)",
+      Object.keys(f).sort().join(","), "acc,best,cache,derKm,derMin,derNom,derType,derniere,fin,flamme,nAct,pose,pseudo,sem,semDebut,semKm,semMin,semT");
+    vrai("Ni poids, ni repas, ni charges dans la fiche", !/weight|kg|meal|sets|kcal/i.test(JSON.stringify(f)));
+    DB.amis = {pseudo:"Léa", actif:false, vis:{flammes:"moi", semaine:"moi", derniere:"moi"}};
+    const fc = F.ficheAmi();
+    vrai("« Moi seul » : flammes, semaine et dernière séance ne partent pas", fc.flamme === 0 && fc.best === 0 && fc.sem === 0 && fc.semT === 0
+      && fc.derniere === null && fc.derNom === "" && ["flammes", "semaine", "derniere"].every(k=>fc.cache.includes(k)));
+    DB.amis = {pseudo:"Léa", actif:false, vis:{profil:"amis", flammes:"public"}};
+    eq("Pas de flamme publique sans profil public", F.visAmis().flammes, "amis");
+    delete DB.amis;
+    const po = F.poussinAmi(["bandeau", "../../evil", "<img onerror=x>", 42], "../x");
+    vrai("Compagnon d'un ami : seuls les accessoires connus sont dessinés",
+      /bandeau@en-forme/.test(po) && !/evil|onerror/.test(po));
+    const vieux = Date.now() - 6 * 864e5, recent = Date.now() - 3600e3;
+    eq("La flamme d'un ami s'éteint après plus de 3 jours", F.flammeAmi({flamme:9, derniere:vieux}), 0);
+    eq("… et reste allumée s'il s'est entraîné récemment", F.flammeAmi({flamme:9, derniere:recent}), 9);
+    eq("Un ami inactif depuis plus de 3 jours : son compagnon dort", F.poseAmi({pose:"muscle", flamme:4, derniere:vieux}), "repos");
+    eq("Une humeur inconnue retombe sur « en forme »", F.poseAmi({pose:"<script>", flamme:4, derniere:recent}), "en-forme");
+    eq("La semaine d'un ami, publiée la semaine dernière, ne coche rien", F.semAmi({sem:127, semDebut:Date.now() - 8 * 864e5}), 0);
+    vrai("Un nom de séance piégé est échappé", !/<i>x/.test(F.derniereAmi({derniere:recent, derNom:"<i>x</i>", derType:"muscu", derMin:40})));
+    vrai("Un pseudo piégé est échappé", !/<b>x<\/b>/.test(F.ligneAmi({uid:"u", pseudo:"<b>x</b>", acc:[], nAct:2, flamme:1, derniere:recent})));
+  }
+  neuf();
+
+  grp("Rallumer sa flamme (abonnés)");
+  neuf();
+  {
+    const garde = {h:DB.history, c:DB.cardio, r:DB.rallumages, abo:DB.abo, l:DB.flammeLaissee};
+    const jour = n => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(0, 5, 0, 0); return d.toISOString(); };
+    const act = n => ({id:"r" + n, date:jour(n), entries:[]});
+    DB.cardio = []; DB.rallumages = []; delete DB.flammeLaissee;
+    DB.history = [act(10), act(9), act(8)];
+    eq("Huit jours sans activité : la flamme est éteinte", F.serieJours().n, 0);
+    const r = F.flammeRallumable();
+    vrai("…mais on peut la rallumer (flamme de 3)", r && r.n === 3, JSON.stringify(r));
+    F.eval("window._estAbo = estAbonne; estAbonne = () => false;");
+    vrai("Sans abonnement, pas de rallumage", F.rallumerFlamme() === false && F.serieJours().n === 0);
+    F.eval("estAbonne = () => true;");
+    vrai("Abonné : la flamme est rallumée", F.rallumerFlamme() === true);
+    eq("Elle garde sa série (le rallumage ne compte pas comme une activité)", F.serieJours().n, 3);
+    eq("Un rallumage de moins ce mois-ci", F.rallumagesRestants(), F.eval("RALLUMAGES_MOIS") - 1);
+    DB.history.push(act(0));
+    eq("Une séance le jour même : la série continue à 4", F.serieJours().n, 4);
+    vrai("La meilleure flamme en tient compte", F.meilleureFlamme() >= 4);
+    vrai("Un rallumage ne déclenche pas la fête d'un accessoire", DB.history.pop() && F.accessoireDuJour() === null);
+    DB.rallumages = []; DB.history = [act(20), act(19), act(18)];
+    eq("Éteinte depuis trop longtemps : plus de rallumage", F.flammeRallumable(), null);
+    DB.history = [act(9), act(8)]; DB.rallumages = [];
+    F.eval("db.flammeLaissee = " + (() => { const d = new Date(jour(8)); d.setHours(0, 0, 0, 0); return d.getTime(); })());
+    eq("« La laisser éteinte » : on ne la propose plus", F.flammeRallumable(), null);
+    F.eval("estAbonne = window._estAbo;");
+    DB.history = garde.h; DB.cardio = garde.c; DB.rallumages = garde.r; DB.abo = garde.abo;
+    if(garde.l === undefined) delete DB.flammeLaissee; else DB.flammeLaissee = garde.l;
   }
   neuf();
 

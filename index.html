@@ -397,15 +397,15 @@
      un tonnage a cinq chiffres glisse dessous. Chaque moitie s'ecarte donc du
      centre de la largeur du bouton — les deux nombres restent symetriques. */
   .wk-nums .n{flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:9px;}
-  .wk-nums .n:first-child{padding-right:46px;}
-  .wk-nums .n:last-child{padding-left:46px;}
+  .wk-nums .n:first-child{padding-right:52px; justify-content:flex-start;}
+  .wk-nums .n + .n{padding-left:52px; justify-content:flex-end;}
   .wk-nums .ic{flex:0 0 auto; width:34px; height:34px; border-radius:50%; font-size:17px;
     background:rgba(245,130,32,.13); color:var(--accent);
     display:flex; align-items:center; justify-content:center;}
   .wk-nums .ic svg{width:19px; height:19px;}
   .wk-nums .tx{min-width:0; text-align:left;}
   .wk-nums .n{text-align:left; color:var(--ink);}
-  .wk-nums .v{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .wk-nums .v{font-size:19px; font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.1;}
   .wk-nums .v small{font-size:13px; font-weight:700; color:var(--ink-soft);}
   /* « Soulevés −50 % » ne tient pas sur un ecran etroit : l evolution passe a la ligne
      plutot que d etre coupee par le bouton Bilan */
@@ -415,16 +415,16 @@
      et le tonnage revenait toucher le bouton. On reduit alors le chiffre et la
      reserve centrale plutot que de laisser les deux se chevaucher. */
   @media (max-width:380px){
-    .wk-nums .v{font-size:18px;}
-    .wk-nums .n:first-child{padding-right:40px;}
-    .wk-nums .n:last-child{padding-left:40px;}
+    .wk-nums .v{font-size:17px;}
+    .wk-nums .n:first-child{padding-right:44px;}
+    .wk-nums .n + .n{padding-left:44px;}
     .wk-bilan{font-size:11px; padding:3px 9px;}
   }
   /* petit ecran ET texte agrandi : il faut descendre encore d'un cran */
   @media (max-width:320px){
-    .wk-nums .v{font-size:16px;}
-    .wk-nums .n:first-child{padding-right:36px;}
-    .wk-nums .n:last-child{padding-left:36px;}
+    .wk-nums .v{font-size:15px;}
+    .wk-nums .n:first-child{padding-right:40px;}
+    .wk-nums .n + .n{padding-left:40px;}
   }
   .wk-bilan{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
     background:var(--accent-grad); color:var(--accent-ink); font-size:13px; font-weight:800;
@@ -1209,6 +1209,9 @@
   .recup-card .rc-img{position:absolute; right:0; bottom:0; width:38%; max-width:170px; height:auto; z-index:1; pointer-events:none;}
   .recup-card .rc-chev{position:absolute; right:12px; top:50%; transform:translateY(-50%); z-index:2; color:rgba(255,255,255,.8);}
   .recup-card .rc-chev .chev{width:18px; height:18px; margin:0;}
+  .recup-card .rc-cad{width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,.28); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .recup-card .rc-cad svg{width:15px; height:15px;}
+  .recup-card.verrou .rc-ring, .recup-card.verrou .rc-txt, .recup-card.verrou .rc-img{filter:blur(5px); pointer-events:none; user-select:none;}
   /* ---- la fiche de recuperation, d'apres la maquette du 21 septembre ---- */
   .rq-carte{background:#11181B; color:#fff; border-radius:18px; padding:14px; margin-bottom:14px;}
   .rq-haut{display:flex; align-items:center; gap:12px;}
@@ -1693,6 +1696,11 @@
   .tab svg, .tab .icm{width:22px; height:22px; transition:transform .22s cubic-bezier(.22,.9,.35,1);}
   .tab:active svg, .tab:active .icm{transform:scale(.82); transition-duration:.06s;}
   .tab.on{color:var(--accent);}
+  .tab-ic{position:relative; display:flex;}
+  .tab .tab-cad{position:absolute; right:-9px; top:-6px; width:17px; height:17px; border-radius:50%;
+    background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 2px var(--surface);}
+  .tab .tab-cad svg{width:10px; height:10px; stroke-width:3;}
 
   /* rest timer */
   /* Le cadran deborde la barre de dix-sept pixels en haut comme en bas : il doit
@@ -1850,6 +1858,7 @@
   /* pose sur le bord de la carte de la semaine : il est dans le meme bloc qu'elle, au-dessus */
   .under-hero{position:relative;}
   .hero-poussin{position:absolute; right:14px; bottom:calc(100% - 7px); width:112px; pointer-events:none; z-index:3;}
+  #app .under-hero > .hero-poussin{pointer-events:auto; cursor:pointer;}
   /* ---- le halo de la regularite : un disque en degrade radial derriere le poussin, qui
      pulse. Pas d'ombre portee (elle se coupe en carre sur certains Android). Il grandit
      et s'avive chaque semaine tenue, et passe a l'or a la quatrieme. ---- */
@@ -1905,6 +1914,23 @@
   .hero-flamme.danger{--fl-etat:.55; right:50px; top:-50px; opacity:1;}
   .hero-poussin[data-pose="danger"]{width:88px; right:22px;}
   .hero-flamme .fe{position:absolute; inset:0; width:100%; height:100%; object-fit:contain;}
+  /* eteinte, mais qu'on peut rallumer : grise, et on la touche */
+  .hero-flamme.eteinte{border:0; padding:0; background:none; cursor:pointer; pointer-events:auto;}
+  .hero-flamme.eteinte .fe{filter:grayscale(1) brightness(.85); opacity:.75;}
+  .hero-flamme .fl-cad{position:absolute; right:-6px; top:2px; width:22px; height:22px; border-radius:50%; background:var(--accent-grad); color:#fff;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--surface);}
+  .hero-flamme .fl-cad svg{width:12px; height:12px;}
+  .rl-fl{position:relative; width:74px; height:92px; margin:6px auto 8px;}
+  .rl-fl img{width:100%; height:100%; object-fit:contain; filter:grayscale(1) brightness(.85); opacity:.8;}
+  .rl-fl b{position:absolute; left:0; right:0; top:50%; text-align:center; color:#fff; font-size:28px; font-weight:900;
+    font-family:"Fredoka Chiffres", -apple-system, sans-serif; paint-order:stroke; -webkit-text-stroke:3px rgba(0,0,0,.35);}
+  .rl-s{font-size:13px; color:var(--ink-mute); text-align:center; margin:10px 0 0;}
+  #rl-go svg{width:16px; height:16px; vertical-align:-2px;}
+  /* la fenetre posee au milieu : sa croix, ses choix empiles */
+  .pp-boite.fen{position:relative; padding-top:22px;}
+  .fen-x{position:absolute; top:10px; right:10px; width:32px; height:32px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink); font-size:14px;}
+  .fen-choix{display:flex; flex-direction:column; gap:8px;}
+  .fen-choix .btn{width:100%; margin:0;}
   /* Le chiffre de la flamme dans une police ronde et pleine (Fredoka, licence OFL) : seuls
      les dix chiffres sont embarques, 1,7 Ko, pas de reseau. */
   @font-face{font-family:"Fredoka Chiffres"; font-weight:700; font-display:block; unicode-range:U+30-39;
@@ -1928,7 +1954,7 @@
   .vs-poussin{position:relative; width:190px; z-index:1;}
   .vs-poussin img{position:absolute; inset:0; width:100%; height:100%; display:block;}
   .vs-compte{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 18px;}
-  .vs-c{display:flex; align-items:center; gap:12px; padding:14px; border-radius:16px; background:var(--surface2);}
+  .vs-c{display:flex; align-items:center; gap:12px; padding:14px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
   .vs-c .ic{flex:none; width:50px; height:50px; border-radius:50%; background:rgba(245,130,32,.14); color:var(--accent); display:flex; align-items:center; justify-content:center;}
   .vs-c .ic.etoile{background:rgba(253,170,22,.18); color:#f5a623; position:relative;} .vs-c .ic svg, .vs-c .ic .icm{width:30px !important; height:30px !important; fill:currentColor;}
   /* l'etoile pleine, un peu plus grande, avec une petite flamme blanche au coeur : le record de la flamme */
@@ -1945,7 +1971,7 @@
      sur une tablette : la grille compte toute seule d'apres la place. Avec trente
      accessoires, trois par rangee faisait une fiche interminable. */
   .vs-grille{display:grid; grid-template-columns:repeat(auto-fill, minmax(76px, 1fr)); gap:8px; margin-bottom:16px;}
-  .vs-t{position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 5px; border-radius:15px; background:var(--surface2); color:var(--ink); text-align:center; min-height:136px;}
+  .vs-t{position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 5px; border-radius:15px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); color:var(--ink); text-align:center; min-height:136px;}
   /* l'accessoire entier, centre, sans cadre : juste l'objet au-dessus de son nom */
   .vs-t .vs-img{width:100%; height:76px; display:flex; align-items:center; justify-content:center; margin-bottom:3px;}
   .vs-t .vs-img img{max-width:100%; max-height:100%; object-fit:contain;}
@@ -2718,6 +2744,15 @@
   .grab{width:44px; height:5px; border-radius:3px; background:var(--ink-mute); opacity:.55; margin:0 auto 6px;}
   .grab::after{content:""; display:block; height:14px;}   /* zone de préhension plus large au doigt */
   .sheet{touch-action:pan-y;}
+  /* la fenetre du milieu (amis) : une carte au centre, qui defile a l'interieur */
+  .overlay.milieu{align-items:center; padding:16px;}
+  .sheet.milieu{border-radius:24px; max-width:440px; max-height:86dvh; border-top:0; padding:16px 16px 18px;
+    box-shadow:0 22px 60px rgba(0,0,0,.3); background:var(--surface);}
+  .sheet.milieu .grab, .sheet.milieu .sheet-x{display:none;}
+  .overlay.milieu.show > .sheet{animation:fenIn .3s cubic-bezier(.22,1,.36,1) backwards;}
+  .overlay.milieu.part > .sheet{animation:fenOut .2s ease forwards;}
+  @keyframes fenIn{from{opacity:0; transform:scale(.94);}}
+  @keyframes fenOut{to{opacity:0; transform:scale(.96);}}
   /* ---- les pages pleines : le resultat d'un scan, plat ou code-barres ----
      Une page entiere et BLANCHE : la fiche grise qui remontait du bas laissait voir
      l'app derriere, et la moitie de l'ecran servait a rien. */
@@ -3507,9 +3542,11 @@
   .pr-rond img{position:absolute; inset:0; width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;}
   .pr-rond .vide{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--ink-mute);}
   .pr-rond .vide svg{width:46px; height:46px; opacity:.55;}
-  .pr-rond .crayon{position:absolute; right:-2px; bottom:-2px; width:32px; height:32px; border-radius:50%; background:var(--accent-grad); color:#fff;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px var(--sheet);}
-  .pr-rond .crayon svg{width:16px; height:16px;}
+  .pr-rond{background:rgba(245,130,32,.12); border:0; padding:0; cursor:pointer;}
+  .pr-rond .pr-po{position:absolute; inset:0; border-radius:50%; overflow:hidden;}
+  .pr-rond .pr-po .in{position:absolute; left:50%; top:-11%; width:118%; aspect-ratio:1/1.21; transform:translateX(-50%);}
+  .pr-rond .pr-po img{position:absolute; inset:0; width:100%; height:100%;}
+  .pr-rond .pastille{top:4px; right:4px;}
   .pr-sous{font-size:13.5px; color:var(--ink-mute); margin:0;}
   .pr-nom{font-size:22px; font-weight:800; margin-top:14px;}
   .pr-ligne{font-size:14px; color:var(--ink-mute); margin-top:2px;}
@@ -4693,7 +4730,170 @@
   .sc-astuce .co{flex:1; min-width:0;}
   .sc-astuce b{display:block; font-size:13px; font-weight:800; line-height:1.4; color:var(--ink);}
   .sc-astuce p{margin:4px 0 0; font-size:13px; line-height:1.45; color:var(--ink-soft);}
-  .sc-astuce b + p{margin-top:5px;}
+  .sc-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .sc-chips span{padding:4px 10px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px rgba(245,130,32,.25);
+    font-size:12.5px; font-weight:800; color:var(--ink); white-space:nowrap;}
+  .sc-chips + p{margin-top:7px; font-size:13.5px; font-weight:700; color:var(--ink);}
+  .sc-astuce .co > p:only-child{font-size:13.5px; font-weight:700; color:var(--ink); margin:0;}
+  .sc-astuce{align-items:center;}
+  #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
+  /* ---- mes amis ---- */
+  /* ---- Mon profil, d'apres la maquette (28 septembre) ---- */
+  .sheet.milieu .pp-x{background:#fff; box-shadow:0 1px 5px rgba(0,0,0,.12), inset 0 0 0 1px var(--bord-doux); border:0;}
+  .am-tete h2 .eclat, .mp-titre .eclat{width:22px; height:22px; vertical-align:top; margin-left:2px;}
+  .mp-tete{display:flex; align-items:center; gap:16px; margin:4px 0 14px;}
+  .mp-tete .am-po{width:104px; height:104px; background:#FFF1E4;}
+  .mp-tete .grow{text-align:left; min-width:0;}
+  #sheet .mp-tete h3{margin:0 0 6px; padding:0; text-align:left; font-size:24px; font-weight:900; overflow-wrap:break-word;}
+  .mp-hu{display:inline-block; padding:5px 12px; border-radius:99px; background:#FFE7D6; color:var(--accent); font-size:14px; font-weight:800;}
+  .mp-code{display:flex; align-items:center; gap:10px; padding:12px 12px 12px 16px; border-radius:18px; margin:0 0 18px;
+    background:#FFF6EE; box-shadow:inset 0 0 0 1px rgba(245,130,32,.14);}
+  .mp-code .ic{flex:none; color:#FF8A3D; display:flex;} .mp-code .ic svg{width:24px; height:24px;}
+  .mp-code .lb{font-size:14px; color:var(--ink-soft);}
+  .mp-code b{flex:1; min-width:0; font-size:17px; font-weight:900; letter-spacing:.02em; color:var(--ink); white-space:nowrap;}
+  .mp-code .lb{white-space:nowrap;}
+  .mp-copie{flex:none; width:44px; height:44px; border:0; border-radius:50%; background:#EEEAE6; color:var(--ink); display:flex; align-items:center; justify-content:center;}
+  .mp-copie svg{width:20px; height:20px;}
+  .mp-titre{font-size:14px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:#5C6680;}
+  .mp-expl{font-size:13.5px; color:#7A849A; margin:4px 0 12px; line-height:1.45;}
+  .mp-vis{display:flex; flex-direction:column; gap:10px;}
+  .mp-l{display:flex; align-items:center; gap:12px; padding:12px; border-radius:18px; background:var(--surface);
+    box-shadow:0 2px 10px rgba(20,25,40,.06), inset 0 0 0 1px var(--bord-doux);}
+  .mp-ic{flex:none; width:48px; height:48px; border-radius:50%; background:#FFF1E4; color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  #sheet .mp-ic svg{width:24px !important; height:24px !important;} .mp-ic .icm{background-color:currentColor;}
+  .mp-l b{display:block; font-size:15px; font-weight:900; margin-bottom:7px;}
+  .mp-seg{display:flex; gap:4px; padding:3px; border-radius:99px; background:#F1EFED; margin:0;}
+  .mp-seg button{flex:1; display:flex; align-items:center; justify-content:center; gap:5px; border:0; background:none; padding:8px 4px; border-radius:99px;
+    font:inherit; font-size:13px; font-weight:800; color:var(--ink-soft); white-space:nowrap;}
+  .mp-seg button svg{width:15px; height:15px; flex:none;}
+  .mp-seg button.on{background:var(--accent-grad); color:#fff; box-shadow:0 3px 10px rgba(245,130,32,.35);}
+  .mp-seg button:disabled{opacity:.35;}
+  :root[data-theme="dark"] .mp-code, :root[data-theme="dark"] .mp-ic, :root[data-theme="dark"] .mp-tete .am-po{background:rgba(245,130,32,.12);}
+  :root[data-theme="dark"] .mp-hu{background:rgba(245,130,32,.18);}
+  :root[data-theme="dark"] .mp-seg, :root[data-theme="dark"] .mp-copie{background:var(--surface2);}
+  :root[data-theme="dark"] .sheet.milieu .pp-x{background:var(--surface2);}
+  .am-moi{display:flex; align-items:center; gap:12px; width:100%; margin:0 0 8px; padding:10px 12px; border:0; border-radius:16px; text-align:left;
+    background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 1px rgba(245,130,32,.22); color:var(--ink);}
+  .am-moi .tx{flex:1; min-width:0; display:flex; flex-direction:column;} .am-moi b{font-size:15.5px; font-weight:800;}
+  .am-moi small{font-size:12.5px; color:var(--ink-soft);} .am-moi > svg{width:18px; height:18px; color:var(--ink-mute);}
+  .am-tete-moi{position:relative; flex:none; width:42px; height:42px; border-radius:50%; overflow:hidden; background:rgba(245,130,32,.14);}
+  .am-tete-moi .pr-po{position:absolute; inset:0;}
+  .am-moi-bt{border:0; padding:0; box-shadow:0 0 0 2px var(--accent); cursor:pointer;}
+  .am-tete-moi .pr-po .in{position:absolute; left:50%; top:-11%; width:118%; aspect-ratio:1/1.21; transform:translateX(-50%);}
+  .am-tete-moi .pr-po img{position:absolute; inset:0; width:100%; height:100%;}
+  .mp-apercus{display:flex; flex-direction:column; gap:8px; margin-top:16px;}
+  .mp-apercus .btn{width:100%; margin:0; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .amd-apercu{font-size:12px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); margin:0 44px 8px 0;}
+  .amd-cache{display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; color:var(--ink-mute); margin:12px 0 0;}
+  .amd-cache svg{width:13px; height:13px;}
+  .cp-po{display:flex; justify-content:center; margin:8px 0 6px;} .cp-po .am-po{width:120px; height:120px;}
+  #sheet .cp-nom{text-align:center; margin:0; font-size:22px;}
+  .cp-rg{text-align:center; font-size:13.5px; font-weight:800; color:var(--accent); margin-top:2px;}
+  .cp-fl{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0;}
+  .cp-fl > div{display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 6px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .cp-fl b{display:flex; align-items:center; gap:4px; font-size:22px; font-weight:900; color:var(--accent);}
+  .cp-fl b svg{width:20px; height:20px; fill:currentColor;} .cp-fl b .icm{background-color:currentColor;}
+  .cp-fl small{font-size:12px; color:var(--ink-mute);}
+  .cp-rien{text-align:center; font-size:13px; color:var(--ink-mute); margin:12px 0;}
+  #cp-go svg{width:18px; height:18px; vertical-align:-3px;}
+  .am-pub span{display:flex; flex-direction:column; gap:2px;} .am-pub small{font-size:12px; font-weight:500; color:var(--ink-soft); line-height:1.4;}
+  .am-pub{align-items:flex-start;} .am-pub input{margin-top:2px;}
+
+  .am-tete{display:flex; align-items:center; gap:10px; margin:4px 0 8px;}
+  .am-tete h2{flex:1; margin:0; font-size:26px; font-weight:900;}
+  .am-plus{width:42px; height:42px; border:0; border-radius:50%; background:rgba(245,130,32,.12); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background .2s, color .2s;}
+  .am-plus svg{width:24px; height:24px;} .am-plus.on{background:var(--accent-grad); color:#fff;}
+  .am-trophee{background:rgba(245,166,35,.16); color:#e59a0c;} .am-trophee svg{width:22px; height:22px;}
+  .cl-seg{display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--surface2); margin:4px 0 8px;}
+  .cl-seg button{flex:1; border:0; background:none; padding:9px 6px; border-radius:99px; font:inherit; font-size:14px; font-weight:800; color:var(--ink-soft);}
+  .cl-seg button.on{background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .cl-sous{font-size:12.5px; color:var(--ink-mute); text-align:center; margin:0 0 10px;}
+  .cl-liste{display:flex; flex-direction:column; gap:6px;}
+  .cl-moi{display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 10px; padding:10px 14px; border-radius:16px;
+    background:var(--accent-grad); color:#fff; font-size:14px; font-weight:700;}
+  .cl-moi:empty{display:none;}
+  .cl-moi b{font-size:24px; font-weight:900; line-height:1;} .cl-moi sup{font-size:12px; margin-left:1px;}
+  .cl-moi .cl-fl{color:#fff; font-size:16px;}
+  .cl-l{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .cl-l.moi{background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.45);}
+  .cl-l .am-po{width:44px; height:44px;}
+  .cl-rg{flex:none; width:28px; text-align:center; font-size:15px; font-weight:900; color:var(--ink-soft);}
+  .cl-rg.med{font-size:24px; line-height:1;}
+  .cl-l b{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cl-fl{flex:none; display:inline-flex; align-items:center; gap:3px; font-size:17px; font-weight:900; color:var(--accent);}
+  .cl-fl .icm{background-color:currentColor;}
+  .am-moi{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
+  .am-moi b{color:var(--ink); font-weight:800;} .am-moi .sep{color:var(--ink-mute);}
+  .am-share{width:30px; height:30px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; margin-left:auto;}
+  .am-share svg{width:15px; height:15px;}
+  .am-tiroir{display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s cubic-bezier(.22,1,.36,1);}
+  .am-tiroir.ouvert{grid-template-rows:1fr;} .am-tiroir > .in{overflow:hidden;}
+  .am-res{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
+  .am-sec{font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-mute); margin:6px 0 8px;}
+  #am-dem .am-l{margin-bottom:8px;}
+  .am-d{cursor:default;} .am-d .btn-sm{flex:none;}
+  .am-etat{flex:none; font-size:12.5px; font-weight:700; color:var(--ink-mute);}
+  .am-non{flex:none; width:34px; height:34px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink-soft); font-size:13px;}
+  .am-intro{font-size:14.5px; color:var(--ink-soft); margin:0 0 14px;}
+  .amd-actions{display:flex; justify-content:center; flex-wrap:wrap; gap:4px 18px; margin:18px 0 24px;}
+  .am-ajout{display:flex; gap:8px; margin:8px 0 12px;}
+  .am-ajout .btn-sm svg{width:18px; height:18px;}
+  .am-ajout input, .am-in{flex:1; min-width:0; padding:12px 14px; border-radius:14px; border:0; background:var(--surface2); color:var(--ink); font:inherit; font-size:16px;}
+  .am-in{background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .am-ajout input{text-transform:uppercase; letter-spacing:.05em;}
+  .am-ajout input::placeholder{text-transform:none; letter-spacing:0;}
+  .am-in{width:100%; box-sizing:border-box;}
+  .am-liste{display:flex; flex-direction:column; gap:8px;}
+  .am-l{display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; border-radius:16px; text-align:left;
+    background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); color:var(--ink);}
+  .am-po{flex:none; width:54px; height:54px; border-radius:50%; background:rgba(245,130,32,.1); overflow:hidden; position:relative;}
+  .am-po .in{position:absolute; left:50%; top:44%; transform:translate(-50%, -50%);}
+  .am-po .in img{position:absolute; inset:0; width:100%; height:100%;}
+  .am-l .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .am-l .t1{display:flex; align-items:center; gap:8px; min-width:0;}
+  .am-l b{font-size:16px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .am-l .fl{flex:none; display:inline-flex; align-items:center; gap:2px; font-size:13.5px; font-weight:800; color:var(--accent);} .am-l .fl .icm{background-color:currentColor;}
+  .am-l .fl.off{color:var(--ink-mute);}
+  .am-l small{font-size:12.5px; color:var(--ink-mute);}
+  .am-sem{display:flex; gap:3px; margin:2px 0;}
+  .am-sem i{width:17px; height:17px; border-radius:50%; font-style:normal; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center;
+    background:var(--surface2); color:var(--ink-mute);}
+  .am-sem i.on{background:var(--accent-grad); color:#fff;}
+  .am-sem i.auj:not(.on){box-shadow:inset 0 0 0 1.5px var(--accent); color:var(--accent);}
+  .amd-tete{display:flex; align-items:center; gap:14px; margin-bottom:12px;}
+  .amd-tete .am-po{width:84px; height:84px;}
+  .amd-tete .grow{text-align:left;}
+  #sheet .amd-tete h3{margin:0; padding:0; text-align:left; font-size:24px;} .amd-hu{font-size:14px; font-weight:700; color:var(--accent);}
+  .amd-sem .am-sem{justify-content:space-between; margin:0 0 12px;}
+  .amd-sem .am-sem i{width:34px; height:34px; font-size:13px;}
+  .amd-tuiles{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;}
+  .amd-tuiles > div{display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 6px; border-radius:16px; text-align:center;
+    background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .amd-tuiles .ic{width:32px; height:32px; border-radius:50%; background:rgba(245,130,32,.13); color:var(--accent); display:flex; align-items:center; justify-content:center; margin-bottom:4px;}
+  .amd-tuiles .ic svg{width:17px; height:17px;} .amd-tuiles .ic .icm{background-color:currentColor;}
+  .amd-tuiles b{font-size:17px; font-weight:900; white-space:nowrap;} .amd-tuiles b small{font-size:11px; color:var(--ink-soft);}
+  .amd-tuiles > div > small{font-size:11.5px; color:var(--ink-mute);}
+  .amd-sous{font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-mute); margin:4px 0 8px;}
+  .amd-lignes{margin-top:14px;}
+  .amd-lignes{display:flex; flex-direction:column; border-radius:16px; box-shadow:inset 0 0 0 1px var(--bord-doux); overflow:hidden;}
+  .amd-lignes > div{display:flex; align-items:center; gap:10px; padding:12px 14px; font-size:14px;}
+  .amd-lignes > div + div{border-top:1px solid var(--bord-doux);}
+  .amd-lignes .ic{flex:none; width:20px; display:flex; justify-content:center; color:var(--accent);}
+  .amd-lignes .ic svg{width:18px; height:18px; fill:currentColor; stroke:currentColor;} .amd-lignes .ic .icm{background-color:currentColor;}
+  .amd-lignes b{font-weight:800; text-align:right; max-width:60%;}
+  .amd-lignes b small{display:block; font-size:12px; font-weight:600; color:var(--ink-mute);}
+  .amd-x{position:absolute; top:14px; right:14px; border:0; z-index:2;}
+  .am-vide{padding:18px 8px; text-align:center; font-size:14px; color:var(--ink-soft);}
+  .am-pied{display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:20px;}
+  .am-lien{border:0; background:none; font:inherit; font-size:14px; color:var(--ink-soft); padding:4px;}
+  .am-lien b{color:var(--ink);} .am-supp{color:var(--bad); font-size:13px;}
+  .am-partage{padding:14px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); margin-bottom:16px;}
+  .am-partage > b{display:block; font-size:15px; margin-bottom:8px;}
+  .am-partage > span{display:flex; align-items:center; gap:12px; font-size:14px; line-height:1.4;}
+  .am-partage p{margin:10px 0 0; font-size:13px; color:var(--ink-soft);}
+  .am-age{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:15px; font-weight:700;}
+  .am-age input{width:22px; height:22px; accent-color:var(--accent);}
+  .am-note{font-size:12.5px; color:var(--ink-mute); margin:10px 0 0; line-height:1.45;} .am-note a{color:var(--accent);}
   /* ---- objectif de course ---- */
   .oc-vide{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; color:var(--ink);
     background:linear-gradient(135deg, rgba(245,130,32,.14), rgba(245,130,32,.05)); border-radius:18px; padding:14px;}
@@ -4701,6 +4901,8 @@
   .oc-vide .ic .icm{background-color:#fff;}
   .oc-vide .tx{flex:1; min-width:0;} .oc-vide b{display:block; font-size:16px; font-weight:900;}
   .oc-vide small{display:block; font-size:12.5px; color:var(--ink-soft); line-height:1.4; margin-top:2px;}
+  .oc-vide .oc-cad{flex:none; width:30px; height:30px; border-radius:50%; background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .oc-vide .oc-cad svg{width:15px; height:15px;}
   .oc-vide > svg{width:18px; height:18px; color:var(--ink-mute); flex:none;}
   .oc-carte{background:var(--surface); border-radius:20px; box-shadow:var(--ombre-carte); padding:14px;}
   .oc-tete{display:flex; align-items:center; gap:12px;}
@@ -4844,6 +5046,160 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Copier mon code":"Copy my code",
+  "Public":"Public",
+  "Public : on te trouve par ton pseudo et tu peux apparaître au classement.":"Public: people can find you by nickname and you can appear on the leaderboard.",
+  "Mon profil et ma visibilité":"My profile and visibility",
+  "Qui voit quoi":"Who sees what",
+  "Mon pseudo et mon compagnon":"My nickname and companion",
+  "Mes flammes":"My streaks",
+  "Mon nombre de séances":"My number of sessions",
+  "Ma semaine":"My week",
+  "Les jours, les kilos soulevés, les kilomètres et le temps.":"The days, weight lifted, distance and time.",
+  "Ma dernière séance":"My last session",
+  "Son nom, sa durée, et quand.":"Its name, duration, and when.",
+  "Tout le monde":"Everyone",
+  "Amis":"Friends",
+  "Moi seul":"Only me",
+  "Voir comme mes amis":"View as my friends",
+  "Voir comme tout le monde":"View as everyone",
+  "Changer de pseudo":"Change nickname",
+  "Aperçu : ce que voient tes amis":"Preview: what your friends see",
+  "Aperçu : ce que voit tout le monde":"Preview: what everyone sees",
+  "Tu gardes certaines infos pour toi.":"You keep some info to yourself.",
+  "Garde certaines infos pour lui.":"Keeps some info private.",
+  "#{} du classement":"#{} on the leaderboard",
+  "Ses flammes ne sont pas publiques.":"Their streaks aren't public.",
+  "Voir sa fiche":"See their profile",
+  "Ajouter en ami":"Add as friend",
+  "Profil public":"Public profile",
+  "On peut te trouver par ton pseudo et te voir dans le classement de Tout Tonnup (ton compagnon, ton pseudo et tes flammes). Tu pourras le changer dans Mon profil.":"People can find you by nickname and see you on the All of Tonnup leaderboard (your companion, nickname and streaks). You can change this in My profile.",
+  "Ta place":"Your rank",
+  "Allume ta flamme pour entrer au classement.":"Light your streak to join the leaderboard.",
+  "Classement":"Leaderboard",
+  "Tout Tonnup":"All of Tonnup",
+  "Flammes en cours activées":"Active streaks",
+  "Personne n'a de flamme allumée pour l'instant.":"Nobody has a streak going right now.",
+  "Toi":"You",
+  "Partager mon code":"Share my code",
+  "Ajouter un ami":"Add a friend",
+  "Pseudo ou code ami":"Nickname or friend code",
+  "Mon pseudo et ma visibilité":"My nickname and visibility",
+  "Pas encore d'amis. Touche le bouton en haut pour en ajouter.":"No friends yet. Tap the button at the top to add some.",
+  "Demandes d'ami":"Friend requests",
+  "veut être ton ami":"wants to be your friend",
+  "Accepter":"Accept",
+  "Refuser":"Decline",
+  "Vous êtes amis !":"You're friends!",
+  "Refuser la demande ?":"Decline the request?",
+  "Refuser et bloquer":"Decline and block",
+  "Bloqué.":"Blocked.",
+  "Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}":"Add me on Tonnup! My nickname: {p} · my friend code: {c}",
+  "Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.":"Nobody with this nickname. Check the spelling, or ask for their code.",
+  "Ami":"Friend",
+  "Demande envoyée":"Request sent",
+  "Impossible d'envoyer une demande à cette personne.":"Can't send a request to this person.",
+  "Bloquer":"Block",
+  "Signaler":"Report",
+  "Bloquer {} ?":"Block {}?",
+  "Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter.":"You'll no longer be friends, and this person won't be able to add you.",
+  "Signaler {}":"Report {}",
+  "Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.":"Tell us what's wrong. Nobody else will see this report.",
+  "Pseudo inapproprié":"Inappropriate nickname",
+  "Se fait passer pour quelqu'un":"Pretending to be someone",
+  "Autre chose":"Something else",
+  "Merci, c'est signalé.":"Thanks, it's been reported.",
+  "Ton numéro actuel : #{}. Il change si tu changes de pseudo.":"Your current number: #{}. It changes if you change your nickname.",
+  "Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.":"A number is added to your nickname (e.g. Lea#4821): two people can share the same name.",
+  "Les autres peuvent me trouver par mon pseudo":"Others can find me by my nickname",
+  "Rallumer avec Tonnup Analyse":"Relight with Tonnup Analyze",
+  "Ta flamme protégée":"Your streak, protected",
+  "Rallume-la 2 fois par mois si elle s'éteint.":"Relight it twice a month if it goes out.",
+  "Rallumer ma flamme":"Relight my streak",
+  "Ta flamme s'est éteinte":"Your streak went out",
+  "Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.":"You had {} activities in a row. Relight it to keep your streak: you'll then have 3 days for your next session.",
+  "Rallumer ta flamme fait partie de Tonnup Analyse.":"Relighting your streak is part of Tonnup Analyze.",
+  "Découvrir Analyse":"Discover Analyze",
+  "Encore {} rallumages ce mois-ci.":"{} relights left this month.",
+  "Encore {} rallumage ce mois-ci.":"{} relight left this month.",
+  "Tu as utilisé tes rallumages du mois. Les prochains arrivent le {}.":"You've used this month's relights. The next ones arrive on {}.",
+  "La laisser éteinte":"Leave it out",
+  "Ta flamme est rallumée ! 🔥":"Your streak is back! 🔥",
+  "Le service Amis n'est pas encore prêt. Réessaie plus tard.":"The Friends service isn't ready yet. Try again later.",
+  "En forme":"Feeling good",
+  "Un peu fatigué":"A bit tired",
+  "Au repos":"Resting",
+  "Sa flamme va s'éteindre":"Their streak is about to end",
+  "Vient de battre un record":"Just set a record",
+  "En fête":"Celebrating",
+  "Au top de sa forme":"In top shape",
+  "En pleine séance":"Mid-workout",
+  "Courus":"Run",
+  "D'entraînement":"Of training",
+  "Flamme en cours":"Current streak",
+  "Meilleure flamme":"Best streak",
+  "Séances au total":"Total sessions",
+  "Retirer de mes amis":"Remove from my friends",
+  "Mes amis":"My friends",
+  "Leur compagnon, leur flamme et leur dernière séance.":"Their companion, their streak and their last session.",
+  "Ton code ami":"Your friend code",
+  "Code d'un ami":"A friend's code",
+  "Chargement…":"Loading…",
+  "Mon pseudo":"My nickname",
+  "Supprimer mes données d'amis":"Delete my friends data",
+  "Pas encore d'amis. Partage ton code, ou ajoute celui d'un ami.":"No friends yet. Share your code, or add a friend's.",
+  "Vous ne verrez plus vos séances l'un de l'autre.":"You will no longer see each other's sessions.",
+  "Pas de connexion. Réessaie plus tard.":"No connection. Try again later.",
+  "Ajoute-moi sur Tonnup ! Mon code ami : {}":"Add me on Tonnup! My friend code: {}",
+  "Code copié !":"Code copied!",
+  "Ami ajouté !":"Friend added!",
+  "Supprimer mes données d'amis ?":"Delete my friends data?",
+  "Ton pseudo, ton code et tes amis seront effacés chez Firebase. Tes séances restent sur ton téléphone.":"Your nickname, code and friends will be erased from Firebase. Your sessions stay on your phone.",
+  "Données d'amis supprimées.":"Friends data deleted.",
+  "Suis la régularité de tes amis, et eux la tienne.":"Follow your friends' consistency, and they follow yours.",
+  "Ce que tes amis verront":"What your friends will see",
+  "Ton pseudo et ton compagnon, ta flamme, ton nombre de séances et l'heure de ta dernière séance.":"Your nickname and companion, your streak, your number of sessions and when your last session was.",
+  "Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.":"Nothing else: your loads, weight and meals stay on your phone.",
+  "Ton pseudo":"Your nickname",
+  "Ex : Léa":"E.g. Lea",
+  "J'ai 16 ans ou plus":"I am 16 or older",
+  "Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.":"This information is stored with Google Firebase, in Europe, until you delete it.",
+  "Activer":"Turn on",
+  "Un code ami a 8 caractères.":"A friend code has 8 characters.",
+  "C'est ton propre code !":"That's your own code!",
+  "Aucun compte avec ce code.":"No account with this code.",
+  "Vous êtes déjà amis.":"You're already friends.",
+  "{} séance":"{} session",
+  "Dernière séance : {}":"Last session: {}",
+  "Pas encore de séance":"No session yet",
+  "Objectifs de course":"Running goals",
+  "Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.":"Sessions that grow with you, level by level. With Tonnup Analyze.",
+  "Des séances qui évoluent avec toi.":"Sessions that grow with you.",
+  "Tes muscles, ta récupération et ton bilan de la semaine.":"Your muscles, your recovery and your weekly review.",
+  "Analyse de la photo en cours…":"Analyzing the photo…",
+  "{} % de tes protéines":"{} % of your protein",
+  "~{} kcal à trouver":"~{} kcal still to eat",
+  "~{} kcal restantes":"~{} kcal left",
+  "+{} kcal sur ta cible":"+{} kcal over your target",
+  "Ajoute des légumes et une source de protéines pour tenir plus longtemps.":"Add vegetables and a protein source to stay full longer.",
+  "Ajoute une source de protéines : œuf, yaourt, poulet…":"Add a protein source: egg, yogurt, chicken…",
+  "Peu de protéines : ajoutes-en une source.":"Low in protein: add a source.",
+  "Belle dose de protéines ! 💪":"Nice dose of protein! 💪",
+  "Bon choix avant l'entraînement, pour l'énergie.":"A good pick before training, for energy.",
+  "Repas copieux : mise sur les légumes ensuite.":"Hearty meal: go for vegetables next.",
+  "Petite portion : complète avec des noix ou des fruits secs.":"Small portion: add nuts or dried fruit.",
+  "Accès développeur":"Developer access",
+  "Réservé à l'équipe Tonnup.":"Reserved for the Tonnup team.",
+  "Code":"Code",
+  "Code incorrect":"Wrong code",
+  "Mode démo":"Demo mode",
+  "Quitter le mode démo":"Leave demo mode",
+  "Tes vraies données reviennent.":"Your real data comes back.",
+  "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.":"A sample profile for your videos and screenshots. Your data stays safe.",
+  "Passer en mode démo ?":"Switch to demo mode?",
+  "L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app.":"The app shows a complete sample profile. Nothing you do in demo is saved, and your real data stays untouched. To go back: Settings, \u201cLeave demo mode\u201d, or close and reopen the app.",
+  "Passer en démo":"Switch to demo",
+  "Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir.":"Demo mode: your real data is safe. Settings to leave.",
   "Ce repas couvre {} % de tes protéines du jour.":"This meal covers {} % of your protein for the day.",
   "Il te restera environ {} kcal à manger aujourd'hui.":"You'll still have about {} kcal to eat today.",
   "Il te restera environ {} kcal pour la journée.":"You'll have about {} kcal left for the day.",
@@ -8311,6 +8667,159 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Copier mon code":"Copiar mi código",
+  "Public":"Público",
+  "Public : on te trouve par ton pseudo et tu peux apparaître au classement.":"Público: te encuentran por tu apodo y puedes aparecer en la clasificación.",
+  "Mon profil et ma visibilité":"Mi perfil y mi visibilidad",
+  "Qui voit quoi":"Quién ve qué",
+  "Mon pseudo et mon compagnon":"Mi apodo y mi compañero",
+  "Mes flammes":"Mis rachas",
+  "Mon nombre de séances":"Mi número de sesiones",
+  "Ma semaine":"Mi semana",
+  "Les jours, les kilos soulevés, les kilomètres et le temps.":"Los días, los kilos levantados, los kilómetros y el tiempo.",
+  "Ma dernière séance":"Mi última sesión",
+  "Son nom, sa durée, et quand.":"Su nombre, su duración y cuándo.",
+  "Tout le monde":"Todos",
+  "Amis":"Amigos",
+  "Moi seul":"Solo yo",
+  "Voir comme mes amis":"Ver como mis amigos",
+  "Voir comme tout le monde":"Ver como todos",
+  "Changer de pseudo":"Cambiar de apodo",
+  "Aperçu : ce que voient tes amis":"Vista previa: lo que ven tus amigos",
+  "Aperçu : ce que voit tout le monde":"Vista previa: lo que ven todos",
+  "Tu gardes certaines infos pour toi.":"Guardas algunos datos para ti.",
+  "Garde certaines infos pour lui.":"Guarda algunos datos en privado.",
+  "#{} du classement":"#{} de la clasificación",
+  "Ses flammes ne sont pas publiques.":"Sus rachas no son públicas.",
+  "Voir sa fiche":"Ver su ficha",
+  "Ajouter en ami":"Añadir como amigo",
+  "Profil public":"Perfil público",
+  "On peut te trouver par ton pseudo et te voir dans le classement de Tout Tonnup (ton compagnon, ton pseudo et tes flammes). Tu pourras le changer dans Mon profil.":"Te pueden encontrar por tu apodo y verte en la clasificación de Todo Tonnup (tu compañero, tu apodo y tus rachas). Puedes cambiarlo en Mi perfil.",
+  "Ta place":"Tu puesto",
+  "Allume ta flamme pour entrer au classement.":"Enciende tu racha para entrar en la clasificación.",
+  "Classement":"Clasificación",
+  "Tout Tonnup":"Todo Tonnup",
+  "Flammes en cours activées":"Rachas activas en curso",
+  "Personne n'a de flamme allumée pour l'instant.":"Nadie tiene una racha activa por ahora.",
+  "Toi":"Tú",
+  "Partager mon code":"Compartir mi código",
+  "Ajouter un ami":"Añadir un amigo",
+  "Pseudo ou code ami":"Apodo o código de amigo",
+  "Mon pseudo et ma visibilité":"Mi apodo y mi visibilidad",
+  "Pas encore d'amis. Touche le bouton en haut pour en ajouter.":"Aún no tienes amigos. Toca el botón de arriba para añadir.",
+  "Demandes d'ami":"Solicitudes de amistad",
+  "veut être ton ami":"quiere ser tu amigo",
+  "Accepter":"Aceptar",
+  "Refuser":"Rechazar",
+  "Vous êtes amis !":"¡Ya sois amigos!",
+  "Refuser la demande ?":"¿Rechazar la solicitud?",
+  "Refuser et bloquer":"Rechazar y bloquear",
+  "Bloqué.":"Bloqueado.",
+  "Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}":"¡Agrégame en Tonnup! Mi apodo: {p} · mi código de amigo: {c}",
+  "Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.":"Nadie con este apodo. Revisa la ortografía o pide su código.",
+  "Ami":"Amigo",
+  "Demande envoyée":"Solicitud enviada",
+  "Impossible d'envoyer une demande à cette personne.":"No se puede enviar una solicitud a esta persona.",
+  "Bloquer":"Bloquear",
+  "Signaler":"Denunciar",
+  "Bloquer {} ?":"¿Bloquear a {}?",
+  "Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter.":"Dejaréis de ser amigos y esta persona no podrá añadirte.",
+  "Signaler {}":"Denunciar a {}",
+  "Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.":"Dinos qué pasa. Nadie más verá esta denuncia.",
+  "Pseudo inapproprié":"Apodo inapropiado",
+  "Se fait passer pour quelqu'un":"Se hace pasar por otra persona",
+  "Autre chose":"Otra cosa",
+  "Merci, c'est signalé.":"Gracias, se ha denunciado.",
+  "Ton numéro actuel : #{}. Il change si tu changes de pseudo.":"Tu número actual: #{}. Cambia si cambias de apodo.",
+  "Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.":"Se añade un número a tu apodo (ej.: Lea#4821): dos personas pueden llamarse igual.",
+  "Les autres peuvent me trouver par mon pseudo":"Otros pueden encontrarme por mi apodo",
+  "Rallumer avec Tonnup Analyse":"Reavivar con Tonnup Analyze",
+  "Ta flamme protégée":"Tu racha protegida",
+  "Rallume-la 2 fois par mois si elle s'éteint.":"Reavívala 2 veces al mes si se apaga.",
+  "Rallumer ma flamme":"Reavivar mi racha",
+  "Ta flamme s'est éteinte":"Tu racha se apagó",
+  "Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.":"Tenías {} actividades seguidas. Reavívala para mantener tu racha: luego tendrás 3 días para tu próxima sesión.",
+  "Rallumer ta flamme fait partie de Tonnup Analyse.":"Reavivar tu racha forma parte de Tonnup Analyze.",
+  "Découvrir Analyse":"Descubrir Analyze",
+  "Encore {} rallumages ce mois-ci.":"Te quedan {} reavivaciones este mes.",
+  "Encore {} rallumage ce mois-ci.":"Te queda {} reavivación este mes.",
+  "Tu as utilisé tes rallumages du mois. Les prochains arrivent le {}.":"Has usado las reavivaciones del mes. Las próximas llegan el {}.",
+  "La laisser éteinte":"Dejarla apagada",
+  "Ta flamme est rallumée ! 🔥":"¡Tu racha ha vuelto! 🔥",
+  "Le service Amis n'est pas encore prêt. Réessaie plus tard.":"El servicio de amigos aún no está listo. Inténtalo más tarde.",
+  "En forme":"En forma",
+  "Un peu fatigué":"Un poco cansado",
+  "Au repos":"Descansando",
+  "Sa flamme va s'éteindre":"Su racha está por apagarse",
+  "Vient de battre un record":"Acaba de batir un récord",
+  "En fête":"De fiesta",
+  "Au top de sa forme":"En plena forma",
+  "En pleine séance":"En plena sesión",
+  "Courus":"Corridos",
+  "D'entraînement":"De entrenamiento",
+  "Flamme en cours":"Racha actual",
+  "Meilleure flamme":"Mejor racha",
+  "Séances au total":"Sesiones en total",
+  "Retirer de mes amis":"Quitar de mis amigos",
+  "Mes amis":"Mis amigos",
+  "Leur compagnon, leur flamme et leur dernière séance.":"Su compañero, su racha y su última sesión.",
+  "Ton code ami":"Tu código de amigo",
+  "Code d'un ami":"Código de un amigo",
+  "Chargement…":"Cargando…",
+  "Mon pseudo":"Mi apodo",
+  "Supprimer mes données d'amis":"Eliminar mis datos de amigos",
+  "Pas encore d'amis. Partage ton code, ou ajoute celui d'un ami.":"Aún no tienes amigos. Comparte tu código o añade el de un amigo.",
+  "Vous ne verrez plus vos séances l'un de l'autre.":"Ya no veréis las sesiones del otro.",
+  "Pas de connexion. Réessaie plus tard.":"Sin conexión. Inténtalo más tarde.",
+  "Ajoute-moi sur Tonnup ! Mon code ami : {}":"¡Agrégame en Tonnup! Mi código de amigo: {}",
+  "Code copié !":"¡Código copiado!",
+  "Ami ajouté !":"¡Amigo añadido!",
+  "Supprimer mes données d'amis ?":"¿Eliminar mis datos de amigos?",
+  "Ton pseudo, ton code et tes amis seront effacés chez Firebase. Tes séances restent sur ton téléphone.":"Tu apodo, tu código y tus amigos se borrarán de Firebase. Tus sesiones se quedan en tu teléfono.",
+  "Données d'amis supprimées.":"Datos de amigos eliminados.",
+  "Suis la régularité de tes amis, et eux la tienne.":"Sigue la constancia de tus amigos, y ellos la tuya.",
+  "Ce que tes amis verront":"Lo que verán tus amigos",
+  "Ton pseudo et ton compagnon, ta flamme, ton nombre de séances et l'heure de ta dernière séance.":"Tu apodo y tu compañero, tu racha, tu número de sesiones y la hora de tu última sesión.",
+  "Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.":"Nada más: tus cargas, tu peso y tus comidas se quedan en tu teléfono.",
+  "Ton pseudo":"Tu apodo",
+  "Ex : Léa":"Ej.: Lea",
+  "J'ai 16 ans ou plus":"Tengo 16 años o más",
+  "Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.":"Esta información se guarda en Google Firebase, en Europa, hasta que la elimines.",
+  "Activer":"Activar",
+  "Un code ami a 8 caractères.":"Un código de amigo tiene 8 caracteres.",
+  "C'est ton propre code !":"¡Es tu propio código!",
+  "Aucun compte avec ce code.":"Ninguna cuenta con este código.",
+  "Vous êtes déjà amis.":"Ya sois amigos.",
+  "Dernière séance : {}":"Última sesión: {}",
+  "Pas encore de séance":"Aún sin sesiones",
+  "Objectifs de course":"Objetivos de carrera",
+  "Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.":"Sesiones que evolucionan contigo, nivel a nivel. Con Tonnup Analyze.",
+  "Des séances qui évoluent avec toi.":"Sesiones que evolucionan contigo.",
+  "Tes muscles, ta récupération et ton bilan de la semaine.":"Tus músculos, tu recuperación y tu balance semanal.",
+  "Analyse de la photo en cours…":"Analizando la foto…",
+  "{} % de tes protéines":"{} % de tus proteínas",
+  "~{} kcal à trouver":"~{} kcal por comer",
+  "~{} kcal restantes":"~{} kcal restantes",
+  "+{} kcal sur ta cible":"+{} kcal sobre tu objetivo",
+  "Ajoute des légumes et une source de protéines pour tenir plus longtemps.":"Añade verduras y una fuente de proteína para aguantar más.",
+  "Ajoute une source de protéines : œuf, yaourt, poulet…":"Añade una fuente de proteína: huevo, yogur, pollo…",
+  "Peu de protéines : ajoutes-en une source.":"Poca proteína: añade una fuente.",
+  "Belle dose de protéines ! 💪":"¡Buena dosis de proteína! 💪",
+  "Bon choix avant l'entraînement, pour l'énergie.":"Buena opción antes de entrenar, para la energía.",
+  "Repas copieux : mise sur les légumes ensuite.":"Comida abundante: apuesta por verduras después.",
+  "Petite portion : complète avec des noix ou des fruits secs.":"Porción pequeña: completa con frutos secos.",
+  "Accès développeur":"Acceso de desarrollador",
+  "Réservé à l'équipe Tonnup.":"Reservado al equipo de Tonnup.",
+  "Code":"Código",
+  "Code incorrect":"Código incorrecto",
+  "Mode démo":"Modo demo",
+  "Quitter le mode démo":"Salir del modo demo",
+  "Tes vraies données reviennent.":"Tus datos reales vuelven.",
+  "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.":"Un perfil de ejemplo para tus vídeos y capturas. Tus datos quedan a salvo.",
+  "Passer en mode démo ?":"¿Pasar al modo demo?",
+  "L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app.":"La app muestra un perfil de ejemplo completo. Nada de lo que hagas en demo se guarda, y tus datos reales no cambian. Para volver: Ajustes, «Salir del modo demo», o cierra y vuelve a abrir la app.",
+  "Passer en démo":"Pasar a demo",
+  "Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir.":"Modo demo: tus datos reales están a salvo. Ajustes para salir.",
   "Ce repas couvre {} % de tes protéines du jour.":"Esta comida cubre el {} % de tus proteínas del día.",
   "Il te restera environ {} kcal à manger aujourd'hui.":"Te quedarán unas {} kcal por comer hoy.",
   "Il te restera environ {} kcal pour la journée.":"Te quedarán unas {} kcal para el día.",
@@ -11994,6 +12503,159 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Copier mon code":"Copiar meu código",
+  "Public":"Público",
+  "Public : on te trouve par ton pseudo et tu peux apparaître au classement.":"Público: podem te encontrar pelo apelido e você pode aparecer na classificação.",
+  "Mon profil et ma visibilité":"Meu perfil e visibilidade",
+  "Qui voit quoi":"Quem vê o quê",
+  "Mon pseudo et mon compagnon":"Meu apelido e meu companheiro",
+  "Mes flammes":"Minhas sequências",
+  "Mon nombre de séances":"Meu número de sessões",
+  "Ma semaine":"Minha semana",
+  "Les jours, les kilos soulevés, les kilomètres et le temps.":"Os dias, os quilos levantados, os quilômetros e o tempo.",
+  "Ma dernière séance":"Minha última sessão",
+  "Son nom, sa durée, et quand.":"O nome, a duração e quando.",
+  "Tout le monde":"Todos",
+  "Amis":"Amigos",
+  "Moi seul":"Só eu",
+  "Voir comme mes amis":"Ver como meus amigos",
+  "Voir comme tout le monde":"Ver como todos",
+  "Changer de pseudo":"Mudar de apelido",
+  "Aperçu : ce que voient tes amis":"Prévia: o que seus amigos veem",
+  "Aperçu : ce que voit tout le monde":"Prévia: o que todos veem",
+  "Tu gardes certaines infos pour toi.":"Você guarda algumas informações para si.",
+  "Garde certaines infos pour lui.":"Guarda algumas informações em privado.",
+  "#{} du classement":"#{} na classificação",
+  "Ses flammes ne sont pas publiques.":"As sequências não são públicas.",
+  "Voir sa fiche":"Ver o perfil",
+  "Ajouter en ami":"Adicionar como amigo",
+  "Profil public":"Perfil público",
+  "On peut te trouver par ton pseudo et te voir dans le classement de Tout Tonnup (ton compagnon, ton pseudo et tes flammes). Tu pourras le changer dans Mon profil.":"Podem te encontrar pelo apelido e te ver na classificação de Todo o Tonnup (seu companheiro, apelido e sequências). Você pode mudar isso em Meu perfil.",
+  "Ta place":"Sua posição",
+  "Allume ta flamme pour entrer au classement.":"Acenda sua sequência para entrar na classificação.",
+  "Classement":"Classificação",
+  "Tout Tonnup":"Todo o Tonnup",
+  "Flammes en cours activées":"Sequências ativas em curso",
+  "Personne n'a de flamme allumée pour l'instant.":"Ninguém tem uma sequência ativa no momento.",
+  "Toi":"Você",
+  "Partager mon code":"Compartilhar meu código",
+  "Ajouter un ami":"Adicionar um amigo",
+  "Pseudo ou code ami":"Apelido ou código de amigo",
+  "Mon pseudo et ma visibilité":"Meu apelido e visibilidade",
+  "Pas encore d'amis. Touche le bouton en haut pour en ajouter.":"Ainda sem amigos. Toque no botão no topo para adicionar.",
+  "Demandes d'ami":"Pedidos de amizade",
+  "veut être ton ami":"quer ser seu amigo",
+  "Accepter":"Aceitar",
+  "Refuser":"Recusar",
+  "Vous êtes amis !":"Vocês são amigos!",
+  "Refuser la demande ?":"Recusar o pedido?",
+  "Refuser et bloquer":"Recusar e bloquear",
+  "Bloqué.":"Bloqueado.",
+  "Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}":"Me adicione no Tonnup! Meu apelido: {p} · meu código de amigo: {c}",
+  "Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.":"Ninguém com esse apelido. Confira a grafia ou peça o código.",
+  "Ami":"Amigo",
+  "Demande envoyée":"Pedido enviado",
+  "Impossible d'envoyer une demande à cette personne.":"Não é possível enviar um pedido a essa pessoa.",
+  "Bloquer":"Bloquear",
+  "Signaler":"Denunciar",
+  "Bloquer {} ?":"Bloquear {}?",
+  "Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter.":"Vocês deixarão de ser amigos e essa pessoa não poderá te adicionar.",
+  "Signaler {}":"Denunciar {}",
+  "Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.":"Diga o que está errado. Ninguém mais verá esta denúncia.",
+  "Pseudo inapproprié":"Apelido impróprio",
+  "Se fait passer pour quelqu'un":"Se passa por outra pessoa",
+  "Autre chose":"Outra coisa",
+  "Merci, c'est signalé.":"Obrigado, foi denunciado.",
+  "Ton numéro actuel : #{}. Il change si tu changes de pseudo.":"Seu número atual: #{}. Ele muda se você mudar de apelido.",
+  "Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.":"Um número é adicionado ao seu apelido (ex.: Lea#4821): duas pessoas podem ter o mesmo nome.",
+  "Les autres peuvent me trouver par mon pseudo":"Outros podem me encontrar pelo apelido",
+  "Rallumer avec Tonnup Analyse":"Reacender com o Tonnup Analyze",
+  "Ta flamme protégée":"Sua sequência protegida",
+  "Rallume-la 2 fois par mois si elle s'éteint.":"Reacenda 2 vezes por mês se ela se apagar.",
+  "Rallumer ma flamme":"Reacender minha sequência",
+  "Ta flamme s'est éteinte":"Sua sequência se apagou",
+  "Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.":"Você tinha {} atividades seguidas. Reacenda para manter sua sequência: depois terá 3 dias para a próxima sessão.",
+  "Rallumer ta flamme fait partie de Tonnup Analyse.":"Reacender sua sequência faz parte do Tonnup Analyze.",
+  "Découvrir Analyse":"Conhecer o Analyze",
+  "Encore {} rallumages ce mois-ci.":"Restam {} reacendimentos este mês.",
+  "Encore {} rallumage ce mois-ci.":"Resta {} reacendimento este mês.",
+  "Tu as utilisé tes rallumages du mois. Les prochains arrivent le {}.":"Você usou os reacendimentos do mês. Os próximos chegam em {}.",
+  "La laisser éteinte":"Deixar apagada",
+  "Ta flamme est rallumée ! 🔥":"Sua sequência voltou! 🔥",
+  "Le service Amis n'est pas encore prêt. Réessaie plus tard.":"O serviço de amigos ainda não está pronto. Tente mais tarde.",
+  "En forme":"Em forma",
+  "Un peu fatigué":"Um pouco cansado",
+  "Au repos":"Descansando",
+  "Sa flamme va s'éteindre":"A sequência vai se apagar",
+  "Vient de battre un record":"Acabou de bater um recorde",
+  "En fête":"Em festa",
+  "Au top de sa forme":"Em plena forma",
+  "En pleine séance":"Em plena sessão",
+  "Courus":"Corridos",
+  "D'entraînement":"De treino",
+  "Flamme en cours":"Sequência atual",
+  "Meilleure flamme":"Melhor sequência",
+  "Séances au total":"Sessões no total",
+  "Retirer de mes amis":"Remover dos meus amigos",
+  "Mes amis":"Meus amigos",
+  "Leur compagnon, leur flamme et leur dernière séance.":"O companheiro, a sequência e a última sessão deles.",
+  "Ton code ami":"Seu código de amigo",
+  "Code d'un ami":"Código de um amigo",
+  "Chargement…":"Carregando…",
+  "Mon pseudo":"Meu apelido",
+  "Supprimer mes données d'amis":"Excluir meus dados de amigos",
+  "Pas encore d'amis. Partage ton code, ou ajoute celui d'un ami.":"Ainda sem amigos. Compartilhe seu código ou adicione o de um amigo.",
+  "Vous ne verrez plus vos séances l'un de l'autre.":"Vocês não verão mais as sessões um do outro.",
+  "Pas de connexion. Réessaie plus tard.":"Sem conexão. Tente mais tarde.",
+  "Ajoute-moi sur Tonnup ! Mon code ami : {}":"Me adicione no Tonnup! Meu código de amigo: {}",
+  "Code copié !":"Código copiado!",
+  "Ami ajouté !":"Amigo adicionado!",
+  "Supprimer mes données d'amis ?":"Excluir meus dados de amigos?",
+  "Ton pseudo, ton code et tes amis seront effacés chez Firebase. Tes séances restent sur ton téléphone.":"Seu apelido, código e amigos serão apagados do Firebase. Suas sessões ficam no seu celular.",
+  "Données d'amis supprimées.":"Dados de amigos excluídos.",
+  "Suis la régularité de tes amis, et eux la tienne.":"Acompanhe a regularidade dos seus amigos, e eles a sua.",
+  "Ce que tes amis verront":"O que seus amigos verão",
+  "Ton pseudo et ton compagnon, ta flamme, ton nombre de séances et l'heure de ta dernière séance.":"Seu apelido e companheiro, sua sequência, seu número de sessões e o horário da sua última sessão.",
+  "Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.":"Nada mais: suas cargas, seu peso e suas refeições ficam no seu celular.",
+  "Ton pseudo":"Seu apelido",
+  "Ex : Léa":"Ex.: Lea",
+  "J'ai 16 ans ou plus":"Tenho 16 anos ou mais",
+  "Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.":"Essas informações ficam armazenadas no Google Firebase, na Europa, até você excluí-las.",
+  "Activer":"Ativar",
+  "Un code ami a 8 caractères.":"Um código de amigo tem 8 caracteres.",
+  "C'est ton propre code !":"Esse é o seu próprio código!",
+  "Aucun compte avec ce code.":"Nenhuma conta com este código.",
+  "Vous êtes déjà amis.":"Vocês já são amigos.",
+  "Dernière séance : {}":"Última sessão: {}",
+  "Pas encore de séance":"Ainda sem sessões",
+  "Objectifs de course":"Objetivos de corrida",
+  "Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.":"Sessões que evoluem com você, nível a nível. Com o Tonnup Analyze.",
+  "Des séances qui évoluent avec toi.":"Sessões que evoluem com você.",
+  "Tes muscles, ta récupération et ton bilan de la semaine.":"Seus músculos, sua recuperação e seu balanço da semana.",
+  "Analyse de la photo en cours…":"Analisando a foto…",
+  "{} % de tes protéines":"{} % das suas proteínas",
+  "~{} kcal à trouver":"~{} kcal ainda a comer",
+  "~{} kcal restantes":"~{} kcal restantes",
+  "+{} kcal sur ta cible":"+{} kcal acima da meta",
+  "Ajoute des légumes et une source de protéines pour tenir plus longtemps.":"Adicione legumes e uma fonte de proteína para ficar saciado por mais tempo.",
+  "Ajoute une source de protéines : œuf, yaourt, poulet…":"Adicione uma fonte de proteína: ovo, iogurte, frango…",
+  "Peu de protéines : ajoutes-en une source.":"Pouca proteína: adicione uma fonte.",
+  "Belle dose de protéines ! 💪":"Boa dose de proteína! 💪",
+  "Bon choix avant l'entraînement, pour l'énergie.":"Boa escolha antes do treino, para a energia.",
+  "Repas copieux : mise sur les légumes ensuite.":"Refeição farta: aposte em legumes depois.",
+  "Petite portion : complète avec des noix ou des fruits secs.":"Porção pequena: complete com castanhas ou frutas secas.",
+  "Accès développeur":"Acesso de desenvolvedor",
+  "Réservé à l'équipe Tonnup.":"Reservado para a equipe Tonnup.",
+  "Code":"Código",
+  "Code incorrect":"Código incorreto",
+  "Mode démo":"Modo demo",
+  "Quitter le mode démo":"Sair do modo demo",
+  "Tes vraies données reviennent.":"Seus dados reais voltam.",
+  "Un profil d'exemple pour tes vidéos et captures. Tes données restent à l'abri.":"Um perfil de exemplo para seus vídeos e capturas. Seus dados ficam protegidos.",
+  "Passer en mode démo ?":"Passar para o modo demo?",
+  "L'app affiche un profil d'exemple complet. Rien de ce que tu fais en démo n'est enregistré, et tes vraies données ne bougent pas. Pour revenir : Réglages, « Quitter le mode démo », ou ferme et rouvre l'app.":"O app mostra um perfil de exemplo completo. Nada do que você fizer no demo é salvo, e seus dados reais não mudam. Para voltar: Ajustes, “Sair do modo demo”, ou feche e reabra o app.",
+  "Passer en démo":"Passar para demo",
+  "Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir.":"Modo demo: seus dados reais estão protegidos. Ajustes para sair.",
   "Ce repas couvre {} % de tes protéines du jour.":"Esta refeição cobre {} % das suas proteínas do dia.",
   "Il te restera environ {} kcal à manger aujourd'hui.":"Ainda vão faltar cerca de {} kcal para comer hoje.",
   "Il te restera environ {} kcal pour la journée.":"Vão sobrar cerca de {} kcal para o dia.",
@@ -18787,7 +19449,7 @@ function marquerAccessoireVu(a){
 /* la pastille suit la personne : l'icone du profil est dans la page, pas dans la fiche */
 function majPastilles(){
   const n = accessoiresNeufs().length;
-  document.querySelectorAll("#app #tb-user, #sheet #pr-avatar").forEach(b=>{
+  document.querySelectorAll("#app #tb-user, #sheet #pr-rond").forEach(b=>{
     const p = b.querySelector(".pastille");
     if(n && !p){ const i = document.createElement("i"); i.className = "pastille"; b.appendChild(i); }
     else if(!n && p) p.remove();
@@ -18805,21 +19467,91 @@ function varChoisie(a){
   if(memo && dess.some(x=>x.id === memo)) return memo;
   return dess.length ? dess[0].id : a.id;
 }
+/* ---- rallumer sa flamme (Nico, 28 septembre) ----
+   Reserve a l'abonnement Analyse. Possible pendant 7 jours apres qu'elle s'est eteinte,
+   pour une flamme d'au moins 2 activites, RALLUMAGES_MOIS fois par mois civil. Le
+   rallumage ne compte pas comme une activite : il garde la serie, et laisse les 3 jours
+   habituels pour la prochaine seance. Ces chiffres sont des choix de Tonnup. */
+const RALLUMAGES_MOIS = 2;
+function rallumagesRestants(){
+  const m = new Date(); m.setDate(1); m.setHours(0,0,0,0);
+  return Math.max(0, RALLUMAGES_MOIS - (db.rallumages || []).filter(r=>r.quand >= m.getTime()).length);
+}
+/* la flamme qu'on pourrait rallumer : {n, de} — ou null */
+function flammeRallumable(){
+  if(serieJours().n > 0) return null;
+  const pts = pointsFlamme(Date.now()).filter(x=>x.act);
+  if(!pts.length) return null;
+  const de = pts[0].t;
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  if(Math.round((auj - de) / 864e5) > 10) return null;           /* eteinte depuis plus de 7 jours */
+  if(db.flammeLaissee === de) return null;                        /* « laisser eteinte » */
+  const n = serieJours(new Date(de + 12 * 3600e3)).n;
+  return n >= 2 ? {n, de} : null;
+}
+function rallumerFlamme(){
+  const r = flammeRallumable();
+  if(!r || verrouille("rallumer") || rallumagesRestants() < 1) return false;
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  db.rallumages = (db.rallumages || []).concat([{jour:auj.getTime(), de:r.de, quand:Date.now()}]);
+  save();
+  return true;
+}
+function openRallumer(){
+  const r = flammeRallumable();
+  if(!r) return;
+  const bloque = verrouille("rallumer"), reste = rallumagesRestants();
+  const prochain = new Date(); prochain.setMonth(prochain.getMonth() + 1, 1);
+  const w = fenetre(`<div class="rl-fl"><img src="img/flamme-24b.webp" alt=""><b>${r.n}</b></div>
+    <h3>${TR("Ta flamme s'est éteinte")}</h3>
+    <p>${TR("Tu avais {} activités d'affilée. Rallume-la pour garder ta série : tu auras ensuite 3 jours pour ta prochaine séance.").replace("{}", r.n)}</p>
+    ${bloque ? `<button class="btn btn-accent" id="rl-go" style="width:100%;">${IC_CADENAS_MINI} ${TR("Rallumer avec Tonnup Analyse")}</button>`
+    : reste > 0 ? `<button class="btn btn-accent" id="rl-go" style="width:100%;">🔥 ${TR("Rallumer ma flamme")}</button>
+      <div class="rl-s">${TR(reste > 1 ? "Encore {} rallumages ce mois-ci." : "Encore {} rallumage ce mois-ci.").replace("{}", reste)}</div>`
+    : `<div class="rl-s">${TR("Tu as utilisé tes rallumages du mois. Les prochains arrivent le {}.")
+        .replace("{}", prochain.toLocaleDateString(loc(), {day:"numeric", month:"long"}))}</div>`}
+    <button class="am-lien" id="rl-non" style="display:block; margin:8px auto 0;">${TR("La laisser éteinte")}</button>`);
+  const go = w.el.querySelector("#rl-go");
+  if(go) go.onclick = ()=>{
+    if(bloque){ w.fermer(); openAbonnement(); return; }
+    if(rallumerFlamme()){ w.fermer(); vibrer(20); toast(TR("Ta flamme est rallumée ! 🔥")); render(); }
+  };
+  w.el.querySelector("#rl-non").onclick = ()=>{ db.flammeLaissee = r.de; save(); w.fermer(); render(); };
+}
 /* la meilleure serie de semaines jamais tenue, sur tout l'historique */
 /* La meilleure flamme jamais tenue : la plus longue suite de jours d'activite ou deux
    activites ne sont jamais separees de plus de 3 jours (la regle de la flamme). Jamais
    perdue : c'est le record, l'etoile du vestiaire. Les rares se gagnent avec elle. */
 function meilleureFlamme(){
-  const jours = [...new Set((db.history || []).concat(db.cardio || []).map(x=>{
-    const d = new Date(x.date); if(!(d > 0) || d > Date.now()) return null;
-    d.setHours(0,0,0,0); return d.getTime();
-  }).filter(t=>t !== null))].sort((a, b)=>a - b);
+  const pts = pointsFlamme(Date.now()).reverse();         /* du plus ancien au plus recent */
   let best = 0, n = 0;
-  for(let i = 0; i < jours.length; i++){
-    n = (i > 0 && jours[i] - jours[i - 1] <= 3 * 864e5) ? n + 1 : 1;
+  for(let i = 0; i < pts.length; i++){
+    const suit = i > 0 && lienFlamme(pts[i], pts[i - 1]);
+    n = (suit ? n : 0) + (pts[i].act ? 1 : 0);
     best = Math.max(best, n);
   }
   return best;
+}
+/* Les points de la flamme, du plus recent au plus ancien : chaque jour d'activite (il
+   compte), et chaque rallumage (Nico, 28 septembre) — il ne compte pas, il fait le pont
+   entre la derniere activite et le jour ou on l'a rallumee. */
+function pointsFlamme(maintenant){
+  const now = new Date(maintenant), pts = new Map();
+  (db.history || []).concat(db.cardio || []).forEach(x=>{
+    const d = new Date(x.date); if(!(d > 0) || d > now) return;
+    d.setHours(0,0,0,0); pts.set(d.getTime(), {t:d.getTime(), act:true});
+  });
+  (db.rallumages || []).forEach(r=>{
+    if(!(r.jour <= now.getTime())) return;
+    /* une seance le jour meme du rallumage garde le pont */
+    if(pts.has(r.jour)) pts.get(r.jour).de = r.de;
+    else pts.set(r.jour, {t:r.jour, act:false, de:r.de});
+  });
+  return [...pts.values()].sort((a, b)=>b.t - a.t);
+}
+/* deux points se suivent : 3 jours d'ecart au plus, ou un rallumage qui vise ce jour-la */
+function lienFlamme(recent, ancien){
+  return recent.t - ancien.t <= 3 * 864e5 || (recent.de !== undefined && recent.de === ancien.t);
 }
 function meilleureSerieSemaines(){
   const sem = new Set();
@@ -18904,7 +19636,7 @@ function recordSignificatif(){
 /* un accessoire gagne aujourd'hui : le palier d'activites tombe pile sur le jour, ou la
    serie de semaines vient d'atteindre celui d'un rare */
 function accessoireDuJour(){
-  if(serieJours().depuis !== 0) return null;
+  if(dayKey(new Date(finDerniereActivite() || 0)) !== dayKey()) return null;
   const n = nActivites(), fl = serieJours().n;
   return ACCESSOIRES.find(a=>variantesDessinees(a).length && (a.flamme ? fl === a.flamme : a.seances === n)) || null;
 }
@@ -19053,7 +19785,9 @@ function habille(id, force){
   const cl = f ? Object.assign({}, db.avatar && db.avatar.cl, {[f.id]:id}) : (db.avatar && db.avatar.cl);
   db.avatar = Object.assign({}, db.avatar, {acc, cl}); save(); vibrer(12);
   majPoussins();                      /* celui de la page derriere, tout de suite */
+  const y = sheet.scrollTop;          /* la fiche se redessine : on reste ou on etait (Nico) */
   openVestiaire();
+  sheet.scrollTop = y;
   majPastilles();
 }
 /* « Tu as debloque le casque audio. » On le montre en grand, on dit ce qu'il a fallu
@@ -19087,7 +19821,7 @@ function revelerAccessoire(a){
   const fermer = porter=>{
     el.remove();
     if(porter) habille(v, true);
-    else { openVestiaire(); majPoussins(); }
+    else { const y = sheet.scrollTop; openVestiaire(); sheet.scrollTop = y; majPoussins(); }
     majPastilles();
   };
   el.querySelector('[data-rev="porter"]').onclick = ()=>fermer(true);
@@ -19142,6 +19876,7 @@ function majPoussins(){
   });
 }
 document.addEventListener("click", e=>{
+  if(!e.target.closest("#poussin-record") && e.target.closest("#app .hero-poussin")){ openVestiaire(); return; }
   const b = e.target.closest("#poussin-record");
   if(!b) return;
   const r = recordSignificatif();
@@ -19231,7 +19966,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "27 septembre 2026 02h42";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "28 septembre 2026 03h54";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -19414,7 +20149,7 @@ function majWidget(){
 /* On ne redessine plus le widget pendant qu'on se sert de l'app : le lanceur qui
    repeint ses widgets peut figer l'ecran une ou deux secondes sur certains telephones,
    juste apres un enregistrement. Il sera a jour en quittant l'app (visibilitychange). */
-function majWidgetBientot(){ clearTimeout(widgetDelai); widgetDelai = setTimeout(()=>{ if(document.visibilityState === "hidden") majWidget(); }, 1500); }
+function majWidgetBientot(){ clearTimeout(widgetDelai); widgetDelai = setTimeout(()=>{ if(document.visibilityState === "hidden" && !demoEnCours) majWidget(); }, 1500); }
 setTimeout(majWidget, 1200);
 document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "hidden") majWidget(); });
 /* les rappels : reposes a chaque ouverture et a chaque passage en arriere-plan */
@@ -19578,7 +20313,7 @@ async function autoFileWrite(){
 function autoFileSchedule(){
   if(!autoFile.ok) return;
   if(autoFile.to) clearTimeout(autoFile.to);
-  autoFile.to = setTimeout(autoFileWrite, 2000);
+  autoFile.to = setTimeout(()=>{ if(!demoEnCours) autoFileWrite(); }, 2000);
 }
 async function autoFilePick(){
   try{
@@ -19662,6 +20397,7 @@ function save(){
   autoFileSchedule();
   driveSchedule();
   if(typeof majWidgetBientot === "function") majWidgetBientot();
+  publierAmiBientot();                         /* la fiche que voient les amis, si elle a change */
 }
 /* ---- la zone que le clavier laisse voir -------------------------------------
    visualViewport donne la portion d ecran reellement visible, clavier deduit. C est
@@ -20647,6 +21383,729 @@ function hero(inner, opts){
   </div>`;
 }
 /* l'avatar en haut à gauche : profil, plan, objectif */
+/* ===== Mes amis (Nico, 28 septembre) ========================================
+   Ce qui quitte le telephone, et rien d'autre : un pseudo, les accessoires portes, le
+   nombre d'activites, la flamme et l'heure de la derniere activite. Les charges, le
+   poids et les repas restent ici.
+   Pas de bibliotheque Firebase : l'authentification anonyme et Firestore par leur API
+   REST, avec fetch — 150 Ko de moins, et rien a mettre a jour. Ce sont les regles de
+   securite (firestore.rules, publiees dans la console) qui decident qui lit quoi : sa
+   propre fiche, et celle de ses amis. Une amitie se cree avec le code de l'autre :
+   donner son code, c'est accepter. La cle ci-dessous est publique par nature. */
+const FB = {cle:"AIzaSyBhYWKQ--_6gaIap4mwwokZNPLcYYf6_jI", projet:"tonnup-1"};
+const FB_DOCS = `https://firestore.googleapis.com/v1/projects/${FB.projet}/databases/(default)/documents`;
+const IC_AMIS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="8" r="3.4"/><path d="M2.6 19.2c.5-3.6 3.2-5.4 6.4-5.4s5.9 1.8 6.4 5.4z"/><circle cx="16.6" cy="9" r="2.8" opacity=".6"/><path d="M16.2 13.2c2.9-.1 4.9 1.5 5.3 4.6h-4.4c-.2-1.8-.5-3.3-.9-4.6z" opacity=".6"/></svg>';
+let fbJeton = null, fbJetonFin = 0;
+function fbErreur(r, j){ return Object.assign(new Error((j && j.error && (j.error.message || j.error.status)) || String(r.status)), {status:r.status}); }
+async function fbPost(url, corps, form){
+  const r = await fetch(url, {method:"POST", headers:{"Content-Type": form ? "application/x-www-form-urlencoded" : "application/json"},
+    body: form ? corps : JSON.stringify(corps)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw fbErreur(r, j);
+  return j;
+}
+/* le jeton d'une heure ; a defaut, on le renouvelle ; a defaut encore, une identite neuve */
+async function fbConnexion(){
+  if(fbJeton && Date.now() < fbJetonFin) return fbJeton;
+  const a = db.amis;
+  if(a && a.refresh){
+    const j = await fbPost(`https://securetoken.googleapis.com/v1/token?key=${FB.cle}`,
+      "grant_type=refresh_token&refresh_token=" + encodeURIComponent(a.refresh), true);
+    fbJeton = j.id_token; fbJetonFin = Date.now() + (Number(j.expires_in) - 120) * 1000;
+    a.uid = j.user_id;
+    if(j.refresh_token && j.refresh_token !== a.refresh){ a.refresh = j.refresh_token; save(); }
+    return fbJeton;
+  }
+  const j = await fbPost(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.cle}`, {returnSecureToken:true});
+  fbJeton = j.idToken; fbJetonFin = Date.now() + (Number(j.expiresIn) - 120) * 1000;
+  db.amis = Object.assign(db.amis || {}, {uid:j.localId, refresh:j.refreshToken}); save();
+  return fbJeton;
+}
+/* Firestore parle en valeurs typees : {stringValue:"…"}, {integerValue:"3"}… */
+function fbVal(v){
+  if(v === null || v === undefined) return {nullValue:null};
+  if(typeof v === "boolean") return {booleanValue:v};
+  if(typeof v === "number") return Number.isInteger(v) ? {integerValue:String(v)} : {doubleValue:v};
+  if(v instanceof Date) return {timestampValue:v.toISOString()};
+  if(Array.isArray(v)) return {arrayValue:{values:v.map(fbVal)}};
+  if(typeof v === "object") return {mapValue:{fields:fbChamps(v)}};
+  return {stringValue:String(v)};
+}
+function fbChamps(o){ const f = {}; Object.keys(o).forEach(k=>{ f[k] = fbVal(o[k]); }); return f; }
+function fbLire(v){
+  if(!v) return null;
+  if("stringValue" in v) return v.stringValue;
+  if("integerValue" in v) return Number(v.integerValue);
+  if("doubleValue" in v) return v.doubleValue;
+  if("booleanValue" in v) return v.booleanValue;
+  if("timestampValue" in v) return new Date(v.timestampValue).getTime();
+  if("arrayValue" in v) return (v.arrayValue.values || []).map(fbLire);
+  if("mapValue" in v) return fbObjet(v.mapValue.fields);
+  return null;
+}
+function fbObjet(f){ const o = {}; Object.keys(f || {}).forEach(k=>{ o[k] = fbLire(f[k]); }); return o; }
+async function fbReq(methode, chemin, corps){
+  const jeton = await fbConnexion();
+  const r = await fetch(/^https:/.test(chemin) ? chemin : FB_DOCS + chemin, {method:methode,
+    headers:{"Authorization":"Bearer " + jeton, "Content-Type":"application/json"}, body: corps ? JSON.stringify(corps) : undefined});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw fbErreur(r, j);
+  return j;
+}
+/* le code ami : 8 caracteres sans 0/O ni 1/I, pour se dicter sans erreur */
+const CODE_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function nouveauCode(){ const t = new Uint32Array(8); crypto.getRandomValues(t); return Array.from(t, x=>CODE_ABC[x % 32]).join(""); }
+function codeAff(c){ return c ? c.slice(0, 4) + "-" + c.slice(4) : ""; }
+function codeSaisi(t){ return String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+/* ce que les amis voient — et seulement ca (Nico, 28 septembre) : l'humeur du
+   compagnon, la semaine en pastilles et en chiffres, la derniere seance. Jamais le
+   poids, les repas, ni la charge d'un exercice. */
+/* Qui voit quoi (Nico, 28 septembre). Trois niveaux : tout le monde (l'annuaire : la
+   recherche et le classement), les amis (la fiche), moi seul (rien ne part). Le
+   compagnon et le pseudo sont toujours vus des amis ; les flammes peuvent etre
+   publiques ; le reste ne va jamais plus loin que les amis. */
+const VIS_DEF = {profil:"public", flammes:"public", seances:"amis", semaine:"amis", derniere:"amis"};
+function visAmis(){
+  const a = db.amis || {}, v = Object.assign({}, VIS_DEF, a.vis || {});
+  if(a.visible === false && !(a.vis && a.vis.profil)) v.profil = "amis";   /* reglage d'avant */
+  if(v.profil !== "public" && v.flammes === "public") v.flammes = "amis";   /* pas de flamme publique sans profil public */
+  return v;
+}
+function profilPublic(){ return visAmis().profil === "public"; }
+function ficheAmi(){
+  const now = Date.now(), w0 = weekStartDate(), v = visAmis(), cache = [];
+  let der = null;
+  (db.history || []).forEach(h=>{
+    const t = h.end || new Date(h.date).getTime();
+    if(t <= now && (!der || t > der.t)) der = {t, type:"muscu", nom:h.name || "",
+      min:h.start && h.end ? Math.round((h.end - h.start) / 60000) : 0, km:0};
+  });
+  (db.cardio || []).forEach(c=>{
+    const t = new Date(c.date).getTime() + (c.min || 0) * 60000;
+    if(t <= now && (!der || t > der.t)) der = {t, type:cardioType(c) === "marche" ? "marche" : "course",
+      nom:c.parcours || "", min:Math.round(c.min || 0), km:Math.round((c.km || 0) * 100) / 100};
+  });
+  let sem = 0, semT = 0, semKm = 0, semMin = 0;
+  (db.history || []).forEach(h=>{
+    const d = new Date(h.date); if(!(d >= w0) || d > now) return;
+    sem |= 1 << ((d.getDay() + 6) % 7);
+    semT += sessionVolume(h);
+    if(h.start && h.end) semMin += (h.end - h.start) / 60000;
+  });
+  (db.cardio || []).forEach(c=>{
+    const d = new Date(c.date); if(!(d >= w0) || d > now) return;
+    sem |= 1 << ((d.getDay() + 6) % 7);
+    semKm += c.km || 0; semMin += c.min || 0;
+  });
+  const e = poussinEtat(), fl = serieJours().n, pts = pointsFlamme(now);
+  const f = {pseudo:String(db.amis.pseudo || "").slice(0, 20), acc:ficheAmi2acc(), pose:e.pose,
+    nAct:nActivites(), flamme:fl, best:meilleureFlamme(),
+    /* le jour ou la flamme s'eteindra si rien ne se passe : un rallumage compte */
+    fin:pts.length && fl > 0 ? new Date(pts[0].t + 4 * 864e5) : null,
+    derniere:der ? new Date(der.t) : null, derType:der ? der.type : "", derNom:der ? String(der.nom).slice(0, 30) : "",
+    derMin:der ? Math.max(0, Math.min(1440, der.min)) : 0, derKm:der ? der.km : 0,
+    sem, semDebut:w0, semT:Math.round(semT), semKm:Math.round(semKm * 10) / 10, semMin:Math.round(semMin), cache};
+  if(v.flammes === "moi"){ f.flamme = 0; f.best = 0; f.fin = null; cache.push("flammes"); }
+  if(v.seances === "moi"){ f.nAct = 0; cache.push("seances"); }
+  if(v.semaine === "moi"){ f.sem = 0; f.semT = 0; f.semKm = 0; f.semMin = 0; cache.push("semaine"); }
+  if(v.derniere === "moi"){ f.derniere = null; f.derType = ""; f.derNom = ""; f.derMin = 0; f.derKm = 0; cache.push("derniere"); }
+  return f;
+}
+let amiPubliMinuterie = null;
+function publierAmiBientot(){
+  if(!(db.amis && db.amis.actif) || demoEnCours) return;
+  clearTimeout(amiPubliMinuterie);
+  amiPubliMinuterie = setTimeout(()=>publierAmi(false).catch(()=>{}), 4000);
+}
+/* ---- le pseudo et son numero (Nico : « Tom#4821 », comme Discord) ----
+   Deux personnes peuvent s'appeler Tom ; le numero les distingue. Le couple nom+numero
+   est reserve dans tags/{nom_numero} : Firebase garantit qu'il n'existe qu'une fois.
+   Le nom compare est le pseudo en minuscules — les regles le verifient (p.lower()). */
+function pseudoNorm(p){ return String(p || "").toLowerCase(); }
+function pseudoValide(p){ return /^[\p{L}\p{N}][\p{L}\p{N} _.'-]{1,19}$/u.test(p); }
+function nomComplet(o){ return o && o.tag ? o.pseudo + "#" + o.tag : ((o && o.pseudo) || ""); }
+async function reserverTag(pseudo){
+  const n = pseudoNorm(pseudo);
+  for(let i = 0; i < 8; i++){
+    const t = String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, "0");
+    try{ await fbReq("POST", `/tags?documentId=${encodeURIComponent(n + "_" + t)}`, {fields:fbChamps({uid:db.amis.uid})}); return t; }
+    catch(e){ if(e.status !== 409 && e.status !== 403) throw e; }
+  }
+  throw new Error("tag");
+}
+/* une ecriture seulement si quelque chose a change : c'est ce qui garde Firebase gratuit */
+async function publierAmi(force){
+  const a = db.amis;
+  if(!(a && a.actif) || demoEnCours) return;
+  const f = ficheAmi(), cle = JSON.stringify(f);
+  if(!force && cle === a.envoye) return;
+  await fbConnexion();
+  await fbReq("PATCH", `/profils/${a.uid}`, {fields:fbChamps(Object.assign({}, f, {maj:new Date()}))});
+  /* l'annuaire, pour la recherche : le nom, le numero et le compagnon — rien d'autre, et
+     seulement pour qui a choisi d'etre trouvable */
+  if(a.tag){
+    /* la flamme, pour le classement : sa valeur, et le jour ou elle s'eteindra si rien ne
+       se passe (le dernier point de la serie + 4 jours — un rallumage compte) */
+    const flPub = visAmis().flammes === "public";
+    const ann = {n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag, acc:f.acc, fl:flPub ? f.flamme : 0, best:flPub ? f.best : 0,
+      fin:flPub ? f.fin : null};
+    const cleA = !profilPublic() ? "invisible" : JSON.stringify(ann);
+    if(force || cleA !== a.envoyeAnn){
+      if(!profilPublic()) await fbReq("DELETE", `/annuaire/${a.uid}`).catch(()=>{});
+      else await fbReq("PATCH", `/annuaire/${a.uid}`, {fields:fbChamps(ann)});
+      a.envoyeAnn = cleA;
+    }
+  }
+  a.envoye = cle; save();
+}
+async function activerAmis(pseudo, visible){
+  await fbConnexion();
+  const a = db.amis;
+  for(let i = 0; i < 5 && !a.code; i++){
+    const c = nouveauCode();
+    try{ await fbReq("POST", `/codes?documentId=${c}`, {fields:fbChamps({uid:a.uid})}); a.code = c; }
+    catch(e){ if(i === 4) throw e; }
+  }
+  a.pseudo = pseudo; a.vis = Object.assign({}, VIS_DEF, a.vis || {}, {profil:visible === false ? "amis" : "public"}); delete a.visible;
+  if(!a.tag) a.tag = await reserverTag(pseudo);
+  a.actif = true; a.age15 = true; save();
+  await publierAmi(true);
+}
+/* changer de pseudo (ou de visibilite) : un nouveau numero si le nom change */
+async function changerPseudo(pseudo, visible){
+  const a = db.amis, avant = a.tag ? pseudoNorm(a.pseudo) + "_" + a.tag : null;
+  if(!a.tag || pseudoNorm(pseudo) !== pseudoNorm(a.pseudo)){
+    a.tag = await reserverTag(pseudo);
+    if(avant) fbReq("DELETE", `/tags/${encodeURIComponent(avant)}`).catch(()=>{});
+  }
+  a.pseudo = pseudo;
+  if(visible !== undefined){ a.vis = Object.assign({}, visAmis(), {profil:visible ? "public" : "amis"}); delete a.visible; }
+  save();
+  await publierAmi(true);
+}
+/* ---- lire : les amities dans les deux sens, puis la fiche de chacun. Relue au plus
+   toutes les deux minutes — chaque fiche lue compte dans le quota gratuit. ---- */
+let amisCache = null, amisCacheT = 0;
+function fbRequete(coll, champ, val, limite){
+  return fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:coll}],
+    where:{fieldFilter:{field:{fieldPath:champ}, op:"EQUAL", value:{stringValue:val}}}, limit:limite || 300}})
+    .then(r=>r.filter(x=>x.document).map(x=>Object.assign({nom:x.document.name}, fbObjet(x.document.fields))));
+}
+async function liensAmis(){
+  const me = db.amis.uid;
+  const [r1, r2] = await Promise.all([fbRequete("amities", "de", me), fbRequete("amities", "a", me)]);
+  return r1.concat(r2);
+}
+async function chargerAmis(force){
+  if(!force && amisCache && Date.now() - amisCacheT < 120000) return amisCache;
+  const me = db.amis.uid;
+  const ids = [...new Set((await liensAmis()).map(l=>l.de === me ? l.a : l.de))];
+  const liste = await Promise.all(ids.map(async uid=>{
+    try{ return Object.assign({uid}, fbObjet((await fbReq("GET", `/profils/${uid}`)).fields)); }
+    catch(e){ return null; }                   /* fiche supprimee : l'ami a quitte */
+  }));
+  amisCache = liste.filter(Boolean).sort((x, y)=>(y.derniere || 0) - (x.derniere || 0));
+  amisCacheT = Date.now();
+  return amisCache;
+}
+/* ajouter avec un code : immediat — donner son code, c'est accepter */
+async function ajouterAmi(saisie){
+  const c = codeSaisi(saisie);
+  if(c.length !== 8) throw new Error(TR("Un code ami a 8 caractères."));
+  if(c === db.amis.code) throw new Error(TR("C'est ton propre code !"));
+  let d;
+  try{ d = await fbReq("GET", `/codes/${c}`); }
+  catch(e){ if(e.status === 404) throw Object.assign(new Error(TR("Aucun compte avec ce code.")), {introuvable:true}); throw e; }
+  const uid = fbObjet(d.fields).uid;
+  if((amisCache || []).some(f=>f.uid === uid)) throw new Error(TR("Vous êtes déjà amis."));
+  await fbReq("PATCH", `/amities/${db.amis.uid}_${uid}`, {fields:fbChamps({de:db.amis.uid, a:uid, code:c, quand:new Date()})});
+  amisCache = null;
+}
+/* chercher un pseudo : « tom » trouve les Tom, « tom#48 » resserre sur le numero */
+async function chercherPseudos(q){
+  const m = String(q || "").trim().match(/^(.*?)(?:#(\d{0,4}))?$/);
+  const n = pseudoNorm((m[1] || "").trim()), tag = m[2] || "";
+  if(n.length < 2) return [];
+  const r = await fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:"annuaire"}],
+    where:{compositeFilter:{op:"AND", filters:[
+      {fieldFilter:{field:{fieldPath:"n"}, op:"GREATER_THAN_OR_EQUAL", value:{stringValue:n}}},
+      {fieldFilter:{field:{fieldPath:"n"}, op:"LESS_THAN", value:{stringValue:n + "\uf8ff"}}}]}},
+    orderBy:[{field:{fieldPath:"n"}}], limit:10}});
+  return r.filter(x=>x.document).map(x=>Object.assign({uid:x.document.name.split("/").pop()}, fbObjet(x.document.fields)))
+    .map(x=>Object.assign(x, {pseudo:x.p}))
+    .filter(x=>x.uid !== db.amis.uid && (!tag || String(x.tag).startsWith(tag)));
+}
+/* une demande : l'autre accepte ou refuse. Elle porte le nom et le compagnon de celui
+   qui la fait — les regles verifient que le nom et le numero sont bien les siens. */
+async function demanderAmi(uid){
+  const a = db.amis;
+  await fbReq("PATCH", `/demandes/${a.uid}_${uid}`, {fields:fbChamps({de:a.uid, a:uid, n:pseudoNorm(a.pseudo), p:a.pseudo, tag:a.tag,
+    acc:ficheAmi().acc, quand:new Date()})});
+}
+async function accepterDemande(d){
+  await fbReq("PATCH", `/amities/${db.amis.uid}_${d.de}`, {fields:fbChamps({de:db.amis.uid, a:d.de, quand:new Date()})});
+  await fbReq("DELETE", `/demandes/${d.de}_${db.amis.uid}`).catch(()=>{});
+  amisCache = null;
+}
+function refuserDemande(d){ return fbReq("DELETE", `/demandes/${d.de}_${db.amis.uid}`); }
+async function retirerAmi(uid){
+  const me = db.amis.uid;
+  await Promise.all([`${me}_${uid}`, `${uid}_${me}`].map(id=>fbReq("DELETE", `/amities/${id}`).catch(()=>{})));
+  amisCache = null;
+}
+/* bloquer : plus d'amitie, plus de demande, et il ne peut plus t'ajouter ni te redemander */
+async function bloquerAmi(uid){
+  const me = db.amis.uid;
+  await fbReq("PATCH", `/blocages/${me}_${uid}`, {fields:fbChamps({de:me, a:uid, quand:new Date()})});
+  await Promise.all([`/amities/${me}_${uid}`, `/amities/${uid}_${me}`, `/demandes/${uid}_${me}`, `/demandes/${me}_${uid}`]
+    .map(x=>fbReq("DELETE", x).catch(()=>{})));
+  amisCache = null;
+}
+/* signaler : une ligne pour Nico, lisible seulement dans la console Firebase */
+function signalerAmi(uid, raison){
+  return fbReq("POST", "/signalements", {fields:fbChamps({de:db.amis.uid, cible:uid, raison, quand:new Date()})});
+}
+/* tout effacer : amities, demandes, blocages, annuaire, numero, code, fiche, identite */
+async function supprimerAmis(){
+  const a = db.amis;
+  if(a && a.uid && a.refresh){
+    const me = a.uid;
+    const [l1, l2, l3, l4] = await Promise.all([liensAmis(), fbRequete("demandes", "de", me), fbRequete("demandes", "a", me), fbRequete("blocages", "de", me)]);
+    await Promise.all(l1.concat(l2, l3, l4).map(l=>fbReq("DELETE", "https://firestore.googleapis.com/v1/" + l.nom).catch(()=>{})));
+    await fbReq("DELETE", `/annuaire/${me}`).catch(()=>{});
+    if(a.tag) await fbReq("DELETE", `/tags/${encodeURIComponent(pseudoNorm(a.pseudo) + "_" + a.tag)}`).catch(()=>{});
+    if(a.code) await fbReq("DELETE", `/codes/${a.code}`).catch(()=>{});
+    await fbReq("DELETE", `/profils/${me}`).catch(()=>{});
+    await fbPost(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${FB.cle}`, {idToken:await fbConnexion()});
+  }
+  db.amis = null; fbJeton = null; amisCache = null; save();
+}
+/* Le compagnon d'un ami, dans son humeur. Seuls une pose et des accessoires CONNUS
+   sont dessines : une fiche ne choisit jamais une adresse d'image. Sans activite depuis
+   plus de 3 jours, sa derniere humeur n'est plus vraie : il dort. */
+function cacheAmi(f, quoi){ return Array.isArray(f.cache) && f.cache.includes(quoi); }
+function poseAmi(f){
+  const actif = flammeAmi(f) > 0 || (f.fin && f.fin > Date.now()) || (f.derniere && Date.now() - f.derniere < 4 * 864e5);
+  if(!actif && !(cacheAmi(f, "flammes") && cacheAmi(f, "derniere"))) return POUSSIN.repos ? "repos" : "en-forme";
+  return (typeof f.pose === "string" && POUSSIN[f.pose]) ? f.pose : "en-forme";
+}
+const HUMEUR_AMI = {"en-forme":"En forme", fatigue:"Un peu fatigué", repos:"Au repos", danger:"Sa flamme va s'éteindre",
+  record:"Vient de battre un record", fete:"En fête", muscle:"Au top de sa forme", seance:"En pleine séance"};
+function calquesHtml(acc, po){
+  const p = POUSSIN[po];
+  const mis = (Array.isArray(acc) ? acc : []).filter(a=>typeof a === "string" && p.acc.includes(a)).sort((x, y)=>plan(x) - plan(y));
+  const der = a=>{ const f = familleAcc(a); return !!(f && f.arriere); };
+  const img = a=>`<img src="img/poussin/${a}@${po}.webp" alt="">`;
+  return mis.filter(der).map(img).join("") + `<img src="img/poussin/${po}.webp" alt="">` + mis.filter(a=>!der(a)).map(img).join("");
+}
+function poussinAmi(acc, pose){
+  const po = POUSSIN[pose] ? pose : "en-forme", p = POUSSIN[po];
+  if(!p) return `<span class="am-po"></span>`;
+  /* la pose la plus haute tient dans le rond ; une pose couchee s'elargit */
+  const l = Math.min(84, 88 / p.ratio);
+  return `<span class="am-po"><span class="in" style="width:${l.toFixed(1)}%; aspect-ratio:1/${p.ratio};">${calquesHtml(acc, po)}</span></span>`;
+}
+/* ma tete de profil : le compagnon « en forme » avec ses accessoires, cadre sur la tete (Nico) */
+function teteCompagnon(){
+  if(!POUSSIN["en-forme"]) return `<span class="vide">${IC_USER}</span>`;
+  return `<span class="pr-po"><span class="in">${calquesHtml(poussinEtat("en-forme").acc, "en-forme")}</span></span>`;
+}
+/* la flamme d'un ami s'eteint, comme la tienne, apres plus de 3 jours sans activite */
+function flammeAmi(f){
+  if(cacheAmi(f, "flammes")) return 0;
+  if(f.fin !== undefined) return f.fin && f.fin > Date.now() ? (f.flamme || 0) : 0;
+  if(!f.derniere) return 0;
+  const j0 = new Date(f.derniere); j0.setHours(0, 0, 0, 0);
+  const auj = new Date(); auj.setHours(0, 0, 0, 0);
+  return Math.round((auj - j0) / 864e5) > 3 ? 0 : (f.flamme || 0);
+}
+/* la semaine d'un ami n'a de sens que si c'est la notre : sinon, rien de coche */
+function semAmi(f){ return f.semDebut && Math.abs(f.semDebut - weekStartDate().getTime()) < 36e5 ? (f.sem || 0) : 0; }
+function pastillesAmi(f){
+  const m = semAmi(f), auj = (new Date().getDay() + 6) % 7;
+  return `<span class="am-sem">${JOURS_COURTS().map((j, i)=>`<i class="${m & (1 << i) ? "on" : ""}${i === auj ? " auj" : ""}">${j}</i>`).join("")}</span>`;
+}
+function JOURS_COURTS(){ return [TR("L"), TR("M"), TR("M"), TR("J"), TR("V"), TR("S"), TR("D")]; }
+function derniereAmi(f){
+  if(!f.derniere) return TR("Pas encore de séance");
+  const nom = f.derNom ? esc(TR(f.derNom)) : TR(f.derType === "marche" ? "Marche" : (f.derType === "course" ? "Course" : "Séance"));
+  const q = f.derKm > 0 ? kmTxt(f.derKm) : (f.derMin > 0 ? minTxt(f.derMin) : "");
+  return `${nom}${q ? " · " + q : ""} · ${agoTexte(f.derniere)}`;
+}
+function ligneAmi(f){
+  const fl = flammeAmi(f);
+  return `<button class="am-l" data-ami="${esc(f.uid)}">${poussinAmi(f.acc, poseAmi(f))}
+    <span class="tx"><span class="t1"><b>${esc(f.pseudo || "?")}</b>${cacheAmi(f, "flammes") ? "" : `<span class="fl ${fl ? "" : "off"}">${icoM("flamme", 14)}${fl}</span>`}</span>
+      ${cacheAmi(f, "semaine") ? "" : pastillesAmi(f)}
+      ${cacheAmi(f, "derniere") ? "" : `<small>${derniereAmi(f)}</small>`}</span></button>`;
+}
+/* ---- le classement (Nico) : le rang, le compagnon, le nom, la flamme — rien d'autre ----
+   « Mes amis » se calcule avec les fiches deja lues ; « Tout Tonnup » lit les 50 plus
+   grandes flammes de l'annuaire (seulement les personnes trouvables) et ecarte celles
+   qui se sont eteintes depuis. */
+function flammeVivante(x){ return x.fin && x.fin > Date.now() ? (x.fl || 0) : 0; }
+async function classementGlobal(){
+  const r = await fbReq("POST", ":runQuery", {structuredQuery:{from:[{collectionId:"annuaire"}],
+    where:{fieldFilter:{field:{fieldPath:"fl"}, op:"GREATER_THAN", value:{integerValue:"0"}}},
+    orderBy:[{field:{fieldPath:"fl"}, direction:"DESCENDING"}], limit:50}});
+  return r.filter(x=>x.document).map(x=>Object.assign({uid:x.document.name.split("/").pop()}, fbObjet(x.document.fields)))
+    .map(x=>Object.assign(x, {pseudo:x.p, flamme:flammeVivante(x)})).filter(x=>x.flamme > 0);
+}
+function ligneClassement(x, i, moi){
+  const med = ["🥇", "🥈", "🥉"][i];
+  return `<div class="cl-l${moi ? " moi" : ""}" data-cli="${i}"><span class="cl-rg${med ? " med" : ""}">${med || (i + 1)}</span>${poussinAmi(x.acc, "en-forme")}
+    <b>${esc(nomComplet(x))}</b><span class="cl-fl">${icoM("flamme", 16)}${x.flamme}</span></div>`;
+}
+function openClassement(onglet){
+  onglet = onglet || "amis";
+  const a = db.amis || {};
+  openSheet(`${teteAmis(TR("Classement"))}
+    <div class="cl-seg"><button data-cl="amis" class="${onglet === "amis" ? "on" : ""}">${TR("Mes amis")}</button><button data-cl="tous" class="${onglet === "tous" ? "on" : ""}">${TR("Tout Tonnup")}</button></div>
+    <p class="cl-sous">${TR("Flammes en cours activées")}</p>
+    <div class="cl-moi" id="cl-moi"></div>
+    <div class="cl-liste" id="cl-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
+  brancherCroix();
+  document.querySelectorAll("[data-cl]").forEach(b=>b.onclick = ()=>{ if(b.dataset.cl !== onglet) openClassement(b.dataset.cl); });
+  const el = document.getElementById("cl-liste");
+  const moi = {uid:a.uid || "moi", pseudo:a.pseudo || TR("Toi"), tag:a.tag, acc:ficheAmi2acc(), flamme:serieJours().n, best:meilleureFlamme()};
+  const afficher = l=>{
+    if(!document.body.contains(el)) return;
+    l = l.slice().sort((x, y)=>(y.flamme || 0) - (x.flamme || 0) || (y.best || 0) - (x.best || 0));
+    el.innerHTML = l.length ? l.map((x, i)=>ligneClassement(x, i, x.uid === moi.uid)).join("")
+      : `<div class="am-vide">${TR("Personne n'a de flamme allumée pour l'instant.")}</div>`;
+    el.querySelectorAll("[data-cli]").forEach(b=>b.onclick = ()=>{
+      const x = l[b.dataset.cli], rang = Number(b.dataset.cli) + 1, retour = ()=>openClassement(onglet);
+      if(x.uid === moi.uid){ ouvrirParDessus(retour, openMonProfil); return; }
+      const ami = onglet === "amis" || (amisCache || []).some(f=>f.uid === x.uid);
+      if(ami && x.derniere !== undefined) ouvrirParDessus(retour, ()=>openAmiDetail(x, retour));
+      else ouvrirParDessus(retour, ()=>openCartePublique(x, onglet === "tous" ? rang : 0));
+    });
+    /* ta place, en haut, toujours visible (Nico) */
+    const rang = l.findIndex(x=>x.uid === moi.uid), cm = document.getElementById("cl-moi");
+    if(cm) cm.innerHTML = !moi.flamme ? `<span>${TR("Allume ta flamme pour entrer au classement.")}</span>`
+      : rang >= 0 ? `<span>${TR("Ta place")}</span><b>#${rang + 1}</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`
+      : `<span>${TR("Ta place")}</span><b>50+</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`;
+  };
+  const erreur = ()=>{ if(document.body.contains(el)) el.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; };
+  if(demoEnCours){
+    const d = amisDemo().map(f=>Object.assign({}, f, {flamme:flammeAmi(f)}));
+    afficher(onglet === "amis" ? d.concat([Object.assign(moi, {flamme:9})])
+      : d.concat([{uid:"g1", pseudo:"Sarah", tag:"0712", acc:["casque-rouge"], flamme:64}, {uid:"g2", pseudo:"Karim", tag:"3380", acc:["bonnet-blanc"], flamme:41},
+          {uid:"g3", pseudo:"Tom", tag:"9921", acc:[], flamme:17}]));
+    return;
+  }
+  if(onglet === "amis") chargerAmis(false).then(l=>afficher(l.filter(f=>!cacheAmi(f, "flammes")).map(f=>Object.assign({}, f, {flamme:flammeAmi(f)})).concat([moi]))).catch(erreur);
+  else classementGlobal().then(l=>{
+    /* ta propre ligne vient de ton telephone : elle est a jour meme si l'annuaire ne l'est pas encore */
+    const pub = visAmis().flammes === "public";
+    afficher(l.filter(x=>x.uid !== moi.uid).concat(pub && moi.flamme > 0 ? [moi] : []).sort((x, y)=>y.flamme - x.flamme).slice(0, 50));
+  }).catch(erreur);
+}
+function ficheAmi2acc(){ return ((db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"]).filter(id=>{ const f = familleAcc(id); return f && accessoireGagne(f); }).slice(0, 12); }
+/* une petite fenetre posee au milieu de l'ecran (Nico : pas une fiche qui remonte) */
+function fenetre(html){
+  document.querySelectorAll(".pp-modal").forEach(m=>m.remove());
+  const m = document.createElement("div");
+  m.className = "pp-modal";
+  m.innerHTML = `<div class="pp-boite fen" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${TR("Fermer")}">✕</button>${html}</div>`;
+  document.body.appendChild(m);
+  const fermer = ()=>m.remove();
+  m.onclick = e=>{ if(e.target === m) fermer(); };
+  m.querySelector(".fen-x").onclick = fermer;
+  return {el:m, fermer};
+}
+const IC_PERSONNE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7.5" r="4.5"/><path d="M3.5 21c.6-5 4.1-7.6 8.5-7.6s7.9 2.6 8.5 7.6z"/></svg>';
+const IC_GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9s1.3-6.4 3.8-9z"/></svg>';
+const IC_COPIE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v9A2.5 2.5 0 0 0 6.5 17H8"/></svg>';
+/* les deux petits traits orange de la maquette, apres un titre */
+const ECLAT = '<svg class="eclat" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M9 3 5.5 10.5M19 9.5l-7.5 3.5"/></svg>';
+const IC_AMI_PLUS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9.5" cy="8" r="3.6"/><path d="M2.8 19.4c.5-3.8 3.4-5.7 6.7-5.7s6.2 1.9 6.7 5.7z"/><path d="M18.5 7.5v7M15 11h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+/* la tete d'une page pleine : le titre, un bouton a droite, la croix */
+function teteAmis(titre, droite, gauche){
+  return `<div class="am-tete">${gauche || ""}<h2>${titre}</h2>${droite || ""}<button type="button" class="pp-x" id="am-x" aria-label="${TR("Fermer")}">✕</button></div>`;
+}
+function brancherCroix(){ const x = document.getElementById("am-x"); if(x) x.onclick = closeSheet; }
+/* la fiche d'un ami : ce qu'on n'a pas voulu mettre dans la liste */
+function openAmiDetail(f, retour){
+  const fl = flammeAmi(f), po = poseAmi(f), cette = f.semDebut && Math.abs(f.semDebut - weekStartDate().getTime()) < 36e5;
+  const tuile = (ic, v, l) => `<div><span class="ic">${ic}</span><b>${v}</b><small>${l}</small></div>`;
+  const hm = (m) => m >= 60 ? Math.floor(m / 60) + " h " + String(Math.round(m % 60)).padStart(2, "0") : Math.round(m) + " " + TR("min");
+  const c = q=>cacheAmi(f, q), lignes = [];
+  if(!c("flammes")){
+    lignes.push(`<div><span class="ic">${icoM("flamme", 18)}</span><span class="grow">${TR("Flamme en cours")}</span><b>${fl}</b></div>`);
+    lignes.push(`<div><span class="ic">${IC_ETOILE}</span><span class="grow">${TR("Meilleure flamme")}</span><b>${f.best || fl}</b></div>`);
+  }
+  if(!c("seances")) lignes.push(`<div><span class="ic">${ICONS.seance}</span><span class="grow">${TR("Séances au total")}</span><b>${f.nAct || 0}</b></div>`);
+  if(!c("derniere")) lignes.push(`<div><span class="ic">${IC_CHRONO}</span><span class="grow">${TR("Dernière séance")}</span><b>${f.derniere ? derniereAmi(f).replace(/ · ([^·]*)$/, "<small>$1</small>") : derniereAmi(f)}</b></div>`);
+  openSheet(`<button type="button" class="pp-x amd-x" id="am-x" aria-label="${TR("Fermer")}">✕</button>
+    ${f.apercu ? `<div class="amd-apercu">${TR("Aperçu : ce que voient tes amis")}</div>` : ""}
+    <div class="amd-tete">${poussinAmi(f.acc, po)}
+      <div class="grow"><h3>${esc(f.apercu ? nomComplet(f) : (f.pseudo || "?"))}</h3><div class="amd-hu">${TR(HUMEUR_AMI[po] || "En forme")}</div></div></div>
+    ${c("semaine") ? "" : `<div class="amd-sous">${TR("Cette semaine")}</div>
+    <div class="amd-sem">${pastillesAmi(f)}</div>
+    <div class="amd-tuiles">
+      ${tuile(ICONS.seance, cette && f.semT ? volNb(f.semT) + ` <small>${uPoids() === "lb" ? "lb" : "kg"}</small>` : "—", TR("Soulevés"))}
+      ${tuile(icoM("course", 20), cette && f.semKm ? kmTxt(f.semKm) : "—", TR("Courus"))}
+      ${tuile(IC_CHRONO, cette && f.semMin ? hm(f.semMin) : "—", TR("D'entraînement"))}
+    </div>`}
+    ${lignes.length ? `<div class="amd-lignes">${lignes.join("")}</div>` : ""}
+    ${f.cache && f.cache.length ? `<p class="amd-cache">${IC_CADENAS_MINI}${TR(f.apercu ? "Tu gardes certaines infos pour toi." : "Garde certaines infos pour lui.")}</p>` : ""}
+    ${demoEnCours || f.apercu ? "" : `<div class="amd-actions"><button class="am-lien" id="amd-retirer">${TR("Retirer de mes amis")}</button>
+      <button class="am-lien am-supp" id="amd-bloquer">${TR("Bloquer")}</button>
+      <button class="am-lien am-supp" id="amd-signaler">${TR("Signaler")}</button></div>`}`, {milieu:true});
+  brancherCroix();
+  const erreur = ()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur");
+  const r = document.getElementById("amd-retirer");
+  if(r) r.onclick = ()=>askConfirm(TR("Retirer {} ?").replace("{}", f.pseudo), TR("Vous ne verrez plus vos séances l'un de l'autre."), TR("Retirer"), true, async ()=>{
+    try{ await retirerAmi(f.uid); }catch(e){ erreur(); }
+    retour();
+  });
+  const b = document.getElementById("amd-bloquer");
+  if(b) b.onclick = ()=>askConfirm(TR("Bloquer {} ?").replace("{}", f.pseudo), TR("Vous ne serez plus amis, et cette personne ne pourra plus t'ajouter."), TR("Bloquer"), true, async ()=>{
+    try{ await bloquerAmi(f.uid); toast(TR("Bloqué.")); }catch(e){ erreur(); }
+    retour();
+  });
+  const sg = document.getElementById("amd-signaler");
+  if(sg) sg.onclick = ()=>openSignaler(f.uid, f.pseudo);
+}
+/* la carte publique : ce qu'un inconnu voit en te touchant dans le classement (Nico) */
+async function openCartePublique(x, rang){
+  const moi = db.amis && x.uid === db.amis.uid, apercu = !!x.apercu;
+  openSheet(`<button type="button" class="pp-x amd-x" id="am-x" aria-label="${TR("Fermer")}">✕</button>
+    ${apercu ? `<div class="amd-apercu">${TR("Aperçu : ce que voit tout le monde")}</div>` : ""}
+    <div class="cp-po">${poussinAmi(x.acc, "en-forme")}</div>
+    <h3 class="cp-nom">${esc(nomComplet(x))}</h3>
+    ${rang ? `<div class="cp-rg">${TR("#{} du classement").replace("{}", rang)}</div>` : ""}
+    ${x.flamme > 0 || x.best > 0 ? `<div class="cp-fl"><div><b>${icoM("flamme", 20)}${x.flamme || 0}</b><small>${TR("Flamme en cours")}</small></div>
+      <div><b>${IC_ETOILE}${x.best || 0}</b><small>${TR("Meilleure flamme")}</small></div></div>`
+      : `<p class="cp-rien">${TR("Ses flammes ne sont pas publiques.")}</p>`}
+    <div id="cp-act">${apercu || moi || demoEnCours ? "" : `<div class="am-vide">…</div>`}</div>
+    ${apercu || moi || demoEnCours ? "" : `<button class="am-lien am-supp" id="cp-sig" style="display:block; margin:12px auto 0;">${TR("Signaler")}</button>`}`, {milieu:true});
+  brancherCroix();
+  const sg = document.getElementById("cp-sig");
+  if(sg) sg.onclick = ()=>openSignaler(x.uid, nomComplet(x));
+  const act = document.getElementById("cp-act");
+  if(apercu || moi || demoEnCours || !act) return;
+  try{
+    const [amis, env] = await Promise.all([chargerAmis(false), fbRequete("demandes", "de", db.amis.uid, 50)]);
+    if(!document.body.contains(act)) return;
+    const ami = amis.find(f=>f.uid === x.uid);
+    if(ami){ act.innerHTML = `<button class="btn btn-accent" id="cp-go" style="width:100%;">${TR("Voir sa fiche")}</button>`;
+      document.getElementById("cp-go").onclick = ()=>openAmiDetail(ami, ()=>openClassement("tous")); return; }
+    if(env.some(d=>d.a === x.uid)){ act.innerHTML = `<div class="am-vide">${TR("Demande envoyée")}</div>`; return; }
+    act.innerHTML = `<button class="btn btn-accent" id="cp-go" style="width:100%;">${IC_AMI_PLUS} ${TR("Ajouter en ami")}</button>`;
+    const go = document.getElementById("cp-go");
+    go.onclick = async ()=>{
+      go.disabled = true;
+      try{ await demanderAmi(x.uid); act.innerHTML = `<div class="am-vide">${TR("Demande envoyée")}</div>`; vibrer(10); }
+      catch(e){ go.disabled = false; toast(e.status === 403 ? TR("Impossible d'envoyer une demande à cette personne.") : TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+    };
+  }catch(e){ act.innerHTML = ""; }
+}
+/* ---- mon profil : mon apercu, mon code, et qui voit quoi ---- */
+function openMonProfil(){
+  const a = db.amis || {}, v = visAmis(), e = poussinEtat();
+  const moi = demoEnCours ? {pseudo:"Nico", tag:"4821", code:"TNP4K7Q2"} : a;
+  /* d'apres la maquette de Nico (28 septembre) : chaque ligne est une carte avec son
+     icone ronde, le choix retenu est une pilule orange avec son icone */
+  const LIGNES = [
+    ["profil", "Mon pseudo et mon compagnon", IC_PERSONNE, ["public", "amis"]],
+    ["flammes", "Mes flammes", icoM("flamme", 24), ["public", "amis", "moi"]],
+    ["seances", "Mon nombre de séances", ICONS.seance, ["amis", "moi"]],
+    ["semaine", "Ma semaine", IC_CALENDRIER, ["amis", "moi"]],
+    ["derniere", "Ma dernière séance", IC_CHRONO, ["amis", "moi"]]];
+  const NOMS = {public:"Public", amis:"Amis", moi:"Moi seul"}, ICV = {public:IC_GLOBE, amis:IC_AMIS, moi:IC_CADENAS_MINI};
+  openSheet(`${teteAmis(TR("Mon profil") + ECLAT)}
+    <div class="mp-tete">${poussinAmi(ficheAmi2acc(), e.pose)}
+      <div class="grow"><h3>${esc(nomComplet(moi))}</h3><span class="mp-hu">${TR(HUMEUR_AMI[e.pose] || "En forme")}</span></div></div>
+    <div class="mp-code"><span class="ic">${IC_AMIS}</span><span class="lb">${TR("Ton code ami")}</span><b>${codeAff(moi.code)}</b>
+      <button class="mp-copie" id="am-partager" aria-label="${TR("Copier mon code")}">${IC_COPIE}</button></div>
+    <div class="mp-titre">${TR("Qui voit quoi")}${ECLAT}</div>
+    <p class="mp-expl">${TR("Public : on te trouve par ton pseudo et tu peux apparaître au classement.")}</p>
+    <div class="mp-vis">${LIGNES.map(([k, t, ic, choix])=>{
+      const bloque = k === "flammes" && v.profil !== "public";
+      return `<div class="mp-l"><span class="mp-ic">${ic}</span><div class="grow"><b>${TR(t)}</b>
+        <div class="mp-seg">${choix.map(c=>`<button data-vis="${k}" data-v="${c}" class="${v[k] === c ? "on" : ""}" ${bloque && c === "public" ? "disabled" : ""}>${ICV[c]}<span>${TR(NOMS[c])}</span></button>`).join("")}</div></div></div>`;
+    }).join("")}</div>
+    <div class="mp-apercus"><button class="btn" id="mp-amis">${TR("Voir comme mes amis")}</button>
+      <button class="btn" id="mp-tous" ${v.profil === "public" ? "" : "disabled"}>${TR("Voir comme tout le monde")}</button></div>
+    ${demoEnCours ? "" : `<div class="am-pied"><button class="am-lien" id="am-pseudo">${TR("Changer de pseudo")}</button>
+      <button class="am-lien am-supp" id="am-supp">${TR("Supprimer mes données d'amis")}</button></div>`}`, {milieu:true});
+  brancherCroix();
+  document.querySelectorAll("[data-vis]").forEach(b=>b.onclick = ()=>{
+    if(b.classList.contains("on") || demoEnCours) return;
+    db.amis.vis = Object.assign({}, visAmis(), {[b.dataset.vis]:b.dataset.v}); delete db.amis.visible;
+    if(db.amis.vis.profil !== "public" && db.amis.vis.flammes === "public") db.amis.vis.flammes = "amis";
+    save(); vibrer(8);
+    publierAmi(true).catch(()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"));
+    const y = sheet.scrollTop; openMonProfil(); sheet.scrollTop = y;
+  });
+  const f = demoEnCours ? null : ficheAmi();
+  document.getElementById("mp-amis").onclick = ()=>ouvrirParDessus(openMonProfil, ()=>openAmiDetail(Object.assign(
+    demoEnCours ? amisDemo()[0] : f, {uid:"moi", apercu:true, pseudo:moi.pseudo, tag:moi.tag}), openMonProfil));
+  document.getElementById("mp-tous").onclick = ()=>{
+    const pub = v.flammes === "public";
+    ouvrirParDessus(openMonProfil, ()=>openCartePublique({uid:"moi", apercu:true, pseudo:moi.pseudo, tag:moi.tag, acc:ficheAmi2acc(),
+      flamme:pub ? serieJours().n : 0, best:pub ? meilleureFlamme() : 0}));
+  };
+  document.getElementById("am-partager").onclick = async ()=>{
+    const txt = TR("Ajoute-moi sur Tonnup ! Mon pseudo : {p} · mon code ami : {c}").replace("{p}", nomComplet(moi)).replace("{c}", codeAff(moi.code)) + " https://daero9.github.io/tonnage/";
+    try{ await navigator.clipboard.writeText(txt); toast(TR("Code copié !")); vibrer(8); return; }catch(e){}
+    try{ if(navigator.share) await navigator.share({text:txt}); }catch(e){}
+  };
+  const bP = document.getElementById("am-pseudo");
+  if(bP) bP.onclick = ()=>ouvrirParDessus(openMonProfil, ()=>openAmisDebut(true));
+  const bS = document.getElementById("am-supp");
+  if(bS) bS.onclick = ()=>askConfirm(TR("Supprimer mes données d'amis ?"),
+    TR("Ton pseudo, ton code et tes amis seront effacés chez Firebase. Tes séances restent sur ton téléphone."), TR("Supprimer"), true, async ()=>{
+      try{ await supprimerAmis(); toast(TR("Données d'amis supprimées.")); }
+      catch(e){ toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+    });
+}
+function openSignaler(uid, pseudo){
+  const RAISONS = [["pseudo", "Pseudo inapproprié"], ["usurpation", "Se fait passer pour quelqu'un"], ["autre", "Autre chose"]];
+  const w = fenetre(`<h3>${TR("Signaler {}").replace("{}", esc(pseudo || "?"))}</h3>
+    <p>${TR("Dis-nous ce qui ne va pas. Personne d'autre ne verra ce signalement.")}</p>
+    <div class="fen-choix">${RAISONS.map(([k, l])=>`<button class="btn" data-raison="${k}">${TR(l)}</button>`).join("")}</div>`);
+  w.el.querySelectorAll("[data-raison]").forEach(b=>b.onclick = async ()=>{
+    try{ await signalerAmi(uid, b.dataset.raison); w.fermer(); toast(TR("Merci, c'est signalé.")); }
+    catch(e){ toast(TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+  });
+}
+/* en mode demo (la video) : trois amis dessines ici, sans reseau */
+function amisDemo(){
+  const h = n=>Date.now() - n * 3600e3, w0 = weekStartDate().getTime();
+  const passe = (2 << ((new Date().getDay() + 6) % 7)) - 1;
+  return [{uid:"d1", pseudo:"Léa", acc:["bandeau-rose", "medaille-rouge"], pose:"muscle", nAct:87, flamme:12, best:21, derniere:h(0.5),
+      derType:"muscu", derNom:"Push", derMin:52, derKm:0, sem:passe & 0b0010101, semDebut:w0, semT:13900, semKm:5.2, semMin:185},
+    {uid:"d2", pseudo:"Tom", acc:["casquette-noir", "sifflet"], pose:"en-forme", nAct:54, flamme:6, best:14, derniere:h(20),
+      derType:"course", derNom:"", derMin:34, derKm:5.2, sem:passe & 0b0000011, semDebut:w0, semT:4200, semKm:9.8, semMin:120},
+    {uid:"d3", pseudo:"Max", acc:["bonnet-vert"], pose:"fatigue", nAct:31, flamme:3, best:9, derniere:h(70),
+      derType:"muscu", derNom:"Legs", derMin:61, derKm:0, sem:passe & 0b0000001, semDebut:w0, semT:6100, semKm:0, semMin:61}];
+}
+/* ---- la page « Mes amis » : une page entiere (Nico), la liste d'abord ----
+   En haut, une ligne discrete : ton nom et ton code, a partager. Le bouton « ami + »
+   fait glisser la barre d'ajout — un pseudo, ou un code. */
+function openAmis(tiroir){
+  const a = db.amis;
+  if(!demoEnCours && !(a && a.actif)){ openAmisDebut(); return; }
+  if(!demoEnCours && !a.tag){ changerPseudo(a.pseudo).then(()=>openAmis(tiroir)).catch(()=>{}); }
+  const moi = demoEnCours ? {pseudo:"Nico", tag:"4821", code:"TNP4K7Q2"} : a;
+  openSheet(`${teteAmis(TR("Mes amis"), `<button class="am-plus am-trophee" id="am-top" aria-label="${TR("Classement")}">${IC_COURONNE}</button><button class="am-plus${tiroir ? " on" : ""}" id="am-plus" aria-label="${TR("Ajouter un ami")}">${IC_AMI_PLUS}</button>`,
+      `<button class="am-tete-moi am-moi-bt" id="am-moi" aria-label="${TR("Mon profil et ma visibilité")}">${teteCompagnon()}</button>`)}
+    <div class="am-tiroir${tiroir ? " ouvert" : ""}" id="am-tiroir"><div class="in">
+      <div class="am-ajout"><input id="am-saisie" placeholder="${TR("Pseudo ou code ami")}" autocomplete="off" spellcheck="false" maxlength="25" enterkeyhint="search">
+        <button class="btn btn-accent btn-sm" id="am-ajouter">${IC_LOUPE}</button></div>
+      <div class="am-res" id="am-res"></div></div></div>
+    <div id="am-dem"></div>
+    <div class="am-liste" id="am-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
+  brancherCroix();
+  const erreur = ()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur");
+  const liste = document.getElementById("am-liste"), dem = document.getElementById("am-dem");
+  const tir = document.getElementById("am-tiroir"), plus = document.getElementById("am-plus");
+  const ouvrir = o=>{ tir.classList.toggle("ouvert", o); plus.classList.toggle("on", o); if(o) setTimeout(()=>{ const i = document.getElementById("am-saisie"); if(i) i.focus({preventScroll:true}); }, 300); };
+  plus.onclick = ()=>ouvrir(!tir.classList.contains("ouvert"));
+  document.getElementById("am-top").onclick = ()=>ouvrirParDessus(()=>openAmis(), ()=>openClassement());
+  const afficher = l=>{
+    if(!document.body.contains(liste)) return;
+    liste.innerHTML = l.length ? l.map(ligneAmi).join("")
+      : `<div class="am-vide">${TR("Pas encore d'amis. Touche le bouton en haut pour en ajouter.")}</div>`;
+    liste.querySelectorAll("[data-ami]").forEach(b=>b.onclick = ()=>{
+      const f = l.find(x=>x.uid === b.dataset.ami);
+      if(f) ouvrirParDessus(()=>openAmis(), ()=>openAmiDetail(f, ()=>openAmis()));
+    });
+    if(!l.length && !tir.classList.contains("ouvert") && !demoEnCours) ouvrir(true);
+  };
+  /* les demandes recues, au-dessus de la liste */
+  const afficherDemandes = l=>{
+    if(!document.body.contains(dem) || !l.length){ if(dem) dem.innerHTML = ""; return; }
+    dem.innerHTML = `<div class="am-sec">${TR("Demandes d'ami")}</div>` + l.map((d, i)=>`<div class="am-l am-d">${poussinAmi(d.acc, "en-forme")}
+      <span class="tx"><b>${esc(nomComplet({pseudo:d.p, tag:d.tag}))}</b><small>${TR("veut être ton ami")}</small></span>
+      <button class="btn btn-accent btn-sm" data-ok="${i}">${TR("Accepter")}</button><button class="am-non" data-non="${i}" aria-label="${TR("Refuser")}">✕</button></div>`).join("");
+    dem.querySelectorAll("[data-ok]").forEach(b=>b.onclick = async ()=>{
+      b.disabled = true;
+      try{ await accepterDemande(l[b.dataset.ok]); vibrer(12); toast(TR("Vous êtes amis !")); openAmis(); }catch(e){ b.disabled = false; erreur(); }
+    });
+    dem.querySelectorAll("[data-non]").forEach(b=>b.onclick = ()=>{
+      const d = l[b.dataset.non];
+      const w = fenetre(`<h3>${TR("Refuser la demande ?")}</h3><p>${esc(nomComplet({pseudo:d.p, tag:d.tag}))}</p>
+        <div class="fen-choix"><button class="btn" id="fn-ref">${TR("Refuser")}</button>
+          <button class="btn btn-jeter" id="fn-blo">${TR("Refuser et bloquer")}</button></div>`);
+      w.el.querySelector("#fn-ref").onclick = async ()=>{ try{ await refuserDemande(d); }catch(e){ erreur(); } w.fermer(); openAmis(); };
+      w.el.querySelector("#fn-blo").onclick = async ()=>{ try{ await bloquerAmi(d.de); toast(TR("Bloqué.")); }catch(e){ erreur(); } w.fermer(); openAmis(); };
+    });
+  };
+  if(demoEnCours) afficher(amisDemo());
+  else{
+    chargerAmis(false).then(afficher).catch(()=>{
+      if(document.body.contains(liste)) liste.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; });
+    fbRequete("demandes", "a", a.uid, 50).then(afficherDemandes).catch(()=>{});
+  }
+  document.getElementById("am-moi").onclick = ()=>ouvrirParDessus(()=>openAmis(), openMonProfil);
+  /* la barre : un code ajoute tout de suite ; un pseudo cherche dans l'annuaire */
+  const saisie = document.getElementById("am-saisie"), bAj = document.getElementById("am-ajouter"), res = document.getElementById("am-res");
+  bAj.onclick = async ()=>{
+    if(demoEnCours) return;
+    const v = saisie.value.trim();
+    if(v.length < 2) return;
+    bAj.disabled = true;
+    try{
+      if(/^[a-z2-9]{4}-?[a-z2-9]{4}$/i.test(v) && !/#/.test(v)){
+        try{ await ajouterAmi(v); toast(TR("Ami ajouté !")); vibrer(12); openAmis(); return; }
+        catch(e){ if(!e.introuvable) throw e; }        /* pas un code : peut-etre un pseudo */
+      }
+      const [trouves, envoyees, amis] = await Promise.all([chercherPseudos(v), fbRequete("demandes", "de", a.uid, 50), chargerAmis(false)]);
+      bAj.disabled = false;
+      if(!trouves.length){ res.innerHTML = `<div class="am-vide">${TR("Personne avec ce pseudo. Vérifie l'orthographe, ou demande son code.")}</div>`; return; }
+      res.innerHTML = trouves.map((x, i)=>{
+        const ami = amis.some(f=>f.uid === x.uid), env = envoyees.some(d=>d.a === x.uid);
+        return `<div class="am-l am-d">${poussinAmi(x.acc, "en-forme")}<span class="tx"><b>${esc(nomComplet(x))}</b></span>
+          ${ami ? `<span class="am-etat">${TR("Ami")}</span>` : env ? `<span class="am-etat">${TR("Demande envoyée")}</span>`
+            : `<button class="btn btn-accent btn-sm" data-dem="${i}">${TR("Ajouter")}</button>`}</div>`;
+      }).join("");
+      res.querySelectorAll("[data-dem]").forEach(b=>b.onclick = async ()=>{
+        b.disabled = true;
+        try{ await demanderAmi(trouves[b.dataset.dem].uid); b.outerHTML = `<span class="am-etat">${TR("Demande envoyée")}</span>`; vibrer(10); }
+        catch(e){ b.disabled = false; toast(e.status === 403 ? TR("Impossible d'envoyer une demande à cette personne.") : TR("Pas de connexion. Réessaie plus tard."), "erreur"); }
+      });
+    }catch(e){ bAj.disabled = false; toast(e.status ? TR("Pas de connexion. Réessaie plus tard.") : e.message, "erreur"); }
+  };
+  saisie.onkeydown = e=>{ if(e.key === "Enter") bAj.click(); };
+}
+/* la premiere fois : ce qui sera partage, le pseudo, la recherche, les 15 ans.
+   `modif` : changer de pseudo ou de visibilite */
+function openAmisDebut(modif){
+  const a = db.amis || {};
+  const pseudo0 = modif ? a.pseudo : String((db.settings && db.settings.name) || "").slice(0, 20);
+  openSheet(`${teteAmis(TR(modif ? "Mon pseudo" : "Mes amis"))}
+    ${modif ? "" : `<p class="am-intro">${TR("Suis la régularité de tes amis, et eux la tienne.")}</p>
+      <div class="am-partage"><b>${TR("Ce que tes amis verront")}</b>
+      <span>${poussinAmi(poussinEtat().acc, poussinEtat().pose)}<span>${TR("Ton pseudo et ton compagnon, ta flamme, ton nombre de séances et l'heure de ta dernière séance.")}</span></span>
+      <p>${TR("Rien d'autre : tes charges, ton poids et tes repas restent sur ton téléphone.")}</p></div>`}
+    <span class="f-lab">${TR("Ton pseudo")}</span>
+    <input class="am-in" id="am-p" maxlength="20" autocomplete="off" value="${esc(pseudo0 || "")}" placeholder="${TR("Ex : Léa")}">
+    <p class="am-note" style="margin-top:6px;">${modif && a.tag ? TR("Ton numéro actuel : #{}. Il change si tu changes de pseudo.").replace("{}", a.tag)
+      : TR("Un numéro est ajouté à ton pseudo (ex : Léa#4821) : deux personnes peuvent porter le même nom.")}</p>
+    ${modif ? "" : `<label class="am-age am-pub"><input type="checkbox" id="am-vis" checked><span><b>${TR("Profil public")}</b>
+      <small>${TR("On peut te trouver par ton pseudo et te voir dans le classement de Tout Tonnup (ton compagnon, ton pseudo et tes flammes). Tu pourras le changer dans Mon profil.")}</small></span></label>`}
+    ${modif ? "" : `<label class="am-age"><input type="checkbox" id="am-age"><span>${TR("J'ai 16 ans ou plus")}</span></label>
+    <p class="am-note">${TR("Ces informations sont stockées chez Google Firebase, en Europe, jusqu'à ce que tu les supprimes.")}
+      <a href="https://daero9.github.io/tonnage/confidentialite.html" target="_blank" rel="noopener">${TR("Confidentialité")}</a></p>`}
+    <button class="btn btn-accent" id="am-go" style="width:100%; margin-top:16px;">${TR(modif ? "Enregistrer" : "Activer")}</button>`, {milieu:true});
+  brancherCroix();
+  const inp = document.getElementById("am-p"), age = document.getElementById("am-age"), vis = document.getElementById("am-vis"), go = document.getElementById("am-go");
+  const maj = ()=>{ go.disabled = !pseudoValide(inp.value.trim().replace(/\s+/g, " ")) || (age && !age.checked); };
+  inp.oninput = maj; if(age) age.onchange = maj; maj();
+  go.onclick = async ()=>{
+    const ps = inp.value.trim().replace(/\s+/g, " ").slice(0, 20);
+    go.disabled = true;
+    try{
+      if(modif) await changerPseudo(ps);
+      else await activerAmis(ps, vis.checked);
+      if(modif) closeSheet(); else openAmis(true);
+    }catch(e){ go.disabled = false; toast(TR(e.status === 403 ? "Le service Amis n'est pas encore prêt. Réessaie plus tard." : "Pas de connexion. Réessaie plus tard."), "erreur"); }
+  };
+}
 function openProfil(){
   const pl = planFor(db.profile);
   const p = db.profile || {};
@@ -20670,10 +22129,8 @@ function openProfil(){
     <div class="l">${lab}</div>${bas? `<div class="b">${bas}</div>`:""}</div>`;
   const protPct = (pl && kg) ? Math.min(100, Math.round(pl.prot / (2.2 * kg) * 100)) : 0;   /* 2,2 g/kg = le haut de la fourchette */
   openSheet(`<div class="pr-tete">
-      <button class="pr-rond ${p.photo ? "avec" : ""}" id="pr-rond" aria-label="${TR("Ma photo")}">
-        ${p.photo ? `<img src="${p.photo}" alt="">` : `<span class="vide">${IC_USER}</span>`}
-        <span class="crayon">${IC_CRAYON}</span></button>
-      <input type="file" accept="image/*" id="pr-photo" style="display:none;">
+      <button class="pr-rond" id="pr-rond" aria-label="${TR("Personnaliser mon compagnon")}">${teteCompagnon()}${
+        accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}</button>
       <div class="grow">
         <h3>${TR("Mon profil")}</h3>
         <div class="pr-sous">${TR("Tes infos de base et tes objectifs.")}</div>
@@ -20696,28 +22153,19 @@ function openProfil(){
         <span class="fl">${IC_CHEVRON}</span></button>
       <button class="btn pr-l" id="pr-edit"><span class="pic">${IC_CRAYON}</span>${TR("Modifier mon profil")}
         <span class="fl">${IC_CHEVRON}</span></button>
-      ${POUSSIN.repos ? `<button class="btn pr-l" id="pr-avatar"><span class="pic">${icoM("compagnon", 23)}</span>${TR("Personnaliser mon compagnon")}${
-        accessoiresNeufs().length ? `<i class="pastille"></i>` : ""}
-        <span class="fl">${IC_CHEVRON}</span></button>` : ""}
+      <button class="btn pr-l" id="pr-amis"><span class="pic">${IC_AMIS}</span>${TR("Mes amis")}
+        <span class="fl">${IC_CHEVRON}</span></button>
     </div>`);
   /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
   document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
   document.getElementById("pr-edit").onclick = ()=>{ closeSheet(); openOnboarding(false); };
-  const bAv = document.getElementById("pr-avatar");
-  if(bAv) bAv.onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
-  /* la photo de la personne : choisie dans la galerie, reduite a 256 px, gardee sur le
-     telephone avec le reste (une vingtaine de Ko). Elle ne part nulle part. */
-  const fichier = document.getElementById("pr-photo");
-  document.getElementById("pr-rond").onclick = ()=>fichier.click();
-  fichier.onchange = async ()=>{
-    const f = fichier.files && fichier.files[0]; fichier.value = "";
-    if(!f) return;
-    try{
-      db.profile = db.profile || {};
-      db.profile.photo = await photoProfilCarree(f);
-      save(); openProfil();
-    }catch(e){ toast(TR("Photo illisible."), "erreur"); }
-  };
+  document.getElementById("pr-rond").onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
+  document.getElementById("pr-amis").onclick = ()=>ouvrirParDessus(openProfil, ()=>openAmis());
+  /* une demande d'ami en attente : la pastille sur « Mes amis » (une lecture, a l'ouverture du profil) */
+  if(db.amis && db.amis.actif && !demoEnCours) fbRequete("demandes", "a", db.amis.uid, 20).then(l=>{
+    const b = document.getElementById("pr-amis");
+    if(b && l.length && !b.querySelector(".pastille")) b.insertAdjacentHTML("beforeend", '<i class="pastille"></i>');
+  }).catch(()=>{});
   const prOk = document.getElementById("pr-ok"); if(prOk) prOk.onclick = closeSheet;
 }
 /* le salut de l'accueil sur une seule ligne : on reduit le corps jusqu'a ce qu'il tienne
@@ -20920,7 +22368,8 @@ function appuiVenuDAilleurs(bouton){
 }
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
-    `<button class="tab ${curTab===id?'on':''}" data-tab="${id}">${ICONS[id]}<span>${TR(lab)}</span></button>`).join("");
+    `<button class="tab ${curTab===id?'on':''}" data-tab="${id}"><span class="tab-ic">${ICONS[id]}${verrouille(id)
+      ? `<span class="tab-cad">${IC_CADENAS_MINI}</span>` : ""}</span><span>${TR(lab)}</span></button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
     if(b.dataset.tab===curTab) return;
     if(appuiVenuDAilleurs(b)) return;
@@ -20933,6 +22382,7 @@ let ecranPrecedent = null;
 let carrouselCible = null;        /* selecteur de la carte a montrer au prochain rendu */
 function render(){
   renderTabs();
+  publierAmiBientot();
   majVerrouPage();
   majOrientation();
   const app = document.getElementById("app");
@@ -21057,6 +22507,9 @@ function openSheet(html, opts){
   gardeFermeture = null;
   /* « plein » : une page entière et blanche plutôt qu'une fiche qui remonte du bas */
   sheet.classList.toggle("plein", !!(opts && opts.plein));
+  /* « milieu » : une fenetre posee au centre de l'ecran (Nico, pour les amis) */
+  sheet.classList.toggle("milieu", !!(opts && opts.milieu));
+  overlay.classList.toggle("milieu", !!(opts && opts.milieu));
   sheet.style.transition = ""; sheet.style.transform = "";
   sheet.scrollTop = 0;
   sheet.innerHTML = (sheetVerrou ? "" : `<div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="${TR("Fermer")}">✕</button>`)+html;
@@ -22308,7 +23761,9 @@ document.getElementById("rest-pill").addEventListener("click", e=>{
 
 /* le minuteur se déplace : relâché au-dessus du milieu il se cale en haut, en dessous il revient en bas */
 const restDrag = {actif:false, bouge:false, y0:0, top0:0, tFin:0};
-function placerRest(){ restbar.classList.toggle("haut", db.settings.restHaut === true); }
+/* en haut par defaut (Nico) : en bas, il couvrait la bulle verte de la premiere seance
+   (« le chrono se lance tout seul »). Qui l'a glisse en bas l'y retrouve. */
+function placerRest(){ restbar.classList.toggle("haut", db.settings.restHaut !== false); }
 function restDragStart(y, cible){
   if(cible.closest("button")) return;
   const r = restbar.getBoundingClientRect();
@@ -23295,33 +24750,35 @@ function astuceScan(v){
   const pl = planFor(db.profile);
   const kcal = Math.round(v.kcal || 0), prot = Math.round(v.prot || 0), gluc = v.gluc || 0;
   const k = jourAlim();
+  /* Nico : « trop de phrases » — les reperes passent en deux pastilles, l'astuce en une
+     phrase courte */
   const reperes = [];
   const cibleP = proteinTarget();
-  if(cibleP && prot > 0) reperes.push(TR("Ce repas couvre {} % de tes protéines du jour.").replace("{}", Math.max(1, Math.round(prot / cibleP * 100))));
+  if(cibleP && prot > 0) reperes.push(TR("{} % de tes protéines").replace("{}", Math.max(1, Math.round(prot / cibleP * 100))));
   if(pl && kcal > 0){
     const reste = Math.round((pl.kcal - dayKcal(k) - kcal) / 10) * 10;
-    if(reste > 0) reperes.push(TR(pl.delta > 0 ? "Il te restera environ {} kcal à manger aujourd'hui." : "Il te restera environ {} kcal pour la journée.").replace("{}", reste.toLocaleString(loc())));
-    else if(reste < 0) reperes.push(TR("Avec ce repas, tu dépasses ta cible du jour d'environ {} kcal.").replace("{}", (-reste).toLocaleString(loc())));
+    if(reste > 0) reperes.push(TR(pl.delta > 0 ? "~{} kcal à trouver" : "~{} kcal restantes").replace("{}", reste.toLocaleString(loc())));
+    else if(reste < 0) reperes.push(TR("+{} kcal sur ta cible").replace("{}", (-reste).toLocaleString(loc())));
   }
   const muscle = aim === "masse" || aim === "force" || aim === "recomp";
   const seanceFaite = (db.history || []).some(h=>dayKey(new Date(h.date)) === dayKey());
   let astuce = "";
   if(kcal >= 200 && prot < 10){
-    astuce = aim === "seche" ? TR("Pour ton objectif, pense à associer cet aliment avec des légumes et une source de protéines pour un repas plus rassasiant.")
-      : muscle ? TR("Pour atteindre ton objectif, tu peux compléter ce repas avec une source de protéines : un œuf, un yaourt, du poulet…")
-      : TR("Ce repas apporte peu de protéines. Tu peux ajouter une source de protéines pour te rapprocher de ton objectif.");
+    astuce = aim === "seche" ? TR("Ajoute des légumes et une source de protéines pour tenir plus longtemps.")
+      : muscle ? TR("Ajoute une source de protéines : œuf, yaourt, poulet…")
+      : TR("Peu de protéines : ajoutes-en une source.");
   } else if(prot >= 25){
-    astuce = TR("Belle dose de protéines : ce repas te rapproche bien de ton objectif. 💪");
+    astuce = TR("Belle dose de protéines ! 💪");
   } else if(kcal >= 150 && gluc * 4 >= kcal * 0.55 && !seanceFaite && (muscle || aim === "entretien")){
-    astuce = TR("Cet aliment peut être intéressant avant l'entraînement pour apporter de l'énergie.");
+    astuce = TR("Bon choix avant l'entraînement, pour l'énergie.");
   } else if(aim === "seche" && kcal >= 600){
-    astuce = TR("Repas copieux pour ton objectif : pense aux légumes pour la suite de la journée, ils rassasient pour peu de calories.");
+    astuce = TR("Repas copieux : mise sur les légumes ensuite.");
   } else if(aim === "masse" && kcal > 0 && kcal < 250){
-    astuce = TR("Petite portion pour une prise de muscle : une poignée de noix ou un fruit sec peut compléter.");
+    astuce = TR("Petite portion : complète avec des noix ou des fruits secs.");
   }
   if(!reperes.length && !astuce) return "";
   return `<div class="sc-astuce"><span class="ic">${IC_AMPOULE}</span><div class="co">
-    ${reperes.length ? `<b>${reperes.join(" ")}</b>` : ""}${astuce ? `<p>${astuce}</p>` : ""}</div></div>`;
+    ${reperes.length ? `<div class="sc-chips">${reperes.map(r=>`<span>${r}</span>`).join("")}</div>` : ""}${astuce ? `<p>${astuce}</p>` : ""}</div></div>`;
 }
 function openProduitScanne(meal, p){
   const k = jourAlim();
@@ -23527,7 +24984,8 @@ async function lancerScan(meal, mode){
   if(r.type === "scans"){ proposerPhotos(meal); return true; }
   if(r.type === "photo"){
     db.settings.camMode = "plat";
-    photoEnCours = {meal, b64:r.b64, apercu:r.apercu, corrections:0};
+    /* en demo, quelle que soit la photo prise, c'est l'assiette d'exemple qu'on voit */
+    photoEnCours = {meal, b64:r.b64, apercu:demoEnCours ? PHOTO_DEMO : r.apercu, corrections:0};
     lancerAnalysePhoto(r.indice || "", true);
     return true;
   }
@@ -23658,7 +25116,22 @@ function reduirePhoto(fichier){
   });
 }
 const ANALYSE_MAX_MS = 45000;                    /* au-dela, on rend la main : rien ne doit tourner sans fin */
+/* En mode demo, la photo ne part JAMAIS au serveur (Nico) : chaque entree en demo
+   repartait avec un compteur neuf et un nouvel appareil — des scans gratuits en boucle,
+   payes par le compte d'API. On joue l'attente habituelle, puis un plat d'exemple. */
+/* le resultat d'une VRAIE analyse de la photo d'exemple (img/repas-exemple-1.webp),
+   faite une fois le 27 septembre et gardee telle quelle */
+const PHOTO_DEMO = "img/repas-exemple-1.webp";
+const PLAT_DEMO = {plat:"salade composée poulet mozzarella",
+  remarque:"Quantité d'huile d'assaisonnement difficile à évaluer, peut faire varier les calories.",
+  aliments:[
+    {nom:"blanc de poulet grillé", grammes:130, confiance:"moyenne", note:"escalope tranchée", kcal100:165, prot100:31, gluc100:0, lip100:4},
+    {nom:"mozzarella", grammes:90, confiance:"moyenne", note:"", kcal100:260, prot100:18, gluc100:2, lip100:20},
+    {nom:"tomate cerise", grammes:60, confiance:"moyenne", note:"", kcal100:18, prot100:0.9, gluc100:3.9, lip100:0.2},
+    {nom:"salade verte", grammes:50, confiance:"basse", note:"mélange laitue, roquette, épinard", kcal100:15, prot100:1.4, gluc100:2, lip100:0.2},
+    {nom:"huile d'olive", grammes:8, confiance:"basse", note:"assaisonnement visible", kcal100:884, prot100:0, gluc100:0, lip100:100}]};
 async function analyserPhoto(b64, indice){
+  if(demoEnCours){ await new Promise(r=>setTimeout(r, 2600)); return JSON.parse(JSON.stringify(PLAT_DEMO)); }
   const ctrl = new AbortController();
   const garde = setTimeout(()=>ctrl.abort(), ANALYSE_MAX_MS);
   let r;
@@ -23730,8 +25203,7 @@ function photographierRepas(meal){ lancerScan(meal, "plat"); }
 async function lancerAnalysePhoto(indice, premiere){
   const p = photoEnCours; if(!p) return;
   openSheet(`<div class="ph-attente"><div class="ph-scan"><img src="${p.apercu}" alt=""><i></i></div><div class="spin"></div>
-    <div class="t">${TR("Analyse de la photo…")}</div>
-    <div class="s">${TR("La photo part chez Anthropic pour l'analyse ; l'app ne la garde pas.")}</div></div>`);
+    <div class="t">${TR("Analyse de la photo en cours…")}</div></div>`);
   /* une correction de la meme photo est gratuite pour le quota (dans la limite) */
   const correction = !premiere && !!indice && (p.corrections || 0) < CORRECTIONS_PAR_PHOTO;
   if(correction) p.corrections = (p.corrections || 0) + 1;
@@ -24398,15 +25870,12 @@ function weekStartDate(){
 function serieJours(maintenant){
   const now = maintenant ? new Date(maintenant) : new Date();
   const auj = new Date(now); auj.setHours(0,0,0,0);
-  const jours = [...new Set((db.history || []).concat(db.cardio || []).map(x=>{
-    const d = new Date(x.date); if(!(d > 0) || d > now) return null;
-    d.setHours(0,0,0,0); return d.getTime();
-  }).filter(t=>t !== null))].sort((a, b)=>b - a);
-  if(!jours.length) return {n:0, depuis:99, force:"eteinte"};
-  const depuis = Math.round((auj - jours[0]) / 864e5);
+  const pts = pointsFlamme(now);
+  if(!pts.length) return {n:0, depuis:99, force:"eteinte"};
+  const depuis = Math.round((auj - pts[0].t) / 864e5);
   if(depuis > 3) return {n:0, depuis, force:"eteinte"};
-  let n = 1;
-  for(let i = 1; i < jours.length && jours[i - 1] - jours[i] <= 3 * 864e5; i++) n++;
+  let n = pts[0].act ? 1 : 0;
+  for(let i = 1; i < pts.length && lienFlamme(pts[i - 1], pts[i]); i++) if(pts[i].act) n++;
   return {n, depuis, force: depuis <= 1 ? "pleine" : (depuis === 2 ? "moyenne" : "petite")};
 }
 function serieSemaines(maintenant){
@@ -25627,7 +27096,9 @@ function renderSeance(app){
       <div style="font-size:13px; color:var(--ink-soft);">Ton navigateur bloque le stockage de cette page. Ouvre l'app depuis l'icône de ton écran d'accueil (et non dans un onglet Safari), et désactive la navigation privée.</div></div>`}
     <div class="under-hero">
       ${poussinHtml()}
-      ${(()=>{ const fl = serieJours(now); if(!POUSSIN.repos || fl.n < 1) return "";
+      ${(()=>{ const fl = serieJours(now); if(!POUSSIN.repos) return "";
+        if(fl.n < 1){ const r = flammeRallumable(); return r ? `<button class="hero-flamme eteinte" id="fl-rallumer" aria-label="${TR("Rallumer ma flamme")}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${r.n}</b>${
+          verrouille("rallumer") ? `<span class="fl-cad">${IC_CADENAS_MINI}</span>` : ""}</button>` : ""; }
         /* la flamme, entre les pattes du poussin : les jours de seance de la serie en
            cours ; elle faiblit quand les jours sans seance s'accumulent */
         /* elle grandit de 2 % par activite accumulee depuis le debut, et s'arrete a
@@ -25667,13 +27138,13 @@ function renderSeance(app){
       </div>
     </div>
     <div id="start-zone"></div>
-    ${db.history.length? `<button class="recup-card" id="recup-btn" data-etat="${(()=>{ const g = recuperation().global; return g>=85? "frais" : (g>=50? "recup":"fatigue"); })()}">
-      ${(()=>{ const r = recuperation();
+    ${db.history.length? `<button class="recup-card${verrouille("recup") ? " verrou" : ""}" id="recup-btn" data-etat="${(()=>{ const g = verrouille("recup") ? 100 : recuperation().global; return g>=85? "frais" : (g>=50? "recup":"fatigue"); })()}">
+      ${(()=>{ const r = verrouille("recup") ? {global:100, muscles:{}} : recuperation();
         const c = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
         /* d'apres la maquette du 21 septembre : l'anneau en grand, le titre et une phrase,
            la montagne de Nico en bas a droite avec sa bulle, et le chevron */
         const etat = r.global>=85? "frais" : (r.global>=50? "recup":"fatigue");
-        const w = recupPire(r);
+        const w = verrouille("recup") ? {pct:100, nom:""} : recupPire(r);
         const sous = w.pct < 65 ? TR("{m} à {p} %").replace("{m}", esc(TR(w.nom))).replace("{p}", w.pct)
           : TR(etat === "frais" ? "Ton corps est au top !" : (etat === "recup" ? "Vas-y en douceur." : "Laisse tes muscles souffler."));
         return `<span class="rc-ring">${anneau(r.global, 60, c)}</span>
@@ -25683,7 +27154,7 @@ function renderSeance(app){
             <span class="rc-sous">${sous}</span>
           </span>
           <img class="rc-img" src="img/recup.png" alt="">
-          <span class="rc-chev">${CHEV_MP}</span>`;
+          <span class="rc-chev${verrouille("recup") ? " rc-cad" : ""}">${verrouille("recup") ? IC_CADENAS_MINI : CHEV_MP}</span>`;
       })()}
     </button>`:""}
     <div class="car-wrap"><div class="car" id="car"></div></div>
@@ -25698,6 +27169,8 @@ function renderSeance(app){
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
   if(rc) rc.onclick = openRecup;
+  const flR = document.getElementById("fl-rallumer");
+  if(flR) flR.onclick = openRallumer;
 
   /* carte de démarrage : visible tant que la première séance n'est pas faite */
   const profilOk = !!planFor(db.profile);
@@ -30383,7 +31856,7 @@ function feuilleChoix(o){
    tiennes, ou en creer une nouvelle (Nico). Une seance creee ici est enregistree
    comme les autres, puis ajoutee directement. */
 function choisirCourse(c){
-  const items = (db.objCourse ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
+  const items = (objCourseActif() ? [{v:"objectif", ic:icoM("course", 28), t:TR("Séance du jour"), s:TR("Ton objectif de course")}] : [])
     .concat((db.parcours || []).map(q=>{ const tt = parcoursTotaux(q.etapes);
       return {v:q.id, ic:icoM("course", 28), t:esc(q.nom), s:`${minTxt(tt.min)} · ${kmTxt(tt.km)} (${TR("est.")})`}; }));
   feuilleChoix({
@@ -30394,6 +31867,7 @@ function choisirCourse(c){
   });
 }
 function openObjectifCourse(){
+  if(verrouille("objcourse")){ openAbonnement(); return; }
   const cur = db.objCourse;
   let type = cur ? cur.type : "30min";
   const imp = estImperial();
@@ -30469,7 +31943,7 @@ function openObjectifCourse(){
 /* ---- la page « Course » : l'objectif et la seance du jour, puis tes seances ---- */
 function openParcoursListe(){
   const l = db.parcours || [];
-  const obj = db.objCourse;
+  const obj = objCourseActif();
   const p = obj ? seanceProposee(obj) : null;
   const av = obj ? avancementObjectif(obj) : null;
   const carteObj = obj ? `<div class="oc-carte">
@@ -30488,6 +31962,8 @@ function openParcoursListe(){
       </div>
       <button class="oc-pq" id="oc-pq">${TR("Pourquoi cette séance ?")}</button>
     </div>`
+    : verrouille("objcourse") ? `<button class="oc-vide oc-verrou" id="oc-choisir"><span class="ic">${icoM("cible", 26)}</span>
+        <span class="tx"><b>${TR("Objectifs de course")}</b><small>${TR("Des séances qui évoluent avec toi, niveau par niveau. Avec Tonnup Analyse.")}</small></span><span class="oc-cad">${IC_CADENAS_MINI}</span></button>`
     : `<button class="oc-vide" id="oc-choisir"><span class="ic">${icoM("cible", 26)}</span>
         <span class="tx"><b>${TR("Choisis un objectif")}</b><small>${TR("L'application prépare tes séances.")}</small></span>${IC_CHEVRON}</button>`;
   openSheet(`<div class="ca-titre"><h3>${TR("Course")}</h3></div>
@@ -30532,7 +32008,7 @@ function openParcoursListe(){
    ou rapide placee au debut. Le seuil de 15 minutes est un choix de conception. */
 function courseDeSeance(c){
   if(!c) return null;
-  if(c.ref === "objectif") return db.objCourse ? seanceProposee() : null;
+  if(c.ref === "objectif") return objCourseActif() ? seanceProposee() : null;
   return (db.parcours || []).find(p=>p.id === c.ref) || null;
 }
 function courseTropDurePourDebut(p){
@@ -30641,7 +32117,7 @@ function carteCourseCarrousel(p){
 }
 /* la carte de l'objectif : la seance du jour, en tete des seances de course */
 function carteObjectifCarrousel(){
-  const obj = db.objCourse;
+  const obj = objCourseActif();
   if(!obj) return "";
   const p = seanceProposee(obj), t = parcoursTotaux(p.etapes);
   return `<div class="prog-slot">
@@ -30804,7 +32280,7 @@ function openTplEditor(id){
         <div><span class="f-lab">${TR("Exercices")}</span><div id="tp-items"></div>
         <button class="btn-dash" id="tp-add">＋ ${TR("Ajouter un exercice")}</button></div>
         <div>${tpl.course ? (()=>{ const pc = courseDeSeance(tpl.course);
-          const opts = (db.objCourse ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
+          const opts = (objCourseActif() ? [["objectif", TR("Séance du jour de mon objectif")]] : []).concat((db.parcours || []).map(q=>[q.id, q.nom]));
           return `<span class="f-lab">${TR("Séance de course")}</span>
           <div class="tpl-item tp-course">
             <select data-co="ref">${opts.map(([v, l])=>`<option value="${esc(v)}" ${v === tpl.course.ref ? "selected" : ""}>${esc(l)}</option>`).join("")}
@@ -31309,6 +32785,7 @@ function driveSchedule(){
   if(!driveActif()) return;
   if(driveTo) clearTimeout(driveTo);
   driveTo = setTimeout(async ()=>{
+    if(demoEnCours) return;                       /* jamais les fausses donnees sur Drive */
     if(driveEmpreinte() === driveDernierEnvoi) return;
     if(await driveSauver(false)) return;
     /* Sur le web, le jeton vit une heure et Google n'en rend un nouveau que dans un
@@ -31603,7 +33080,12 @@ function estAbonne(){ return db.abo === true || essaiRestant() > 0; }
 /* Ce qui est derriere l'abonnement : la Progression et le Bilan — et, dans l'onglet
    Alimentation, la photo de l'assiette seulement (voir quotaPhotos). La seance et le
    journal a la main ou au code-barres restent gratuits de bout en bout : c'est la vitrine. */
-const ONGLETS_PAYANTS = ["prg", "bilan"];
+/* objcourse : les objectifs de course a niveaux (Nico, 27 septembre). Les seances de
+   course qu'on compose soi-meme restent gratuites. */
+const ONGLETS_PAYANTS = ["prg", "bilan", "recup", "objcourse", "rallumer"];
+/* l'objectif en cours, s'il est accessible : sans abonnement, il dort — rien n'est
+   efface, il revient tel quel a l'abonnement */
+function objCourseActif(){ return verrouille("objcourse") ? null : db.objCourse; }
 function verrouille(quoi){ return ONGLETS_PAYANTS.includes(quoi) && !estAbonne(); }
 /* Le profil de demonstration : un mois d'entrainement et de repas plausibles, pour que
    l'ecran floute ait l'air d'un vrai — chiffres, courbes, jauges remplies. Aucune
@@ -31645,10 +33127,121 @@ function dbDemo(){
 }
 /* Dessiner avec le faux profil, puis rendre le vrai — quoi qu'il arrive */
 function avecDemo(fn){
-  const vrai = db;
+  const vrai = db, avant = demoEnCours;
   db = dbDemo(); demoEnCours = true;
   try{ applyDefaults(); fn(); }
-  finally{ db = vrai; demoEnCours = false; }
+  finally{ db = vrai; demoEnCours = avant; }    /* en mode demo, on y reste */
+}
+/* ---- le mode demo, pour les videos et les captures (Nico, 27 septembre) ----
+   Un faux profil soigne remplace les donnees EN MEMOIRE : save() ne fait rien tant que
+   demoEnCours est vrai, et les envois deja programmes (Drive, fichier, widget) le
+   verifient aussi. Pour en sortir, on recharge l'app : les vraies donnees reviennent
+   de la memoire du telephone, intactes, et tous les minuteurs repartent de zero. */
+let modeDemo = false;
+function dbDemoVideo(){
+  const d = dbDemo();
+  const ex = n => libId(n), j = n => new Date(Date.now() - n * 864e5);
+  const serie = (w, r) => ({w, r, done:true, warm:false, rir:1});
+  const seance = (n, tid, name, entries) => ({id:"demo" + n, date:j(n).toISOString(), name, templateId:tid,
+    start:j(n).getTime() - 3.4e6, end:j(n).getTime(), entries:entries.filter(e=>e.exId)});
+  /* douze semaines de Push / Pull / Legs, qui progressent doucement */
+  const history = [];
+  for(let k = 11; k >= 0; k--){
+    const plus = (11 - k) * 1.25;
+    history.push(
+      seance(k*7 + 5, "demo-push", "Push", [
+        {exId:ex("Développé couché"), sets:[serie(65+plus,8),serie(65+plus,8),serie(65+plus,7),serie(65+plus,7)]},
+        {exId:ex("Développé militaire"), sets:[serie(35+plus/2,10),serie(35+plus/2,9),serie(35+plus/2,8)]},
+        {exId:ex("Extension poulie (barre)"), sets:[serie(22.5,12),serie(22.5,12),serie(22.5,11)]}]),
+      seance(k*7 + 3, "demo-pull", "Pull", [
+        {exId:ex("Tractions"), sets:[serie(0,8),serie(0,7),serie(0,7)]},
+        {exId:ex("Rowing barre"), sets:[serie(55+plus,10),serie(55+plus,10),serie(55+plus,9)]},
+        {exId:ex("Curl haltères"), sets:[serie(12+plus/5,12),serie(12+plus/5,11),serie(12+plus/5,10)]}]),
+      seance(k*7 + 1, "demo-legs", "Legs", [
+        {exId:ex("Squat"), sets:[serie(80+plus*1.5,6),serie(80+plus*1.5,6),serie(80+plus*1.5,6)]},
+        {exId:ex("Presse à cuisses"), sets:[serie(130+plus*2,10),serie(130+plus*2,10),serie(130+plus*2,10)]},
+        {exId:ex("Leg curl"), sets:[serie(32.5,12),serie(32.5,12),serie(32.5,11)]}])
+    );
+  }
+  history.sort((a, b)=>new Date(a.date) - new Date(b.date));
+  const it = (n, sets, reps, rest) => ({exId:ex(n), sets, reps, rest});
+  const templates = [
+    {id:"demo-push", name:"Push", items:[it("Développé couché", 4, "6-8", 150), it("Développé militaire", 3, "8-10", 120), it("Extension poulie (barre)", 3, "10-12", 60)].filter(x=>x.exId)},
+    {id:"demo-pull", name:"Pull", items:[it("Tractions", 3, "6-10", 120), it("Rowing barre", 3, "8-10", 120), it("Curl haltères", 3, "10-12", 60)].filter(x=>x.exId)},
+    {id:"demo-legs", name:"Legs", items:[it("Squat", 3, "5-6", 180), it("Presse à cuisses", 3, "8-10", 120), it("Leg curl", 3, "10-12", 60)].filter(x=>x.exId)}
+  ];
+  const weights = Array.from({length:12}, (_, i)=>({date:j((11 - i) * 7).toISOString(), kg:+(75 + i * 0.22).toFixed(1)}));
+  /* les repas : un mois complet, et aujourd'hui a moitie (le matin et le midi) */
+  const habitSel = {};
+  for(let n = 0; n < 30; n++){
+    const jour = {
+      matin:["Œuf", "Œuf", "Pain (1 tranche)", "Pain (1 tranche)", "Fromage blanc 0 % (200 g)", "Banane", "Avoine (60 g)"],
+      midi:["Poulet (1 filet, 130 g cuit)", "Riz (200 g cuit)", "Brocoli (200 g)"]};
+    if(n > 0){
+      /* la collation porte la whey : la plupart des jours atteignent l'objectif de proteines */
+      jour.collation = n % 3 ? ["Whey + lait (1 dose, 300 ml)", "Amandes / noix (30 g)"] : ["Fromage blanc 0 % (200 g)", "Fruits secs (30 g)", "Amandes / noix (30 g)"];
+      jour.soir = ["Saumon (1 pavé, 120 g cuit)", "Patates (250 g)", "Pâtes (200 g cuites)", "Salade verte (bol)"];
+    }
+    habitSel[dayKey(j(n))] = jour;
+  }
+  /* la course : quelques sorties de plus en plus longues, une seance composee */
+  const cardio = [20, 16, 12, 9, 6, 2].map((n, i)=>({id:"demo-c" + n, date:j(n).toISOString(), machine:"course",
+    km:+(2.4 + i * 0.35).toFixed(2), min:22 + i * 2, runMin:12 + i * 3, type:"mixte", pente:0, estime:false, parcours:"Course et marche"}));
+  const parcours = [{id:"demo-p1", nom:"Course et marche", etapes:[
+    {type:"course", min:15, v:8}, {type:"marche", min:5, v:4}, {type:"course", min:10, v:8.5}, {type:"marche", min:5, v:4}]}];
+  /* le poussin : tout ce que douze semaines ont debloque, deja vu ; une casquette sur la tete */
+  const variante = id => { const a = ACCESSOIRES.find(x=>x.id === id); return a ? (a.couleurs ? a.couleurs[0].id : a.id) : null; };
+  const acc = [variante("casquette"), variante("montre-connectee")].filter(Boolean);
+  return Object.assign(d, {
+    profile:Object.assign(d.profile, {name:"Alex"}),
+    settings:Object.assign(d.settings, {goal:80}),
+    history, templates, weights, habitSel, cardio, parcours,
+    objCourse:null, objPauses:{},
+    avatar:{acc, vus:ACCESSOIRES.map(a=>a.id)},
+    abo:true, lastBilan:j(8).toISOString(),
+    /* aucune bulle d'aide ni visite guidee pendant le tournage */
+    seen:new Proxy({}, {get:(o, k)=>typeof k === "string" ? true : undefined, has:()=>true})
+  });
+}
+function entrerModeDemo(){
+  if(modeDemo) return;
+  if(db.active || db.courseEnCours){ toast(TR("Termine d'abord ta séance en cours.")); return; }
+  modeDemo = true;
+  db = dbDemoVideo(); demoEnCours = true;
+  applyDefaults();
+  db.objCourse = nouvelObjectif("30min");
+  db.objCourse.niveau = 3;
+  curTab = "seance";
+  hideSheet();
+  document.querySelectorAll("body > .onb").forEach(x=>x.remove());   /* un accueil ouvert se referme */
+  render();
+  toast(TR("Mode démo : tes vraies données sont à l'abri. Réglages pour en sortir."));
+}
+/* L'acces developpeur : un code ouvre le mode demo (Nico). Comme les codes d'acces, il
+   n'est pas ecrit dans l'app : seule son empreinte SHA-256 l'est, calculee sur le code
+   en majuscules, sans espaces — la casse ne compte pas. */
+const CODE_DEV = "83c8f38f2d34fd27a135bd90fdb87532642c89aedea1425b0fc60eb3d716130b";
+function openAccesDev(){
+  openSheet(`<div class="ca-titre"><h3>${TR("Accès développeur")}</h3><p>${TR("Réservé à l'équipe Tonnup.")}</p></div>
+    <input id="dev-code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${TR("Code")}" style="margin-top:14px; text-align:center;">
+    <button class="btn btn-accent" id="dev-ok" style="width:100%; margin-top:12px;">${TR("Valider")}</button>`);
+  const inp = document.getElementById("dev-code");
+  const valider = async ()=>{
+    const code = String(inp.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    let bon = false;
+    try{ bon = (await empreinte(code)) === CODE_DEV; }catch(e){}
+    if(bon){ inp.blur(); entrerModeDemo(); return; }
+    inp.classList.remove("ko"); void inp.offsetWidth; inp.classList.add("ko");
+    vibrer([40, 60, 40]);
+    toast(TR("Code incorrect"));
+  };
+  document.getElementById("dev-ok").onclick = valider;
+  inp.onkeydown = e=>{ if(e.key === "Enter") valider(); };
+  setTimeout(()=>inp.focus(), 300);
+}
+function quitterModeDemo(){
+  /* recharger : les vraies donnees reviennent de la memoire, rien de la demo ne reste */
+  location.reload();
 }
 /* l'economie de l'annuel, calculee — jamais ecrite en dur, les prix peuvent changer */
 function economieAnnuel(){
@@ -31695,7 +33288,11 @@ function openAbonnement(){
         <li><span class="ic">${IC_BARRES}</span><div><b>${TR("Tes progrès")}</b>
           <span>${TR("Tes charges, exercice par exercice.")}</span></div></li>
         <li><span class="ic"><span class="icm icm-muscle" style="width:22px; height:22px;" aria-hidden="true"></span></span><div><b>${TR("Ton profil complet")}</b>
-          <span>${TR("Tes muscles et ton bilan de la semaine.")}</span></div></li>
+          <span>${TR("Tes muscles, ta récupération et ton bilan de la semaine.")}</span></div></li>
+        <li><span class="ic">${icoM("course", 22)}</span><div><b>${TR("Objectifs de course")}</b>
+          <span>${TR("Des séances qui évoluent avec toi.")}</span></div></li>
+        <li><span class="ic">${icoM("flamme", 22)}</span><div><b>${TR("Ta flamme protégée")}</b>
+          <span>${TR("Rallume-la 2 fois par mois si elle s'éteint.")}</span></div></li>
       </ul>
     </div>
     <div class="abo-forfaits">
@@ -31959,6 +33556,12 @@ function openSettings(){
         <span class="rgi c-gris">${IC_BOUCLIER}</span>
         <span class="grow">${TR("Aide, confidentialité et conditions")}</span><span class="fl">${IC_CHEVRON}</span>
       </button>
+      <button class="rg-l" id="st-demo">
+        <span class="rgi ${modeDemo ? "c-ambre" : "c-gris"}">${modeDemo ? IC_PHOTO : IC_CADENAS_MINI}</span>
+        <span class="grow">${TR(modeDemo ? "Quitter le mode démo" : "Accès développeur")}
+          ${modeDemo ? `<em>${TR("Tes vraies données reviennent.")}</em>` : ""}</span>
+        <span class="fl">${IC_CHEVRON}</span>
+      </button>
     </div>
     <button class="btn btn-accent" id="st-ok" style="width:100%;">${TR("Fermer")}</button>
     <div class="rg-version">Tonnup · ${TR("version du")} ${BUILD}</div>`);
@@ -31970,6 +33573,10 @@ function openSettings(){
                   : (alarmeExacte === "denied" ? TR("À autoriser") : TR("Sans objet"));
   };
   /* la fenetre d'abonnement passe sous la fiche : on ferme celle-ci d'abord */
+  document.getElementById("st-demo").onclick = ()=>{
+    if(modeDemo){ quitterModeDemo(); return; }
+    openAccesDev();
+  };
   document.getElementById("st-abo").onclick = ()=>{
     if(db.abo === true && db.aboVia === "play"){ gererSurPlay(); return; }
     if(db.abo === true) return;                      /* debloque par code : rien a gerer */
@@ -32285,7 +33892,13 @@ function openSauvegarde(){
     };
   };
   document.getElementById("st-reset").onclick=()=>askConfirm(TR("Tout effacer ?"),TR("Programmes, historique et exercices persos seront définitivement supprimés de ce téléphone."),"Tout effacer",true,()=>{
+    /* « Mes amis » actif : on efface aussi ce qui est chez Firebase (la politique de
+       confidentialite le promet) — sans attendre le reseau pour vider le telephone */
+    const amis = db.amis && db.amis.actif && !demoEnCours ? db.amis : null;
     db = {custom:[], templates:[], history:[], settings:{rest:90, goal:80, name:db.settings.name}, active:null, seq:1, weights:[], cardio:[], habits:["Petit-déj complet","Déjeuner solide","Dîner solide","Shake ou collation en +"], habitLog:{}}; save(); render();
+    /* l'identite garde de quoi s'effacer ; supprimerAmis la retire une fois Firebase vide
+       (hors ligne : elle reste, et « Supprimer mes données d'amis » pourra reessayer) */
+    if(amis){ amis.actif = false; db.amis = amis; save(); supprimerAmis().catch(()=>{}); }
   });
 }
 
@@ -33027,6 +34640,7 @@ function anneau(pct, taille, couleur){
   </svg>`;
 }
 function openRecup(){
+  if(verrouille("recup")){ openAbonnement(); return; }
   const r = recuperation();
   const coul = RECUP_C[r.global>=85? "frais" : (r.global>=50? "recup":"fatigue")];
   const st = {};
