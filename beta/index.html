@@ -4960,11 +4960,13 @@
   .cl-tete{position:relative; justify-content:center; min-height:44px;}
   .cl-titre{display:flex; align-items:center; gap:8px;} .cl-tete h2{flex:none;}
   .cl-tete .pp-x{position:absolute; right:0; top:50%; transform:translateY(-50%);}
-  .cl-podium{position:relative; margin:0 -16px 6px; aspect-ratio:1000/537;}
+  /* la barre de flammes remonte sur les nuages du bas du podium (Nico) */
+  .cl-podium{position:relative; margin:0 -16px -8px; aspect-ratio:1000/537;}
+  .cl-podium + .cl-moi{z-index:1;}
   .cl-podium .fond{position:absolute; inset:0; width:100%; height:100%; display:block; pointer-events:none;}
   .pd-po{position:absolute; transform:translate(-50%, -100%); padding:0; border:0; background:none; cursor:pointer;
     animation:pdIn .5s cubic-bezier(.34,1.56,.64,1) backwards; transform-origin:50% 100%;}
-  .pd-po .in{position:relative; display:block; width:100%; translate:0 calc(var(--pied, 0) * 100% + 6%);}
+  .pd-po .in{position:relative; display:block; width:100%; translate:0 calc(var(--pied, 0) * 100% + 3%);}
   .pd-po .in img{position:absolute; inset:0; width:100%; height:100%; display:block;}
   .pd-po.part{opacity:0; transition:opacity .15s;}
   @keyframes pdIn{from{opacity:0; transform:translate(-50%, -100%) scale(.4);}}
@@ -20629,7 +20631,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 15h13 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 15h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22492,10 +22494,10 @@ function ligneClassement(x, i, moi){
 }
 /* Le podium (maquette de Nico, 29 sept.) : le premier en fete avec son trophee, les deux
    autres en forme, un peu plus petits a chaque marche. Les positions sont celles des
-   dessus des marches, mesurees sur l'image (classement-podium.webp). */
+   dessus des marches, mesurees sur l'image (podium-2.webp). */
 const PODIUM = [{i:1, x:23.6, y:72.4, l:22, pose:"en-forme"}, {i:0, x:51.1, y:65.2, l:30, pose:"fete"}, {i:2, x:77.6, y:81.4, l:19, pose:"en-forme"}];
 function podiumHtml(l){
-  return `<img class="fond" src="img/classement-podium.webp" alt="">${PODIUM.map((m, k)=>{
+  return `<img class="fond" src="img/podium-2.webp" alt="">${PODIUM.map((m, k)=>{
     const x = l[m.i];
     if(!x) return "";
     const pose = POUSSIN[m.pose] ? m.pose : "en-forme", pr = POUSSIN[pose] || {ratio:1.2};
