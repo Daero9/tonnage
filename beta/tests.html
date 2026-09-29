@@ -6812,13 +6812,14 @@ async function lancer(){
     /* la jauge du temps disponible */
     const t8 = {items:["Développé couché","Squat","Rowing barre","Développé militaire","Élévations latérales","Curl barre","Extension poulie (corde)","Crunch câble"]
       .map(n=>({exId:F.libId(n), sets:4, reps:"8-12", rest:120}))};
-    const pal = F.paliersTemps(t8, 0);
-    vrai("Des paliers plus courts que la séance entière", pal.length >= 3 && pal.every(m=>m < F.dureeMinutes(t8.items)));
-    vrai("Chaque palier tient sa promesse, et en garde plus que le précédent", pal.every((m, k)=>{
-      const sel = F.indicesPourTemps(t8.items, m, 0);
-      const avant = k ? F.indicesPourTemps(t8.items, pal[k - 1], 0).length : 0;
-      return F.dureeMinutes(sel.map(i=>t8.items[i])) <= m + 3 && sel.length > avant; }));
-    eq("Le plus court garde d'abord les gros mouvements", F.indicesPourTemps(t8.items, pal[0], 0).slice(0, 2).map(i=>F.getEx(t8.items[i].exId).name).join(" + "), "Développé couché + Squat");
+    const plan = m=>F.planPourTemps(t8.items, m, 0);
+    const minutes = pl=>F.dureeMinutes(Object.keys(pl).map(i=>Object.assign({}, t8.items[i], {sets: pl[i]})));
+    vrai("Chaque temps de 15 à 90 min tient sa promesse", [15, 20, 35, 40, 55, 70, 90].every(m=>minutes(plan(m)) <= m));
+    vrai("Plus de temps, jamais moins de séries", [20, 35, 50, 65, 80].every(m=>
+      Object.values(plan(m + 10)).reduce((a, b)=>a + b, 0) >= Object.values(plan(m)).reduce((a, b)=>a + b, 0)));
+    vrai("Un exercice entre avec 2 séries au moins", [20, 35, 60].every(m=>Object.values(plan(m)).every(n=>n >= 2)));
+    eq("À 20 min, les gros mouvements d'abord", Object.keys(plan(20)).slice(0, 2).map(i=>F.getEx(t8.items[i].exId).name).join(" + "), "Développé couché + Squat");
+    eq("La séance entière tient : aucun plan", F.planPourTemps(t8.items, 200, 0), null);
   })();
   neuf();
 
