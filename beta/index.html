@@ -4775,6 +4775,7 @@
   /* la montre dans le recap de fin et l'historique */
   .fin-montre{display:flex; align-items:center; justify-content:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin:-6px 0 14px;}
   .fin-montre .ic{color:#3b82f6; display:inline-flex;} .fin-montre .ic svg{width:17px; height:17px;}
+  .fin-court{font-size:13px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;}
   .hd-vide{font-size:13px; color:var(--ink-soft); text-align:center; padding:6px 0;}
   /* ---- mes amis ---- */
   /* la montre */
@@ -5171,6 +5172,8 @@ const TRAD = {en:{
   "max {}":"max {}",
   "kcal (montre)":"kcal (watch)",
   "bpm max":"bpm max",
+  "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"An activity is suggested from 10 min, 30 min for walking: a walk to work won't light your flame.",
+  "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Under 5 minutes: this workout doesn't light your flame.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -8902,6 +8905,8 @@ es:{
   "max {}":"máx. {}",
   "kcal (montre)":"kcal (reloj)",
   "bpm max":"ppm máx.",
+  "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"Una actividad se propone a partir de 10 min, 30 min para caminar: un trayecto a pie no enciende tu llama.",
+  "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: esta sesión no enciende tu llama.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -12847,6 +12852,8 @@ pt:{
   "max {}":"máx. {}",
   "kcal (montre)":"kcal (relógio)",
   "bpm max":"bpm máx.",
+  "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"Uma atividade é sugerida a partir de 10 min, 30 min para caminhada: um trajeto a pé não acende a sua chama.",
+  "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: este treino não acende a sua chama.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20000,7 +20007,7 @@ function meilleureFlamme(){
    entre la derniere activite et le jour ou on l'a rallumee. */
 function pointsFlamme(maintenant){
   const now = new Date(maintenant), pts = new Map();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{
+  activitesComptees().forEach(x=>{
     const d = new Date(x.date); if(!(d > 0) || d > now) return;
     d.setHours(0,0,0,0); pts.set(d.getTime(), {t:d.getTime(), act:true});
   });
@@ -20018,7 +20025,7 @@ function lienFlamme(recent, ancien){
 }
 function meilleureSerieSemaines(){
   const sem = new Set();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{
+  activitesComptees().forEach(x=>{
     const d = new Date(x.date); if(!(d > 0)) return;
     d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); sem.add(d.getTime());
   });
@@ -20032,7 +20039,7 @@ function meilleureSerieSemaines(){
    valent qu'une activite — pas de cumul. */
 function nActivites(){
   const jours = new Set();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > 0) jours.add(dayKey(d)); });
+  activitesComptees().forEach(x=>{ const d = new Date(x.date); if(d > 0) jours.add(dayKey(d)); });
   return jours.size;
 }
 /* Mode essai du vestiaire : « …/beta/#accessoires » dans la barre d'adresse. Tout est
@@ -20050,7 +20057,7 @@ function accessoireGagne(a){
 /* activites (jours avec une seance ou une sortie) sur les 7 derniers jours */
 function activites7j(fin){
   const now = fin || Date.now(), jours = new Set(), depuis = now - 7 * 864e5;
-  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= now) jours.add(dayKey(d)); });
+  activitesComptees().forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= now) jours.add(dayKey(d)); });
   return jours.size;
 }
 /* Depuis combien de jours d'affilee la condition « muscle » (3 activites sur 7 jours)
@@ -20068,10 +20075,23 @@ function niveauHalo(){
   return j >= 28 ? 4 : (j >= 21 ? 3 : (j >= 14 ? 2 : (j >= 7 ? 1 : 0)));
 }
 /* la fin de la derniere activite (seance ou sortie), en ms ; 0 s'il n'y en a pas */
+/* Les seances et sorties qui comptent comme ACTIVITE — la flamme, les jours actifs, les
+   series de semaines (Nico, 29 sept.) : 5 minutes au moins. Une seance lancee puis
+   terminee aussitot n'allume rien. Elle reste dans l'historique, avec ses series. Une
+   seance ou une sortie sans duree connue compte, comme avant. */
+const MIN_ACTIVITE = 5;
+function compteActivite(x){
+  if(x.start && x.end) return x.end - x.start >= MIN_ACTIVITE * 60000;
+  if(x.min > 0) return x.min >= MIN_ACTIVITE;
+  return true;
+}
+function activitesComptees(){
+  return (db.history || []).concat(db.cardio || []).filter(compteActivite);
+}
 function finDerniereActivite(){
   let fin = 0;
-  (db.history || []).forEach(h=>{ const t = h.end || new Date(h.date).getTime(); if(t > fin && t <= Date.now()) fin = t; });
-  (db.cardio || []).forEach(c=>{ const t = new Date(c.date).getTime() + (c.min || 0) * 60000; if(t > fin && t <= Date.now()) fin = t; });
+  (db.history || []).forEach(h=>{ if(!compteActivite(h)) return; const t = h.end || new Date(h.date).getTime(); if(t > fin && t <= Date.now()) fin = t; });
+  (db.cardio || []).forEach(c=>{ if(!compteActivite(c)) return; const t = new Date(c.date).getTime() + (c.min || 0) * 60000; if(t > fin && t <= Date.now()) fin = t; });
   return fin;
 }
 /* Un VRAI record, pas +1 kg : la charge de travail de la seance du jour depasse d'au
@@ -20429,7 +20449,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 03h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 03h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22716,6 +22736,7 @@ async function openMontre(){
       <b>${TR("Comment ça marche")}</b>
       <p>${TR("Ta montre enregistre tes activités dans son application (Zepp, Samsung Health, Fitbit…), qui les dépose dans Health Connect. Tonnup les lit, et rien ne quitte ton téléphone.")}</p>
       <p>${TR("Dans l'application de ta montre, active l'envoi vers Health Connect.")}</p>
+      <p>${TR("Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.")}</p>
     </div>`}
     <button class="btn btn-accent" id="mt-ok" style="width:100%; margin-top:14px;">${TR("Fermer")}</button>`);
   document.getElementById("mt-ok").onclick = closeSheet;
@@ -22739,6 +22760,14 @@ function dejaDansTonnup(a){
     && (Math.abs(h.start - a.debut) < 15 * 60000 || (h.end && h.start < a.fin && h.end > a.debut))));
 }
 let montreEnCours = false;
+/* Le minimum pour qu'une activite de la montre soit proposee, en minutes (Nico, 29 sept.).
+   La marche a 30 min : les montres detectent seules une marche soutenue, et un trajet a
+   pied vers le travail ne doit pas allumer la flamme. La muscu a 15 min : en dessous,
+   c'est un mode lance par erreur. Le reste a 10 min : une vraie seance, pas un sprint
+   pour attraper le bus. */
+function minimumMontre(type){
+  return type === "marche" ? 30 : type === "muscu" ? 15 : 10;
+}
 /* `apres` : appele une fois les activites proposees (ou s'il n'y en a pas) */
 async function verifierMontre(force, apres){
   const sa = db.sante, pl = pluginSante();
@@ -22751,8 +22780,7 @@ async function verifierMontre(force, apres){
     const depuis = Math.max(sa.depuis || 0, Date.now() - 7 * 864e5);
     const r = await pl.activites({depuis});
     const vus = new Set(sa.vus || []);
-    /* la muscu de la montre : 15 min au moins, sinon c'est un mode lance par erreur */
-    const l = (r.activites || []).filter(a=>(a.type === "muscu" ? a.fin - a.debut >= 15 * 60000 : SANTE_TYPES[a.type] && a.fin - a.debut >= 3 * 60000)
+    const l = (r.activites || []).filter(a=>(a.type === "muscu" || SANTE_TYPES[a.type]) && a.fin - a.debut >= minimumMontre(a.type) * 60000
       && !vus.has(a.id) && !dejaDansTonnup(a)).sort((x, y)=>x.debut - y.debut);
     await enrichirSeances();
     if(l.length){ const cb = apres; apres = null; proposerActivite(l, 0, cb); }
@@ -26741,7 +26769,7 @@ function serieSemaines(maintenant){
   const now = maintenant ? new Date(maintenant) : new Date();
   const lundi = new Date(now); lundi.setHours(0,0,0,0); lundi.setDate(lundi.getDate() - ((lundi.getDay()+6)%7));
   const jours = new Set();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{
+  activitesComptees().forEach(x=>{
     const d = new Date(x.date); if(!(d > 0) || d > now) return;
     d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7));
     jours.add(d.getTime());
@@ -28101,7 +28129,7 @@ function renderSeance(app){
   /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
   const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
-  db.history.concat(db.cardio).forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
+  activitesComptees().forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
   const todayIdx = (now.getDay()+6)%7;
   /* comparaison avec la semaine précédente : un repère, pas un jugement */
   const w1 = new Date(w0.getTime() - 7*864e5);
@@ -31495,6 +31523,7 @@ function openFinSeance(r){
         leur visage, et « Terminé » avec son chevron */""}
   <div class="fin-serie"><span class="ic">${IC_BARRES}</span><span><b>${r.series}</b> ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} <b>${r.exos}</b> ${TR(r.exos>1 ? "exercices" : "exercice")}.</span></div>
   <div class="fin-montre" id="fin-montre" hidden></div>
+  ${r.duree < MIN_ACTIVITE * 60000 ? `<div class="fin-court">${TR("Moins de 5 minutes : cette séance n'allume pas ta flamme.")}</div>` : ""}
   ${r.cardio ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.cardio)}</div>` : ""}
   ${r.course ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.course)}</div>` : ""}
   ${r.records.length? `<div class="fin-rec">
