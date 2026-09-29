@@ -285,7 +285,9 @@
     display:flex; flex-direction:column; align-items:center; gap:5px; font-size:11px; font-weight:800; color:var(--ink-soft); white-space:nowrap;}
   .pv-temps .grad span i{width:2px; height:8px; border-radius:1px; background:#9A9590;}
   .pv-temps .grad span.on{color:var(--accent);} .pv-temps .grad span.on i{background:var(--accent);}
-  .pv-temps .astuce{display:flex; align-items:center; gap:10px; margin-top:8px; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.65);}
+  .pv-temps .astuce{display:flex; align-items:center; gap:10px; margin-top:8px; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.65);
+    max-height:120px; overflow:hidden; transition:max-height .35s ease, opacity .3s ease, margin-top .35s ease, padding .35s ease;}
+  .pv-temps .astuce.cache{max-height:0; opacity:0; margin-top:0; padding-top:0; padding-bottom:0;}
   :root[data-theme="dark"] .pv-temps .astuce{background:rgba(255,255,255,.06);}
   .pv-temps .astuce .ic{flex:0 0 auto; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     background:rgba(245,130,32,.14); color:var(--accent);}
@@ -21509,7 +21511,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31872,7 +31874,9 @@ function openPreview(tplId, lieuFait){
       </div>
       <div class="grad">${crans.map(m=>`<span data-m="${m}" style="--p:${pos(m) / 100}"><i></i>${fmtMinutes(m)}</span>`).join("")}${
         jaugeMax > JAUGE_MAX ? `<span data-m="${jaugeMax}" style="--p:1"><i></i>${TR("Tout")}</span>` : ""}</div>
-      <div class="astuce"><span class="ic">${IC_AMPOULE}</span><span id="pv-astuce">${astuceTemps(tempsDispo, plein)}</span></div>
+      ${/* l'astuce n'existe que si l'on a bouge le curseur (Nico) : la seance telle quelle
+           n'a rien a expliquer. Elle se deplie au premier mouvement. */""}
+      <div class="astuce ${tempsDispo === null ? "cache" : ""}" id="pv-astuce-b"><span class="ic">${IC_AMPOULE}</span><span id="pv-astuce">${astuceTemps(tempsDispo, plein)}</span></div>
     </div>`; })() : ""}
     <div class="pn-tuiles" style="margin-top:14px;">
       ${tuile(ICONS.seance, itemsTout.length, TR(itemsTout.length>1? "exercices":"exercice"))}
@@ -31981,6 +31985,7 @@ function openPreview(tplId, lieuFait){
       const v = val();
       allumer();
       const as = document.getElementById("pv-astuce"); if(as) as.textContent = astuceTemps(v, plein);
+      const asb = document.getElementById("pv-astuce-b"); if(asb) asb.classList.toggle("cache", v === null);
       const lv = document.getElementById("pv-temps-v");
       lv.textContent = v === null ? TR("Séance complète") : fmtMinutes(v);
       lv.classList.toggle("long", v === null);
