@@ -5179,6 +5179,8 @@ const TRAD = {en:{
   "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Under 5 minutes: this workout doesn't light your flame.",
   "Connecte ta montre":"Connect your watch",
   "Tes activités et ton cardio arrivent tout seuls dans Tonnup.":"Your activities and heart rate come into Tonnup on their own.",
+  "Moins de 5 minutes : cette sortie n'allume pas ta flamme.":"Under 5 minutes: this workout doesn't light your flame.",
+  "Une activité compte à partir de 5 minutes.":"An activity counts from 5 minutes.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -8914,6 +8916,8 @@ es:{
   "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: esta sesión no enciende tu llama.",
   "Connecte ta montre":"Conecta tu reloj",
   "Tes activités et ton cardio arrivent tout seuls dans Tonnup.":"Tus actividades y tu ritmo cardíaco llegan solos a Tonnup.",
+  "Moins de 5 minutes : cette sortie n'allume pas ta flamme.":"Menos de 5 minutos: esta salida no enciende tu llama.",
+  "Une activité compte à partir de 5 minutes.":"Una actividad cuenta a partir de 5 minutos.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -12863,6 +12867,8 @@ pt:{
   "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: este treino não acende a sua chama.",
   "Connecte ta montre":"Conecte seu relógio",
   "Tes activités et ton cardio arrivent tout seuls dans Tonnup.":"Suas atividades e seu ritmo cardíaco chegam sozinhos ao Tonnup.",
+  "Moins de 5 minutes : cette sortie n'allume pas ta flamme.":"Menos de 5 minutos: esta saída não acende a sua chama.",
+  "Une activité compte à partir de 5 minutes.":"Uma atividade conta a partir de 5 minutos.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20247,7 +20253,7 @@ function openVestiaire(){
     const d = document.createElement("div");
     d.className = "vs-info";
     d.innerHTML = rare
-      ? TR("Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.")
+      ? TR("Pour la régularité : ta meilleure flamme, c'est-à-dire la plus longue suite d'activités sans jamais laisser passer plus de 3 jours. Elle n'est jamais perdue.") + " " + TR("Une activité compte à partir de 5 minutes.")
       : TR("Chaque séance ou sortie compte. Touche un accessoire gagné pour le mettre ou l'enlever.") + " " + TR("Une seule activité est comptée par jour : une séance et une sortie le même jour ne font qu'une.");
     titre.after(d); b.classList.add("on");
   });
@@ -20458,7 +20464,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 11h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 12h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -26996,6 +27002,7 @@ function openCardioAdd(idExistant){
         TR("{detail}, soit environ <b style=\"color:var(--accent);\">{kcal} kcal</b> brûlées{src}{eq}.")
           .replace("{detail}", detail).replace("{kcal}", kcal)
           .replace("{src}", src? " (" + src + ")" : "").replace("{eq}", kcalEquiv(kcal))}</p>
+      ${!compteActivite(sortie) ? `<div class="fin-court">${TR("Moins de 5 minutes : cette sortie n'allume pas ta flamme.")}</div>` : ""}
       <button class="btn btn-accent" id="cd-close" style="width:100%;">${TR("Continuer")}</button>`);
     document.getElementById("cd-close").onclick=()=>{ closeSheet(); setTimeout(render, 320); };
   };
@@ -32672,6 +32679,7 @@ function openFinCourse(s, muscu){
       <div style="font-size:14px; color:var(--ink-soft); margin-top:8px;">${esc(s.parcours || "")}</div>
     </div>
     <div style="margin:16px 0 14px;">${crResume({min:s.min, km:s.km, kcal})}</div>
+    ${!muscu && !compteActivite(s) ? `<div class="fin-court">${TR("Moins de 5 minutes : cette sortie n'allume pas ta flamme.")}</div>` : ""}
     <div class="cd-bloc">
       <span class="f-lab">${TR("Distance réelle (facultatif)")}</span>
       <div class="ot-pas" style="padding:5px 16px;"><input type="number" inputmode="decimal" step="0.1" min="0" id="fc-km" placeholder="${affDist(s.km)}"><span style="color:var(--ink-mute); font-weight:700;">${uDist()}</span></div>
