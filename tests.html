@@ -222,7 +222,7 @@ async function lancer(){
   const LIBEN = F.eval("LIB"), CANONX = F.eval("nomCanon");
   const EXOI = F.eval("EXO_INFO"), MWK = F.eval("MUSCLE_WORK");
 
-  eq("Les 115 exercices sont là", LIBEN.length, 115);   /* 116 moins le curl auto-résisté, retiré le 20 septembre */
+  eq("Les 127 exercices sont là", LIBEN.length, 127);   /* 116 moins le curl auto-résisté, retiré le 20 septembre, plus 10 machines le 29 */
   vrai("Le curl auto-résisté n'existe plus", !LIBEN.some(e=>e.nameFr === "Curl auto-résisté"));
   /* L'identifiant d'un exercice est sa POSITION dans la liste. Insérer une ligne au
      milieu décale tous les suivants et rattache l'historique de chacun à son voisin —
@@ -635,6 +635,32 @@ async function lancer(){
   vrai("Aucune habitude sur un repas jamais pris", F.habitudesDuRepas("midi").length === 0);
   neuf();
 
+  /* ------------------------------------------ machines d'assistance (29 sept.)
+     Le poids reglé est une AIDE : plus il est lourd, plus c'est facile. Tout le reste
+     de l'app pense l'inverse ; ces tests gardent le sens. */
+  grp("Machines d'assistance");
+  (()=>{
+    const B = F.eval("db"), id = F.libId("Tractions assistées");
+    B.weights = [{date:new Date().toISOString(), kg:80}];
+    const j = n => new Date(Date.now() - n * 864e5).toISOString();
+    const S = (w, r, rir)=>({w, r, done:true, warm:false, rir});
+    const seance = (n, sets)=>({id:"as" + n, date:j(n), name:"Pull", start:Date.parse(j(n)) - 3e6, end:Date.parse(j(n)), entries:[{exId:id, sets}]});
+    B.history = [seance(3, [S(30,12,3), S(30,12,3), S(30,12,3)])];
+    const t = {reps:"8-12"};
+    const facile = F.suggestFor(id, t);
+    eq("Trop facile : l'aide BAISSE (30 → 27,5 kg)", facile && facile.w, 27.5);
+    vrai("…et la phrase parle d'aide", /d'aide/.test(facile && facile.text || ""));
+    const o = F.objectifDuJour(id, t);
+    vrai("…la flèche monte : moins d'aide est un progrès", o && o.ecart > 0);
+    B.history.push(seance(1, [S(20,5,0), S(20,5,0), S(20,4,0)]));
+    const dur = F.suggestFor(id, t);
+    eq("Trop dur : l'aide MONTE (20 → 22,5 kg)", dur && dur.w, 22.5);
+    eq("La charge réellement hissée : 80 − 20 = 60 kg", F.chargeReelle(id, {w:20}), 60);
+    eq("Aucun tonnage : l'aide n'est pas une charge soulevée", F.sessionVolume(seance(1, [S(20,8,1)])), 0);
+    eq("L'échauffement se fait avec PLUS d'aide", F.serieEchauffement(id, "8-12").w, 50);
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- cardio */
   grp("Cardio");
   const base = {km:6, min:50, pente:0, runMin:0, hr:0, kcalM:0, machine:"course", intensite:"modere"};
@@ -654,6 +680,9 @@ async function lancer(){
   eq("Montre : la marche compte à partir de 30 min", F.minimumMontre("marche"), 30);
   eq("…la musculation à partir de 15 min", F.minimumMontre("muscu"), 15);
   eq("…la course et le reste à partir de 10 min", F.minimumMontre("course"), 10);
+  eq("Allure d'une course : 30 min pour 4,36 km", F.allureTxt(30, 4.36), "6'53 /km");
+  eq("…sans distance, pas d'allure", F.allureTxt(30, 0), "—");
+  eq("…les secondes ne montent jamais à 60", F.allureTxt(29.999, 5), "6'00 /km");
   eq("La ligne de la montre", F.ligneMontre({fcMoy:118, fcMax:161, kcal:287}), "118 bpm moyens · max 161 · 287 kcal");
   eq("…vide sans mesure", F.ligneMontre({}), "");
   vrai("FC prise en compte à défaut de montre",
@@ -2220,8 +2249,10 @@ async function lancer(){
     const meta = [...D2.querySelectorAll(".hero-meta span")].map(x=>x.textContent).join(" · ");
     const travail = DB.active.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
     eq("L'échauffement ne compte pas comme une série", travail, 6);
-    eq("Le bandeau dit ce que pèse la séance",
-      meta.replace(/~\d+ min/, "~m"), "2 exercices · 6 séries · ~m");
+    /* seule la duree reste dans le bandeau (Nico, 29 sept.) : le nombre d'exercices
+       et de series se voit dans la liste juste dessous */
+    eq("Le bandeau ne donne plus que la durée",
+      meta.replace(/~\d+ min/, "~m"), "~m");
     vrai("…et estime une durée", /~\d+ min/.test(meta));
     /* ce que la séance a déjà produit, dans les mêmes pastilles que le chrono */
     eq("Deux pastilles de plus", D2.querySelectorAll(".hero-stats .hs").length, 2);
