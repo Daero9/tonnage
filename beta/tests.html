@@ -647,6 +647,13 @@ async function lancer(){
   /* la montre sur une seance de muscu : ses calories remplacent l'estimation, sauf avec du cardio (compte a part) */
   eq("Muscu : les calories de la montre remplacent l'estimation", F.liftKcal({entries:[], montre:{kcal:287}}), 287);
   eq("…pas quand la séance contient du cardio", F.liftKcal({entries:[], montre:{kcal:287}, cardio:{machine:"course", min:10}}), 0);
+  vrai("Une séance de 4 min ne compte pas comme activité", !F.compteActivite({start:1e12, end:1e12 + 4 * 60000}));
+  vrai("…une de 5 min, si", F.compteActivite({start:1e12, end:1e12 + 5 * 60000}));
+  vrai("…une sortie de 3 min non plus", !F.compteActivite({min:3}));
+  vrai("…une séance sans durée connue compte", F.compteActivite({date:"2026-01-01"}));
+  eq("Montre : la marche compte à partir de 30 min", F.minimumMontre("marche"), 30);
+  eq("…la musculation à partir de 15 min", F.minimumMontre("muscu"), 15);
+  eq("…la course et le reste à partir de 10 min", F.minimumMontre("course"), 10);
   eq("La ligne de la montre", F.ligneMontre({fcMoy:118, fcMax:161, kcal:287}), "118 bpm moyens · max 161 · 287 kcal");
   eq("…vide sans mesure", F.ligneMontre({}), "");
   vrai("FC prise en compte à défaut de montre",
