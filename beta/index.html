@@ -2181,6 +2181,18 @@
   .ex-card.ss-a::after, .ex-card.ss-b::before{content:""; position:absolute; left:-9px; width:3px; border-radius:3px; background:var(--accent); pointer-events:none;}
   .ex-card.ss-a::after{top:26px; bottom:-16px;}
   .ex-card.ss-b::before{top:-16px; bottom:26px;}
+  /* Assisté · Normal · Lesté : une pilule a trois cases sous le nom */
+  .trio{display:flex; background:var(--surface2); border-radius:99px; padding:3px; margin:0 0 10px;}
+  .trio button{flex:1; padding:7px 0; border-radius:99px; font:inherit; font-size:12.5px; font-weight:800; color:var(--ink-soft); background:none; transition:background .2s, color .2s;}
+  .trio button.on{background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .trio button.suggere:not(.on){color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); animation:trioSugg 1.6s ease-in-out infinite;}
+  @keyframes trioSugg{50%{box-shadow:inset 0 0 0 1.5px var(--accent), 0 0 0 4px rgba(245,130,32,.18);}}
+  .trio-conseil{font-size:12px; font-weight:700; color:var(--accent); margin:-4px 0 10px; text-align:center;}
+  /* au poids du corps : pas de colonne des kilos */
+  /* au poids du corps : ni colonne des kilos, ni degressif (pas de poids a baisser) */
+  .ex-card.sans-charge .set-row, .ex-card.sans-charge .set-row .bn-tete{grid-template-columns:26px 1fr 44px;}
+  .ex-card.sans-charge .set-row > input, .ex-card.sans-charge .set-row > .dg, .ex-card.sans-charge .set-row > span:empty,
+  .ex-card.sans-charge .set-row .bn-tete > span:nth-child(2), .ex-card.sans-charge .set-row .bn-tete > span:nth-child(4){display:none;}
   /* les details de l'evolution, replies : la grille des tuiles ne doit pas l'emporter */
   #prg-tiles[hidden], #chart-wrap[hidden]{display:none;}
 
@@ -5611,6 +5623,10 @@ const TRAD = {en:{
   "Superset : tu passes à {} sans repos, le repos vient après les deux.":"Superset: you go straight to {} with no rest; you rest after both.",
   "Masquer les détails":"Hide details",
   "Afficher les détails":"Show details",
+  "Assisté":"Assisted",
+  "Lesté":"Weighted",
+  "Moins de 5 répétitions : essaie la version assistée.":"Fewer than 5 reps: try the assisted version.",
+  "Presque plus d'aide : tu peux passer à la version normale.":"Hardly any assistance left: you can move to the normal version.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9500,6 +9516,10 @@ es:{
   "Superset : tu passes à {} sans repos, le repos vient après les deux.":"Superserie: pasas a {} sin descanso; el descanso llega después de los dos.",
   "Masquer les détails":"Ocultar detalles",
   "Afficher les détails":"Mostrar detalles",
+  "Assisté":"Asistido",
+  "Lesté":"Lastrado",
+  "Moins de 5 répétitions : essaie la version assistée.":"Menos de 5 repeticiones: prueba la versión asistida.",
+  "Presque plus d'aide : tu peux passer à la version normale.":"Casi sin ayuda: puedes pasar a la versión normal.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13603,6 +13623,10 @@ pt:{
   "Superset : tu passes à {} sans repos, le repos vient après les deux.":"Superset: você passa para {} sem descanso; o descanso vem depois dos dois.",
   "Masquer les détails":"Ocultar detalhes",
   "Afficher les détails":"Mostrar detalhes",
+  "Assisté":"Assistido",
+  "Lesté":"Com carga",
+  "Moins de 5 répétitions : essaie la version assistée.":"Menos de 5 repetições: experimente a versão assistida.",
+  "Presque plus d'aide : tu peux passer à la version normale.":"Quase sem ajuda: você pode passar para a versão normal.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21312,7 +21336,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 22h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31694,7 +31718,7 @@ function startWorkout(tplId, lieu, courte){
       else r = ls ? ls.r : repsDepart(rng);
       sets.push({w, r, done:false});
     }
-    return {exId:it.exId, target:it, sets, enchaine: it.enchaine ? true : undefined};
+    return {exId:it.exId, target:it, sets, enchaine: it.enchaine ? true : undefined, leste: it.leste};
   }) : [];
   /* série d'échauffement sur le premier exercice */
   if(entries.length){
@@ -32079,6 +32103,100 @@ function allerAuProchainExo(vers){
   const y = cible.getBoundingClientRect().top + window.scrollY - marge;
   try{ window.scrollTo({top: Math.max(0, y), behavior:"smooth"}); }catch(e){ window.scrollTo(0, Math.max(0, y)); }
 }
+/* ---- Assisté · Normal · Lesté (Nico, 29 sept.) ----
+   Tractions et dips existent en trois versions. Un selecteur sous le nom les fait
+   basculer sur place, sans fenetre. Normal et Lesté sont le MEME exercice : seule la
+   colonne des kilos apparait (lest) ou disparait (poids du corps). Assisté est un
+   autre exercice (l'aide, qui baisse quand on progresse) : on change d'exercice.
+   Les series deja validees gardent leur version : elles restent sur une ligne repliee,
+   et la suite continue sur la nouvelle. Le choix est retenu dans le programme. */
+const TRIO = {"Tractions": "Tractions assistées", "Dips": "Dips assistés"};
+function trioDe(ex){
+  const n = nomCanon(ex);
+  if(TRIO[n]) return {base: n, assiste: TRIO[n]};
+  const b = Object.keys(TRIO).find(k=>TRIO[k] === n);
+  return b ? {base: b, assiste: n} : null;
+}
+function modeTrio(en){
+  if(estAssiste(getEx(en.exId))) return "assiste";
+  if(en.leste === undefined) return en.sets.some(s=>(Number(s.w) || 0) > 0) ? "leste" : "normal";
+  return en.leste ? "leste" : "normal";
+}
+function basculerTrio(a, ei, mode){
+  const en = a.entries[ei], t = en && trioDe(getEx(en.exId));
+  if(!t) return;
+  const avant = modeTrio(en);
+  if(avant === mode) return;
+  const tpl = a.templateId ? db.templates.find(x=>x.id === a.templateId) : null;
+  const it = tpl && tpl.items.find(x=>x.exId === en.exId);
+  if(mode !== "assiste" && avant !== "assiste"){
+    /* meme exercice : on montre ou on retire la colonne des kilos */
+    en.leste = mode === "leste";
+    if(mode === "normal") en.sets.forEach(s=>{ if(!s.done) s.w = 0; });
+    if(it) it.leste = en.leste;
+    delete en.conseilTrio;
+    save(); renderSurPlace(); return;
+  }
+  const nouvId = libId(mode === "assiste" ? t.assiste : t.base);
+  const faites = en.sets.filter(s=>s.done);
+  const restent = en.sets.filter(s=>!s.done && !s.warm);
+  /* la charge des series qui restent : celle de la nouvelle version */
+  let w = 0;
+  if(mode === "assiste"){
+    const sug = suggestFor(nouvId, en.target), last = lastPerf(nouvId);
+    w = sug && sug.w != null ? sug.w : (last ? last.sets[0].w : chargeDepart(nouvId, en.target && en.target.reps));
+  }
+  /* nouvelle version, nouvelle cible : le milieu de la fourchette, pas les reps
+     ratees de l'ancienne (c'est justement pour ca qu'on change) */
+  const rNouv = repsDepart(parseReps(en.target && en.target.reps));
+  const nouv = (restent.length ? restent : [{r: ""}]).map(s=>({w, r: rNouv !== "" ? rNouv : s.r, done: false}));
+  if(faites.some(s=>!s.warm)){
+    en.sets = faites; en.replie = true;
+    const ne = {exId: nouvId, target: en.target, sets: nouv};
+    if(mode === "leste") ne.leste = true; else if(mode === "normal") ne.leste = false;
+    if(en.enchaine){ ne.enchaine = true; delete en.enchaine; }
+    a.entries.splice(ei + 1, 0, ne);
+  } else {
+    en.exId = nouvId; en.sets = nouv;
+    if(mode === "assiste") delete en.leste; else en.leste = mode === "leste";
+  }
+  delete en.conseilTrio;
+  if(it){ it.exId = nouvId; if(mode === "assiste") delete it.leste; else it.leste = mode === "leste"; }
+  save(); renderSurPlace();
+}
+/* le bon moment pour basculer : moins de 5 tractions au poids du corps -> assisté ;
+   une aide presque nulle tenue sur toute la fourchette -> normal */
+function conseilTrio(en){
+  const t = trioDe(getEx(en.exId));
+  if(!t) return null;
+  const faites = en.sets.filter(s=>s.done && !s.warm);
+  const der = faites[faites.length - 1];
+  if(!der) return null;
+  const mode = modeTrio(en);
+  if(mode === "normal" && (der.r || 0) > 0 && der.r < 5) return "assiste";
+  const rng = parseReps(en.target && en.target.reps);
+  if(mode === "assiste" && (Number(der.w) || 0) <= 2.5 && (der.r || 0) >= (rng ? rng.hi : 8)) return "normal";
+  return null;
+}
+function selecteurTrio(en, ei){
+  const t = trioDe(getEx(en.exId));
+  if(!t) return "";
+  const mode = modeTrio(en), sugg = conseilTrio(en);
+  const texte = sugg === "assiste" ? TR("Moins de 5 répétitions : essaie la version assistée.")
+    : (sugg === "normal" ? TR("Presque plus d'aide : tu peux passer à la version normale.") : "");
+  return `<div class="trio" data-trio="${ei}">
+      ${[["assiste", "Assisté"], ["normal", "Normal"], ["leste", "Lesté"]].map(([m, l])=>
+        `<button type="button" data-t3="${m}" class="${m === mode ? "on" : ""}${m === sugg ? " suggere" : ""}">${TR(l)}</button>`).join("")}
+    </div>${texte ? `<div class="trio-conseil">${texte}</div>` : ""}`;
+}
+/* pose (ou repose apres une serie) le selecteur sous le nom, et le branche */
+function poserTrio(card, a, ei){
+  card.querySelectorAll(".trio, .trio-conseil").forEach(x=>x.remove());
+  const html = selecteurTrio(a.entries[ei], ei);
+  if(!html) return;
+  card.querySelector(".ex-head").insertAdjacentHTML("afterend", html);
+  card.querySelectorAll("[data-t3]").forEach(b=>b.onclick = e=>{ e.stopPropagation(); vibrer(8); basculerTrio(a, ei, b.dataset.t3); });
+}
 function renderActive(app){
   const a = db.active;
   setTimeout(verifierSeanceOubliee, 800);
@@ -32195,7 +32313,7 @@ function renderActive(app){
         </div>
       </div>`;
     const card = document.createElement("div");
-    card.className="ex-card"+(iso? " iso":"");
+    card.className="ex-card"+(iso? " iso":"")+(trioDe(ex) && modeTrio(en) === "normal" ? " sans-charge" : "");
     card.dataset.ei = ei;
     if(en.enchaine && a.entries[ei + 1] && !a.entries[ei + 1].replie) card.classList.add("ss-a");
     if(ei > 0 && a.entries[ei - 1].enchaine && !a.entries[ei - 1].replie) card.classList.add("ss-b");
@@ -32404,6 +32522,7 @@ function renderActive(app){
           return;
         }
         if(st.done){
+          poserTrio(card, a, ei);            /* « essaie la version assistée », si c'est le moment */
           /* plus rien à faire après ? inutile de lancer un repos */
           const resteDuTravail = a.entries.some(e2=>e2.sets.some(s2=>!s2.done && !s2.warm));
           if(!resteDuTravail) setTimeout(proposerFin, 1500);   /* le temps de replier la carte */
@@ -32641,6 +32760,7 @@ function renderActive(app){
       };
       /* ajouter une ligne à charge réduite : bouton ↓ ou menu d'appui long */
       const ajouterDrop = ()=>{
+        if(trioDe(ex) && modeTrio(en) === "normal") return;   /* au poids du corps, rien a alleger */
         const dernier = (st.drops && st.drops.length)? st.drops[st.drops.length-1] : st;
         if(!st.drops) st.drops = [];
         st.drops.push({w: chargeExistante(en.exId, Math.max(0, (dernier.w||0)-incBas(en.exId, dernier.w))), r: ""});
@@ -32734,6 +32854,7 @@ function renderActive(app){
       const ok = document.getElementById("pq-ok");
       if(ok) ok.onclick = closeSheet;
     });
+    poserTrio(card, a, ei);
     const hx = card.querySelector("[data-hist-ex]");
     if(hx) hx.onclick = (e)=>{ e.stopPropagation(); openHistoExo(parseInt(hx.dataset.histEx)); };
     /* l'objectif prend de la place : on peut le replier pour cet exercice, le temps

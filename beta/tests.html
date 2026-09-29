@@ -740,6 +740,30 @@ async function lancer(){
     eq("Pas de charge de départ au poids du corps", F.chargeDepart(F.libId("Pompes"), "8-12"), "");
     B.profile.sex = "h"; F.eval("profilDepartMemo = null");
   })();
+  grp("Assisté · Normal · Lesté");
+  (()=>{
+    const B = F.eval("db");
+    const tr = F.libId("Tractions"), ta = F.libId("Tractions assistées");
+    B.history = []; B.weights = [{date:new Date().toISOString(), kg:80}];
+    const A = {name:"T", templateId:null, start:Date.now(), entries:[
+      {exId:tr, target:{sets:3, reps:"6-10"}, sets:[{w:0, r:3, done:true, warm:false}, {w:0, r:3, done:false}]}]};
+    eq("Au poids du corps : mode Normal", F.modeTrio(A.entries[0]), "normal");
+    eq("Moins de 5 tractions : l'app propose Assisté", F.conseilTrio(A.entries[0]), "assiste");
+    B.active = A;
+    F.basculerTrio(A, 0, "assiste");
+    eq("La série faite garde sa version, la suite passe en assisté",
+      A.entries.map(e=>F.getEx(e.exId).name).join(" / "), "Tractions / Tractions assistées");
+    vrai("…la première reste repliée, avec sa série faite", A.entries[0].replie && A.entries[0].sets.every(s=>s.done));
+    eq("…la suite repart au milieu de la fourchette", A.entries[1].sets[0].r, 8);
+    vrai("…avec une aide en kilos", A.entries[1].sets[0].w > 0);
+    F.basculerTrio(A, 1, "leste");
+    eq("Sans série faite, on change d'exercice sur place", A.entries.length + " " + F.getEx(A.entries[1].exId).name, "2 Tractions");
+    eq("…et Lesté montre la colonne des kilos", F.modeTrio(A.entries[1]), "leste");
+    F.basculerTrio(A, 1, "normal");
+    eq("Normal : même exercice, sans lest", F.modeTrio(A.entries[1]) + " " + A.entries[1].sets[0].w, "normal 0");
+    eq("Un autre exercice n'a pas de sélecteur", F.trioDe(F.getEx(F.libId("Squat"))), null);
+    B.active = null;
+  })();
   neuf();
 
   /* ---------------------------------------------------------- cardio */
