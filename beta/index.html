@@ -316,6 +316,15 @@
   @keyframes tabRebond{35%{transform:translateY(-4px) scale(1.12);} 70%{transform:translateY(1px) scale(.97);}}
   @media (prefers-reduced-motion:reduce){ .ch-trait{animation:none; stroke-dashoffset:0;} .ch-aire, .ch-pt, .ch-bulle, .tab.rebond .tab-ic,
     .hx-barre-svg .d rect, .hx-barre-svg .e text, .pv-entre{animation:none;} }
+  .pv-peu{margin-top:10px; padding:12px; border-radius:14px; background:rgba(255,255,255,.7); text-align:center;}
+  :root[data-theme="dark"] .pv-peu{background:rgba(255,255,255,.06);}
+  .pv-peu b{display:block; font-size:14px; font-weight:900; color:var(--ink);}
+  .pv-peu > span{display:block; font-size:12.5px; color:var(--ink-soft); margin:3px 0 10px; line-height:1.45;}
+  .pv-peu-b{display:flex; gap:8px; justify-content:center; flex-wrap:wrap;}
+  .pv-peu-lien{margin-top:10px; border:0; background:none; font:inherit; font-size:12.5px; font-weight:800; color:var(--accent);}
+  .pv-plus-t{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .pv-garder{padding:5px 11px; border-radius:99px; border:0; background:rgba(245,130,32,.12); color:var(--accent);
+    font:inherit; font-size:11.5px; font-weight:800; letter-spacing:0; text-transform:none;}
   .pv-plus-t{margin:12px 0 6px; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
   .pv-ex.pv-plus{box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.35);}
   .pv-ex.pv-plus .num{color:var(--accent); font-weight:900;}
@@ -5790,6 +5799,14 @@ const TRAD = {en:{
   "{} sauts":"{} jumps",
   "niveau {}":"level {}",
   "Une autre sortie cardio":"Another cardio session",
+  "Ta séance n'a qu'un exercice.":"Your workout has only one exercise.",
+  "Ta séance n'a que deux exercices.":"Your workout has only two exercises.",
+  "Tonnup peut la compléter pour les mêmes muscles, ou tu ajoutes les tiens.":"Tonnup can fill it out for the same muscles, or you add your own.",
+  "Compléter pour moi":"Fill it out for me",
+  "Garder dans ma séance":"Keep in my workout",
+  "{n} exercices gardés dans ta séance ✓":"{n} exercises kept in your workout ✓",
+  "Exercice gardé dans ta séance ✓":"Exercise kept in your workout ✓",
+  "Ou prendre une séance toute faite, adaptée à ton objectif":"Or pick a ready-made workout matched to your goal",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9722,6 +9739,14 @@ es:{
   "{} sauts":"{} saltos",
   "niveau {}":"nivel {}",
   "Une autre sortie cardio":"Otra sesión de cardio",
+  "Ta séance n'a qu'un exercice.":"Tu sesión tiene un solo ejercicio.",
+  "Ta séance n'a que deux exercices.":"Tu sesión tiene solo dos ejercicios.",
+  "Tonnup peut la compléter pour les mêmes muscles, ou tu ajoutes les tiens.":"Tonnup puede completarla para los mismos músculos, o añades los tuyos.",
+  "Compléter pour moi":"Complétala por mí",
+  "Garder dans ma séance":"Guardar en mi sesión",
+  "{n} exercices gardés dans ta séance ✓":"{n} ejercicios guardados en tu sesión ✓",
+  "Exercice gardé dans ta séance ✓":"Ejercicio guardado en tu sesión ✓",
+  "Ou prendre une séance toute faite, adaptée à ton objectif":"O elige una sesión ya hecha, adaptada a tu objetivo",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13868,6 +13893,14 @@ pt:{
   "{} sauts":"{} saltos",
   "niveau {}":"nível {}",
   "Une autre sortie cardio":"Outra sessão de cardio",
+  "Ta séance n'a qu'un exercice.":"Seu treino tem só um exercício.",
+  "Ta séance n'a que deux exercices.":"Seu treino tem só dois exercícios.",
+  "Tonnup peut la compléter pour les mêmes muscles, ou tu ajoutes les tiens.":"O Tonnup pode completá-lo para os mesmos músculos, ou você adiciona os seus.",
+  "Compléter pour moi":"Complete para mim",
+  "Garder dans ma séance":"Manter no meu treino",
+  "{n} exercices gardés dans ta séance ✓":"{n} exercícios mantidos no seu treino ✓",
+  "Exercice gardé dans ta séance ✓":"Exercício mantido no seu treino ✓",
+  "Ou prendre une séance toute faite, adaptée à ton objectif":"Ou escolha um treino pronto, adaptado ao seu objetivo",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20622,7 +20655,12 @@ function seancesDunAutreProgramme(goal){
 function ajouterProgramme(goal, msg){
   const vieilles = seancesDunAutreProgramme(goal);
   const fini = (remplace)=>{
-    addCoachProgram(goal); closeSheet(); render();
+    const avant = new Set(db.templates.map(t=>t.id));
+    addCoachProgram(goal);
+    /* le carrousel glisse jusqu'a la premiere seance du programme ajoute */
+    const neuve = db.templates.find(t=>!avant.has(t.id));
+    if(neuve) carrouselCible = `[data-open="${neuve.id}"]`;
+    closeSheet(); render();
     toast(remplace ? TR("Ancien programme remplacé ✓") : msg);
   };
   if(!vieilles.length) return fini(false);
@@ -21577,7 +21615,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 01h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 01h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31356,10 +31394,12 @@ function apercuProposition(type, evites, dejaFaite){
     <div class="stack" style="gap:7px; margin-bottom:14px;">
       ${prop.items.map(it=>{
         const bless = injuryNote(it.nom);
+        const exP = LIB.find(e=>e.name === it.nom);
         return `<div class="card" style="padding:11px 13px;">
           <div class="row" style="justify-content:space-between; gap:10px; align-items:center;">
-            <div style="min-width:0;">
-              <div style="font-weight:800; font-size:14.5px;">${esc(it.nom)}</div>
+            ${exP ? `<span class="ouvre-fiche" data-ppfiche="${exP.id}">${exIcon(exP)}</span>` : ""}
+            <div style="min-width:0; flex:1;">
+              <div style="font-weight:800; font-size:14.5px;">${esc(TR(it.nom))}</div>
               <div style="font-size:12px; color:var(--ink-mute);">${it.sets} × ${esc(it.reps)} · repos ${it.rest} s</div>
             </div>
             <button class="btn btn-sm" data-ppswap="${prop.items.indexOf(it)}" style="flex:0 0 auto;" aria-label="${TR("Autre exercice")}">↻</button>
@@ -31397,10 +31437,15 @@ function apercuProposition(type, evites, dejaFaite){
     vibrer(8);
     apercuProposition(type, evites, prop);
   });
+  /* l'image d'un exercice propose : un appui ouvre sa fiche, et la croix revient ici */
+  document.querySelectorAll("[data-ppfiche]").forEach(b=>b.onclick = ()=>
+    toucherPuis(b, ()=>ouvrirParDessus(()=>apercuProposition(type, evites, prop), ()=>openExoInfo(b.dataset.ppfiche))));
   document.getElementById("pp-again").onclick = ()=>apercuProposition(type, dejaVus);
   document.getElementById("pp-back").onclick = openPropose;
   document.getElementById("pp-add").onclick = ()=>{
-    enregistrerProposition(prop); closeSheet(); render(); toast(TR("Séance ajoutée ✓"));
+    const tpl = enregistrerProposition(prop);
+    carrouselCible = `[data-open="${tpl.id}"]`;          /* le carrousel va la montrer (Nico) */
+    closeSheet(); render(); toast(TR("Séance ajoutée ✓"));
   };
   document.getElementById("pp-go").onclick = ()=>{
     /* le lieu vient d'être choisi juste au-dessus : inutile de reposer la question */
@@ -31770,7 +31815,7 @@ function exercicesEnPlus(items, minutes, extra, mat){
     const nom = nomCanon(getEx(it.exId));
     /* les muscles PRINCIPAUX de la seance : un muscle qui ne fait qu'aider (les lombaires
        d'un rowing) avait une part faible et prenait tous les ajouts */
-    (MUSCLE_WORK[nom] || []).filter(([m, n])=>n === 3).forEach(([m])=>{ const g = groupeDe(m); if(g) groupes.add(g); });
+    (MUSCLE_WORK[nom] || []).filter(([m, n])=>n >= (items.length < 3 ? 2 : 3)).forEach(([m])=>{ const g = groupeDe(m); if(g) groupes.add(g); });
   });
   const salle = !mat;
   for(let tour = 0; tour < 6; tour++){
@@ -31780,7 +31825,9 @@ function exercicesEnPlus(items, minutes, extra, mat){
        une seule fois (ils n'ont presque aucune part dans une seance Push : sans cette
        limite, ils prenaient tous les ajouts) ; deux ajouts au plus par muscle */
     const deja = g=>ajout.filter(x=>x.pour === g).length;
-    const ordre = [...groupes].filter(g=>g !== "Abdos" && deja(g) < 2).sort((a, b)=>(part[a] || 0) - (part[b] || 0));
+    /* une seance a un ou deux exercices a besoin de plus d'appui : trois ajouts par muscle */
+    const parMuscle = items.length < 3 ? 3 : 2;
+    const ordre = [...groupes].filter(g=>g !== "Abdos" && deja(g) < parMuscle).sort((a, b)=>(part[a] || 0) - (part[b] || 0));
     if(deja("Abdos") < 1) ordre.push("Abdos");
     let choisi = null;
     for(const g of ordre){
@@ -32049,6 +32096,13 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
         jaugeMax > JAUGE_MAX ? `<span data-m="${jaugeMax}" style="--p:1"><i></i>${TR("Tout")}</span>` : ""}</div>
       ${/* l'astuce n'existe que si l'on a bouge le curseur (Nico) : la seance telle quelle
            n'a rien a expliquer. Elle se deplie au premier mouvement. */""}
+      ${t.items.length <= 2 && !enPlus.length ? `<div class="pv-peu">
+        <b>${TR(t.items.length === 1 ? "Ta séance n'a qu'un exercice." : "Ta séance n'a que deux exercices.")}</b>
+        <span>${TR("Tonnup peut la compléter pour les mêmes muscles, ou tu ajoutes les tiens.")}</span>
+        <div class="pv-peu-b"><button type="button" class="btn btn-accent btn-sm" id="pv-completer">${TR("Compléter pour moi")}</button>
+          <button type="button" class="btn btn-sm" id="pv-peu-add">＋ ${TR("Ajouter un exercice")}</button></div>
+        <button type="button" class="pv-peu-lien" id="pv-peu-prop">${TR("Ou prendre une séance toute faite, adaptée à ton objectif")} ›</button>
+      </div>` : ""}
       <div class="astuce ${tempsDispo === null ? "cache" : ""}" id="pv-astuce-b"><span class="ic">${IC_AMPOULE}</span><span id="pv-astuce">${astuceTemps(tempsDispo, plein)}</span></div>
     </div>`; })() : ""}
     <div class="pn-tuiles" style="margin-top:14px;">
@@ -32093,7 +32147,8 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
           <button class="sup" data-pvdel="${i}" title="${TR("Retirer")}" aria-label="${TR("Retirer")}">✕</button>
         </span></div>`;
     }).join("")}</div>
-    ${enPlus.length ? `<div class="pv-plus-t">${TR("En plus aujourd'hui")}</div>${enPlus.map(it=>{ const ex = getEx(it.exId);
+    ${enPlus.length ? `<div class="pv-plus-t"><span>${TR("En plus aujourd'hui")}</span>
+        <button type="button" class="pv-garder" id="pv-garder">${TR("Garder dans ma séance")}</button></div>${enPlus.map(it=>{ const ex = getEx(it.exId);
       return `<div class="pv-ex pv-plus" data-key="plus-${it.exId}"><span class="num">＋</span><span class="ouvre-fiche" data-exinfo="${it.exId}">${exIcon(ex)}</span>
         <div class="grow" style="min-width:0;">
           <div class="nm ouvre-fiche" data-exinfo="${it.exId}">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
@@ -32128,6 +32183,21 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
     toucherPuis(b, ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>openExoInfo(b.dataset.exinfo)));
   });
   if(apercuAvant){ const av = apercuAvant; apercuAvant = null; animerApercu(av); }
+  /* seance trop courte : on la complete (45 min, ou 20 de plus qu'elle) — les ajouts
+     apparaissent dans « En plus aujourd'hui », qu'on peut garder dans la seance */
+  const bComp = document.getElementById("pv-completer");
+  if(bComp) bComp.onclick = ()=>{ tempsDispo = Math.min(JAUGE_MAX, Math.max(45, Math.ceil((plein + 20) / 5) * 5)); vibrer(8); apercuAvant = photoApercu(); openPreview(tplId, true); };
+  const bPeuProp = document.getElementById("pv-peu-prop");
+  if(bPeuProp) bPeuProp.onclick = ()=>{ closeSheet(); setTimeout(openPropose, 280); };
+  const bPeuAdd = document.getElementById("pv-peu-add");
+  if(bPeuAdd) bPeuAdd.onclick = ()=>document.getElementById("pv-add").click();
+  const bGarder = document.getElementById("pv-garder");
+  if(bGarder) bGarder.onclick = ()=>{
+    enPlus.forEach(it=>t.items.push({exId: it.exId, sets: it.sets, reps: it.reps, rest: it.rest}));
+    tempsDispo = null; t.retouche = Date.now(); save(); render(); vibrer(10);
+    toast(TR(enPlus.length > 1 ? "{n} exercices gardés dans ta séance ✓" : "Exercice gardé dans ta séance ✓").replace("{n}", enPlus.length));
+    openPreview(tplId, true);
+  };
   /* une pastille de muscle : les exercices de la seance qui le travaillent (Nico) */
   document.querySelectorAll("[data-mg]").forEach(b=>b.onclick = ()=>{
     vibrer(6);
@@ -35979,6 +36049,7 @@ function openTplEditor(id){
         <div class="tp-l">
           <span class="poig" data-poignee aria-label="${TR("Déplacer cet exercice")}">⠿</span>
           <span class="tp-num">${i+1}</span>
+          <span class="ouvre-fiche" data-tpfiche="${it.exId}">${exIcon(ex, true)}</span>
           <b class="grow">${esc(nomEx(ex))}</b>
           <button class="tp-rm" data-rm aria-label="${TR("Retirer cet exercice")}">${IC_CROIX}</button>
         </div>
@@ -35988,6 +36059,11 @@ function openTplEditor(id){
           <label><span class="label">${TR("Repos (sec)")}</span><span class="tp-champ"><input type="number" inputmode="numeric" min="0" step="15" value="${it.rest}" data-f="rest">${crans("rest")}</span></label>
         </div>`;
       d.querySelector("[data-rm]").onclick=()=>{ tpl.items.splice(i,1); tpl.name=document.getElementById("tp-name").value; draw(); };
+      d.querySelector("[data-tpfiche]").onclick = e=>{
+        e.stopPropagation(); const el = e.currentTarget;
+        tpl.name = document.getElementById("tp-name").value;
+        toucherPuis(el, ()=>ouvrirParDessus(()=>draw(), ()=>openExoInfo(it.exId)));
+      };
       d.querySelectorAll("[data-f]").forEach(inp=>inp.oninput=()=>{
         const f = inp.dataset.f;
         it[f] = f==="reps"? inp.value : (parseInt(inp.value)||0);
