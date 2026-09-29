@@ -235,6 +235,20 @@
   .pv-muscles .pm{flex:0 0 auto; display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:99px;
     background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); font-size:13px; font-weight:700; color:var(--ink-soft); white-space:nowrap;}
   .pv-muscles .pm b{color:var(--accent); font-weight:900;}
+  .pv-muscles .pm{border:0; font:inherit; font-size:13px; font-weight:700; cursor:pointer;}
+  .pv-muscles .pm:active{transform:scale(.96);}
+  /* la fenetre d'un muscle */
+  .ms-liste{display:grid; gap:8px; margin-top:12px;}
+  .ms-l{display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border-radius:14px; border:0; text-align:left;
+    background:var(--surface); box-shadow:var(--ombre-carte); font:inherit; color:var(--ink);}
+  .ms-l .grow{flex:1; min-width:0;}
+  .ms-l b{display:block; font-size:14.5px; font-weight:800;}
+  .ms-l small{display:block; font-size:12px; color:var(--ink-mute); margin-top:2px;}
+  .ms-l .pc{font-size:15px; font-weight:900; color:var(--accent);}
+  .ms-l .fl svg{width:16px; height:16px; color:var(--ink-mute);}
+  /* « Dans la séance », dans la liste des exercices */
+  .pk-dans{display:inline-block; vertical-align:2px; margin-left:4px; padding:2px 8px; border-radius:99px; background:var(--accent); color:#fff;
+    font-size:10.5px; font-weight:800; letter-spacing:.02em;}
   /* la jauge du temps disponible, d'apres la maquette de Nico (30 sept.) */
   .pv-temps{position:relative; margin-top:14px; padding:16px 14px 14px; border-radius:20px;
     background:linear-gradient(135deg, #FFF3E6 0%, #FFF8F1 60%, #FFFFFF 100%); box-shadow:0 2px 10px rgba(245,130,32,.10);}
@@ -5721,6 +5735,13 @@ const TRAD = {en:{
   "Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.":"Less time: we keep what works best. More time: extra exercises for the muscles of your workout.",
   "En plus aujourd'hui":"Extra today",
   "On garde les exercices les plus efficaces.":"We keep the most effective exercises.",
+  "Adapte ta séance au temps que tu as.":"Fit your workout to the time you have.",
+  "Glisse vers la gauche pour raccourcir, vers la droite pour ajouter des exercices.":"Slide left to shorten, right to add exercises.",
+  "Moins de temps : on garde les exercices et les séries les plus efficaces.":"Less time: we keep the most effective exercises and sets.",
+  "Plus de temps : des exercices en plus pour les muscles de ta séance.":"More time: extra exercises for the muscles of your workout.",
+  "{p} % du travail de ta séance. Voici les exercices qui le font.":"{p}% of your workout's work. Here are the exercises doing it.",
+  "Dans la séance":"In the workout",
+  "sollicitation":"effort",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9636,6 +9657,13 @@ es:{
   "Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.":"Menos tiempo: se mantiene lo más eficaz. Más tiempo: ejercicios extra para los músculos de tu sesión.",
   "En plus aujourd'hui":"Extra hoy",
   "On garde les exercices les plus efficaces.":"Se mantienen los ejercicios más eficaces.",
+  "Adapte ta séance au temps que tu as.":"Adapta tu sesión al tiempo que tienes.",
+  "Glisse vers la gauche pour raccourcir, vers la droite pour ajouter des exercices.":"Desliza a la izquierda para acortar, a la derecha para añadir ejercicios.",
+  "Moins de temps : on garde les exercices et les séries les plus efficaces.":"Menos tiempo: se mantienen los ejercicios y series más eficaces.",
+  "Plus de temps : des exercices en plus pour les muscles de ta séance.":"Más tiempo: ejercicios extra para los músculos de tu sesión.",
+  "{p} % du travail de ta séance. Voici les exercices qui le font.":"{p} % del trabajo de tu sesión. Estos son los ejercicios que lo hacen.",
+  "Dans la séance":"En la sesión",
+  "sollicitation":"solicitación",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13765,6 +13793,13 @@ pt:{
   "Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.":"Menos tempo: mantemos o mais eficaz. Mais tempo: exercícios a mais para os músculos do seu treino.",
   "En plus aujourd'hui":"A mais hoje",
   "On garde les exercices les plus efficaces.":"Mantemos os exercícios mais eficazes.",
+  "Adapte ta séance au temps que tu as.":"Adapte seu treino ao tempo que você tem.",
+  "Glisse vers la gauche pour raccourcir, vers la droite pour ajouter des exercices.":"Deslize para a esquerda para encurtar, para a direita para adicionar exercícios.",
+  "Moins de temps : on garde les exercices et les séries les plus efficaces.":"Menos tempo: mantemos os exercícios e séries mais eficazes.",
+  "Plus de temps : des exercices en plus pour les muscles de ta séance.":"Mais tempo: exercícios a mais para os músculos do seu treino.",
+  "{p} % du travail de ta séance. Voici les exercices qui le font.":"{p}% do trabalho do seu treino. Estes são os exercícios que o fazem.",
+  "Dans la séance":"No treino",
+  "sollicitation":"solicitação",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21474,7 +21509,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31672,6 +31707,13 @@ function exercicesEnPlus(items, minutes, extra, mat){
   }
   return ajout;
 }
+/* l'astuce sous la jauge ne dit que ce qui se passe (Nico) : moins de temps que la
+   seance, plus, ou la seance telle quelle */
+function astuceTemps(v, plein){
+  if(v === null || v === undefined) return TR("Glisse vers la gauche pour raccourcir, vers la droite pour ajouter des exercices.");
+  return v < plein ? TR("Moins de temps : on garde les exercices et les séries les plus efficaces.")
+                   : TR("Plus de temps : des exercices en plus pour les muscles de ta séance.");
+}
 function fmtMinutes(m){ return m < 60 ? m + " min" : (m % 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") : m / 60 + " h"); }
 /* Les exercices que garde la seance courte. Apres un deplacement, on retient lesquels
    elle gardait : sinon deux exercices a egalite se departageraient sur leur nouvelle
@@ -31703,6 +31745,25 @@ function repartitionMuscles(items){
   if(!somme) return [];
   return Object.keys(tot).map(g=>({g, p: Math.round(tot[g] / somme * 100)}))
     .filter(x=>x.p >= 1).sort((a, b)=>b.p - a.p);
+}
+/* La petite fenetre d'un muscle : chaque exercice de la seance qui le travaille, avec sa
+   part dans le travail de CE muscle et sa sollicitation. Un appui ouvre la fiche. */
+function openMuscleSeance(g, pct, items){
+  const lignes = items.map(it=>{
+    const nom = nomCanon(getEx(it.exId));
+    const n = (MUSCLE_WORK[nom] || []).filter(([m])=>(groupeDe(m) || m.replace(/\s*\(.*\)$/, "")) === g)
+      .reduce((a, [m, k])=>Math.max(a, k), 0);
+    return {it, n, part: n * (Number(it.sets) || 1)};
+  }).filter(x=>x.n > 0).sort((a, b)=>b.part - a.part);
+  const tot = lignes.reduce((a, x)=>a + x.part, 0) || 1;
+  openSheet(`<div class="ca-titre"><h3>${esc(TR(g))}</h3>
+      <p>${TR("{p} % du travail de ta séance. Voici les exercices qui le font.").replace("{p}", pct)}</p></div>
+    <div class="ms-liste">${lignes.map(x=>{ const ex = getEx(x.it.exId);
+      return `<button type="button" class="ms-l" data-msx="${x.it.exId}">${exIcon(ex)}
+        <span class="grow"><b>${esc(nomEx(ex))}</b><small>${x.it.sets} ${TR(x.it.sets > 1 ? "séries" : "série")} · ${TR("sollicitation")} ${TR(NIVEAU_TEXTE[x.n])}</small></span>
+        <span class="pc">${Math.round(x.part / tot * 100)} %</span><span class="fl">${IC_CHEVRON}</span></button>`; }).join("")}</div>`);
+  document.querySelectorAll("[data-msx]").forEach(b=>b.onclick = ()=>
+    ouvrirParDessus(()=>openMuscleSeance(g, pct, items), ()=>openExoInfo(b.dataset.msx)));
 }
 function openPreview(tplId, lieuFait){
   const t = db.templates.find(x=>x.id===tplId);
@@ -31797,7 +31858,7 @@ function openPreview(tplId, lieuFait){
       return `<div class="pv-temps" style="--pct:${pos(v0)}%">
       <div class="tete">
         <span class="rond">${IC_CHRONO}</span>
-        <div class="tx"><b>${TR("Temps disponible")}</b><span>${TR("On garde les exercices les plus efficaces.")}</span></div>
+        <div class="tx"><b>${TR("Temps disponible")}</b><span>${TR("Adapte ta séance au temps que tu as.")}</span></div>
         <div class="droite">
           <span class="val ${tempsDispo === null ? "long" : ""}" id="pv-temps-v">${tempsDispo === null ? TR("Séance complète") : fmtMinutes(tempsDispo)}</span>
           <span class="eff" id="pv-eff">${
@@ -31811,7 +31872,7 @@ function openPreview(tplId, lieuFait){
       </div>
       <div class="grad">${crans.map(m=>`<span data-m="${m}" style="--p:${pos(m) / 100}"><i></i>${fmtMinutes(m)}</span>`).join("")}${
         jaugeMax > JAUGE_MAX ? `<span data-m="${jaugeMax}" style="--p:1"><i></i>${TR("Tout")}</span>` : ""}</div>
-      <div class="astuce"><span class="ic">${IC_AMPOULE}</span><span>${TR("Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.")}</span></div>
+      <div class="astuce"><span class="ic">${IC_AMPOULE}</span><span id="pv-astuce">${astuceTemps(tempsDispo, plein)}</span></div>
     </div>`; })() : ""}
     <div class="pn-tuiles" style="margin-top:14px;">
       ${tuile(ICONS.seance, itemsTout.length, TR(itemsTout.length>1? "exercices":"exercice"))}
@@ -31820,7 +31881,7 @@ function openPreview(tplId, lieuFait){
     </div>
     ${(()=>{ const rep = repartitionMuscles(itemsTout);
       return rep.length ? `<div class="pv-muscles" aria-label="${TR("Muscles ciblés")}">${rep.map(x=>
-        `<span class="pm"><b>${x.p} %</b>${esc(TR(x.g))}</span>`).join("")}</div>` : ""; })()}
+        `<button type="button" class="pm" data-mg="${esc(x.g)}" data-mp="${x.p}"><b>${x.p} %</b>${esc(TR(x.g))}</button>`).join("")}</div>` : ""; })()}
     <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
       seanceCourte && ecartes.length
         ? TR("Mis de côté aujourd'hui : {}").replace("{}", ecartes.map(it=>esc(getEx(it.exId).name)).join(", "))
@@ -31894,6 +31955,11 @@ function openPreview(tplId, lieuFait){
     e.stopPropagation();
     ouvrirParDessus(()=>openPreview(tplId, true), ()=>openExoInfo(b.dataset.exinfo));
   });
+  /* une pastille de muscle : les exercices de la seance qui le travaillent (Nico) */
+  document.querySelectorAll("[data-mg]").forEach(b=>b.onclick = ()=>{
+    vibrer(6);
+    ouvrirParDessus(()=>openPreview(tplId, true), ()=>openMuscleSeance(b.dataset.mg, Number(b.dataset.mp), itemsTout));
+  });
   /* la jauge : l'etiquette suit le doigt, la seance se recompose au lacher */
   const jauge = document.getElementById("pv-temps");
   if(jauge){
@@ -31912,6 +31978,7 @@ function openPreview(tplId, lieuFait){
     jauge.oninput = ()=>{
       const v = val();
       allumer();
+      const as = document.getElementById("pv-astuce"); if(as) as.textContent = astuceTemps(v, plein);
       const lv = document.getElementById("pv-temps-v");
       lv.textContent = v === null ? TR("Séance complète") : fmtMinutes(v);
       lv.classList.toggle("long", v === null);
@@ -31950,7 +32017,7 @@ function openPreview(tplId, lieuFait){
      le mouvement, pas la consigne. */
   document.querySelectorAll("[data-pvswap]").forEach(b=>b.onclick=()=>{
     const i = Number(b.dataset.pvswap);
-    ouvrirParDessus(()=>openPreview(tplId, true), ()=>openPicker(exId=>{
+    ouvrirParDessus(()=>openPreview(tplId, true), ()=>pickerSeance(t.items.map(x=>x.exId), exId=>{
       t.items[i].exId = exId;
       t.retouche = Date.now();       /* sinon le retour sur l'aperçu refait la séance */
       save(); render();
@@ -31975,7 +32042,7 @@ function openPreview(tplId, lieuFait){
      3 series, 8 a 12 reps et le repos habituel ; les abdos, 12 a 15 reps et 60 s —
      un reglage de depart que l'on corrige ensuite, pas une prescription. Sur une seance
      adaptative, l'ajout tient pour la journee, comme un exercice remplace ou retire. */
-  document.getElementById("pv-add").onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>openPicker(exId=>{
+  document.getElementById("pv-add").onclick = ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>pickerSeance(t.items.map(x=>x.exId), exId=>{
     const abdos = muscleCanon(getEx(exId)) === "Abdos";
     t.items.push({exId, sets:3, reps: abdos ? "12-15" : "8-12", rest: abdos ? 60 : (db.settings.rest || 90)});
     t.retouche = Date.now();
@@ -33469,7 +33536,7 @@ function renderActive(app){
 
   majSerieActive();                            /* état correct dès le premier affichage */
   requestAnimationFrame(majSerieActive);       /* affiné une fois la mise en page mesurée */
-  const ajouterExo = ()=>openPicker(exId=>{
+  const ajouterExo = ()=>pickerSeance(a.entries.map(e=>e.exId), exId=>{
     const last = lastPerf(exId);
     const ls = last? last.sets[0] : null;
     const cible = cibleParDefaut(exId);
@@ -34080,7 +34147,7 @@ function openSwap(ei, fromInjury){
     toast(TR("Remplacé par {}").replace("{}", getEx(newId).name));
   };
   document.querySelectorAll("[data-swap]").forEach(r=>r.onclick=()=>remplacerPar(r.dataset.swap));
-  document.getElementById("sw-autre").onclick = ()=>openPicker(newId=>{ if(newId !== en.exId) remplacerPar(newId); });
+  document.getElementById("sw-autre").onclick = ()=>pickerSeance((db.active ? db.active.entries : []).map(e=>e.exId), newId=>{ if(newId !== en.exId) remplacerPar(newId); });
 }
 
 /* ================= EXERCISE PICKER ================= */
@@ -34103,8 +34170,14 @@ function pkDansFamille(e, f){
    bibliothèque au même endroit vaut mieux que tout retaper. */
 let pkFam = "tous", pkMat = "";
 /* `variante` : on choisit l'exercice de BASE d'une variante — pas de boutons de creation. */
+/* Choisir un exercice pour une seance : la liste signale ceux qui y sont deja, d'une
+   pastille orange (Nico). Le contexte suit le rappel : rouvrir la liste avec le meme
+   rappel (retour d'une fiche) le garde, une autre liste ne le voit pas. */
+let pickerContexte = null;
+function pickerSeance(ids, cb){ pickerContexte = {cb, ids: new Set(ids)}; openPicker(cb); }
 function openPicker(cb, variante){
   const browse = !cb;
+  const dansSeance = (cb && pickerContexte && pickerContexte.cb === cb) ? pickerContexte.ids : null;
   const mats = [...new Set(allEx().map(e=>equipCanon(e)).filter(Boolean))].sort();
   if(pkMat && mats.indexOf(pkMat) < 0) pkMat = "";
   const voirMuscles = db.settings.pkMuscles !== false;
@@ -34157,7 +34230,8 @@ function openPicker(cb, variante){
     listEl.innerHTML = ordre.map(m=>
       `<div class="pk-h">${esc(TR(m))}</div>`+groups[m].map(e=>
         `<div class="pk-row${exoDispo(e)?"":" absent"}" data-pk="${e.id}"><div class="th">${exIcon(e, true)}</div>
-          <div class="grow" style="min-width:0;"><div class="nm">${esc(nomEx(e))}</div>
+          <div class="grow" style="min-width:0;"><div class="nm">${esc(nomEx(e))}${
+            dansSeance && dansSeance.has(e.id) ? ` <span class="pk-dans">${TR("Dans la séance")}</span>` : ""}</div>
             <div class="eq">${(esc(eqEx(e.equip)) || "—")}${e.custom?" · "+TR("perso"):""}${exoDispo(e)?"":" · "+esc(manqueTexte(e))}</div>${
               db.settings.pkMuscles !== false ? musclesHtml(nomCanon(e),3) : ""}</div>
           <button class="icon-btn info-btn" data-exinfo="${e.id}" title="${TR("Fiche de l'exercice")}">ⓘ</button>
@@ -35696,7 +35770,7 @@ function openTplEditor(id){
     }, "tp-ex");
     document.getElementById("tp-add").onclick=()=>{
       tpl.name = document.getElementById("tp-name").value;
-      openPicker(exId=>{ tpl.items.push({exId, sets:4, reps:"8-12", rest:db.settings.rest}); draw(); });
+      pickerSeance(tpl.items.map(x=>x.exId), exId=>{ tpl.items.push({exId, sets:4, reps:"8-12", rest:db.settings.rest}); draw(); });
     };
     const cAdd = document.getElementById("tp-cardio-add");
     if(cAdd) cAdd.onclick = ()=>{ tpl.name = document.getElementById("tp-name").value; tpl.cardio = {machine:"course", min:30, km:0, pente:0}; draw(); };
