@@ -644,6 +644,11 @@ async function lancer(){
   vrai("Courir coûte plus que marcher", course > marche);
   vrai("Mixte se situe entre les deux", mixte > marche && mixte < course);
   eq("Calories de la montre : prioritaires", Math.round(F.sortieKcal({...base, type:"course", kcalM:410}, 74)), 410);
+  /* la montre sur une seance de muscu : ses calories remplacent l'estimation, sauf avec du cardio (compte a part) */
+  eq("Muscu : les calories de la montre remplacent l'estimation", F.liftKcal({entries:[], montre:{kcal:287}}), 287);
+  eq("…pas quand la séance contient du cardio", F.liftKcal({entries:[], montre:{kcal:287}, cardio:{machine:"course", min:10}}), 0);
+  eq("La ligne de la montre", F.ligneMontre({fcMoy:118, fcMax:161, kcal:287}), "118 bpm moyens · max 161 · 287 kcal");
+  eq("…vide sans mesure", F.ligneMontre({}), "");
   vrai("FC prise en compte à défaut de montre",
        F.sortieKcal({...base, type:"marche", hr:160}, 74) > F.sortieKcal({...base, type:"marche", hr:120}, 74));
   pres("Vélo intense 45 min (10 MET, 74 kg)",

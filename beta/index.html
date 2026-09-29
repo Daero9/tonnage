@@ -4772,6 +4772,10 @@
   .ecr{opacity:0; animation:ecrIn .12s ease-out forwards;}
   @keyframes ecrIn{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
   .wv.ecr{display:inline-block; animation:ecrIn .25s ease-out forwards;}   /* la main, juste apres la derniere lettre */
+  /* la montre dans le recap de fin et l'historique */
+  .fin-montre{display:flex; align-items:center; justify-content:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin:-6px 0 14px;}
+  .fin-montre .ic{color:#3b82f6; display:inline-flex;} .fin-montre .ic svg{width:17px; height:17px;}
+  .hd-vide{font-size:13px; color:var(--ink-soft); text-align:center; padding:6px 0;}
   /* ---- mes amis ---- */
   /* la montre */
   .mt-aide{margin-top:14px; padding:12px 14px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
@@ -5159,6 +5163,16 @@ const TRAD = {en:{
   "Course sur tapis":"Treadmill run",
   "distance":"distance",
   "bpm moyens":"avg bpm",
+  "Une séance de ta montre":"A workout from your watch",
+  "Elle compte pour ta flamme et tes séances, pas pour le tonnage.":"It counts for your flame and workouts, not for tonnage.",
+  "Séance ajoutée ! 🔥":"Workout added! 🔥",
+  "Musculation (montre)":"Strength training (watch)",
+  "{} bpm moyens":"{} bpm average",
+  "max {}":"max {}",
+  "kcal (montre)":"kcal (watch)",
+  "bpm max":"bpm max",
+  "Ta montre":"Your watch",
+  "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
   "à":"at",
   "{a} sur {n}":"{a} of {n}",
@@ -8880,6 +8894,16 @@ es:{
   "Course sur tapis":"Carrera en cinta",
   "distance":"distancia",
   "bpm moyens":"ppm medias",
+  "Une séance de ta montre":"Una sesión de tu reloj",
+  "Elle compte pour ta flamme et tes séances, pas pour le tonnage.":"Cuenta para tu llama y tus sesiones, no para el tonelaje.",
+  "Séance ajoutée ! 🔥":"¡Sesión añadida! 🔥",
+  "Musculation (montre)":"Musculación (reloj)",
+  "{} bpm moyens":"{} ppm de media",
+  "max {}":"máx. {}",
+  "kcal (montre)":"kcal (reloj)",
+  "bpm max":"ppm máx.",
+  "Ta montre":"Tu reloj",
+  "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
   "à":"a las",
   "{a} sur {n}":"{a} de {n}",
@@ -12815,6 +12839,16 @@ pt:{
   "Course sur tapis":"Corrida na esteira",
   "distance":"distância",
   "bpm moyens":"bpm médios",
+  "Une séance de ta montre":"Um treino do seu relógio",
+  "Elle compte pour ta flamme et tes séances, pas pour le tonnage.":"Conta para a sua chama e os seus treinos, não para a tonelagem.",
+  "Séance ajoutée ! 🔥":"Treino adicionado! 🔥",
+  "Musculation (montre)":"Musculação (relógio)",
+  "{} bpm moyens":"{} bpm de média",
+  "max {}":"máx. {}",
+  "kcal (montre)":"kcal (relógio)",
+  "bpm max":"bpm máx.",
+  "Ta montre":"Seu relógio",
+  "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
   "à":"às",
   "{a} sur {n}":"{a} de {n}",
@@ -20385,7 +20419,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 03h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 03h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21208,6 +21242,9 @@ const SEC_PAR_REP = 6;      /* une répétition et sa pause : ~4 s de mouvement,
    ouverte, une longue discussion entre deux séries, et le compteur montait tout seul.
    Le chiffre ne bouge donc qu'au moment où l'on valide une série. */
 function liftKcal(sess){
+  /* mesurees par la montre : elles remplacent l'estimation — sauf si la seance contient
+     une course ou du cardio, dont les calories sont deja comptees a part */
+  if(sess && sess.montre && sess.montre.kcal > 0 && !sess.course && !sess.cardio) return sess.montre.kcal;
   const kg = currentWeight() || (db.profile && db.profile.weight) || 75;
   let kcal = 0;
   ((sess && sess.entries) || []).forEach(en=>{
@@ -22688,7 +22725,8 @@ async function openMontre(){
 /* une activite de la montre deja dans Tonnup (meme heure, a 15 min pres) : on ne la propose pas */
 function dejaDansTonnup(a){
   const pres = x=>Math.abs(new Date(x.date).getTime() - a.debut) < 15 * 60000;
-  return (db.cardio || []).some(c=>c.santeId === a.id || pres(c)) || (db.history || []).some(h=>h.start && Math.abs(h.start - a.debut) < 15 * 60000);
+  return (db.cardio || []).some(c=>c.santeId === a.id || pres(c)) || (db.history || []).some(h=>h.santeId === a.id || (h.start
+    && (Math.abs(h.start - a.debut) < 15 * 60000 || (h.end && h.start < a.fin && h.end > a.debut))));
 }
 let montreEnCours = false;
 async function verifierMontre(force){
@@ -22700,11 +22738,59 @@ async function verifierMontre(force){
     const depuis = Math.max(sa.depuis || 0, Date.now() - 7 * 864e5);
     const r = await pl.activites({depuis});
     const vus = new Set(sa.vus || []);
-    const l = (r.activites || []).filter(a=>a.type !== "muscu" && SANTE_TYPES[a.type] && a.fin - a.debut >= 3 * 60000
+    /* la muscu de la montre : 15 min au moins, sinon c'est un mode lance par erreur */
+    const l = (r.activites || []).filter(a=>(a.type === "muscu" ? a.fin - a.debut >= 15 * 60000 : SANTE_TYPES[a.type] && a.fin - a.debut >= 3 * 60000)
       && !vus.has(a.id) && !dejaDansTonnup(a)).sort((x, y)=>x.debut - y.debut);
+    await enrichirSeances();
     if(l.length) proposerActivite(l, 0);
   }catch(e){}
   montreEnCours = false;
+}
+/* Le cardio et les calories de la montre sur une seance Tonnup (Nico, 29 sept.) : ce que
+   la montre a mesure entre le debut et la fin de la seance, qu'on l'ait mise en mode
+   musculation ou non — le cardio continu suffit, en moins precis. La montre envoie ses
+   mesures a Health Connect quand son appli se synchronise, parfois des heures apres :
+   on relit donc a chaque ouverture tant que la seance a moins d'un jour. */
+async function mesurerSeance(h){
+  const pl = pluginSante();
+  if(!pl || !db.sante || !db.sante.actif || !h || !h.start || !h.end || h.end <= h.start) return null;
+  try{
+    const m = await pl.mesures({debut:h.start, fin:h.end});
+    if(!(m && (m.fcMoy > 0 || m.kcal > 0))) return h.montre || null;
+    const n = {maj:Date.now()};
+    if(m.fcMoy > 0) n.fcMoy = Math.round(m.fcMoy);
+    if(m.fcMax > 0) n.fcMax = Math.round(m.fcMax);
+    if(m.kcal > 0) n.kcal = Math.round(m.kcal);
+    h.montre = n;
+    save();
+    return n;
+  }catch(e){ return h.montre || null; }
+}
+async function enrichirSeances(){
+  const l = (db.history || []).filter(h=>h.start && h.end && !h.santeId && Date.now() - h.end < 864e5
+    && !(h.montre && h.montre.maj - h.end > 864e5));
+  for(const h of l) await mesurerSeance(h);
+}
+/* la ligne « ta montre » : cardio moyen, max, calories */
+function ligneMontre(m){
+  if(!m) return "";
+  const p = [];
+  if(m.fcMoy > 0) p.push(TR("{} bpm moyens").replace("{}", m.fcMoy));
+  if(m.fcMax > 0) p.push(TR("max {}").replace("{}", m.fcMax));
+  if(m.kcal > 0) p.push(m.kcal + " kcal");
+  return p.join(" · ");
+}
+/* Une seance de musculation de la montre sans seance Tonnup : on l'oublie parfois. Ajoutee,
+   elle compte pour la flamme et les seances, pas pour le tonnage — la montre ne sait ni
+   les exercices ni les charges. */
+function ajouterSeanceMontre(a){
+  const n = {maj:Date.now()};
+  if(a.fcMoy > 0) n.fcMoy = Math.round(a.fcMoy);
+  if(a.fcMax > 0) n.fcMax = Math.round(a.fcMax);
+  if(a.kcal > 0) n.kcal = Math.round(a.kcal);
+  db.history.push({id:uid(), date:new Date(a.debut).toISOString(), name:TR("Musculation (montre)"),
+    start:a.debut, end:a.fin, entries:[], montre:n, source:"montre", santeId:a.id});
+  marquerVue(a.id);
 }
 function marquerVue(id){
   db.sante.vus = (db.sante.vus || []).concat([id]).slice(-300);
@@ -22725,7 +22811,7 @@ function ajouterActivite(a){
 }
 function proposerActivite(l, i){
   const a = l[i]; if(!a) return;
-  const t = SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000;
+  const t = a.type === "muscu" ? [null, null, "Musculation"] : SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000;
   const quand = new Date(a.debut);
   const jour = dayKey(quand) === dayKey() ? TR("aujourd'hui") : quand.toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"});
   const tuile = (ic, v, lab)=>`<div><span class="ic">${ic}</span><b>${v}</b><small>${lab}</small></div>`;
@@ -22733,24 +22819,26 @@ function proposerActivite(l, i){
   if(a.km > 0.05) tu.push(tuile(icoM("course", 18), kmTxt(Math.round(a.km * 100) / 100), TR("distance")));
   if(a.kcal > 0) tu.push(tuile(icoM("flamme", 18), Math.round(a.kcal), "kcal"));
   if(a.fcMoy > 0) tu.push(tuile(IC_COEUR, a.fcMoy, TR("bpm moyens")));
+  if(a.fcMax > 0 && tu.length === 3) tu.push(tuile(IC_COEUR, a.fcMax, TR("bpm max")));   /* 4 tuiles plutot qu'une seule orpheline */
   const w = fenetre(`<div class="fe-logo" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">${IC_MONTRE}</div>
-    <h3>${TR("Une activité de ta montre")}</h3>
+    <h3>${TR(a.type === "muscu" ? "Une séance de ta montre" : "Une activité de ta montre")}</h3>
     <p><b>${esc(TR(t[2]))}</b> · ${esc(jour)} ${TR("à")} ${quand.toLocaleTimeString(loc(), {hour:"2-digit", minute:"2-digit"})}</p>
     <div class="mt-tuiles">${tu.join("")}</div>
+    ${a.type === "muscu" ? `<p class="fe-petit">${TR("Elle compte pour ta flamme et tes séances, pas pour le tonnage.")}</p>` : ""}
     ${l.length > 1 ? `<p class="fe-petit">${TR("{a} sur {n}").replace("{a}", i + 1).replace("{n}", l.length)}</p>` : ""}
     <button class="btn btn-accent" id="mt-add" style="width:100%; margin-top:12px;">${TR("Ajouter à Tonnup")}</button>
     ${l.length - i > 1 ? `<button class="btn" id="mt-tout" style="width:100%; margin-top:8px;">${TR("Tout ajouter ({})").replace("{}", l.length - i)}</button>` : ""}
     <button class="am-lien" id="mt-non" style="display:block; margin:8px auto 0;">${TR("Ignorer")}</button>`);
   const suite = ()=>{ w.fermer(); if(l[i + 1]) setTimeout(()=>proposerActivite(l, i + 1), 250); else render(); };
   w.el.querySelector("#mt-add").onclick = ()=>{
-    ajouterActivite(a);
-    vibrer(20); toast(TR("Activité ajoutée ! 🔥"));
+    (a.type === "muscu" ? ajouterSeanceMontre : ajouterActivite)(a);
+    vibrer(20); toast(TR(a.type === "muscu" ? "Séance ajoutée ! 🔥" : "Activité ajoutée ! 🔥"));
     suite();
   };
   const tout = w.el.querySelector("#mt-tout");
   if(tout) tout.onclick = ()=>{
     const reste = l.slice(i);
-    reste.forEach(ajouterActivite);
+    reste.forEach(x=>(x.type === "muscu" ? ajouterSeanceMontre : ajouterActivite)(x));
     vibrer(24); toast(TR("{} activités ajoutées ! 🔥").replace("{}", reste.length));
     w.fermer(); render();
   };
@@ -29496,11 +29584,13 @@ function openHistDetail(id){
   /* d'apres la maquette du 21 septembre : chaque exercice sur sa ligne avec sa vignette,
      puis partager, modifier, supprimer */
   openSheet(`<h3 style="text-align:center;">${esc(h.name)}</h3>
-    <div class="hd-sous">${fmtDate(h.date)} · ${mn} min · ${volPds(vol)}</div>
+    <div class="hd-sous">${fmtDate(h.date)} · ${mn} min${h.entries.length ? " · " + volPds(vol) : ""}</div>
     <div class="hd-liste">${h.entries.map(en=>{ const ex = getEx(en.exId); return `
       <div class="hd-ex">${exIcon(ex)}<div class="grow"><b>${esc(nomEx(ex))}</b>
       <span>${en.sets.map(st=>`${fmtKg(st.w)} × ${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)} × ${d.r}`).join("")}`).join(" · ")}</span></div></div>`; }).join("")}${
-      h.cardio ? `<div class="hd-ex"><span class="ex-ico" style="color:var(--accent);">${icoM("course", 26)}</span><div class="grow"><b>${esc(machineNom(h.cardio))}</b><span>${esc(texteSortie(h.cardio))}</span></div></div>` : ""}</div>
+      h.cardio ? `<div class="hd-ex"><span class="ex-ico" style="color:var(--accent);">${icoM("course", 26)}</span><div class="grow"><b>${esc(machineNom(h.cardio))}</b><span>${esc(texteSortie(h.cardio))}</span></div></div>` : ""}${
+      h.montre && ligneMontre(h.montre) ? `<div class="hd-ex"><span class="ex-ico" style="color:#3b82f6;">${IC_MONTRE}</span><div class="grow"><b>${TR("Ta montre")}</b><span>${esc(ligneMontre(h.montre))}</span></div></div>` : ""}${
+      !h.entries.length && h.source === "montre" ? `<div class="hd-vide">${TR("Enregistrée par ta montre : sans exercices ni charges.")}</div>` : ""}</div>
     <button class="btn hd-btn" id="hd-partager" style="width:100%; margin-bottom:10px;">${IC_PARTAGE}${TR("Partager la séance")}</button>
     <div class="row" style="gap:10px;">
       <button class="btn grow hd-btn" id="hd-edit">${IC_CRAYON}${TR("Modifier")}</button>
@@ -31389,6 +31479,7 @@ function openFinSeance(r){
         en carte sombre avec le trophee et une ligne par exercice, les trois humeurs avec
         leur visage, et « Terminé » avec son chevron */""}
   <div class="fin-serie"><span class="ic">${IC_BARRES}</span><span><b>${r.series}</b> ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} <b>${r.exos}</b> ${TR(r.exos>1 ? "exercices" : "exercice")}.</span></div>
+  <div class="fin-montre" id="fin-montre" hidden></div>
   ${r.cardio ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.cardio)}</div>` : ""}
   ${r.course ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.course)}</div>` : ""}
   ${r.records.length? `<div class="fin-rec">
@@ -31423,6 +31514,18 @@ function openFinSeance(r){
     vibrer(8);
   });
   document.getElementById("fin-ok").onclick = closeSheet;
+  /* la montre : ses mesures arrivent parfois plus tard — elles iront alors dans l'historique */
+  const hm = (db.history || []).find(x=>x.id === r.id);
+  if(hm) mesurerSeance(hm).then(m=>{
+    const el = document.getElementById("fin-montre");
+    if(!m || !el) return;
+    el.innerHTML = `<span class="ic">${IC_MONTRE}</span><span>${esc(ligneMontre(m))}</span>`;
+    el.hidden = false;
+    if(m.kcal > 0 && !hm.course && !hm.cardio){
+      const t = document.querySelector(".fin-tiles .tile:nth-child(3)");
+      if(t){ t.querySelector(".v").textContent = m.kcal; t.querySelector(".u").textContent = TR("kcal (montre)"); }
+    }
+  });
 }
 
 /* ================================================================== la carte a partager
