@@ -3384,6 +3384,11 @@
      l'ouverture — le declencheur reste sous le clavier — et seul le champ vient se
      poser juste au-dessus des touches : on valide d'abord le texte (Nico, 29 sept.) */
   :root.clavier .cam{bottom:auto; height:var(--cam-h, 100%);}
+  .cam.saisie .bas, .cam.saisie .repere{opacity:0; visibility:hidden; pointer-events:none;}
+  /* Android : l'ecran a deja retreci au-dessus du clavier, le champ se pose en bas */
+  .cam.saisie.plat .indice-plat, .cam.saisie.plat .t:not(:empty) ~ .indice-plat{top:auto; bottom:12px;}
+  /* iPhone : l'ecran ne retrecit pas, c'est la mesure du clavier qui place le champ */
+  :root.clavier .cam.saisie.plat .indice-plat, :root.clavier .cam.saisie.plat .t:not(:empty) ~ .indice-plat{bottom:auto;}
   :root.clavier .cam.plat .indice-plat, :root.clavier .cam.plat .t:not(:empty) ~ .indice-plat{
     top:calc(var(--v-haut, 0px) + var(--v-haut-h, 100dvh) - 56px);}
   /* la video reste invisible tant qu'elle n'a rien a montrer : sans ca, Android
@@ -21346,7 +21351,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -26783,6 +26788,13 @@ function ouvrirCamera(mode, titre){
     /* « OK » sur le clavier range le clavier, rien de plus : la photo se prend au declencheur */
     const champIndice = q("#cam-indice");
     if(champIndice) champIndice.onkeydown = e=>{ if(e.key === "Enter"){ e.preventDefault(); champIndice.blur(); } };
+    /* Pendant la saisie, le declencheur et les boutons du bas s'effacent : on valide le
+       texte d'abord (Nico). On suit le FOCUS du champ, pas une mesure du clavier : dans
+       l'app Android tout l'ecran retrecit avec le clavier, et la mesure ne le voyait pas. */
+    if(champIndice){
+      champIndice.addEventListener("focus", ()=>boite.classList.add("saisie"));
+      champIndice.addEventListener("blur", ()=>setTimeout(()=>{ if(document.activeElement !== champIndice) boite.classList.remove("saisie"); }, 120));
+    }
     const video = q("video"), texte = q(".t"), fich = q("[data-fichier]");
     let flux = null, piste = null, boucle = null, fini = false, lecteur = null, zbar = null;
     let codeRepere = null, occupe = false;
