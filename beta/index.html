@@ -2304,6 +2304,7 @@
   .ex-done .nm em{display:block; font-style:normal; font-size:12.5px; font-weight:700;
     color:var(--accent-deep); margin-top:1px;}
   .ex-done .nm em b{color:var(--good);}
+  .ex-done .nm .ex-done-v{display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-top:2px;}
   .ex-done .dep{flex:0 0 auto; color:var(--ink-soft); display:flex;}
   .ex-done .dep svg{width:20px; height:13px;}
   @keyframes replieIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:none;}}
@@ -5629,6 +5630,7 @@ const TRAD = {en:{
   "Presque plus d'aide : tu peux passer à la version normale.":"Hardly any assistance left: you can move to the normal version.",
   "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Fewer than 5 reps: use a band looped over the bar, or do negatives (climb up using your feet, lower slowly over 3 to 5 seconds).",
   "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Fewer than 5 reps: do negatives. Climb up using your feet, then lower slowly, over 3 to 5 seconds.",
+  "{c} d'aide × {r}":"{c} assistance × {r}",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9524,6 +9526,7 @@ es:{
   "Presque plus d'aide : tu peux passer à la version normale.":"Casi sin ayuda: puedes pasar a la versión normal.",
   "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Menos de 5 repeticiones: ayúdate con una goma enganchada a la barra, o haz negativas (sube ayudándote con los pies, baja despacio en 3 a 5 segundos).",
   "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Menos de 5 repeticiones: haz negativas. Sube ayudándote con los pies y baja despacio, en 3 a 5 segundos.",
+  "{c} d'aide × {r}":"{c} de ayuda × {r}",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13633,6 +13636,7 @@ pt:{
   "Presque plus d'aide : tu peux passer à la version normale.":"Quase sem ajuda: você pode passar para a versão normal.",
   "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Menos de 5 repetições: use um elástico preso na barra, ou faça negativas (suba com a ajuda dos pés, desça devagar em 3 a 5 segundos).",
   "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Menos de 5 repetições: faça negativas. Suba com a ajuda dos pés e desça devagar, em 3 a 5 segundos.",
+  "{c} d'aide × {r}":"{c} de ajuda × {r}",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21342,7 +21346,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h20 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -32143,19 +32147,28 @@ function basculerTrio(a, ei, mode){
   if(avant === mode) return;
   const tpl = a.templateId ? db.templates.find(x=>x.id === a.templateId) : null;
   const it = tpl && tpl.items.find(x=>x.exId === en.exId);
-  if(mode !== "assiste" && avant !== "assiste"){
-    /* meme exercice : on montre ou on retire la colonne des kilos */
+  const dejaFaites = en.sets.some(s=>s.done && !s.warm);
+  if(mode !== "assiste" && avant !== "assiste" && !dejaFaites){
+    /* meme exercice, rien de fait : on montre ou on retire la colonne des kilos */
     en.leste = mode === "leste";
     if(mode === "normal") en.sets.forEach(s=>{ if(!s.done) s.w = 0; });
     if(it) it.leste = en.leste;
     delete en.conseilTrio;
     save(); renderSurPlace(); return;
   }
+  /* Des series sont faites : elles restent dans leur version, sur une ligne repliee qui
+     les montre (« 30 kg d'aide × 8 »), et la suite continue dans une nouvelle carte.
+     Meme entre Normal et Lesté : sans ca, passer en Normal cachait la colonne des kilos
+     et, avec elle, le lest des series deja faites (Nico, 29 sept.). */
   const nouvId = libId(mode === "assiste" ? t.assiste : t.base);
   const faites = en.sets.filter(s=>s.done);
   const restent = en.sets.filter(s=>!s.done && !s.warm);
   /* la charge des series qui restent : celle de la nouvelle version */
   let w = 0;
+  if(mode === "leste" && avant !== "assiste"){
+    const lests = en.sets.filter(s=>s.done && (Number(s.w) || 0) > 0);
+    w = lests.length ? lests[lests.length - 1].w : 0;
+  }
   if(mode === "assiste"){
     const sug = suggestFor(nouvId, en.target), last = lastPerf(nouvId);
     w = sug && sug.w != null ? sug.w : (last ? last.sets[0].w : chargeDepart(nouvId, en.target && en.target.reps));
@@ -32165,7 +32178,7 @@ function basculerTrio(a, ei, mode){
   const rNouv = repsDepart(parseReps(en.target && en.target.reps));
   const nouv = (restent.length ? restent : [{r: ""}]).map(s=>({w, r: rNouv !== "" ? rNouv : s.r, done: false}));
   if(faites.some(s=>!s.warm)){
-    en.sets = faites; en.replie = true;
+    en.sets = faites; en.replie = true; en.versionFinie = modeTrio(en);
     const ne = {exId: nouvId, target: en.target, sets: nouv};
     if(mode === "leste") ne.leste = true; else if(mode === "normal") ne.leste = false;
     if(en.enchaine){ ne.enchaine = true; delete en.enchaine; }
@@ -32313,6 +32326,14 @@ function renderActive(app){
                 ? TR("{} reps").replace("{}", rec.gain)
                 : pds(rec.gain)}</b></em>` : ""
       }</span><span class="dep">${CHEV}</span>`;
+      /* une version laissee en route (Assisté -> Normal...) montre ses series : sinon on
+         croyait qu'elles avaient disparu */
+      if(en.versionFinie){
+        const fs = en.sets.filter(x=>x.done && !x.warm);
+        const det = fs.map(x=>en.versionFinie === "assiste" ? TR("{c} d'aide × {r}").replace("{c}", pds(x.w || 0)).replace("{r}", x.r || 0)
+          : ((Number(x.w) || 0) > 0 ? "+" + pds(x.w) + " × " + (x.r || 0) : TR("{} reps").replace("{}", x.r || 0))).join(" · ");
+        plie.querySelector(".nm").insertAdjacentHTML("beforeend", `<small class="ex-done-v">${esc(det)}</small>`);
+      }
       plie.onclick = ()=>{ delete en.replie; save(); renderSurPlace(); };
       list.appendChild(plie);
       return;
