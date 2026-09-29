@@ -243,6 +243,7 @@
   .pv-temps .val{font-weight:900; color:var(--accent);}
   .pv-temps input[type=range]{width:100%; margin:12px 0 4px; accent-color:var(--accent); height:24px; background:none; border:0; padding:0;}
   .pv-temps .crans{display:flex; justify-content:space-between; font-size:10.5px; font-weight:700; color:var(--ink-mute); padding:0 2px;}
+  .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
   .pv-temps p{margin:8px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;}
   /* l'interrupteur « seance courte » de l'apercu */
   .pv-courte{display:flex; align-items:center; gap:11px; width:100%; text-align:left; margin-top:14px;
@@ -5674,6 +5675,8 @@ const TRAD = {en:{
   "Tout":"All",
   "On garde les exercices les plus efficaces qui tiennent dans ce temps.":"We keep the most effective exercises that fit in this time.",
   "Lancer · {}":"Start · {}",
+  "On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.":"We keep the most effective exercises and sets that fit in this time.",
+  "sur {}":"of {}",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9579,6 +9582,8 @@ es:{
   "Tout":"Todo",
   "On garde les exercices les plus efficaces qui tiennent dans ce temps.":"Se mantienen los ejercicios más eficaces que caben en este tiempo.",
   "Lancer · {}":"Empezar · {}",
+  "On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.":"Se mantienen los ejercicios y series más eficaces que caben en este tiempo.",
+  "sur {}":"de {}",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13698,6 +13703,8 @@ pt:{
   "Tout":"Tudo",
   "On garde les exercices les plus efficaces qui tiennent dans ce temps.":"Mantemos os exercícios mais eficazes que cabem neste tempo.",
   "Lancer · {}":"Começar · {}",
+  "On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.":"Mantemos os exercícios e séries mais eficazes que cabem neste tempo.",
+  "sur {}":"de {}",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21407,7 +21414,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h57 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31482,55 +31489,58 @@ function indicesSeanceCourte(items){
     .slice(0, garder).map(x=>x.i).sort((a, b)=>a - b);   /* on rejoue dans l'ordre d'origine */
   return classes;
 }
-/* ---- Le temps disponible (Nico, 29 sept.) ----
-   L'interrupteur « séance courte » devient une jauge : 20, 30, 45 min, 1 h, 1 h 15,
-   1 h 30 — ne restent que les paliers plus courts que la seance entiere, puis la seance
-   complete. Pour un palier, on remplit le temps dans l'ordre d'efficacite (le meme
-   classement que la seance courte : lourds et polyarticulaires d'abord) ; un exercice
-   qui ne tient plus est saute, un plus court derriere peut encore entrer. Jamais moins
-   de deux exercices. Le temps compte la sortie cardio prevue. Les paliers sont un choix
-   de Tonnup : des durees rondes, faciles a caser dans une journee. */
-const PALIERS_MIN = [20, 30, 45, 60, 75, 90];
+/* ---- Le temps disponible (Nico, 29-30 sept.) ----
+   Une jauge continue, de 15 min a 1 h 30 par pas de 5 min, puis la seance complete.
+   Le temps se remplit SERIE PAR SERIE, en prenant chaque fois la plus utile qui tient :
+   - une serie vaut le score de son exercice (lourds et polyarticulaires d'abord, le meme
+     classement que la seance courte) ;
+   - elle vaut un peu moins a chaque serie de plus sur le meme exercice : les premieres
+     series d'un exercice rapportent plus que les dernieres (le rendement decroit avec le
+     volume d'une seance — etabli dans son principe ; les coefficients sont un choix de
+     Tonnup) ;
+   - un exercice entre avec 2 series au moins, jamais une seule, et jamais plus que
+     celles prevues. Le temps compte la sortie cardio prevue. */
 let tempsDispo = null;                 /* null : la seance complete */
-function indicesPourTemps(items, minutes, extra){
-  const ordre = items.map((it, i)=>({i, s:scoreExoCourt(it)})).sort((a, b)=>(b.s - a.s) || (a.i - b.i));
-  let garde = [];
-  ordre.forEach(o=>{
-    const essai = garde.concat(o.i);
-    if(garde.length < 2 || dureeMinutes(essai.map(i=>items[i])) + (extra || 0) <= minutes) garde = essai;
-  });
-  return garde.sort((a, b)=>a - b);
-}
-function paliersTemps(t, extra){
-  const plein = dureeMinutes(t.items) + (extra || 0);
-  /* un palier n'apparait que s'il change quelque chose et s'il tient sa promesse : pas
-     deux crans qui donnent la meme seance, pas « 20 min » pour une seance de 25 */
-  const cle = m=>indicesPourTemps(t.items, m, extra).join(",");
-  const tout = t.items.map((_, i)=>i).join(",");
-  const garde = [];
-  PALIERS_MIN.filter(m=>m < plein - 4).forEach(m=>{
-    const sel = indicesPourTemps(t.items, m, extra);
-    if(dureeMinutes(sel.map(i=>t.items[i])) + (extra || 0) > m + 3) return;
-    if(sel.join(",") === tout) return;
-    const prec = garde[garde.length - 1];
-    if(prec !== undefined && cle(prec) === sel.join(",")) return;   /* meme seance : le cran le plus court la decrit mieux */
-    garde.push(m);
-  });
-  return garde;
+const JAUGE_MIN = 15, JAUGE_MAX = 90;
+const DECROISSANCE_SERIES = [1, 0.8, 0.62, 0.48, 0.38, 0.3, 0.24, 0.2];
+/* rend {index: series} pour ce temps, ou null si la seance entiere y tient */
+function planPourTemps(items, minutes, extra){
+  extra = extra || 0;
+  if(dureeMinutes(items) + extra <= minutes) return null;
+  const score = items.map(it=>scoreExoCourt(it) + 0.01);
+  const duree = plan=>dureeMinutes(Object.keys(plan).map(i=>Object.assign({}, items[i], {sets: plan[i]}))) + extra;
+  const plan = {};
+  for(;;){
+    let best = null;
+    items.forEach((it, i)=>{
+      const prevues = Math.max(1, Number(it.sets) || 3);
+      const deja = plan[i] || 0;
+      if(deja >= prevues) return;
+      /* l'entree d'un exercice : ses deux premieres series ensemble */
+      const pas = deja === 0 ? Math.min(2, prevues) : 1;
+      let v = 0;
+      for(let k = deja; k < deja + pas; k++) v += score[i] * (DECROISSANCE_SERIES[k] || 0.15);
+      v /= pas;
+      if(best && v <= best.v) return;
+      const essai = Object.assign({}, plan, {[i]: deja + pas});
+      if(duree(essai) <= minutes) best = {i, n: deja + pas, v};
+    });
+    if(!best) break;
+    plan[best.i] = best.n;
+  }
+  /* rien ne tient (15 min pour une seance tres lourde) : le meilleur exercice, 2 series */
+  if(!Object.keys(plan).length){
+    const top = score.indexOf(Math.max(...score));
+    plan[top] = Math.min(2, Math.max(1, Number(items[top].sets) || 2));
+  }
+  return plan;
 }
 function fmtMinutes(m){ return m < 60 ? m + " min" : (m % 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") : m / 60 + " h"); }
 /* Les exercices que garde la seance courte. Apres un deplacement, on retient lesquels
    elle gardait : sinon deux exercices a egalite se departageraient sur leur nouvelle
    place, et un autre mouvement apparaitrait sous le doigt. Si la seance a change
    depuis (exercice retire ou remplace), on refait le choix. */
-function gardesCourte(t, extra){
-  if(tempsDispo !== null){
-    if(t.courteIds && t.courteMin === tempsDispo){
-      const idx = t.items.map((it, i)=>t.courteIds.includes(it.exId) ? i : -1).filter(i=>i >= 0);
-      if(idx.length === t.courteIds.length) return idx;
-    }
-    return indicesPourTemps(t.items, tempsDispo, extra);
-  }
+function gardesCourte(t){
   if(t.courteIds){
     const idx = t.items.map((it, i)=>t.courteIds.includes(it.exId) ? i : -1).filter(i=>i >= 0);
     if(idx.length === t.courteIds.length) return idx;
@@ -31607,11 +31617,18 @@ function openPreview(tplId, lieuFait){
      sortie cardio prevue, minute pour minute */
   const objCardio = t.cardio ? objectifCardio(t.cardio) : null;
   const extraMin = objCardio ? Math.round(objCardio.min || 0) : 0;
-  const paliers = paliersTemps(t, extraMin);
-  if(tempsDispo !== null && !paliers.includes(tempsDispo)) tempsDispo = null;
+  const plein = dureeMinutes(t.items) + extraMin;
+  /* le bout de la jauge : la seance entiere (arrondie aux 5 min), 1 h 30 au plus ; au-dela,
+     un dernier cran « Tout » */
+  const jaugeMax = plein <= JAUGE_MAX ? Math.max(JAUGE_MIN + 5, Math.ceil(plein / 5) * 5) : JAUGE_MAX + 5;
+  const avecJauge = plein >= JAUGE_MIN + 5 && t.items.length >= 2;
+  if(tempsDispo !== null && (!avecJauge || tempsDispo >= plein || tempsDispo >= jaugeMax)) tempsDispo = null;
+  const planTemps = tempsDispo !== null ? planPourTemps(t.items, tempsDispo, extraMin) : null;
+  if(!planTemps) tempsDispo = null;
   seanceCourte = tempsDispo !== null;
-  const gardes = seanceCourte ? gardesCourte(t, extraMin) : t.items.map((_, i)=>i);
-  const items = gardes.map(i=>t.items[i]);
+  const gardes = planTemps ? Object.keys(planTemps).map(Number).sort((a, b)=>a - b) : t.items.map((_, i)=>i);
+  /* les series du jour : celles que le temps permet */
+  const items = gardes.map(i=>planTemps ? Object.assign({}, t.items[i], {sets: planTemps[i]}) : t.items[i]);
   const ecartes = t.items.filter((_, i)=>!gardes.includes(i));
   const mins = dureeMinutes(items) + (objCardio ? Math.round(objCardio.min || 0) : 0);
   const nSeries = items.reduce((a,i)=>a+i.sets, 0);
@@ -31626,13 +31643,13 @@ function openPreview(tplId, lieuFait){
     ${aRemplacer? `<p style="margin:10px 0 0; font-size:12px; color:var(--ink-mute); text-align:center;">${
       (aRemplacer > 1 ? TR("Chez toi, {n} exercices seront remplacés par leur équivalent.")
                       : TR("Chez toi, 1 exercice sera remplacé par son équivalent.")).replace("{n}", aRemplacer)}</p>`:""}
-    ${paliers.length && t.items.length > 2 ? `<div class="pv-temps">
+    ${avecJauge ? `<div class="pv-temps">
       <div class="tete"><span class="ic">${IC_CHRONO}</span><b>${TR("Temps disponible")}</b>
         <span class="val" id="pv-temps-v">${tempsDispo === null ? TR("Séance complète") : fmtMinutes(tempsDispo)}</span></div>
-      <input type="range" id="pv-temps" min="0" max="${paliers.length}" step="1"
-        value="${tempsDispo === null ? paliers.length : paliers.indexOf(tempsDispo)}" aria-label="${TR("Temps disponible")}">
-      <div class="crans">${paliers.map(m=>`<span>${fmtMinutes(m).replace(" min", "")}</span>`).join("")}<span>${TR("Tout")}</span></div>
-      <p>${TR("On garde les exercices les plus efficaces qui tiennent dans ce temps.")}</p>
+      <input type="range" id="pv-temps" min="${JAUGE_MIN}" max="${jaugeMax}" step="5"
+        value="${tempsDispo === null ? jaugeMax : tempsDispo}" aria-label="${TR("Temps disponible")}">
+      <div class="crans"><span>${fmtMinutes(JAUGE_MIN)}</span><span>${plein <= JAUGE_MAX ? "~" + fmtMinutes(plein) : TR("Tout")}</span></div>
+      <p>${TR("On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.")}</p>
     </div>` : ""}
     <div class="pn-tuiles" style="margin-top:14px;">
       ${tuile(ICONS.seance, items.length, TR(items.length>1? "exercices":"exercice"))}
@@ -31656,7 +31673,8 @@ function openPreview(tplId, lieuFait){
         <span class="num">${k+1}</span>${exIcon(ex)}
         <div class="grow" style="min-width:0;">
           <div class="nm">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
-          <div class="meta"><b>${it.sets} × ${esc(String(it.reps||"?"))}</b> · ${TR("repos")} ${fmtRepos(it.rest||90)}${
+          <div class="meta"><b>${it.sets} × ${esc(String(it.reps||"?"))}</b>${
+            planTemps && it.sets < t.items[i].sets ? ` <span class="pv-moins">${TR("sur {}").replace("{}", t.items[i].sets)}</span>` : ""} · ${TR("repos")} ${fmtRepos(it.rest||90)}${
             last? ` · ${TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0))))}`:""}</div>
           ${musclesHtml(nomCanon(ex),3)}
           ${note? `<div class="inj">⚠️ <b>${esc(TR(note.injury))}</b> · ${
@@ -31710,7 +31728,7 @@ function openPreview(tplId, lieuFait){
   /* la jauge : l'etiquette suit le doigt, la seance se recompose au lacher */
   const jauge = document.getElementById("pv-temps");
   if(jauge){
-    const val = ()=>{ const k = Number(jauge.value); return k >= paliers.length ? null : paliers[k]; };
+    const val = ()=>{ const v = Number(jauge.value); return v >= jaugeMax || v >= plein ? null : v; };
     jauge.oninput = ()=>{ const v = val(); document.getElementById("pv-temps-v").textContent = v === null ? TR("Séance complète") : fmtMinutes(v); vibrer(4); };
     jauge.onchange = ()=>{ tempsDispo = val(); openPreview(tplId, true); };
   }
@@ -31791,7 +31809,7 @@ function openPreview(tplId, lieuFait){
   }));
   /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
   document.getElementById("pv-start").onclick=()=>{
-    const courte = seanceCourte ? gardes.slice() : null;
+    const courte = planTemps ? gardes.map(i=>({i, sets: planTemps[i]})) : null;
     closeSheet(); startWorkout(tplId, deuxLieux() ? lieuProp : undefined, courte);
   };
 }
@@ -31852,7 +31870,9 @@ function startWorkout(tplId, lieu, courte){
   let remplaces = 0;
   /* seance courte : seuls les exercices retenus dans l'apercu partent ; la seance type
      reste entiere pour la prochaine fois */
-  const itemsDuJour = tpl ? (Array.isArray(courte) ? tpl.items.filter((_, i)=>courte.includes(i)) : tpl.items) : [];
+  const itemsDuJour = tpl ? (Array.isArray(courte)
+    ? courte.map(c=>typeof c === "number" ? tpl.items[c] : Object.assign({}, tpl.items[c.i], {sets: c.sets})).filter(Boolean)
+    : tpl.items) : [];
   seanceCourte = false; tempsDispo = null;
   const pris = itemsDuJour.map(it=>it.exId);
   const plan = tpl ? itemsDuJour.map((it, k)=>{
