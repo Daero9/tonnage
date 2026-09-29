@@ -456,6 +456,8 @@
     color:var(--ink); min-height:66px; hyphens:auto;}
   .cd-grille.large button{padding:11px 5px; font-size:12px; min-height:0;}
   .cd-grille .ic{font-size:19px; line-height:1;}
+  .ic-cardio{display:inline-block; width:var(--t, 26px); height:var(--t, 26px); flex:0 0 auto; background:currentColor;
+    -webkit-mask:var(--m) center / contain no-repeat; mask:var(--m) center / contain no-repeat;}
   .cd-grille button:active{background:var(--btn);}
   .cd-grille button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
   .cd-nb{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
@@ -21310,7 +21312,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 22h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 22h48 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -28292,7 +28294,7 @@ function openCardioAdd(idExistant){
     <div class="cd-bloc">
       <span class="f-lab">${TR("Activité")}</span>
       <div class="cd-grille">${MACHINES.map(([id,lab,ic])=>
-        `<button data-cmach="${id}"><span class="ic">${ic}</span>${TR(lab)}</button>`).join("")}</div>
+        `<button data-cmach="${id}"><span class="ic">${icCardio(id, 26)}</span>${TR(lab)}</button>`).join("")}</div>
     </div>
     <div class="cd-bloc" id="cd-intwrap" style="display:none;">
       <span class="f-lab">${TR("Intensité")}</span>
@@ -34538,7 +34540,13 @@ function carteChoix(attr, v, ic, titre, sous, on){
     <span class="ch-ok" aria-hidden="true">${IC_COCHE}</span></button>`;
 }
 /* l'icone d'une machine : le coureur dessine pour la course, l'emoji pour les autres */
-function icMachine(m, t){ return m[0] === "course" ? icoM("course", t) : `<span class="emo">${m[2]}</span>`; }
+/* les pictogrammes de Nico (29 sept.) : un masque, la couleur vient du texte autour —
+   noir sur clair, blanc sur la case orange choisie, clair en mode sombre */
+function icCardio(id, t){
+  const m = MACHINES.find(x=>x[0] === id) ? id : "autre";
+  return `<span class="ic-cardio" style="--t:${t || 26}px; --m:url(img/cardio/${m}-1.png)" aria-hidden="true"></span>`;
+}
+function icMachine(m, t){ return icCardio(m[0], t); }
 /* choisir puis valider : la coche se deplace, le bouton du bas ajoute */
 function feuilleChoix(o){
   let sel = o.sel;
