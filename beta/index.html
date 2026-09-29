@@ -294,6 +294,8 @@
   .pv-temps .astuce .ic svg{width:17px; height:17px;}
   .pv-temps .astuce > span:last-child{font-size:12px; color:var(--ink-soft); line-height:1.45;}
   .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .pv-course{margin-top:8px;} .pv-course.debut{margin:0 0 8px;}
+  .pv-co-mv{font-size:15px; font-weight:900; color:var(--accent); margin-right:4px;}
   .pv-plus-t{margin:12px 0 6px; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
   .pv-ex.pv-plus{box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.35);}
   .pv-ex.pv-plus .num{color:var(--accent); font-weight:900;}
@@ -4982,7 +4984,7 @@
     background:none; color:var(--ink); box-shadow:inset 0 0 0 1.6px var(--ink); display:flex; align-items:center; justify-content:center;}
   .co-x::before{content:""; position:absolute; inset:-8px;}
   .co-x svg{width:14px; height:14px; stroke-width:2.6;}
-  .co-x.pv-co-x{position:relative; top:auto; right:auto; flex:none; margin-left:6px;}
+  .co-x.pv-co-x, .co-x.pv-co-mv{position:relative; top:auto; right:auto; flex:none; margin-left:6px;}
   .pv-ex .num.pv-co-num{background:rgba(245,130,32,.14);} .pv-ex .num.pv-co-num .icm{background-color:var(--accent);}
   /* le cadenas du bilan, sans abonnement */
   .wk-bilan .wk-cad{display:inline-flex; margin-right:5px;} .wk-bilan .wk-cad svg{width:13px; height:13px;}
@@ -5744,6 +5746,8 @@ const TRAD = {en:{
   "{p} % du travail de ta séance. Voici les exercices qui le font.":"{p}% of your workout's work. Here are the exercises doing it.",
   "Dans la séance":"In the workout",
   "sollicitation":"effort",
+  "Mettre à la fin":"Move to the end",
+  "Mettre au début":"Move to the start",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9666,6 +9670,8 @@ es:{
   "{p} % du travail de ta séance. Voici les exercices qui le font.":"{p} % del trabajo de tu sesión. Estos son los ejercicios que lo hacen.",
   "Dans la séance":"En la sesión",
   "sollicitation":"solicitación",
+  "Mettre à la fin":"Mover al final",
+  "Mettre au début":"Mover al inicio",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13802,6 +13808,8 @@ pt:{
   "{p} % du travail de ta séance. Voici les exercices qui le font.":"{p}% do trabalho do seu treino. Estes são os exercícios que o fazem.",
   "Dans la séance":"No treino",
   "sollicitation":"solicitação",
+  "Mettre à la fin":"Mover para o final",
+  "Mettre au début":"Mover para o início",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21511,7 +21519,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h50 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31839,6 +31847,15 @@ function openPreview(tplId, lieuFait){
   const ecartes = t.items.filter((_, i)=>!gardes.includes(i));
   const mins = dureeMinutes(itemsTout) + (objCardio ? Math.round(objCardio.min || 0) : 0);
   const nSeries = itemsTout.reduce((a,i)=>a+i.sets, 0);
+const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex pv-course ${t.course.place === "debut" ? "debut" : ""}">
+        <span class="num pv-co-num">${icoM("course", 16)}</span>
+        <div class="grow" style="min-width:0;">
+          <div class="nm">${esc(pc ? pc.nom : TR("Séance de course introuvable"))}</div>
+          <div class="meta">${TR(t.course.place === "debut" ? "Au début · échauffement" : "À la fin")}${pc ? " · " + minTxt(parcoursTotaux(pc.etapes).min) : ""}</div>
+        </div>
+        <button class="co-x pv-co-mv" id="pv-course-mv" title="${TR(t.course.place === "debut" ? "Mettre à la fin" : "Mettre au début")}" aria-label="${TR(t.course.place === "debut" ? "Mettre à la fin" : "Mettre au début")}">⇅</button>
+        <button class="co-x pv-co-x" id="pv-course-rm" title="${TR("Retirer la course")}" aria-label="${TR("Retirer la course")}">${IC_CROIX}</button>
+      </div>`; })() : "";
   const tuile = (ic, val, lab) => `<div class="pn-t">
     <span class="ic">${ic}</span>
     <div class="co"><div class="v">${val}</div><div class="l">${lab}</div></div></div>`;
@@ -31890,6 +31907,7 @@ function openPreview(tplId, lieuFait){
       seanceCourte && ecartes.length
         ? TR("Mis de côté aujourd'hui : {}").replace("{}", ecartes.map(it=>esc(getEx(it.exId).name)).join(", "))
         : (items.length > 1 ? TR("Glisse ⠿ pour changer l'ordre des exercices.") : "")}</p>
+    ${t.course && t.course.place === "debut" ? ligneCourse : ""}
     <div class="pv-liste trie">${items.map((it,k)=>{
       const i = gardes[k];
       const ex = getEx(it.exId);
@@ -31927,14 +31945,7 @@ function openPreview(tplId, lieuFait){
           <div class="meta"><b>${it.sets} × ${esc(String(it.reps || "?"))}</b> · ${TR("pour {}").replace("{}", esc(TR(it.pour)).toLowerCase())}</div>
         </div>
         <span class="act"><button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button></span></div>`; }).join("")}` : ""}
-    ${t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex" style="margin-top:8px;">
-        <span class="num pv-co-num">${icoM("course", 16)}</span>
-        <div class="grow" style="min-width:0;">
-          <div class="nm">${esc(pc ? pc.nom : TR("Séance de course introuvable"))}</div>
-          <div class="meta">${TR(t.course.place === "debut" ? "Au début · échauffement" : "À la fin")}${pc ? " · " + minTxt(parcoursTotaux(pc.etapes).min) : ""}</div>
-        </div>
-        <button class="co-x pv-co-x" id="pv-course-rm" title="${TR("Retirer la course")}" aria-label="${TR("Retirer la course")}">${IC_CROIX}</button>
-      </div>`; })() : ""}
+    ${t.course && t.course.place !== "debut" ? ligneCourse : ""}
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
         <span class="num pv-co-num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
@@ -32064,6 +32075,9 @@ function openPreview(tplId, lieuFait){
     sous:TR("Elle sera ajoutée à la fin de ta séance. Tu peux la placer en échauffement en modifiant la séance."),
     ok:v=>{ t.course = {ref:v, place:"fin"}; save(); retourFiche(); }
   }));
+  /* la course passe du debut a la fin, et inversement (Nico) */
+  const pvCoMv = document.getElementById("pv-course-mv");
+  if(pvCoMv) pvCoMv.onclick = ()=>{ t.course.place = t.course.place === "debut" ? "fin" : "debut"; vibrer(8); save(); openPreview(tplId, true); };
   const pvCoRm = document.getElementById("pv-course-rm");
   if(pvCoRm) pvCoRm.onclick = ()=>{ delete t.course; save(); openPreview(tplId, true); };
   const pvCaRm = document.getElementById("pv-cardio-rm");
