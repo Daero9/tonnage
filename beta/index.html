@@ -2175,6 +2175,12 @@
      (comme les menus), plus par un trait beige */
   .ex-card{background:var(--surface); border:1px solid var(--bord-feuille); border-radius:var(--radius); padding:14px;
     position:relative; box-shadow:var(--ombre-feuille);}
+  /* le superset : un trait orange dans la marge relie les cartes enchainees */
+  .ex-card.ss-a::after, .ex-card.ss-b::before{content:""; position:absolute; left:-9px; width:3px; border-radius:3px; background:var(--accent); pointer-events:none;}
+  .ex-card.ss-a::after{top:26px; bottom:-16px;}
+  .ex-card.ss-b::before{top:-16px; bottom:26px;}
+  /* les details de l'evolution, replies : la grille des tuiles ne doit pas l'emporter */
+  #prg-tiles[hidden], #chart-wrap[hidden]{display:none;}
 
   /* ---- la série en cours se détache ---- */
   /* le cadre noir déborde de la carte blanche : marge négative compensée par le rembourrage,
@@ -5599,6 +5605,10 @@ const TRAD = {en:{
   "{n} séance déjà présente, ignorée.":"{n} workout already here, skipped.",
   "Importer {n} séance":"Import {n} workout",
   "{n} séance importée ✓":"{n} workout imported ✓",
+  "Enchaîner avec l'exercice suivant":"Chain with the next exercise",
+  "Superset : tu passes à {} sans repos, le repos vient après les deux.":"Superset: you go straight to {} with no rest; you rest after both.",
+  "Masquer les détails":"Hide details",
+  "Afficher les détails":"Show details",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9484,6 +9494,10 @@ es:{
   "{n} séance déjà présente, ignorée.":"{n} sesión ya presente, ignorada.",
   "Importer {n} séance":"Importar {n} sesión",
   "{n} séance importée ✓":"{n} sesión importada ✓",
+  "Enchaîner avec l'exercice suivant":"Encadenar con el siguiente ejercicio",
+  "Superset : tu passes à {} sans repos, le repos vient après les deux.":"Superserie: pasas a {} sin descanso; el descanso llega después de los dos.",
+  "Masquer les détails":"Ocultar detalles",
+  "Afficher les détails":"Mostrar detalles",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13583,6 +13597,10 @@ pt:{
   "{n} séance déjà présente, ignorée.":"{n} treino já presente, ignorado.",
   "Importer {n} séance":"Importar {n} treino",
   "{n} séance importée ✓":"{n} treino importado ✓",
+  "Enchaîner avec l'exercice suivant":"Encadear com o próximo exercício",
+  "Superset : tu passes à {} sans repos, le repos vient après les deux.":"Superset: você passa para {} sem descanso; o descanso vem depois dos dois.",
+  "Masquer les détails":"Ocultar detalhes",
+  "Afficher les détails":"Mostrar detalhes",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -18032,7 +18050,9 @@ function serieEchauffement(exId, reps){
     const aideTravail = Math.min(...last.sets.map(s=>Number(s.w)||0)), bw = poidsCorps();
     return {w:Math.round((aideTravail + (bw - aideTravail) / 2) / 2.5) * 2.5, r:Math.min(12, cible+4), done:false, warm:true};
   }
-  const w = last ? Math.max(0, Math.round(Math.max(...last.sets.map(s=>s.w||0))*0.5/2.5)*2.5) : "";
+  const moitie = last ? Math.max(...last.sets.map(s=>s.w||0)) * 0.5 : 0;
+  /* aux halteres, le poids qui existe au ratelier (7 kg, pas 7,5) */
+  const w = !last ? "" : estHaltere(exId) ? chargeExistante(exId, moitie) : Math.max(0, Math.round(moitie/2.5)*2.5);
   return {w, r:Math.min(12, cible+4), done:false, warm:true};
 }
 /* Le nombre pré-rempli dans une case : le milieu de la fourchette, pas son plancher.
@@ -21290,7 +21310,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 22h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 22h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22186,6 +22206,25 @@ function blocChargeFixe(exId, id){
       <span style="font-size:12px; color:var(--ink-mute);">${TR("L'application ne touche plus au poids : elle adapte uniquement les répétitions.")}</span></span>
   </label>`;
 }
+/* Le cran de charge. Barre et machines : 1 kg sous 20 kg, 2,5 kg au-dessus. Les
+   halteres (la charge saisie est celle d'UN haltere) vont en salle de 1 en 1 jusqu'a
+   10 kg, puis de 2 en 2 (Nico, 29 sept.) : 13 ou 22,5 kg n'existent pas au ratelier.
+   En livres, les halteres vont de 5 en 5. */
+function estHaltere(exId){ const ex = getEx(exId); return !!ex && equipCanon(ex) === "Haltères"; }
+function incCharge(exId, w){
+  if(estHaltere(exId)) return estImperial() ? 5 / PAR_LB : ((w || 0) >= 10 ? 2 : 1);
+  return (w || 0) >= 20 ? 2.5 : 1;
+}
+/* le cran pour descendre : de 12 on revient a 10, mais de 10 on passe a 9 */
+function incBas(exId, w){
+  if(estHaltere(exId) && !estImperial()) return (w || 0) > 10 ? 2 : 1;
+  return incCharge(exId, w);
+}
+/* une charge d'haltere ramenee a un poids qui existe : entier sous 10 kg, pair au-dessus */
+function chargeExistante(exId, v){
+  if(!estHaltere(exId) || estImperial()) return v;
+  return v < 10 ? Math.max(0, Math.round(v)) : Math.round(v / 2) * 2;
+}
 function chargeBloquee(exId){
   const ex = getEx(exId);
   return !!db.plafond[exId] || (estPoidsDuCorps(ex) && !db.plafond["libre:"+exId]);
@@ -22309,7 +22348,7 @@ function ajusterPosition(exId, target, sug, pc, auj){
   const ref = pc.ref, rng = parseReps(target && target.reps);
   const maxW = Math.max(...ref.sets.map(x=>x.w || 0));
   const bestR = Math.max(...ref.sets.map(x=>x.r || 0));
-  const inc = maxW >= 20 ? 2.5 : 1;
+  const inc = incCharge(exId, maxW);
   if(!auj){
     /* Plus frais qu'à la dernière fois. Les répétitions manquées venaient peut-être de
        là : on ne baisse rien. On ne monte pas non plus sur une supposition — c'est la
@@ -22357,7 +22396,7 @@ function ajusterPosition(exId, target, sug, pc, auj){
       why: pourquoi + " " + lu,
       text: TR("Il arrive plus tard qu'à la dernière fois : garde {c}, et vise {r} reps.")
         .replace("{c}", pds(maxW)).replace("{r}", rng ? Math.min(Math.max(1, repsA), rng.hi) : Math.max(1, repsA))};
-  const w2 = Math.max(0, Math.floor((attendu / (1 + rng.lo / 30) - corps) / inc) * inc);
+  const w2 = chargeExistante(exId, Math.max(0, Math.floor((attendu / (1 + rng.lo / 30) - corps) / inc) * inc));
   if(w2 >= maxW)
     return {mode:"hold", w:maxW, reps:rng.lo, ref, position:true, why: pourquoi + " " + lu,
       text: TR("Il arrive plus tard qu'à la dernière fois : garde {c} sans chercher à battre ton chiffre.").replace("{c}", pds(maxW))};
@@ -22371,7 +22410,8 @@ function suggestSur(exId, target, last, derniere){
   const rng = parseReps(target && target.reps);
   if(!rng) return null;
   const maxW = Math.max(...last.sets.map(s=>s.w||0));
-  const inc = maxW>=20? 2.5 : 1;
+  const inc = incCharge(exId, maxW);
+  const monte = chargeExistante(exId, maxW + inc), baisse = chargeExistante(exId, Math.max(0, maxW - incBas(exId, maxW)));
   /* La coupure passe AVANT tout le reste : ce qui s'est joué dans cette séance —
      les reps tenues, le repos pris, la réserve annoncée — a cessé de décrire
      l'utilisateur d'aujourd'hui. */
@@ -22471,22 +22511,22 @@ function suggestSur(exId, target, last, derniere){
             text: TR("Garde {c} et gagne une répétition — {z} sensible.")
                     .replace("{c}", pds(maxW)).replace("{z}", TR(bobo.injury))};
   if(allTop || (avgRir!==null && avgRir>=3 && !anyBelow))
-    return {mode:"up", w:maxW+inc, why: allTop
+    return {mode:"up", w:monte, why: allTop
       ? TR("La dernière fois, tu as tenu {r} répétitions ou plus sur TOUTES tes séries à {c}. Quand le haut de la fourchette est atteint partout, la charge est devenue trop légère.")
           .replace("{r}", rng.hi).replace("{c}", pds(maxW))
       : TR("Tu as répondu qu'il te restait 3 répétitions ou plus en réserve. Une série qui finit aussi loin de l'échec ne fait plus assez travailler le muscle."),
       text: allTop
       ? TR("Toutes les séries à {r} reps ou plus la dernière fois — passe à {c}.")
-          .replace("{r}", rng.hi).replace("{c}", pds(maxW+inc))
-      : TR("Trop facile la dernière fois (3+ reps en réserve) — passe à {}.").replace("{}", pds(maxW+inc))};
+          .replace("{r}", rng.hi).replace("{c}", pds(monte))
+      : TR("Trop facile la dernière fois (3+ reps en réserve) — passe à {}.").replace("{}", pds(monte))};
   if(anyBelow && avgRir!==null && avgRir<0.5)
-    return {mode:"down", w:Math.max(0,maxW-inc),
+    return {mode:"down", w:baisse,
             why: TR("Tu es descendu sous {r} répétitions sur {n} {s}, en répondant que tu étais à bout. Les deux ensemble veulent dire que {c} était trop lourd.")
                    .replace("{r}", rng.lo).replace("{n}", sousLaCible)
                    .replace("{s}", TR(sousLaCible>1 ? "séries" : "série")).replace("{c}", pds(maxW)),
             text: TR("Trop lourd la dernière fois sur {n} {s} — repars à {c} pour tenir {r} reps.")
                     .replace("{n}", sousLaCible).replace("{s}", TR(sousLaCible>1 ? "séries" : "série"))
-                    .replace("{c}", pds(Math.max(0,maxW-inc))).replace("{r}", rng.lo)};
+                    .replace("{c}", pds(baisse)).replace("{r}", rng.lo)};
   if(anyBelow)
     return {mode:"hold", w:maxW,
             why: TR("Tu n'as pas encore fait {r} répétitions sur toutes tes séries à {c}. Tant que le bas de la fourchette n'est pas tenu partout, charger plus ferait reculer.")
@@ -31651,7 +31691,7 @@ function startWorkout(tplId, lieu, courte){
       else r = ls ? ls.r : repsDepart(rng);
       sets.push({w, r, done:false});
     }
-    return {exId:it.exId, target:it, sets};
+    return {exId:it.exId, target:it, sets, enchaine: it.enchaine ? true : undefined};
   }) : [];
   /* série d'échauffement sur le premier exercice */
   if(entries.length){
@@ -31754,8 +31794,23 @@ function openHistoExo(ei){
                  <span>${TR("Tu saisis la charge d'un seul côté : l'app compte les deux dans ton tonnage et ton profil.")}</span></span>
              </label>`}
       </div>
+      ${a.entries[ei + 1] ? `<div class="hx-mat">
+        <label class="choix">
+          <input type="checkbox" id="hx-ss" ${en.enchaine ? "checked" : ""}>
+          <span><b>${TR("Enchaîner avec l'exercice suivant")}</b>
+            <span>${TR("Superset : tu passes à {} sans repos, le repos vient après les deux.").replace("{}", esc(nomEx(getEx(a.entries[ei + 1].exId))))}</span></span>
+        </label></div>` : ""}
       <button class="btn btn-accent" id="hx-ok">${TR("Compris")}</button>
     </div>`);
+  /* le superset vaut aussi pour la prochaine fois : on l'ecrit sur le plan */
+  const ss = document.getElementById("hx-ss");
+  if(ss) ss.onchange = e=>{
+    if(e.target.checked) en.enchaine = true; else delete en.enchaine;
+    const tpl = a.templateId ? db.templates.find(t=>t.id === a.templateId) : null;
+    const it = tpl && tpl.items.find(x=>x.exId === en.exId);
+    if(it){ if(e.target.checked) it.enchaine = true; else delete it.enchaine; }
+    save();
+  };
   /* Le temps choisi vaut pour CET exercice : on l'écrit sur la séance en cours et,
      si le plan existe encore, sur le plan — sinon il faudrait le refaire chaque fois. */
   const poserRepos = v=>{
@@ -31977,9 +32032,34 @@ function replierCarte(card, apres){
    suivant restait a trouver soi-meme, en remontant a la main, en soufflant, par-dessus
    la carte d astuce. On l amene. Le bloc « start » et non « center » : la carte doit
    commencer sous le bandeau, pas flotter au milieu. */
-function allerAuProchainExo(){
+/* ---- Les supersets (Nico, 29 sept.) ----
+   Un exercice « enchaine » forme un groupe avec le suivant. Apres une serie, on passe
+   au suivant du groupe SANS repos ; le repos ne vient qu'apres le dernier, et l'app
+   ramene alors au premier du groupe qui a encore du travail. A l'ecran, rien qu'un
+   trait orange qui relie les cartes. */
+function groupeSuperset(a, ei){
+  let d = ei, f = ei;
+  while(d > 0 && a.entries[d - 1].enchaine) d--;
+  while(f < a.entries.length - 1 && a.entries[f].enchaine) f++;
+  return [d, f];
+}
+const resteSeries = en=>!!en && en.sets.some(s=>!s.done && !s.warm);
+/* le suivant du groupe qui a encore une serie : on y va sans repos */
+function enchaineSansRepos(a, ei){
+  const [, f] = groupeSuperset(a, ei);
+  for(let k = ei + 1; k <= f; k++) if(resteSeries(a.entries[k])) return k;
+  return null;
+}
+/* apres le dernier du groupe : le repos, puis retour au premier qui a encore du travail */
+function retourSuperset(a, ei){
+  const [d, f] = groupeSuperset(a, ei);
+  if(d === f) return null;
+  for(let k = d; k <= f; k++) if(resteSeries(a.entries[k])) return k === ei ? null : k;
+  return null;
+}
+function allerAuProchainExo(vers){
   const a = db.active; if(!a) return;
-  const i = a.entries.findIndex(en=>!en.replie && en.sets.some(s=>!s.done && !s.warm));
+  const i = typeof vers === "number" ? vers : a.entries.findIndex(en=>!en.replie && en.sets.some(s=>!s.done && !s.warm));
   const cible = (i >= 0)
     ? document.querySelector('.ex-card[data-ei="' + i + '"]')
     : (document.getElementById("fin-terminer") || document.getElementById("finish-w"));   /* plus rien a faire : le bouton de fin */
@@ -32114,6 +32194,8 @@ function renderActive(app){
     const card = document.createElement("div");
     card.className="ex-card"+(iso? " iso":"");
     card.dataset.ei = ei;
+    if(en.enchaine && a.entries[ei + 1] && !a.entries[ei + 1].replie) card.classList.add("ss-a");
+    if(ei > 0 && a.entries[ei - 1].enchaine && !a.entries[ei - 1].replie) card.classList.add("ss-b");
     card.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">${exIcon(ex,true)}
         <div class="grow"><div class="ex-name">${esc(nomEx(ex))}${
@@ -32323,7 +32405,10 @@ function renderActive(app){
           const resteDuTravail = a.entries.some(e2=>e2.sets.some(s2=>!s2.done && !s2.warm));
           if(!resteDuTravail) setTimeout(proposerFin, 1500);   /* le temps de replier la carte */
           const rs = (en.target && en.target.rest) || db.settings.rest;
-          if(resteDuTravail) startRest(rs);
+          /* superset : pas de repos avant le suivant du groupe */
+          const sansRepos = enchaineSansRepos(a, ei);
+          const versSuperset = sansRepos !== null ? sansRepos : retourSuperset(a, ei);
+          if(resteDuTravail && sansRepos === null) startRest(rs);
           else { restbar.classList.remove("show"); if(rest.int){ clearInterval(rest.int); rest.int=null; } }
           const ask = document.createElement("div");
           ask.className = "rir-ask";
@@ -32339,7 +32424,7 @@ function renderActive(app){
              les mêmes règles d'ajustement. */
           const rng = parseReps(en.target && en.target.reps) || {lo:8, hi:12};
           const next = en.sets.find(s2=>!s2.done && !s2.warm);   /* jamais l'échauffement */
-          const inc = (st.w||0)>=20? 2.5 : 1;
+          const inc = incCharge(en.exId, st.w);
           /* applique une valeur à toutes les séries restantes, pas seulement à la suivante */
           const appliquerSuite = (champ, valeur)=>{
             en.sets.forEach((s2,j)=>{
@@ -32373,6 +32458,8 @@ function renderActive(app){
           };
           /* la série revient dès qu'on n'attend plus rien d'elle */
           const clore = (delai)=>{
+            /* superset : une fois la question refermee, on file au suivant du groupe */
+            if(versSuperset !== null && en.sets.some(s2=>!s2.done)) setTimeout(()=>allerAuProchainExo(versSuperset), 650);
             majSerieActive();
             ondeSurBloc();                  /* sans effet tant qu'aucune ligne n'est dans le cadre */
             rendreLignes(card);
@@ -32430,7 +32517,7 @@ function renderActive(app){
                 detail = pr.text;
                 if(next && pr.mode === "reps") appliquerSuite("r", pr.reps);
               } else {
-                const nw = (st.w||0) + inc;
+                const nw = chargeExistante(en.exId, (st.w||0) + inc);
                 detail = TR("{r} reps avant de descendre — séries suivantes à {c}.")
                   .replace("{r}", hautR).replace("{c}", pds(nw));
                 if(next) appliquerSuite("w", nw);
@@ -32488,7 +32575,7 @@ function renderActive(app){
                 msg = TR("Trop lourd — vise {} reps sur les séries suivantes, la qualité prime.").replace("{}", nr);
                 if(next) appliquerSuite("r", nr);
               } else {
-                const bas = Math.max(0, Math.round(((st.w||0) - Math.max(inc, (st.w||0)*0.08))*2)/2);
+                const bas = chargeExistante(en.exId, Math.max(0, Math.round(((st.w||0) - Math.max(incBas(en.exId, st.w), (st.w||0)*0.08))*2)/2));
                 const cible = Math.max(st.r||0, rng.lo);
                 msg = next ? TR("Trop lourd — séries suivantes à {c}, on garde {r} reps.").replace("{c}", pds(bas)).replace("{r}", cible)
                             : TR("Trop lourd — repars de {} à la prochaine séance.").replace("{}", pds(bas));
@@ -32501,7 +32588,7 @@ function renderActive(app){
                 msg = TR("Trop léger —") + " " + pr.text.charAt(0).toLowerCase() + pr.text.slice(1);
                 if(next && pr.mode==="reps") appliquerSuite("r", pr.reps);
               } else {
-                const nw = (st.w||0)+inc;
+                const nw = chargeExistante(en.exId, (st.w||0)+inc);
                 msg = next ? TR("Trop léger — séries suivantes à {}.").replace("{}", pds(nw))
                             : TR("Trop léger — passe à {} à la prochaine séance.").replace("{}", pds(nw));
                 if(next) appliquerSuite("w", nw);
@@ -32514,7 +32601,7 @@ function renderActive(app){
                             : TR("Trop dur — reste sur ce nombre de reps jusqu'à ce que ça passe proprement.");
                 if(next) appliquerSuite("r", nr);
               } else {
-                const nw = Math.max(0,(st.w||0)-inc);
+                const nw = chargeExistante(en.exId, Math.max(0,(st.w||0)-incBas(en.exId, st.w)));
                 if(next) appliquerSuite("r", Math.max(st.r||0, rng.lo));
                 msg = next ? TR("Trop lourd — séries suivantes à {}.").replace("{}", pds(nw))
                             : TR("Trop lourd — garde cette charge la prochaine fois, elle viendra.");
@@ -32551,10 +32638,9 @@ function renderActive(app){
       };
       /* ajouter une ligne à charge réduite : bouton ↓ ou menu d'appui long */
       const ajouterDrop = ()=>{
-        const inc = (st.w||0)>=20? 2.5 : 1;
         const dernier = (st.drops && st.drops.length)? st.drops[st.drops.length-1] : st;
         if(!st.drops) st.drops = [];
-        st.drops.push({w: Math.max(0, (dernier.w||0)-inc), r: ""});
+        st.drops.push({w: chargeExistante(en.exId, Math.max(0, (dernier.w||0)-incBas(en.exId, dernier.w))), r: ""});
         save(); renderSurPlace();
       };
       const dgBtn = row.querySelector(".dg");
@@ -37297,11 +37383,14 @@ function renderProgress(app){
           isoPrg? TR("Temps total") : (mode==="sans"? TR("Reps totales") : "Volume")}</button>
       </div>
       </div>
-      <div class="tiles" id="prg-tiles"></div>
-      <div id="prg-verdict"></div>${/* le verdict reste visible replie : c'est le coup d'oeil */""}
-      <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;" ${prgPlis.evo ? "" : "hidden"}><div class="chart-tip" id="chart-tip"></div></div>
+      ${/* la courbe d'abord, toujours visible (Nico, 29 sept.) : c'est elle qu'on vient
+           voir. Puis le verdict, le coup d'oeil. Le record, la derniere seance et le
+           nombre de seances ne viennent qu'au depliage : ce sont des details. */""}
+      <div class="chart-wrap" id="chart-wrap" style="margin-top:12px;"><div class="chart-tip" id="chart-tip"></div></div>
+      <div id="prg-verdict"></div>
+      <div class="tiles" id="prg-tiles" style="margin-top:12px;" ${prgPlis.evo ? "" : "hidden"}></div>
     </div>
-    ${pliBouton("evo-pli", prgPlis.evo, TR(prgPlis.evo ? "Masquer la courbe" : "Afficher la courbe"))}`;
+    ${pliBouton("evo-pli", prgPlis.evo, TR(prgPlis.evo ? "Masquer les détails" : "Afficher les détails"))}`;
   brancherPli(body, "evo-pli", "evo");
   /* changer d'exercice ou de mesure ne doit pas renvoyer en haut de page */
   document.getElementById("prg-sel").onchange=e=>{ prgEx=e.target.value; renderSurPlace(); };
@@ -37328,8 +37417,10 @@ function renderProgress(app){
     pts.push({date:s.date, v:Math.round(v*10)/10});
   });
   if(!pts.length){
-    document.getElementById("prg-tiles").innerHTML =
-      `<div class="empty" style="padding:14px 10px; grid-column:1/-1;">${TR("Aucune série de ce type pour cet exercice.")}</div>`;
+    const tl = document.getElementById("prg-tiles");
+    tl.hidden = false;                          /* le seul message a lire : on le montre replie aussi */
+    tl.innerHTML = `<div class="empty" style="padding:14px 10px; grid-column:1/-1;">${TR("Aucune série de ce type pour cet exercice.")}</div>`;
+    document.getElementById("chart-wrap").hidden = true;
     return;
   }
 
