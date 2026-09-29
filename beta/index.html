@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <title>Tonnup bêta</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#1b1b1d">
+<meta name="theme-color" content="#ff9a3c">
 <meta name="robots" content="noindex">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -21177,7 +21177,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 20h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 20h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21448,7 +21448,10 @@ function appliquerTheme(){
     || (db.settings.theme === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.dataset.theme = sombre ? "dark" : "light";
   const meta = document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.setAttribute("content", sombre ? "#0e0e10" : "#1b1b1d");
+  /* tant que l'ecran d'ouverture est la, la barre du haut reste orange avec lui : elle
+     ne passe a la couleur du theme qu'au lever du rideau (sinon, un bandeau sombre
+     au-dessus de l'orange, puis un saut) */
+  if(meta) meta.setAttribute("content", document.getElementById("ouverture") ? "#ff9a3c" : (sombre ? "#0e0e10" : "#1b1b1d"));
 }
 /* en « auto », le theme suit le telephone en direct */
 try{ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(db && db.settings && db.settings.theme === "auto") appliquerTheme(); }); }catch(e){}
@@ -24246,6 +24249,7 @@ function leverRideau(){
         ov.style.setProperty("--d", Math.ceil(innerHeight / 2 + r + 20) + "px");
         void ov.offsetWidth;
         ov.classList.add("leve"); if(fond) fond.remove();
+        setTimeout(()=>{ ov.remove(); appliquerTheme(); }, 600);
         setTimeout(()=>{ if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } }, 220);
         setTimeout(()=>{ ov.remove(); if(fond) fond.remove(); }, 750);
       }, 230);
