@@ -1008,6 +1008,18 @@
   :root[data-theme="dark"] .hx2 .hx-now{background:rgba(245,130,32,.10); border-color:rgba(255,255,255,.35);}
   .hx2 .hx-now .v{font-size:28px; font-weight:900; color:var(--ink);}
   .hx2 .hx-now .v em{font-style:normal; color:var(--accent);}
+  /* les disques de chaque cote, et le poids de la barre discret dans l'angle */
+  .hx2 .hx-now{position:relative;}
+  .hx-disq{margin-top:10px; font-size:13px; color:var(--ink-soft); line-height:1.45;}
+  .hx-disq b{color:var(--ink); font-weight:800;}
+  .hx-barre-svg{display:block; width:100%; max-width:300px; height:auto; margin:2px auto 4px;}
+  .hx-barre-svg .b{fill:var(--ink-mute);} .hx-barre-svg .m{fill:var(--ink-soft);}
+  .hx-barre-svg .d rect{fill:var(--ink);}
+  .hx-barre-svg .e text{font-size:10px; font-weight:800; fill:var(--ink-soft); text-anchor:middle;}
+  .hx-barre{position:absolute; top:8px; right:10px; padding:4px 6px; background:none; font:inherit; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .hx-barres{display:inline-flex; gap:6px; flex-wrap:wrap; justify-content:center;}
+  .hx-barres button{padding:6px 11px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); font:inherit; font-size:12.5px; font-weight:800; color:var(--ink-soft);}
+  .hx-barres button.on{background:rgba(245,130,32,.10); box-shadow:inset 0 0 0 1.5px var(--accent); color:var(--accent);}
   .hx2 .hx-k{font-size:11.5px; color:var(--ink-soft);}
   .hx2 .hx-duo > div{display:flex; align-items:center; gap:10px; box-shadow:var(--ombre-carte); border-radius:18px; padding:12px;}
   .hx2 .hx-duo .co{min-width:0;}
@@ -3388,10 +3400,10 @@
      La camera garde donc la hauteur de son ouverture et suit le glissement (--v-haut,
      l'ecart que mesure visualViewport) : son haut reste en haut de l'ecran. Le champ,
      place DANS la camera, se pose en bas de la zone visible (--v-haut-h). */
-  .cam.saisie{top:var(--v-haut, 0px); bottom:auto; height:var(--cam-h, 100%);}
+  .cam.saisie{top:var(--cam-top, var(--v-haut, 0px)); bottom:auto; height:var(--cam-h, 100%);}
   .cam.saisie .bas, .cam.saisie .repere{opacity:0; visibility:hidden; pointer-events:none;}
   .cam.saisie.plat .indice-plat, .cam.saisie.plat .t:not(:empty) ~ .indice-plat{
-    top:calc(var(--v-haut-h, 100dvh) - 57px); bottom:auto;}
+    top:calc(var(--cam-vis, var(--v-haut-h, 100dvh)) - 57px); bottom:auto;}
   /* la video reste invisible tant qu'elle n'a rien a montrer : sans ca, Android
      affiche son gabarit gris avec un bouton « lecture » etire le temps que la
      camera s'ouvre */
@@ -5637,6 +5649,10 @@ const TRAD = {en:{
   "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Fewer than 5 reps: use a band looped over the bar, or do negatives (climb up using your feet, lower slowly over 3 to 5 seconds).",
   "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Fewer than 5 reps: do negatives. Climb up using your feet, then lower slowly, over 3 to 5 seconds.",
   "{c} d'aide × {r}":"{c} assistance × {r}",
+  "De chaque côté :":"Each side:",
+  "(à peu près)":"(roughly)",
+  "La barre seule, sans disque":"The bar alone, no plates",
+  "Moins lourd que la barre seule ({})":"Lighter than the bar alone ({})",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9533,6 +9549,10 @@ es:{
   "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Menos de 5 repeticiones: ayúdate con una goma enganchada a la barra, o haz negativas (sube ayudándote con los pies, baja despacio en 3 a 5 segundos).",
   "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Menos de 5 repeticiones: haz negativas. Sube ayudándote con los pies y baja despacio, en 3 a 5 segundos.",
   "{c} d'aide × {r}":"{c} de ayuda × {r}",
+  "De chaque côté :":"Cada lado:",
+  "(à peu près)":"(aprox.)",
+  "La barre seule, sans disque":"Solo la barra, sin discos",
+  "Moins lourd que la barre seule ({})":"Menos que la barra sola ({})",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13643,6 +13663,10 @@ pt:{
   "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Menos de 5 repetições: use um elástico preso na barra, ou faça negativas (suba com a ajuda dos pés, desça devagar em 3 a 5 segundos).",
   "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Menos de 5 repetições: faça negativas. Suba com a ajuda dos pés e desça devagar, em 3 a 5 segundos.",
   "{c} d'aide × {r}":"{c} de ajuda × {r}",
+  "De chaque côté :":"Cada lado:",
+  "(à peu près)":"(aprox.)",
+  "La barre seule, sans disque":"Só a barra, sem anilhas",
+  "Moins lourd que la barre seule ({})":"Menos que a barra sozinha ({})",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21352,7 +21376,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -26792,9 +26816,21 @@ function ouvrirCamera(mode, titre){
     /* Pendant la saisie, le declencheur et les boutons du bas s'effacent : on valide le
        texte d'abord (Nico). On suit le FOCUS du champ, pas une mesure du clavier : dans
        l'app Android tout l'ecran retrecit avec le clavier, et la mesure ne le voyait pas. */
+    /* Et la camera suit Safari IMAGE PAR IMAGE pendant que le clavier monte : la mesure
+       generale n'arrive qu'une fois le clavier arrete, et la camera glissait avec la
+       page avant de se recaler d'un coup (Nico). */
+    const vvCam = window.visualViewport;
+    let suiviJusqua = 0;
+    const suivre = ()=>{
+      if(!vvCam || !boite.isConnected) return;
+      boite.style.setProperty("--cam-top", Math.round(vvCam.offsetTop) + "px");
+      boite.style.setProperty("--cam-vis", Math.round(vvCam.height) + "px");
+      if(performance.now() < suiviJusqua) requestAnimationFrame(suivre);
+    };
+    const suivrePendant = ms=>{ const relancer = performance.now() >= suiviJusqua; suiviJusqua = performance.now() + ms; if(relancer) requestAnimationFrame(suivre); };
     if(champIndice){
-      champIndice.addEventListener("focus", ()=>boite.classList.add("saisie"));
-      champIndice.addEventListener("blur", ()=>setTimeout(()=>{ if(document.activeElement !== champIndice) boite.classList.remove("saisie"); }, 120));
+      champIndice.addEventListener("focus", ()=>{ suivre(); boite.classList.add("saisie"); suivrePendant(900); });
+      champIndice.addEventListener("blur", ()=>setTimeout(()=>{ if(document.activeElement !== champIndice){ boite.classList.remove("saisie"); suivrePendant(600); } }, 120));
     }
     const video = q("video"), texte = q(".t"), fich = q("[data-fichier]");
     let flux = null, piste = null, boucle = null, fini = false, lecteur = null, zbar = null;
@@ -31791,6 +31827,83 @@ function reprendreChrono(a){
   }
 }
 /* ce qu'il faut savoir avant d'attaquer l'exercice : la dernière fois, l'objectif, la charge du jour */
+/* ---- Les disques de chaque côté (Nico, 29 sept.) ----
+   Dans la roue de l'exercice, sous « À faire maintenant » : ce qu'il faut charger de
+   chaque côté de la barre. Seulement pour les exercices à la barre libre. La barre
+   pèse 20 kg par défaut ; un petit bouton dans l'angle la change (15, 10 kg… ou 25 pour
+   les grandes barres), retenu pour cet exercice. Disques olympiques courants : 25, 20,
+   15, 10, 5, 2,5 et 1,25 kg (en livres : 45, 35, 25, 10, 5 et 2,5 lb). */
+const BARRES_KG = [25, 20, 15, 10];
+function estBarreLibre(exId){ const ex = getEx(exId); return !!ex && equipCanon(ex) === "Barre" && !estAssiste(ex); }
+function poidsBarre(exId){ return (db.barre && db.barre[exId]) || (estImperial() ? 45 / PAR_LB : 20); }
+/* rend les disques d'UN côté, en kilos, du plus lourd au plus léger, et ce qui ne tombe pas juste */
+function disquesCote(total, barre){
+  const imp = estImperial();
+  const DISQ = imp ? [45, 35, 25, 10, 5, 2.5] : [25, 20, 15, 10, 5, 2.5, 1.25];
+  let cote = ((imp ? total * PAR_LB : total) - (imp ? barre * PAR_LB : barre)) / 2;
+  const liste = [];
+  DISQ.forEach(d=>{ while(cote >= d - 0.01){ liste.push(imp ? d / PAR_LB : d); cote -= d; } });
+  return {liste, reste: cote > 0.05};
+}
+/* un disque de 1,25 kg ne s'arrondit pas a 1,3 : deux decimales */
+const fmtDisque = v=>{ const n = estImperial() ? v * PAR_LB : v; return (Math.round(n * 100) / 100).toLocaleString(langue() === "en" ? "en-US" : loc()); };
+/* Le dessin (Nico) : la barre de face, les disques de chaque cote a leur taille
+   relative — les gros contre le manchon, les petits vers l'exterieur, comme on les
+   charge — et le poids de chacun ecrit dessous. */
+function barreSvg(liste){
+  const H = {25:52, 20:48, 15:42, 10:36, 5:27, 2.5:21, 1.25:16};
+  const L = {25:15, 20:14, 15:13, 10:12, 5:10, 2.5:9, 1.25:8};
+  const kg = v=>{ const k = Math.round(v * 100) / 100; return H[k] ? k : (v >= 20 ? 20 : v >= 10 ? 10 : v >= 5 ? 5 : 2.5); };
+  const W = 300, cx = W / 2, y = 32, dep = 30, gap = 3;
+  let larg = liste.reduce((t, v)=>t + L[kg(v)] + gap, 0);
+  const k = larg > 112 ? 112 / larg : 1;                 /* beaucoup de disques : on resserre */
+  let x = dep, disques = "", etiq = "";
+  liste.forEach((v, i)=>{
+    const l = L[kg(v)] * k, h = H[kg(v)], t = fmtDisque(v);
+    /* deux etiquettes voisines ne se chevauchent pas : une sur deux descend d'un cran */
+    const ty = y + 38 + (i % 2 ? 11 : 0);
+    [cx + x, cx - x - l].forEach(px=>{
+      disques += `<rect x="${px.toFixed(1)}" y="${y - h / 2}" width="${l.toFixed(1)}" height="${h}" rx="2.5"/>`;
+      etiq += `<text x="${(px + l / 2).toFixed(1)}" y="${ty}">${t}</text>`;
+    });
+    x += l + gap * k;
+  });
+  const bas = liste.length > 1 ? 88 : 76;
+  return `<svg class="hx-barre-svg" viewBox="0 0 ${W} ${bas}" aria-hidden="true">
+    <rect class="b" x="${cx - dep - 122}" y="${y - 2.5}" width="${2 * (dep + 122)}" height="5" rx="2.5"/>
+    <rect class="m" x="${cx - dep - 4}" y="${y - 7}" width="5" height="14" rx="1.5"/><rect class="m" x="${cx + dep - 1}" y="${y - 7}" width="5" height="14" rx="1.5"/>
+    <g class="d">${disques}</g><g class="e">${etiq}</g></svg>`;
+}
+function disquesHtml(exId, w){
+  if(!estBarreLibre(exId) || !(w > 0)) return "";
+  const b = poidsBarre(exId);
+  let ligne;
+  if(w < b - 0.05) ligne = TR("Moins lourd que la barre seule ({})").replace("{}", pds(b));
+  else if(w < b + 0.05) ligne = TR("La barre seule, sans disque");
+  else {
+    const d = disquesCote(w, b);
+    ligne = barreSvg(d.liste) + `${TR("De chaque côté :")} <b>${d.liste.map(fmtDisque).join(" + ")} ${uPoids()}</b>${d.reste ? " " + TR("(à peu près)") : ""}`;
+  }
+  return `<div class="hx-disq" id="hx-disq"><span>${ligne}</span></div>
+    <button type="button" class="hx-barre" id="hx-barre">${TR("Barre")} ${pds(b)} ✎</button>`;
+}
+/* le bouton de l'angle : les poids de barre courants, en place, sans autre fenêtre */
+function brancherDisques(exId, w){
+  const b = document.getElementById("hx-barre");
+  if(!b) return;
+  b.onclick = ()=>{
+    const z = document.getElementById("hx-disq");
+    const actuel = poidsBarre(exId);
+    z.innerHTML = `<span class="hx-barres">${BARRES_KG.map(v=>
+      `<button type="button" data-barre="${v}" class="${Math.abs(v - actuel) < 0.3 ? "on" : ""}">${pds(v)}</button>`).join("")}</span>`;
+    z.querySelectorAll("[data-barre]").forEach(x=>x.onclick = ()=>{
+      db.barre = db.barre || {};
+      db.barre[exId] = Number(x.dataset.barre); save(); vibrer(6);
+      const zone = document.getElementById("hx-disq-zone");
+      if(zone){ zone.innerHTML = disquesHtml(exId, w); brancherDisques(exId, w); }
+    });
+  };
+}
 function openHistoExo(ei){
   const a = db.active; if(!a) return;
   const en = a.entries[ei], ex = getEx(en.exId);
@@ -31814,6 +31927,7 @@ function openHistoExo(ei){
           ? `${chiffre(pds(prochain.w))}${prochain.r ? ` × ${chiffre(prochain.r + " " + TR("reps"))}` : ""}`
           : TR("À toi de choisir la charge")}</div>
         ${sug? `<div class="t">${esc(sug.text)}</div>`:""}
+        <div id="hx-disq-zone">${disquesHtml(en.exId, prochain && prochain.w)}</div>
       </div>
       <div class="hx-duo">
         <div><span class="ic gris">${ICONS.seance}</span><div class="co">
@@ -31852,6 +31966,7 @@ function openHistoExo(ei){
         </label></div>` : ""}
       <button class="btn btn-accent" id="hx-ok">${TR("Compris")}</button>
     </div>`);
+  brancherDisques(en.exId, prochain && prochain.w);
   /* le superset vaut aussi pour la prochaine fois : on l'ecrit sur le plan */
   const ss = document.getElementById("hx-ss");
   if(ss) ss.onchange = e=>{
