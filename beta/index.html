@@ -12,8 +12,8 @@
 <link rel="icon" href="icon-192.png?v=4">
 <!-- Le service worker sert a fonctionner hors connexion SUR LE WEB. Dans l application Android, les memes fichiers sont deja installes avec l APK : l enregistrer y rangeait une seconde copie de 8 Mo dans les donnees utilisateur, et pouvait servir une version plus ancienne que celle du paquet. On ne l enregistre donc pas quand Capacitor est la. -->
 <script>if("serviceWorker" in navigator && !window.Capacitor){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(function(){})});}</script>
-<!-- noir des la premiere image : l'ecran d'ouverture arrive juste apres (retire avec lui) -->
-<style id="ov-fond">html, body{background:#000 !important;}</style>
+<!-- orange des la premiere image : l'ecran d'ouverture arrive juste apres (retire avec lui) -->
+<style id="ov-fond">html, body{background:#f58220 !important;}</style>
 <style>
   :root{
     /* clair : fond crème, bandeau sombre, orange franc — d'après la maquette Figma */
@@ -2777,6 +2777,8 @@
   .sheet.milieu .grab, .sheet.milieu .sheet-x{display:none;}
   .overlay.milieu.show > .sheet{animation:fenIn .3s cubic-bezier(.22,1,.36,1) backwards;}
   .overlay.milieu.part > .sheet{animation:fenOut .2s ease forwards;}
+  .overlay.milieu.show > .sheet.remplace{animation:fenRemplace .26s cubic-bezier(.22,1,.36,1);}
+  @keyframes fenRemplace{from{opacity:.35; transform:scale(.97);}}
   @keyframes fenIn{from{opacity:0; transform:scale(.94);}}
   @keyframes fenOut{to{opacity:0; transform:scale(.96);}}
   /* ---- les pages pleines : le resultat d'un scan, plat ou code-barres ----
@@ -3189,6 +3191,8 @@
   /* le demarrage d'une seance : le disque orange qui couvre l'ecran puis s'efface */
   .deploie{position:fixed; inset:0; z-index:100000; pointer-events:none; background:var(--accent-grad);
     clip-path:circle(0px at var(--x) var(--y)); animation:deploie 1.3s forwards;}
+  .rang-entree{animation:rangSeance .65s cubic-bezier(.2,.8,.3,1) backwards; animation-delay:calc(850ms + var(--i, 0) * 170ms);}
+  @keyframes rangSeance{from{opacity:0; transform:translateY(22px);}}
   /* le logo, a la taille de l'ecran d'ouverture, immobile au centre */
   .deploie img{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); width:58vw; max-width:300px; height:auto;}
   /* le cercle s'ouvre depuis le doigt, laisse voir le logo, puis remonte : le masque
@@ -3344,6 +3348,13 @@
      Plein écran par-dessus tout : on vise un produit, on ne lit rien d'autre. */
   /* ---- l'ecran camera : un flux, deux modes ---- */
   .cam{position:fixed; inset:0; z-index:200; background:#000; color:#fff; overflow:hidden;}
+  /* clavier ouvert (la precision du plat) : Android retrecit la fenetre et tout le bas
+     remontait avec, declencheur compris. La camera garde la hauteur mesuree a
+     l'ouverture — le declencheur reste sous le clavier — et seul le champ vient se
+     poser juste au-dessus des touches : on valide d'abord le texte (Nico, 29 sept.) */
+  :root.clavier .cam{bottom:auto; height:var(--cam-h, 100%);}
+  :root.clavier .cam.plat .indice-plat, :root.clavier .cam.plat .t:not(:empty) ~ .indice-plat{
+    top:calc(var(--v-haut, 0px) + var(--v-haut-h, 100dvh) - 56px);}
   /* la video reste invisible tant qu'elle n'a rien a montrer : sans ca, Android
      affiche son gabarit gris avec un bouton « lecture » etire le temps que la
      camera s'ouvre */
@@ -3369,7 +3380,7 @@
      carree — une assiette vue de biais est plus large que haute, et les bords partaient
      hors champ. Elle s'elargit donc SEULEMENT en largeur : sa hauteur (46vh / 1,2 = 38vh)
      est exactement celle du carre d'avant, et elle gagne quatorze pour cent de largeur. */
-  .cam .carre{position:absolute; left:50%; top:40%; width:min(94vw, 46vh); aspect-ratio:6/5; transform:translate(-50%,-50%);
+  .cam .carre{position:absolute; left:50%; top:40%; width:min(94vw, calc(46 * var(--cam-vh, 1vh))); aspect-ratio:6/5; transform:translate(-50%,-50%);
     border:3px solid #fff; border-radius:24px; box-shadow:0 0 0 9999px rgba(0,0,0,.74);
     transition:opacity .28s ease, transform .32s cubic-bezier(.22,1,.36,1);}
   .cam.code .carre{opacity:0; transform:translate(-50%,-50%) scale(.9); pointer-events:none;}
@@ -3393,16 +3404,16 @@
   /* le texte se cale sous la fenetre, quelle que soit la hauteur de l'ecran : calcule depuis
      son centre (40 %) plus sa DEMI-HAUTEUR — la largeur divisee par 2,4 —, il ne peut plus
      la toucher */
-  .cam.plat .t{top:calc(40% + min(39.2vw, 19.2vh) + 12px); bottom:auto;}
+  .cam.plat .t{top:calc(40% + min(39.2vw, calc(19.2 * var(--cam-vh, 1vh))) + 12px); bottom:auto;}
   .cam .indice-plat{display:none;}
   .cam.plat .indice-plat{display:block; position:absolute; left:50%; transform:translateX(-50%); width:min(86%, 340px);
-    top:calc(40% + min(39.2vw, 19.2vh) + 14px);}
+    top:calc(40% + min(39.2vw, calc(19.2 * var(--cam-vh, 1vh))) + 14px);}
   .cam .indice-plat input{width:100%; border:1px solid rgba(255,255,255,.28); border-radius:99px; padding:12px 16px;
     background:rgba(16,16,20,.55); color:#fff; font-size:14px; text-align:center;
     -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
   .cam .indice-plat input::placeholder{color:rgba(255,255,255,.72);}
   /* un message sous la fenetre (camera refusee, lecteur indisponible) : le champ passe dessous */
-  .cam.plat .t:not(:empty) ~ .indice-plat{top:calc(40% + min(39.2vw, 19.2vh) + 78px);}
+  .cam.plat .t:not(:empty) ~ .indice-plat{top:calc(40% + min(39.2vw, calc(19.2 * var(--cam-vh, 1vh))) + 78px);}
   .cam .indice-plat input:focus{outline:none; border-color:rgba(245,130,32,.9);}
   /* ecran court : la consigne se resserre pour ne pas toucher la pilule des assiettes */
   @media (max-height:700px){ .cam .t{font-size:13px; line-height:1.35; padding:0 18px;} }
@@ -4103,6 +4114,7 @@
   .exo-h{display:flex; gap:12px; align-items:center; margin:2px 0 16px;}
   .exo-h h3{margin:0; padding:0; font-size:22px; line-height:1.15; text-align:left;}
   .exo-h .sous{font-size:13px; color:var(--ink-mute); margin-top:3px;}
+  .exo-h .exo-mw{margin-top:7px;}
   /* Le verdict ouvre la page Progression : la cause, puis la conclusion. Le trait de
      couleur donne le ton avant même la lecture — vert ça monte, orange ça coince,
      gris on ne sait pas encore. */
@@ -5133,6 +5145,9 @@
   .sq-l span, .sq-l i{background:linear-gradient(90deg, var(--surface2) 0%, rgba(245,130,32,.08) 50%, var(--surface2) 100%); background-size:200% 100%; animation:sqBrille 1.2s linear infinite;}
   @keyframes sqBrille{from{background-position:100% 0;} to{background-position:-100% 0;}}
   .am-liste .sq-l + .sq-l, .cl-liste .sq-l + .sq-l{margin-top:0;}
+  .sq-roue{width:24px; height:24px; margin:2px auto 4px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--accent);
+    animation:phspin .8s linear infinite, sqVoir .01s .4s both;}
+  @keyframes sqVoir{from{opacity:0;} to{opacity:1;}}
   @media (prefers-reduced-motion: reduce){ .rg-in, .pd-po{animation:none;} .sq-l span, .sq-l i{animation:none;} }
   .am-moi{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
   .am-moi b{color:var(--ink); font-weight:800;} .am-moi .sep{color:var(--ink-mute);}
@@ -5316,29 +5331,27 @@
   #sheet .pc-et .pc-type button.on{color:#fff;}
 </style>
 
-<!-- L'ecran d'ouverture (Nico, 29 sept.) : noir, les deux halos, le logo et sa barre. Il
+<!-- L'ecran d'ouverture (Nico, 29 sept.) : orange, le logo blanc et sa barre blanche. Il
      est peint avant que l'app ne tourne ; quand l'accueil est pret, il monte comme un
      rideau et le salut s'ecrit. Styles ici, en ligne : ils s'appliquent sans attendre. -->
 <style>
-  #ouverture{position:fixed; inset:0; z-index:200000; background:#000; overflow:hidden;
-    transition:transform .5s cubic-bezier(.7,0,.25,1);}
-  #ouverture .ov-halo{position:absolute; width:62vw; max-width:420px; pointer-events:none;}
-  #ouverture .ov-halo.h1{left:0; top:0;}
-  #ouverture .ov-halo.h2{right:0; bottom:0; transform:rotate(180deg);}
+  #ouverture{position:fixed; inset:0; z-index:200000; background:linear-gradient(180deg, #ff9a3c 0%, #f58220 55%, #e8700f 100%); overflow:hidden;
+    clip-path:circle(var(--r, 150vmax) at 50% 50%); transition:clip-path .6s cubic-bezier(.6,0,.35,1);}
   #ouverture .ov-c{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); display:flex; flex-direction:column; align-items:center; gap:22px;}
   #ouverture .ov-logo{width:58vw; max-width:300px; height:auto;}
-  #ouverture .ov-barre{width:140px; height:6px; border-radius:99px; background:#262626; overflow:hidden;}
-  #ouverture .ov-barre i{display:block; height:100%; width:0; border-radius:99px; background:linear-gradient(90deg, #ff8a1e, #ff5f00);
+  /* la barre : un fond transparent cerne d'un trait blanc tres fin, qui se remplit de blanc */
+  #ouverture .ov-barre{width:140px; height:7px; border-radius:99px; background:transparent; box-shadow:inset 0 0 0 1px rgba(255,255,255,.9); overflow:hidden;}
+  #ouverture .ov-barre i{display:block; height:100%; width:0; border-radius:99px; background:#fff;
     animation:ovCharge 1.4s cubic-bezier(.2,.7,.3,1) forwards;}
   #ouverture.fin .ov-barre i{animation:none; width:100%; transition:width .2s ease-out;}
-  #ouverture.leve{transform:translateY(-100%);}
+  /* le rideau se leve comme au lancement d'une seance : un cercle qui couvre tout
+     l'ecran remonte, le logo reste en place et disparait au passage du bord */
+  #ouverture.leve{clip-path:circle(var(--r, 150vmax) at 50% calc(50% - var(--d, 300vh)));}
   @keyframes ovCharge{from{width:0;} to{width:82%;}}
-  @media (prefers-reduced-motion: reduce){ #ouverture{transition:opacity .2s;} #ouverture.leve{transform:none; opacity:0;} }
+  @media (prefers-reduced-motion: reduce){ #ouverture{transition:opacity .2s;} #ouverture.leve{clip-path:none; opacity:0;} }
 </style>
 <div id="ouverture" aria-hidden="true">
-  <img class="ov-halo h1" src="img/halo.webp" alt="">
-  <img class="ov-halo h2" src="img/halo.webp" alt="">
-  <div class="ov-c"><img class="ov-logo" src="img/logo-texte.png" alt="Tonnup"><div class="ov-barre"><i></i></div></div>
+  <div class="ov-c"><img class="ov-logo" src="img/logo-blanc.webp" alt="Tonnup"><div class="ov-barre"><i></i></div></div>
 </div>
 
 <div id="app"></div>
@@ -5520,6 +5533,21 @@ const TRAD = {en:{
   "Pousse la jambe vers l'arrière avec le talon.":"Push your leg back with your heel.",
   "Serre le fessier une seconde en haut.":"Squeeze your glute for a second at the top.",
   "Reviens lentement sans te laisser tirer.":"Return slowly without letting it pull you back.",
+  "Tractions assistées":"Assisted pull-ups",
+  "Dips assistés":"Assisted dips",
+  "aide":"assist",
+  "d'aide":"assist",
+  "Le poids réglé est une aide : plus il est lourd, plus c'est facile. Pour progresser, baisse l'aide petit à petit, jusqu'à la traction sans aide.":"The weight you set is an assist: the heavier it is, the easier it gets. To progress, lower the assist bit by bit, until you can do unassisted pull-ups.",
+  "Le poids réglé est une aide : plus il est lourd, plus c'est facile. Baisse-la petit à petit pour arriver aux dips sans aide.":"The weight you set is an assist: the heavier it is, the easier it gets. Lower it bit by bit to reach unassisted dips.",
+  "Règle le contrepoids : plus il est lourd, plus la machine t'aide.":"Set the counterweight: the heavier it is, the more the machine helps you.",
+  "Genoux ou pieds sur l'appui, mains sur les poignées du haut.":"Knees or feet on the platform, hands on the top handles.",
+  "Tire en amenant les coudes vers le bas et l'arrière, poitrine vers les poignées.":"Pull by driving your elbows down and back, chest toward the handles.",
+  "Monte jusqu'à ce que le menton dépasse les poignées.":"Go up until your chin passes the handles.",
+  "Redescends lentement jusqu'à tendre les bras.":"Lower slowly until your arms are straight.",
+  "Genoux sur l'appui, mains sur les barres parallèles, bras tendus.":"Knees on the platform, hands on the parallel bars, arms straight.",
+  "Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.":"Lower by bending your elbows until they form a right angle.",
+  "Garde les épaules basses, loin des oreilles.":"Keep your shoulders down, away from your ears.",
+  "Pousse pour remonter jusqu'à tendre les bras.":"Push back up until your arms are straight.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9364,6 +9392,21 @@ es:{
   "Pousse la jambe vers l'arrière avec le talon.":"Empuja la pierna hacia atrás con el talón.",
   "Serre le fessier une seconde en haut.":"Aprieta el glúteo un segundo arriba.",
   "Reviens lentement sans te laisser tirer.":"Vuelve despacio sin dejarte arrastrar.",
+  "Tractions assistées":"Dominadas asistidas",
+  "Dips assistés":"Fondos asistidos",
+  "aide":"ayuda",
+  "d'aide":"de ayuda",
+  "Le poids réglé est une aide : plus il est lourd, plus c'est facile. Pour progresser, baisse l'aide petit à petit, jusqu'à la traction sans aide.":"El peso que ajustas es una ayuda: cuanto más pesa, más fácil es. Para progresar, baja la ayuda poco a poco hasta la dominada sin ayuda.",
+  "Le poids réglé est une aide : plus il est lourd, plus c'est facile. Baisse-la petit à petit pour arriver aux dips sans aide.":"El peso que ajustas es una ayuda: cuanto más pesa, más fácil es. Bájala poco a poco hasta los fondos sin ayuda.",
+  "Règle le contrepoids : plus il est lourd, plus la machine t'aide.":"Ajusta el contrapeso: cuanto más pesa, más te ayuda la máquina.",
+  "Genoux ou pieds sur l'appui, mains sur les poignées du haut.":"Rodillas o pies en el apoyo, manos en los agarres de arriba.",
+  "Tire en amenant les coudes vers le bas et l'arrière, poitrine vers les poignées.":"Tira llevando los codos hacia abajo y atrás, pecho hacia los agarres.",
+  "Monte jusqu'à ce que le menton dépasse les poignées.":"Sube hasta que la barbilla supere los agarres.",
+  "Redescends lentement jusqu'à tendre les bras.":"Baja despacio hasta estirar los brazos.",
+  "Genoux sur l'appui, mains sur les barres parallèles, bras tendus.":"Rodillas en el apoyo, manos en las barras paralelas, brazos estirados.",
+  "Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.":"Baja flexionando los codos hasta formar un ángulo recto.",
+  "Garde les épaules basses, loin des oreilles.":"Mantén los hombros bajos, lejos de las orejas.",
+  "Pousse pour remonter jusqu'à tendre les bras.":"Empuja para subir hasta estirar los brazos.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13422,6 +13465,21 @@ pt:{
   "Mollets à la presse":"Panturrilha no leg press",
   "Développé incliné machine":"Supino inclinado na máquina",
   "Machine fessiers":"Máquina de glúteos",
+  "Tractions assistées":"Barra fixa assistida",
+  "Dips assistés":"Paralelas assistidas",
+  "aide":"ajuda",
+  "d'aide":"de ajuda",
+  "Le poids réglé est une aide : plus il est lourd, plus c'est facile. Pour progresser, baisse l'aide petit à petit, jusqu'à la traction sans aide.":"O peso regulado é uma ajuda: quanto mais pesado, mais fácil. Para progredir, diminua a ajuda aos poucos, até a barra fixa sem ajuda.",
+  "Le poids réglé est une aide : plus il est lourd, plus c'est facile. Baisse-la petit à petit pour arriver aux dips sans aide.":"O peso regulado é uma ajuda: quanto mais pesado, mais fácil. Diminua aos poucos até as paralelas sem ajuda.",
+  "Règle le contrepoids : plus il est lourd, plus la machine t'aide.":"Regule o contrapeso: quanto mais pesado, mais a máquina ajuda.",
+  "Genoux ou pieds sur l'appui, mains sur les poignées du haut.":"Joelhos ou pés no apoio, mãos nas pegadas de cima.",
+  "Tire en amenant les coudes vers le bas et l'arrière, poitrine vers les poignées.":"Puxe levando os cotovelos para baixo e para trás, peito em direção às pegadas.",
+  "Monte jusqu'à ce que le menton dépasse les poignées.":"Suba até o queixo passar das pegadas.",
+  "Redescends lentement jusqu'à tendre les bras.":"Desça devagar até estender os braços.",
+  "Genoux sur l'appui, mains sur les barres parallèles, bras tendus.":"Joelhos no apoio, mãos nas barras paralelas, braços estendidos.",
+  "Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.":"Desça flexionando os cotovelos até formarem um ângulo reto.",
+  "Garde les épaules basses, loin des oreilles.":"Mantenha os ombros baixos, longe das orelhas.",
+  "Pousse pour remonter jusqu'à tendre les bras.":"Empurre para subir até estender os braços.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -17531,7 +17589,9 @@ const LIB = [
      haltere a deux mains, le mouvement de la poulie mais en travers du banc */
   ["Dos","Pull-over haltère","Haltères","pullover"],
   /* ---- machines populaires en salle (Nico, 29 sept.) ---- */
-  ["Jambes","Leg curl assis","Machine","legcurl"],["Dos","Lombaires au banc à 45°","Machine","deadlift"],["Abdos","Relevés de genoux à la chaise romaine","Machine","legraise"],["Abdos","Crunch machine","Machine","cablecrunch"],["Jambes","Squat à la Smith","Machine","squat"],["Épaules","Élévations latérales machine","Machine","latraise"],["Biceps","Curl biceps machine","Machine","preacher"],["Jambes","Mollets à la presse","Machine","calf"],["Pectoraux","Développé incliné machine","Machine","chestpress"],["Jambes","Machine fessiers","Machine","kickback"]
+  ["Jambes","Leg curl assis","Machine","legcurl"],["Dos","Lombaires au banc à 45°","Machine","deadlift"],["Abdos","Relevés de genoux à la chaise romaine","Machine","legraise"],["Abdos","Crunch machine","Machine","cablecrunch"],["Jambes","Squat à la Smith","Machine","squat"],["Épaules","Élévations latérales machine","Machine","latraise"],["Biceps","Curl biceps machine","Machine","preacher"],["Jambes","Mollets à la presse","Machine","calf"],["Pectoraux","Développé incliné machine","Machine","chestpress"],["Jambes","Machine fessiers","Machine","kickback"],
+  /* ---- machines d'assistance (Nico, 29 sept.) : le poids regle est une AIDE ---- */
+  ["Dos","Tractions assistées","Machine","pullup"],["Pectoraux","Dips assistés","Machine","dips"]
 ].map((e,i)=>({
   /* L'identifiant est derive du NOM francais, plus du rang : inserer un exercice
      n'importe ou ne decale plus rien. (Les anciens « libN » sont convertis une fois
@@ -17801,7 +17861,10 @@ const ALTS = {
   "Curl biceps machine":["Curl pupitre", "Curl barre", "Curl poulie basse"],
   "Mollets à la presse":["Mollets debout", "Mollets assis"],
   "Développé incliné machine":["Développé incliné haltères", "Développé incliné barre", "Développé machine"],
-  "Machine fessiers":["Kickback fessier poulie", "Hip thrust", "Pont fessier une jambe"]
+  "Machine fessiers":["Kickback fessier poulie", "Hip thrust", "Pont fessier une jambe"],
+  /* machines d'assistance (29 sept.) */
+  "Tractions assistées":["Tractions","Tirage vertical","Tirage vertical prise neutre"],
+  "Dips assistés":["Dips","Pompes","Développé machine"]
 };
 /* exercices où la charge est ton propre corps : le champ kg sert au lest éventuel */
 function estPoidsDuCorps(ex){ const e = equipCanon(ex); return !!ex && (e==="Poids du corps" || e==="Barre fixe"); }
@@ -17830,6 +17893,15 @@ function fmtDuree(sec){
    fraction, qui change avec l'inclinaison et les proportions — l'app ne peut pas la
    mesurer, donc elle ne l'invente pas : elles restent hors de ce calcul. */
 const CORPS_ENTIER = ["Tractions", "Tractions supination", "Dips"];
+/* Les machines d'assistance (Nico, 29 sept.) : le contrepoids qu'on regle AIDE a monter.
+   Plus il est lourd, plus c'est facile — l'inverse de toute l'app. La charge reellement
+   hissee est donc le poids du corps MOINS l'aide ; le tonnage, lui, ne compte rien
+   (comme une traction sans lest : aucune charge externe deplacee). */
+const ASSISTES = ["Tractions assistées", "Dips assistés"];
+function estAssiste(ex){ return !!ex && ASSISTES.indexOf(nomCanon(ex)) >= 0; }
+function poidsCorps(){ return currentWeight() || (db.profile && db.profile.weight) || 75; }
+/* pendant que le moteur de conseils raisonne en charge reelle (voir suggestAssiste) */
+let miroirAide = false;
 function porteLeCorps(ex){ return !!ex && CORPS_ENTIER.indexOf(nomCanon(ex)) >= 0; }
 /* charge servant aux records et au profil musculaire — jamais au tonnage.
    Le poids du corps est pris tel quel pour toutes les séances, passées comprises :
@@ -17837,6 +17909,7 @@ function porteLeCorps(ex){ return !!ex && CORPS_ENTIER.indexOf(nomCanon(ex)) >= 
    naître d'une simple variation de poids. */
 function chargeReelle(exId, st){
   const w = st && st.w ? Number(st.w) : 0;
+  if(estAssiste(getEx(exId))) return miroirAide ? w : Math.max(0, poidsCorps() - w);
   return porteLeCorps(getEx(exId))
     ? w + (currentWeight() || (db.profile && db.profile.weight) || 75)
     : w;
@@ -17850,6 +17923,12 @@ function serieEchauffement(exId, reps){
     return {w:"", r:Math.max(3, Math.round(cible/2)), done:false, warm:true};
   }
   const last = lastPerf(exId);
+  if(estAssiste(ex)){
+    /* la moitie de la charge reellement hissee : l'aide monte d'autant */
+    if(!last) return {w:"", r:Math.min(12, cible+4), done:false, warm:true};
+    const aideTravail = Math.min(...last.sets.map(s=>Number(s.w)||0)), bw = poidsCorps();
+    return {w:Math.round((aideTravail + (bw - aideTravail) / 2) / 2.5) * 2.5, r:Math.min(12, cible+4), done:false, warm:true};
+  }
   const w = last ? Math.max(0, Math.round(Math.max(...last.sets.map(s=>s.w||0))*0.5/2.5)*2.5) : "";
   return {w, r:Math.min(12, cible+4), done:false, warm:true};
 }
@@ -18003,7 +18082,10 @@ const MUSCLE_WORK = {
   "Curl biceps machine":[["Biceps", 3]],
   "Mollets à la presse":[["Mollets (jumeaux)", 3]],
   "Développé incliné machine":[["Pectoraux (haut)", 3], ["Deltoïdes (antérieur)", 2], ["Triceps", 2]],
-  "Machine fessiers":[["Fessiers", 3], ["Ischio-jambiers", 1]]
+  "Machine fessiers":[["Fessiers", 3], ["Ischio-jambiers", 1]],
+  /* machines d'assistance (29 sept.) */
+  "Tractions assistées":[["Grand dorsal",3],["Biceps",2],["Avant-bras",1]],
+  "Dips assistés":[["Triceps",3],["Pectoraux",3],["Deltoïdes (antérieur)",2]]
 };
 /* fiches d'exécution : conseil de pro + étapes, par exercice */
 /* La fiche d'un exercice. Son texte est en francais dans EXO_INFO : c'est la cle,
@@ -18289,7 +18371,10 @@ function openExoInfo(exId){
     <div class="exo-h">
       ${exIcon(ex)}
       <div class="grow"><h3>${esc(nomEx(ex))}</h3>
-        <div class="sous">${[ex.equip, ex.muscle].filter(Boolean).map(v=>esc(TR(v))).join(" · ")}</div></div>
+        ${/* les muscles quittent la carte de la seance pour venir ici, sous le nom (Nico,
+             29 sept.) : la seance se lit plus vite, la fiche les garde a un appui */""}
+        <div class="sous">${[ex.equip, muscles.length ? "" : ex.muscle].filter(Boolean).map(v=>esc(TR(v))).join(" · ")}</div>
+        ${muscles.length ? `<div class="exo-mw">${musclesHtml(nomCanon(ex))}</div>` : ""}</div>
     </div>
     ${/* La blessure ne se dit plus ici : elle a son bouton ⚠ dans la séance, et le
          même avertissement à deux endroits finit par ne plus être lu nulle part.
@@ -18340,6 +18425,10 @@ const INJURIES = [
 ];
 /* ---- machines populaires (Nico, 29 sept.) ---- */
 Object.assign(EXO_INFO, {
+"Tractions assistées":{tip:"Le poids réglé est une aide : plus il est lourd, plus c'est facile. Pour progresser, baisse l'aide petit à petit, jusqu'à la traction sans aide.",
+ steps:["Règle le contrepoids : plus il est lourd, plus la machine t'aide.","Genoux ou pieds sur l'appui, mains sur les poignées du haut.","Tire en amenant les coudes vers le bas et l'arrière, poitrine vers les poignées.","Monte jusqu'à ce que le menton dépasse les poignées.","Redescends lentement jusqu'à tendre les bras."]},
+"Dips assistés":{tip:"Le poids réglé est une aide : plus il est lourd, plus c'est facile. Baisse-la petit à petit pour arriver aux dips sans aide.",
+ steps:["Règle le contrepoids : plus il est lourd, plus la machine t'aide.","Genoux sur l'appui, mains sur les barres parallèles, bras tendus.","Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.","Garde les épaules basses, loin des oreilles.","Pousse pour remonter jusqu'à tendre les bras."]},
 "Leg curl assis":{tip:"Hanche pliée, les ischios travaillent plus étirés : dans une étude de 2021 (Maeo et coll.), la version assise les a fait davantage grossir que la couchée, à entraînement égal.",
  steps:["Règle le dossier pour que tes genoux soient alignés avec l'axe de la machine.","Rouleau juste au-dessus des talons, cuisses bloquées sous l'appui.","Tire les talons vers l'arrière et le bas, sous le siège.","Serre une seconde en fin de mouvement.","Remonte lentement en gardant la tension."]},
 "Lombaires au banc à 45°":{tip:"Remonte jusqu'à l'alignement des jambes et du buste, pas au-delà : se cambrer en haut ne muscle rien de plus et charge les vertèbres.",
@@ -18366,9 +18455,11 @@ const INJURY_RULES = {
     "Développé militaire":{tip:"Debout barre au-dessus de la tête, c'est le mouvement le plus exigeant pour l'épaule.", alts:["Face pull","Oiseau"]},
     "Développé couché":{tip:"Garde les coudes à 45° du buste plutôt qu'écartés à 90°, et ne descends pas la barre trop bas.", alts:["Développé machine","Pompes inclinées"]},
     "Dips":{tip:"Grande amplitude en bas = forte tension sur l'avant de l'épaule.", alts:["Extension triceps machine","Extension poulie (corde)"]},
+    "Dips assistés":{tip:"Grande amplitude en bas = forte tension sur l'avant de l'épaule.", alts:["Extension triceps machine","Extension poulie (corde)"]},
     "Écartés poulie":{tip:"L'étirement en fin de course tire sur la capsule de l'épaule. Réduis l'amplitude.", alts:["Développé machine","Pompes inclinées"]},
     "Butterfly (pec deck)":{tip:"Règle le siège pour que les bras partent à hauteur de poitrine et ne recule pas trop loin en arrière.", alts:["Développé machine","Pompes inclinées"]},
     "Tractions":{tip:"Prise large et descente complète sollicitent beaucoup l'épaule. Préfère une prise neutre.", alts:["Tirage vertical prise neutre","Rowing machine"]},
+    "Tractions assistées":{tip:"Prise large et descente complète sollicitent beaucoup l'épaule. Préfère une prise neutre.", alts:["Tirage vertical prise neutre","Rowing machine"]},
     "Élévations latérales":{tip:"Ne monte pas au-delà de la hauteur d'épaule, pouce légèrement vers le haut.", alts:["Oiseau","Face pull"]},
     "Élévations latérales poulie":{tip:"La poulie garde une tension constante : reste sous la hauteur d'épaule et va lentement.", alts:["Oiseau","Face pull"]},
     "Développé couché à la Smith":{tip:"La barre guidée impose une trajectoire fixe qui peut forcer l'épaule. Les haltères s'adaptent mieux.", alts:["Développé machine","Pompes inclinées"]}
@@ -18395,6 +18486,7 @@ const INJURY_RULES = {
     "Barre au front":{tip:"Le nom dit tout : très exigeant pour le coude. La poulie répartit mieux la tension.", alts:["Extension poulie (corde)","Extension triceps machine"]},
     "Curl barre":{tip:"La barre droite bloque les poignets et tire sur le coude. Prise neutre ou haltères.", alts:["Curl marteau","Curl marteau élastique"]},
     "Dips":{tip:"Forte tension sur le tendon du triceps au coude.", alts:["Extension triceps machine","Extension poulie (corde)"]},
+    "Dips assistés":{tip:"Forte tension sur le tendon du triceps au coude.", alts:["Extension triceps machine","Extension poulie (corde)"]},
     "Extension nuque haltère":{tip:"Position qui étire fortement le tendon. Amplitude modérée.", alts:["Extension poulie (corde)","Extension triceps machine"]},
     "Kickback poulie":{tip:"Coude verrouillé en extension complète : va doucement et sans à-coups.", alts:["Extension triceps machine","Extension poulie (corde)"]}
   },
@@ -21071,7 +21163,8 @@ const EXO_PHOTO = {
   "Planche latérale":"planche-laterale", "Roulette abdominale":"roulette-abdos",
   "Russian twist":"russian-twist", "Mountain climber":"mountain-climber",
   /* machines populaires (29 sept.) */
-  "Leg curl assis":"leg-curl-assis", "Lombaires au banc à 45°":"lombaires-45", "Relevés de genoux à la chaise romaine":"chaise-romaine", "Crunch machine":"crunch-machine", "Squat à la Smith":"squat-smith", "Élévations latérales machine":"elevations-laterales-machine", "Curl biceps machine":"curl-machine", "Mollets à la presse":"mollets-presse", "Développé incliné machine":"developpe-incline-machine", "Machine fessiers":"machine-fessiers"
+  "Leg curl assis":"leg-curl-assis", "Lombaires au banc à 45°":"lombaires-45", "Relevés de genoux à la chaise romaine":"chaise-romaine", "Crunch machine":"crunch-machine", "Squat à la Smith":"squat-smith", "Élévations latérales machine":"elevations-laterales-machine", "Curl biceps machine":"curl-machine", "Mollets à la presse":"mollets-presse", "Développé incliné machine":"developpe-incline-machine", "Machine fessiers":"machine-fessiers",
+  "Tractions assistées":"tractions-assistees", "Dips assistés":"dips-assistes"
 };
 function exIcon(ex, sm){
   const img = EXO_PHOTO[nomCanon(ex)];
@@ -21084,7 +21177,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 19h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 20h31 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -21659,6 +21752,7 @@ function dejaParCote(exId){
   const ex = getEx(exId);
   return !!(ex && equipCanon(ex)==="Haltères" && !/haltère$|nuque/i.test(nomCanon(ex)));
 }
+function facteurTonnage(exId){ return estAssiste(getEx(exId)) ? 0 : facteurCharge(exId); }
 function facteurCharge(exId){
   if(dejaParCote(exId)) return 2;
   /* unilatéral : la charge saisie est celle d'un côté, on compte les deux */
@@ -21668,7 +21762,7 @@ function facteurCharge(exId){
 function sessionVolume(sess){
   let v=0;
   sess.entries.forEach(en=>{
-    const f = facteurCharge(en.exId);
+    const f = facteurTonnage(en.exId);
     en.sets.forEach(st=>{ if(st.done && !st.warm) v += volSerie(st)*f; });
   });
   return v;
@@ -21831,6 +21925,7 @@ function ecartPerso(exId, type){
    nom de l'exercice change tout : on sait ce qu'on vient chercher avant de commencer.
    La ligne du dessous rappelle d'où on part, sinon l'objectif ne veut rien dire. */
 function objectifDuJour(exId, cible, fat){
+  if(estAssiste(getEx(exId))) return objectifAssiste(exId, cible, fat);
   const sug = suggestFor(exId, cible, fat);
   /* « la dernière fois » = la séance à laquelle on se compare, pas forcément la
      plus récente : à une autre place dans la séance, son chiffre ne voulait pas dire
@@ -22018,7 +22113,57 @@ function progressionSansCharge(exId, repsActuelles, nbSeries){
 }
 /* `fat` : la pré-fatigue de l'exercice AUJOURD'HUI, à sa place dans la séance. Sans
    elle (appel ancien, séance libre), on garde la règle d'avant : la dernière fois. */
+/* l'objectif du jour d'une machine d'assistance : la meilleure serie est celle qui a eu
+   le MOINS d'aide ; baisser l'aide est une progression (fleche vers le haut) */
+function objectifAssiste(exId, cible, fat){
+  const sug = suggestFor(exId, cible, fat);
+  const last = (sug && sug.ref) || lastPerf(exId);
+  if(!last || !last.sets.length) return null;
+  const best = last.sets.slice().sort((a, b)=>(a.w || 0) - (b.w || 0) || (b.r || 0) - (a.r || 0))[0];
+  const passe = TR("{n} à {p}").replace("{n}", last.sets.length + " × " + (best.r || 0))
+    .replace("{p}", pds(best.w || 0) + " " + TR("d'aide"));
+  const rng = parseReps(cible && cible.reps);
+  const reps = (sug && sug.reps) ? String(sug.reps) : (sug && sug.sansCible) ? ""
+    : (rng ? (rng.lo === rng.hi ? String(rng.lo) : rng.lo + "–" + rng.hi) : "");
+  const poids = sug ? pds(sug.w || 0) + " " + TR("d'aide") : "";
+  let ecart = 0, ecartTxt = "";
+  if(sug){
+    ecart = Math.round(((best.w || 0) - (sug.w || 0)) * 100) / 100;     /* > 0 : moins d'aide, donc on monte */
+    if(ecart) ecartTxt = (ecart > 0 ? "−" : "+") + pds(Math.abs(ecart)) + " " + TR("d'aide");
+  }
+  return {poids, reps, passe, ecart, ecartTxt, iso:false, pourquoi:(sug && (sug.why || sug.text)) || "", menage:(sug && sug.menage) || ""};
+}
+/* Une machine d'assistance, dans le moteur de conseils (Nico, 29 sept.). Tout le moteur
+   pense « plus lourd = plus dur » : on lui presente les series converties en CHARGE
+   REELLE (poids du corps moins l'aide), il raisonne comme pour n'importe quel exercice,
+   puis on retraduit sa reponse en aide — le poids propose et chaque poids cite dans ses
+   phrases (« passe a 17,5 kg d'aide »). Monter la charge, c'est baisser l'aide. */
+function suggestAssiste(exId, target, fat){
+  const bw = poidsCorps();
+  const reel = w=>Math.max(0, bw - (Number(w) || 0));
+  const aide = w=>Math.max(0, Math.round((bw - w) * 2) / 2);
+  const conv = st=>Object.assign({}, st, {w:reel(st.w), drops:st.drops ? st.drops.map(d=>Object.assign({}, d, {w:reel(d.w)})) : st.drops});
+  const vrai = db.history;
+  db.history = vrai.map(h=>h.entries && h.entries.some(en=>en.exId === exId)
+    ? Object.assign({}, h, {entries:h.entries.map(en=>en.exId !== exId ? en : Object.assign({}, en, {sets:en.sets.map(conv)}))}) : h);
+  miroirAide = true;
+  let sug;
+  try{ sug = suggestFor(exId, target, fat); }
+  finally{ db.history = vrai; miroirAide = false; }
+  if(!sug) return sug;
+  const phrase = t=>t ? String(t).replace(/(\d+(?:[.,]\d+)?)\s(kg|lb)\b/g, (m, n, u)=>{
+    let v = parseFloat(n.replace(",", "."));
+    if(u === "lb") v = v / PAR_LB;
+    return pds(aide(v)) + " " + TR("d'aide");
+  }) : t;
+  sug.w = aide(sug.w || 0);
+  if(sug.ref && sug.ref.sets) sug.ref = Object.assign({}, sug.ref, {sets:sug.ref.sets.map(st=>Object.assign({}, st, {w:aide(st.w || 0)}))});
+  sug.text = phrase(sug.text);
+  sug.why = phrase(sug.why);
+  return sug;
+}
 function suggestFor(exId, target, fat){
+  if(!miroirAide && estAssiste(getEx(exId))) return suggestAssiste(exId, target, fat);
   if(fat === undefined || fat === null){
     const l = lastPerf(exId);
     return suggestSur(exId, target, l, l);
@@ -22979,6 +23124,21 @@ function deploiement(){
   d.style.setProperty("--d", Math.ceil(pt.y + r + 20) + "px");
   document.body.appendChild(d);
   setTimeout(()=>d.remove(), 1400);
+  return true;
+}
+/* Sous le rideau qui se leve, la seance arrive rangee par rangee (Nico) : le bandeau,
+   chaque exercice, puis les boutons. Posement — 170 ms entre deux —, en commencant quand
+   le rideau se met a monter. */
+function rangeesSeance(){
+  const app = document.getElementById("app");
+  if(!app) return;
+  const rangs = [];
+  [...app.children].forEach(c=>{
+    if(c.id === "ex-list") rangs.push(...c.children);
+    else if(!c.classList.contains("fin-bandeau") || c.classList.contains("show")) rangs.push(c);
+  });
+  rangs.forEach((el, i)=>{ el.style.setProperty("--i", i); el.classList.add("rang-entree"); });
+  setTimeout(()=>rangs.forEach(el=>el.classList.remove("rang-entree")), 900 + rangs.length * 170 + 700);
 }
 /* ---- Les confettis d'un record (Nico) : orange, jaune, et un peu de couleur ---- */
 function pluieConfettis(n){
@@ -23016,8 +23176,11 @@ function remplirDoux(el, html, t0, apres){
     if(apres) apres();
   }, attente);
 }
-/* en attendant les donnees : des rangees vides a la bonne hauteur, qui scintillent */
-function squelette(n){ return Array.from({length:n}, ()=>`<div class="sq-l"><span></span><i></i></div>`).join(""); }
+/* en attendant les donnees : des rangees vides a la bonne hauteur, qui scintillent, et
+   une petite roue qui n'apparait que si l'attente dure (au-dela de 0,4 s) */
+function squelette(n){ return `<div class="sq-roue" aria-hidden="true"></div>` + Array.from({length:n}, ()=>`<div class="sq-l"><span></span><i></i></div>`).join(""); }
+/* une fenetre est-elle deja a l'ecran (on passe de l'une a l'autre) ? */
+function fenetreDejaOuverte(){ return overlay.classList.contains("show") && !overlay.classList.contains("part"); }
 function ligneClassement(x, i, moi){
   const rg = i < 3 ? `<img class="cl-med" src="img/medaille-${i + 1}.webp" alt="${i + 1}">` : `<span class="cl-num">${i + 1}</span>`;
   return `<div class="cl-l${i === 0 ? " or" : ""}${moi ? " moi" : ""}" data-cli="${i}"><span class="cl-rg">${rg}</span>${poussinAmi(x.acc, "en-forme")}
@@ -23042,7 +23205,9 @@ let classementTous = null;
 function openClassement(onglet){
   onglet = onglet || "amis";
   const a = db.amis || {};
-  const t0 = performance.now();
+  /* venue de Mes amis, la fenetre est deja ouverte : aucune animation d'ouverture a
+     laisser finir, la liste arrive des qu'elle est la (Nico : « un petit bug d'attente ») */
+  const t0 = fenetreDejaOuverte() ? 0 : performance.now();
   openSheet(`<div class="am-tete cl-tete"><span class="cl-titre"><img class="cl-trophee" src="img/trophee.webp" alt=""><h2>${TR("Classement")}</h2></span>
       <button type="button" class="pp-x" id="am-x" aria-label="${TR("Fermer")}">✕</button></div>
     <div class="cl-seg ${onglet === "tous" ? "tous" : ""}" id="cl-seg"><i class="cl-pastille" aria-hidden="true"></i><button data-cl="amis" class="${onglet === "amis" ? "on" : ""}">${TR("Mes amis")}</button><button data-cl="tous" class="${onglet === "tous" ? "on" : ""}">${TR("Tout Tonnup")}</button></div>
@@ -23356,6 +23521,7 @@ function amisDemo(){
    En haut, une ligne discrete : ton nom et ton code, a partager. Le bouton « ami + »
    fait glisser la barre d'ajout — un pseudo, ou un code. */
 function openAmis(tiroir){
+  const dejaOuverte = fenetreDejaOuverte();
   const a = db.amis;
   if(!demoEnCours && !(a && a.actif)){ openAmisDebut(); return; }
   if(!demoEnCours && !a.tag){ changerPseudo(a.pseudo).then(()=>openAmis(tiroir)).catch(()=>{}); }
@@ -23368,7 +23534,7 @@ function openAmis(tiroir){
       <div class="am-res" id="am-res"></div></div></div>
     <div id="am-dem"></div>
     <div class="am-liste" id="am-liste">${squelette(3)}</div>`, {milieu:true});
-  const t0 = performance.now();
+  const t0 = dejaOuverte ? 0 : performance.now();
   brancherCroix();
   const erreur = ()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur");
   const liste = document.getElementById("am-liste"), dem = document.getElementById("am-dem");
@@ -24075,9 +24241,13 @@ function leverRideau(){
     setTimeout(()=>{
       ov.classList.add("fin");
       setTimeout(()=>{
+        const r = Math.ceil(Math.hypot(innerWidth / 2, innerHeight / 2)) + 10;
+        ov.style.setProperty("--r", r + "px");
+        ov.style.setProperty("--d", Math.ceil(innerHeight / 2 + r + 20) + "px");
+        void ov.offsetWidth;
         ov.classList.add("leve"); if(fond) fond.remove();
         setTimeout(()=>{ if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } }, 220);
-        setTimeout(()=>{ ov.remove(); if(fond) fond.remove(); }, 650);
+        setTimeout(()=>{ ov.remove(); if(fond) fond.remove(); }, 750);
       }, 230);
     }, Math.max(0, 900 - performance.now()));
   });
@@ -24470,6 +24640,9 @@ function openSheet(html, opts){
   const rejoue = !overlay.classList.contains("show") || overlay.classList.contains("part");
   annulerFermeture();
   if(rejoue){ overlay.classList.remove("show"); void overlay.offsetWidth; }
+  /* une fenetre du milieu qui en remplace une autre (Mes amis -> Classement) : un court
+     fondu, au lieu d'un contenu qui change de taille d'un coup (Nico) */
+  else if(opts && opts.milieu){ sheet.classList.remove("remplace"); void sheet.offsetWidth; sheet.classList.add("remplace"); }
   overlay.classList.add("show");
   majVerrouPage();
   if(!sheetOpen){
@@ -26407,6 +26580,9 @@ function ouvrirCamera(mode, titre){
         <button class="assiette" data-assiette-btn><span class="tx">${TR(assietteChoisie()[1])}</span>${IC_CHEVRON_BAS}</button>
       </div>
       <input type="file" accept="image/*" data-fichier style="display:none;">`;
+    /* la hauteur de l'ecran sans clavier : la mise en page s'y tient quand le clavier s'ouvre */
+    boite.style.setProperty("--cam-h", window.innerHeight + "px");
+    boite.style.setProperty("--cam-vh", (window.innerHeight / 100) + "px");
     document.body.appendChild(boite);
     const q = sel => boite.querySelector(sel);
     const indiceSaisi = () => { const c = q("#cam-indice"); return c ? c.value.trim().slice(0, 120) : ""; };
@@ -28792,7 +28968,7 @@ function computeBilan(){
   cur.forEach(s=>s.entries.forEach(en=>{
     const sets = workSets(en);
     if(!sets.length) return;
-    const b = Math.max(...sets.map(st=>e1rm(st.w||0,st.r||0)));
+    const b = Math.max(...sets.map(st=>e1rm(chargeReelle(en.exId, st),st.r||0)));
     if(b>(curBest[en.exId]||0)) curBest[en.exId]=b;
   }));
   Object.keys(curBest).forEach(exId=>{
@@ -28801,7 +28977,7 @@ function computeBilan(){
       const t=new Date(s.date).getTime();
       if(t<d28||t>=d7) return;
       const en=s.entries.find(e=>e.exId===exId);
-      if(en && workSets(en).length) pb=Math.max(pb, ...workSets(en).map(st=>e1rm(st.w||0,st.r||0)));
+      if(en && workSets(en).length) pb=Math.max(pb, ...workSets(en).map(st=>e1rm(chargeReelle(exId, st),st.r||0)));
     });
     if(pb>0){
       const pct=(curBest[exId]-pb)/pb*100;
@@ -29590,7 +29766,7 @@ const RESERVOIRS = {
   epaule:    ["Développé militaire","Développé militaire haltères","Arnold press","Développé kettlebell","Développé machine épaules","Pompes piquées","Pompes piquées surélevées","Développé militaire élastique"],
   epauleIso: ["Élévations latérales","Élévations latérales poulie","Élévations frontales","Élévations latérales élastique"],
   triceps:   ["Extension poulie (barre)","Extension poulie (corde)","Barre au front","Extension nuque haltère","Extension triceps machine","Pompes diamant","Kickback poulie","Dips sur banc","Extension triceps élastique"],
-  dosVert:   ["Tractions","Tirage vertical","Tirage vertical prise neutre","Tractions supination","Tirage élastique vertical"],
+  dosVert:   ["Tractions","Tractions assistées","Tirage vertical","Tirage vertical prise neutre","Tractions supination","Tirage élastique vertical"],
   dosHoriz:  ["Rowing barre","Rowing haltère","Tirage horizontal","Rowing machine","Rowing T-bar","Rowing TRX","Tractions australiennes","Tirage élastique horizontal","Rowing sous la table"],
   dosComp:   ["Pull-over poulie","Pull-over haltère","Haussements d'épaules","Tirage horizontal","Rowing haltère","Superman"],
   arriere:   ["Face pull","Oiseau","Rowing menton","Oiseau élastique"],
@@ -29816,7 +29992,10 @@ const SCHEMA = {
   /* machines populaires (29 sept.) */
   "Lombaires au banc à 45°":"charniere",
   "Squat à la Smith":"squat",
-  "Développé incliné machine":"pousseeH"
+  "Développé incliné machine":"pousseeH",
+  /* machines d'assistance (29 sept.) */
+  "Tractions assistées":"tirageV",
+  "Dips assistés":"dip"
 };
 function schemaDe(nom){ return SCHEMA[nom] || "isolation"; }
 /* Combien un exercice met de muscle en jeu : Σ(intensité × masse). Un soulevé de terre
@@ -31368,7 +31547,7 @@ function startWorkout(tplId, lieu, courte){
       derniere: o.base ? texteSortie(o.base) : ""};
   }
   save(); render();
-  deploiement();
+  if(deploiement()) rangeesSeance();
   /* la seance s'ouvre tout en haut (Nico) : la fiche qui se referme par history.back()
      pouvait rendre l'ancienne position ; le rideau orange cache le saut */
   window.scrollTo(0, 0);
@@ -31695,8 +31874,6 @@ function renderActive(app){
   const tailleTitre = nbCar <= 18 ? 29 : (nbCar <= 26 ? 25 : (nbCar <= 36 ? 22 : 19));
   /* ce que la séance représente, en un coup d'œil. Même calcul que partout ailleurs :
      l'installation, la mise en place, les répétitions à leur tempo, puis les repos. */
-  const nbEx = a.entries.length;
-  const nbSeries = a.entries.reduce((n, e)=>n + e.sets.filter(st=>!st.warm).length, 0);
   const minSeance = dureeMinutes(a.entries.map(e=>({
     exId: e.exId,
     sets: e.sets.filter(st=>!st.warm).length || e.sets.length,
@@ -31709,7 +31886,7 @@ function renderActive(app){
         <h1 class="hero-seance" style="--t:${tailleTitre}px">${esc(a.name)}</h1>
         ${/* d'apres la maquette du 21 septembre : trois reperes avec leur signe, puis une
               carte sombre en bas du bandeau avec le tonnage, les calories et le chrono */""}
-        <div class="hero-meta"><span>${ICONS.seance}${TR("{n} exercices").replace("{n}", nbEx)}</span><span>${IC_COUCHES}${TR("{s} séries").replace("{s}", nbSeries)}</span><span>${IC_HORLOGE}~${minSeance} min</span></div>
+        <div class="hero-meta"><span>${IC_HORLOGE}~${minSeance} min</span></div>
       </div>`,
       {photo, icones:false, retour:true, classe:"hero-en-cours", plat:true, apres:`<div class="hero-stats">
           <span class="hs"><i class="ic">${IC_SAC}</i><span><b id="hs-vol">—</b><i>${TR("Soulevés")}</i></span></span>
@@ -31810,7 +31987,6 @@ function renderActive(app){
         <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Réglages de l'exercice")}" aria-label="${TR("Réglages de l'exercice")}">${IC_ROUE_FINE}</button>
         ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
         <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">${IC_INFO_ROND}</button></div>
-      <div style="margin-bottom:10px;">${musclesHtml(nomCanon(ex))}</div>
       ${(()=>{ const o = objectifDuJour(en.exId, en.target, prefatigueDans(a.entries, ei));
         if(!o || (!o.poids && !o.reps) || en.objMasque) return "";
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
@@ -31832,7 +32008,7 @@ function renderActive(app){
             </div>
             ${o.ecart ? `<div class="r ecart ${o.ecart > 0 ? "up" : "down"}">
               <span class="fl">${fleche}</span>
-              <div class="co"><div class="v">${(o.ecart > 0 ? "+" : "−") + pds(Math.abs(o.ecart))}</div>
+              <div class="co"><div class="v">${o.ecartTxt || ((o.ecart > 0 ? "+" : "−") + pds(Math.abs(o.ecart)))}</div>
                 <div class="s">${o.ecart > 0 ? TR("Progression suggérée") : TR("Allègement suggéré")}</div></div>
             </div>` : ""}
           </div>
@@ -31904,7 +32080,7 @@ function renderActive(app){
       row.dataset.si = si;                     /* repère fiable : les dégressifs décalent les index DOM */
       const num = st.warm ? TR("Éch.") : String(en.sets.slice(0,si).filter(s=>!s.warm).length+1);
       /* dans le cadre noir, la premiere ligne porte ses titres en blanc (maquette du 21 septembre) */
-      row.innerHTML = `<div class="bn-tete"><span></span><span>${estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
+      row.innerHTML = `<div class="bn-tete"><span></span><span>${estAssiste(ex)? TR("aide")+" ("+uPoids()+")" : estPoidsDuCorps(ex)? TR("lest")+" ("+uPoids()+")"
           : (dejaParCote(en.exId)? uPoids()+" / "+TR("haltère") : (db.unilat[en.exId]? uPoids()+" / "+TR("bras") : uPoids()))}</span><span>${
           iso? TR("durée") : "reps"}</span><span>${iso? "" : TR("dég.")}</span><span>✓</span></div>
         <div class="n">${num}</div>
@@ -32512,7 +32688,7 @@ function renderActive(app){
     const cardioFait = !!(a.cardio && a.cardio.fait && (a.cardio.min > 0 || a.cardio.km > 0));
     const courseFaite = !!(a.course && a.course.fait);
     if(!doneSets && !cardioFait && !courseFaite){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
-    const vol = a.entries.reduce((v,en)=>{ const f=facteurCharge(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
+    const vol = a.entries.reduce((v,en)=>{ const f=facteurTonnage(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
     const kcal = liftKcal(a) + (courseFaite ? (a.course.kcal || 0) : 0);
     /* d'apres la maquette du 21 septembre : la coche verte dans son rond, la question,
        trois tuiles (series, tonnage, calories) et « On enregistre ? » */
@@ -32822,7 +32998,7 @@ function musclesDeSeance(h){
   return vus;
 }
 function volumeExo(en){
-  const f = facteurCharge(en.exId);
+  const f = facteurTonnage(en.exId);
   return en.sets.reduce((a, st)=>a + ((st.done !== false && !st.warm) ? volSerie(st) * f : 0), 0);
 }
 async function dessinerCarteSeance(h, extra){
@@ -36735,11 +36911,12 @@ function renderProgress(app){
     if(!sets.length) return;
     let v;
     if(prgMetric==="max")
-      v = mode==="sans" ? Math.max(...sets.map(st=>st.r||0)) : Math.max(...sets.map(st=>st.w||0));
+      v = mode==="sans" ? Math.max(...sets.map(st=>st.r||0))
+        : (estAssiste(getEx(prgEx)) ? Math.max(...sets.map(st=>chargeReelle(prgEx, st))) : Math.max(...sets.map(st=>st.w||0)));
     /* le 1RM d'une traction n'a de sens qu'en comptant le corps qu'on hisse */
     else if(prgMetric==="1rm") v = Math.max(...sets.map(st=>e1rm(chargeReelle(prgEx, st), st.r||0)));
     else if(mode==="sans")     v = sets.reduce((x,st)=>x+(st.r||0), 0);
-    else                       v = sets.reduce((x,st)=>x+volSerie(st),0)*facteurCharge(prgEx);
+    else                       v = sets.reduce((x,st)=>x+volSerie(st),0)*facteurTonnage(prgEx);
     if(estImperial() && !enReps) v *= PAR_LB;
     pts.push({date:s.date, v:Math.round(v*10)/10});
   });
@@ -36886,7 +37063,10 @@ const STRENGTH_REF = {
   "Curl biceps machine":0.35,
   "Mollets à la presse":1.5,
   "Développé incliné machine":0.75,
-  "Machine fessiers":0.5
+  "Machine fessiers":0.5,
+  /* machines d'assistance (29 sept.) */
+  "Tractions assistées":1.25,
+  "Dips assistés":1.35
 };
 /* muscles suivis dans le profil, avec le nom court affiché sur la silhouette */
 const MP_MUSCLES = ["Pectoraux","Grand dorsal","Trapèzes","Deltoïdes","Biceps","Triceps","Avant-bras",
