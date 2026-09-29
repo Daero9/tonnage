@@ -3135,6 +3135,17 @@
   #app.entre[data-sens="g"] > *:not(.eat-fab){--gl:-28px;}
   @keyframes pageGlisse{from{opacity:0; translate:var(--gl, 28px) 0;}}
   @media (prefers-reduced-motion:reduce){ #app.entre, #app.entre[data-sens] > *{animation:none;} }
+  /* la pastille des pas sur la photo de l'accueil */
+  .pas-pastille{display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:4px 11px 4px 4px; border-radius:99px; border:0;
+    background:rgba(255,255,255,.16); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); color:#fff; font:inherit; position:relative;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);}
+  .pas-pastille .an{width:28px; height:28px; transform:rotate(-90deg);}
+  .pas-pastille .an circle{fill:none; stroke-width:3.4;} .pas-pastille .an .fd{stroke:rgba(255,255,255,.25);}
+  .pas-pastille .an .pg{stroke:#FFB020; stroke-linecap:round; transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1);}
+  .pas-pastille.ok .an .pg{stroke:#4ADE80;}
+  .pas-pastille .ic{position:absolute; left:4px; top:4px; width:28px; height:28px; display:flex; align-items:center; justify-content:center;}
+  .pas-pastille .ic svg{width:15px; height:15px;}
+  .pas-pastille b{font-size:14px; font-weight:900;} .pas-pastille small{font-size:12px; opacity:.85; margin-left:-2px;}
   /* les pas : le bouton du mois dans l'en-tete, la pastille sous le titre, le bilan du mois */
   .pas-mois{flex:none; width:40px; height:40px; border-radius:12px; border:0; background:var(--surface2); color:var(--accent);
     display:flex; align-items:center; justify-content:center; align-self:flex-start;}
@@ -5392,6 +5403,8 @@ const TRAD = {en:{
   "Pas de données":"No data",
   "pas ce mois-ci":"steps this month",
   "par jour en moyenne":"per day on average",
+  "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main.":"Photo analysis is temporarily unavailable. Try again in a few minutes, or add it by hand.",
+  "pas":"steps",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9163,6 +9176,8 @@ es:{
   "Pas de données":"Sin datos",
   "pas ce mois-ci":"pasos este mes",
   "par jour en moyenne":"al día de media",
+  "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main.":"El análisis de fotos no está disponible por el momento. Vuelve a intentarlo en unos minutos o añádelo a mano.",
+  "pas":"pasos",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13148,6 +13163,8 @@ pt:{
   "Pas de données":"Sem dados",
   "pas ce mois-ci":"passos este mês",
   "par jour en moyenne":"por dia em média",
+  "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main.":"A análise de fotos está temporariamente indisponível. Tente de novo em alguns minutos ou adicione à mão.",
+  "pas":"passos",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20751,7 +20768,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 16h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 16h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20888,7 +20905,7 @@ function applyDefaults(){
 applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
-setTimeout(()=>{ Promise.resolve(sonderAbo()).catch(()=>{}).then(()=>setTimeout(()=>{ messagesAbo(); setTimeout(()=>verifierMontre(false), 600); setTimeout(()=>envoyerSeances(), 5000); setTimeout(()=>lirePasSemaine(), 2500); }, 1500)); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
+setTimeout(()=>{ Promise.resolve(sonderAbo()).catch(()=>{}).then(()=>setTimeout(()=>{ messagesAbo(); setTimeout(()=>verifierMontre(false), 600); setTimeout(()=>envoyerSeances(), 5000); setTimeout(()=>lirePasSemaine().then(ch=>{ if(ch && !sheetOpen && curTab === "seance" && !db.active) render(); }), 2500); }, 1500)); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
 setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
 /* ---- le widget de l'ecran d'accueil (Android) -----------------------------------------
@@ -22760,7 +22777,10 @@ function openClassement(onglet){
     const d = amisDemo().map(f=>Object.assign({}, f, {flamme:flammeAmi(f)}));
     afficher(onglet === "amis" ? d.concat([Object.assign(moi, {flamme:9})])
       : d.concat([{uid:"g1", pseudo:"Sarah", tag:"0712", acc:["casque-rouge"], flamme:64}, {uid:"g2", pseudo:"Karim", tag:"3380", acc:["bonnet-blanc"], flamme:41},
-          {uid:"g3", pseudo:"Tom", tag:"9921", acc:[], flamme:17}]));
+          {uid:"g3", pseudo:"Tom", tag:"9921", acc:[], flamme:17}], modeDemo ? [
+          {uid:"g4", pseudo:"Nadia", tag:"4410", acc:["bandeau-bleu"], flamme:33}, {uid:"g5", pseudo:"Julien", tag:"1187", acc:["casquette-bleu"], flamme:27},
+          {uid:"g6", pseudo:"Emma", tag:"6602", acc:["bonnet-rose"], flamme:22}, {uid:"g7", pseudo:"Lucas", tag:"5093", acc:["boxe-vert"], flamme:15},
+          {uid:"g8", pseudo:"Manon", tag:"2731", acc:["petit-noeud-rouge"], flamme:11}, Object.assign({}, moi, {flamme:9})] : []));
     return;
   }
   if(onglet === "amis") chargerAmis(false).then(pour(l=>afficher(l.filter(f=>!cacheAmi(f, "flammes")).map(f=>Object.assign({}, f, {flamme:flammeAmi(f)})).concat([moi])))).catch(pour(erreur));
@@ -22996,7 +23016,16 @@ function amisDemo(){
     {uid:"d2", pseudo:"Tom", acc:["casquette-noir", "sifflet"], pose:"en-forme", nAct:54, flamme:6, best:14, derniere:h(20),
       derType:"course", derNom:"", derMin:34, derKm:5.2, sem:passe & 0b0000011, semDebut:w0, semT:4200, semKm:9.8, semMin:120},
     {uid:"d3", pseudo:"Max", acc:["bonnet-vert"], pose:"fatigue", nAct:31, flamme:3, best:9, derniere:h(70),
-      derType:"muscu", derNom:"Legs", derMin:61, derKm:0, sem:passe & 0b0000001, semDebut:w0, semT:6100, semKm:0, semMin:61}];
+      derType:"muscu", derNom:"Legs", derMin:61, derKm:0, sem:passe & 0b0000001, semDebut:w0, semT:6100, semKm:0, semMin:61}].concat(modeDemo ? [
+    /* le mode demo (acces developpeur) : un vrai groupe d'amis, pour voir le classement plein */
+    {uid:"d4", pseudo:"Inès", acc:["casque-rouge"], pose:"muscle", nAct:120, flamme:18, best:25, derniere:h(3),
+      derType:"course", derNom:"", derMin:41, derKm:6.8, sem:passe & 0b0101011, semDebut:w0, semT:9800, semKm:14.2, semMin:210},
+    {uid:"d5", pseudo:"Yanis", acc:["boxe-rouge", "debardeur-noir"], pose:"en-forme", nAct:66, flamme:9, best:15, derniere:h(26),
+      derType:"muscu", derNom:"Pull", derMin:58, derKm:0, sem:passe & 0b0010011, semDebut:w0, semT:11200, semKm:0, semMin:170},
+    {uid:"d6", pseudo:"Chloé", acc:["petit-noeud-rose"], pose:"en-forme", nAct:44, flamme:5, best:11, derniere:h(30),
+      derType:"muscu", derNom:"Full body", derMin:47, derKm:0, sem:passe & 0b0000101, semDebut:w0, semT:5400, semKm:3, semMin:95},
+    {uid:"d7", pseudo:"Hugo", acc:["lunette-noir", "ceinture"], pose:"repos", nAct:23, flamme:2, best:7, derniere:h(48),
+      derType:"course", derNom:"", derMin:28, derKm:4.1, sem:passe & 0b0000010, semDebut:w0, semT:0, semKm:4.1, semMin:28}] : []);
 }
 /* ---- la page « Mes amis » : une page entiere (Nico), la liste d'abord ----
    En haut, une ligne discrete : ton nom et ton code, a partager. Le bouton « ami + »
@@ -24688,7 +24717,8 @@ async function planifierNotifs(){
 }
 /* un rappel touche : on ouvre ce qu'il annonce */
 /* revenir dans l'app (apres une course avec la montre) : on regarde s'il y a du nouveau */
-document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible") setTimeout(()=>verifierMontre(false), 1200); });
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible"){ setTimeout(()=>verifierMontre(false), 1200);
+  setTimeout(()=>lirePasSemaine().then(ch=>{ if(ch && !sheetOpen && curTab === "seance" && !db.active) render(); }), 2000); } });
 function brancherNotifs(){
   const n = pluginNotifs(); if(!n || !n.addListener) return;
   try{
@@ -26857,7 +26887,14 @@ async function lancerAnalysePhoto(indice, premiere){
   if(correction) p.corrections = (p.corrections || 0) + 1;
   let res;
   try{ res = await analyserPhoto(p.b64, indice); if(!correction) compterPhoto(); }
-  catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur"); openAjoutAliment(p.meal); return; }
+  catch(e){
+    /* le relais a repondu mais le service d'analyse (Anthropic) est en panne : on le dit,
+       plutot qu'un « n'a pas abouti » qui laisse croire a un souci de photo (Nico, 29 sept.) */
+    const panne = /Anthropic 5\d\d|relais 5\d\d|Failed to fetch|NetworkError|AbortError|aborted/i.test(String(e && (e.message || e.name) || ""));
+    toast(TR(panne ? "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main."
+      : "L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur");
+    openAjoutAliment(p.meal); return;
+  }
   if(!res.aliments.length){ toast(res.remarque || TR("Je ne vois pas de nourriture sur cette photo.")); openAjoutAliment(p.meal); return; }
   await etiquettesScan(res.aliments);
   openResultatPhoto(p.meal, res);
@@ -28932,7 +28969,7 @@ function renderSeance(app){
     ${hero(`<div class="sur">${TR("Sport")}</div>
       <h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}
         <span class="wv">👋</span></h1>
-      <div class="sub">${sub}</div>`, {classe:"hero-accueil" + (POUSSIN[poussinEtat().pose] ? " avec-poussin" : ""),
+      <div class="sub">${sub}</div>${pastillePas()}`, {classe:"hero-accueil" + (POUSSIN[poussinEtat().pose] ? " avec-poussin" : ""),
       fond:"img/hero-seance-2.webp"})}
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">${TR("⚠️ Tes données ne peuvent pas être enregistrées")}</div>
@@ -29026,6 +29063,8 @@ function renderSeance(app){
       openMontre();
     };
   }
+  const pp = document.getElementById("pas-pastille");
+  if(pp) pp.onclick = ()=>openPasMois();
   const flR = document.getElementById("fl-rallumer");
   if(flR) flR.onclick = openRallumer;
 
@@ -35155,8 +35194,23 @@ function dbDemoVideo(){
     habitSel[dayKey(j(n))] = jour;
   }
   /* la course : quelques sorties de plus en plus longues, une seance composee */
-  const cardio = [20, 16, 12, 9, 6, 2].map((n, i)=>({id:"demo-c" + n, date:j(n).toISOString(), machine:"course",
-    km:+(2.4 + i * 0.35).toFixed(2), min:22 + i * 2, runMin:12 + i * 3, type:"mixte", pente:0, estime:false, parcours:"Course et marche"}));
+  /* chaque sortie a ses etapes et un cardio realiste (qui monte en course, redescend en
+     marche), pour voir la fiche complete : courbe, zones, comparaison (Nico, 29 sept.) */
+  const cardio = [20, 16, 12, 9, 6, 2].map((n, i)=>{
+    const run = 12 + i * 3, marche = 30 - run, etapes = [{type:"marche", min:3}, {type:"course", min:Math.round(run / 2)},
+      {type:"marche", min:Math.max(2, marche - 6)}, {type:"course", min:run - Math.round(run / 2)}, {type:"marche", min:3}];
+    const tot = etapes.reduce((a, e)=>a + e.min, 0), v = [];
+    let t = 0;
+    etapes.forEach(e=>{ for(let s = 0; s < e.min * 60; s += 30){ const base = e.type === "course" ? 146 + Math.min(14, s / 25) - i : 108 + Math.max(0, 32 - s / 5);
+      v.push(Math.round(base + Math.sin((t + s) / 45) * 3)); } t += e.min * 60; });
+    return {id:"demo-c" + n, date:j(n).toISOString(), fin:j(n).getTime() + tot * 60000, machine:"course",
+      km:+(2.4 + i * 0.35).toFixed(2), min:tot, runMin:run, type:"mixte", pente:0, estime:false, parcours:"Course et marche",
+      etapes, fc:{p:30, v}, hr:Math.round(v.reduce((a, x)=>a + x, 0) / v.length), hrMax:Math.max.apply(null, v), kcalM:250 + i * 12};
+  });
+  /* deux mois de pas, plausibles : plus le week-end, moins les jours de bureau */
+  const pas = {};
+  for(let n = 0; n < 62; n++){ const d = j(n), w = d.getDay(); pas[dayKey(d)] = Math.round((w === 0 || w === 6 ? 10500 : 7200) + Math.sin(n * 1.7) * 2600 + (n % 5) * 310); }
+  pas[dayKey()] = 6240;
   const parcours = [{id:"demo-p1", nom:"Course et marche", etapes:[
     {type:"course", min:15, v:8}, {type:"marche", min:5, v:4}, {type:"course", min:10, v:8.5}, {type:"marche", min:5, v:4}]}];
   /* le poussin : tout ce que douze semaines ont debloque, deja vu ; une casquette sur la tete */
@@ -35165,7 +35219,7 @@ function dbDemoVideo(){
   return Object.assign(d, {
     profile:Object.assign(d.profile, {name:"Alex"}),
     settings:Object.assign(d.settings, {goal:80}),
-    history, templates, weights, habitSel, cardio, parcours,
+    history, templates, weights, habitSel, cardio, parcours, pas,
     objCourse:null, objPauses:{},
     avatar:{acc, vus:ACCESSOIRES.map(a=>a.id)},
     abo:true, lastBilan:j(8).toISOString(),
@@ -37112,7 +37166,17 @@ function openInfoProfil(moy){
 const IC_PAS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(7.4 11.2) rotate(-12)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/><circle cx="-2.3" cy="-5.9" r="1"/><circle cx="-.4" cy="-6.7" r="1.1"/><circle cx="1.6" cy="-6.2" r="1"/></g><g transform="translate(16.6 9.4) rotate(12) scale(-1 1)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/><circle cx="-2.3" cy="-5.9" r="1"/><circle cx="-.4" cy="-6.7" r="1.1"/><circle cx="1.6" cy="-6.2" r="1"/></g></svg>';
 const OBJ_PAS = 10000;
 function objPas(){ return (db.settings && db.settings.objPas) || OBJ_PAS; }
-function pasDispo(){ return !!(pluginSante() && db.sante && db.sante.actif); }
+function pasDispo(){ return !!(modeDemo || (pluginSante() && db.sante && db.sante.actif)); }
+/* La pastille de l'accueil (Nico, 29 sept.) : sur la photo du haut, sous le salut, les pas
+   du jour avec un anneau qui se remplit vers l'objectif. Elle ne prend aucune place. */
+function pastillePas(){
+  if(!pasDispo()) return "";
+  const v = pasJour(dayKey()), obj = objPas(), f = Math.min(1, v / obj);
+  return `<button class="pas-pastille${v >= obj ? " ok" : ""}" id="pas-pastille" aria-label="${TR("Mes pas du mois")}">
+    <svg class="an" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" class="fd"/><circle cx="18" cy="18" r="15.5" class="pg"
+      pathLength="100" stroke-dasharray="100" stroke-dashoffset="${(100 - f * 100).toFixed(1)}"/></svg>
+    <span class="ic">${IC_PAS}</span><b>${v.toLocaleString(loc())}</b><small>${TR("pas")}</small></button>`;
+}
 function pasJour(k){ return (db.pas && db.pas[k]) || 0; }
 function pasCourt(n){ return n >= 1000 ? (n / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + "k" : String(n); }
 /* lit les pas de [debut, fin] (ms) et les garde ; rend vrai si quelque chose a change */
