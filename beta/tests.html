@@ -661,6 +661,42 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Import depuis Strong ou Hevy");
+  (()=>{
+    const B = F.eval("db");
+    B.history = []; B.custom = [];
+    const strong = [
+      'Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Bench Press (Barbell)","W",40,10,0,0,"","",',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Bench Press (Barbell)","1",80,8,0,0,"","",',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Plank","1",0,0,0,60,"","",',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Zottman Curl (Dumbbell)","1",12,10,0,0,"","",',
+      '"2024-03-06 07:30:00","Cardio","30m","Running","1",0,0,5,1800,"","",'].join("\n");
+    const r = F.analyserImport(strong, "kg");
+    eq("Strong reconnu, une séance (la course n'est pas de la muscu)", r.app + " " + r.seances.length, "Strong 1");
+    eq("La durée « 1h 5m » donne l'heure de fin", (r.seances[0].fin - r.seances[0].debut) / 6e4, 65);
+    const dc = r.seances[0].entries[0];
+    eq("« Bench Press (Barbell) » = Développé couché", F.getEx(dc.exId).name, "Développé couché");
+    vrai("La série « W » est un échauffement", dc.sets[0].warm && !dc.sets[1].warm);
+    eq("Le gainage garde sa durée en secondes", r.seances[0].entries[1].sets[0].r, 60);
+    eq("Un exercice inconnu est gardé sous son nom", r.inconnus.join(), "Zottman Curl (Dumbbell)");
+    eq("En livres, la charge est convertie en kilos", F.analyserImport(strong, "lb").seances[0].entries[0].sets[1].w, 36.29);
+    const hevy = [
+      '"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"',
+      '"Legs","8 Oct 2024, 18:02","8 Oct 2024, 19:10","","Squat (Barbell)","","","0","normal","100","5","","",""',
+      '"Legs","8 Oct 2024, 18:02","8 Oct 2024, 19:10","","Squat (Barbell)","","","1","dropset","80","8","","",""'].join("\n");
+    const h = F.analyserImport(hevy, "kg");
+    eq("Hevy reconnu, date « 8 Oct 2024, 18:02 » lue", h.app + " " + new Date(h.seances[0].debut).getHours(), "Hevy 18");
+    eq("Le dégressif s'accroche à la série d'avant", JSON.stringify(h.seances[0].entries[0].sets[0].drops), '[{"w":80,"r":8}]');
+    F.appliquerImport(r);
+    eq("L'import ajoute la séance et crée l'exercice perso", B.history.length + " " + B.custom.length, "1 1");
+    eq("Importer deux fois le même fichier ne double rien", F.analyserImport(strong, "kg").seances.length, 0);
+    eq("Un fichier d'une autre app est refusé", !!F.analyserImport(["a,b", "1,2"].join("\n"), "kg").erreur, true);
+    eq("Toutes les correspondances visent un vrai exercice",
+      Object.values(F.eval("ALIAS_IMPORT")).filter(n=>!F.eval("LIB").find(x=>x.name === n)).join(), "");
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- cardio */
   grp("Cardio");
   const base = {km:6, min:50, pente:0, runMin:0, hr:0, kcalM:0, machine:"course", intensite:"modere"};
