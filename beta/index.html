@@ -4904,9 +4904,15 @@
   .am-plus{width:42px; height:42px; border:0; border-radius:50%; background:rgba(245,130,32,.12); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background .2s, color .2s;}
   .am-plus svg{width:24px; height:24px;} .am-plus.on{background:var(--accent-grad); color:#fff;}
   .am-trophee{background:rgba(245,166,35,.16); color:#e59a0c;} .am-trophee svg{width:22px; height:22px;}
-  .cl-seg{display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--surface2); margin:4px 0 8px;}
-  .cl-seg button{flex:1; border:0; background:none; padding:9px 6px; border-radius:99px; font:inherit; font-size:14px; font-weight:800; color:var(--ink-soft);}
-  .cl-seg button.on{background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .cl-seg{position:relative; display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--surface2); margin:4px 0 8px;}
+  /* la pastille blanche glisse d'un onglet a l'autre */
+  .cl-pastille{position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 6px); border-radius:99px; background:var(--surface);
+    box-shadow:0 1px 4px rgba(0,0,0,.12); transition:transform .28s cubic-bezier(.3,.8,.3,1);}
+  .cl-seg.tous .cl-pastille{transform:translateX(calc(100% + 4px));}
+  .cl-seg button{position:relative; z-index:1; flex:1; border:0; background:none; padding:9px 6px; border-radius:99px; font:inherit; font-size:14px; font-weight:800; color:var(--ink-soft); transition:color .2s;}
+  .cl-seg button.on{color:var(--ink);}
+  .cl-liste.change{opacity:.35; transition:opacity .15s;}
+  .cl-liste:not(.change){transition:opacity .2s;}
   .cl-sous{font-size:12.5px; color:var(--ink-mute); text-align:center; margin:0 0 10px;}
   .cl-liste{display:flex; flex-direction:column; gap:6px;}
   .cl-moi{display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 10px; padding:10px 14px; border-radius:16px;
@@ -20523,7 +20529,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 12h47 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 12h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22366,23 +22372,41 @@ function ligneClassement(x, i, moi){
   return `<div class="cl-l${moi ? " moi" : ""}" data-cli="${i}"><span class="cl-rg${med ? " med" : ""}">${med || (i + 1)}</span>${poussinAmi(x.acc, "en-forme")}
     <b>${esc(nomComplet(x))}</b><span class="cl-fl">${icoM("flamme", 16)}${x.flamme}</span></div>`;
 }
+/* « Tout Tonnup » garde sa liste 30 secondes : revenir sur l'onglet est immediat */
+let classementTous = null;
 function openClassement(onglet){
   onglet = onglet || "amis";
   const a = db.amis || {};
   openSheet(`${teteAmis(TR("Classement"))}
-    <div class="cl-seg"><button data-cl="amis" class="${onglet === "amis" ? "on" : ""}">${TR("Mes amis")}</button><button data-cl="tous" class="${onglet === "tous" ? "on" : ""}">${TR("Tout Tonnup")}</button></div>
+    <div class="cl-seg ${onglet === "tous" ? "tous" : ""}" id="cl-seg"><i class="cl-pastille" aria-hidden="true"></i><button data-cl="amis" class="${onglet === "amis" ? "on" : ""}">${TR("Mes amis")}</button><button data-cl="tous" class="${onglet === "tous" ? "on" : ""}">${TR("Tout Tonnup")}</button></div>
     <p class="cl-sous">${TR("Flammes en cours activées")}</p>
     <div class="cl-moi" id="cl-moi"></div>
     <div class="cl-liste" id="cl-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
   brancherCroix();
-  document.querySelectorAll("[data-cl]").forEach(b=>b.onclick = ()=>{ if(b.dataset.cl !== onglet) openClassement(b.dataset.cl); });
   const el = document.getElementById("cl-liste");
+  /* Changer d'onglet ne rouvre plus la fenetre (Nico : « ca se ferme et s'ouvre d'un coup,
+     on dirait un bug ») : la pastille glisse, la liste s'estompe puis se remplit sur place. */
+  document.querySelectorAll("[data-cl]").forEach(b=>b.onclick = ()=>{
+    if(b.dataset.cl === onglet) return;
+    onglet = b.dataset.cl;
+    document.getElementById("cl-seg").classList.toggle("tous", onglet === "tous");
+    document.querySelectorAll("[data-cl]").forEach(x=>x.classList.toggle("on", x === b));
+    el.style.minHeight = el.offsetHeight + "px";      /* la fenetre ne saute pas pendant le chargement */
+    el.classList.add("change");
+    vibrer(6);
+    remplir();
+  });
   const moi = {uid:a.uid || "moi", pseudo:a.pseudo || TR("Toi"), tag:a.tag, acc:ficheAmi2acc(), flamme:serieJours().n, best:meilleureFlamme()};
   const afficher = l=>{
     if(!document.body.contains(el)) return;
+    const h0 = el.offsetHeight;
+    el.classList.remove("change"); el.style.minHeight = "";
     l = l.slice().sort((x, y)=>(y.flamme || 0) - (x.flamme || 0) || (y.best || 0) - (x.best || 0));
     el.innerHTML = l.length ? l.map((x, i)=>ligneClassement(x, i, x.uid === moi.uid)).join("")
       : `<div class="am-vide">${TR("Personne n'a de flamme allumée pour l'instant.")}</div>`;
+    /* la hauteur glisse vers celle de la nouvelle liste, sans a-coup */
+    const h1 = el.offsetHeight;
+    if(Math.abs(h1 - h0) > 4 && el.animate) el.animate([{height:h0 + "px", overflow:"hidden"}, {height:h1 + "px", overflow:"hidden"}], {duration:240, easing:"cubic-bezier(.3,.8,.3,1)"});
     el.querySelectorAll("[data-cli]").forEach(b=>b.onclick = ()=>{
       const x = l[b.dataset.cli], rang = Number(b.dataset.cli) + 1, retour = ()=>openClassement(onglet);
       if(x.uid === moi.uid){ ouvrirParDessus(retour, openMonProfil); return; }
@@ -22396,7 +22420,10 @@ function openClassement(onglet){
       : rang >= 0 ? `<span>${TR("Ta place")}</span><b>#${rang + 1}</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`
       : `<span>${TR("Ta place")}</span><b>50+</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`;
   };
-  const erreur = ()=>{ if(document.body.contains(el)) el.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; };
+  const erreur = ()=>{ if(document.body.contains(el)){ el.classList.remove("change"); el.style.minHeight = ""; el.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; } };
+  const remplir = ()=>{
+  const ici = onglet;                                   /* une reponse lente d'un autre onglet est ignoree */
+  const pour = f=>l=>{ if(onglet === ici) f(l); };
   if(demoEnCours){
     const d = amisDemo().map(f=>Object.assign({}, f, {flamme:flammeAmi(f)}));
     afficher(onglet === "amis" ? d.concat([Object.assign(moi, {flamme:9})])
@@ -22404,12 +22431,15 @@ function openClassement(onglet){
           {uid:"g3", pseudo:"Tom", tag:"9921", acc:[], flamme:17}]));
     return;
   }
-  if(onglet === "amis") chargerAmis(false).then(l=>afficher(l.filter(f=>!cacheAmi(f, "flammes")).map(f=>Object.assign({}, f, {flamme:flammeAmi(f)})).concat([moi]))).catch(erreur);
-  else classementGlobal().then(l=>{
+  if(onglet === "amis") chargerAmis(false).then(pour(l=>afficher(l.filter(f=>!cacheAmi(f, "flammes")).map(f=>Object.assign({}, f, {flamme:flammeAmi(f)})).concat([moi])))).catch(pour(erreur));
+  else (classementTous && Date.now() - classementTous.quand < 30000 ? Promise.resolve(classementTous.l)
+      : classementGlobal().then(l=>{ classementTous = {l, quand:Date.now()}; return l; })).then(pour(l=>{
     /* ta propre ligne vient de ton telephone : elle est a jour meme si l'annuaire ne l'est pas encore */
     const pub = visAmis().flammes === "public";
     afficher(l.filter(x=>x.uid !== moi.uid).concat(pub && moi.flamme > 0 ? [moi] : []).sort((x, y)=>y.flamme - x.flamme).slice(0, 50));
-  }).catch(erreur);
+  })).catch(pour(erreur));
+  };
+  remplir();
 }
 function ficheAmi2acc(){ return ((db.avatar && Array.isArray(db.avatar.acc)) ? db.avatar.acc : ["bandeau"]).filter(id=>{ const f = familleAcc(id); return f && accessoireGagne(f); }).slice(0, 12); }
 /* une petite fenetre posee au milieu de l'ecran (Nico : pas une fiche qui remonte) */
