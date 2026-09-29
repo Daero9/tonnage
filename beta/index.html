@@ -3187,14 +3187,17 @@
   .pas-bilan > div{background:var(--surface2); border-radius:14px; padding:10px 8px; text-align:center;}
   .pas-bilan b{display:block; font-size:16px; font-weight:900;} .pas-bilan small{display:block; font-size:11px; color:var(--ink-soft); margin-top:2px;}
   /* le demarrage d'une seance : le disque orange qui couvre l'ecran puis s'efface */
-  .deploie{position:fixed; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; background:var(--accent-grad);
-    z-index:100000; pointer-events:none; animation:deploie 1s forwards;}
-  /* il s'etend depuis le doigt, couvre l'ecran, puis remonte comme un rideau (Nico) */
+  .deploie{position:fixed; inset:0; z-index:100000; pointer-events:none; background:var(--accent-grad);
+    clip-path:circle(0px at var(--x) var(--y)); animation:deploie 1.3s forwards;}
+  /* le logo, a la taille de l'ecran d'ouverture, immobile au centre */
+  .deploie img{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); width:58vw; max-width:300px; height:auto;}
+  /* le cercle s'ouvre depuis le doigt, laisse voir le logo, puis remonte : le masque
+     decouvre la seance par le bas, comme un rideau qui se leve */
   @keyframes deploie{
-    0%{transform:translateY(0) scale(0); animation-timing-function:cubic-bezier(.5,0,.3,1);}
-    42%{transform:translateY(0) scale(var(--s)); animation-timing-function:cubic-bezier(.6,0,.35,1);}
-    52%{transform:translateY(0) scale(var(--s)); animation-timing-function:cubic-bezier(.6,0,.35,1);}
-    100%{transform:translateY(var(--monte, -140vh)) scale(var(--s));}}
+    0%{clip-path:circle(0px at var(--x) var(--y)); animation-timing-function:cubic-bezier(.5,0,.3,1);}
+    35%{clip-path:circle(var(--r) at var(--x) var(--y));}
+    62%{clip-path:circle(var(--r) at var(--x) var(--y)); animation-timing-function:cubic-bezier(.6,0,.35,1);}
+    100%{clip-path:circle(var(--r) at var(--x) calc(var(--y) - var(--d)));}}
   /* le poussin touche : il s'ecrase, s'etire et se penche */
   /* le point d'appui ne change pas pendant le saut : la pose musclee garde le sien (en bas a
      droite), sinon il glissait de cote puis revenait d'un coup a la fin (Nico) */
@@ -21079,7 +21082,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 18h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 18h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22956,18 +22959,24 @@ function animerCompteurs(racine, delai){
    touche, couvre l'ecran, puis s'efface sur la seance ---- */
 let dernierPoint = null;
 document.addEventListener("pointerdown", e=>{ dernierPoint = {x:e.clientX, y:e.clientY, t:Date.now()}; }, true);
+/* le logo blanc, charge d'avance : il doit etre la des la premiere image du rideau */
+try{ new Image().src = "img/logo-blanc.webp"; }catch(e){}
 function deploiement(){
   if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const pt = dernierPoint && Date.now() - dernierPoint.t < 4000 ? dernierPoint : {x:innerWidth / 2, y:innerHeight * .75};
+  /* Un MASQUE, pas un disque qui bouge (Nico) : le fond orange et le logo couvrent tout
+     l'ecran ; un cercle les decouvre depuis le doigt, puis remonte. Le logo reste a sa
+     place et disparait au passage du bord du cercle. */
   const d = document.createElement("div");
   d.className = "deploie";
-  const loin = Math.hypot(Math.max(pt.x, innerWidth - pt.x), Math.max(pt.y, innerHeight - pt.y));
-  d.style.left = pt.x + "px"; d.style.top = pt.y + "px";
-  d.style.setProperty("--s", (loin / 20 + 1).toFixed(1));
-  /* assez haut pour que le bas du disque sorte entierement par le haut de l'ecran */
-  d.style.setProperty("--monte", -Math.ceil(pt.y + loin + 40) + "px");
+  d.innerHTML = `<img src="img/logo-blanc.webp" alt="">`;
+  const r = Math.ceil(Math.hypot(Math.max(pt.x, innerWidth - pt.x), Math.max(pt.y, innerHeight - pt.y))) + 10;
+  d.style.setProperty("--x", pt.x + "px");
+  d.style.setProperty("--y", pt.y + "px");
+  d.style.setProperty("--r", r + "px");
+  d.style.setProperty("--d", Math.ceil(pt.y + r + 20) + "px");
   document.body.appendChild(d);
-  setTimeout(()=>d.remove(), 1100);
+  setTimeout(()=>d.remove(), 1400);
 }
 /* ---- Les confettis d'un record (Nico) : orange, jaune, et un peu de couleur ---- */
 function pluieConfettis(n){
