@@ -6820,6 +6820,9 @@ async function lancer(){
     vrai("Un exercice entre avec 2 séries au moins", [20, 35, 60].every(m=>Object.values(plan(m)).every(n=>n >= 2)));
     eq("À 20 min, les gros mouvements d'abord", Object.keys(plan(20)).slice(0, 2).map(i=>F.getEx(t8.items[i].exId).name).join(" + "), "Développé couché + Squat");
     eq("La séance entière tient : aucun plan", F.planPourTemps(t8.items, 200, 0), null);
+    const eff = m=>F.efficaciteTemps(t8.items, F.planPourTemps(t8.items, m, 0));
+    vrai("L'efficacité monte avec le temps, et vaut 100 % pour la séance entière",
+      eff(10) < eff(30) && eff(30) < eff(60) && eff(60) < eff(90) && F.efficaciteTemps(t8.items, null) === 100);
   })();
   neuf();
 

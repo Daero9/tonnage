@@ -244,6 +244,9 @@
   .pv-temps input[type=range]{width:100%; margin:12px 0 4px; accent-color:var(--accent); height:24px; background:none; border:0; padding:0;}
   .pv-temps .crans{display:flex; justify-content:space-between; font-size:10.5px; font-weight:700; color:var(--ink-mute); padding:0 2px;}
   .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .pv-temps{position:relative;}
+  .pv-temps .eff{display:block; margin:6px 0 -4px; text-align:right; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .pv-temps .eff b{font-size:13px; font-weight:900; color:var(--good);}
   .pv-temps p{margin:8px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;}
   /* l'interrupteur « seance courte » de l'apercu */
   .pv-courte{display:flex; align-items:center; gap:11px; width:100%; text-align:left; margin-top:14px;
@@ -5677,6 +5680,8 @@ const TRAD = {en:{
   "Lancer · {}":"Start · {}",
   "On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.":"We keep the most effective exercises and sets that fit in this time.",
   "sur {}":"of {}",
+  "d'efficacité":"effective",
+  "Ce que cette durée garde de la séance complète (estimation de Tonnup)":"What this duration keeps of the full workout (Tonnup estimate)",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9584,6 +9589,8 @@ es:{
   "Lancer · {}":"Empezar · {}",
   "On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.":"Se mantienen los ejercicios y series más eficaces que caben en este tiempo.",
   "sur {}":"de {}",
+  "d'efficacité":"de eficacia",
+  "Ce que cette durée garde de la séance complète (estimation de Tonnup)":"Lo que esta duración conserva de la sesión completa (estimación de Tonnup)",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13705,6 +13712,8 @@ pt:{
   "Lancer · {}":"Começar · {}",
   "On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.":"Mantemos os exercícios e séries mais eficazes que cabem neste tempo.",
   "sur {}":"de {}",
+  "d'efficacité":"de eficácia",
+  "Ce que cette durée garde de la séance complète (estimation de Tonnup)":"O que esta duração mantém do treino completo (estimativa do Tonnup)",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21414,7 +21423,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h19 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31501,7 +31510,7 @@ function indicesSeanceCourte(items){
    - un exercice entre avec 2 series au moins, jamais une seule, et jamais plus que
      celles prevues. Le temps compte la sortie cardio prevue. */
 let tempsDispo = null;                 /* null : la seance complete */
-const JAUGE_MIN = 15, JAUGE_MAX = 90;
+const JAUGE_MIN = 10, JAUGE_MAX = 90;
 const DECROISSANCE_SERIES = [1, 0.8, 0.62, 0.48, 0.38, 0.3, 0.24, 0.2];
 /* rend {index: series} pour ce temps, ou null si la seance entiere y tient */
 function planPourTemps(items, minutes, extra){
@@ -31534,6 +31543,24 @@ function planPourTemps(items, minutes, extra){
     plan[top] = Math.min(2, Math.max(1, Number(items[top].sets) || 2));
   }
   return plan;
+}
+/* L'efficacite affichee dans le coin de la jauge (Nico) : la valeur des series gardees,
+   rapportee a celle de la seance complete — avec la MEME valeur qui sert a les choisir.
+   C'est une estimation de Tonnup (ce que la seance raccourcie garde de la complete),
+   pas une mesure : la ponderation est un choix, comme ci-dessus. */
+function valeurSeries(items, plan){
+  let v = 0;
+  items.forEach((it, i)=>{
+    const n = plan ? (plan[i] || 0) : Math.max(1, Number(it.sets) || 3);
+    const sc = scoreExoCourt(it) + 0.01;
+    for(let k = 0; k < n; k++) v += sc * (DECROISSANCE_SERIES[k] || 0.15);
+  });
+  return v;
+}
+function efficaciteTemps(items, plan){
+  if(!plan) return 100;
+  const tout = valeurSeries(items, null);
+  return tout ? Math.min(100, Math.round(valeurSeries(items, plan) / tout * 100)) : 100;
 }
 function fmtMinutes(m){ return m < 60 ? m + " min" : (m % 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") : m / 60 + " h"); }
 /* Les exercices que garde la seance courte. Apres un deplacement, on retient lesquels
@@ -31646,6 +31673,7 @@ function openPreview(tplId, lieuFait){
     ${avecJauge ? `<div class="pv-temps">
       <div class="tete"><span class="ic">${IC_CHRONO}</span><b>${TR("Temps disponible")}</b>
         <span class="val" id="pv-temps-v">${tempsDispo === null ? TR("Séance complète") : fmtMinutes(tempsDispo)}</span></div>
+      <span class="eff" id="pv-eff" title="${TR("Ce que cette durée garde de la séance complète (estimation de Tonnup)")}"><b>${efficaciteTemps(t.items, planTemps)} %</b> ${TR("d'efficacité")}</span>
       <input type="range" id="pv-temps" min="${JAUGE_MIN}" max="${jaugeMax}" step="5"
         value="${tempsDispo === null ? jaugeMax : tempsDispo}" aria-label="${TR("Temps disponible")}">
       <div class="crans"><span>${fmtMinutes(JAUGE_MIN)}</span><span>${plein <= JAUGE_MAX ? "~" + fmtMinutes(plein) : TR("Tout")}</span></div>
@@ -31729,7 +31757,14 @@ function openPreview(tplId, lieuFait){
   const jauge = document.getElementById("pv-temps");
   if(jauge){
     const val = ()=>{ const v = Number(jauge.value); return v >= jaugeMax || v >= plein ? null : v; };
-    jauge.oninput = ()=>{ const v = val(); document.getElementById("pv-temps-v").textContent = v === null ? TR("Séance complète") : fmtMinutes(v); vibrer(4); };
+    jauge.oninput = ()=>{
+      const v = val();
+      document.getElementById("pv-temps-v").textContent = v === null ? TR("Séance complète") : fmtMinutes(v);
+      /* l'efficacite suit le doigt : le calcul est instantane */
+      const e = efficaciteTemps(t.items, v === null ? null : planPourTemps(t.items, v, extraMin));
+      document.querySelector("#pv-eff b").textContent = e + " %";
+      vibrer(4);
+    };
     jauge.onchange = ()=>{ tempsDispo = val(); openPreview(tplId, true); };
   }
   /* La seance courte se reordonne aussi (Nico). Elle ne montre qu'une partie des
