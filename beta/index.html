@@ -3152,9 +3152,18 @@
   .pas-pastille .ic svg{width:15px; height:15px;}
   .pas-pastille b{font-size:14px; font-weight:900;} .pas-pastille small{font-size:12px; opacity:.85;}
   /* les pas : le bouton du mois dans l'en-tete, la pastille sous le titre, le bilan du mois */
-  .pas-mois{flex:none; width:40px; height:40px; border-radius:12px; border:0; background:var(--surface2); color:var(--accent);
-    display:flex; align-items:center; justify-content:center; align-self:flex-start;}
-  .pas-mois svg{width:21px; height:21px;}
+  .pas-bts{display:flex; gap:8px; align-self:flex-start; flex:none;}
+  .pas-bt{width:38px; height:38px; border-radius:12px; border:0; background:var(--surface); color:var(--ink-soft);
+    box-shadow:inset 0 0 0 1px var(--bord-doux); display:flex; align-items:center; justify-content:center;}
+  .pas-bt svg{width:19px; height:19px;}
+  /* le reglage de l'objectif */
+  .op-reglage{display:flex; align-items:center; justify-content:center; gap:18px; margin:6px 0 12px;}
+  .op-reglage b{font-size:32px; font-weight:900; min-width:120px; text-align:center;}
+  .op-reglage button{width:44px; height:44px; border-radius:50%; border:0; background:var(--surface2); color:var(--ink); font-size:24px; font-weight:800;}
+  .op-rep{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;}
+  .op-rep button{padding:7px 12px; border-radius:99px; border:0; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);
+    font:inherit; font-size:13px; font-weight:800; color:var(--ink-soft);}
+  .op-rep button.on{background:rgba(245,130,32,.10); box-shadow:inset 0 0 0 1.5px var(--accent); color:var(--accent);}
   .pas-quota{margin:-4px 0 8px;}
   .pas-card .pt-moy .ic svg{width:17px; height:17px;}
   .pas-bilan{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px;}
@@ -5417,6 +5426,9 @@ const TRAD = {en:{
   "pas":"steps",
   "Calories des pas":"Calories from steps",
   "Pas du jour":"Today's steps",
+  "Modifier mon objectif de pas":"Change my step goal",
+  "Objectif de pas":"Step goal",
+  "Objectif : {} pas par jour":"Goal: {} steps a day",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9192,6 +9204,9 @@ es:{
   "pas":"pasos",
   "Calories des pas":"Calorías de los pasos",
   "Pas du jour":"Pasos del día",
+  "Modifier mon objectif de pas":"Cambiar mi objetivo de pasos",
+  "Objectif de pas":"Objetivo de pasos",
+  "Objectif : {} pas par jour":"Objetivo: {} pasos al día",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13181,6 +13196,9 @@ pt:{
   "pas":"passos",
   "Calories des pas":"Calorias dos passos",
   "Pas du jour":"Passos do dia",
+  "Modifier mon objectif de pas":"Alterar minha meta de passos",
+  "Objectif de pas":"Meta de passos",
+  "Objectif : {} pas par jour":"Meta: {} passos por dia",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20784,7 +20802,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 16h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 16h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -37272,7 +37290,8 @@ function renderPasSection(sec){
         <span class="pt-ic pt-ic-orange">${IC_PAS}</span>
         <div class="grow"><div class="pt-t">${TR("Pas")}</div>
           <div class="pt-obj">${TR("Objectif")} <b>${obj.toLocaleString(loc())}</b> / ${TR("jour")}</div></div>
-        <button class="pas-mois" id="pas-mois" aria-label="${TR("Mes pas du mois")}">${IC_CALENDRIER}</button>
+        <span class="pas-bts"><button class="pas-bt" id="pas-obj" aria-label="${TR("Modifier mon objectif de pas")}">${IC_CRAYON}</button>
+          <button class="pas-bt" id="pas-mois" aria-label="${TR("Mes pas du mois")}">${IC_CALENDRIER}</button></span>
       </div>
       ${connus.length ? `<div class="pas-quota"><span class="pt-quota ${hit >= 5 ? "bon" : ""}">${hit} ${TR(hit > 1 ? "jours à l'objectif" : "jour à l'objectif")}</span></div>
       <div class="pr-plot pt-plot">
@@ -37286,19 +37305,45 @@ function renderPasSection(sec){
       </div>
       <div class="pr-labels pt-labels">${days.map((x, k)=>`<span class="${k === 6 ? "auj" : ""}">${(langue() === "en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"])[x.d.getDay()]}</span>`).join("")}</div>
       <div class="pt-moy">
-        <div class="l"><span class="ic">${IC_PAS}</span><span class="grow">${TR("Aujourd'hui")}</span><b class="${auj.v >= obj ? "bon" : ""}">${auj.v.toLocaleString(loc())}</b></div>
         <div class="l"><span class="ic">${IC_BARRES}</span><span class="grow">${TR("Moyenne de la semaine")}</span><b class="${moy >= obj ? "bon" : ""}">≈ ${moy.toLocaleString(loc())}</b></div>
-      </div>
-      <div class="pt-astuce"><span class="ic">${IC_AMPOULE}</span>${TR("10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.")}</div>`
+      </div>`
       : `<div class="empty" style="padding:14px 10px 6px;">${TR("Tes pas apparaîtront ici dès que ta montre ou ton téléphone les aura envoyés à Health Connect.")}</div>`}
     </div>`;
     div.querySelector("#pas-mois").onclick = ()=>openPasMois();
+    div.querySelector("#pas-obj").onclick = ()=>openObjPas(()=>dessiner(false));
   };
   const monte = !pasAnimee; pasAnimee = true;
   dessiner(monte);
   sec.appendChild(div);
   /* les derniers pas, lus en arriere-plan : la carte se redessine si quelque chose a bouge */
   lirePasSemaine().then(ch=>{ if(ch && document.body.contains(div)) dessiner(false); });
+}
+/* L'objectif de pas (Nico, 29 sept.) : par pas de 500, ou d'un toucher sur un repere.
+   La note dit ce qui est etabli : le benefice augmente jusqu'a 7 000 a 10 000 pas. */
+function openObjPas(apres){
+  let v = objPas();
+  const reperes = [6000, 7500, 8000, 10000, 12000];
+  const w = fenetre(`<div class="fe-logo">${IC_PAS}</div>
+    <h3>${TR("Objectif de pas")}</h3>
+    <div class="op-reglage"><button class="op-moins" aria-label="−500">−</button><b id="op-v"></b><button class="op-plus" aria-label="+500">+</button></div>
+    <div class="op-rep">${reperes.map(x=>`<button data-op="${x}">${pasCourt(x)}</button>`).join("")}</div>
+    <p class="fe-petit" style="text-align:left;">${TR("10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.")}</p>
+    <button class="btn btn-accent" id="op-ok" style="width:100%; margin-top:12px;">${TR("Enregistrer")}</button>`);
+  const maj = ()=>{
+    w.el.querySelector("#op-v").textContent = v.toLocaleString(loc());
+    w.el.querySelectorAll("[data-op]").forEach(b=>b.classList.toggle("on", Number(b.dataset.op) === v));
+  };
+  maj();
+  w.el.querySelector(".op-moins").onclick = ()=>{ v = Math.max(1000, v - 500); maj(); vibrer(6); };
+  w.el.querySelector(".op-plus").onclick = ()=>{ v = Math.min(40000, v + 500); maj(); vibrer(6); };
+  w.el.querySelectorAll("[data-op]").forEach(b=>b.onclick = ()=>{ v = Number(b.dataset.op); maj(); vibrer(6); });
+  w.el.querySelector("#op-ok").onclick = ()=>{
+    db.settings.objPas = v; save(); w.fermer(); vibrer(12);
+    toast(TR("Objectif : {} pas par jour").replace("{}", v.toLocaleString(loc())));
+    if(apres) apres();
+    const pp = document.getElementById("pas-pastille");
+    if(pp && curTab === "seance") render();
+  };
 }
 /* les pas du mois, en calendrier (le meme que celui des proteines) */
 let pasMois = null;
