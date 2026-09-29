@@ -19949,7 +19949,17 @@ function rallumerFlamme(){
   save();
   return true;
 }
+/* Avant de rallumer, la montre (Nico, 29 sept.) : des courses faites sans ouvrir Tonnup
+   peuvent sauver la flamme — on les propose d'abord, et la fenetre de rallumage ne s'ouvre
+   que si la flamme est toujours eteinte. Sans quoi on gacherait un rallumage. */
 function openRallumer(){
+  if(db.sante && db.sante.actif && pluginSante()){
+    verifierMontre(true, ()=>{ if(flammeRallumable()) ouvrirRallumer(); else render(); });
+    return;
+  }
+  ouvrirRallumer();
+}
+function ouvrirRallumer(){
   const r = flammeRallumable();
   if(!r) return;
   const bloque = verrouille("rallumer"), reste = rallumagesRestants();
@@ -20419,7 +20429,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 03h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 03h24 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22729,9 +22739,12 @@ function dejaDansTonnup(a){
     && (Math.abs(h.start - a.debut) < 15 * 60000 || (h.end && h.start < a.fin && h.end > a.debut))));
 }
 let montreEnCours = false;
-async function verifierMontre(force){
+/* `apres` : appele une fois les activites proposees (ou s'il n'y en a pas) */
+async function verifierMontre(force, apres){
   const sa = db.sante, pl = pluginSante();
-  if(!sa || !sa.actif || !pl || demoEnCours || montreEnCours) return;
+  const fini = ()=>{ if(apres){ const f = apres; apres = null; f(); } };
+  if(!sa || !sa.actif || !pl || demoEnCours){ fini(); return; }
+  if(montreEnCours) return;
   if(!force && (sheetOpen || document.querySelector(".pp-modal") || document.getElementById("abo-fenetre"))) return;
   montreEnCours = true;
   try{
@@ -22742,9 +22755,10 @@ async function verifierMontre(force){
     const l = (r.activites || []).filter(a=>(a.type === "muscu" ? a.fin - a.debut >= 15 * 60000 : SANTE_TYPES[a.type] && a.fin - a.debut >= 3 * 60000)
       && !vus.has(a.id) && !dejaDansTonnup(a)).sort((x, y)=>x.debut - y.debut);
     await enrichirSeances();
-    if(l.length) proposerActivite(l, 0);
+    if(l.length){ const cb = apres; apres = null; proposerActivite(l, 0, cb); }
   }catch(e){}
   montreEnCours = false;
+  fini();
 }
 /* Le cardio et les calories de la montre sur une seance Tonnup (Nico, 29 sept.) : ce que
    la montre a mesure entre le debut et la fin de la seance, qu'on l'ait mise en mode
@@ -22809,7 +22823,7 @@ function ajouterActivite(a){
   db.cardio.push(sortie);
   marquerVue(a.id);
 }
-function proposerActivite(l, i){
+function proposerActivite(l, i, apres){
   const a = l[i]; if(!a) return;
   const t = a.type === "muscu" ? [null, null, "Musculation"] : SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000;
   const quand = new Date(a.debut);
@@ -22829,7 +22843,7 @@ function proposerActivite(l, i){
     <button class="btn btn-accent" id="mt-add" style="width:100%; margin-top:12px;">${TR("Ajouter à Tonnup")}</button>
     ${l.length - i > 1 ? `<button class="btn" id="mt-tout" style="width:100%; margin-top:8px;">${TR("Tout ajouter ({})").replace("{}", l.length - i)}</button>` : ""}
     <button class="am-lien" id="mt-non" style="display:block; margin:8px auto 0;">${TR("Ignorer")}</button>`);
-  const suite = ()=>{ w.fermer(); if(l[i + 1]) setTimeout(()=>proposerActivite(l, i + 1), 250); else render(); };
+  const suite = ()=>{ w.fermer(); if(l[i + 1]) setTimeout(()=>proposerActivite(l, i + 1, apres), 250); else{ render(); if(apres) setTimeout(apres, 250); } };
   w.el.querySelector("#mt-add").onclick = ()=>{
     (a.type === "muscu" ? ajouterSeanceMontre : ajouterActivite)(a);
     vibrer(20); toast(TR(a.type === "muscu" ? "Séance ajoutée ! 🔥" : "Activité ajoutée ! 🔥"));
@@ -22841,6 +22855,7 @@ function proposerActivite(l, i){
     reste.forEach(x=>(x.type === "muscu" ? ajouterSeanceMontre : ajouterActivite)(x));
     vibrer(24); toast(TR("{} activités ajoutées ! 🔥").replace("{}", reste.length));
     w.fermer(); render();
+    if(apres) setTimeout(apres, 250);
   };
   w.el.querySelector("#mt-non").onclick = ()=>{ marquerVue(a.id); suite(); };
 }
