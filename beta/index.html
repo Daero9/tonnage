@@ -4799,8 +4799,8 @@
   .gs-coeur{display:inline-flex; color:#ef4444;} .gs-coeur svg{width:18px; height:18px;}
   .gs-agrandir{margin-left:auto; width:32px; height:32px; border-radius:50%; border:0; background:var(--surface2); color:var(--ink-soft);
     display:flex; align-items:center; justify-content:center;} .gs-agrandir svg{width:15px; height:15px;}
-  .gs .gs-cadre{fill:var(--surface2);}
-  .gs rect.gs-c{fill:rgba(245,130,32,.20);} .gs rect.gs-m{fill:rgba(59,130,246,.10);}
+  .gs .gs-cadre{fill:none;}
+  .gs rect.gs-c{fill:rgba(245,130,32,.18);} .gs rect.gs-m{fill:rgba(96,165,250,.07);}
   .gs .gs-fc{fill:none; stroke:#ef4444; stroke-width:2.4; stroke-linejoin:round; stroke-linecap:round;}
   .gs text{font-size:10px; fill:var(--ink-soft); font-family:inherit; font-weight:700;}
   .gs .gs-pt{fill:#fff; stroke-width:2.4;} .gs .gs-pt.haut{stroke:var(--accent);} .gs .gs-pt.bas{stroke:#ef4444;}
@@ -4808,7 +4808,7 @@
   .gs .gs-et-t{fill:#fff; font-size:10px; font-weight:900;}
   .gs-leg{display:flex; gap:14px; justify-content:center; font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
   .gs-leg i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
-  .gs-leg i.gs-c{background:rgba(245,130,32,.35);} .gs-leg i.gs-m{background:rgba(59,130,246,.22);}
+  .gs-leg i.gs-c{background:rgba(245,130,32,.35);} .gs-leg i.gs-m{background:rgba(96,165,250,.20);}
   .gs-leg i.gs-l{width:14px; height:3px; border-radius:2px; background:#ef4444; vertical-align:3px;}
   .gs-fen .gs{box-shadow:none; padding:0;}
   .cz{margin:0 0 12px;}
@@ -4945,30 +4945,56 @@
   .am-plus{width:42px; height:42px; border:0; border-radius:50%; background:rgba(245,130,32,.12); color:var(--accent); display:flex; align-items:center; justify-content:center; transition:background .2s, color .2s;}
   .am-plus svg{width:24px; height:24px;} .am-plus.on{background:var(--accent-grad); color:#fff;}
   .am-trophee{background:rgba(245,166,35,.16); color:#e59a0c;} .am-trophee svg{width:22px; height:22px;}
-  .cl-seg{position:relative; display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--surface2); margin:4px 0 8px;}
+  .cl-seg{position:relative; display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--surface2); margin:4px 0 4px;}
   /* la pastille blanche glisse d'un onglet a l'autre */
   .cl-pastille{position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 6px); border-radius:99px; background:var(--surface);
-    box-shadow:0 1px 4px rgba(0,0,0,.12); transition:transform .28s cubic-bezier(.3,.8,.3,1);}
+    box-shadow:inset 0 0 0 2px var(--accent), 0 3px 10px rgba(245,130,32,.22); transition:transform .28s cubic-bezier(.3,.8,.3,1);}
   .cl-seg.tous .cl-pastille{transform:translateX(calc(100% + 4px));}
   .cl-seg button{position:relative; z-index:1; flex:1; border:0; background:none; padding:9px 6px; border-radius:99px; font:inherit; font-size:14px; font-weight:800; color:var(--ink-soft); transition:color .2s;}
-  .cl-seg button.on{color:var(--ink);}
+  .cl-seg button.on{color:var(--accent);}
   .cl-liste.change{opacity:.35; transition:opacity .15s;}
   .cl-liste:not(.change){transition:opacity .2s;}
-  .cl-sous{font-size:12.5px; color:var(--ink-mute); text-align:center; margin:0 0 10px;}
-  .cl-liste{display:flex; flex-direction:column; gap:6px;}
-  .cl-moi{display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 10px; padding:10px 14px; border-radius:16px;
-    background:var(--accent-grad); color:#fff; font-size:14px; font-weight:700;}
+  /* le classement (maquette de Nico, 29 sept.) : trophee, podium, barre de flammes, medailles */
+  .cl-trophee{width:46px; height:auto; flex:none; margin:-4px -2px -4px -4px;}
+  .cl-podium{position:relative; margin:0 -16px 6px; aspect-ratio:1000/587;}
+  .cl-podium .fond{position:absolute; inset:0; width:100%; height:100%; display:block; pointer-events:none;}
+  .pd-po{position:absolute; transform:translate(-50%, -100%); padding:0; border:0; background:none; cursor:pointer;
+    animation:pdIn .5s cubic-bezier(.34,1.56,.64,1) backwards; transform-origin:50% 100%;}
+  .pd-po .in{position:relative; display:block; width:100%; translate:0 calc(var(--pied, 0) * 100% + 6%);}
+  .pd-po .in img{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .pd-po.part{opacity:0; transition:opacity .15s;}
+  @keyframes pdIn{from{opacity:0; transform:translate(-50%, -100%) scale(.4);}}
+  .cl-moi{position:relative; display:flex; align-items:center; gap:12px; margin:0 0 12px; padding:0 70px 0 20px; height:64px; border-radius:18px;
+    background:url(img/classement-barre.webp) center/100% 100% no-repeat; color:#fff; font-weight:800;}
+  .cl-moi.vide{justify-content:center; padding:0 64px 0 16px; font-size:13.5px; text-align:center;}
   .cl-moi:empty{display:none;}
-  .cl-moi b{font-size:24px; font-weight:900; line-height:1;} .cl-moi sup{font-size:12px; margin-left:1px;}
-  .cl-moi .cl-fl{color:#fff; font-size:16px;}
-  .cl-l{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
-  .cl-l.moi{background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.45);}
-  .cl-l .am-po{width:44px; height:44px;}
-  .cl-rg{flex:none; width:28px; text-align:center; font-size:15px; font-weight:900; color:var(--ink-soft);}
-  .cl-rg.med{font-size:24px; line-height:1;}
-  .cl-l b{flex:1; min-width:0; font-size:15px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .cl-fl{flex:none; display:inline-flex; align-items:center; gap:3px; font-size:17px; font-weight:900; color:var(--accent);}
+  .cl-moi .t{font-size:17px; font-weight:800;}
+  .cl-moi b.rg{font-size:32px; font-weight:900; line-height:1; letter-spacing:-.02em;}
+  .cl-moi .sep{width:1.5px; height:30px; background:rgba(255,255,255,.55); margin:0 2px;}
+  .cl-moi .fl{display:inline-flex; align-items:center; gap:6px;}
+  .cl-moi .fl .icm{background-color:#fff;} .cl-moi .fl b{font-size:26px; font-weight:900; line-height:1;}
+  .cl-moi .fl small{font-size:12px; line-height:1.15; font-weight:700; opacity:.95;}
+  .cl-liste{display:flex; flex-direction:column; gap:8px;}
+  .cl-l{display:flex; align-items:center; gap:12px; padding:9px 14px 9px 10px; border-radius:18px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); cursor:pointer;}
+  .cl-l.or{background:rgba(250,204,21,.12); box-shadow:inset 0 0 0 1px rgba(250,204,21,.25);}
+  .cl-l.moi{background:rgba(245,130,32,.08); box-shadow:inset 0 0 0 2px var(--accent);}
+  .cl-l .am-po{width:50px; height:50px;}
+  .cl-rg{flex:none; width:36px; display:flex; justify-content:center;}
+  .cl-med{width:32px; height:auto; display:block;}
+  .cl-num{width:32px; height:32px; border-radius:50%; background:var(--surface2); display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:900; color:var(--ink-soft);}
+  .cl-l b{flex:1; min-width:0; font-size:16px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cl-fl{flex:none; display:inline-flex; align-items:center; gap:4px; font-size:20px; font-weight:900; color:var(--accent);}
   .cl-fl .icm{background-color:currentColor;}
+  /* les rangees arrivent une a une ; en attendant, des rangees vides qui scintillent */
+  .rg-in{animation:rgIn .38s cubic-bezier(.22,1,.36,1) backwards;}
+  @keyframes rgIn{from{opacity:0; transform:translateY(10px);}}
+  .sq-l{display:flex; align-items:center; gap:12px; height:66px; padding:0 14px; border-radius:18px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .sq-l span{width:44px; height:44px; border-radius:50%; flex:none;} .sq-l i{height:12px; border-radius:6px; width:45%;}
+  .sq-l span, .sq-l i{background:linear-gradient(90deg, var(--surface2) 0%, rgba(245,130,32,.08) 50%, var(--surface2) 100%); background-size:200% 100%; animation:sqBrille 1.2s linear infinite;}
+  @keyframes sqBrille{from{background-position:100% 0;} to{background-position:-100% 0;}}
+  .am-liste .sq-l + .sq-l, .cl-liste .sq-l + .sq-l{margin-top:0;}
+  @media (prefers-reduced-motion: reduce){ .rg-in, .pd-po{animation:none;} .sq-l span, .sq-l i{animation:none;} }
   .am-moi{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
   .am-moi b{color:var(--ink); font-weight:800;} .am-moi .sep{color:var(--ink-mute);}
   .am-share{width:30px; height:30px; border:0; border-radius:50%; background:var(--surface2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; margin-left:auto;}
@@ -5269,6 +5295,7 @@ const TRAD = {en:{
   "Basé sur un cardio max estimé à {} bpm":"Based on an estimated max heart rate of {} bpm",
   "Facile : moins de 70 % de ce cardio maximum. Modéré : de 70 à 85 %. Intense : au-delà. Le maximum est estimé d'après ton âge (208 − 0,7 × âge), ou c'est le plus haut que ta montre ait mesuré s'il est plus élevé. Ce sont des repères, pas une mesure de laboratoire.":"Easy: under 70% of this maximum. Moderate: 70 to 85%. Hard: above. The maximum is estimated from your age (208 − 0.7 × age), or it's the highest your watch has measured if that is higher. These are guides, not a lab measurement.",
   "Tu progresses !":"You're improving!",
+  "flammes en cours":"active streaks",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9027,6 +9054,7 @@ es:{
   "Basé sur un cardio max estimé à {} bpm":"Según un pulso máximo estimado en {} ppm",
   "Facile : moins de 70 % de ce cardio maximum. Modéré : de 70 à 85 %. Intense : au-delà. Le maximum est estimé d'après ton âge (208 − 0,7 × âge), ou c'est le plus haut que ta montre ait mesuré s'il est plus élevé. Ce sont des repères, pas une mesure de laboratoire.":"Fácil: menos del 70 % de ese máximo. Moderado: del 70 al 85 %. Intenso: por encima. El máximo se estima según tu edad (208 − 0,7 × edad), o es el más alto que haya medido tu reloj si es mayor. Son referencias, no una medida de laboratorio.",
   "Tu progresses !":"¡Estás progresando!",
+  "flammes en cours":"rachas activas",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -12999,6 +13027,7 @@ pt:{
   "Basé sur un cardio max estimé à {} bpm":"Com base em uma frequência máxima estimada em {} bpm",
   "Facile : moins de 70 % de ce cardio maximum. Modéré : de 70 à 85 %. Intense : au-delà. Le maximum est estimé d'après ton âge (208 − 0,7 × âge), ou c'est le plus haut que ta montre ait mesuré s'il est plus élevé. Ce sont des repères, pas une mesure de laboratoire.":"Fácil: menos de 70 % desse máximo. Moderado: de 70 a 85 %. Intenso: acima disso. O máximo é estimado pela sua idade (208 − 0,7 × idade), ou é o mais alto que o relógio mediu, se for maior. São referências, não uma medida de laboratório.",
   "Tu progresses !":"Você está progredindo!",
+  "flammes en cours":"sequências ativas",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20594,7 +20623,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 13h36 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 15h02 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22432,21 +22461,53 @@ async function classementGlobal(){
   return r.filter(x=>x.document).map(x=>Object.assign({uid:x.document.name.split("/").pop()}, fbObjet(x.document.fields)))
     .map(x=>Object.assign(x, {pseudo:x.p, flamme:flammeVivante(x)})).filter(x=>x.flamme > 0);
 }
+/* Remplir la liste d'une fenetre sans a-coup (Nico : « ca saccade a la premiere ouverture ») :
+   on laisse la fenetre finir d'apparaitre, la hauteur glisse vers la nouvelle, et les
+   rangees arrivent une a une, avec un petit temps entre chacune. */
+const RANGEE_PAS = 90;                              /* ms entre deux rangees */
+function remplirDoux(el, html, t0, apres){
+  const attente = t0 ? Math.max(0, 330 - (performance.now() - t0)) : 0;
+  setTimeout(()=>{
+    if(!document.body.contains(el)) return;
+    const h0 = el.offsetHeight;
+    el.innerHTML = html;
+    Array.from(el.children).forEach((c, i)=>{ c.classList.add("rg-in"); c.style.animationDelay = Math.min(i, 12) * RANGEE_PAS + "ms"; });
+    const h1 = el.offsetHeight;
+    if(Math.abs(h1 - h0) > 4 && el.animate) el.animate([{height:h0 + "px", overflow:"hidden"}, {height:h1 + "px", overflow:"hidden"}], {duration:260, easing:"cubic-bezier(.3,.8,.3,1)"});
+    if(apres) apres();
+  }, attente);
+}
+/* en attendant les donnees : des rangees vides a la bonne hauteur, qui scintillent */
+function squelette(n){ return Array.from({length:n}, ()=>`<div class="sq-l"><span></span><i></i></div>`).join(""); }
 function ligneClassement(x, i, moi){
-  const med = ["🥇", "🥈", "🥉"][i];
-  return `<div class="cl-l${moi ? " moi" : ""}" data-cli="${i}"><span class="cl-rg${med ? " med" : ""}">${med || (i + 1)}</span>${poussinAmi(x.acc, "en-forme")}
-    <b>${esc(nomComplet(x))}</b><span class="cl-fl">${icoM("flamme", 16)}${x.flamme}</span></div>`;
+  const rg = i < 3 ? `<img class="cl-med" src="img/medaille-${i + 1}.webp" alt="${i + 1}">` : `<span class="cl-num">${i + 1}</span>`;
+  return `<div class="cl-l${i === 0 ? " or" : ""}${moi ? " moi" : ""}" data-cli="${i}"><span class="cl-rg">${rg}</span>${poussinAmi(x.acc, "en-forme")}
+    <b>${esc(nomComplet(x))}</b><span class="cl-fl">${icoM("flamme", 20)}${x.flamme}</span></div>`;
+}
+/* Le podium (maquette de Nico, 29 sept.) : le premier en fete avec son trophee, les deux
+   autres en forme, un peu plus petits a chaque marche. Les positions sont celles des
+   dessus des marches, mesurees sur l'image (classement-podium.webp). */
+const PODIUM = [{i:1, x:23.6, y:66.3, l:22, pose:"en-forme"}, {i:0, x:51.1, y:59.6, l:30, pose:"fete"}, {i:2, x:77.6, y:74.4, l:19, pose:"en-forme"}];
+function podiumHtml(l){
+  return `<img class="fond" src="img/classement-podium.webp" alt="">${PODIUM.map((m, k)=>{
+    const x = l[m.i];
+    if(!x) return "";
+    const pose = POUSSIN[m.pose] ? m.pose : "en-forme", pr = POUSSIN[pose] || {ratio:1.2};
+    return `<button class="pd-po p${m.i + 1}" data-cli="${m.i}" style="left:${m.x}%; top:${m.y}%; width:${m.l}%; animation-delay:${150 + k * 160}ms;" aria-label="${esc(nomComplet(x))}">
+      <span class="in" style="aspect-ratio:1/${pr.ratio}; --pied:${pr.pied || 0};">${calquesHtml(x.acc, pose)}</span></button>`;
+  }).join("")}`;
 }
 /* « Tout Tonnup » garde sa liste 30 secondes : revenir sur l'onglet est immediat */
 let classementTous = null;
 function openClassement(onglet){
   onglet = onglet || "amis";
   const a = db.amis || {};
-  openSheet(`${teteAmis(TR("Classement"))}
+  const t0 = performance.now();
+  openSheet(`${teteAmis(TR("Classement"), "", `<img class="cl-trophee" src="img/trophee.webp" alt="">`)}
     <div class="cl-seg ${onglet === "tous" ? "tous" : ""}" id="cl-seg"><i class="cl-pastille" aria-hidden="true"></i><button data-cl="amis" class="${onglet === "amis" ? "on" : ""}">${TR("Mes amis")}</button><button data-cl="tous" class="${onglet === "tous" ? "on" : ""}">${TR("Tout Tonnup")}</button></div>
-    <p class="cl-sous">${TR("Flammes en cours activées")}</p>
+    <div class="cl-podium" id="cl-podium">${podiumHtml([])}</div>
     <div class="cl-moi" id="cl-moi"></div>
-    <div class="cl-liste" id="cl-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
+    <div class="cl-liste" id="cl-liste">${squelette(4)}</div>`, {milieu:true});
   brancherCroix();
   const el = document.getElementById("cl-liste");
   /* Changer d'onglet ne rouvre plus la fenetre (Nico : « ca se ferme et s'ouvre d'un coup,
@@ -22457,33 +22518,40 @@ function openClassement(onglet){
     document.getElementById("cl-seg").classList.toggle("tous", onglet === "tous");
     document.querySelectorAll("[data-cl]").forEach(x=>x.classList.toggle("on", x === b));
     el.style.minHeight = el.offsetHeight + "px";      /* la fenetre ne saute pas pendant le chargement */
+    const pdz = document.getElementById("cl-podium");
+    if(pdz) pdz.querySelectorAll(".pd-po").forEach(x=>x.classList.add("part"));
     el.classList.add("change");
     vibrer(6);
     remplir();
   });
   const moi = {uid:a.uid || "moi", pseudo:a.pseudo || TR("Toi"), tag:a.tag, acc:ficheAmi2acc(), flamme:serieJours().n, best:meilleureFlamme()};
+  let premier = true;
   const afficher = l=>{
     if(!document.body.contains(el)) return;
-    const h0 = el.offsetHeight;
     el.classList.remove("change"); el.style.minHeight = "";
     l = l.slice().sort((x, y)=>(y.flamme || 0) - (x.flamme || 0) || (y.best || 0) - (x.best || 0));
-    el.innerHTML = l.length ? l.map((x, i)=>ligneClassement(x, i, x.uid === moi.uid)).join("")
+    const pd = document.getElementById("cl-podium");
+    const html = l.length ? l.map((x, i)=>ligneClassement(x, i, x.uid === moi.uid)).join("")
       : `<div class="am-vide">${TR("Personne n'a de flamme allumée pour l'instant.")}</div>`;
-    /* la hauteur glisse vers celle de la nouvelle liste, sans a-coup */
-    const h1 = el.offsetHeight;
-    if(Math.abs(h1 - h0) > 4 && el.animate) el.animate([{height:h0 + "px", overflow:"hidden"}, {height:h1 + "px", overflow:"hidden"}], {duration:240, easing:"cubic-bezier(.3,.8,.3,1)"});
-    el.querySelectorAll("[data-cli]").forEach(b=>b.onclick = ()=>{
+    remplirDoux(el, html, premier ? t0 : 0, ()=>{
+    if(pd) pd.innerHTML = podiumHtml(l);
+    (pd ? [el, pd] : [el]).forEach(z=>z.querySelectorAll("[data-cli]").forEach(b=>b.onclick = ()=>{
       const x = l[b.dataset.cli], rang = Number(b.dataset.cli) + 1, retour = ()=>openClassement(onglet);
       if(x.uid === moi.uid){ ouvrirParDessus(retour, openMonProfil); return; }
       const ami = onglet === "amis" || (amisCache || []).some(f=>f.uid === x.uid);
       if(ami && x.derniere !== undefined) ouvrirParDessus(retour, ()=>openAmiDetail(x, retour));
       else ouvrirParDessus(retour, ()=>openCartePublique(x, onglet === "tous" ? rang : 0));
+    }));
     });
-    /* ta place, en haut, toujours visible (Nico) */
+    premier = false;
+    /* ta place, en haut, toujours visible (Nico) : la barre de flammes de la maquette */
     const rang = l.findIndex(x=>x.uid === moi.uid), cm = document.getElementById("cl-moi");
-    if(cm) cm.innerHTML = !moi.flamme ? `<span>${TR("Allume ta flamme pour entrer au classement.")}</span>`
-      : rang >= 0 ? `<span>${TR("Ta place")}</span><b>#${rang + 1}</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`
-      : `<span>${TR("Ta place")}</span><b>50+</b><span class="cl-fl">${icoM("flamme", 15)}${moi.flamme}</span>`;
+    const flammes = `<i class="sep"></i><span class="fl">${icoM("flamme", 24)}<b>${moi.flamme}</b><small>${TR("flammes en cours").replace(" ", "<br>")}</small></span>`;
+    if(cm){
+      cm.classList.toggle("vide", !moi.flamme);
+      cm.innerHTML = !moi.flamme ? `<span class="t">${TR("Allume ta flamme pour entrer au classement.")}</span>`
+        : `<span class="t">${TR("Ta place")}</span><b class="rg">${rang >= 0 ? "#" + (rang + 1) : "50+"}</b>${flammes}`;
+    }
   };
   const erreur = ()=>{ if(document.body.contains(el)){ el.classList.remove("change"); el.style.minHeight = ""; el.innerHTML = `<div class="am-vide">${TR("Pas de connexion. Réessaie plus tard.")}</div>`; } };
   const remplir = ()=>{
@@ -22746,7 +22814,8 @@ function openAmis(tiroir){
         <button class="btn btn-accent btn-sm" id="am-ajouter">${IC_LOUPE}</button></div>
       <div class="am-res" id="am-res"></div></div></div>
     <div id="am-dem"></div>
-    <div class="am-liste" id="am-liste"><div class="am-vide">${TR("Chargement…")}</div></div>`, {milieu:true});
+    <div class="am-liste" id="am-liste">${squelette(3)}</div>`, {milieu:true});
+  const t0 = performance.now();
   brancherCroix();
   const erreur = ()=>toast(TR("Pas de connexion. Réessaie plus tard."), "erreur");
   const liste = document.getElementById("am-liste"), dem = document.getElementById("am-dem");
@@ -22756,13 +22825,14 @@ function openAmis(tiroir){
   document.getElementById("am-top").onclick = ()=>ouvrirParDessus(()=>openAmis(), ()=>openClassement());
   const afficher = l=>{
     if(!document.body.contains(liste)) return;
-    liste.innerHTML = l.length ? l.map(ligneAmi).join("")
-      : `<div class="am-vide">${TR("Pas encore d'amis. Touche le bouton en haut pour en ajouter.")}</div>`;
-    liste.querySelectorAll("[data-ami]").forEach(b=>b.onclick = ()=>{
-      const f = l.find(x=>x.uid === b.dataset.ami);
-      if(f) ouvrirParDessus(()=>openAmis(), ()=>openAmiDetail(f, ()=>openAmis()));
+    remplirDoux(liste, l.length ? l.map(ligneAmi).join("")
+      : `<div class="am-vide">${TR("Pas encore d'amis. Touche le bouton en haut pour en ajouter.")}</div>`, t0, ()=>{
+      liste.querySelectorAll("[data-ami]").forEach(b=>b.onclick = ()=>{
+        const f = l.find(x=>x.uid === b.dataset.ami);
+        if(f) ouvrirParDessus(()=>openAmis(), ()=>openAmiDetail(f, ()=>openAmis()));
+      });
+      if(!l.length && !tir.classList.contains("ouvert") && !demoEnCours) ouvrir(true);
     });
-    if(!l.length && !tir.classList.contains("ouvert") && !demoEnCours) ouvrir(true);
   };
   /* les demandes recues, au-dessus de la liste */
   const afficherDemandes = l=>{
