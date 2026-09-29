@@ -762,6 +762,15 @@ async function lancer(){
     F.basculerTrio(A, 1, "normal");
     eq("Normal : même exercice, sans lest", F.modeTrio(A.entries[1]) + " " + A.entries[1].sets[0].w, "normal 0");
     eq("Un autre exercice n'a pas de sélecteur", F.trioDe(F.getEx(F.libId("Squat"))), null);
+    /* à la maison : pas de machine d'assistance */
+    const matAvant = B.materiel;
+    B.materiel = ["traction"];
+    const M = {name:"M", templateId:null, start:Date.now(), entries:[
+      {exId:tr, target:{sets:3, reps:"6-10"}, sets:[{w:0, r:3, done:true, warm:false}, {w:0, r:3, done:false}]}]};
+    B.active = M;
+    vrai("Maison : pas de case « Assisté »", !/data-t3="assiste"/.test(F.selecteurTrio(M.entries[0], 0)));
+    eq("…et moins de 5 tractions : on conseille les négatives", F.conseilTrio(M.entries[0]), "negatives");
+    B.materiel = matAvant;
     B.active = null;
   })();
   neuf();
