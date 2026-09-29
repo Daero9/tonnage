@@ -3145,8 +3145,12 @@
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 4px 14px rgba(0,0,0,.25); white-space:nowrap;}
   .pas-pastille .ic .icm{background-color:#fff;}
   .pas-pastille .vl{display:inline-flex; align-items:baseline; gap:4px;}
-  .pas-pastille.tourne .ic, .pas-pastille.tourne .vl{animation:ppTourne .35s cubic-bezier(.3,1.3,.5,1);}
-  @keyframes ppTourne{from{opacity:0; transform:rotateX(90deg);}}
+  /* le passage pas <-> calories : le nouveau chiffre monte d'en bas, comme un compteur */
+  .pas-pastille{overflow:hidden;}
+  .pas-pastille.roule .ic, .pas-pastille.roule .vl{animation:ppRoule .42s cubic-bezier(.22,1,.36,1);}
+  .pas-pastille.roule .vl{animation-delay:.04s; animation-fill-mode:backwards;}
+  @keyframes ppRoule{from{opacity:0; transform:translateY(90%);}}
+  .pas-pastille.kcal .an .pg{stroke:#FF8A3D;}
   .pas-pastille .an{width:28px; height:28px; transform:rotate(-90deg);}
   .pas-pastille .an circle{fill:none; stroke-width:3.4;} .pas-pastille .an .fd{stroke:rgba(255,255,255,.25);}
   .pas-pastille .an .pg{stroke:#FFB020; stroke-linecap:round; transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1);}
@@ -3159,6 +3163,16 @@
   .pas-bt{width:38px; height:38px; border-radius:12px; border:0; background:var(--surface); color:var(--ink-soft);
     box-shadow:inset 0 0 0 1px var(--bord-doux); display:flex; align-items:center; justify-content:center;}
   .pas-bt svg{width:19px; height:19px;}
+  /* la fenetre d'un jour de pas : deux tuiles, puis le champ pour corriger */
+  .pj-tuiles{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0 12px;}
+  .pj-tuiles > div{display:flex; flex-direction:column; align-items:center; gap:3px; padding:12px 8px; border-radius:16px; background:var(--surface);
+    box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .pj-tuiles .ic{width:34px; height:34px; border-radius:11px; background:rgba(245,130,32,.12); color:var(--accent); display:flex; align-items:center; justify-content:center;}
+  .pj-tuiles .ic svg{width:18px; height:18px;} .pj-tuiles .ic .icm{background-color:var(--accent);}
+  .pj-tuiles b{font-size:22px; font-weight:900; line-height:1.1;} .pj-tuiles small{font-size:12px; color:var(--ink-soft);}
+  .pj-modif{display:block; text-align:left;}
+  .pj-modif span{display:block; font-size:12.5px; font-weight:800; color:var(--ink-soft); margin:0 0 6px 4px;}
+  .pj-modif input{width:100%; text-align:center; font-size:18px; font-weight:800;}
   /* le reglage de l'objectif */
   .op-reglage{display:flex; align-items:center; justify-content:center; gap:18px; margin:6px 0 12px;}
   .op-reglage b{font-size:32px; font-weight:900; min-width:120px; text-align:center;}
@@ -5432,6 +5446,7 @@ const TRAD = {en:{
   "Modifier mon objectif de pas":"Change my step goal",
   "Objectif de pas":"Step goal",
   "Objectif : {} pas par jour":"Goal: {} steps a day",
+  "Modifier le nombre de pas":"Edit the number of steps",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9210,6 +9225,7 @@ es:{
   "Modifier mon objectif de pas":"Cambiar mi objetivo de pasos",
   "Objectif de pas":"Objetivo de pasos",
   "Objectif : {} pas par jour":"Objetivo: {} pasos al día",
+  "Modifier le nombre de pas":"Modificar el número de pasos",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13202,6 +13218,7 @@ pt:{
   "Modifier mon objectif de pas":"Alterar minha meta de passos",
   "Objectif de pas":"Meta de passos",
   "Objectif : {} pas par jour":"Meta: {} passos por dia",
+  "Modifier le nombre de pas":"Alterar o número de passos",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20805,7 +20822,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 17h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 17h22 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -29102,16 +29119,28 @@ function renderSeance(app){
     };
   }
   const pp = document.getElementById("pas-pastille");
-  if(pp) pp.onclick = ()=>{
-    db.settings.pastille = db.settings.pastille === "kcal" ? "pas" : "kcal";
-    save(); vibrer(8);
-    const neuf = document.createElement("div"); neuf.innerHTML = pastillePas();
-    const b = neuf.firstElementChild;
-    pp.querySelector(".ic").innerHTML = b.querySelector(".ic").innerHTML;
-    pp.querySelector(".vl").innerHTML = b.querySelector(".vl").innerHTML;
-    pp.setAttribute("aria-label", b.getAttribute("aria-label"));
-    pp.classList.remove("tourne"); void pp.offsetWidth; pp.classList.add("tourne");
-  };
+  if(pp){
+    /* un toucher : les calories roulent a la place des pas, 3 secondes, puis les pas
+       reviennent tout seuls (Nico). Toucher pendant ce temps revient tout de suite. */
+    let retour = null;
+    const montrer = kcal=>{
+      if(!document.body.contains(pp)) return;
+      const neuf = document.createElement("div"); neuf.innerHTML = pastillePas(kcal);
+      const b = neuf.firstElementChild;
+      pp.classList.remove("roule"); void pp.offsetWidth;
+      pp.querySelector(".ic").innerHTML = b.querySelector(".ic").innerHTML;
+      pp.querySelector(".vl").innerHTML = b.querySelector(".vl").innerHTML;
+      pp.setAttribute("aria-label", b.getAttribute("aria-label"));
+      pp.classList.toggle("kcal", kcal);
+      pp.classList.add("roule");
+    };
+    pp.onclick = ()=>{
+      clearTimeout(retour);
+      if(pp.classList.contains("kcal")){ montrer(false); return; }
+      vibrer(8); montrer(true);
+      retour = setTimeout(()=>montrer(false), 3000);
+    };
+  }
   const flR = document.getElementById("fl-rallumer");
   if(flR) flR.onclick = openRallumer;
 
@@ -37223,8 +37252,8 @@ function pasDispo(){ return !!(modeDemo || (pluginSante() && db.sante && db.sant
    Les pas faits pendant une sortie de course ou de marche enregistree sont retires : ses
    calories sont deja comptees avec la sortie. Faute de mieux, on les deduit de sa distance. */
 function foulee(){ const h = (db.profile && db.profile.height) || 170; return h * 0.415 / 100; }
-function pasKcal(k){
-  const pas = pasJour(k);
+function pasKcal(k, force){
+  const pas = force === undefined ? pasJour(k) : force;
   if(!pas) return 0;
   const kg = currentWeight() || (db.profile && db.profile.weight) || 70, f = foulee();
   let pasSorties = 0;
@@ -37242,10 +37271,10 @@ function pasKcalDepuis(d0){
 }
 /* La pastille de l'accueil : en haut, au centre, sur verre fume. Un toucher bascule entre
    les pas et leurs calories (Nico). */
-function pastillePas(){
+/* toujours les pas a l'ouverture ; `kcal` : la face calories, montree 3 secondes apres un toucher */
+function pastillePas(kcal){
   if(!pasDispo()) return "";
   const k = dayKey(), v = pasJour(k), obj = objPas(), f = Math.min(1, v / obj);
-  const kcal = (db.settings && db.settings.pastille) === "kcal";
   return `<button class="pas-pastille${v >= obj ? " ok" : ""}" id="pas-pastille" aria-label="${TR(kcal ? "Calories des pas" : "Pas du jour")}">
     <svg class="an" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" class="fd"/><circle cx="18" cy="18" r="15.5" class="pg"
       pathLength="100" stroke-dasharray="100" stroke-dashoffset="${(100 - f * 100).toFixed(1)}"/></svg>
@@ -37261,7 +37290,8 @@ async function lirePas(debut, fin){
     const r = await pl.pasParJour({debut, fin});
     db.pas = db.pas || {};
     let change = false;
-    ((r && r.jours) || []).forEach(j=>{ if(j.pas > 0 && db.pas[j.jour] !== j.pas){ db.pas[j.jour] = j.pas; change = true; } });
+    const fixe = db.pasFixe || {};
+    ((r && r.jours) || []).forEach(j=>{ if(j.pas > 0 && !fixe[j.jour] && db.pas[j.jour] !== j.pas){ db.pas[j.jour] = j.pas; change = true; } });
     if(change){
       /* on garde une annee, pas plus */
       const limite = dayKey(new Date(Date.now() - 400 * 864e5));
@@ -37301,10 +37331,10 @@ function renderPasSection(sec){
         ${grad.map(g=>`<span class="pt-grad" style="bottom:calc(${(g / cap).toFixed(3)} * (100% - 15px));">${pasCourt(g)}</span>`).join("")}
         <div class="pr-target" style="bottom:calc(${(obj / cap).toFixed(3)} * (100% - 15px));"><i>${pasCourt(obj)}</i></div>
         ${days.map((x, k)=>{ const dernier = k === 6;
-          return `<div class="pr-col ${dernier ? "auj" : ""} ${x.v >= obj ? "quota" : ""}" style="--i:${k}">
+          return `<button class="pr-col ${dernier ? "auj" : ""} ${x.v >= obj ? "quota" : ""}" data-pasj="${x.k}" style="--i:${k}">
             <span class="pr-val"></span>
             <span class="pr-barwrap"><span class="pr-b" ${dernier && x.v > 0 ? `data-v="${x.v.toLocaleString(loc())}"` : ""} style="height:${Math.max(x.v > 0 ? 4 : 2, Math.min(100, x.v / cap * 100))}%;"></span></span>
-          </div>`; }).join("")}
+          </button>`; }).join("")}
       </div>
       <div class="pr-labels pt-labels">${days.map((x, k)=>`<span class="${k === 6 ? "auj" : ""}">${(langue() === "en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"])[x.d.getDay()]}</span>`).join("")}</div>
       <div class="pt-moy">
@@ -37314,6 +37344,10 @@ function renderPasSection(sec){
     </div>`;
     div.querySelector("#pas-mois").onclick = ()=>openPasMois();
     div.querySelector("#pas-obj").onclick = ()=>openObjPas(()=>dessiner(false));
+    div.querySelectorAll("[data-pasj]").forEach(b=>b.onclick = ()=>openPasJour(b.dataset.pasj, ()=>{
+      dessiner(false);
+      if(b.dataset.pasj === dayKey()){ const pp = document.getElementById("pas-pastille"); if(pp) pp.outerHTML = pastillePas(); }
+    }));
   };
   const monte = !pasAnimee; pasAnimee = true;
   dessiner(monte);
@@ -37330,7 +37364,6 @@ function openObjPas(apres){
     <h3>${TR("Objectif de pas")}</h3>
     <div class="op-reglage"><button class="op-moins" aria-label="−500">−</button><b id="op-v"></b><button class="op-plus" aria-label="+500">+</button></div>
     <div class="op-rep">${reperes.map(x=>`<button data-op="${x}">${pasCourt(x)}</button>`).join("")}</div>
-    <p class="fe-petit" style="text-align:left;">${TR("10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.")}</p>
     <button class="btn btn-accent" id="op-ok" style="width:100%; margin-top:12px;">${TR("Enregistrer")}</button>`);
   const maj = ()=>{
     w.el.querySelector("#op-v").textContent = v.toLocaleString(loc());
@@ -37346,6 +37379,37 @@ function openObjPas(apres){
     if(apres) apres();
     const pp = document.getElementById("pas-pastille");
     if(pp && curTab === "seance") render();
+  };
+}
+/* Un jour de pas (Nico, 29 sept.) : la date en titre, les pas et leurs calories en deux
+   tuiles, et le nombre de pas modifiable — les calories suivent en direct. La meme fenetre
+   s'ouvre depuis une barre de la semaine et depuis le calendrier. Une valeur corrigee a la
+   main reste : Health Connect ne l'ecrase plus. */
+function openPasJour(k, apres){
+  const d = new Date(k + "T12:00:00");
+  const titre = majuscule(d.toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"}));
+  let v = pasJour(k);
+  const w = fenetre(`<div class="fe-logo">${IC_PAS}</div>
+    <h3>${esc(titre)}</h3>
+    <div class="pj-tuiles">
+      <div><span class="ic">${IC_PAS}</span><b id="pj-p"></b><small>${TR("pas")}</small></div>
+      <div><span class="ic">${icoM("flamme", 18)}</span><b id="pj-k"></b><small>kcal</small></div>
+    </div>
+    <label class="pj-modif"><span>${TR("Modifier le nombre de pas")}</span>
+      <input id="pj-in" type="number" inputmode="numeric" min="0" max="100000" step="100" value="${v}"></label>
+    <button class="btn btn-accent" id="pj-ok" style="width:100%; margin-top:12px;">${TR("Enregistrer")}</button>`);
+  const inp = w.el.querySelector("#pj-in");
+  const maj = ()=>{
+    w.el.querySelector("#pj-p").textContent = v.toLocaleString(loc());
+    w.el.querySelector("#pj-k").textContent = pasKcal(k, v).toLocaleString(loc());
+  };
+  maj();
+  inp.oninput = ()=>{ v = Math.max(0, Math.min(100000, Math.round(Number(inp.value) || 0))); maj(); };
+  w.el.querySelector("#pj-ok").onclick = ()=>{
+    db.pas = db.pas || {};
+    if(v !== pasJour(k)){ db.pas[k] = v; db.pasFixe = Object.assign({}, db.pasFixe, {[k]:true}); save(); vibrer(12); }
+    w.fermer();
+    if(apres) apres();
   };
 }
 /* les pas du mois, en calendrier (le meme que celui des proteines) */
@@ -37374,7 +37438,7 @@ function dessinePasMois(){
     const key = dayKey(new Date(an, mois, j)), v = pasJour(key), futur = key > auj;
     if(v > 0){ total += v; joursConnus++; if(v >= obj) atteints++; }
     const cl = futur ? "futur rien" : (v <= 0 ? "rien" : (v >= obj ? "atteint" : "partiel"));
-    cases.push(`<div class="cal-c ${cl}${key === auj ? " auj" : ""}"><span class="d">${j}</span><span class="p">${v > 0 ? pasCourt(v) : "·"}</span></div>`);
+    cases.push(`<button class="cal-c ${cl}${key === auj ? " auj" : ""}" ${futur ? "disabled" : `data-pasj="${key}"`}><span class="d">${j}</span><span class="p">${v > 0 ? pasCourt(v) : "·"}</span></button>`);
   }
   const apresPossible = premier < new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const avantPossible = premier > new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1);
@@ -37401,6 +37465,7 @@ function dessinePasMois(){
   if(!prec.disabled) prec.onclick = ()=>{ pasMois = new Date(an, mois - 1, 1); openPasMois(); };
   if(!suiv.disabled) suiv.onclick = ()=>{ pasMois = new Date(an, mois + 1, 1); openPasMois(); };
   document.getElementById("pas-ok").onclick = closeSheet;
+  document.querySelectorAll("#pas-cal [data-pasj]").forEach(b=>b.onclick = ()=>openPasJour(b.dataset.pasj, dessinePasMois));
 }
 
 let protAnimee = false;
