@@ -3379,21 +3379,19 @@
      Plein écran par-dessus tout : on vise un produit, on ne lit rien d'autre. */
   /* ---- l'ecran camera : un flux, deux modes ---- */
   .cam{position:fixed; inset:0; z-index:200; background:#000; color:#fff; overflow:hidden;}
-  /* clavier ouvert (la precision du plat) : Android retrecit la fenetre et tout le bas
-     remontait avec, declencheur compris. La camera garde la hauteur mesuree a
-     l'ouverture — le declencheur reste sous le clavier — et seul le champ vient se
-     poser juste au-dessus des touches : on valide d'abord le texte (Nico, 29 sept.) */
-  :root.clavier .cam{bottom:auto; height:var(--cam-h, 100%);}
+  /* ---- la saisie de la precision (Nico, 29 sept.) ----
+     Pendant qu'on ecrit, le declencheur et les boutons du bas s'effacent : on valide le
+     texte d'abord. Les deux systemes font de la place au clavier differemment :
+     - Android retrecit l'ecran : la video et le cadre remontaient avec lui ;
+     - l'iPhone fait GLISSER la page vers le haut pour montrer le champ : la camera
+       partait avec, son haut sortait de l'ecran et l'app apparaissait dessous.
+     La camera garde donc la hauteur de son ouverture et suit le glissement (--v-haut,
+     l'ecart que mesure visualViewport) : son haut reste en haut de l'ecran. Le champ,
+     place DANS la camera, se pose en bas de la zone visible (--v-haut-h). */
+  .cam.saisie{top:var(--v-haut, 0px); bottom:auto; height:var(--cam-h, 100%);}
   .cam.saisie .bas, .cam.saisie .repere{opacity:0; visibility:hidden; pointer-events:none;}
-  /* Pendant la saisie, la camera garde la hauteur de son ouverture : sur Android l'ecran
-     retrecit avec le clavier, et la video et le cadre remontaient (Nico). Seul le champ
-     se place sur la zone visible (--v-haut-h, mesuree par visualViewport sur les deux
-     systemes), juste au-dessus du clavier. */
-  .cam.saisie{bottom:auto; height:var(--cam-h, 100%);}
   .cam.saisie.plat .indice-plat, .cam.saisie.plat .t:not(:empty) ~ .indice-plat{
-    top:calc(var(--v-haut, 0px) + var(--v-haut-h, 100dvh) - 57px); bottom:auto;}
-  :root.clavier .cam.plat .indice-plat, :root.clavier .cam.plat .t:not(:empty) ~ .indice-plat{
-    top:calc(var(--v-haut, 0px) + var(--v-haut-h, 100dvh) - 56px);}
+    top:calc(var(--v-haut-h, 100dvh) - 57px); bottom:auto;}
   /* la video reste invisible tant qu'elle n'a rien a montrer : sans ca, Android
      affiche son gabarit gris avec un bouton « lecture » etire le temps que la
      camera s'ouvre */
@@ -21354,7 +21352,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h34 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
