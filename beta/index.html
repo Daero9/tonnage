@@ -228,6 +228,13 @@
      tableau, des cartes se lisent comme une succession — ce qu'est une séance. */
   /* fond blanc et lisere : sur la feuille creme, le gris clair etait invisible et
      les cartes se confondaient en une seule masse */
+  /* la part de chaque muscle : des pastilles qui defilent de gauche a droite */
+  .pv-muscles{display:flex; gap:8px; overflow-x:auto; margin:0 -16px 10px; padding:2px 16px 4px; scrollbar-width:none;
+    -webkit-overflow-scrolling:touch; touch-action:pan-x;}
+  .pv-muscles::-webkit-scrollbar{display:none;}
+  .pv-muscles .pm{flex:0 0 auto; display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:99px;
+    background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); font-size:13px; font-weight:700; color:var(--ink-soft); white-space:nowrap;}
+  .pv-muscles .pm b{color:var(--accent); font-weight:900;}
   /* la jauge du temps disponible (remplace l'interrupteur « seance courte ») */
   .pv-temps{margin-top:14px; padding:12px 14px 10px; border-radius:16px; background:var(--surface2);}
   .pv-temps .tete{display:flex; align-items:center; gap:8px; font-size:14px;}
@@ -21400,7 +21407,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h56 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h57 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31530,6 +31537,26 @@ function gardesCourte(t, extra){
   }
   return indicesSeanceCourte(t.items);
 }
+/* ---- La part de chaque muscle dans la seance (Nico, 29 sept.) ----
+   Pour chaque exercice, chaque muscle recoit ses series ponderees par sa sollicitation
+   (forte 3, moyenne 2, legere 1, la table MUSCLE_WORK) ; on rapporte au total. C'est une
+   REPARTITION du travail de la seance, pas une mesure d'intensite : la ponderation est
+   un choix de Tonnup. Les libelles precis (« Pectoraux (haut) ») rejoignent leur groupe. */
+function repartitionMuscles(items){
+  const tot = {};
+  let somme = 0;
+  items.forEach(it=>{
+    const nom = nomCanon(getEx(it.exId));
+    (MUSCLE_WORK[nom] || []).forEach(([m, n])=>{
+      const g = groupeDe(m) || m.replace(/\s*\(.*\)$/, "");
+      const v = n * (Number(it.sets) || 1);
+      tot[g] = (tot[g] || 0) + v; somme += v;
+    });
+  });
+  if(!somme) return [];
+  return Object.keys(tot).map(g=>({g, p: Math.round(tot[g] / somme * 100)}))
+    .filter(x=>x.p >= 1).sort((a, b)=>b.p - a.p);
+}
 function openPreview(tplId, lieuFait){
   const t = db.templates.find(x=>x.id===tplId);
   if(!t) return;
@@ -31612,6 +31639,9 @@ function openPreview(tplId, lieuFait){
       ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries":"série"))}
       ${tuile(IC_CHRONO, "~"+mins, TR("minutes"))}
     </div>
+    ${(()=>{ const rep = repartitionMuscles(items);
+      return rep.length ? `<div class="pv-muscles" aria-label="${TR("Muscles ciblés")}">${rep.map(x=>
+        `<span class="pm"><b>${x.p} %</b>${esc(TR(x.g))}</span>`).join("")}</div>` : ""; })()}
     <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
       seanceCourte && ecartes.length
         ? TR("Mis de côté aujourd'hui : {}").replace("{}", ecartes.map(it=>esc(getEx(it.exId).name)).join(", "))
