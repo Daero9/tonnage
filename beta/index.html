@@ -296,6 +296,26 @@
   .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
   .pv-course{margin-top:8px;} .pv-course.debut{margin:0 0 8px;}
   .pv-co-mv{font-size:15px; font-weight:900; color:var(--accent); margin-right:4px;}
+  /* l'apercu qui se recompose : les lignes qui arrivent, celles qui partent */
+  .pv-entre{animation:pvEntre .42s cubic-bezier(.2,.8,.3,1) backwards;}
+  @keyframes pvEntre{from{opacity:0; transform:translateY(-8px) scale(.97);}}
+  .pv-fantome{position:absolute; z-index:3; pointer-events:none; animation:pvSort .38s ease forwards;}
+  .pv-fantome > *{margin:0 !important;}
+  @keyframes pvSort{to{opacity:0; transform:scale(.95);}}
+  /* les courbes : le trait se trace de gauche a droite, l'aire et les points suivent */
+  .ch-trait{stroke-dasharray:1; stroke-dashoffset:1; animation:chTrace .95s cubic-bezier(.4,.1,.3,1) .1s forwards;}
+  @keyframes chTrace{to{stroke-dashoffset:0;}}
+  .ch-aire{animation:chAire .9s ease .35s backwards;}
+  @keyframes chAire{from{opacity:0;}}
+  .ch-pt{animation:chPoint .3s ease backwards;}
+  @keyframes chPoint{from{opacity:0; transform:scale(.3);}}
+  .ch-pt{transform-box:fill-box; transform-origin:center;}
+  .ch-bulle{animation:chAire .35s ease 1s backwards;}
+  /* l'onglet touche : un petit rebond */
+  .tab.rebond .tab-ic{animation:tabRebond .45s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes tabRebond{35%{transform:translateY(-4px) scale(1.12);} 70%{transform:translateY(1px) scale(.97);}}
+  @media (prefers-reduced-motion:reduce){ .ch-trait{animation:none; stroke-dashoffset:0;} .ch-aire, .ch-pt, .ch-bulle, .tab.rebond .tab-ic,
+    .hx-barre-svg .d rect, .hx-barre-svg .e text, .pv-entre{animation:none;} }
   .pv-plus-t{margin:12px 0 6px; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
   .pv-ex.pv-plus{box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.35);}
   .pv-ex.pv-plus .num{color:var(--accent); font-weight:900;}
@@ -1086,7 +1106,10 @@
   .hx-disq b{color:var(--ink); font-weight:800;}
   .hx-barre-svg{display:block; width:100%; max-width:300px; height:auto; margin:2px auto 4px;}
   .hx-barre-svg .b{fill:var(--ink-mute);} .hx-barre-svg .m{fill:var(--ink-soft);}
-  .hx-barre-svg .d rect{fill:var(--ink);}
+  .hx-barre-svg .d rect{fill:var(--ink); animation:disqueEnfile .42s cubic-bezier(.25,.8,.3,1) backwards;}
+  .hx-barre-svg .e text{animation:disqueEtiq .3s ease backwards;}
+  @keyframes disqueEnfile{from{transform:translateX(var(--dx, 60px)); opacity:0;} 25%{opacity:1;}}
+  @keyframes disqueEtiq{from{opacity:0;}}
   .hx-barre-svg .e text{font-size:10px; font-weight:800; fill:var(--ink-soft); text-anchor:middle;}
   .hx-barre{position:absolute; top:8px; right:10px; padding:4px 6px; background:none; font:inherit; font-size:11px; font-weight:700; color:var(--ink-mute);}
   .hx-barres{display:inline-flex; gap:6px; flex-wrap:wrap; justify-content:center;}
@@ -2267,8 +2290,12 @@
   .ex-card.ss-b::before{top:-16px; bottom:26px;}
   /* Assisté · Normal · Lesté : une pilule a trois cases sous le nom */
   .trio{display:flex; background:var(--surface2); border-radius:99px; padding:3px; margin:0 0 10px;}
-  .trio button{flex:1; padding:7px 0; border-radius:99px; font:inherit; font-size:12.5px; font-weight:800; color:var(--ink-soft); background:none; transition:background .2s, color .2s;}
-  .trio button.on{background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .trio{position:relative;}
+  .trio-cur{position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / var(--n, 3)); border-radius:99px;
+    background:var(--surface); box-shadow:0 1px 4px rgba(0,0,0,.12); transform:translateX(calc(var(--i, 1) * 100%));
+    transition:transform .32s cubic-bezier(.3,.9,.3,1);}
+  .trio button{position:relative; z-index:1; flex:1; padding:7px 0; border-radius:99px; font:inherit; font-size:12.5px; font-weight:800; color:var(--ink-soft); background:none; transition:color .25s;}
+  .trio button.on{color:var(--ink);}
   .trio button.suggere:not(.on){color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); animation:trioSugg 1.6s ease-in-out infinite;}
   @keyframes trioSugg{50%{box-shadow:inset 0 0 0 1.5px var(--accent), 0 0 0 4px rgba(245,130,32,.18);}}
   .trio-conseil{font-size:12px; font-weight:700; color:var(--accent); margin:-4px 0 10px; text-align:center;}
@@ -2373,6 +2400,12 @@
   /* ---- exercice terminé : la carte se replie ---- */
   /* la carte qui se replie, puis la ligne qui la remplace */
   .ex-card.se-plie{overflow:hidden; transition:height .34s cubic-bezier(.4,0,.2,1);}
+  .ex-card.se-deplie > *{animation:plieContenu .3s ease .12s backwards;}
+  /* ce qui ouvre la fiche : l'icone et le nom de l'exercice, avec un rebond au toucher */
+  .ouvre-fiche{cursor:pointer; -webkit-tap-highlight-color:transparent;}
+  .ouvre-fiche.touche{animation:ficheTouche .32s cubic-bezier(.3,1.4,.5,1);}
+  @keyframes ficheTouche{35%{transform:scale(.92);} 70%{transform:scale(1.04);}}
+  span.ouvre-fiche{display:inline-flex;}
   .ex-card.se-plie > *{opacity:0; transition:opacity .18s ease;}
   .ex-done.arrive{animation:plieArrive .3s ease-out;}
   .ex-done.arrive > *{animation:plieContenu .35s ease-out .05s backwards;}
@@ -18736,15 +18769,9 @@ function openExoInfo(exId){
           </div>
         </div>
       </div>`:""}
-    <div class="exo-c">
-      <div class="exo-t">${TR("Mon matériel")}</div>
-      ${blocChargeFixe(ex.id, "ei-plafond")}
-    </div>
+    ${/* « je n'ai pas plus lourd » est un reglage, pas une information : il vit dans la
+         roue de l'exercice (Nico, 30 sept.) */""}
     <button class="btn btn-accent" id="ei-ok" style="width:100%; margin-top:4px;">${TR("Fermer")}</button>`);
-  document.getElementById("ei-plafond").onchange = e=>{
-    reglerChargeFixe(ex.id, e.target.checked);
-    toast(e.target.checked ? "Charge fixe : progression en répétitions ✓" : "Charge libre ✓");
-  };
   document.getElementById("ei-ok").onclick = closeSheet;
 }
 
@@ -21509,6 +21536,12 @@ const EXO_PHOTO = {
   "Leg curl assis":"leg-curl-assis", "Lombaires au banc à 45°":"lombaires-45", "Relevés de genoux à la chaise romaine":"chaise-romaine", "Crunch machine":"crunch-machine", "Squat à la Smith":"squat-smith", "Élévations latérales machine":"elevations-laterales-machine", "Curl biceps machine":"curl-machine", "Mollets à la presse":"mollets-presse", "Développé incliné machine":"developpe-incline-machine", "Machine fessiers":"machine-fessiers",
   "Tractions assistées":"tractions-assistees", "Dips assistés":"dips-assistes"
 };
+/* le petit rebond d'un element qu'on touche, puis l'action (la fiche s'ouvre juste apres) */
+function toucherPuis(el, fn){
+  el.classList.remove("touche"); void el.offsetWidth; el.classList.add("touche");
+  vibrer(6);
+  setTimeout(fn, 140);
+}
 function exIcon(ex, sm){
   const img = EXO_PHOTO[nomCanon(ex)];
   /* Une plaque claire dans les deux themes : le trait est noir, il lui faut son fond.
@@ -21520,7 +21553,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 01h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -24850,13 +24883,16 @@ document.addEventListener("pointerdown", e=>{ dernierAppui = {el:e.target, t:Dat
 function appuiVenuDAilleurs(bouton){
   return !!(dernierAppui && Date.now() - dernierAppui.t < 1000 && dernierAppui.el && !bouton.contains(dernierAppui.el));
 }
+let tabRebond = null;
 function renderTabs(){
+  const rebond = tabRebond; tabRebond = null;
   document.getElementById("tabs").innerHTML = TABS.map(([id,lab])=>
-    `<button class="tab ${curTab===id?'on':''}" data-tab="${id}"><span class="tab-ic">${ICONS[id]}${verrouille(id)
+    `<button class="tab ${curTab===id?'on':''}${id === rebond ? " rebond" : ""}" data-tab="${id}"><span class="tab-ic">${ICONS[id]}${verrouille(id)
       ? `<span class="tab-cad">${IC_CADENAS_MINI}</span>` : ""}</span><span>${TR(lab)}</span></button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
     if(b.dataset.tab===curTab) return;
     if(appuiVenuDAilleurs(b)) return;
+    tabRebond = b.dataset.tab;             /* l'icone touchee fait un petit rebond (Nico) */
     allerOnglet(b.dataset.tab);
   });
 }
@@ -31776,6 +31812,75 @@ function openMuscleSeance(g, pct, items){
   document.querySelectorAll("[data-msx]").forEach(b=>b.onclick = ()=>
     ouvrirParDessus(()=>openMuscleSeance(g, pct, items), ()=>openExoInfo(b.dataset.msx)));
 }
+/* ---- L'apercu se recompose en douceur quand on lache la jauge (Nico, 30 sept.) ----
+   Avant de redessiner, on photographie : la position de chaque ligne et de chaque
+   pastille de muscle, les chiffres des tuiles, la place dans la fiche. Apres : les lignes
+   qui restent glissent a leur nouvelle place, celles qui arrivent entrent, celles qui
+   partent s'effacent sur place ; les pastilles glissent ; les chiffres defilent de
+   l'ancienne valeur a la nouvelle. */
+let apercuAvant = null;
+function photoApercu(){
+  const base = sheet.getBoundingClientRect().top - sheet.scrollTop;
+  const lignes = {}, chips = {};
+  sheet.querySelectorAll("[data-key]").forEach(el=>{
+    const r = el.getBoundingClientRect();
+    lignes[el.dataset.key] = {top: r.top, y: r.top - base, h: r.height, x: r.left - sheet.getBoundingClientRect().left, w: r.width, html: el.outerHTML};
+  });
+  sheet.querySelectorAll(".pv-muscles [data-mg]").forEach(el=>{ chips[el.dataset.mg] = el.getBoundingClientRect().left; });
+  return {scroll: sheet.scrollTop, lignes, chips,
+    tuiles: [...sheet.querySelectorAll(".pn-tuiles .pn-t .v")].map(v=>v.textContent),
+    eff: (sheet.querySelector("#pv-eff b") || {}).textContent || ""};
+}
+function defilerNombre(el, de, a, avant, apres){
+  if(de === a || isNaN(de) || isNaN(a)) return;
+  const t0 = performance.now(), duree = 450;
+  const pas = now=>{
+    if(!el.isConnected) return;
+    const k = Math.min(1, (now - t0) / duree), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = avant + Math.round(de + (a - de) * e) + apres;
+    if(k < 1) requestAnimationFrame(pas);
+  };
+  requestAnimationFrame(pas);
+}
+function animerApercu(av){
+  sheet.scrollTop = av.scroll;
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const vus = new Set();
+  let entree = 0;
+  sheet.querySelectorAll("[data-key]").forEach(el=>{
+    const k = el.dataset.key; vus.add(k);
+    const avant = av.lignes[k];
+    const now = el.getBoundingClientRect().top;
+    if(!avant){ el.style.animationDelay = (entree++ * 60) + "ms"; el.classList.add("pv-entre"); return; }
+    if(Math.abs(avant.top - now) < 1) return;
+    el.style.transition = "none"; el.style.transform = `translateY(${(avant.top - now).toFixed(1)}px)`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.transition = "transform .38s cubic-bezier(.2,.8,.3,1)"; el.style.transform = ""; }));
+  });
+  /* les lignes qui partent : un fantome a leur ancienne place, qui s'efface */
+  Object.keys(av.lignes).filter(k=>!vus.has(k)).forEach(k=>{
+    const o = av.lignes[k], f = document.createElement("div");
+    f.className = "pv-fantome"; f.innerHTML = o.html;
+    f.style.cssText = `top:${o.y.toFixed(1)}px; left:${o.x.toFixed(1)}px; width:${o.w.toFixed(1)}px;`;
+    sheet.appendChild(f);
+    setTimeout(()=>f.remove(), 420);
+  });
+  sheet.querySelectorAll(".pv-muscles [data-mg]").forEach(el=>{
+    const avant = av.chips[el.dataset.mg];
+    if(avant === undefined){ el.classList.add("pv-entre"); return; }
+    const dx = avant - el.getBoundingClientRect().left;
+    if(Math.abs(dx) < 1) return;
+    el.style.transition = "none"; el.style.transform = `translateX(${dx.toFixed(1)}px)`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.transition = "transform .4s cubic-bezier(.2,.8,.3,1)"; el.style.transform = ""; }));
+  });
+  /* les chiffres des tuiles et de l'efficacite */
+  const nb = t=>{ const m = /(-?\d+)/.exec(t || ""); return m ? Number(m[1]) : NaN; };
+  [...sheet.querySelectorAll(".pn-tuiles .pn-t .v")].forEach((v, i)=>{
+    const t = v.textContent, pre = t.startsWith("~") ? "~" : "";
+    defilerNombre(v, nb(av.tuiles[i]), nb(t), pre, "");
+  });
+  const effB = sheet.querySelector("#pv-eff b");
+  if(effB && /%/.test(effB.textContent) && /%/.test(av.eff)) defilerNombre(effB, nb(av.eff), nb(effB.textContent), "", " %");
+}
 function openPreview(tplId, lieuFait){
   const t = db.templates.find(x=>x.id===tplId);
   if(!t) return;
@@ -31914,11 +32019,11 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
       const ex = getEx(it.exId);
       const last = lastPerf(it.exId);
       const note = injuryNote(nomCanon(ex));
-      return `<div class="pv-ex" data-ord="${i}">${items.length>1
+      return `<div class="pv-ex" data-ord="${i}" data-key="${it.exId}">${items.length>1
           ? `<span class="poig" data-poignee aria-label="${TR("Déplacer cet exercice")}">⠿</span>`:""}
-        <span class="num">${k+1}</span>${exIcon(ex)}
+        <span class="num">${k+1}</span><span class="ouvre-fiche" data-exinfo="${it.exId}">${exIcon(ex)}</span>
         <div class="grow" style="min-width:0;">
-          <div class="nm">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
+          <div class="nm ouvre-fiche" data-exinfo="${it.exId}">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
           <div class="meta"><b>${it.sets} × ${esc(String(it.reps||"?"))}</b>${
             planTemps && it.sets < t.items[i].sets ? ` <span class="pv-moins">${TR("sur {}").replace("{}", t.items[i].sets)}</span>` : ""} · ${TR("repos")} ${fmtRepos(it.rest||90)}${
             last? ` · ${TR("dernière fois {}").replace("{}", pds(Math.max(...last.sets.map(s=>s.w||0))))}`:""}</div>
@@ -31934,18 +32039,17 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
             TR(Math.abs(it.ecartSeries) > 1 ? "séries" : "série")} · ${
             esc(TR(it.pourquoiSeries))}</div>` : ""}</div>
         <span class="act">
-          <button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button>
           <button data-pvswap="${i}" title="${TR("Remplacer")}" aria-label="${TR("Remplacer")}">⇄</button>
           <button class="sup" data-pvdel="${i}" title="${TR("Retirer")}" aria-label="${TR("Retirer")}">✕</button>
         </span></div>`;
     }).join("")}</div>
     ${enPlus.length ? `<div class="pv-plus-t">${TR("En plus aujourd'hui")}</div>${enPlus.map(it=>{ const ex = getEx(it.exId);
-      return `<div class="pv-ex pv-plus"><span class="num">＋</span>${exIcon(ex)}
+      return `<div class="pv-ex pv-plus" data-key="plus-${it.exId}"><span class="num">＋</span><span class="ouvre-fiche" data-exinfo="${it.exId}">${exIcon(ex)}</span>
         <div class="grow" style="min-width:0;">
-          <div class="nm">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
+          <div class="nm ouvre-fiche" data-exinfo="${it.exId}">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
           <div class="meta"><b>${it.sets} × ${esc(String(it.reps || "?"))}</b> · ${TR("pour {}").replace("{}", esc(TR(it.pour)).toLowerCase())}</div>
         </div>
-        <span class="act"><button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button></span></div>`; }).join("")}` : ""}
+        </div>`; }).join("")}` : ""}
     ${t.course && t.course.place !== "debut" ? ligneCourse : ""}
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
         <span class="num pv-co-num">${icCardio(t.cardio.machine || "course", 16)}</span>
@@ -31971,8 +32075,9 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
   });
   document.querySelectorAll("[data-exinfo]").forEach(b=>b.onclick=(e)=>{
     e.stopPropagation();
-    ouvrirParDessus(()=>openPreview(tplId, true), ()=>openExoInfo(b.dataset.exinfo));
+    toucherPuis(b, ()=>ouvrirParDessus(()=>openPreview(tplId, true), ()=>openExoInfo(b.dataset.exinfo)));
   });
+  if(apercuAvant){ const av = apercuAvant; apercuAvant = null; animerApercu(av); }
   /* une pastille de muscle : les exercices de la seance qui le travaillent (Nico) */
   document.querySelectorAll("[data-mg]").forEach(b=>b.onclick = ()=>{
     vibrer(6);
@@ -32012,7 +32117,7 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
       }
       vibrer(4);
     };
-    jauge.onchange = ()=>{ tempsDispo = val(); openPreview(tplId, true); };
+    jauge.onchange = ()=>{ tempsDispo = val(); apercuAvant = photoApercu(); openPreview(tplId, true); };
   }
   /* La seance courte se reordonne aussi (Nico). Elle ne montre qu'une partie des
      exercices : le nouvel ordre se range dans LEURS places d'origine, et ceux qu'elle
@@ -32277,11 +32382,15 @@ function barreSvg(liste){
   let x = dep, disques = "", etiq = "";
   liste.forEach((v, i)=>{
     const l = L[kg(v)] * k, h = H[kg(v)], t = fmtDisque(v);
+    /* on les enfile comme en vrai (Nico) : depuis le bout de la barre vers le centre, les
+       gros d'abord, chacun avec un petit temps de retard */
+    const retard = 120 + i * 140;
     /* deux etiquettes voisines ne se chevauchent pas : une sur deux descend d'un cran */
     const ty = y + 38 + (i % 2 ? 11 : 0);
-    [cx + x, cx - x - l].forEach(px=>{
-      disques += `<rect x="${px.toFixed(1)}" y="${y - h / 2}" width="${l.toFixed(1)}" height="${h}" rx="2.5"/>`;
-      etiq += `<text x="${(px + l / 2).toFixed(1)}" y="${ty}">${t}</text>`;
+    [[cx + x, 1], [cx - x - l, -1]].forEach(([px, sens])=>{
+      const dep = (sens > 0 ? (W - 4 - px - l) : -(px - 4)).toFixed(1);   /* jusqu'au bout de la barre */
+      disques += `<rect x="${px.toFixed(1)}" y="${y - h / 2}" width="${l.toFixed(1)}" height="${h}" rx="2.5" style="--dx:${dep}px; animation-delay:${retard}ms"/>`;
+      etiq += `<text x="${(px + l / 2).toFixed(1)}" y="${ty}" style="animation-delay:${retard + 260}ms">${t}</text>`;
     });
     x += l + gap * k;
   });
@@ -32374,6 +32483,7 @@ function openHistoExo(ei){
                <span><b>${TR("Je le fais un bras (ou une jambe) à la fois")}</b>
                  <span>${TR("Tu saisis la charge d'un seul côté : l'app compte les deux dans ton tonnage et ton profil.")}</span></span>
              </label>`}
+        ${estAssiste(ex) ? "" : `<div style="margin-top:10px;">${blocChargeFixe(en.exId, "hx-plafond")}</div>`}
       </div>
       ${a.entries[ei + 1] ? `<div class="hx-mat">
         <label class="choix">
@@ -32384,6 +32494,11 @@ function openHistoExo(ei){
       <button class="btn btn-accent" id="hx-ok">${TR("Compris")}</button>
     </div>`);
   brancherDisques(en.exId, prochain && prochain.w);
+  const plaf = document.getElementById("hx-plafond");
+  if(plaf) plaf.onchange = e=>{
+    reglerChargeFixe(en.exId, e.target.checked);
+    toast(TR(e.target.checked ? "Charge fixe : progression en répétitions ✓" : "Charge libre ✓"));
+  };
   /* le superset vaut aussi pour la prochaine fois : on l'ecrit sur le plan */
   const ss = document.getElementById("hx-ss");
   if(ss) ss.onchange = e=>{
@@ -32599,6 +32714,19 @@ function exerciceFini(card, nom, apres){
    la hauteur de la ligne « ✓ » en s'effacant, et la ligne apparait a sa place. La liste
    glisse au lieu de sauter. */
 let plieArrive = null;
+/* l'inverse (Nico) : la ligne « ✓ » rouverte grandit jusqu'a la carte entiere, le contenu
+   apparait ensuite — au lieu de s'ouvrir d'un coup */
+let deplieArrive = null;
+function deplierCarte(card){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const h = card.getBoundingClientRect().height;
+  card.style.height = "60px"; card.style.overflow = "hidden";
+  card.classList.add("se-deplie");
+  void card.offsetHeight;
+  card.style.transition = "height .36s cubic-bezier(.2,.8,.3,1)";
+  card.style.height = h + "px";
+  setTimeout(()=>{ card.style.height = ""; card.style.overflow = ""; card.style.transition = ""; card.classList.remove("se-deplie"); }, 400);
+}
 function replierCarte(card, apres){
   const fin = ()=>{ if(typeof apres === "function") apres(); };
   if(!card || !card.isConnected || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return fin();
@@ -32764,17 +32892,26 @@ function selecteurTrio(en, ei){
   /* pas de machine d'assistance ici : deux cases seulement (sauf si on y est deja) */
   const cases = [["assiste", "Assisté"], ["normal", "Normal"], ["leste", "Lesté"]]
     .filter(([m])=>m !== "assiste" || mode === "assiste" || assistanceDispo(t));
-  return `<div class="trio" data-trio="${ei}">
+  const iOn = Math.max(0, cases.findIndex(([m])=>m === mode));
+  return `<div class="trio" data-trio="${ei}" style="--n:${cases.length}; --i:${iOn}"><span class="trio-cur"></span>
       ${cases.map(([m, l])=>
         `<button type="button" data-t3="${m}" class="${m === mode ? "on" : ""}${m === sugg ? " suggere" : ""}">${TR(l)}</button>`).join("")}
     </div>${texte ? `<div class="trio-conseil">${texte}</div>` : ""}`;
 }
+const trioAvant = {};
 /* pose (ou repose apres une serie) le selecteur sous le nom, et le branche */
 function poserTrio(card, a, ei){
   card.querySelectorAll(".trio, .trio-conseil").forEach(x=>x.remove());
   const html = selecteurTrio(a.entries[ei], ei);
   if(!html) return;
   card.querySelector(".ex-head").insertAdjacentHTML("afterend", html);
+  /* la case blanche part de l'ancienne position et glisse vers la nouvelle (Nico) */
+  const tr = card.querySelector(".trio"), iNouv = tr ? tr.style.getPropertyValue("--i") : null;
+  if(tr && trioAvant[ei] !== undefined && String(trioAvant[ei]) !== iNouv){
+    tr.style.setProperty("--i", trioAvant[ei]);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>tr.style.setProperty("--i", iNouv)));
+  }
+  if(tr) trioAvant[ei] = iNouv;
   card.querySelectorAll("[data-t3]").forEach(b=>b.onclick = e=>{ e.stopPropagation(); vibrer(8); basculerTrio(a, ei, b.dataset.t3); });
 }
 function renderActive(app){
@@ -32879,7 +33016,7 @@ function renderActive(app){
           : ((Number(x.w) || 0) > 0 ? "+" + pds(x.w) + " × " + (x.r || 0) : TR("{} reps").replace("{}", x.r || 0))).join(" · ");
         plie.querySelector(".nm").insertAdjacentHTML("beforeend", `<small class="ex-done-v">${esc(det)}</small>`);
       }
-      plie.onclick = ()=>{ delete en.replie; save(); renderSurPlace(); };
+      plie.onclick = ()=>{ delete en.replie; deplieArrive = ei; save(); renderSurPlace(); };
       list.appendChild(plie);
       return;
     }
@@ -32910,8 +33047,7 @@ function renderActive(app){
         <div class="grow"><div class="ex-name">${esc(nomEx(ex))}${
           ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>` : ""}</div></div>
         <button class="icon-btn info-btn" data-hist-ex="${ei}" title="${TR("Réglages de l'exercice")}" aria-label="${TR("Réglages de l'exercice")}">${IC_ROUE_FINE}</button>
-        ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}
-        <button class="icon-btn info-btn" data-exinfo="${en.exId}" title="${TR("Fiche de l'exercice")}">${IC_INFO_ROND}</button></div>
+        ${note? `<button class="icon-btn inj-btn" data-injinfo="${ei}" title="${esc(note.injury)} sensible">⚠️</button>`:""}</div>
       ${(()=>{ const o = objectifDuJour(en.exId, en.target, prefatigueDans(a.entries, ei));
         if(!o || (!o.poids && !o.reps) || en.objMasque) return "";
         const fleche = o.ecart > 0 ? "↑" : (o.ecart < 0 ? "↓" : "");
@@ -33442,7 +33578,14 @@ function renderActive(app){
       const ok = document.getElementById("pq-ok");
       if(ok) ok.onclick = closeSheet;
     });
+    if(String(deplieArrive) === String(ei)){ deplieArrive = null; requestAnimationFrame(()=>deplierCarte(card)); }
     poserTrio(card, a, ei);
+    /* le bouton ⓘ s'en va (Nico, 30 sept.) : c'est l'icone ou le nom de l'exercice qui
+       ouvrent sa fiche, avec un petit rebond pour dire qu'on a bien touche */
+    card.querySelectorAll(".ex-head > .ex-ico, .ex-head .ex-name").forEach(el=>{
+      el.classList.add("ouvre-fiche");
+      el.onclick = e=>{ e.stopPropagation(); toucherPuis(el, ()=>openExoInfo(en.exId)); };
+    });
     const hx = card.querySelector("[data-hist-ex]");
     if(hx) hx.onclick = (e)=>{ e.stopPropagation(); openHistoExo(parseInt(hx.dataset.histEx)); };
     /* l'objectif prend de la place : on peut le replier pour cet exercice, le temps
@@ -39548,6 +39691,25 @@ function renderCardioSection(sec){
 
 /* `fmt` : comment ecrire la valeur de la bulle. Par defaut un poids (fmtKg) ; une
    distance ou une vitesse DOIT passer le sien — fmtKg convertit en livres en imperial. */
+/* Une courbe arrondie qui ne ment pas (Nico, 30 sept.) : interpolation cubique
+   MONOTONE (Fritsch-Carlson). Entre deux mesures, la courbe ne monte jamais plus haut
+   ni ne descend plus bas qu'elles — une courbe de Bezier ordinaire inventerait des bosses,
+   un poids qu'on n'a jamais pese. */
+function cheminLisse(P){
+  const n = P.length;
+  if(n < 3) return P.map((q, i)=>(i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+  const dx = [], dy = [], m = [];
+  for(let i = 0; i < n - 1; i++){ dx.push(P[i + 1][0] - P[i][0]); dy.push(P[i + 1][1] - P[i][1]); m.push(dy[i] / (dx[i] || 1)); }
+  const t = [m[0]];
+  for(let i = 1; i < n - 1; i++) t.push(m[i - 1] * m[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]));
+  t.push(m[n - 2]);
+  let d = "M" + P[0][0].toFixed(1) + " " + P[0][1].toFixed(1);
+  for(let i = 0; i < n - 1; i++){
+    const h = dx[i] / 3;
+    d += ` C${(P[i][0] + h).toFixed(1)} ${(P[i][1] + t[i] * h).toFixed(1)} ${(P[i + 1][0] - h).toFixed(1)} ${(P[i + 1][1] - t[i + 1] * h).toFixed(1)} ${P[i + 1][0].toFixed(1)} ${P[i + 1][1].toFixed(1)}`;
+  }
+  return d;
+}
 function drawChart(wrap, pts, unit, goal, fmt){
   const W = Math.max(280, wrap.clientWidth || 300), H = 220;
   const padL = 40, padR = 16, padT = 18, padB = 26;
@@ -39566,17 +39728,18 @@ function drawChart(wrap, pts, unit, goal, fmt){
     grid += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
     ylab += `<text x="${padL-7}" y="${y+4}" text-anchor="end" font-size="10.5" fill="var(--ink-mute)" style="font-variant-numeric:tabular-nums;">${(hi-lo)<4? (Math.round(v*10)/10).toLocaleString(loc()) : Math.round(v)}</text>`;
   }
-  const path = pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.v).toFixed(1)).join(" ");
+  const path = cheminLisse(pts.map((p, i)=>[X(i), Y(p.v)]));
   const area = pts.length>1 ? path + ` L${X(pts.length-1).toFixed(1)} ${H-padB} L${X(0).toFixed(1)} ${H-padB} Z` : "";
   const dots = pts.map((p,i)=>{
     const lastP = i===pts.length-1;
-    return `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${lastP?5.5:3.5}" fill="${lastP?"#FE7610":"#FDAA16"}" stroke="var(--surface)" stroke-width="2"/>`;
+    return `<circle class="ch-pt" style="animation-delay:${(200 + 700 * (pts.length > 1 ? i / (pts.length - 1) : 0)).toFixed(0)}ms" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${lastP?5.5:3.5}" fill="${lastP?"#FE7610":"#FDAA16"}" stroke="var(--surface)" stroke-width="2"/>`;
   }).join("");
   /* la bulle du dernier point : orange pleine, texte blanc, posee au-dessus */
   const bx = Math.min(Math.max(X(pts.length-1), padL + 30), W - padR - 30), by = Y(pts[pts.length-1].v) - 14;
   const lastLabel = `<rect x="${(bx-30).toFixed(1)}" y="${(by-20).toFixed(1)}" width="60" height="22" rx="11" fill="#FE7610"/>
     <path d="M${(bx-5).toFixed(1)} ${(by+2).toFixed(1)} L${bx.toFixed(1)} ${(by+8).toFixed(1)} L${(bx+5).toFixed(1)} ${(by+2).toFixed(1)} Z" fill="#FE7610"/>
     <text x="${bx.toFixed(1)}" y="${(by-5).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">${(fmt || fmtKg)(pts[pts.length-1].v)} ${unit}</text>`;
+  const bulle = `<g class="ch-bulle">${lastLabel}</g>`;
   const xl0 = `<text x="${X(0).toFixed(1)}" y="${H-8}" text-anchor="${pts.length===1?"middle":"start"}" font-size="10.5" fill="var(--ink-mute)">${fmtDateShort(pts[0].date)}</text>`;
   const xl1 = pts.length>1? `<text x="${X(pts.length-1).toFixed(1)}" y="${H-8}" text-anchor="end" font-size="10.5" fill="var(--ink-mute)">${fmtDateShort(pts[pts.length-1].date)}</text>`:"";
 
@@ -39588,10 +39751,10 @@ function drawChart(wrap, pts, unit, goal, fmt){
       ${useGoal? `<line x1="${padL}" y1="${Y(goal).toFixed(1)}" x2="${W-padR}" y2="${Y(goal).toFixed(1)}" stroke="#2e9e4f" stroke-width="2" stroke-dasharray="6 5"/>
         <rect x="${W-padR-98}" y="${(Y(goal)-26).toFixed(1)}" width="98" height="20" rx="10" fill="rgba(46,158,79,.14)"/>
         <text x="${W-padR-49}" y="${(Y(goal)-12).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#2e9e4f">${TR("Objectif")} ${fmtKg(goal)} ${unit}</text>`:""}
-      ${area?`<path d="${area}" fill="url(#pd-aire)"/>`:""}
-      ${pts.length>1?`<path d="${path}" fill="none" stroke="url(#pd-trait)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:""}
+      ${area?`<path class="ch-aire" d="${area}" fill="url(#pd-aire)"/>`:""}
+      ${pts.length>1?`<path class="ch-trait" pathLength="1" d="${path}" fill="none" stroke="url(#pd-trait)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:""}
       <line id="cross" x1="0" y1="${padT}" x2="0" y2="${H-padB}" stroke="var(--ink-mute)" stroke-width="1" stroke-dasharray="3 3" style="display:none;"/>
-      ${dots}${lastLabel}${xl0}${xl1}
+      ${dots}${bulle}${xl0}${xl1}
     </svg>`;
 
   const svg = wrap.querySelector("#chart-svg");
