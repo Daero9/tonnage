@@ -532,7 +532,8 @@
   .cd-grille button:active{background:var(--btn);}
   .cd-grille button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
   .cd-nb{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
-  .cd-nb label{display:block; min-width:0;}
+  .cd-nb label{display:flex; flex-direction:column; justify-content:flex-end; min-width:0;}
+  .cd-nb .f-lab{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}   /* un titre long ne fait plus descendre sa case */
   .cd-nb input{width:100%; text-align:center; padding-inline:6px;}
   .cd-aide{font-size:11.5px; color:var(--ink-mute); margin-top:7px; line-height:1.5;}
   .cd-ok{width:100%; margin-top:4px;}
@@ -2852,7 +2853,7 @@
   .tpl-item select{width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font:inherit;}
   /* la carte de la sortie cardio pendant la seance */
   .ex-card.cardio.fini{opacity:.72;}
-  .ex-card.cardio .cd-nb label{display:block;}
+  .ex-card.cardio .cd-nb label{display:flex;}
   .ex-card.cardio input{width:100%; padding:9px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font:inherit; font-size:15px;}
   .tpl-item .cfg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; margin-top:8px;}
   .tpl-item .cfg .label{font-size:9px; letter-spacing:.08em; text-align:center; display:block; margin-bottom:3px;}
@@ -21519,7 +21520,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h55 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31947,7 +31948,7 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
         <span class="act"><button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button></span></div>`; }).join("")}` : ""}
     ${t.course && t.course.place !== "debut" ? ligneCourse : ""}
     ${objCardio ? `<div class="pv-ex" style="margin-top:8px;">
-        <span class="num pv-co-num">${icoM("course", 16)}</span>
+        <span class="num pv-co-num">${icCardio(t.cardio.machine || "course", 16)}</span>
         <div class="grow" style="min-width:0;">
           <div class="nm">${esc(TR(machineOf(t.cardio)[1]))}</div>
           <div class="meta"><b>${esc(texteSortie(objCardio))}</b>${objCardio.base ? ` · ${TR("Dernière fois : {}").replace("{}", esc(texteSortie(objCardio.base)))}` : ""}</div>
@@ -33506,14 +33507,14 @@ function renderActive(app){
     /* faite : une ligne repliee, comme un exercice termine — on peut la rouvrir */
     if(c.fait && !c.ouverte) cc.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px;">
-        <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--good);">${icoM("course", 24)}</span>
+        <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--good);">${icCardio(c.machine || "course", 24)}</span>
         <div class="grow"><div class="ex-name">✓ ${esc(TR(machineOf(c)[1]))}</div>
           <div style="font-size:12px; color:var(--ink-mute);">${esc(texteSortie(c))} · ${Math.round(sortieKcal(Object.assign({intensite:"modere"}, c), currentWeight() || 75))} kcal</div></div>
         <button class="icon-btn" id="ca-ouvrir" style="width:auto; padding:0 10px; font-size:12.5px;">${TR("Modifier")}</button>
       </div>`;
     else cc.innerHTML = `
       <div class="ex-head" style="align-items:center; gap:10px; margin-bottom:6px;">
-        <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--accent);">${icoM("course", 26)}</span>
+        <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--accent);">${icCardio(c.machine || "course", 26)}</span>
         <div class="grow"><div class="ex-name">${esc(TR(machineOf(c)[1]))}</div>
           <div style="font-size:12px; color:var(--ink-mute);">${c.fait ? TR("Sortie faite") : TR("Sortie à faire")}${c.derniere ? " · " + TR("Dernière fois : {}").replace("{}", esc(c.derniere)) : ""}</div></div>
       </div>
@@ -33521,11 +33522,16 @@ function renderActive(app){
         <div class="co"><span class="k">${TR("Objectif du jour")}</span>
           <div class="v"><b>${esc(texteSortie(c))}</b></div>
           <div class="s">${TR("Un petit cran de plus que la dernière fois : c'est comme ça qu'on progresse en endurance, par petites marches, pas par bonds.")}</div></div></div></div>` : ""}
-      <div class="cd-nb" style="margin-top:8px;">
+      ${/* les cases qui ont un sens pour CETTE activite (Nico) : la pente n'existe que sur
+           un tapis de course, la distance sur ce qui avance (velo, rameur, nage, course) */""}
+      ${(()=>{ const m = c.machine || "course";
+        const avecKm = ["course", "velo", "rameur", "natation"].includes(m), avecPente = m === "course";
+        const n = 1 + (avecKm ? 1 : 0) + (avecPente ? 1 : 0);
+        return `<div class="cd-nb" style="margin-top:8px; grid-template-columns:repeat(${n},1fr);">
         <label><span class="f-lab">${TR("Durée (min)")}</span><input type="number" inputmode="numeric" min="0" id="ca-min" value="${c.min ? Math.round(c.min) : ""}" placeholder="30"></label>
-        <label><span class="f-lab">${TR("Distance")} (${uDist()})</span><input type="number" inputmode="decimal" step="0.1" min="0" id="ca-km" value="${c.km ? affDist(c.km).replace(",", ".") : ""}" placeholder="5"></label>
-        <label><span class="f-lab">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" id="ca-pente" value="${c.pente || ""}" placeholder="0"></label>
-      </div>
+        ${avecKm ? `<label><span class="f-lab">${TR("Distance")} (${uDist()})</span><input type="number" inputmode="decimal" step="0.1" min="0" id="ca-km" value="${c.km ? affDist(c.km).replace(",", ".") : ""}" placeholder="5"></label>` : ""}
+        ${avecPente ? `<label><span class="f-lab">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" id="ca-pente" value="${c.pente || ""}" placeholder="0"></label>` : ""}
+      </div>`; })()}
       <div class="row" style="gap:8px; margin-top:10px;">
         <button class="btn" id="ca-retirer" style="flex:0 0 auto; padding-inline:14px; color:var(--bad);">${TR("Retirer")}</button>
         <button class="btn ${c.fait ? "" : "btn-accent"} grow" id="ca-fait">${c.fait ? "✓ " + TR("Sortie faite") : TR("Sortie faite")}</button>
@@ -33534,8 +33540,8 @@ function renderActive(app){
       const q = sel => cc.querySelector(sel);
       if(!q("#ca-min")) return;
       c.min = parseFloat(q("#ca-min").value) || 0;
-      c.km = versKm(parseFloat(q("#ca-km").value) || 0);
-      c.pente = parseFloat(q("#ca-pente").value) || 0;
+      if(q("#ca-km")) c.km = versKm(parseFloat(q("#ca-km").value) || 0);
+      if(q("#ca-pente")) c.pente = parseFloat(q("#ca-pente").value) || 0;
     };
     cc.querySelectorAll("input").forEach(i=>i.oninput = ()=>{ lire(); save(); });
     const bFait = cc.querySelector("#ca-fait");
