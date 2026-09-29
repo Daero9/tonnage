@@ -12,6 +12,8 @@
 <link rel="icon" href="icon-192.png?v=4">
 <!-- Le service worker sert a fonctionner hors connexion SUR LE WEB. Dans l application Android, les memes fichiers sont deja installes avec l APK : l enregistrer y rangeait une seconde copie de 8 Mo dans les donnees utilisateur, et pouvait servir une version plus ancienne que celle du paquet. On ne l enregistre donc pas quand Capacitor est la. -->
 <script>if("serviceWorker" in navigator && !window.Capacitor){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(function(){})});}</script>
+<!-- noir des la premiere image : l'ecran d'ouverture arrive juste apres (retire avec lui) -->
+<style id="ov-fond">html, body{background:#000 !important;}</style>
 <style>
   :root{
     /* clair : fond crème, bandeau sombre, orange franc — d'après la maquette Figma */
@@ -5065,6 +5067,31 @@
     color:var(--ink-soft); transition:color .25s ease;}
   #sheet .pc-et .pc-type button.on{color:#fff;}
 </style>
+
+<!-- L'ecran d'ouverture (Nico, 29 sept.) : noir, les deux halos, le logo et sa barre. Il
+     est peint avant que l'app ne tourne ; quand l'accueil est pret, il monte comme un
+     rideau et le salut s'ecrit. Styles ici, en ligne : ils s'appliquent sans attendre. -->
+<style>
+  #ouverture{position:fixed; inset:0; z-index:200000; background:#000; overflow:hidden;
+    transition:transform .5s cubic-bezier(.7,0,.25,1);}
+  #ouverture .ov-halo{position:absolute; width:62vw; max-width:420px; pointer-events:none;}
+  #ouverture .ov-halo.h1{left:0; top:0;}
+  #ouverture .ov-halo.h2{right:0; bottom:0; transform:rotate(180deg);}
+  #ouverture .ov-c{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); display:flex; flex-direction:column; align-items:center; gap:22px;}
+  #ouverture .ov-logo{width:58vw; max-width:300px; height:auto;}
+  #ouverture .ov-barre{width:140px; height:6px; border-radius:99px; background:#262626; overflow:hidden;}
+  #ouverture .ov-barre i{display:block; height:100%; width:0; border-radius:99px; background:linear-gradient(90deg, #ff8a1e, #ff5f00);
+    animation:ovCharge 1.4s cubic-bezier(.2,.7,.3,1) forwards;}
+  #ouverture.fin .ov-barre i{animation:none; width:100%; transition:width .2s ease-out;}
+  #ouverture.leve{transform:translateY(-100%);}
+  @keyframes ovCharge{from{width:0;} to{width:82%;}}
+  @media (prefers-reduced-motion: reduce){ #ouverture{transition:opacity .2s;} #ouverture.leve{transform:none; opacity:0;} }
+</style>
+<div id="ouverture" aria-hidden="true">
+  <img class="ov-halo h1" src="img/halo.webp" alt="">
+  <img class="ov-halo h2" src="img/halo.webp" alt="">
+  <div class="ov-c"><img class="ov-logo" src="img/logo-texte.png" alt="Tonnup"><div class="ov-barre"><i></i></div></div>
+</div>
 
 <div id="app"></div>
 
@@ -20286,7 +20313,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 01h54 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 02h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22598,6 +22625,31 @@ function openProfil(){
    « Pret pour ta seance ? ». Chaque lettre est deja a sa place (invisible) : la mise en
    page ne bouge pas, et ajusterSalut a mesure le texte entier. Rien si l'appareil demande
    moins d'animations. */
+var salutEnAttente = false;
+/* Lever le rideau d'ouverture quand l'accueil est pret : ses images de fond decodees (1,8 s
+   au plus), et au moins 0,9 s apres le lancement — la barre a le temps de se remplir sans
+   que l'ecran clignote. Dans une page de test (iframe), il s'efface tout de suite. */
+function leverRideau(){
+  const ov = document.getElementById("ouverture");
+  if(!ov) return;
+  const fond = document.getElementById("ov-fond");
+  if(window.top !== window){ ov.remove(); if(fond) fond.remove(); if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } return; }
+  const urls = [];
+  document.querySelectorAll("#app img").forEach(im=>{ if(urls.length < 6 && im.src) urls.push(im.src); });
+  document.querySelectorAll('#app [style*="background-image"]').forEach(el=>{
+    const m = /url\(['"]?([^'")]+)/.exec(el.getAttribute("style") || ""); if(m && urls.length < 8) urls.push(m[1]); });
+  const decoder = u=>new Promise(r=>{ const im = new Image(); im.onload = im.onerror = ()=>r(); im.src = u; });
+  Promise.race([Promise.all(urls.map(decoder)), new Promise(r=>setTimeout(r, 1800))]).then(()=>{
+    setTimeout(()=>{
+      ov.classList.add("fin");
+      setTimeout(()=>{
+        ov.classList.add("leve"); if(fond) fond.remove();
+        setTimeout(()=>{ if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } }, 220);
+        setTimeout(()=>{ ov.remove(); if(fond) fond.remove(); }, 650);
+      }, 230);
+    }, Math.max(0, 900 - performance.now()));
+  });
+}
 function ecrireSalut(){
   if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const h1 = document.querySelector(".hero-accueil h1"), sous = document.querySelector(".hero-accueil .sub");
@@ -27842,7 +27894,8 @@ function renderSeance(app){
   document.getElementById("hist-all").onclick = ()=>allerOnglet("hist");
   wireTopbar();
   ajusterSalut();
-  if(rendus === 1) ecrireSalut();    /* a l'ouverture seulement, pas en revenant sur l'onglet */
+  /* a l'ouverture seulement, pas en revenant sur l'onglet ; et apres le rideau s'il est la */
+  if(rendus === 1){ if(document.getElementById("ouverture")) salutEnAttente = true; else ecrireSalut(); }
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
@@ -36312,6 +36365,7 @@ render = function(){ _origRender(); syncWakeLock(); };
 appliquerTheme();
 majTextesFixes();
 render();
+leverRideau();
 /* juste apres le premier dessin : l'accueil passe avant les photos des autres pages */
 setTimeout(prechargerHeros, 300);
 if(!db.profile) setTimeout(()=>{ if(!db.profile) openOnboarding(true); }, 400);
