@@ -235,19 +235,52 @@
   .pv-muscles .pm{flex:0 0 auto; display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:99px;
     background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); font-size:13px; font-weight:700; color:var(--ink-soft); white-space:nowrap;}
   .pv-muscles .pm b{color:var(--accent); font-weight:900;}
-  /* la jauge du temps disponible (remplace l'interrupteur « seance courte ») */
-  .pv-temps{margin-top:14px; padding:12px 14px 10px; border-radius:16px; background:var(--surface2);}
-  .pv-temps .tete{display:flex; align-items:center; gap:8px; font-size:14px;}
-  .pv-temps .tete .ic{display:inline-flex; color:var(--accent);} .pv-temps .tete .ic svg{width:18px; height:18px;}
-  .pv-temps .tete b{flex:1;}
-  .pv-temps .val{font-weight:900; color:var(--accent);}
-  .pv-temps input[type=range]{width:100%; margin:12px 0 4px; accent-color:var(--accent); height:24px; background:none; border:0; padding:0;}
-  .pv-temps .crans{display:flex; justify-content:space-between; font-size:10.5px; font-weight:700; color:var(--ink-mute); padding:0 2px;}
-  .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
-  .pv-temps{position:relative;}
-  .pv-temps .eff{display:block; margin:6px 0 -4px; text-align:right; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  /* la jauge du temps disponible, d'apres la maquette de Nico (30 sept.) */
+  .pv-temps{position:relative; margin-top:14px; padding:16px 14px 14px; border-radius:20px;
+    background:linear-gradient(135deg, #FFF3E6 0%, #FFF8F1 60%, #FFFFFF 100%); box-shadow:0 2px 10px rgba(245,130,32,.10);}
+  :root[data-theme="dark"] .pv-temps{background:linear-gradient(135deg, rgba(245,130,32,.16), rgba(245,130,32,.06));}
+  .pv-temps .tete{display:flex; align-items:center; gap:12px;}
+  .pv-temps .rond{flex:0 0 auto; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(145deg, #FF8A1E, #F26A00); color:#fff; box-shadow:0 4px 10px rgba(245,110,0,.30);}
+  .pv-temps .rond svg{width:26px; height:26px;}
+  .pv-temps .tx{flex:1; min-width:0;}
+  .pv-temps .tx b{display:block; font-size:16.5px; font-weight:900; color:var(--ink);}
+  .pv-temps .tx span{display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px; line-height:1.35;}
+  .pv-temps .droite{flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:5px;}
+  .pv-temps .val{padding:6px 14px; border-radius:14px; background:rgba(245,130,32,.14); color:var(--accent); font-size:22px; font-weight:900; line-height:1.1; white-space:nowrap;}
+  .pv-temps .val.long{font-size:14px; padding:8px 12px;}
+  .pv-temps .eff{font-size:11.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap;}
   .pv-temps .eff b{font-size:13px; font-weight:900; color:var(--good);}
-  .pv-temps p{margin:8px 0 0; font-size:11.5px; color:var(--ink-mute); text-align:center;}
+  /* la barre : epaisse, remplie en degrade jusqu'au curseur */
+  .pv-temps .piste{position:relative; margin:16px 0 4px;}
+  .pv-temps input[type=range]{-webkit-appearance:none; appearance:none; display:block; width:100%; height:34px; margin:0; padding:0; border:0; background:none; cursor:pointer;}
+  .pv-temps input[type=range]::-webkit-slider-runnable-track{height:14px; border-radius:99px;
+    background:linear-gradient(90deg, #F26A00, #FFA53A var(--pct, 50%), #E4E1DD var(--pct, 50%));}
+  .pv-temps input[type=range]::-moz-range-track{height:14px; border-radius:99px;
+    background:linear-gradient(90deg, #F26A00, #FFA53A var(--pct, 50%), #E4E1DD var(--pct, 50%));}
+  .pv-temps input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:32px; height:32px; margin-top:-9px; border-radius:50%;
+    background:#F26A00; border:4px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .pv-temps input[type=range]::-moz-range-thumb{width:24px; height:24px; border-radius:50%; background:#F26A00; border:4px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  :root[data-theme="dark"] .pv-temps input[type=range]::-webkit-slider-runnable-track{background:linear-gradient(90deg, #F26A00, #FFA53A var(--pct, 50%), rgba(255,255,255,.18) var(--pct, 50%));}
+  /* la seance entiere : une encoche discrete sur la barre */
+  .pv-temps .piste .plein{position:absolute; top:50%; left:calc(16px + (100% - 32px) * var(--p)); width:3px; height:8px; margin:-4px 0 0 -1.5px;
+    border-radius:2px; background:rgba(255,255,255,.9); pointer-events:none;}
+  /* les graduations, alignees sur la course du curseur */
+  .pv-temps .grad{position:relative; height:34px;}
+  .pv-temps .grad span{position:absolute; top:0; left:calc(16px + (100% - 32px) * var(--p)); transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:5px; font-size:11px; font-weight:800; color:var(--ink-soft); white-space:nowrap;}
+  .pv-temps .grad span i{width:2px; height:8px; border-radius:1px; background:#9A9590;}
+  .pv-temps .grad span.on{color:var(--accent);} .pv-temps .grad span.on i{background:var(--accent);}
+  .pv-temps .astuce{display:flex; align-items:center; gap:10px; margin-top:8px; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.65);}
+  :root[data-theme="dark"] .pv-temps .astuce{background:rgba(255,255,255,.06);}
+  .pv-temps .astuce .ic{flex:0 0 auto; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:rgba(245,130,32,.14); color:var(--accent);}
+  .pv-temps .astuce .ic svg{width:17px; height:17px;}
+  .pv-temps .astuce > span:last-child{font-size:12px; color:var(--ink-soft); line-height:1.45;}
+  .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .pv-plus-t{margin:12px 0 6px; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
+  .pv-ex.pv-plus{box-shadow:inset 0 0 0 1.5px rgba(245,130,32,.35);}
+  .pv-ex.pv-plus .num{color:var(--accent); font-weight:900;}
   /* l'interrupteur « seance courte » de l'apercu */
   .pv-courte{display:flex; align-items:center; gap:11px; width:100%; text-align:left; margin-top:14px;
     padding:11px 12px; border-radius:16px; background:var(--surface2); border:1.5px solid transparent;}
@@ -5682,6 +5715,12 @@ const TRAD = {en:{
   "sur {}":"of {}",
   "d'efficacité":"effective",
   "Ce que cette durée garde de la séance complète (estimation de Tonnup)":"What this duration keeps of the full workout (Tonnup estimate)",
+  "exercices en plus":"extra exercises",
+  "exercice en plus":"extra exercise",
+  "ta séance":"your workout",
+  "Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.":"Less time: we keep what works best. More time: extra exercises for the muscles of your workout.",
+  "En plus aujourd'hui":"Extra today",
+  "On garde les exercices les plus efficaces.":"We keep the most effective exercises.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9591,6 +9630,12 @@ es:{
   "sur {}":"de {}",
   "d'efficacité":"de eficacia",
   "Ce que cette durée garde de la séance complète (estimation de Tonnup)":"Lo que esta duración conserva de la sesión completa (estimación de Tonnup)",
+  "exercices en plus":"ejercicios extra",
+  "exercice en plus":"ejercicio extra",
+  "ta séance":"tu sesión",
+  "Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.":"Menos tiempo: se mantiene lo más eficaz. Más tiempo: ejercicios extra para los músculos de tu sesión.",
+  "En plus aujourd'hui":"Extra hoy",
+  "On garde les exercices les plus efficaces.":"Se mantienen los ejercicios más eficaces.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13714,6 +13759,12 @@ pt:{
   "sur {}":"de {}",
   "d'efficacité":"de eficácia",
   "Ce que cette durée garde de la séance complète (estimation de Tonnup)":"O que esta duração mantém do treino completo (estimativa do Tonnup)",
+  "exercices en plus":"exercícios a mais",
+  "exercice en plus":"exercício a mais",
+  "ta séance":"seu treino",
+  "Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.":"Menos tempo: mantemos o mais eficaz. Mais tempo: exercícios a mais para os músculos do seu treino.",
+  "En plus aujourd'hui":"A mais hoje",
+  "On garde les exercices les plus efficaces.":"Mantemos os exercícios mais eficazes.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21423,7 +21474,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 00h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 00h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31562,6 +31613,65 @@ function efficaciteTemps(items, plan){
   const tout = valeurSeries(items, null);
   return tout ? Math.min(100, Math.round(valeurSeries(items, plan) / tout * 100)) : 100;
 }
+/* ---- Plus de temps que la seance : des exercices en plus (Nico, 30 sept.) ----
+   Seulement pour les muscles que la seance travaille deja (plus les abdos) : une seance
+   Push recoit des triceps ou des epaules, jamais des jambes — le programme reste le
+   meme. A chaque ajout, on sert le muscle le MOINS travaille de la seance, avec le
+   meilleur exercice disponible (materiel du lieu, pas de blessure signalee, pas deja
+   dans la seance). Series, reps et repos : la dose par defaut du profil. */
+const EQUIP_DE_SECOURS = ["Élastique", "Sangles", "Ballon"];
+const AJOUT_EXCLUS = ["Mountain climber"];      /* du cardio plus que du renforcement */
+function estLourdCourt(ex){
+  const nom = nomCanon(ex);
+  const roles = Object.keys(RESERVOIRS).filter(r=>(RESERVOIRS[r] || []).includes(nom));
+  return roles.length > 0 && !roles.every(r=>ROLES_LEGERS.includes(r));
+}
+function principauxDe(exId){
+  const nom = nomCanon(getEx(exId));
+  return [...new Set((MUSCLE_WORK[nom] || []).filter(([m, n])=>n === 3).map(([m])=>groupeDe(m)).filter(Boolean))];
+}
+function exercicesEnPlus(items, minutes, extra, mat){
+  extra = extra || 0;
+  const base = items.slice(), ajout = [];
+  const groupes = new Set();
+  items.forEach(it=>{
+    const nom = nomCanon(getEx(it.exId));
+    /* les muscles PRINCIPAUX de la seance : un muscle qui ne fait qu'aider (les lombaires
+       d'un rowing) avait une part faible et prenait tous les ajouts */
+    (MUSCLE_WORK[nom] || []).filter(([m, n])=>n === 3).forEach(([m])=>{ const g = groupeDe(m); if(g) groupes.add(g); });
+  });
+  const salle = !mat;
+  for(let tour = 0; tour < 6; tour++){
+    const part = {};
+    repartitionMuscles(base).forEach(x=>{ part[x.g] = x.p; });
+    /* les muscles de la seance d'abord, le moins travaille en tete ; les abdos a la fin,
+       une seule fois (ils n'ont presque aucune part dans une seance Push : sans cette
+       limite, ils prenaient tous les ajouts) ; deux ajouts au plus par muscle */
+    const deja = g=>ajout.filter(x=>x.pour === g).length;
+    const ordre = [...groupes].filter(g=>g !== "Abdos" && deja(g) < 2).sort((a, b)=>(part[a] || 0) - (part[b] || 0));
+    if(deja("Abdos") < 1) ordre.push("Abdos");
+    let choisi = null;
+    for(const g of ordre){
+      const cands = LIB.filter(ex=>!base.some(it=>it.exId === ex.id) && principauxDe(ex.id).includes(g)
+          && exoDispo(ex, mat) && !injuryNote(nomCanon(ex)) && !estAssiste(ex) && !estIsometrique(ex) && !estLourdCourt(ex))
+        .filter(ex=>!AJOUT_EXCLUS.includes(nomCanon(ex)))
+        /* en fin de seance, de l'appoint plutot qu'un gros mouvement lourd (pas de souleve
+           de terre apres squat et presse) ; en salle, pas d'elastique si une machine existe */
+        .map(ex=>({ex, v: scoreExoCourt({exId: ex.id, sets: 3}) - (estLourdCourt(ex) ? 3.5 : 0)
+          - (salle && EQUIP_DE_SECOURS.includes(equipCanon(ex)) ? 3 : 0)
+          - (salle && equipCanon(ex) === "Poids du corps" ? 1.5 : 0)}))
+        .sort((a, b)=>b.v - a.v);
+      for(const c of cands){
+        const it = Object.assign({exId: c.ex.id}, cibleParDefaut(c.ex.id), {pour: g});
+        if(dureeMinutes(base.concat(it)) + extra <= minutes){ choisi = it; break; }
+      }
+      if(choisi) break;
+    }
+    if(!choisi) break;
+    base.push(choisi); ajout.push(choisi);
+  }
+  return ajout;
+}
 function fmtMinutes(m){ return m < 60 ? m + " min" : (m % 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") : m / 60 + " h"); }
 /* Les exercices que garde la seance courte. Apres un deplacement, on retient lesquels
    elle gardait : sinon deux exercices a egalite se departageraient sur leur nouvelle
@@ -31647,18 +31757,25 @@ function openPreview(tplId, lieuFait){
   const plein = dureeMinutes(t.items) + extraMin;
   /* le bout de la jauge : la seance entiere (arrondie aux 5 min), 1 h 30 au plus ; au-dela,
      un dernier cran « Tout » */
-  const jaugeMax = plein <= JAUGE_MAX ? Math.max(JAUGE_MIN + 5, Math.ceil(plein / 5) * 5) : JAUGE_MAX + 5;
-  const avecJauge = plein >= JAUGE_MIN + 5 && t.items.length >= 2;
-  if(tempsDispo !== null && (!avecJauge || tempsDispo >= plein || tempsDispo >= jaugeMax)) tempsDispo = null;
-  const planTemps = tempsDispo !== null ? planPourTemps(t.items, tempsDispo, extraMin) : null;
-  if(!planTemps) tempsDispo = null;
+  /* la jauge va jusqu'a 1 h 30 ; la seance complete est un cran au milieu (sa duree,
+     arrondie aux 5 min). Au-dessous on retire, au-dessus on ajoute. Plus d'1 h 30 : un
+     dernier cran « Tout ». */
+  const jaugeMax = plein <= JAUGE_MAX ? JAUGE_MAX : JAUGE_MAX + 5;
+  const cranPlein = Math.min(jaugeMax, Math.round(plein / 5) * 5);
+  const avecJauge = t.items.length >= 1;
+  if(tempsDispo !== null && (!avecJauge || (plein > JAUGE_MAX && tempsDispo >= jaugeMax))) tempsDispo = null;
+  const planTemps = tempsDispo !== null && tempsDispo < plein ? planPourTemps(t.items, tempsDispo, extraMin) : null;
+  const enPlus = tempsDispo !== null && tempsDispo > plein ? exercicesEnPlus(t.items, tempsDispo, extraMin, matProp()) : [];
+  if(!planTemps && !enPlus.length) tempsDispo = null;
   seanceCourte = tempsDispo !== null;
   const gardes = planTemps ? Object.keys(planTemps).map(Number).sort((a, b)=>a - b) : t.items.map((_, i)=>i);
   /* les series du jour : celles que le temps permet */
   const items = gardes.map(i=>planTemps ? Object.assign({}, t.items[i], {sets: planTemps[i]}) : t.items[i]);
+  /* les tuiles et les muscles comptent aussi les exercices ajoutes */
+  const itemsTout = items.concat(enPlus);
   const ecartes = t.items.filter((_, i)=>!gardes.includes(i));
-  const mins = dureeMinutes(items) + (objCardio ? Math.round(objCardio.min || 0) : 0);
-  const nSeries = items.reduce((a,i)=>a+i.sets, 0);
+  const mins = dureeMinutes(itemsTout) + (objCardio ? Math.round(objCardio.min || 0) : 0);
+  const nSeries = itemsTout.reduce((a,i)=>a+i.sets, 0);
   const tuile = (ic, val, lab) => `<div class="pn-t">
     <span class="ic">${ic}</span>
     <div class="co"><div class="v">${val}</div><div class="l">${lab}</div></div></div>`;
@@ -31670,21 +31787,38 @@ function openPreview(tplId, lieuFait){
     ${aRemplacer? `<p style="margin:10px 0 0; font-size:12px; color:var(--ink-mute); text-align:center;">${
       (aRemplacer > 1 ? TR("Chez toi, {n} exercices seront remplacés par leur équivalent.")
                       : TR("Chez toi, 1 exercice sera remplacé par son équivalent.")).replace("{n}", aRemplacer)}</p>`:""}
-    ${avecJauge ? `<div class="pv-temps">
-      <div class="tete"><span class="ic">${IC_CHRONO}</span><b>${TR("Temps disponible")}</b>
-        <span class="val" id="pv-temps-v">${tempsDispo === null ? TR("Séance complète") : fmtMinutes(tempsDispo)}</span></div>
-      <span class="eff" id="pv-eff" title="${TR("Ce que cette durée garde de la séance complète (estimation de Tonnup)")}"><b>${efficaciteTemps(t.items, planTemps)} %</b> ${TR("d'efficacité")}</span>
-      <input type="range" id="pv-temps" min="${JAUGE_MIN}" max="${jaugeMax}" step="5"
-        value="${tempsDispo === null ? jaugeMax : tempsDispo}" aria-label="${TR("Temps disponible")}">
-      <div class="crans"><span>${fmtMinutes(JAUGE_MIN)}</span><span>${plein <= JAUGE_MAX ? "~" + fmtMinutes(plein) : TR("Tout")}</span></div>
-      <p>${TR("On garde les exercices et les séries les plus efficaces qui tiennent dans ce temps.")}</p>
-    </div>` : ""}
+    ${avecJauge ? (()=>{
+      /* d'apres la maquette de Nico (30 sept.) : le rond orange du chrono, la duree dans
+         sa pastille, une barre epaisse en degrade, des graduations dont la plus proche
+         s'allume, et l'astuce a l'ampoule */
+      const pos = m=>((m - JAUGE_MIN) / (jaugeMax - JAUGE_MIN) * 100).toFixed(2);
+      const crans = [10, 30, 45, 60, 75, 90].filter(m=>m <= jaugeMax);
+      const v0 = tempsDispo === null ? cranPlein : tempsDispo;
+      return `<div class="pv-temps" style="--pct:${pos(v0)}%">
+      <div class="tete">
+        <span class="rond">${IC_CHRONO}</span>
+        <div class="tx"><b>${TR("Temps disponible")}</b><span>${TR("On garde les exercices les plus efficaces.")}</span></div>
+        <div class="droite">
+          <span class="val ${tempsDispo === null ? "long" : ""}" id="pv-temps-v">${tempsDispo === null ? TR("Séance complète") : fmtMinutes(tempsDispo)}</span>
+          <span class="eff" id="pv-eff">${
+            enPlus.length ? `<b>+${enPlus.length}</b> ${TR(enPlus.length > 1 ? "exercices en plus" : "exercice en plus")}`
+              : `<b>${efficaciteTemps(t.items, planTemps)} %</b> ${TR("d'efficacité")}`}</span>
+        </div>
+      </div>
+      <div class="piste">
+        <input type="range" id="pv-temps" min="${JAUGE_MIN}" max="${jaugeMax}" step="5" value="${v0}" aria-label="${TR("Temps disponible")}">
+        <span class="plein" style="--p:${pos(cranPlein) / 100}" title="${TR("ta séance")}"></span>
+      </div>
+      <div class="grad">${crans.map(m=>`<span data-m="${m}" style="--p:${pos(m) / 100}"><i></i>${fmtMinutes(m)}</span>`).join("")}${
+        jaugeMax > JAUGE_MAX ? `<span data-m="${jaugeMax}" style="--p:1"><i></i>${TR("Tout")}</span>` : ""}</div>
+      <div class="astuce"><span class="ic">${IC_AMPOULE}</span><span>${TR("Moins de temps : on garde le plus efficace. Plus de temps : des exercices en plus pour les muscles de ta séance.")}</span></div>
+    </div>`; })() : ""}
     <div class="pn-tuiles" style="margin-top:14px;">
-      ${tuile(ICONS.seance, items.length, TR(items.length>1? "exercices":"exercice"))}
+      ${tuile(ICONS.seance, itemsTout.length, TR(itemsTout.length>1? "exercices":"exercice"))}
       ${tuile(IC_COUCHES, nSeries, TR(nSeries>1? "séries":"série"))}
       ${tuile(IC_CHRONO, "~"+mins, TR("minutes"))}
     </div>
-    ${(()=>{ const rep = repartitionMuscles(items);
+    ${(()=>{ const rep = repartitionMuscles(itemsTout);
       return rep.length ? `<div class="pv-muscles" aria-label="${TR("Muscles ciblés")}">${rep.map(x=>
         `<span class="pm"><b>${x.p} %</b>${esc(TR(x.g))}</span>`).join("")}</div>` : ""; })()}
     <p style="margin:0 0 8px; font-size:11.5px; color:var(--ink-mute); text-align:center;">${
@@ -31719,6 +31853,13 @@ function openPreview(tplId, lieuFait){
           <button class="sup" data-pvdel="${i}" title="${TR("Retirer")}" aria-label="${TR("Retirer")}">✕</button>
         </span></div>`;
     }).join("")}</div>
+    ${enPlus.length ? `<div class="pv-plus-t">${TR("En plus aujourd'hui")}</div>${enPlus.map(it=>{ const ex = getEx(it.exId);
+      return `<div class="pv-ex pv-plus"><span class="num">＋</span>${exIcon(ex)}
+        <div class="grow" style="min-width:0;">
+          <div class="nm">${esc(nomEx(ex))}${ex.equip? ` <span class="eqp">· ${esc(eqEx(ex.equip))}</span>`:""}</div>
+          <div class="meta"><b>${it.sets} × ${esc(String(it.reps || "?"))}</b> · ${TR("pour {}").replace("{}", esc(TR(it.pour)).toLowerCase())}</div>
+        </div>
+        <span class="act"><button data-exinfo="${it.exId}" title="${TR("Fiche de l'exercice")}" aria-label="${TR("Fiche de l'exercice")}">ⓘ</button></span></div>`; }).join("")}` : ""}
     ${t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex" style="margin-top:8px;">
         <span class="num pv-co-num">${icoM("course", 16)}</span>
         <div class="grow" style="min-width:0;">
@@ -31742,7 +31883,7 @@ function openPreview(tplId, lieuFait){
       ${!t.cardio ? `<button class="btn-dash" id="pv-add-cardio">＋ ${TR("Cardio")}</button>` : ""}
     </div>
     <div class="pv-pied">
-      <button class="btn btn-accent" id="pv-start" style="width:100%;">${seanceCourte ? TR("Lancer · {}").replace("{}", fmtMinutes(tempsDispo)) : TR("Lancer cette séance")}</button>
+      <button class="btn btn-accent" id="pv-start" style="width:100%;">${tempsDispo !== null ? TR("Lancer · {}").replace("{}", fmtMinutes(tempsDispo)) : TR("Lancer cette séance")}</button>
     </div>`);
   document.querySelectorAll("[data-pvlieu]").forEach(b=>b.onclick=()=>{
     if(b.dataset.pvlieu === lieuProp) return;
@@ -31756,13 +31897,33 @@ function openPreview(tplId, lieuFait){
   /* la jauge : l'etiquette suit le doigt, la seance se recompose au lacher */
   const jauge = document.getElementById("pv-temps");
   if(jauge){
-    const val = ()=>{ const v = Number(jauge.value); return v >= jaugeMax || v >= plein ? null : v; };
+    /* le cran de la seance entiere = la seance telle quelle */
+    const val = ()=>{ const v = Number(jauge.value); return (plein > JAUGE_MAX && v >= jaugeMax) || v === cranPlein ? null : v; };
+    const bloc = jauge.closest(".pv-temps");
+    const allumer = ()=>{
+      const x = Number(jauge.value);
+      bloc.style.setProperty("--pct", ((x - JAUGE_MIN) / (jaugeMax - JAUGE_MIN) * 100).toFixed(2) + "%");
+      /* la graduation la plus proche s'allume */
+      let proche = null;
+      bloc.querySelectorAll(".grad span").forEach(g=>{ if(proche === null || Math.abs(g.dataset.m - x) < Math.abs(proche.dataset.m - x)) proche = g; });
+      bloc.querySelectorAll(".grad span").forEach(g=>g.classList.toggle("on", g === proche));
+    };
+    allumer();
     jauge.oninput = ()=>{
       const v = val();
-      document.getElementById("pv-temps-v").textContent = v === null ? TR("Séance complète") : fmtMinutes(v);
+      allumer();
+      const lv = document.getElementById("pv-temps-v");
+      lv.textContent = v === null ? TR("Séance complète") : fmtMinutes(v);
+      lv.classList.toggle("long", v === null);
       /* l'efficacite suit le doigt : le calcul est instantane */
-      const e = efficaciteTemps(t.items, v === null ? null : planPourTemps(t.items, v, extraMin));
-      document.querySelector("#pv-eff b").textContent = e + " %";
+      const eff = document.getElementById("pv-eff");
+      if(v !== null && v > plein){
+        const n = exercicesEnPlus(t.items, v, extraMin, matProp()).length;
+        eff.innerHTML = n ? `<b>+${n}</b> ${TR(n > 1 ? "exercices en plus" : "exercice en plus")}` : `<b>100 %</b> ${TR("d'efficacité")}`;
+      } else {
+        const e = efficaciteTemps(t.items, v === null || v >= plein ? null : planPourTemps(t.items, v, extraMin));
+        eff.innerHTML = `<b>${e} %</b> ${TR("d'efficacité")}`;
+      }
       vibrer(4);
     };
     jauge.onchange = ()=>{ tempsDispo = val(); openPreview(tplId, true); };
@@ -31844,7 +32005,8 @@ function openPreview(tplId, lieuFait){
   }));
   /* Le lieu est déjà réglé au-dessus : on ne repose plus la question après coup. */
   document.getElementById("pv-start").onclick=()=>{
-    const courte = planTemps ? gardes.map(i=>({i, sets: planTemps[i]})) : null;
+    const courte = planTemps ? gardes.map(i=>({i, sets: planTemps[i]}))
+      : (enPlus.length ? t.items.map((_, i)=>i).concat(enPlus.map(it=>({item: {exId: it.exId, sets: it.sets, reps: it.reps, rest: it.rest}}))) : null);
     closeSheet(); startWorkout(tplId, deuxLieux() ? lieuProp : undefined, courte);
   };
 }
@@ -31906,7 +32068,7 @@ function startWorkout(tplId, lieu, courte){
   /* seance courte : seuls les exercices retenus dans l'apercu partent ; la seance type
      reste entiere pour la prochaine fois */
   const itemsDuJour = tpl ? (Array.isArray(courte)
-    ? courte.map(c=>typeof c === "number" ? tpl.items[c] : Object.assign({}, tpl.items[c.i], {sets: c.sets})).filter(Boolean)
+    ? courte.map(c=>typeof c === "number" ? tpl.items[c] : (c.item ? c.item : Object.assign({}, tpl.items[c.i], {sets: c.sets}))).filter(Boolean)
     : tpl.items) : [];
   seanceCourte = false; tempsDispo = null;
   const pris = itemsDuJour.map(it=>it.exId);

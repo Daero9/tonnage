@@ -6823,6 +6823,15 @@ async function lancer(){
     const eff = m=>F.efficaciteTemps(t8.items, F.planPourTemps(t8.items, m, 0));
     vrai("L'efficacité monte avec le temps, et vaut 100 % pour la séance entière",
       eff(10) < eff(30) && eff(30) < eff(60) && eff(60) < eff(90) && F.efficaciteTemps(t8.items, null) === 100);
+    /* plus de temps que la séance : des exercices en plus, pour ses propres muscles */
+    const push = ["Développé couché","Développé incliné haltères","Développé militaire","Élévations latérales","Extension poulie (corde)"]
+      .map(n=>({exId:F.libId(n), sets:3, reps:"8-12", rest:90}));
+    const plus = F.exercicesEnPlus(push, 90, 0, null);
+    vrai("Plus de temps : des exercices en plus, qui tiennent dans le temps", plus.length >= 2
+      && F.dureeMinutes(push.concat(plus)) <= 90);
+    vrai("…jamais pour les jambes sur une séance Push", plus.every(it=>!["Quadriceps","Ischio-jambiers","Fessiers","Mollets"].includes(it.pour)));
+    vrai("…un seul exercice d'abdos au plus, et aucun déjà dans la séance",
+      plus.filter(it=>it.pour === "Abdos").length <= 1 && plus.every(it=>!push.some(p=>p.exId === it.exId)));
   })();
   neuf();
 
