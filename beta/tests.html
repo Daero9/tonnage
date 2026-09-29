@@ -695,6 +695,28 @@ async function lancer(){
     eq("Toutes les correspondances visent un vrai exercice",
       Object.values(F.eval("ALIAS_IMPORT")).filter(n=>!F.eval("LIB").find(x=>x.name === n)).join(), "");
   })();
+  grp("Haltères et supersets");
+  (()=>{
+    const B = F.eval("db");
+    const dc = F.libId("Curl haltères"), barre = F.libId("Développé couché");
+    eq("Haltères : de 1 en 1 sous 10 kg", F.incCharge(dc, 8), 1);
+    eq("Haltères : de 2 en 2 à partir de 10 kg", F.incCharge(dc, 12), 2);
+    eq("Haltères : de 10 kg on redescend à 9", F.incBas(dc, 10), 1);
+    eq("Haltères : un poids qui existe (13 → 14)", F.chargeExistante(dc, 13), 14);
+    eq("Barre : inchangé, 2,5 kg au-dessus de 20", F.incCharge(barre, 60), 2.5);
+    eq("Barre : aucun arrondi aux kilos pairs", F.chargeExistante(barre, 62.5), 62.5);
+    const j = n => new Date(Date.now() - n * 864e5).toISOString();
+    B.history = [{id:"h1", date:j(2), name:"Bras", start:Date.parse(j(2)) - 3e6, end:Date.parse(j(2)),
+      entries:[{exId:dc, sets:[1,2,3].map(()=>({w:12, r:12, done:true, warm:false, rir:4}))}]}];
+    const sug = F.suggestFor(dc, {reps:"8-12"});
+    eq("Trop facile à 12 kg : l'haltère suivant est 14 kg", sug && sug.w, 14);
+    eq("L'échauffement tombe sur un haltère qui existe (12 → 6)", F.serieEchauffement(dc, "8-12").w, 6);
+    const A = {entries:[{sets:[{done:false}], enchaine:true}, {sets:[{done:false}]}, {sets:[{done:false}]}]};
+    eq("Superset : après le 1er, on enchaîne sur le 2e sans repos", F.enchaineSansRepos(A, 0), 1);
+    eq("…après le 2e, pas d'enchaînement : c'est le repos", F.enchaineSansRepos(A, 1), null);
+    eq("…puis retour au 1er du groupe", F.retourSuperset(A, 1), 0);
+    eq("Un exercice seul n'a pas de groupe", F.retourSuperset(A, 2), null);
+  })();
   neuf();
 
   /* ---------------------------------------------------------- cardio */
