@@ -3135,6 +3135,39 @@
   #app.entre[data-sens="g"] > *:not(.eat-fab){--gl:-28px;}
   @keyframes pageGlisse{from{opacity:0; translate:var(--gl, 28px) 0;}}
   @media (prefers-reduced-motion:reduce){ #app.entre, #app.entre[data-sens] > *{animation:none;} }
+  /* le demarrage d'une seance : le disque orange qui couvre l'ecran puis s'efface */
+  .deploie{position:fixed; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; background:var(--accent-grad);
+    z-index:100000; pointer-events:none; animation:deploie .7s cubic-bezier(.5,0,.3,1) forwards;}
+  @keyframes deploie{0%{transform:scale(0); opacity:1;} 55%{transform:scale(var(--s)); opacity:1;} 100%{transform:scale(var(--s)); opacity:0;}}
+  /* le poussin touche : il s'ecrase, s'etire et se penche */
+  .hero-poussin.tape{animation:poussinTape .42s cubic-bezier(.3,1.3,.5,1); transform-origin:50% 100%;}
+  @keyframes poussinTape{0%{scale:1;} 22%{scale:1.1 .86;} 52%{scale:.93 1.12; rotate:-5deg;} 78%{scale:1.03 .97; rotate:3deg;} 100%{scale:1; rotate:0deg;}}
+  /* le scan : la photo s'agrandit et les aliments reconnus s'y posent en etiquettes */
+  .ph-scan{transition:width .35s cubic-bezier(.22,1,.36,1), height .35s cubic-bezier(.22,1,.36,1);}
+  .ph-scan.vu{width:200px; height:200px;}
+  .ph-scan.vu i{display:none;}
+  .ph-attente .ph-scan img{width:100%; height:100%; transition:inherit;}
+  .ph-scan.vu + .spin{display:none;}
+  .ph-et{position:absolute; transform:translate(-50%, -50%); padding:4px 9px; border-radius:99px; background:#fff; color:#1a1a1a;
+    font-size:11.5px; font-weight:800; white-space:nowrap; max-width:118px; overflow:hidden; text-overflow:ellipsis; box-shadow:0 3px 10px rgba(0,0,0,.25); animation:etIn .38s cubic-bezier(.3,1.5,.5,1) backwards;}
+  .ph-et::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:5px; vertical-align:1px;}
+  @keyframes etIn{from{opacity:0; transform:translate(-50%, -50%) scale(.3);}}
+  /* les proteines atteintes : une coche verte, et la jauge qui brille une fois */
+  .prot-ok{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:5px; border-radius:50%;
+    background:var(--good); color:#fff; vertical-align:-3px;}
+  .prot-ok svg{width:10px; height:10px;}
+  .prot-ok.fete{animation:recFete .6s cubic-bezier(.3,1.4,.5,1) .5s backwards;}
+  .eat-jauge.brille .eat-bar{position:relative; overflow:hidden;}
+  .eat-jauge.brille .eat-bar::after{content:""; position:absolute; top:0; bottom:0; width:40%; left:-40%;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.85), rgba(255,255,255,0)); animation:brille 1s ease-in-out .6s;}
+  @keyframes brille{to{left:110%;}}
+  /* la semaine s'allume jour apres jour : dans le bilan, et sur l'accueil a l'arrivee */
+  .sm-bande .sm-j{animation:smIn .38s cubic-bezier(.3,1.3,.5,1) backwards; animation-delay:calc(var(--i, 0) * 110ms + 250ms);}
+  @keyframes smIn{from{opacity:0; transform:translateY(8px) scale(.85);}}
+  #app.entre .wk-day.on{animation:wkOn .4s cubic-bezier(.3,1.4,.5,1) backwards; animation-delay:calc(var(--i, 0) * 80ms + 200ms);}
+  @keyframes wkOn{from{background:var(--surface2); transform:scale(.8);}}
+  @media (prefers-reduced-motion:reduce){ .sm-bande .sm-j, #app.entre .wk-day.on, .ph-et, .prot-ok.fete, .hero-poussin.tape{animation:none;}
+    .eat-jauge.brille .eat-bar::after{display:none;} }
   /* les confettis d'un record */
   .confettis{position:fixed; inset:0; pointer-events:none; z-index:100001; overflow:hidden;}
   .confettis i{position:absolute; top:-12px; width:8px; height:13px; border-radius:2px; opacity:0;
@@ -5338,6 +5371,7 @@ const TRAD = {en:{
   "Facile : moins de 70 % de ce cardio maximum. Modéré : de 70 à 85 %. Intense : au-delà. Le maximum est estimé d'après ton âge (208 − 0,7 × âge), ou c'est le plus haut que ta montre ait mesuré s'il est plus élevé. Ce sont des repères, pas une mesure de laboratoire.":"Easy: under 70% of this maximum. Moderate: 70 to 85%. Hard: above. The maximum is estimated from your age (208 − 0.7 × age), or it's the highest your watch has measured if that is higher. These are guides, not a lab measurement.",
   "Tu progresses !":"You're improving!",
   "flammes en cours":"active streaks",
+  "Voilà ce que je vois !":"Here's what I see!",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9097,6 +9131,7 @@ es:{
   "Facile : moins de 70 % de ce cardio maximum. Modéré : de 70 à 85 %. Intense : au-delà. Le maximum est estimé d'après ton âge (208 − 0,7 × âge), ou c'est le plus haut que ta montre ait mesuré s'il est plus élevé. Ce sont des repères, pas une mesure de laboratoire.":"Fácil: menos del 70 % de ese máximo. Moderado: del 70 al 85 %. Intenso: por encima. El máximo se estima según tu edad (208 − 0,7 × edad), o es el más alto que haya medido tu reloj si es mayor. Son referencias, no una medida de laboratorio.",
   "Tu progresses !":"¡Estás progresando!",
   "flammes en cours":"rachas activas",
+  "Voilà ce que je vois !":"¡Esto es lo que veo!",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13070,6 +13105,7 @@ pt:{
   "Facile : moins de 70 % de ce cardio maximum. Modéré : de 70 à 85 %. Intense : au-delà. Le maximum est estimé d'après ton âge (208 − 0,7 × âge), ou c'est le plus haut que ta montre ait mesuré s'il est plus élevé. Ce sont des repères, pas une mesure de laboratoire.":"Fácil: menos de 70 % desse máximo. Moderado: de 70 a 85 %. Intenso: acima disso. O máximo é estimado pela sua idade (208 − 0,7 × idade), ou é o mais alto que o relógio mediu, se for maior. São referências, não uma medida de laboratório.",
   "Tu progresses !":"Você está progredindo!",
   "flammes en cours":"sequências ativas",
+  "Voilà ce que je vois !":"Isto é o que eu vejo!",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20575,7 +20611,15 @@ function majPoussins(){
   });
 }
 document.addEventListener("click", e=>{
-  if(!e.target.closest("#poussin-record") && e.target.closest("#app .hero-poussin")){ openVestiaire(); return; }
+  if(!e.target.closest("#poussin-record") && e.target.closest("#app .hero-poussin")){
+    /* il sursaute, content qu'on s'occupe de lui, puis le vestiaire s'ouvre (Nico) */
+    const po = e.target.closest("#app .hero-poussin");
+    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ openVestiaire(); return; }
+    po.classList.remove("tape"); void po.offsetWidth; po.classList.add("tape");
+    vibrer(10);
+    setTimeout(()=>{ po.classList.remove("tape"); openVestiaire(); }, 420);
+    return;
+  }
   const b = e.target.closest("#poussin-record");
   if(!b) return;
   const r = recordSignificatif();
@@ -20665,7 +20709,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 15h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 16h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22506,7 +22550,7 @@ async function classementGlobal(){
 /* ---- Les chiffres qui defilent (Nico, 29 sept.) ----
    A la fin d'une seance, le tonnage, les minutes et les calories montent de 0 a leur
    valeur en un peu plus d'une seconde, au lieu d'apparaitre d'un coup. Chaque nombre porte
-   data-compte (sa valeur) et data-fmt (sa facon de s'ecrire) ; a la fin, le texte exact. */
+   data-defile (sa valeur) et data-fmt (sa facon de s'ecrire) ; a la fin, le texte exact. */
 const FMT_COMPTE = {
   int: v=>String(Math.round(v)),
   vol: v=>v >= 1000 && !estImperial() ? (v / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + " t" : pds(v),
@@ -22514,11 +22558,11 @@ const FMT_COMPTE = {
   min: v=>minTxt(Math.round(v))
 };
 function animerCompteurs(racine, delai){
-  const els = Array.from((racine || document).querySelectorAll("[data-compte]"));
+  const els = Array.from((racine || document).querySelectorAll("[data-defile]"));
   if(!els.length) return;
   const reduit = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   els.forEach(el=>{
-    const cible = parseFloat(el.dataset.compte) || 0, f = FMT_COMPTE[el.dataset.fmt || "int"] || FMT_COMPTE.int, fin = el.textContent;
+    const cible = parseFloat(el.dataset.defile) || 0, f = FMT_COMPTE[el.dataset.fmt || "int"] || FMT_COMPTE.int, fin = el.textContent;
     if(reduit || cible <= 0) return;
     el.textContent = f(0);
     const duree = 1100;
@@ -22536,6 +22580,21 @@ function animerCompteurs(racine, delai){
        s'affiche quand meme — jamais un chiffre bloque en route */
     setTimeout(()=>{ if(document.body.contains(el)) el.textContent = fin; }, (delai || 0) + duree + 250);
   });
+}
+/* ---- Le demarrage d'une seance (Nico, 29 sept.) : un disque orange part du bouton
+   touche, couvre l'ecran, puis s'efface sur la seance ---- */
+let dernierPoint = null;
+document.addEventListener("pointerdown", e=>{ dernierPoint = {x:e.clientX, y:e.clientY, t:Date.now()}; }, true);
+function deploiement(){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const pt = dernierPoint && Date.now() - dernierPoint.t < 4000 ? dernierPoint : {x:innerWidth / 2, y:innerHeight * .75};
+  const d = document.createElement("div");
+  d.className = "deploie";
+  const loin = Math.hypot(Math.max(pt.x, innerWidth - pt.x), Math.max(pt.y, innerHeight - pt.y));
+  d.style.left = pt.x + "px"; d.style.top = pt.y + "px";
+  d.style.setProperty("--s", (loin / 20 + 1).toFixed(1));
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 800);
 }
 /* ---- Les confettis d'un record (Nico) : orange, jaune, et un peu de couleur ---- */
 function pluieConfettis(n){
@@ -25579,6 +25638,10 @@ function renderEat(app){
   const pctProt = Math.min(100, protTarget? protNow/protTarget*100 : 0);
   const pctKcal = Math.min(100, kRef? kcalNow/kRef*100 : 0);
 
+  if(protTarget && protNow >= protTarget && db.protFete !== k){
+    /* note des le rendu suivant : l'eclat ne se rejoue pas a chaque aliment ajoute */
+    setTimeout(()=>{ db.protFete = k; save(); vibrer(14); }, 50);
+  }
   app.innerHTML = `
     ${hero(`<div class="sur">${TR("Nutrition")}</div>
       <div class="big">${auj ? TR("Aujourd'hui")
@@ -25595,8 +25658,10 @@ function renderEat(app){
                    qu'une fois qu'il y a quelque chose à rapporter à la cible. */""}
               ${protNow > 0 && protTarget ? `<span class="pc">${
                 Math.round(protNow/protTarget*100)} %</span>` : ""}</div>
-            <div class="lb">${TR("Protéines")}</div>
-            <div class="eat-jauge">
+            <div class="lb">${TR("Protéines")}${protTarget && protNow >= protTarget ? `<span class="prot-ok${
+              /* la premiere fois qu'on le voit atteint ce jour-la : la jauge brille (Nico) */
+              db.protFete !== k ? " fete" : ""}" aria-label="${TR("Objectif atteint")}">${IC_COCHE}</span>` : ""}</div>
+            <div class="eat-jauge${protTarget && protNow >= protTarget && db.protFete !== k ? " brille" : ""}">
               <div class="eat-bar"><i data-jauge="prot" style="width:${pctProt}%; background:${(protTarget && protNow>=protTarget)?'var(--jauge-vert)':'var(--jauge-grad)'};"></i></div>
               <b>${protTarget ? protTarget + " g" : "—"}</b></div>
           </div>
@@ -26751,7 +26816,29 @@ async function lancerAnalysePhoto(indice, premiere){
   try{ res = await analyserPhoto(p.b64, indice); if(!correction) compterPhoto(); }
   catch(e){ toast(TR("L'analyse n'a pas abouti. Réessaie, ou ajoute à la main."), "erreur"); openAjoutAliment(p.meal); return; }
   if(!res.aliments.length){ toast(res.remarque || TR("Je ne vois pas de nourriture sur cette photo.")); openAjoutAliment(p.meal); return; }
+  await etiquettesScan(res.aliments);
   openResultatPhoto(p.meal, res);
+}
+/* Ce que la photo a reconnu, pose en etiquettes sur la photo, une a une (Nico), avant
+   le detail. Un peu plus d'une seconde : le temps de voir que « riz » et « poulet » ont
+   ete vus. */
+function etiquettesScan(aliments){
+  const box = document.querySelector("#sheet .ph-scan");
+  if(!box || window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
+  const noms = aliments.slice(0, 5).map(a=>majuscule(a.nom_aff || a.nom || "")).filter(Boolean);
+  const places = [[36, 16], [64, 33], [36, 50], [64, 67], [44, 84]];
+  box.classList.add("vu");
+  const t = document.querySelector("#sheet .ph-attente .t");
+  if(t) t.textContent = TR("Voilà ce que je vois !");
+  noms.forEach((n, i)=>{
+    const e = document.createElement("span");
+    e.className = "ph-et"; e.textContent = n;
+    e.style.left = places[i][0] + "%"; e.style.top = places[i][1] + "%";
+    e.style.animationDelay = (250 + i * 260) + "ms";
+    box.appendChild(e);
+  });
+  vibrer(8);
+  return new Promise(r=>setTimeout(r, 250 + noms.length * 260 + 750));
 }
 /* La pastille du repas, en haut à gauche des pages de scan. `change(m)` reçoit le
    nouveau repas : chaque page le garde dans sa propre variable. */
@@ -28376,7 +28463,7 @@ function semaineHtml(){
     const seance = (db.history || []).some(h=>dayKey(h.date) === k)
                 || (db.cardio || []).some(c=>dayKey(c.date) === k);
     const repas = dayProt(k) > 0;
-    cases.push(`<div class="sm-j ${seance ? "seance" : (repas ? "repas" : "")}">
+    cases.push(`<div class="sm-j ${seance ? "seance" : (repas ? "repas" : "")}" style="--i:${6 - i};">
       <span class="d">${noms[d.getDay()]}</span>
       <span class="p">${seance ? IC_CHECK : (repas ? "·" : "")}</span></div>`);
   }
@@ -28834,7 +28921,7 @@ function renderSeance(app){
           grandit ? `<span class="fl-pouf" aria-hidden="true"></span><span class="fl-etinc" aria-hidden="true">${"<i></i>".repeat(8)}</span>` : ""}</div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
-          `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
+          `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}" style="--i:${i};">${d}</div>`).join("")}</div>
         ${(()=>{ const sr = serieSemaines(now); if(sr.n < 2 || POUSSIN.repos) return "";
           /* a partir de deux semaines : avant, ce n'est pas encore une serie. Sans seance
              cette semaine, on le dit — c'est le moment ou elle se joue. */
@@ -30849,6 +30936,7 @@ function startWorkout(tplId, lieu, courte){
       derniere: o.base ? texteSortie(o.base) : ""};
   }
   save(); render();
+  deploiement();
   if(remplaces) toast(remplaces > 1
     ? TR("{n} exercices adaptés à ce que tu as chez toi").replace("{n}", remplaces)
     : TR("1 exercice adapté à ce que tu as chez toi"));
@@ -32182,9 +32270,9 @@ function openFinSeance(r){
     </div>
   </div>
   <div class="tiles fin-tiles" style="margin:16px 0 14px;">
-    <div class="tile"><span class="ic">${IC_CHRONO}</span><div class="v"><span data-compte="${mn}">${mn}</span><span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
-    <div class="tile"><span class="ic">${ICONS.seance}</span><div class="v"><span data-compte="${r.volume}" data-fmt="vol">${FMT_COMPTE.vol(r.volume)}</span></div><div class="u">${TR("soulevés")}</div></div>
-    <div class="tile"><span class="ic">${icoM("flamme", 18)}</span><div class="v" style="color:var(--accent);"><span data-compte="${r.kcal}">${r.kcal}</span></div><div class="u">${TR("kcal brûlées")}</div></div>
+    <div class="tile"><span class="ic">${IC_CHRONO}</span><div class="v"><span data-defile="${mn}">${mn}</span><span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
+    <div class="tile"><span class="ic">${ICONS.seance}</span><div class="v"><span data-defile="${r.volume}" data-fmt="vol">${FMT_COMPTE.vol(r.volume)}</span></div><div class="u">${TR("soulevés")}</div></div>
+    <div class="tile"><span class="ic">${icoM("flamme", 18)}</span><div class="v" style="color:var(--accent);"><span data-defile="${r.kcal}">${r.kcal}</span></div><div class="u">${TR("kcal brûlées")}</div></div>
   </div>
   ${/* d'apres la maquette du 21 septembre : la ligne des series en pastille, les records
         en carte sombre avec le trophee et une ligne par exercice, les trois humeurs avec
@@ -32786,8 +32874,8 @@ const IC_EPINGLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="tr
 function crResume(tot, allure){
   /* la course terminee : trois pastilles de couleur, temps (vert), distance (bleu), allure (orange) */
   if(allure) return `<div class="cr-resume cr-fini">
-    <div><span class="ic v">${IC_CHRONO}</span><div><small>${TR("Temps total")}</small><b class="${minTxt(tot.min).length > 7 ? "long" : ""}" data-compte="${tot.min}" data-fmt="min">${minTxt(tot.min)}</b></div></div>
-    <div><span class="ic b">${IC_EPINGLE}</span><div><small>${TR(tot.estime === false ? "Distance" : "Distance (est.)")}</small><b data-compte="${tot.km}" data-fmt="km">${kmTxt(tot.km)}</b></div></div>
+    <div><span class="ic v">${IC_CHRONO}</span><div><small>${TR("Temps total")}</small><b class="${minTxt(tot.min).length > 7 ? "long" : ""}" data-defile="${tot.min}" data-fmt="min">${minTxt(tot.min)}</b></div></div>
+    <div><span class="ic b">${IC_EPINGLE}</span><div><small>${TR(tot.estime === false ? "Distance" : "Distance (est.)")}</small><b data-defile="${tot.km}" data-fmt="km">${kmTxt(tot.km)}</b></div></div>
     <div><span class="ic o">${icoM("course", 22)}</span><div><small>${TR("Allure moyenne")}</small><b>${allureTxt(tot.min, tot.km)}</b></div></div>
   </div>`;
   return `<div class="cr-resume">
