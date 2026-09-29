@@ -6809,6 +6809,16 @@ async function lancer(){
     vrai("…et l'ordre d'origine est conservé", g.every((v, i)=>i === 0 || v > g[i - 1]));
     eq("Trois exercices ou moins : on garde tout", F.indicesSeanceCourte(items.slice(0, 3)).length, 3);
     eq("Dix exercices : six", F.indicesSeanceCourte(items.concat(items)).length, 6);
+    /* la jauge du temps disponible */
+    const t8 = {items:["Développé couché","Squat","Rowing barre","Développé militaire","Élévations latérales","Curl barre","Extension poulie (corde)","Crunch câble"]
+      .map(n=>({exId:F.libId(n), sets:4, reps:"8-12", rest:120}))};
+    const pal = F.paliersTemps(t8, 0);
+    vrai("Des paliers plus courts que la séance entière", pal.length >= 3 && pal.every(m=>m < F.dureeMinutes(t8.items)));
+    vrai("Chaque palier tient sa promesse, et en garde plus que le précédent", pal.every((m, k)=>{
+      const sel = F.indicesPourTemps(t8.items, m, 0);
+      const avant = k ? F.indicesPourTemps(t8.items, pal[k - 1], 0).length : 0;
+      return F.dureeMinutes(sel.map(i=>t8.items[i])) <= m + 3 && sel.length > avant; }));
+    eq("Le plus court garde d'abord les gros mouvements", F.indicesPourTemps(t8.items, pal[0], 0).slice(0, 2).map(i=>F.getEx(t8.items[i].exId).name).join(" + "), "Développé couché + Squat");
   })();
   neuf();
 
