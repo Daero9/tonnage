@@ -3136,16 +3136,21 @@
   @keyframes pageGlisse{from{opacity:0; translate:var(--gl, 28px) 0;}}
   @media (prefers-reduced-motion:reduce){ #app.entre, #app.entre[data-sens] > *{animation:none;} }
   /* la pastille des pas sur la photo de l'accueil */
-  .pas-pastille{display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:4px 11px 4px 4px; border-radius:99px; border:0;
-    background:rgba(255,255,255,.16); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); color:#fff; font:inherit; position:relative;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);}
+  .hero-centre{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); z-index:3;}
+  .pas-pastille{display:inline-flex; align-items:center; gap:6px; padding:4px 12px 4px 4px; border-radius:99px; border:0;
+    background:rgba(10,10,12,.45); -webkit-backdrop-filter:blur(12px) saturate(1.3); backdrop-filter:blur(12px) saturate(1.3); color:#fff; font:inherit; position:relative;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 4px 14px rgba(0,0,0,.25); white-space:nowrap;}
+  .pas-pastille .ic .icm{background-color:#fff;}
+  .pas-pastille .vl{display:inline-flex; align-items:baseline; gap:4px;}
+  .pas-pastille.tourne .ic, .pas-pastille.tourne .vl{animation:ppTourne .35s cubic-bezier(.3,1.3,.5,1);}
+  @keyframes ppTourne{from{opacity:0; transform:rotateX(90deg);}}
   .pas-pastille .an{width:28px; height:28px; transform:rotate(-90deg);}
   .pas-pastille .an circle{fill:none; stroke-width:3.4;} .pas-pastille .an .fd{stroke:rgba(255,255,255,.25);}
   .pas-pastille .an .pg{stroke:#FFB020; stroke-linecap:round; transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1);}
   .pas-pastille.ok .an .pg{stroke:#4ADE80;}
   .pas-pastille .ic{position:absolute; left:4px; top:4px; width:28px; height:28px; display:flex; align-items:center; justify-content:center;}
   .pas-pastille .ic svg{width:15px; height:15px;}
-  .pas-pastille b{font-size:14px; font-weight:900;} .pas-pastille small{font-size:12px; opacity:.85; margin-left:-2px;}
+  .pas-pastille b{font-size:14px; font-weight:900;} .pas-pastille small{font-size:12px; opacity:.85;}
   /* les pas : le bouton du mois dans l'en-tete, la pastille sous le titre, le bilan du mois */
   .pas-mois{flex:none; width:40px; height:40px; border-radius:12px; border:0; background:var(--surface2); color:var(--accent);
     display:flex; align-items:center; justify-content:center; align-self:flex-start;}
@@ -3160,8 +3165,13 @@
     z-index:100000; pointer-events:none; animation:deploie .7s cubic-bezier(.5,0,.3,1) forwards;}
   @keyframes deploie{0%{transform:scale(0); opacity:1;} 55%{transform:scale(var(--s)); opacity:1;} 100%{transform:scale(var(--s)); opacity:0;}}
   /* le poussin touche : il s'ecrase, s'etire et se penche */
-  .hero-poussin.tape{animation:poussinTape .42s cubic-bezier(.3,1.3,.5,1); transform-origin:50% 100%;}
-  @keyframes poussinTape{0%{scale:1;} 22%{scale:1.1 .86;} 52%{scale:.93 1.12; rotate:-5deg;} 78%{scale:1.03 .97; rotate:3deg;} 100%{scale:1; rotate:0deg;}}
+  /* le point d'appui ne change pas pendant le saut : la pose musclee garde le sien (en bas a
+     droite), sinon il glissait de cote puis revenait d'un coup a la fin (Nico) */
+  .hero-poussin.tape{animation:poussinTape .45s cubic-bezier(.3,1.3,.5,1);}
+  .hero-poussin:not([data-pose="muscle"]){transform-origin:50% 100%;}
+  @keyframes poussinTape{0%{scale:1;} 25%{scale:1.08 .88;} 55%{scale:.95 1.08;} 80%{scale:1.02 .98;} 100%{scale:1;}}
+  .hero-poussin[data-pose="muscle"].tape{animation-name:poussinTapeM;}
+  @keyframes poussinTapeM{0%{scale:1;} 25%{scale:1 .88;} 55%{scale:1 1.08;} 80%{scale:1 .98;} 100%{scale:1;}}
   /* le scan : la photo s'agrandit et les aliments reconnus s'y posent en etiquettes */
   .ph-scan{transition:width .35s cubic-bezier(.22,1,.36,1), height .35s cubic-bezier(.22,1,.36,1);}
   .ph-scan.vu{width:200px; height:200px;}
@@ -5405,6 +5415,8 @@ const TRAD = {en:{
   "par jour en moyenne":"per day on average",
   "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main.":"Photo analysis is temporarily unavailable. Try again in a few minutes, or add it by hand.",
   "pas":"steps",
+  "Calories des pas":"Calories from steps",
+  "Pas du jour":"Today's steps",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9178,6 +9190,8 @@ es:{
   "par jour en moyenne":"al día de media",
   "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main.":"El análisis de fotos no está disponible por el momento. Vuelve a intentarlo en unos minutos o añádelo a mano.",
   "pas":"pasos",
+  "Calories des pas":"Calorías de los pasos",
+  "Pas du jour":"Pasos del día",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13165,6 +13179,8 @@ pt:{
   "par jour en moyenne":"por dia em média",
   "L'analyse des photos est momentanément indisponible. Réessaie dans quelques minutes, ou ajoute à la main.":"A análise de fotos está temporariamente indisponível. Tente de novo em alguns minutos ou adicione à mão.",
   "pas":"passos",
+  "Calories des pas":"Calorias dos passos",
+  "Pas du jour":"Passos do dia",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20768,7 +20784,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 16h33 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 16h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22182,6 +22198,7 @@ function hero(inner, opts){
           accessoiresNeufs().length || (typeof demandesRecuesN === "number" && demandesRecuesN) ? `<i class="pastille"></i>` : ""}</button>
         <span class="hero-droite">${o.scans ? `<button class="hero-essai hero-scans" id="hero-scans" aria-label="${TR("Prendre mon plat en photo")}">${IC_PHOTO}<b>${photosRestantes()}</b></button>` : ""}${o.essai && essaiEnCours() ? `<button class="hero-essai" id="hero-essai">${
           TR("Essai Analyse · {} j").replace("{}", essaiRestant())}</button>` : ""}<button class="hero-ic" id="tb-settings" title="${TR("Réglages")}" aria-label="${TR("Réglages")}">${IC_GEAR}</button></span>`}
+        ${o.centre ? `<span class="hero-centre">${o.centre}</span>` : ""}
       </div>
       <div class="hero-h">${inner}</div>${o.apres || ""}
     </div>
@@ -28948,7 +28965,7 @@ function renderSeance(app){
   const week = db.history.filter(s=>new Date(s.date)>=w0);
   const weekVol = week.reduce((a,s)=>a+sessionVolume(s),0);
   const cs = cardioWeekStats();
-  const weekKcal = week.reduce((a,s)=>a+liftKcal(s),0) + cs.kcal;
+  const weekKcal = week.reduce((a,s)=>a+liftKcal(s),0) + cs.kcal + (pasDispo() ? pasKcalDepuis(w0) : 0);
   /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
   const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
@@ -28969,7 +28986,7 @@ function renderSeance(app){
     ${hero(`<div class="sur">${TR("Sport")}</div>
       <h1>${db.settings.name? TR("Salut {},").replace("{}", esc(db.settings.name)) : TR("Bienvenue,")}
         <span class="wv">👋</span></h1>
-      <div class="sub">${sub}</div>${pastillePas()}`, {classe:"hero-accueil" + (POUSSIN[poussinEtat().pose] ? " avec-poussin" : ""),
+      <div class="sub">${sub}</div>`, {centre:pastillePas(), classe:"hero-accueil" + (POUSSIN[poussinEtat().pose] ? " avec-poussin" : ""),
       fond:"img/hero-seance-2.webp"})}
     ${storageOK? "" : `<div class="card" style="border-color:var(--bad); margin-top:12px;">
       <div style="font-weight:800; color:var(--bad); margin-bottom:4px;">${TR("⚠️ Tes données ne peuvent pas être enregistrées")}</div>
@@ -29064,7 +29081,16 @@ function renderSeance(app){
     };
   }
   const pp = document.getElementById("pas-pastille");
-  if(pp) pp.onclick = ()=>openPasMois();
+  if(pp) pp.onclick = ()=>{
+    db.settings.pastille = db.settings.pastille === "kcal" ? "pas" : "kcal";
+    save(); vibrer(8);
+    const neuf = document.createElement("div"); neuf.innerHTML = pastillePas();
+    const b = neuf.firstElementChild;
+    pp.querySelector(".ic").innerHTML = b.querySelector(".ic").innerHTML;
+    pp.querySelector(".vl").innerHTML = b.querySelector(".vl").innerHTML;
+    pp.setAttribute("aria-label", b.getAttribute("aria-label"));
+    pp.classList.remove("tourne"); void pp.offsetWidth; pp.classList.add("tourne");
+  };
   const flR = document.getElementById("fl-rallumer");
   if(flR) flR.onclick = openRallumer;
 
@@ -37163,19 +37189,46 @@ function openInfoProfil(moy){
    ETABLI : le benefice sante augmente avec les pas et se stabilise autour de 7 000 a
    10 000 par jour chez l'adulte (Paluch et coll., Lancet Public Health, 2022, 15 cohortes).
    « 10 000 pas » est un repere populaire, pas un seuil — l'objectif se regle. */
-const IC_PAS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(7.4 11.2) rotate(-12)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/><circle cx="-2.3" cy="-5.9" r="1"/><circle cx="-.4" cy="-6.7" r="1.1"/><circle cx="1.6" cy="-6.2" r="1"/></g><g transform="translate(16.6 9.4) rotate(12) scale(-1 1)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/><circle cx="-2.3" cy="-5.9" r="1"/><circle cx="-.4" cy="-6.7" r="1.1"/><circle cx="1.6" cy="-6.2" r="1"/></g></svg>';
+const IC_PAS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(7.4 11.2) rotate(-12)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/></g><g transform="translate(16.6 9.4) rotate(12) scale(-1 1)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/></g></svg>';
 const OBJ_PAS = 10000;
 function objPas(){ return (db.settings && db.settings.objPas) || OBJ_PAS; }
 function pasDispo(){ return !!(modeDemo || (pluginSante() && db.sante && db.sante.actif)); }
 /* La pastille de l'accueil (Nico, 29 sept.) : sur la photo du haut, sous le salut, les pas
    du jour avec un anneau qui se remplit vers l'objectif. Elle ne prend aucune place. */
+/* Les calories des pas (Nico, 29 sept.).
+   ETABLI (equations de l'ACSM) : marcher coute environ 0,5 kcal par kilo et par kilometre,
+   au-dela de la depense de repos. La longueur du pas est estimee a 41,5 % de la taille : un
+   repere courant, approximatif (elle varie avec l'allure et la personne).
+   Les pas faits pendant une sortie de course ou de marche enregistree sont retires : ses
+   calories sont deja comptees avec la sortie. Faute de mieux, on les deduit de sa distance. */
+function foulee(){ const h = (db.profile && db.profile.height) || 170; return h * 0.415 / 100; }
+function pasKcal(k){
+  const pas = pasJour(k);
+  if(!pas) return 0;
+  const kg = currentWeight() || (db.profile && db.profile.weight) || 70, f = foulee();
+  let pasSorties = 0;
+  (db.cardio || []).forEach(c=>{
+    if(dayKey(c.date) !== k) return;
+    if(c.pas > 0) pasSorties += c.pas;
+    else if((c.machine || "course") === "course" && c.km > 0) pasSorties += c.km * 1000 / f;
+  });
+  return Math.round(Math.max(0, pas - pasSorties) * f / 1000 * 0.5 * kg);
+}
+function pasKcalDepuis(d0){
+  let t = 0;
+  for(let d = new Date(d0); d <= new Date(); d.setDate(d.getDate() + 1)) t += pasKcal(dayKey(d));
+  return t;
+}
+/* La pastille de l'accueil : en haut, au centre, sur verre fume. Un toucher bascule entre
+   les pas et leurs calories (Nico). */
 function pastillePas(){
   if(!pasDispo()) return "";
-  const v = pasJour(dayKey()), obj = objPas(), f = Math.min(1, v / obj);
-  return `<button class="pas-pastille${v >= obj ? " ok" : ""}" id="pas-pastille" aria-label="${TR("Mes pas du mois")}">
+  const k = dayKey(), v = pasJour(k), obj = objPas(), f = Math.min(1, v / obj);
+  const kcal = (db.settings && db.settings.pastille) === "kcal";
+  return `<button class="pas-pastille${v >= obj ? " ok" : ""}" id="pas-pastille" aria-label="${TR(kcal ? "Calories des pas" : "Pas du jour")}">
     <svg class="an" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" class="fd"/><circle cx="18" cy="18" r="15.5" class="pg"
       pathLength="100" stroke-dasharray="100" stroke-dashoffset="${(100 - f * 100).toFixed(1)}"/></svg>
-    <span class="ic">${IC_PAS}</span><b>${v.toLocaleString(loc())}</b><small>${TR("pas")}</small></button>`;
+    <span class="ic">${kcal ? icoM("flamme", 14) : IC_PAS}</span><span class="vl"><b>${(kcal ? pasKcal(k) : v).toLocaleString(loc())}</b><small>${kcal ? "kcal" : TR("pas")}</small></span></button>`;
 }
 function pasJour(k){ return (db.pas && db.pas[k]) || 0; }
 function pasCourt(n){ return n >= 1000 ? (n / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + "k" : String(n); }
