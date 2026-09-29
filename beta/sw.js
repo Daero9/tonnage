@@ -1,7 +1,17 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-beta-v11-20260929-1836";
+const CACHE = "tonnup-beta-v11-20260929-1854";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png?v=4", "./icon-512.png?v=4", "./apple-touch-icon.png?v=4",
   "./img/exos2/abducteurs.png",
+  "./img/exos2/leg-curl-assis.png",
+  "./img/exos2/lombaires-45.png",
+  "./img/exos2/chaise-romaine.png",
+  "./img/exos2/crunch-machine.png",
+  "./img/exos2/squat-smith.png",
+  "./img/exos2/elevations-laterales-machine.png",
+  "./img/exos2/curl-machine.png",
+  "./img/exos2/mollets-presse.png",
+  "./img/exos2/developpe-incline-machine.png",
+  "./img/exos2/machine-fessiers.png",
   "./img/exos2/abduction-hanche.png",
   "./img/exos2/adducteurs.png",
   "./img/exos2/arnold-press.png",
