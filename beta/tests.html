@@ -661,6 +661,17 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Cardio : les bonnes mesures, plusieurs sorties");
+  (()=>{
+    eq("Escalier : les étages", F.texteSortie({machine:"stepper", min:15, etages:20}), "15 min · 20 étages");
+    eq("Rameur : la distance en mètres", F.texteSortie({machine:"rameur", min:10, km:2}), "10 min · " + (2000).toLocaleString(F.loc()) + " m");
+    eq("Corde : les sauts", F.texteSortie({machine:"corde", min:10, sauts:500}), "10 min · 500 sauts");
+    vrai("Chaque activité a ses cases", F.champsCardio("stepper").includes("etages") && !F.champsCardio("stepper").includes("km")
+      && F.champsCardio("velo").includes("km") && !F.champsCardio("velo").includes("pente"));
+    const a = {cardioFaits:[{machine:"stepper", min:15, fait:true}], cardio:{machine:"corde", min:10, fait:true}};
+    const un = F.kcalSortieActive({cardio:a.cardioFaits[0]}), deux = F.kcalSortieActive({cardio:a.cardio});
+    eq("Deux sorties dans une séance : leurs calories s'ajoutent", F.kcalSortieActive(a), un + deux);
+  })();
   grp("Import depuis Strong ou Hevy");
   (()=>{
     const B = F.eval("db");

@@ -5782,6 +5782,14 @@ const TRAD = {en:{
   "sollicitation":"effort",
   "Mettre à la fin":"Move to the end",
   "Mettre au début":"Move to the start",
+  "Distance (m)":"Distance (m)",
+  "Étages montés":"Floors climbed",
+  "Sauts":"Jumps",
+  "Résistance (niveau)":"Resistance (level)",
+  "{} étages":"{} floors",
+  "{} sauts":"{} jumps",
+  "niveau {}":"level {}",
+  "Une autre sortie cardio":"Another cardio session",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9706,6 +9714,14 @@ es:{
   "sollicitation":"solicitación",
   "Mettre à la fin":"Mover al final",
   "Mettre au début":"Mover al inicio",
+  "Distance (m)":"Distancia (m)",
+  "Étages montés":"Pisos subidos",
+  "Sauts":"Saltos",
+  "Résistance (niveau)":"Resistencia (nivel)",
+  "{} étages":"{} pisos",
+  "{} sauts":"{} saltos",
+  "niveau {}":"nivel {}",
+  "Une autre sortie cardio":"Otra sesión de cardio",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13844,6 +13860,14 @@ pt:{
   "sollicitation":"solicitação",
   "Mettre à la fin":"Mover para o final",
   "Mettre au début":"Mover para o início",
+  "Distance (m)":"Distância (m)",
+  "Étages montés":"Andares subidos",
+  "Sauts":"Saltos",
+  "Résistance (niveau)":"Resistência (nível)",
+  "{} étages":"{} andares",
+  "{} sauts":"{} saltos",
+  "niveau {}":"nível {}",
+  "Une autre sortie cardio":"Outra sessão de cardio",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21553,7 +21577,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 01h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 01h12 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -28573,6 +28597,14 @@ function openCardioAdd(idExistant){
           <input type="number" inputmode="numeric" min="0" id="cd-min" placeholder="30" value="${c? Math.round(c.min) : ""}"></label>
         <label id="cd-pentewrap"><span class="f-lab">${TR("Pente (%)")}</span>
           <input type="number" inputmode="decimal" step="0.5" id="cd-pente" placeholder="0" value="${(c && c.pente)? c.pente : ""}"></label>
+        <label id="cd-mwrap"><span class="f-lab">${TR("Distance (m)")}</span>
+          <input type="number" inputmode="numeric" step="50" min="0" id="cd-m" placeholder="2000" value="${(c && c.km && EN_METRES.includes(c.machine)) ? Math.round(c.km * 1000) : ""}"></label>
+        <label id="cd-etageswrap"><span class="f-lab">${TR("Étages montés")}</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-etages" placeholder="20" value="${(c && c.etages) || ""}"></label>
+        <label id="cd-sautswrap"><span class="f-lab">${TR("Sauts")}</span>
+          <input type="number" inputmode="numeric" step="10" min="0" id="cd-sauts" placeholder="500" value="${(c && c.sauts) || ""}"></label>
+        <label id="cd-niveauwrap"><span class="f-lab">${TR("Résistance (niveau)")}</span>
+          <input type="number" inputmode="numeric" min="0" id="cd-niveau" placeholder="8" value="${(c && c.niveau) || ""}"></label>
       </div>
     </div>
     <div class="cd-bloc" id="cd-typewrap">
@@ -28621,8 +28653,11 @@ function openCardioAdd(idExistant){
     document.querySelectorAll("[data-cint]").forEach(b=>b.classList.toggle("on", b.dataset.cint===cInt));
     document.getElementById("cd-intwrap").style.display = machine? "block":"none";
     document.getElementById("cd-typewrap").style.display = machine? "none":"block";
-    document.getElementById("cd-pentewrap").style.display = machine? "none":"block";
-    document.getElementById("cd-kmwrap").style.display = (cMach==="rameur"||cMach==="natation"||cMach==="corde"||cMach==="autre")? "none":"block";
+    /* les cases de CETTE activite (Nico) : le stepper n'a pas de distance, mais des etages */
+    const ch = champsCardio(cMach);
+    document.getElementById("cd-pentewrap").style.display = ch.includes("pente") ? "" : "none";
+    document.getElementById("cd-kmwrap").style.display = ch.includes("km") ? "" : "none";
+    ["m", "etages", "sauts", "niveau"].forEach(k=>{ document.getElementById("cd-" + k + "wrap").style.display = ch.includes(k) ? "" : "none"; });
     const h = document.getElementById("cd-inthint");
     if(machine && m[3]){
       const kg = currentWeight() || 75;
@@ -28656,9 +28691,13 @@ function openCardioAdd(idExistant){
   };
   document.getElementById("cd-ok").onclick=()=>{
     const machine = cMach !== "course";
-    const km = versKm(document.getElementById("cd-km").value) || 0;
+    const ch = champsCardio(cMach);
+    const km = ch.includes("m") ? (parseFloat(document.getElementById("cd-m").value) || 0) / 1000
+      : (ch.includes("km") ? versKm(document.getElementById("cd-km").value) || 0 : 0);
     const min = parseFloat(document.getElementById("cd-min").value);
     const pente = machine? 0 : (parseFloat(document.getElementById("cd-pente").value)||0);
+    const extra = {};
+    ["etages", "sauts", "niveau"].forEach(k=>{ const v = ch.includes(k) ? parseFloat(document.getElementById("cd-" + k).value) || 0 : 0; if(v) extra[k] = v; });
     if(!min){ toast(TR("Indique la durée")); return; }
     if(!machine && !km){ toast(TR("Indique la distance et la durée")); return; }
     const type = cType || ((km/(min/60) >= 7) ? "course" : "marche");
@@ -28679,6 +28718,7 @@ function openCardioAdd(idExistant){
     };
     if(c){
       c.km = km; c.min = min; c.pente = pente; c.type = type; c.runMin = runMin; c.hr = hr; c.kcalM = kcalM;
+      delete c.etages; delete c.sauts; delete c.niveau; Object.assign(c, extra);
       c.machine = cMach; c.intensite = cInt;
       c.date = dateChoisie(c.date);
       db.cardio.sort((a, b)=> new Date(a.date) - new Date(b.date));
@@ -28688,7 +28728,7 @@ function openCardioAdd(idExistant){
       save(); render(); openCardioList(); toast(TR("Sortie modifiée ✓"));
       return;
     }
-    const sortie = {id:uid(), date:dateChoisie(new Date().toISOString()), km, min, pente, type, runMin, hr, kcalM, machine:cMach, intensite:cInt};
+    const sortie = Object.assign({id:uid(), date:dateChoisie(new Date().toISOString()), km, min, pente, type, runMin, hr, kcalM, machine:cMach, intensite:cInt}, extra);
     db.cardio.push(sortie);
     db.cardio.sort((a, b)=> new Date(a.date) - new Date(b.date));
     save();
@@ -28699,7 +28739,7 @@ function openCardioAdd(idExistant){
     const detail = machine
       ? TR("<b style=\"color:var(--ink);\">{m}</b> pendant {min} min{km}")
           .replace("{m}", esc(machineNom(sortie))).replace("{min}", Math.round(min))
-          .replace("{km}", km? " (" + dist(km) + ")" : "")
+          .replace("{km}", (()=>{ const t = texteSortie(Object.assign({}, sortie, {min:0})); return t ? " (" + t + ")" : ""; })())
       : TR("Tu as {verbe} <b style=\"color:var(--ink);\">{d}</b> en {min} min{fin}")
           .replace("{verbe}", TR(CARDIO_VERBE[type])).replace("{d}", dist(km))
           .replace("{min}", Math.round(min))
@@ -31595,11 +31635,21 @@ function objectifCardio(plan){
   const min = d.km > 0 ? Math.round(d.min || plan.min || 30) : Math.round((d.min || plan.min || 28) + 2);
   return {min, km, pente: d.pente || plan.pente || 0, base:d};
 }
+/* Ce qui se mesure pour chaque activite, au-dela de la duree (Nico, 30 sept.) : les
+   etages d'un escalier, les sauts d'une corde, le niveau d'un elliptique ; le rameur et la
+   nage se comptent en metres (2 000 m, pas 2 km). La distance reste stockee en km. */
+const CHAMPS_CARDIO = {course:["km", "pente"], velo:["km"], rameur:["m"], natation:["m"],
+  elliptique:["niveau"], stepper:["etages"], corde:["sauts"], autre:[]};
+function champsCardio(m){ return CHAMPS_CARDIO[m] || []; }
+const EN_METRES = ["rameur", "natation"];
 function texteSortie(c){
   const morceaux = [];
   if(c.min > 0) morceaux.push(Math.round(c.min) + " " + TR("min"));
-  if(c.km > 0) morceaux.push(affDist(c.km) + " " + uDist());
+  if(c.km > 0) morceaux.push(EN_METRES.includes(c.machine) ? Math.round(c.km * 1000).toLocaleString(loc()) + " m" : affDist(c.km) + " " + uDist());
   if(c.pente > 0) morceaux.push(TR("pente") + " " + c.pente + " %");
+  if(c.etages > 0) morceaux.push(TR("{} étages").replace("{}", c.etages));
+  if(c.sauts > 0) morceaux.push(TR("{} sauts").replace("{}", Number(c.sauts).toLocaleString(loc())));
+  if(c.niveau > 0) morceaux.push(TR("niveau {}").replace("{}", c.niveau));
   return morceaux.join(" · ");
 }
 /* ---- la seance courte -----------------------------------------------------------
@@ -32655,10 +32705,13 @@ window.addEventListener("scroll", ()=>{
 }, {passive:true});
 /* le nom de l'exercice s'affiche un instant, puis la carte se replie */
 /* les calories de la sortie faite pendant la seance, pour le bandeau et le recap */
+/* les sorties d'une seance : celles deja faites (on peut en enchainer plusieurs — Nico,
+   30 sept.) puis celle en cours */
+function sortiesSeance(a){ return ((a && a.cardioFaits) || []).concat(a && a.cardio ? [a.cardio] : []); }
+const sortieValable = c=>!!(c && c.fait && (c.min > 0 || c.km > 0));
 function kcalSortieActive(a){
-  const c = a && a.cardio;
-  if(!c || !c.fait || !(c.min > 0 || c.km > 0)) return 0;
-  return Math.round(sortieKcal(Object.assign({intensite:"modere"}, c), currentWeight() || 75));
+  return sortiesSeance(a).filter(sortieValable)
+    .reduce((t, c)=>t + Math.round(sortieKcal(Object.assign({intensite:"modere"}, c), currentWeight() || 75)), 0);
 }
 /* ---- la fin qu'on oublie ----------------------------------------------------------
    Beaucoup ne terminent pas leur seance : la derniere serie validee, on range le
@@ -32669,7 +32722,7 @@ function toutEstFait(a){
   if(!a || !a.entries.length) return false;
   const restant = a.entries.some(en=>en.sets.some(s=>!s.done && !s.warm));
   const cardioReste = !!(a.cardio && !a.cardio.fait) || !!(a.course && !a.course.fait && courseDeSeance(a.course));
-  const auMoinsUne = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait) || (a.course && a.course.fait);
+  const auMoinsUne = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || sortiesSeance(a).some(c=>c.fait) || (a.course && a.course.fait);
   return !restant && !cardioReste && !!auMoinsUne;
 }
 function proposerFin(){
@@ -32687,7 +32740,7 @@ function verifierSeanceOubliee(){
   const h = (Date.now() - derniere) / 3600e3;
   if(h < SEANCE_OUBLIEE_H || a.oubliDemande) return;
   a.oubliDemande = true; save();
-  const faite = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || (a.cardio && a.cardio.fait);
+  const faite = a.entries.some(en=>en.sets.some(s=>s.done && !s.warm)) || sortiesSeance(a).some(c=>c.fait);
   /* deux boutons qui disent chacun ce qu'ils font : « Annuler » en face de
      « Annuler la séance », c'etait la meme phrase pour deux gestes opposes */
   askConfirm(TR("Séance ouverte depuis {} h").replace("{}", Math.round(h)),
@@ -32947,7 +33000,7 @@ function renderActive(app){
             <span class="lab">${TR("Temps de séance")}</span></span></span>
         </div>`})}
     <div class="stack" id="ex-list"></div>
-    <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink); box-shadow:var(--ombre-carte);">＋ ${TR(a.cardio ? "Ajouter un exercice" : "Ajouter un exercice / cardio")}</button>
+    <button class="btn" id="add-ex" style="width:100%; margin-top:12px; background:var(--surface); color:var(--ink); box-shadow:var(--ombre-carte);">＋ ${TR(a.cardio && !a.cardio.fait ? "Ajouter un exercice" : "Ajouter un exercice / cardio")}</button>
     <div class="fin-bandeau ${toutEstFait(a) ? "show" : ""}" id="fin-bandeau">
       <div class="row" style="align-items:center; gap:12px;"><span class="ic">🎉</span><div><b>${TR("Tout est fait !")}</b><span>${TR("Termine la séance pour l'enregistrer.")}</span></div></div>
       <div class="row" style="gap:8px; margin-top:10px;">
@@ -33643,6 +33696,18 @@ function renderActive(app){
     if(bx) bx.onclick = ()=>{ delete a.course; save(); vibrer(10); renderSurPlace(); toast(TR("Course retirée de la séance")); };
     if(co.place === "debut") list.insertBefore(el, list.firstChild); else list.appendChild(el);
   }
+  (a.cardioFaits || []).forEach((c, k)=>{
+    const el = document.createElement("div");
+    el.className = "ex-card cardio fini";
+    el.innerHTML = `<div class="ex-head" style="align-items:center; gap:10px;">
+        <span class="ex-ico" style="display:flex; align-items:center; justify-content:center; color:var(--good);">${icCardio(c.machine || "course", 24)}</span>
+        <div class="grow"><div class="ex-name">✓ ${esc(TR(machineOf(c)[1]))}</div>
+          <div style="font-size:12px; color:var(--ink-mute);">${esc(texteSortie(c))} · ${Math.round(sortieKcal(Object.assign({intensite:"modere"}, c), currentWeight() || 75))} kcal</div></div>
+        <button class="icon-btn" data-cf-rm="${k}" aria-label="${TR("Retirer")}" style="width:32px; height:32px; color:var(--bad);">✕</button>
+      </div>`;
+    el.querySelector("[data-cf-rm]").onclick = ()=>{ a.cardioFaits.splice(k, 1); save(); renderSurPlace(); };
+    list.appendChild(el);
+  });
   if(a.cardio){
     const c = a.cardio;
     const cc = document.createElement("div");
@@ -33667,13 +33732,17 @@ function renderActive(app){
           <div class="s">${TR("Un petit cran de plus que la dernière fois : c'est comme ça qu'on progresse en endurance, par petites marches, pas par bonds.")}</div></div></div></div>` : ""}
       ${/* les cases qui ont un sens pour CETTE activite (Nico) : la pente n'existe que sur
            un tapis de course, la distance sur ce qui avance (velo, rameur, nage, course) */""}
-      ${(()=>{ const m = c.machine || "course";
-        const avecKm = ["course", "velo", "rameur", "natation"].includes(m), avecPente = m === "course";
-        const n = 1 + (avecKm ? 1 : 0) + (avecPente ? 1 : 0);
-        return `<div class="cd-nb" style="margin-top:8px; grid-template-columns:repeat(${n},1fr);">
+      ${(()=>{ const ch = champsCardio(c.machine || "course");
+        const cases = {
+          km: `<label><span class="f-lab">${TR("Distance")} (${uDist()})</span><input type="number" inputmode="decimal" step="0.1" min="0" id="ca-km" value="${c.km ? affDist(c.km).replace(",", ".") : ""}" placeholder="5"></label>`,
+          m: `<label><span class="f-lab">${TR("Distance (m)")}</span><input type="number" inputmode="numeric" step="50" min="0" id="ca-m" value="${c.km ? Math.round(c.km * 1000) : ""}" placeholder="2000"></label>`,
+          pente: `<label><span class="f-lab">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" id="ca-pente" value="${c.pente || ""}" placeholder="0"></label>`,
+          etages: `<label><span class="f-lab">${TR("Étages montés")}</span><input type="number" inputmode="numeric" min="0" id="ca-etages" value="${c.etages || ""}" placeholder="20"></label>`,
+          sauts: `<label><span class="f-lab">${TR("Sauts")}</span><input type="number" inputmode="numeric" step="10" min="0" id="ca-sauts" value="${c.sauts || ""}" placeholder="500"></label>`,
+          niveau: `<label><span class="f-lab">${TR("Résistance (niveau)")}</span><input type="number" inputmode="numeric" min="0" id="ca-niveau" value="${c.niveau || ""}" placeholder="8"></label>`};
+        return `<div class="cd-nb" style="margin-top:8px; grid-template-columns:repeat(${1 + ch.length},1fr);">
         <label><span class="f-lab">${TR("Durée (min)")}</span><input type="number" inputmode="numeric" min="0" id="ca-min" value="${c.min ? Math.round(c.min) : ""}" placeholder="30"></label>
-        ${avecKm ? `<label><span class="f-lab">${TR("Distance")} (${uDist()})</span><input type="number" inputmode="decimal" step="0.1" min="0" id="ca-km" value="${c.km ? affDist(c.km).replace(",", ".") : ""}" placeholder="5"></label>` : ""}
-        ${avecPente ? `<label><span class="f-lab">${TR("Pente (%)")}</span><input type="number" inputmode="decimal" step="0.5" min="0" id="ca-pente" value="${c.pente || ""}" placeholder="0"></label>` : ""}
+        ${ch.map(k=>cases[k]).join("")}
       </div>`; })()}
       <div class="row" style="gap:8px; margin-top:10px;">
         <button class="btn" id="ca-retirer" style="flex:0 0 auto; padding-inline:14px; color:var(--bad);">${TR("Retirer")}</button>
@@ -33684,7 +33753,9 @@ function renderActive(app){
       if(!q("#ca-min")) return;
       c.min = parseFloat(q("#ca-min").value) || 0;
       if(q("#ca-km")) c.km = versKm(parseFloat(q("#ca-km").value) || 0);
+      if(q("#ca-m")) c.km = (parseFloat(q("#ca-m").value) || 0) / 1000;
       if(q("#ca-pente")) c.pente = parseFloat(q("#ca-pente").value) || 0;
+      ["etages", "sauts", "niveau"].forEach(k=>{ if(q("#ca-" + k)) c[k] = parseFloat(q("#ca-" + k).value) || 0; });
     };
     cc.querySelectorAll("input").forEach(i=>i.oninput = ()=>{ lire(); save(); });
     const bFait = cc.querySelector("#ca-fait");
@@ -33736,6 +33807,8 @@ function renderActive(app){
     ok:machine=>{
       const plan = {machine, min:30, km:0, pente:0};
       const o = objectifCardio(plan);
+      /* la sortie deja faite rejoint la liste : on en enchaine une autre */
+      if(a.cardio && a.cardio.fait){ (a.cardioFaits = a.cardioFaits || []).push(a.cardio); }
       a.cardio = {machine:plan.machine, min:o.min, km:o.km, pente:o.pente, fait:false,
         derniere: o.base ? texteSortie(o.base) : ""};
       save(); closeSheet(); render();
@@ -33747,14 +33820,15 @@ function renderActive(app){
   const ft = document.getElementById("fin-terminer");
   if(ft) ft.onclick = ()=>document.getElementById("finish-w").click();
   document.getElementById("add-ex").onclick=()=>{
-    if(a.cardio && a.course){ ajouterExo(); return; }   /* une seule sortie et une seule course par seance */
+    /* une course par seance ; les sorties cardio, autant qu'on veut — une a la fois */
+    if(a.cardio && !a.cardio.fait && a.course){ ajouterExo(); return; }
     const ligne = (id2, ic, titre, sous) => `<button class="aj-l" id="${id2}">
       <span class="ic">${ic}</span><span class="tx"><span class="t">${titre}</span><span class="s">${sous}</span></span>
       <span class="fl">${IC_CHEVRON}</span></button>`;
     openSheet(`<div class="ca-titre"><h3>${TR("Ajouter à ta séance")}</h3></div>
       ${ligne("ae-exo", IC_PLUS, TR("Un exercice"), TR("Depuis la bibliothèque"))}
       ${!a.course ? ligne("ae-course", icoM("course", 22), TR("Une séance de course"), TR("Ton objectif ou une de tes séances")) : ""}
-      ${!a.cardio ? ligne("ae-cardio", IC_PLUS, TR("Une sortie cardio"), TR("En fin de séance, avec un objectif du jour")) : ""}`);
+      ${!a.cardio || a.cardio.fait ? ligne("ae-cardio", IC_PLUS, TR(a.cardio ? "Une autre sortie cardio" : "Une sortie cardio"), TR("En fin de séance, avec un objectif du jour")) : ""}`);
     document.getElementById("ae-exo").onclick = ()=>{ closeSheet(); setTimeout(ajouterExo, 260); };
     const aeCa = document.getElementById("ae-cardio");
     if(aeCa) aeCa.onclick = ajouterCardio;   /* sur place : fermer puis rouvrir se marchait dessus */
@@ -33765,7 +33839,8 @@ function renderActive(app){
   document.getElementById("cancel-w").onclick=()=>askConfirm(TR("Annuler la séance ?"),TR("Tout ce que tu as saisi dans cette séance sera perdu."),TR("Oui, annuler"),true,()=>{ db.active=null; arreterChronos(); save(); render(); });
   document.getElementById("finish-w").onclick=()=>{
     const doneSets = a.entries.reduce((n,en)=>n+en.sets.filter(s=>s.done && !s.warm).length,0);
-    const cardioFait = !!(a.cardio && a.cardio.fait && (a.cardio.min > 0 || a.cardio.km > 0));
+    const faites = sortiesSeance(a).filter(sortieValable);
+    const cardioFait = faites.length > 0;
     const courseFaite = !!(a.course && a.course.fait);
     if(!doneSets && !cardioFait && !courseFaite){ askConfirm(TR("Aucune série validée"),TR("Valide au moins une série (bouton ○) avant de terminer, ou annule la séance."),"OK",false,()=>{}); return; }
     const vol = a.entries.reduce((v,en)=>{ const f=facteurTonnage(en.exId); return v+en.sets.reduce((x,s)=>x+((s.done&&!s.warm)?volSerie(s)*f:0),0); },0);
@@ -33798,13 +33873,17 @@ function renderActive(app){
       /* la sortie faite pendant la seance est une sortie comme les autres : elle compte
          dans les kilometres de la semaine et dans les calories du jour */
       if(cardioFait){
-        const c = a.cardio;
-        const sortie = {id:uid(), date:new Date().toISOString(), km:c.km || 0, min:c.min || 0, pente:c.pente || 0,
-          machine:c.machine || "course", intensite:"modere", seanceId:recap.id};
-        db.cardio.push(sortie);
+        const textes = [];
+        faites.forEach(c=>{
+          const sortie = {id:uid(), date:new Date().toISOString(), km:c.km || 0, min:c.min || 0, pente:c.pente || 0,
+            etages:c.etages || undefined, sauts:c.sauts || undefined, niveau:c.niveau || undefined,
+            machine:c.machine || "course", intensite:"modere", seanceId:recap.id};
+          db.cardio.push(sortie);
+          textes.push(TR(machineOf(sortie)[1]) + " · " + texteSortie(sortie));
+        });
         db.cardio.sort((x, y)=> new Date(x.date) - new Date(y.date));
         recap.kcal = kcal + kcalSortieActive(a);
-        recap.cardio = texteSortie(sortie);
+        recap.cardio = textes.join(" — ");
       }
       /* la course faite pendant la seance : deja une sortie (elle compte pour la semaine,
          l'objectif et Progression) ; on la rattache a la seance et on la resume */
@@ -33817,7 +33896,9 @@ function renderActive(app){
         id:recap.id, date:new Date().toISOString(), name:a.name, templateId:a.templateId,
         course: courseFaite ? {sortieId:a.course.sortieId, km:a.course.km, min:a.course.min} : undefined,
         start:a.start, end:a.finForcee || (a.start + dureeSeance2(a)),
-        cardio: cardioFait ? {machine:a.cardio.machine || "course", min:a.cardio.min || 0, km:a.cardio.km || 0, pente:a.cardio.pente || 0} : undefined,
+        cardio: cardioFait ? {machine:faites[0].machine || "course", min:faites[0].min || 0, km:faites[0].km || 0, pente:faites[0].pente || 0} : undefined,
+        cardios: faites.length > 1 ? faites.map(c=>({machine:c.machine || "course", min:c.min || 0, km:c.km || 0, pente:c.pente || 0,
+          etages:c.etages || undefined, sauts:c.sauts || undefined, niveau:c.niveau || undefined})) : undefined,
         feel: (a.feel && a.feel !== "correct") ? a.feel : undefined,
         feelMuscu: a.feelMuscu ? true : undefined,
         entries:a.entries.map(en=>({exId:en.exId, sets:en.sets.filter(s=>s.done).map(s=>({w:s.w||0, r:s.r||0, done:true, warm:!!s.warm, rir:(s.rir===undefined?null:s.rir), t:(s.t || undefined), drops:(s.drops&&s.drops.length? s.drops.map(d=>({w:d.w||0, r:d.r||0})) : undefined)}))})).filter(en=>en.sets.length),
