@@ -5143,6 +5143,8 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Tout ajouter ({})":"Add all ({})",
+  "{} activités ajoutées ! 🔥":"{} activities added! 🔥",
   "Montre connectée":"Smartwatch",
   "Tes activités de la montre, par Health Connect.":"Your watch activities, via Health Connect.",
   "Tes activités enregistrées par ta montre, proposées dans Tonnup.":"Activities recorded by your watch, suggested in Tonnup.",
@@ -8863,6 +8865,8 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Tout ajouter ({})":"Añadir todo ({})",
+  "{} activités ajoutées ! 🔥":"¡{} actividades añadidas! 🔥",
   "Tes activités de la montre, par Health Connect.":"Tus actividades del reloj, vía Health Connect.",
   "Tes activités enregistrées par ta montre, proposées dans Tonnup.":"Las actividades de tu reloj, propuestas en Tonnup.",
   "Il faut Android 14 ou plus récent.":"Requiere Android 14 o posterior.",
@@ -12796,6 +12800,8 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Tout ajouter ({})":"Adicionar tudo ({})",
+  "{} activités ajoutées ! 🔥":"{} atividades adicionadas! 🔥",
   "Tes activités de la montre, par Health Connect.":"Suas atividades do relógio, via Health Connect.",
   "Tes activités enregistrées par ta montre, proposées dans Tonnup.":"As atividades do seu relógio, sugeridas no Tonnup.",
   "Il faut Android 14 ou plus récent.":"Requer Android 14 ou mais recente.",
@@ -20379,7 +20385,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 02h53 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 03h05 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22704,6 +22710,19 @@ function marquerVue(id){
   db.sante.vus = (db.sante.vus || []).concat([id]).slice(-300);
   save();
 }
+function ajouterActivite(a){
+  const t = SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000, quand = new Date(a.debut);
+  const km = a.km > 0.05 ? Math.round(a.km * 100) / 100 : 0;
+  const sortie = {id:uid(), date:quand.toISOString(), km, min:Math.round(min * 10) / 10, machine:t[0], source:"montre", santeId:a.id};
+  if(t[1]) sortie.type = t[1];
+  if(!km) sortie.estime = true;
+  if(a.kcal > 0) sortie.kcalM = Math.round(a.kcal);
+  if(a.fcMoy > 0) sortie.hr = a.fcMoy;
+  if(a.fcMax > 0) sortie.hrMax = a.fcMax;
+  if(a.pas > 0) sortie.pas = a.pas;
+  db.cardio.push(sortie);
+  marquerVue(a.id);
+}
 function proposerActivite(l, i){
   const a = l[i]; if(!a) return;
   const t = SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000;
@@ -22720,21 +22739,20 @@ function proposerActivite(l, i){
     <div class="mt-tuiles">${tu.join("")}</div>
     ${l.length > 1 ? `<p class="fe-petit">${TR("{a} sur {n}").replace("{a}", i + 1).replace("{n}", l.length)}</p>` : ""}
     <button class="btn btn-accent" id="mt-add" style="width:100%; margin-top:12px;">${TR("Ajouter à Tonnup")}</button>
+    ${l.length - i > 1 ? `<button class="btn" id="mt-tout" style="width:100%; margin-top:8px;">${TR("Tout ajouter ({})").replace("{}", l.length - i)}</button>` : ""}
     <button class="am-lien" id="mt-non" style="display:block; margin:8px auto 0;">${TR("Ignorer")}</button>`);
   const suite = ()=>{ w.fermer(); if(l[i + 1]) setTimeout(()=>proposerActivite(l, i + 1), 250); else render(); };
   w.el.querySelector("#mt-add").onclick = ()=>{
-    const km = a.km > 0.05 ? Math.round(a.km * 100) / 100 : 0;
-    const sortie = {id:uid(), date:quand.toISOString(), km, min:Math.round(min * 10) / 10, machine:t[0], source:"montre", santeId:a.id};
-    if(t[1]) sortie.type = t[1];
-    if(!km) sortie.estime = true;
-    if(a.kcal > 0) sortie.kcalM = Math.round(a.kcal);
-    if(a.fcMoy > 0) sortie.hr = a.fcMoy;
-    if(a.fcMax > 0) sortie.hrMax = a.fcMax;
-    if(a.pas > 0) sortie.pas = a.pas;
-    db.cardio.push(sortie);
-    marquerVue(a.id);
+    ajouterActivite(a);
     vibrer(20); toast(TR("Activité ajoutée ! 🔥"));
     suite();
+  };
+  const tout = w.el.querySelector("#mt-tout");
+  if(tout) tout.onclick = ()=>{
+    const reste = l.slice(i);
+    reste.forEach(ajouterActivite);
+    vibrer(24); toast(TR("{} activités ajoutées ! 🔥").replace("{}", reste.length));
+    w.fermer(); render();
   };
   w.el.querySelector("#mt-non").onclick = ()=>{ marquerVue(a.id); suite(); };
 }
