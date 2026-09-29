@@ -3135,6 +3135,15 @@
   #app.entre[data-sens="g"] > *:not(.eat-fab){--gl:-28px;}
   @keyframes pageGlisse{from{opacity:0; translate:var(--gl, 28px) 0;}}
   @media (prefers-reduced-motion:reduce){ #app.entre, #app.entre[data-sens] > *{animation:none;} }
+  /* les pas : le bouton du mois dans l'en-tete, la pastille sous le titre, le bilan du mois */
+  .pas-mois{flex:none; width:40px; height:40px; border-radius:12px; border:0; background:var(--surface2); color:var(--accent);
+    display:flex; align-items:center; justify-content:center; align-self:flex-start;}
+  .pas-mois svg{width:21px; height:21px;}
+  .pas-quota{margin:-4px 0 8px;}
+  .pas-card .pt-moy .ic svg{width:17px; height:17px;}
+  .pas-bilan{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px;}
+  .pas-bilan > div{background:var(--surface2); border-radius:14px; padding:10px 8px; text-align:center;}
+  .pas-bilan b{display:block; font-size:16px; font-weight:900;} .pas-bilan small{display:block; font-size:11px; color:var(--ink-soft); margin-top:2px;}
   /* le demarrage d'une seance : le disque orange qui couvre l'ecran puis s'efface */
   .deploie{position:fixed; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; background:var(--accent-grad);
     z-index:100000; pointer-events:none; animation:deploie .7s cubic-bezier(.5,0,.3,1) forwards;}
@@ -5372,6 +5381,17 @@ const TRAD = {en:{
   "Tu progresses !":"You're improving!",
   "flammes en cours":"active streaks",
   "Voilà ce que je vois !":"Here's what I see!",
+  "Pas":"Steps",
+  "Mes pas du mois":"My steps this month",
+  "jours à l'objectif":"days at goal",
+  "jour à l'objectif":"day at goal",
+  "Moyenne de la semaine":"Weekly average",
+  "10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.":"10,000 steps is a common guide, not a threshold: the health benefit grows with steps up to about 7,000 to 10,000 a day.",
+  "Tes pas apparaîtront ici dès que ta montre ou ton téléphone les aura envoyés à Health Connect.":"Your steps will show here as soon as your watch or phone sends them to Health Connect.",
+  "Mes pas":"My steps",
+  "Pas de données":"No data",
+  "pas ce mois-ci":"steps this month",
+  "par jour en moyenne":"per day on average",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9132,6 +9152,17 @@ es:{
   "Tu progresses !":"¡Estás progresando!",
   "flammes en cours":"rachas activas",
   "Voilà ce que je vois !":"¡Esto es lo que veo!",
+  "Pas":"Pasos",
+  "Mes pas du mois":"Mis pasos del mes",
+  "jours à l'objectif":"días en el objetivo",
+  "jour à l'objectif":"día en el objetivo",
+  "Moyenne de la semaine":"Media de la semana",
+  "10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.":"10 000 pasos es una referencia habitual, no un umbral: el beneficio para la salud aumenta con los pasos hasta unos 7 000 a 10 000 al día.",
+  "Tes pas apparaîtront ici dès que ta montre ou ton téléphone les aura envoyés à Health Connect.":"Tus pasos aparecerán aquí en cuanto tu reloj o tu teléfono los envíe a Health Connect.",
+  "Mes pas":"Mis pasos",
+  "Pas de données":"Sin datos",
+  "pas ce mois-ci":"pasos este mes",
+  "par jour en moyenne":"al día de media",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13106,6 +13137,17 @@ pt:{
   "Tu progresses !":"Você está progredindo!",
   "flammes en cours":"sequências ativas",
   "Voilà ce que je vois !":"Isto é o que eu vejo!",
+  "Pas":"Passos",
+  "Mes pas du mois":"Meus passos do mês",
+  "jours à l'objectif":"dias na meta",
+  "jour à l'objectif":"dia na meta",
+  "Moyenne de la semaine":"Média da semana",
+  "10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.":"10 000 passos é uma referência comum, não um limite: o benefício para a saúde aumenta com os passos até cerca de 7 000 a 10 000 por dia.",
+  "Tes pas apparaîtront ici dès que ta montre ou ton téléphone les aura envoyés à Health Connect.":"Seus passos aparecerão aqui assim que o relógio ou o telefone os enviar ao Health Connect.",
+  "Mes pas":"Meus passos",
+  "Pas de données":"Sem dados",
+  "pas ce mois-ci":"passos este mês",
+  "par jour en moyenne":"por dia em média",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20709,7 +20751,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 16h06 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 16h23 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20846,7 +20888,7 @@ function applyDefaults(){
 applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
-setTimeout(()=>{ Promise.resolve(sonderAbo()).catch(()=>{}).then(()=>setTimeout(()=>{ messagesAbo(); setTimeout(()=>verifierMontre(false), 600); setTimeout(()=>envoyerSeances(), 5000); }, 1500)); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
+setTimeout(()=>{ Promise.resolve(sonderAbo()).catch(()=>{}).then(()=>setTimeout(()=>{ messagesAbo(); setTimeout(()=>verifierMontre(false), 600); setTimeout(()=>envoyerSeances(), 5000); setTimeout(()=>lirePasSemaine(), 2500); }, 1500)); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
 setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
 /* ---- le widget de l'ecran d'accueil (Android) -----------------------------------------
@@ -23897,6 +23939,7 @@ function allerOnglet(id){
   if(curTab === "seance"){ try{ history.pushState({tonnage:"tab"}, ""); }catch(e){} }
   if(curTab === "eat") jourCur = null;
   protAnimee = false;                 /* on revient sur Progression : les barres remontent */
+  pasAnimee = false;
   /* et les chiffres et jauges de l'onglet (Nutrition : proteines, kcal) partent de zero,
      a l'arrivee seulement — ensuite ils vont de l'ancienne valeur a la nouvelle */
   depuisZero = true;
@@ -36202,6 +36245,7 @@ function renderProgress(app){
   renderProteinSection(document.getElementById("wt-sec"));
   renderMuscleSection(document.getElementById("wt-sec"));
   if(!renderCourseSection(document.getElementById("wt-sec"))) renderCardioSection(document.getElementById("wt-sec"));
+  renderPasSection(document.getElementById("wt-sec"));
   const body = document.getElementById("prg-body");
   if(!exIds.length){
     body.innerHTML = `<div class="card" style="margin-top:14px;">
@@ -37002,7 +37046,7 @@ function renderMuscleSection(sec){
   div.innerHTML = `
     <div class="card mp-card">
       <div class="pt-tete">
-        <span class="pd-ic mp-ic">${IC_SILHOUETTE}</span>
+        <span class="pt-ic pt-ic-orange">${IC_SILHOUETTE}</span>
         <div class="grow">
           <div class="pd-t">${TR("Profil musculaire")} <button class="card-i" id="mp-info" aria-label="${TR("À quoi sert le profil musculaire ?")}">i</button></div>
           <div class="pt-obj">${TR("Découvre tes points forts et les zones à améliorer.")}</div>
@@ -37055,6 +37099,143 @@ function openInfoProfil(moy){
       TR("Ce profil ne dit rien de ton physique ni de ta santé. Il montre seulement l'équilibre entre tes muscles."), "bleu")}
     <button class="btn btn-accent" id="mpi-ok" style="width:100%; margin-top:6px;">${TR("J'ai compris")}</button>`);
   document.getElementById("mpi-ok").onclick = closeSheet;
+}
+
+/* ===== Les pas (Nico, 29 sept.) =====
+   Lus dans Health Connect, jour par jour (la montre ET le telephone, sans double compte).
+   Android seulement, montre activee. Une information et un objectif — jamais ajoutes au
+   budget de calories : la depense du jour compte deja l'activite habituelle, marche
+   comprise, et les ajouter les compterait deux fois.
+   ETABLI : le benefice sante augmente avec les pas et se stabilise autour de 7 000 a
+   10 000 par jour chez l'adulte (Paluch et coll., Lancet Public Health, 2022, 15 cohortes).
+   « 10 000 pas » est un repere populaire, pas un seuil — l'objectif se regle. */
+const IC_PAS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(7.4 11.2) rotate(-12)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/><circle cx="-2.3" cy="-5.9" r="1"/><circle cx="-.4" cy="-6.7" r="1.1"/><circle cx="1.6" cy="-6.2" r="1"/></g><g transform="translate(16.6 9.4) rotate(12) scale(-1 1)"><ellipse cx="0" cy="0" rx="3.3" ry="4.4"/><ellipse cx="0" cy="7.1" rx="2.5" ry="2.1"/><circle cx="-2.3" cy="-5.9" r="1"/><circle cx="-.4" cy="-6.7" r="1.1"/><circle cx="1.6" cy="-6.2" r="1"/></g></svg>';
+const OBJ_PAS = 10000;
+function objPas(){ return (db.settings && db.settings.objPas) || OBJ_PAS; }
+function pasDispo(){ return !!(pluginSante() && db.sante && db.sante.actif); }
+function pasJour(k){ return (db.pas && db.pas[k]) || 0; }
+function pasCourt(n){ return n >= 1000 ? (n / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + "k" : String(n); }
+/* lit les pas de [debut, fin] (ms) et les garde ; rend vrai si quelque chose a change */
+async function lirePas(debut, fin){
+  const pl = pluginSante();
+  if(!pl || !db.sante || !db.sante.actif) return false;
+  try{
+    const r = await pl.pasParJour({debut, fin});
+    db.pas = db.pas || {};
+    let change = false;
+    ((r && r.jours) || []).forEach(j=>{ if(j.pas > 0 && db.pas[j.jour] !== j.pas){ db.pas[j.jour] = j.pas; change = true; } });
+    if(change){
+      /* on garde une annee, pas plus */
+      const limite = dayKey(new Date(Date.now() - 400 * 864e5));
+      Object.keys(db.pas).forEach(k=>{ if(k < limite) delete db.pas[k]; });
+      save();
+    }
+    return change;
+  }catch(e){ return false; }
+}
+function lirePasSemaine(){ return lirePas(Date.now() - 6 * 864e5, Date.now()); }
+let pasAnimee = false;
+function renderPasSection(sec){
+  if(!pasDispo()) return;
+  const div = document.createElement("div");
+  div.id = "pas-sec";
+  const dessiner = monte=>{
+    const obj = objPas(), days = [];
+    for(let i = 6; i >= 0; i--){ const d = new Date(Date.now() - i * 864e5), k = dayKey(d); days.push({d, k, v:pasJour(k)}); }
+    const connus = days.filter(x=>x.v > 0);
+    const maxJ = days.reduce((m, x)=>Math.max(m, x.v), 0);
+    const cap = Math.max(obj * 1.3, maxJ * 1.1);
+    const pas = cap <= 15000 ? 5000 : 10000, grad = [];
+    for(let g = 0; g <= cap; g += pas) grad.push(g);
+    const hit = days.filter(x=>x.v >= obj).length;
+    const moy = connus.length ? Math.round(connus.reduce((a, x)=>a + x.v, 0) / connus.length) : 0;
+    const auj = days[6];
+    div.innerHTML = `<div class="card pt-card pas-card${monte ? " monte" : ""}">
+      <div class="pt-tete">
+        <span class="pt-ic pt-ic-orange">${IC_PAS}</span>
+        <div class="grow"><div class="pt-t">${TR("Pas")}</div>
+          <div class="pt-obj">${TR("Objectif")} <b>${obj.toLocaleString(loc())}</b> / ${TR("jour")}</div></div>
+        <button class="pas-mois" id="pas-mois" aria-label="${TR("Mes pas du mois")}">${IC_CALENDRIER}</button>
+      </div>
+      ${connus.length ? `<div class="pas-quota"><span class="pt-quota ${hit >= 5 ? "bon" : ""}">${hit} ${TR(hit > 1 ? "jours à l'objectif" : "jour à l'objectif")}</span></div>
+      <div class="pr-plot pt-plot">
+        ${grad.map(g=>`<span class="pt-grad" style="bottom:calc(${(g / cap).toFixed(3)} * (100% - 15px));">${pasCourt(g)}</span>`).join("")}
+        <div class="pr-target" style="bottom:calc(${(obj / cap).toFixed(3)} * (100% - 15px));"><i>${pasCourt(obj)}</i></div>
+        ${days.map((x, k)=>{ const dernier = k === 6;
+          return `<div class="pr-col ${dernier ? "auj" : ""} ${x.v >= obj ? "quota" : ""}" style="--i:${k}">
+            <span class="pr-val"></span>
+            <span class="pr-barwrap"><span class="pr-b" ${dernier && x.v > 0 ? `data-v="${x.v.toLocaleString(loc())}"` : ""} style="height:${Math.max(x.v > 0 ? 4 : 2, Math.min(100, x.v / cap * 100))}%;"></span></span>
+          </div>`; }).join("")}
+      </div>
+      <div class="pr-labels pt-labels">${days.map((x, k)=>`<span class="${k === 6 ? "auj" : ""}">${(langue() === "en" ? ["S","M","T","W","T","F","S"] : ["D","L","M","M","J","V","S"])[x.d.getDay()]}</span>`).join("")}</div>
+      <div class="pt-moy">
+        <div class="l"><span class="ic">${IC_PAS}</span><span class="grow">${TR("Aujourd'hui")}</span><b class="${auj.v >= obj ? "bon" : ""}">${auj.v.toLocaleString(loc())}</b></div>
+        <div class="l"><span class="ic">${IC_BARRES}</span><span class="grow">${TR("Moyenne de la semaine")}</span><b class="${moy >= obj ? "bon" : ""}">≈ ${moy.toLocaleString(loc())}</b></div>
+      </div>
+      <div class="pt-astuce"><span class="ic">${IC_AMPOULE}</span>${TR("10 000 pas est un repère courant, pas un seuil : le bénéfice pour la santé augmente avec les pas jusqu'à environ 7 000 à 10 000 par jour.")}</div>`
+      : `<div class="empty" style="padding:14px 10px 6px;">${TR("Tes pas apparaîtront ici dès que ta montre ou ton téléphone les aura envoyés à Health Connect.")}</div>`}
+    </div>`;
+    div.querySelector("#pas-mois").onclick = ()=>openPasMois();
+  };
+  const monte = !pasAnimee; pasAnimee = true;
+  dessiner(monte);
+  sec.appendChild(div);
+  /* les derniers pas, lus en arriere-plan : la carte se redessine si quelque chose a bouge */
+  lirePasSemaine().then(ch=>{ if(ch && document.body.contains(div)) dessiner(false); });
+}
+/* les pas du mois, en calendrier (le meme que celui des proteines) */
+let pasMois = null;
+function openPasMois(){
+  if(!pasMois){ const n = new Date(); pasMois = new Date(n.getFullYear(), n.getMonth(), 1); }
+  dessinePasMois();
+  const an = pasMois.getFullYear(), mois = pasMois.getMonth();
+  lirePas(new Date(an, mois, 1).getTime(), Math.min(Date.now(), new Date(an, mois + 1, 0).getTime()))
+    .then(ch=>{ if(ch && document.getElementById("pas-cal")) dessinePasMois(); });
+}
+function dessinePasMois(){
+  const obj = objPas();
+  const an = pasMois.getFullYear(), mois = pasMois.getMonth();
+  const premier = new Date(an, mois, 1), nbJours = new Date(an, mois + 1, 0).getDate();
+  const lundi = langue() !== "en";
+  const decal = lundi ? (premier.getDay() + 6) % 7 : premier.getDay();
+  const noms = Array.from({length:7}, (_, i)=>{
+    const n = new Date(2024, 0, (lundi ? 1 : 7) + i).toLocaleDateString(loc(), {weekday:"short"}).replace(/\.$/, "");
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  });
+  const auj = dayKey(), cases = [];
+  let total = 0, joursConnus = 0, atteints = 0;
+  for(let i = 0; i < decal; i++) cases.push(`<div class="cal-c vide"></div>`);
+  for(let j = 1; j <= nbJours; j++){
+    const key = dayKey(new Date(an, mois, j)), v = pasJour(key), futur = key > auj;
+    if(v > 0){ total += v; joursConnus++; if(v >= obj) atteints++; }
+    const cl = futur ? "futur rien" : (v <= 0 ? "rien" : (v >= obj ? "atteint" : "partiel"));
+    cases.push(`<div class="cal-c ${cl}${key === auj ? " auj" : ""}"><span class="d">${j}</span><span class="p">${v > 0 ? pasCourt(v) : "·"}</span></div>`);
+  }
+  const apresPossible = premier < new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const avantPossible = premier > new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1);
+  openSheet(`<h3 style="text-align:center;">${TR("Mes pas")}</h3>
+    <div class="cal-top">
+      <button id="pas-prec" ${avantPossible ? "" : "disabled"} aria-label="${TR("Mois précédent")}">‹</button>
+      <div class="m">${premier.toLocaleDateString(loc(), {month:"long", year:"numeric"})}</div>
+      <button id="pas-suiv" ${apresPossible ? "" : "disabled"} aria-label="${TR("Mois suivant")}">›</button>
+    </div>
+    <div class="cal-jours">${noms.map(n=>`<span>${n}</span>`).join("")}</div>
+    <div class="cal-grille" id="pas-cal">${cases.join("")}</div>
+    <div class="cal-leg">
+      <span><i class="v"></i>${TR("Objectif atteint")}</span>
+      <span><i class="o"></i>${TR("En dessous")}</span>
+      <span><i class="g"></i>${TR("Pas de données")}</span>
+    </div>
+    <div class="pas-bilan">
+      <div><b>${total.toLocaleString(loc())}</b><small>${TR("pas ce mois-ci")}</small></div>
+      <div><b>${joursConnus ? Math.round(total / joursConnus).toLocaleString(loc()) : "—"}</b><small>${TR("par jour en moyenne")}</small></div>
+      <div><b>${atteints}</b><small>${TR(atteints > 1 ? "jours à l'objectif" : "jour à l'objectif")}</small></div>
+    </div>
+    <button class="btn btn-accent" id="pas-ok" style="width:100%; margin-top:14px;">${TR("Fermer")}</button>`);
+  const prec = document.getElementById("pas-prec"), suiv = document.getElementById("pas-suiv");
+  if(!prec.disabled) prec.onclick = ()=>{ pasMois = new Date(an, mois - 1, 1); openPasMois(); };
+  if(!suiv.disabled) suiv.onclick = ()=>{ pasMois = new Date(an, mois + 1, 1); openPasMois(); };
+  document.getElementById("pas-ok").onclick = closeSheet;
 }
 
 let protAnimee = false;
