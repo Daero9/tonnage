@@ -717,6 +717,29 @@ async function lancer(){
     eq("…puis retour au 1er du groupe", F.retourSuperset(A, 1), 0);
     eq("Un exercice seul n'a pas de groupe", F.retourSuperset(A, 2), null);
   })();
+  grp("Charge de départ d'un exercice jamais fait");
+  (()=>{
+    const B = F.eval("db");
+    B.history = []; B.weights = [{date:new Date().toISOString(), kg:80}];
+    B.profile = Object.assign({}, B.profile || {}, {sex:"h", weight:80});
+    F.eval("profilDepartMemo = null");
+    const dc = F.libId("Développé couché"), sq = F.libId("Squat"), cu = F.libId("Curl haltères");
+    const h = F.chargeDepart(dc, "8-12");
+    vrai("Homme de 80 kg, débutant : un développé couché prudent (entre 20 et 45 kg)", h >= 20 && h <= 45);
+    eq("Arrondi à un poids qui existe (multiple de 2,5)", h % 2.5, 0);
+    vrai("Haltères : un poids entier", Number.isInteger(F.chargeDepart(cu, "8-12")));
+    B.profile.sex = "f"; F.eval("profilDepartMemo = null");
+    const f = F.chargeDepart(dc, "8-12");
+    vrai("Femme, même poids : plus léger en haut du corps", f < h);
+    eq("…mais jamais sous la barre de 20 kg", f >= 20, true);
+    const ecartHaut = F.chargeDepart(dc, "8-12") / h;
+    B.profile.sex = "h"; F.eval("profilDepartMemo = null");
+    const sqH = F.chargeDepart(sq, "8-12");
+    B.profile.sex = "f"; F.eval("profilDepartMemo = null");
+    vrai("L'écart homme/femme est moindre en bas du corps", F.chargeDepart(sq, "8-12") / sqH >= ecartHaut);
+    eq("Pas de charge de départ au poids du corps", F.chargeDepart(F.libId("Pompes"), "8-12"), "");
+    B.profile.sex = "h"; F.eval("profilDepartMemo = null");
+  })();
   neuf();
 
   /* ---------------------------------------------------------- cardio */

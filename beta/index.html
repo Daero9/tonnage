@@ -21310,7 +21310,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 22h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 22h29 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31675,7 +31675,8 @@ function startWorkout(tplId, lieu, courte){
     const sets = [];
     for(let i=0;i<it.sets;i++){
       const ls = last && last.sets[Math.min(i,last.sets.length-1)];
-      const w = sug && (sug.mode==="up"||sug.mode==="down") ? sug.w : (ls? ls.w:"");
+      /* jamais fait : une charge de depart d'apres le profil, plutot qu'une case vide */
+      const w = sug && (sug.mode==="up"||sug.mode==="down") ? sug.w : (ls? ls.w : (last ? "" : chargeDepart(it.exId, it.reps)));
       /* un conseil qui fixe une cible en répétitions l'emporte sur la dernière performance */
       let r;
       if(sug && sug.reps) r = sug.reps;
@@ -32851,7 +32852,7 @@ function renderActive(app){
     const ls = last? last.sets[0] : null;
     const cible = cibleParDefaut(exId);
     a.entries.push({exId, target:cible,
-      sets:[{w: ls? ls.w:"", r: ls? ls.r : repsDepart(parseReps(cible.reps)), done:false}]});
+      sets:[{w: ls? ls.w : chargeDepart(exId, cible.reps), r: ls? ls.r : repsDepart(parseReps(cible.reps)), done:false}]});
     save(); closeSheet(); render();
   });
   /* une sortie cardio s'ajoute aussi en cours de seance : on choisit l'activite, et
@@ -37825,6 +37826,47 @@ function muscleProfile(){
   return out;
 }
 /* moyenne de tes propres scores : c'est elle qui sert de référence, pas un barème absolu */
+/* ---- La charge de depart d'un exercice jamais fait (Nico, 29 sept.) ----
+   Avant, la case restait vide : il fallait chercher seul un poids ni trop lourd ni
+   trop leger. On part du standard « intermediaire » de STRENGTH_REF (un 1RM relatif au
+   poids de corps), qu'on ramene a TOI :
+   - ton niveau sur les muscles de cet exercice, lu dans ton profil musculaire (100 =
+     intermediaire) ; a defaut ta moyenne ; et sans aucun historique, 0,6 — on suppose
+     un debutant : trop leger se corrige a la premiere serie, trop lourd blesse ;
+   - le sexe : a poids de corps egal, les femmes sont en moyenne moins fortes, et
+     l'ecart est plus marque en haut du corps qu'en bas. Etabli dans son principe ; les
+     coefficients 0,6 (haut) et 0,75 (bas) sont un choix de Tonnup, prudent ;
+   - la cible : le milieu de la fourchette de reps, avec 3 repetitions en reserve.
+   Puis on arrondit VERS LE BAS, a un poids qui existe. La premiere serie et la
+   question « aurais-tu pu en faire plus ? » font le reste. */
+const BARRE_OLYMPIQUE = ["Squat", "Front squat", "Développé couché", "Développé incliné barre", "Développé militaire",
+  "Soulevé de terre", "Soulevé de terre roumain", "Soulevé de terre sumo", "Rowing barre", "Hip thrust", "Good morning"];
+const GROUPES_BAS = ["Quadriceps", "Ischio-jambiers", "Fessiers", "Mollets"];
+let profilDepartMemo = null;
+function chargeDepart(exId, reps){
+  const ex = getEx(exId), nom = nomCanon(ex), ref = STRENGTH_REF[nom];
+  if(!ref || estIsometrique(ex) || (estPoidsDuCorps(ex) && !estAssiste(ex))) return "";
+  const bw = poidsCorps(), p = db.profile || {};
+  const groupes = [...new Set((MUSCLE_WORK[nom] || []).filter(([m, n])=>n === 3).map(([m])=>groupeDe(m)).filter(Boolean))];
+  const bas = groupes.length > 0 && groupes.every(g=>GROUPES_BAS.includes(g));
+  const fSexe = p.sex === "f" ? (bas ? 0.75 : 0.6) : (p.sex === "n" ? (bas ? 0.875 : 0.8) : 1);
+  const cle = (db.history || []).length;
+  if(!profilDepartMemo || profilDepartMemo.cle !== cle) profilDepartMemo = {cle, mp: muscleProfile()};
+  const mp = profilDepartMemo.mp;
+  const sc = groupes.map(g=>mp[g]).filter(v=>v != null);
+  let niv = sc.length ? sc.reduce((x, y)=>x + y, 0) / sc.length / 100 : null;
+  if(niv === null){ const moy = mpMoyenne(mp); niv = moy === null ? 0.6 : moy / 100; }
+  niv = Math.max(0.4, Math.min(1.3, niv));
+  const rng = parseReps(reps), cible = rng ? repsDepart(rng) : 10;
+  let w = ref * bw * fSexe * niv / (1 + (cible + 3) / 30);
+  /* machine d'assistance : ce qu'on hisse vraiment, retire du poids de corps = l'aide */
+  if(estAssiste(ex)) return Math.max(0, Math.ceil((bw - w) / 2.5) * 2.5);
+  if(db.unilat && db.unilat[exId] && !dejaParCote(exId)) w /= 2;
+  if(estHaltere(exId)) w = estImperial() ? Math.floor(w * PAR_LB / 5) * 5 / PAR_LB : (w < 10 ? Math.floor(w) : Math.floor(w / 2) * 2);
+  else w = Math.floor(w / 2.5) * 2.5;
+  if(BARRE_OLYMPIQUE.includes(nom)) w = Math.max(20, w);   /* la barre seule pese deja 20 kg */
+  return w > 0 ? w : "";
+}
 function mpMoyenne(prof){
   const vals = MP_MUSCLES.map(m=>prof[m]).filter(v=>v!==null);
   if(vals.length < 3) return null;                 /* trop peu de groupes pour se comparer à soi-même */
