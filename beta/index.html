@@ -5627,6 +5627,8 @@ const TRAD = {en:{
   "Lesté":"Weighted",
   "Moins de 5 répétitions : essaie la version assistée.":"Fewer than 5 reps: try the assisted version.",
   "Presque plus d'aide : tu peux passer à la version normale.":"Hardly any assistance left: you can move to the normal version.",
+  "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Fewer than 5 reps: use a band looped over the bar, or do negatives (climb up using your feet, lower slowly over 3 to 5 seconds).",
+  "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Fewer than 5 reps: do negatives. Climb up using your feet, then lower slowly, over 3 to 5 seconds.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9520,6 +9522,8 @@ es:{
   "Lesté":"Lastrado",
   "Moins de 5 répétitions : essaie la version assistée.":"Menos de 5 repeticiones: prueba la versión asistida.",
   "Presque plus d'aide : tu peux passer à la version normale.":"Casi sin ayuda: puedes pasar a la versión normal.",
+  "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Menos de 5 repeticiones: ayúdate con una goma enganchada a la barra, o haz negativas (sube ayudándote con los pies, baja despacio en 3 a 5 segundos).",
+  "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Menos de 5 repeticiones: haz negativas. Sube ayudándote con los pies y baja despacio, en 3 a 5 segundos.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13627,6 +13631,8 @@ pt:{
   "Lesté":"Com carga",
   "Moins de 5 répétitions : essaie la version assistée.":"Menos de 5 repetições: experimente a versão assistida.",
   "Presque plus d'aide : tu peux passer à la version normale.":"Quase sem ajuda: você pode passar para a versão normal.",
+  "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes).":"Menos de 5 repetições: use um elástico preso na barra, ou faça negativas (suba com a ajuda dos pés, desça devagar em 3 a 5 segundos).",
+  "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.":"Menos de 5 repetições: faça negativas. Suba com a ajuda dos pés e desça devagar, em 3 a 5 segundos.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21336,7 +21342,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 23h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 23h08 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -31724,7 +31730,7 @@ function startWorkout(tplId, lieu, courte){
   if(entries.length){
     entries[0].sets.unshift(serieEchauffement(entries[0].exId, entries[0].target && entries[0].target.reps));
   }
-  db.active = {name: tpl? tpl.name : TR("Séance libre"), templateId:tplId, start:Date.now(), entries};
+  db.active = {name: tpl? tpl.name : TR("Séance libre"), templateId:tplId, start:Date.now(), entries, lieu: lieu || undefined};
   if(tpl && tpl.course) db.active.course = {ref:tpl.course.ref, place:tpl.course.place || "fin", fait:false};
   if(tpl && tpl.cardio){
     const o = objectifCardio(tpl.cardio);
@@ -32117,6 +32123,14 @@ function trioDe(ex){
   const b = Object.keys(TRIO).find(k=>TRIO[k] === n);
   return b ? {base: b, assiste: n} : null;
 }
+/* le materiel de CETTE seance : la maison ne donne que ce qui est coche, la salle tout */
+function materielSeance(a){
+  if(a && a.lieu === "maison") return materielMaison();
+  if(a && a.lieu === "salle") return null;
+  return db.materiel;
+}
+/* la machine d'assistance est-elle la ? (a la maison, presque jamais) */
+function assistanceDispo(t){ return exoDispo(getEx(libId(t.assiste)), materielSeance(db.active)); }
 function modeTrio(en){
   if(estAssiste(getEx(en.exId))) return "assiste";
   if(en.leste === undefined) return en.sets.some(s=>(Number(s.w) || 0) > 0) ? "leste" : "normal";
@@ -32173,7 +32187,8 @@ function conseilTrio(en){
   const der = faites[faites.length - 1];
   if(!der) return null;
   const mode = modeTrio(en);
-  if(mode === "normal" && (der.r || 0) > 0 && der.r < 5) return "assiste";
+  /* sans machine d'assistance, on conseille ce qui se fait partout : les negatives */
+  if(mode === "normal" && (der.r || 0) > 0 && der.r < 5) return assistanceDispo(t) ? "assiste" : "negatives";
   const rng = parseReps(en.target && en.target.reps);
   if(mode === "assiste" && (Number(der.w) || 0) <= 2.5 && (der.r || 0) >= (rng ? rng.hi : 8)) return "normal";
   return null;
@@ -32182,10 +32197,17 @@ function selecteurTrio(en, ei){
   const t = trioDe(getEx(en.exId));
   if(!t) return "";
   const mode = modeTrio(en), sugg = conseilTrio(en);
+  const elastique = (materielSeance(db.active) || []).includes("elastique");
   const texte = sugg === "assiste" ? TR("Moins de 5 répétitions : essaie la version assistée.")
+    : sugg === "negatives" ? TR(elastique
+        ? "Moins de 5 répétitions : aide-toi d'un élastique accroché à la barre, ou fais des négatives (monte en t'aidant des pieds, descends lentement en 3 à 5 secondes)."
+        : "Moins de 5 répétitions : fais des négatives. Monte en t'aidant des pieds, puis descends lentement, en 3 à 5 secondes.")
     : (sugg === "normal" ? TR("Presque plus d'aide : tu peux passer à la version normale.") : "");
+  /* pas de machine d'assistance ici : deux cases seulement (sauf si on y est deja) */
+  const cases = [["assiste", "Assisté"], ["normal", "Normal"], ["leste", "Lesté"]]
+    .filter(([m])=>m !== "assiste" || mode === "assiste" || assistanceDispo(t));
   return `<div class="trio" data-trio="${ei}">
-      ${[["assiste", "Assisté"], ["normal", "Normal"], ["leste", "Lesté"]].map(([m, l])=>
+      ${cases.map(([m, l])=>
         `<button type="button" data-t3="${m}" class="${m === mode ? "on" : ""}${m === sugg ? " suggere" : ""}">${TR(l)}</button>`).join("")}
     </div>${texte ? `<div class="trio-conseil">${texte}</div>` : ""}`;
 }
