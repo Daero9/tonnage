@@ -2398,6 +2398,9 @@
   .set-row .rs:active{background:rgba(255,255,255,.32);}
   .set-row .ck{width:44px; height:42px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink-mute);}
   .set-row.done input{background:var(--surface); color:var(--ink-soft); border-color:transparent;}
+  /* une serie validee s'efface a demi (Nico, 29 sept.) : le regard va a celle en cours et
+     a celles qui restent. La coche verte, elle, reste franche : c'est la preuve du fait */
+  .set-row.done:not(.bn) .n, .set-row.done:not(.bn) input, .set-row.done:not(.bn) .dg{opacity:.4; transition:opacity .35s ease;}
   /* ---- le chrono d un gainage ----
      Il prend la place de l explication de l echauffement, en tete de carte : c est la
      que le regard se pose avant de commencer la serie. */
@@ -3969,6 +3972,21 @@
   .rg-l .rgi.b{background:#e9edfb; color:#3b52c8;}
   .rg-l .rgi.j{background:#fbefd6; color:#c98a12;}
   .rg-l .rgi.g{background:var(--surface2); color:var(--ink-soft);}
+  /* l'import depuis Strong ou Hevy */
+  .imp-p{font-size:13.5px; color:var(--ink-soft); line-height:1.5; margin:0 0 12px;}
+  .imp-etapes{display:grid; gap:8px; margin-bottom:14px;}
+  .imp-etapes > div{background:var(--surface2); border-radius:12px; padding:10px 12px; font-size:13px; color:var(--ink-soft); line-height:1.45;}
+  .imp-etapes b{display:block; color:var(--ink); font-size:13.5px; margin-bottom:2px;}
+  .imp-err{margin-top:12px; font-size:13.5px; font-weight:700; color:var(--bad); text-align:center;}
+  .imp-bilan{margin-top:14px; display:grid; gap:4px; padding:14px; border-radius:14px; box-shadow:var(--ombre-carte); background:var(--surface);}
+  .imp-bilan b{font-size:18px; font-weight:900;}
+  .imp-bilan span{font-size:13px; color:var(--ink-soft); line-height:1.45;}
+  .imp-bilan .imp-inc{color:var(--ink-mute); font-size:12.5px;}
+  .imp-app{font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--accent);}
+  .imp-u{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; font-size:13.5px; font-weight:700;}
+  .imp-u-c{display:flex; gap:6px;}
+  .imp-u-c button{padding:7px 14px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); font:inherit; font-size:13px; font-weight:800; color:var(--ink-soft);}
+  .imp-u-c button.on{background:rgba(245,130,32,.10); box-shadow:inset 0 0 0 1.5px var(--accent); color:var(--accent);}
   /* chaque reglage a sa couleur (Nico, d'apres sa capture) : un fond pastel, l'icone franche */
   .rgi.c-bleu{background:#E6F0FD; color:#2F7DE1;} .rgi.c-vert{background:#E3F6EA; color:#27A65A;}
   .rgi.c-violet{background:#EEEBFD; color:#6E50E6;} .rgi.c-orange{background:#FFF0E2; color:#F58220;}
@@ -5555,6 +5573,32 @@ const TRAD = {en:{
   "Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.":"Lower by bending your elbows until they form a right angle.",
   "Garde les épaules basses, loin des oreilles.":"Keep your shoulders down, away from your ears.",
   "Pousse pour remonter jusqu'à tendre les bras.":"Push back up until your arms are straight.",
+  "Importer depuis Strong ou Hevy":"Import from Strong or Hevy",
+  "Récupère ton historique d'une autre app.":"Bring over your history from another app.",
+  "Importer depuis une autre app":"Import from another app",
+  "Récupère ton historique de Strong ou de Hevy : tes séances, tes séries et tes charges. Rien n'est effacé, les séances s'ajoutent.":"Bring over your Strong or Hevy history: your workouts, sets and weights. Nothing is erased; the workouts are added.",
+  "Réglages → Exporter les données, au format CSV.":"Settings → Export data, as a CSV file.",
+  "Réglages → Exporter et importer des données → Exporter les séances.":"Settings → Export & import data → Export workouts.",
+  "Choisir le fichier CSV":"Choose the CSV file",
+  "Ce fichier est vide.":"This file is empty.",
+  "Ce fichier ne vient ni de Strong ni de Hevy.":"This file doesn't come from Strong or Hevy.",
+  "Séance importée":"Imported workout",
+  "{n} séances":"{n} workouts",
+  "du {a} au {b}":"from {a} to {b}",
+  "{n} séries":"{n} sets",
+  "{n} exercices reconnus":"{n} exercises recognised",
+  "Rien de nouveau à importer.":"Nothing new to import.",
+  "Exercices inconnus, ajoutés à tes exercices perso :":"Unknown exercises, added to your custom exercises:",
+  "{n} séances déjà présentes, ignorées.":"{n} workouts already here, skipped.",
+  "Unité des charges dans Strong :":"Weight unit in Strong:",
+  "Importer {n} séances":"Import {n} workouts",
+  "{n} séances importées ✓":"{n} workouts imported ✓",
+  "{n} séance":"{n} workout",
+  "{n} série":"{n} set",
+  "{n} exercice reconnu":"{n} exercise recognised",
+  "{n} séance déjà présente, ignorée.":"{n} workout already here, skipped.",
+  "Importer {n} séance":"Import {n} workout",
+  "{n} séance importée ✓":"{n} workout imported ✓",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9414,6 +9458,32 @@ es:{
   "Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.":"Baja flexionando los codos hasta formar un ángulo recto.",
   "Garde les épaules basses, loin des oreilles.":"Mantén los hombros bajos, lejos de las orejas.",
   "Pousse pour remonter jusqu'à tendre les bras.":"Empuja para subir hasta estirar los brazos.",
+  "Importer depuis Strong ou Hevy":"Importar desde Strong o Hevy",
+  "Récupère ton historique d'une autre app.":"Recupera tu historial de otra app.",
+  "Importer depuis une autre app":"Importar desde otra app",
+  "Récupère ton historique de Strong ou de Hevy : tes séances, tes séries et tes charges. Rien n'est effacé, les séances s'ajoutent.":"Recupera tu historial de Strong o Hevy: tus sesiones, series y cargas. No se borra nada, las sesiones se añaden.",
+  "Réglages → Exporter les données, au format CSV.":"Ajustes → Exportar datos, en formato CSV.",
+  "Réglages → Exporter et importer des données → Exporter les séances.":"Ajustes → Exportar e importar datos → Exportar entrenamientos.",
+  "Choisir le fichier CSV":"Elegir el archivo CSV",
+  "Ce fichier est vide.":"Este archivo está vacío.",
+  "Ce fichier ne vient ni de Strong ni de Hevy.":"Este archivo no viene de Strong ni de Hevy.",
+  "Séance importée":"Sesión importada",
+  "{n} séances":"{n} sesiones",
+  "du {a} au {b}":"del {a} al {b}",
+  "{n} séries":"{n} series",
+  "{n} exercices reconnus":"{n} ejercicios reconocidos",
+  "Rien de nouveau à importer.":"Nada nuevo que importar.",
+  "Exercices inconnus, ajoutés à tes exercices perso :":"Ejercicios desconocidos, añadidos a tus ejercicios personalizados:",
+  "{n} séances déjà présentes, ignorées.":"{n} sesiones ya presentes, ignoradas.",
+  "Unité des charges dans Strong :":"Unidad de carga en Strong:",
+  "Importer {n} séances":"Importar {n} sesiones",
+  "{n} séances importées ✓":"{n} sesiones importadas ✓",
+  "{n} séance":"{n} sesión",
+  "{n} série":"{n} serie",
+  "{n} exercice reconnu":"{n} ejercicio reconocido",
+  "{n} séance déjà présente, ignorée.":"{n} sesión ya presente, ignorada.",
+  "Importer {n} séance":"Importar {n} sesión",
+  "{n} séance importée ✓":"{n} sesión importada ✓",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13487,6 +13557,32 @@ pt:{
   "Descends en pliant les coudes jusqu'à ce qu'ils forment un angle droit.":"Desça flexionando os cotovelos até formarem um ângulo reto.",
   "Garde les épaules basses, loin des oreilles.":"Mantenha os ombros baixos, longe das orelhas.",
   "Pousse pour remonter jusqu'à tendre les bras.":"Empurre para subir até estender os braços.",
+  "Importer depuis Strong ou Hevy":"Importar do Strong ou Hevy",
+  "Récupère ton historique d'une autre app.":"Recupere seu histórico de outro app.",
+  "Importer depuis une autre app":"Importar de outro app",
+  "Récupère ton historique de Strong ou de Hevy : tes séances, tes séries et tes charges. Rien n'est effacé, les séances s'ajoutent.":"Recupere seu histórico do Strong ou do Hevy: seus treinos, séries e cargas. Nada é apagado, os treinos são adicionados.",
+  "Réglages → Exporter les données, au format CSV.":"Ajustes → Exportar dados, em formato CSV.",
+  "Réglages → Exporter et importer des données → Exporter les séances.":"Ajustes → Exportar e importar dados → Exportar treinos.",
+  "Choisir le fichier CSV":"Escolher o arquivo CSV",
+  "Ce fichier est vide.":"Este arquivo está vazio.",
+  "Ce fichier ne vient ni de Strong ni de Hevy.":"Este arquivo não vem do Strong nem do Hevy.",
+  "Séance importée":"Treino importado",
+  "{n} séances":"{n} treinos",
+  "du {a} au {b}":"de {a} a {b}",
+  "{n} séries":"{n} séries",
+  "{n} exercices reconnus":"{n} exercícios reconhecidos",
+  "Rien de nouveau à importer.":"Nada de novo para importar.",
+  "Exercices inconnus, ajoutés à tes exercices perso :":"Exercícios desconhecidos, adicionados aos seus exercícios personalizados:",
+  "{n} séances déjà présentes, ignorées.":"{n} treinos já presentes, ignorados.",
+  "Unité des charges dans Strong :":"Unidade de carga no Strong:",
+  "Importer {n} séances":"Importar {n} treinos",
+  "{n} séances importées ✓":"{n} treinos importados ✓",
+  "{n} séance":"{n} treino",
+  "{n} série":"{n} série",
+  "{n} exercice reconnu":"{n} exercício reconhecido",
+  "{n} séance déjà présente, ignorée.":"{n} treino já presente, ignorado.",
+  "Importer {n} séance":"Importar {n} treino",
+  "{n} séance importée ✓":"{n} treino importado ✓",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21194,7 +21290,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 21h28 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 22h00 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -36340,6 +36436,7 @@ function openSauvegarde(){
       <input type="file" id="st-restore-in" accept=".json,application/json,text/plain" style="display:none;">
       <button class="rg-l sv-l" id="st-export"><span class="rgi g">${IC_DOC}</span><span class="grow">${TR("Exporter en texte")}<em>${TR("Exporte tes données au format .txt.")}</em></span><span class="fl">${IC_CHEVRON}</span></button>
       <button class="rg-l sv-l" id="st-import"><span class="rgi g">${IC_UPLOAD}</span><span class="grow">${TR("Importer un texte")}<em>${TR("Importe des données depuis un fichier .txt.")}</em></span><span class="fl">${IC_CHEVRON}</span></button>
+      <button class="rg-l sv-l" id="st-autre-app"><span class="rgi b">${IC_ECHANGE}</span><span class="grow">${TR("Importer depuis Strong ou Hevy")}<em>${TR("Récupère ton historique d'une autre app.")}</em></span><span class="fl">${IC_CHEVRON}</span></button>
     </div>
     <div id="st-auto" class="sv-note"></div>
 
@@ -36498,6 +36595,7 @@ function openSauvegarde(){
     ta.value = JSON.stringify(db);
     document.getElementById("ex-copy").onclick=()=>{ ta.select(); document.execCommand("copy"); document.getElementById("ex-copy").textContent=TR("Copié ✓"); };
   };
+  document.getElementById("st-autre-app").onclick = ()=>ouvrirImportAutreApp();
   document.getElementById("st-import").onclick=()=>{
     openSheet(`<h3>Importer</h3><p style="font-size:13.5px; color:var(--ink-soft); margin:0 0 10px;">${TR("Colle ici un export précédent. Attention : cela remplace toutes les données actuelles.")}</p>
       <textarea id="im-in" rows="8" placeholder="Colle ton export ici…" style="font-size:12px; font-family:ui-monospace,monospace;"></textarea>
@@ -36521,6 +36619,275 @@ function openSauvegarde(){
        (hors ligne : elle reste, et « Supprimer mes données d'amis » pourra reessayer) */
     if(amis){ amis.actif = false; db.amis = amis; save(); supprimerAmis().catch(()=>{}); }
   });
+}
+
+/* ================= IMPORT DEPUIS STRONG OU HEVY (Nico, 29 sept.) =================
+   Qui change d'app ne veut pas perdre des annees de seances. Strong et Hevy exportent
+   tous deux un CSV : une ligne par serie, avec la seance, l'exercice, la charge et les
+   repetitions. On regroupe les lignes en seances, on reconnait les exercices par leur
+   nom anglais (celui des deux apps), et ce qu'on ne reconnait pas devient un exercice
+   perso, pour que rien ne se perde. Rien n'est efface : les seances s'ajoutent, et
+   celles deja presentes (meme heure de debut) sont ignorees — importer deux fois le
+   meme fichier ne double rien. */
+function lireCsv(texte){
+  texte = String(texte || "").replace(/^﻿/, "");
+  const premiere = texte.split(/\r?\n/, 1)[0] || "";
+  const sep = premiere.split(";").length > premiere.split(",").length ? ";" : ",";
+  const lignes = [];
+  let champ = "", ligne = [], guill = false;
+  const finLigne = ()=>{ ligne.push(champ); champ = ""; if(ligne.some(x=>x !== "")) lignes.push(ligne); ligne = []; };
+  for(let i = 0; i < texte.length; i++){
+    const c = texte[i];
+    if(guill){
+      if(c === '"'){ if(texte[i + 1] === '"'){ champ += '"'; i++; } else guill = false; }
+      else champ += c;
+    }
+    else if(c === '"') guill = true;
+    else if(c === sep){ ligne.push(champ); champ = ""; }
+    else if(c === "\n" || c === "\r"){ if(c === "\r" && texte[i + 1] === "\n") i++; finLigne(); }
+    else champ += c;
+  }
+  finLigne();
+  if(!lignes.length) return [];
+  const tete = lignes[0].map(h=>h.trim().toLowerCase());
+  return lignes.slice(1).map(l=>{ const o = {}; tete.forEach((h, k)=>{ o[h] = (l[k] || "").trim(); }); return o; });
+}
+const MOIS_EN = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
+/* « 2024-10-08 18:02:11 » (Strong) ou « 8 Oct 2024, 18:02 » (Hevy), heure locale */
+function dateImport(s){
+  if(!s) return null;
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(s);
+  if(m) return new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)).getTime();
+  m = /^(\d{1,2}) ([A-Za-z]{3})[a-z]* (\d{4}),? (\d{1,2}):(\d{2})/.exec(s);
+  if(m && MOIS_EN[m[2].toLowerCase()] != null) return new Date(+m[3], MOIS_EN[m[2].toLowerCase()], +m[1], +m[4], +m[5]).getTime();
+  const t = Date.parse(s);
+  return isNaN(t) ? null : t;
+}
+/* la duree de Strong : « 1h 5m », « 45m », « 50s » */
+function dureeImport(s){
+  const m = /(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?\s*(?:(\d+)\s*s)?/.exec(String(s || "").toLowerCase());
+  return m ? ((+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0)) * 1000 : 0;
+}
+const nbImport = v=>{ const n = parseFloat(String(v || "").replace(",", ".")); return isNaN(n) ? 0 : n; };
+/* un nom ramene a sa forme la plus simple : minuscules, sans accents ni ponctuation,
+   sans le « s » du pluriel (« Lateral Raises » = « Lateral Raise ») */
+function cleImport(s){
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ").trim().split(" ")
+    .map(w=>w.length > 3 && /s$/.test(w) && !/ss$/.test(w) ? w.slice(0, -1) : w).join(" ");
+}
+/* Les noms des deux apps (ils se ressemblent : « Bench Press (Barbell) ») -> le notre.
+   Le nom entre parentheses dit le materiel : c'est lui qui separe un developpe a la
+   barre d'un developpe aux halteres. */
+const ALIAS_IMPORT = {
+  "Bench Press (Barbell)":"Développé couché", "Bench Press":"Développé couché",
+  "Bench Press (Dumbbell)":"Développé couché haltères", "Dumbbell Bench Press":"Développé couché haltères",
+  "Incline Bench Press (Barbell)":"Développé incliné barre", "Incline Bench Press":"Développé incliné barre",
+  "Incline Bench Press (Dumbbell)":"Développé incliné haltères",
+  "Bench Press (Smith Machine)":"Développé couché à la Smith", "Smith Machine Bench Press":"Développé couché à la Smith",
+  "Chest Press (Machine)":"Développé machine", "Incline Chest Press (Machine)":"Développé incliné machine",
+  "Chest Fly (Dumbbell)":"Écartés haltères", "Chest Fly (Machine)":"Butterfly (pec deck)",
+  "Butterfly (Pec Deck)":"Butterfly (pec deck)", "Pec Deck (Machine)":"Butterfly (pec deck)",
+  "Cable Crossover":"Écartés poulie", "Chest Fly (Cable)":"Écartés poulie", "Cable Fly Crossovers":"Écartés poulie",
+  "Low Cable Fly Crossovers":"Écartés poulie basse",
+  "Chest Dip":"Dips", "Triceps Dip":"Dips", "Dip":"Dips",
+  "Chest Dip (Assisted)":"Dips assistés", "Triceps Dip (Assisted)":"Dips assistés", "Bench Dip":"Dips sur banc",
+  "Push Up":"Pompes", "Diamond Push Up":"Pompes diamant", "Incline Push Up":"Pompes inclinées",
+  "Decline Push Up":"Pompes déclinées", "Pike Pushup":"Pompes piquées", "Pike Push Up":"Pompes piquées",
+  "Pull Up":"Tractions", "Wide Pull Up":"Tractions", "Chin Up":"Tractions supination",
+  "Pull Up (Assisted)":"Tractions assistées", "Chin Up (Assisted)":"Tractions assistées", "Assisted Pull Up":"Tractions assistées",
+  "Lat Pulldown (Cable)":"Tirage vertical", "Lat Pulldown (Machine)":"Tirage vertical", "Lat Pulldown":"Tirage vertical",
+  "Lat Pulldown - Close Grip (Cable)":"Tirage vertical prise neutre", "Close Grip Lat Pulldown":"Tirage vertical prise neutre",
+  "Seated Row (Cable)":"Tirage horizontal", "Seated Cable Row - V Grip (Cable)":"Tirage horizontal",
+  "Seated Cable Row - Bar Grip":"Tirage horizontal", "Seated Row (Machine)":"Rowing machine", "Iso-Lateral Row (Machine)":"Rowing machine",
+  "Bent Over Row (Barbell)":"Rowing barre", "Barbell Row":"Rowing barre", "Pendlay Row (Barbell)":"Rowing barre",
+  "Bent Over One Arm Row (Dumbbell)":"Rowing haltère", "Dumbbell Row":"Rowing haltère", "Bent Over Row (Dumbbell)":"Rowing haltère",
+  "T Bar Row":"Rowing T-bar", "Inverted Row":"Tractions australiennes",
+  "Deadlift (Barbell)":"Soulevé de terre", "Deadlift":"Soulevé de terre",
+  "Romanian Deadlift (Barbell)":"Soulevé de terre roumain", "Romanian Deadlift (Dumbbell)":"Soulevé de terre roumain",
+  "Sumo Deadlift (Barbell)":"Soulevé de terre sumo", "Good Morning (Barbell)":"Good morning",
+  "Overhead Press (Barbell)":"Développé militaire", "Overhead Press":"Développé militaire", "Military Press":"Développé militaire",
+  "Standing Military Press (Barbell)":"Développé militaire",
+  "Shoulder Press (Dumbbell)":"Développé militaire haltères", "Overhead Press (Dumbbell)":"Développé militaire haltères",
+  "Seated Overhead Press (Dumbbell)":"Développé militaire haltères",
+  "Shoulder Press (Machine)":"Développé machine épaules", "Seated Overhead Press (Machine)":"Développé machine épaules",
+  "Overhead Press (Machine)":"Développé machine épaules",
+  "Arnold Press (Dumbbell)":"Arnold press",
+  "Lateral Raise (Dumbbell)":"Élévations latérales", "Lateral Raise":"Élévations latérales",
+  "Lateral Raise (Cable)":"Élévations latérales poulie", "Lateral Raise (Machine)":"Élévations latérales machine",
+  "Front Raise (Dumbbell)":"Élévations frontales",
+  "Rear Delt Reverse Fly (Dumbbell)":"Oiseau", "Reverse Fly (Dumbbell)":"Oiseau", "Rear Delt Fly (Dumbbell)":"Oiseau",
+  "Reverse Fly (Machine)":"Butterfly arrière", "Rear Delt Reverse Fly (Machine)":"Butterfly arrière", "Rear Delt Fly (Machine)":"Butterfly arrière",
+  "Face Pull (Cable)":"Face pull", "Face Pull":"Face pull", "Upright Row (Barbell)":"Rowing menton",
+  "Shrug (Dumbbell)":"Haussements d'épaules", "Shrug (Barbell)":"Haussements d'épaules",
+  "Bicep Curl (Barbell)":"Curl barre", "Barbell Curl":"Curl barre", "EZ Bar Biceps Curl":"Curl barre",
+  "Bicep Curl (Dumbbell)":"Curl haltères", "Dumbbell Curl":"Curl haltères",
+  "Hammer Curl (Dumbbell)":"Curl marteau", "Hammer Curl":"Curl marteau",
+  "Preacher Curl (Barbell)":"Curl pupitre", "Preacher Curl (Machine)":"Curl biceps machine", "Bicep Curl (Machine)":"Curl biceps machine",
+  "Bicep Curl (Cable)":"Curl poulie basse", "Cable Curl":"Curl poulie basse",
+  "Incline Curl (Dumbbell)":"Curl incliné haltères", "Concentration Curl (Dumbbell)":"Curl concentration", "Concentration Curl":"Curl concentration",
+  "Triceps Pushdown (Cable - Straight Bar)":"Extension poulie (barre)", "Triceps Pushdown":"Extension poulie (barre)",
+  "Triceps Rope Pushdown":"Extension poulie (corde)", "Triceps Pushdown (Rope)":"Extension poulie (corde)",
+  "Skullcrusher (Barbell)":"Barre au front", "Skull Crusher":"Barre au front",
+  "Triceps Extension (Dumbbell)":"Extension nuque haltère", "Overhead Triceps Extension (Dumbbell)":"Extension nuque haltère",
+  "Triceps Extension (Machine)":"Extension triceps machine", "Triceps Kickback (Cable)":"Kickback poulie",
+  "Squat (Barbell)":"Squat", "Back Squat (Barbell)":"Squat", "Squat":"Squat",
+  "Front Squat (Barbell)":"Front squat", "Goblet Squat (Kettlebell)":"Goblet squat", "Goblet Squat (Dumbbell)":"Goblet squat",
+  "Squat (Smith Machine)":"Squat à la Smith", "Smith Machine Squat":"Squat à la Smith",
+  "Hack Squat (Machine)":"Hack squat", "Squat (Bodyweight)":"Squat au poids du corps", "Air Squat":"Squat au poids du corps",
+  "Leg Press":"Presse à cuisses", "Leg Press (Machine)":"Presse à cuisses",
+  "Leg Extension (Machine)":"Leg extension", "Lying Leg Curl (Machine)":"Leg curl", "Leg Curl":"Leg curl",
+  "Seated Leg Curl (Machine)":"Leg curl assis",
+  "Lunge (Dumbbell)":"Fentes", "Walking Lunge (Dumbbell)":"Fentes", "Lunge":"Fentes avant",
+  "Bulgarian Split Squat":"Fentes bulgares", "Bulgarian Split Squat (Dumbbell)":"Fentes bulgares",
+  "Step Up":"Montées sur step", "Step Up (Dumbbell)":"Montées sur banc",
+  "Hip Thrust (Barbell)":"Hip thrust", "Glute Bridge":"Pont fessier", "Single Leg Glute Bridge":"Pont fessier une jambe",
+  "Glute Kickback (Machine)":"Machine fessiers", "Glute Kickback (Cable)":"Kickback fessier poulie", "Cable Glute Kickback":"Kickback fessier poulie",
+  "Hip Abductor (Machine)":"Abducteurs machine", "Hip Adductor (Machine)":"Adducteurs machine",
+  "Standing Calf Raise (Machine)":"Mollets debout", "Standing Calf Raise":"Mollets debout", "Calf Raise":"Mollets debout",
+  "Seated Calf Raise (Plate Loaded)":"Mollets assis", "Seated Calf Raise (Machine)":"Mollets assis", "Seated Calf Raise":"Mollets assis",
+  "Calf Press on Leg Press":"Mollets à la presse", "Calf Press (Machine)":"Mollets à la presse",
+  "Crunch":"Crunch", "Crunch (Machine)":"Crunch machine", "Cable Crunch":"Crunch câble", "Crunch (Cable)":"Crunch câble",
+  "Plank":"Gainage", "Side Plank":"Planche latérale", "Hanging Leg Raise":"Relevés de jambes", "Leg Raise":"Relevés de jambes",
+  "Knee Raise (Captain's Chair)":"Relevés de genoux à la chaise romaine", "Captain's Chair Knee Raise":"Relevés de genoux à la chaise romaine",
+  "Ab Wheel":"Roulette abdominale", "Russian Twist":"Russian twist", "Mountain Climber":"Mountain climber",
+  "Back Extension":"Lombaires au banc à 45°", "Back Extension (Hyperextension)":"Lombaires au banc à 45°", "Hyperextension":"Lombaires au banc à 45°",
+  "Superman":"Superman", "Pullover (Dumbbell)":"Pull-over haltère", "Straight Arm Pulldown (Cable)":"Pull-over poulie",
+  "Kettlebell Swing":"Swing kettlebell", "Wall Sit":"Chaise contre le mur"
+};
+let tableImport = null;
+function exoImporte(nom){
+  if(!tableImport){
+    tableImport = {};
+    /* nos noms, en francais et en anglais (un export fait en francais marche aussi),
+       puis la table des deux apps, qui l'emporte */
+    allEx().forEach(e=>{
+      tableImport[cleImport(e.name)] = e.id;
+      const en = TRAD.en && TRAD.en[e.name];
+      if(en && !tableImport[cleImport(en)]) tableImport[cleImport(en)] = e.id;
+    });
+    Object.keys(ALIAS_IMPORT).forEach(k=>{
+      const e = LIB.find(x=>x.name === ALIAS_IMPORT[k]);
+      if(e) tableImport[cleImport(k)] = e.id;
+    });
+  }
+  return tableImport[cleImport(nom)] || tableImport[cleImport(String(nom).replace(/\(.*?\)/g, ""))] || null;
+}
+const EQUIP_IMPORT = {barbell:"Barre", dumbbell:"Haltères", cable:"Poulie", machine:"Machine", bodyweight:"Poids du corps"};
+/* uniteStrong : Strong ecrit ses charges dans l'unite de l'app, sans toujours la dire */
+function analyserImport(texte, uniteStrong){
+  const lignes = lireCsv(texte);
+  if(!lignes.length) return {erreur: TR("Ce fichier est vide.")};
+  const h = lignes[0];
+  const app = ("exercise_title" in h) ? "Hevy" : (("exercise name" in h) ? "Strong" : null);
+  if(!app) return {erreur: TR("Ce fichier ne vient ni de Strong ni de Hevy.")};
+  tableImport = null;
+  const dejaLa = new Set(db.history.map(x=>Math.round((x.start || new Date(x.date).getTime()) / 60000)));
+  const seances = new Map(), inconnus = new Set(), reconnus = new Set();
+  let ignorees = 0, doublons = new Set(), series = 0;
+  const uniteDite = app === "Strong" && ("weight unit" in h);
+  lignes.forEach(l=>{
+    const nomEx = app === "Hevy" ? l["exercise_title"] : l["exercise name"];
+    const debut = dateImport(app === "Hevy" ? l["start_time"] : l["date"]);
+    if(!nomEx || !debut) return;
+    if(dejaLa.has(Math.round(debut / 60000))){ doublons.add(debut); return; }
+    const titre = (app === "Hevy" ? l["title"] : l["workout name"]) || TR("Séance importée");
+    const cle = debut + "|" + titre;
+    if(!seances.has(cle)){
+      const fin = app === "Hevy" ? dateImport(l["end_time"]) : debut + dureeImport(l["duration"]);
+      seances.set(cle, {debut, fin: fin && fin > debut ? fin : debut + 3600e3, titre, entries: []});
+    }
+    const s = seances.get(cle);
+    /* la charge en kilos, quelle que soit l'unite d'origine */
+    let w;
+    if(app === "Hevy") w = l["weight_kg"] !== undefined ? nbImport(l["weight_kg"]) : nbImport(l["weight_lbs"]) / 2.20462;
+    else {
+      const u = uniteDite ? String(l["weight unit"]).toLowerCase() : uniteStrong;
+      w = nbImport(l["weight"]) / (/^lb/.test(u) ? 2.20462 : 1);
+    }
+    w = Math.round(w * 100) / 100;
+    const reps = Math.round(nbImport(l["reps"]));
+    const sec = Math.round(nbImport(app === "Hevy" ? l["duration_seconds"] : l["seconds"]));
+    const exId = exoImporte(nomEx);
+    const iso = exId && estIsometrique(getEx(exId));
+    const r = iso && sec > 0 ? sec : reps;
+    /* une ligne sans repetitions (course, velo, rameur) n'est pas une serie de muscu */
+    if(!(r > 0)){ ignorees++; return; }
+    if(exId) reconnus.add(exId); else inconnus.add(nomEx);
+    const type = String(app === "Hevy" ? l["set_type"] : l["set order"]).toLowerCase();
+    let e = s.entries.find(x=>x.nom === nomEx);
+    if(!e){ e = {nom: nomEx, exId, sets: []}; s.entries.push(e); }
+    const prec = e.sets[e.sets.length - 1];
+    if((type === "dropset" || type === "d") && prec){ (prec.drops = prec.drops || []).push({w, r}); }
+    else e.sets.push({w, r, done: true, warm: type === "warmup" || type === "w", rir: null});
+    series++;
+  });
+  const liste = [...seances.values()].filter(s=>s.entries.length).sort((a, b)=>a.debut - b.debut);
+  return {app, seances: liste, series, reconnus: reconnus.size, inconnus: [...inconnus],
+    doublons: doublons.size, ignorees, demanderUnite: app === "Strong" && !uniteDite};
+}
+function appliquerImport(r){
+  const ids = {};
+  r.inconnus.forEach(nom=>{
+    const m = /\(([^)]*)\)/.exec(nom);
+    const equip = (m && EQUIP_IMPORT[cleImport(m[1]).split(" ")[0]]) || "Autre";
+    const ex = {id: uid(), name: nom, muscle: "Autres", equip, icon: EQUIP_ICON[equip] || "dumbbell", custom: true, importe: r.app};
+    db.custom.push(ex); ids[nom] = ex.id;
+  });
+  r.seances.forEach(s=>{
+    db.history.push({id: uid(), date: new Date(s.fin).toISOString(), name: s.titre, start: s.debut, end: s.fin, importe: r.app,
+      entries: s.entries.map(e=>({exId: e.exId || ids[e.nom], sets: e.sets}))});
+  });
+  db.history.sort((a, b)=>new Date(a.date) - new Date(b.date));
+  tableImport = null;
+  save();
+}
+function ouvrirImportAutreApp(){
+  openSheet(`<h3 class="rg-h">${TR("Importer depuis une autre app")}</h3>
+    <p class="imp-p">${TR("Récupère ton historique de Strong ou de Hevy : tes séances, tes séries et tes charges. Rien n'est effacé, les séances s'ajoutent.")}</p>
+    <div class="imp-etapes">
+      <div><b>Strong</b>${TR("Réglages → Exporter les données, au format CSV.")}</div>
+      <div><b>Hevy</b>${TR("Réglages → Exporter et importer des données → Exporter les séances.")}</div>
+    </div>
+    <label class="btn btn-accent" for="imp-f" style="width:100%; display:flex; justify-content:center;">${TR("Choisir le fichier CSV")}</label>
+    <input type="file" id="imp-f" accept=".csv,text/csv,text/plain,text/comma-separated-values" style="display:none;">
+    <div id="imp-res"></div>`);
+  let texte = "", unite = uPoids();
+  const zone = document.getElementById("imp-res");
+  const jour = t=>new Date(t).toLocaleDateString(loc(), {day: "numeric", month: "short", year: "numeric"});
+  /* « 1 séance », « 2 séances » : la phrase au singulier est sa propre cle de traduction */
+  const nb = (n, un, plusieurs)=>TR(n > 1 ? plusieurs : un).replace("{n}", n);
+  const montrer = ()=>{
+    const r = analyserImport(texte, unite);
+    if(r.erreur){ zone.innerHTML = `<div class="imp-err">${esc(r.erreur)}</div>`; return; }
+    const n = r.seances.length;
+    zone.innerHTML = `<div class="imp-bilan">
+        <div class="imp-app">${esc(r.app)}</div>
+        ${n ? `<b>${nb(n, "{n} séance", "{n} séances")}</b>
+          <span>${TR("du {a} au {b}").replace("{a}", jour(r.seances[0].debut)).replace("{b}", jour(r.seances[n - 1].debut))}
+            · ${nb(r.series, "{n} série", "{n} séries")}</span>
+          <span>${nb(r.reconnus, "{n} exercice reconnu", "{n} exercices reconnus")}</span>` : `<b>${TR("Rien de nouveau à importer.")}</b>`}
+        ${r.inconnus.length ? `<span class="imp-inc">${TR("Exercices inconnus, ajoutés à tes exercices perso :")} ${r.inconnus.map(esc).join(", ")}</span>` : ""}
+        ${r.doublons ? `<span>${nb(r.doublons, "{n} séance déjà présente, ignorée.", "{n} séances déjà présentes, ignorées.")}</span>` : ""}
+      </div>
+      ${r.demanderUnite ? `<div class="imp-u"><span>${TR("Unité des charges dans Strong :")}</span>
+        <div class="imp-u-c">${["kg", "lb"].map(u=>`<button data-u="${u}" class="${u === unite ? "on" : ""}">${u}</button>`).join("")}</div></div>` : ""}
+      ${n ? `<button class="btn btn-accent" id="imp-go" style="width:100%; margin-top:12px;">${nb(n, "Importer {n} séance", "Importer {n} séances")}</button>` : ""}`;
+    zone.querySelectorAll("[data-u]").forEach(b=>b.onclick = ()=>{ unite = b.dataset.u; montrer(); });
+    const go = document.getElementById("imp-go");
+    if(go) go.onclick = ()=>{
+      appliquerImport(r);
+      closeSheet(); render();
+      toast(nb(n, "{n} séance importée ✓", "{n} séances importées ✓"));
+    };
+  };
+  document.getElementById("imp-f").onchange = ev=>{
+    const f = ev.target.files && ev.target.files[0];
+    if(!f) return;
+    const lec = new FileReader();
+    lec.onload = ()=>{ texte = String(lec.result || ""); montrer(); };
+    lec.readAsText(f);
+  };
 }
 
 /* ================= HISTORIQUE ================= */
