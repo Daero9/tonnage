@@ -5174,6 +5174,8 @@ const TRAD = {en:{
   "bpm max":"bpm max",
   "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"An activity is suggested from 10 min, 30 min for walking: a walk to work won't light your flame.",
   "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Under 5 minutes: this workout doesn't light your flame.",
+  "Connecte ta montre":"Connect your watch",
+  "Tes activités et ton cardio arrivent tout seuls dans Tonnup.":"Your activities and heart rate come into Tonnup on their own.",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -8907,6 +8909,8 @@ es:{
   "bpm max":"ppm máx.",
   "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"Una actividad se propone a partir de 10 min, 30 min para caminar: un trayecto a pie no enciende tu llama.",
   "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: esta sesión no enciende tu llama.",
+  "Connecte ta montre":"Conecta tu reloj",
+  "Tes activités et ton cardio arrivent tout seuls dans Tonnup.":"Tus actividades y tu ritmo cardíaco llegan solos a Tonnup.",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -12854,6 +12858,8 @@ pt:{
   "bpm max":"bpm máx.",
   "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"Uma atividade é sugerida a partir de 10 min, 30 min para caminhada: um trajeto a pé não acende a sua chama.",
   "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: este treino não acende a sua chama.",
+  "Connecte ta montre":"Conecte seu relógio",
+  "Tes activités et ton cardio arrivent tout seuls dans Tonnup.":"Suas atividades e seu ritmo cardíaco chegam sozinhos ao Tonnup.",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -20449,7 +20455,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 03h32 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 03h39 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22691,6 +22697,25 @@ function openAmisDebut(modif){
 }
 /* « Nouveau » : la fonction Amis, une fois, sur l'accueil (Nico) — jusqu'a ce qu'on la
    touche ou qu'on la ferme ; jamais pour qui l'a deja activee, ni avant la 1re seance */
+/* « Nouveau » : la montre connectee, a la place de la carte des amis (Nico, 29 sept.) —
+   seulement dans l'app Android, sur un telephone ou Health Connect est la (Android 14+),
+   tant qu'elle n'est ni activee, ni touchee, ni fermee. */
+let santeEtat = null;                       /* "ok", "ancien", "absent" — demande une fois */
+function carteMontreNouveau(){
+  if(demoEnCours || db.montreDecouverte || (db.sante && db.sante.actif) || !(db.history || []).length) return "";
+  const pl = pluginSante();
+  if(!pl) return "";
+  if(santeEtat === null){
+    santeEtat = "attente";
+    Promise.resolve(pl.dispo()).then(r=>{ santeEtat = (r && r.etat) || "absent"; if(santeEtat === "ok") render(); }).catch(()=>{ santeEtat = "absent"; });
+    return "";
+  }
+  if(santeEtat !== "ok") return "";
+  return `<div class="am-nouveau" id="mt-nouveau" role="button">
+    <span class="ic">${IC_MONTRE}</span>
+    <span class="grow"><span class="bad">${TR("Nouveau")}</span><b>${TR("Connecte ta montre")}</b><small>${TR("Tes activités et ton cardio arrivent tout seuls dans Tonnup.")}</small></span>
+    <button class="am-nouveau-x" id="mt-nouveau-x" aria-label="${TR("Fermer")}">✕</button></div>`;
+}
 function carteAmisNouveau(){
   if(demoEnCours || db.amisDecouvert || (db.amis && db.amis.actif) || !(db.history || []).length) return "";
   return `<div class="am-nouveau" id="am-nouveau" role="button">
@@ -28215,7 +28240,7 @@ function renderSeance(app){
           <span class="rc-chev${verrouille("recup") ? " rc-cad" : ""}">${verrouille("recup") ? IC_CADENAS_MINI : CHEV_MP}</span>`;
       })()}
     </button>`:""}
-    ${carteAmisNouveau()}
+    ${carteMontreNouveau()}
     <div class="car-wrap"><div class="car" id="car"></div></div>
     <div class="fab-row"><button class="fab" id="fab" aria-label="Ajouter">＋</button></div>
     <div class="hist-tete"><span class="pt-ic hist-ic">${IC_CALENDRIER}</span><span class="hist-t">${TR("Historique")}</span>
@@ -28230,12 +28255,12 @@ function renderSeance(app){
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
   if(rc) rc.onclick = openRecup;
-  const an = document.getElementById("am-nouveau");
-  if(an){
-    an.onclick = e=>{
-      db.amisDecouvert = true; save();
-      if(e.target.closest("#am-nouveau-x")){ render(); return; }
-      openAmis();
+  const mn = document.getElementById("mt-nouveau");
+  if(mn){
+    mn.onclick = e=>{
+      db.montreDecouverte = true; save();
+      if(e.target.closest("#mt-nouveau-x")){ render(); return; }
+      openMontre();
     };
   }
   const flR = document.getElementById("fl-rallumer");
