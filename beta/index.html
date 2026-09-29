@@ -2267,6 +2267,13 @@
   .set-row .ck:active, .set-row .dg:active{transform:scale(.86); transition-duration:.06s;}
 
   /* ---- exercice terminé : la carte se replie ---- */
+  /* la carte qui se replie, puis la ligne qui la remplace */
+  .ex-card.se-plie{overflow:hidden; transition:height .34s cubic-bezier(.4,0,.2,1);}
+  .ex-card.se-plie > *{opacity:0; transition:opacity .18s ease;}
+  .ex-done.arrive{animation:plieArrive .3s ease-out;}
+  .ex-done.arrive > *{animation:plieContenu .35s ease-out .05s backwards;}
+  @keyframes plieArrive{from{transform:scaleY(.92);}}
+  @keyframes plieContenu{from{opacity:0;}}
   .ex-done{display:flex; align-items:center; gap:11px; background:var(--surface2);
     border:1px solid var(--border); border-radius:var(--radius); padding:12px 13px; width:100%;
     animation:replieIn .32s cubic-bezier(.22,.9,.35,1);}
@@ -3189,7 +3196,7 @@
   .pas-bilan > div{background:var(--surface2); border-radius:14px; padding:10px 8px; text-align:center;}
   .pas-bilan b{display:block; font-size:16px; font-weight:900;} .pas-bilan small{display:block; font-size:11px; color:var(--ink-soft); margin-top:2px;}
   /* le demarrage d'une seance : le disque orange qui couvre l'ecran puis s'efface */
-  .deploie{position:fixed; inset:0; z-index:100000; pointer-events:none; background:var(--accent-grad);
+  .deploie{position:fixed; inset:0; z-index:100000; pointer-events:auto;   /* pas de double appui pendant le rideau */ background:var(--accent-grad);
     clip-path:circle(0px at var(--x) var(--y)); animation:deploie 1.3s forwards;}
   .rang-entree{animation:rangSeance .65s cubic-bezier(.2,.8,.3,1) backwards; animation-delay:calc(850ms + var(--i, 0) * 170ms);}
   @keyframes rangSeance{from{opacity:0; transform:translateY(22px);}}
@@ -21185,7 +21192,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 21h04 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 21h14 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -24251,6 +24258,7 @@ function leverRideau(){
   Promise.race([Promise.all(urls.map(decoder)), new Promise(r=>setTimeout(r, 1800))]).then(()=>{
     setTimeout(()=>{
       ov.classList.add("fin");
+      tempsDemarrage.rideau = Math.round(performance.now());
       setTimeout(()=>{
         const r = Math.ceil(Math.hypot(innerWidth / 2, innerHeight / 2)) + 10;
         ov.style.setProperty("--r", r + "px");
@@ -31850,7 +31858,22 @@ function exerciceFini(card, nom, apres){
   v.innerHTML = `<div class="rond">✓</div><div class="txt">${esc(nom)}, terminé</div>`;
   card.appendChild(v);
   vibrer([12, 60, 18]);
-  setTimeout(()=>{ if(typeof apres === "function") apres(); }, 1250);
+  setTimeout(()=>replierCarte(card, apres), 1250);
+}
+/* La carte finie ne devient plus une ligne d'un coup (Nico) : elle se resserre jusqu'a
+   la hauteur de la ligne « ✓ » en s'effacant, et la ligne apparait a sa place. La liste
+   glisse au lieu de sauter. */
+let plieArrive = null;
+function replierCarte(card, apres){
+  const fin = ()=>{ if(typeof apres === "function") apres(); };
+  if(!card || !card.isConnected || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return fin();
+  plieArrive = card.dataset.ei;
+  const h = card.getBoundingClientRect().height;
+  card.style.height = h + "px";
+  card.classList.add("se-plie");
+  void card.offsetHeight;
+  card.style.height = "60px";                 /* la hauteur de la ligne « ✓ » */
+  setTimeout(fin, 340);
 }
 /* Une carte terminee se replie — c est ainsi qu on sait qu elle est finie — mais le
    suivant restait a trouver soi-meme, en remontant a la main, en soufflant, par-dessus
@@ -31952,7 +31975,8 @@ function renderActive(app){
     /* exercice terminé et replié : une simple ligne, qu'on rouvre d'un appui */
     if(en.replie){
       const plie = document.createElement("button");
-      plie.className = "ex-done";
+      plie.className = "ex-done" + (String(plieArrive) === String(ei) ? " arrive" : "");
+      if(String(plieArrive) === String(ei)) plieArrive = null;
       /* le record est dit ici, une fois l'exercice fini : assez près de l'effort pour
          compter, assez rare pour rester un événement */
       const rec = recordExo(en);
@@ -32491,7 +32515,7 @@ function renderActive(app){
       });
     });
 
-    card.querySelector('[data-act="plier"]').onclick=()=>{ en.replie = true; save(); renderSurPlace(); };
+    card.querySelector('[data-act="plier"]').onclick=()=>replierCarte(card, ()=>{ en.replie = true; save(); renderSurPlace(); });
     card.querySelector('[data-act="addset"]').onclick=()=>{
       const prev = en.sets[en.sets.length-1];
       en.sets.push({w: prev? prev.w:"", r: prev? prev.r:"", done:false});
@@ -32716,7 +32740,9 @@ function renderActive(app){
       <div class="row"><button class="btn grow tf-annuler" id="cf-no">${TR("Annuler")}</button>
       <button class="btn grow btn-accent" id="cf-yes">${TR("Enregistrer")}</button></div>`);
     document.getElementById("cf-no").onclick = closeSheet;
-    document.getElementById("cf-yes").onclick = ()=>{ closeSheet(); (()=>{
+    /* le rideau de fin (Nico) : le meme cercle orange qu'au lancement part du bouton,
+       couvre l'ecran, puis remonte sur l'accueil et le recapitulatif */
+    document.getElementById("cf-yes").onclick = ()=>{ closeSheet(); const rideau = deploiement(); setTimeout(()=>{
       /* le récapitulatif se calcule AVANT d'ajouter la séance, sinon elle se compare à elle-même */
       const recap = {
         nom: a.name, series: doneSets, volume: Math.round(vol), kcal,
@@ -32765,11 +32791,11 @@ function renderActive(app){
       setTimeout(()=>{ if(!finOuverte) libererFlamme(); }, 2000);   /* filet : pas de recap */
       db.active=null; arreterChronos(); save(); render();
       demarrerEssai();                       /* la premiere seance ouvre l'essai, si rien ne l'a fait */
-      setTimeout(()=>openFinSeance(recap), 260);
+      setTimeout(()=>openFinSeance(recap), rideau ? 420 : 260);
       envoyerBientot();
       /* la premiere seance terminee : le bon moment pour proposer un rappel, une fois */
       if(db.history.length === 1) setTimeout(proposerNotifs, 9000);
-    })(); };
+    }, rideau ? 460 : 0); };
   };
 }
 /* records battus pendant la séance : meilleur 1RM estimé face à tout l'historique précédent */
@@ -38390,9 +38416,13 @@ const _origRender = render;
 render = function(){ _origRender(); syncWakeLock(); };
 
 /* ================= INIT ================= */
+/* les temps du demarrage, lisibles dans la console (tempsDemarrage) : script lu,
+   premier dessin, rideau leve */
+const tempsDemarrage = {script: Math.round(performance.now())};
 appliquerTheme();
 majTextesFixes();
 render();
+tempsDemarrage.dessin = Math.round(performance.now());
 leverRideau();
 /* juste apres le premier dessin : l'accueil passe avant les photos des autres pages */
 setTimeout(prechargerHeros, 300);
