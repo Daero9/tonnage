@@ -3129,7 +3129,41 @@
      bien la page qui change sous elles. */
   #app.entre{animation:pageIn .24s cubic-bezier(.32,.72,.3,1) backwards;}
   @keyframes pageIn{from{opacity:0;}}
-  @media (prefers-reduced-motion:reduce){ #app.entre{animation:none;} }
+  /* d'un onglet a l'autre, la page glisse (les enfants, pas #app : un transform sur #app
+     decrocherait les boutons fixes qu'il contient) */
+  #app.entre[data-sens] > *:not(.eat-fab){animation:pageGlisse .3s cubic-bezier(.22,1,.36,1) backwards;}
+  #app.entre[data-sens="g"] > *:not(.eat-fab){--gl:-28px;}
+  @keyframes pageGlisse{from{opacity:0; translate:var(--gl, 28px) 0;}}
+  @media (prefers-reduced-motion:reduce){ #app.entre, #app.entre[data-sens] > *{animation:none;} }
+  /* les confettis d'un record */
+  .confettis{position:fixed; inset:0; pointer-events:none; z-index:100001; overflow:hidden;}
+  .confettis i{position:absolute; top:-12px; width:8px; height:13px; border-radius:2px; opacity:0;
+    animation:confetti 2s cubic-bezier(.3,.6,.5,1) forwards;}
+  @keyframes confetti{0%{opacity:1; transform:translate(0, 0) rotate(0);} 85%{opacity:1;}
+    100%{opacity:0; transform:translate(var(--dx), 105vh) rotate(var(--rot));}}
+  /* la flamme qui grandit : un halo qui s'ouvre et huit etincelles */
+  .hero-flamme .fl-pouf{position:absolute; left:50%; top:55%; width:90px; height:90px; margin:-45px 0 0 -45px; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle, rgba(255,200,60,.75) 0%, rgba(245,130,32,.35) 40%, rgba(245,130,32,0) 70%); opacity:0; z-index:-1;}
+  .hero-flamme .fl-etinc{position:absolute; left:50%; top:50%; width:0; height:0; pointer-events:none;}
+  .hero-flamme .fl-etinc i{position:absolute; width:6px; height:6px; margin:-3px; border-radius:50%; background:#FFD23F; opacity:0;
+    box-shadow:0 0 6px 1px rgba(255,170,40,.9);}
+  .hero-flamme .fl-etinc i:nth-child(1){--dx:0px; --dy:-46px;} .hero-flamme .fl-etinc i:nth-child(2){--dx:32px; --dy:-32px;}
+  .hero-flamme .fl-etinc i:nth-child(3){--dx:44px; --dy:0px;} .hero-flamme .fl-etinc i:nth-child(4){--dx:30px; --dy:30px;}
+  .hero-flamme .fl-etinc i:nth-child(5){--dx:-30px; --dy:30px;} .hero-flamme .fl-etinc i:nth-child(6){--dx:-44px; --dy:0px;}
+  .hero-flamme .fl-etinc i:nth-child(7){--dx:-32px; --dy:-32px;} .hero-flamme .fl-etinc i:nth-child(8){--dx:14px; --dy:-44px; background:#fff;}
+  @media (prefers-reduced-motion:no-preference){
+    .hero-flamme.grandit .fl-pouf{animation:flPouf .8s ease-out .35s;}
+    .hero-flamme.grandit .fl-etinc i{animation:etincelle .75s cubic-bezier(.2,.8,.3,1) .4s;}
+    .hero-flamme.grandit .fl-etinc i:nth-child(even){animation-delay:.48s;}
+  }
+  @keyframes flPouf{0%{opacity:0; transform:scale(.3);} 30%{opacity:1;} 100%{opacity:0; transform:scale(1.5);}}
+  /* le podium : ton poussin sautille de temps en temps, pour que tu te reperes */
+  @media (prefers-reduced-motion:no-preference){ .pd-po.moi .in{animation:pdSaut 3.2s ease-in-out 1.4s infinite;} }
+  @keyframes pdSaut{0%, 78%, 100%{transform:none;} 84%{transform:translateY(-12%) scaleY(1.03);} 90%{transform:translateY(0) scaleY(.96);} 94%{transform:none;}}
+  /* l'avancee de l'exercice : une fine barre qui glisse a chaque serie validee */
+  .ex-av{height:5px; border-radius:99px; background:var(--surface2); overflow:hidden; margin:2px 0 10px;}
+  .ex-av i{display:block; height:100%; border-radius:99px; background:var(--accent-grad); transition:width .5s cubic-bezier(.22,1,.36,1), background .3s;}
+  .ex-av.fini i{background:var(--good);}
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(78px + env(safe-area-inset-bottom)); z-index:80;
     /* texte blanc (Nico) : le vert du message est un cran plus fonce que --good, sinon
        le blanc ne se lit pas (2,7:1 sur #5cb22e, 4,3:1 ici) */
@@ -20631,7 +20665,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "29 septembre 2026 15h27 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 15h42 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22469,6 +22503,60 @@ async function classementGlobal(){
   return r.filter(x=>x.document).map(x=>Object.assign({uid:x.document.name.split("/").pop()}, fbObjet(x.document.fields)))
     .map(x=>Object.assign(x, {pseudo:x.p, flamme:flammeVivante(x)})).filter(x=>x.flamme > 0);
 }
+/* ---- Les chiffres qui defilent (Nico, 29 sept.) ----
+   A la fin d'une seance, le tonnage, les minutes et les calories montent de 0 a leur
+   valeur en un peu plus d'une seconde, au lieu d'apparaitre d'un coup. Chaque nombre porte
+   data-compte (sa valeur) et data-fmt (sa facon de s'ecrire) ; a la fin, le texte exact. */
+const FMT_COMPTE = {
+  int: v=>String(Math.round(v)),
+  vol: v=>v >= 1000 && !estImperial() ? (v / 1000).toLocaleString(loc(), {maximumFractionDigits:1}) + " t" : pds(v),
+  km: v=>kmTxt(Math.round(v * 100) / 100),
+  min: v=>minTxt(Math.round(v))
+};
+function animerCompteurs(racine, delai){
+  const els = Array.from((racine || document).querySelectorAll("[data-compte]"));
+  if(!els.length) return;
+  const reduit = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  els.forEach(el=>{
+    const cible = parseFloat(el.dataset.compte) || 0, f = FMT_COMPTE[el.dataset.fmt || "int"] || FMT_COMPTE.int, fin = el.textContent;
+    if(reduit || cible <= 0) return;
+    el.textContent = f(0);
+    const duree = 1100;
+    setTimeout(()=>{
+      const t0 = performance.now();
+      const pas = now=>{
+        if(!document.body.contains(el)) return;
+        const k = Math.min(1, (now - t0) / duree), e = 1 - Math.pow(1 - k, 3);   /* rapide puis doux */
+        el.textContent = k < 1 ? f(cible * e) : fin;
+        if(k < 1) requestAnimationFrame(pas);
+      };
+      requestAnimationFrame(pas);
+    }, delai || 0);
+    /* filet : si le telephone suspend l'animation (appli en arriere-plan), la vraie valeur
+       s'affiche quand meme — jamais un chiffre bloque en route */
+    setTimeout(()=>{ if(document.body.contains(el)) el.textContent = fin; }, (delai || 0) + duree + 250);
+  });
+}
+/* ---- Les confettis d'un record (Nico) : orange, jaune, et un peu de couleur ---- */
+function pluieConfettis(n){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const z = document.createElement("div");
+  z.className = "confettis";
+  const couleurs = ["#F58220", "#FFB020", "#FFD23F", "#EF4444", "#22C55E", "#3B82F6"];
+  for(let i = 0; i < (n || 70); i++){
+    const c = document.createElement("i");
+    c.style.left = (Math.random() * 100) + "%";
+    c.style.background = couleurs[i % couleurs.length];
+    c.style.setProperty("--dx", (Math.random() * 120 - 60) + "px");
+    c.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+    c.style.animationDelay = (Math.random() * .35) + "s";
+    c.style.animationDuration = (1.6 + Math.random() * 1.1) + "s";
+    if(i % 3 === 0){ c.style.width = "7px"; c.style.height = "7px"; c.style.borderRadius = "50%"; }
+    z.appendChild(c);
+  }
+  document.body.appendChild(z);
+  setTimeout(()=>z.remove(), 3400);
+}
 /* Remplir la liste d'une fenetre sans a-coup (Nico : « ca saccade a la premiere ouverture ») :
    on laisse la fenetre finir d'apparaitre, la hauteur glisse vers la nouvelle, et les
    rangees arrivent une a une, avec un petit temps entre chacune. */
@@ -22497,12 +22585,12 @@ function ligneClassement(x, i, moi){
    dessus des marches, mesurees sur l'image (podium-3.webp). */
 /* y : le bord avant du dessus de chaque marche, pour que l'ombre sous les pattes reste sur la marche (Nico) */
 const PODIUM = [{i:1, x:23.6, y:75.2, l:22, pose:"en-forme"}, {i:0, x:51.1, y:68.5, l:30, pose:"fete"}, {i:2, x:77.6, y:84.3, l:19, pose:"en-forme"}];
-function podiumHtml(l){
+function podiumHtml(l, moiUid){
   return `<img class="fond" src="img/podium-3.webp" alt="">${PODIUM.map((m, k)=>{
     const x = l[m.i];
     if(!x) return "";
     const pose = POUSSIN[m.pose] ? m.pose : "en-forme", pr = POUSSIN[pose] || {ratio:1.2};
-    return `<button class="pd-po p${m.i + 1}" data-cli="${m.i}" style="left:${m.x}%; top:${m.y}%; width:${m.l}%; animation-delay:${150 + k * 160}ms;" aria-label="${esc(nomComplet(x))}">
+    return `<button class="pd-po p${m.i + 1}${moiUid && x.uid === moiUid ? " moi" : ""}" data-cli="${m.i}" style="left:${m.x}%; top:${m.y}%; width:${m.l}%; animation-delay:${150 + k * 160}ms;" aria-label="${esc(nomComplet(x))}">
       <span class="in" style="aspect-ratio:1/${pr.ratio}; --pied:${pr.pied || 0};">${calquesHtml(x.acc, pose)}</span></button>`;
   }).join("")}`;
 }
@@ -22544,7 +22632,7 @@ function openClassement(onglet){
     const html = l.length ? l.map((x, i)=>ligneClassement(x, i, x.uid === moi.uid)).join("")
       : `<div class="am-vide">${TR("Personne n'a de flamme allumée pour l'instant.")}</div>`;
     remplirDoux(el, html, premier ? t0 : 0, ()=>{
-    if(pd) pd.innerHTML = podiumHtml(l);
+    if(pd) pd.innerHTML = podiumHtml(l, moi.uid);
     (pd ? [el, pd] : [el]).forEach(z=>z.querySelectorAll("[data-cli]").forEach(b=>b.onclick = ()=>{
       const x = l[b.dataset.cli], rang = Number(b.dataset.cli) + 1, retour = ()=>openClassement(onglet);
       if(x.uid === moi.uid){ ouvrirParDessus(retour, openMonProfil); return; }
@@ -23753,7 +23841,11 @@ function allerOnglet(id){
   /* et les chiffres et jauges de l'onglet (Nutrition : proteines, kcal) partent de zero,
      a l'arrivee seulement — ensuite ils vont de l'ancienne valeur a la nouvelle */
   depuisZero = true;
+  /* la page glisse du cote de l'onglet choisi : a droite si on va vers la droite (Nico) */
+  const ordre = TABS.map(t=>t[0]), app = document.getElementById("app");
+  if(app) app.dataset.sens = ordre.indexOf(id) > ordre.indexOf(curTab) ? "d" : "g";
   curTab = id; render();
+  setTimeout(()=>{ if(app) delete app.dataset.sens; }, 400);
 }
 /* Le dernier appui sur l'ecran : ou il a commence, et quand. Un « clic » qui arrive
    sur un onglet alors que le doigt s'etait pose ailleurs (sur « Enregistrer » d'une
@@ -28737,7 +28829,9 @@ function renderSeance(app){
         const ancienne = flammeRallumable();
         return `<div class="hero-flamme ${fl.force}${danger ? " danger" : ""}${grandit ? " grandit" : ""}${ancienne ? " rallumable" : ""}" ${ancienne ? `id="fl-rallumer" role="button"` : ""} style="--fl-ech:${ech.toFixed(3)};" title="${TR("{} jours de séance d'affilée").replace("{}", fl.n)}"><img class="fe" src="img/flamme-24b.webp" alt=""><b>${
           grandit ? `<span class="fl-avant">${vue}</span><span class="fl-apres">${fl.n}</span>`
-            : (flammeRetenue && vue > 0 && fl.n > vue ? vue : fl.n)}</b>${ancienne ? `<span class="fl-ancienne">${ancienne.n}</span>` : ""}</div>`; })()}
+            : (flammeRetenue && vue > 0 && fl.n > vue ? vue : fl.n)}</b>${ancienne ? `<span class="fl-ancienne">${ancienne.n}</span>` : ""}${
+          /* elle grandit : un « pouf » de lumiere et des etincelles qui jaillissent (Nico) */
+          grandit ? `<span class="fl-pouf" aria-hidden="true"></span><span class="fl-etinc" aria-hidden="true">${"<i></i>".repeat(8)}</span>` : ""}</div>`; })()}
       <div class="wk-card">
         <div class="wk-days">${days.map((d,i)=>
           `<div class="wk-day ${trained.has(i)?'on':''} ${i===todayIdx?'today':''}">${d}</div>`).join("")}</div>
@@ -31241,6 +31335,8 @@ function renderActive(app){
       ${/* les titres des colonnes vivent dans le cadre noir, sur la serie en cours : pas de
             doublon au-dessus du tableau */""}
       <div class="sets"></div>
+      ${(()=>{ const t = en.sets.filter(x=>!x.warm), f = t.filter(x=>x.done).length, pc = t.length ? f / t.length * 100 : 0;
+        return `<div class="ex-av${pc >= 100 ? " fini" : ""}" aria-hidden="true"><i style="width:${pc.toFixed(1)}%;"></i></div>`; })()}
       ${(ei === 0 && !iso) ? hintBox("degressif", TR("<span class=\"ht\">Série dégressive</span>Tu continues la même série avec moins de charge :<br><b>6 × 12 kg, puis 4 × 10 kg.</b><br>Ça reste une seule série, et tout compte dans ton tonnage."), IC_BAISSE) : ""}
       <div class="ex-bas">
         ${/* d'apres la maquette du 21 septembre : trois boutons de meme poids, chacun avec son signe */""}
@@ -31344,6 +31440,13 @@ function renderActive(app){
         if(!st.done) delete st.rir;
         save();
         row.classList.toggle("done", st.done);
+        /* la barre de l'exercice avance en glissant (Nico) */
+        const av = card.querySelector(".ex-av");
+        if(av){
+          const t = en.sets.filter(x=>!x.warm), pc = t.length ? t.filter(x=>x.done).length / t.length * 100 : 0;
+          av.querySelector("i").style.width = pc.toFixed(1) + "%";
+          av.classList.toggle("fini", pc >= 100);
+        }
         const ck = row.querySelector(".ck");
         ck.innerHTML = st.done ? IC_COCHE : "○";
         ck.classList.remove("pop");
@@ -32079,9 +32182,9 @@ function openFinSeance(r){
     </div>
   </div>
   <div class="tiles fin-tiles" style="margin:16px 0 14px;">
-    <div class="tile"><span class="ic">${IC_CHRONO}</span><div class="v">${mn}<span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
-    <div class="tile"><span class="ic">${ICONS.seance}</span><div class="v">${r.volume>=1000 && !estImperial()? (r.volume/1000).toLocaleString(loc(),{maximumFractionDigits:1})+" t" : pds(r.volume)}</div><div class="u">${TR("soulevés")}</div></div>
-    <div class="tile"><span class="ic">${icoM("flamme", 18)}</span><div class="v" style="color:var(--accent);">${r.kcal}</div><div class="u">${TR("kcal brûlées")}</div></div>
+    <div class="tile"><span class="ic">${IC_CHRONO}</span><div class="v"><span data-compte="${mn}">${mn}</span><span style="font-size:13px;"> ${TR("min")}</span></div><div class="u">${TR("de séance")}</div></div>
+    <div class="tile"><span class="ic">${ICONS.seance}</span><div class="v"><span data-compte="${r.volume}" data-fmt="vol">${FMT_COMPTE.vol(r.volume)}</span></div><div class="u">${TR("soulevés")}</div></div>
+    <div class="tile"><span class="ic">${icoM("flamme", 18)}</span><div class="v" style="color:var(--accent);"><span data-compte="${r.kcal}">${r.kcal}</span></div><div class="u">${TR("kcal brûlées")}</div></div>
   </div>
   ${/* d'apres la maquette du 21 septembre : la ligne des series en pastille, les records
         en carte sombre avec le trophee et une ligne par exercice, les trois humeurs avec
@@ -32123,6 +32226,9 @@ function openFinSeance(r){
     vibrer(8);
   });
   document.getElementById("fin-ok").onclick = closeSheet;
+  animerCompteurs(document.querySelector(".fin-tiles"), 350);
+  /* un record : des confettis et une vibration plus marquee (Nico) */
+  if(r.records && r.records.length) setTimeout(()=>{ pluieConfettis(80); vibrer([30, 60, 30, 60, 90]); }, 700);
   /* la montre : ses mesures arrivent parfois plus tard — elles iront alors dans l'historique */
   const hm = (db.history || []).find(x=>x.id === r.id);
   if(hm) mesurerSeance(hm).then(m=>{
@@ -32680,8 +32786,8 @@ const IC_EPINGLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="tr
 function crResume(tot, allure){
   /* la course terminee : trois pastilles de couleur, temps (vert), distance (bleu), allure (orange) */
   if(allure) return `<div class="cr-resume cr-fini">
-    <div><span class="ic v">${IC_CHRONO}</span><div><small>${TR("Temps total")}</small><b class="${minTxt(tot.min).length > 7 ? "long" : ""}">${minTxt(tot.min)}</b></div></div>
-    <div><span class="ic b">${IC_EPINGLE}</span><div><small>${TR(tot.estime === false ? "Distance" : "Distance (est.)")}</small><b>${kmTxt(tot.km)}</b></div></div>
+    <div><span class="ic v">${IC_CHRONO}</span><div><small>${TR("Temps total")}</small><b class="${minTxt(tot.min).length > 7 ? "long" : ""}" data-compte="${tot.min}" data-fmt="min">${minTxt(tot.min)}</b></div></div>
+    <div><span class="ic b">${IC_EPINGLE}</span><div><small>${TR(tot.estime === false ? "Distance" : "Distance (est.)")}</small><b data-compte="${tot.km}" data-fmt="km">${kmTxt(tot.km)}</b></div></div>
     <div><span class="ic o">${icoM("course", 22)}</span><div><small>${TR("Allure moyenne")}</small><b>${allureTxt(tot.min, tot.km)}</b></div></div>
   </div>`;
   return `<div class="cr-resume">
@@ -33234,6 +33340,7 @@ function openFinCourse(s, muscu){
   /* la seance proposee suivante depend de cette reponse ; sans reponse, « correct »,
      comme pour la musculation */
   brancherSortie();
+  animerCompteurs(document.querySelector(".cr-fini"), 350);
   let rs = null;
   document.querySelectorAll("[data-rs]").forEach(b=>b.onclick = ()=>{
     rs = b.dataset.rs;
