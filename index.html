@@ -12,6 +12,8 @@
 <link rel="icon" href="icon-192.png?v=4">
 <!-- Le service worker sert a fonctionner hors connexion SUR LE WEB. Dans l application Android, les memes fichiers sont deja installes avec l APK : l enregistrer y rangeait une seconde copie de 8 Mo dans les donnees utilisateur, et pouvait servir une version plus ancienne que celle du paquet. On ne l enregistre donc pas quand Capacitor est la. -->
 <script>if("serviceWorker" in navigator && !window.Capacitor){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(function(){})});}</script>
+<!-- noir des la premiere image : l'ecran d'ouverture arrive juste apres (retire avec lui) -->
+<style id="ov-fond">html, body{background:#000 !important;}</style>
 <style>
   :root{
     /* clair : fond crème, bandeau sombre, orange franc — d'après la maquette Figma */
@@ -4766,7 +4768,24 @@
   .sc-astuce .co > p:only-child{font-size:13.5px; font-weight:700; color:var(--ink); margin:0;}
   .sc-astuce{align-items:center;}
   #dev-code.ko{box-shadow:inset 0 0 0 2px var(--bad); animation:secouer .4s;}
+  /* le salut, lettre par lettre a l'ouverture */
+  .ecr{opacity:0; animation:ecrIn .12s ease-out forwards;}
+  @keyframes ecrIn{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+  .wv.ecr{display:inline-block; animation:ecrIn .25s ease-out forwards;}   /* la main, juste apres la derniere lettre */
+  /* la montre dans le recap de fin et l'historique */
+  .fin-montre{display:flex; align-items:center; justify-content:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin:-6px 0 14px;}
+  .fin-montre .ic{color:#3b82f6; display:inline-flex;} .fin-montre .ic svg{width:17px; height:17px;}
+  .fin-court{font-size:13px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;}
+  .hd-vide{font-size:13px; color:var(--ink-soft); text-align:center; padding:6px 0;}
   /* ---- mes amis ---- */
+  /* la montre */
+  .mt-aide{margin-top:14px; padding:12px 14px; border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .mt-aide b{display:block; font-size:14px; margin-bottom:4px;} .mt-aide p{margin:4px 0 0; font-size:13px; line-height:1.45; color:var(--ink-soft);}
+  .mt-tuiles{display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin:4px 0 0;}
+  .mt-tuiles > div{display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 6px; border-radius:14px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux);}
+  .mt-tuiles .ic{width:28px; height:28px; border-radius:50%; background:rgba(47,125,225,.12); color:#2f7de1; display:flex; align-items:center; justify-content:center;}
+  .mt-tuiles .ic svg{width:15px; height:15px;} .mt-tuiles .ic .icm{background-color:currentColor;}
+  .mt-tuiles b{font-size:17px; font-weight:900;} .mt-tuiles small{font-size:11.5px; color:var(--ink-mute);}
   /* fin d'essai, annuel */
   .fe-logo{width:56px; height:56px; margin:0 auto 10px; border-radius:18px; background:var(--accent-grad); color:#fff; display:flex; align-items:center; justify-content:center;
     box-shadow:0 6px 14px rgba(245,130,32,.3);}
@@ -5062,6 +5081,31 @@
   #sheet .pc-et .pc-type button.on{color:#fff;}
 </style>
 
+<!-- L'ecran d'ouverture (Nico, 29 sept.) : noir, les deux halos, le logo et sa barre. Il
+     est peint avant que l'app ne tourne ; quand l'accueil est pret, il monte comme un
+     rideau et le salut s'ecrit. Styles ici, en ligne : ils s'appliquent sans attendre. -->
+<style>
+  #ouverture{position:fixed; inset:0; z-index:200000; background:#000; overflow:hidden;
+    transition:transform .5s cubic-bezier(.7,0,.25,1);}
+  #ouverture .ov-halo{position:absolute; width:62vw; max-width:420px; pointer-events:none;}
+  #ouverture .ov-halo.h1{left:0; top:0;}
+  #ouverture .ov-halo.h2{right:0; bottom:0; transform:rotate(180deg);}
+  #ouverture .ov-c{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); display:flex; flex-direction:column; align-items:center; gap:22px;}
+  #ouverture .ov-logo{width:58vw; max-width:300px; height:auto;}
+  #ouverture .ov-barre{width:140px; height:6px; border-radius:99px; background:#262626; overflow:hidden;}
+  #ouverture .ov-barre i{display:block; height:100%; width:0; border-radius:99px; background:linear-gradient(90deg, #ff8a1e, #ff5f00);
+    animation:ovCharge 1.4s cubic-bezier(.2,.7,.3,1) forwards;}
+  #ouverture.fin .ov-barre i{animation:none; width:100%; transition:width .2s ease-out;}
+  #ouverture.leve{transform:translateY(-100%);}
+  @keyframes ovCharge{from{width:0;} to{width:82%;}}
+  @media (prefers-reduced-motion: reduce){ #ouverture{transition:opacity .2s;} #ouverture.leve{transform:none; opacity:0;} }
+</style>
+<div id="ouverture" aria-hidden="true">
+  <img class="ov-halo h1" src="img/halo.webp" alt="">
+  <img class="ov-halo h2" src="img/halo.webp" alt="">
+  <div class="ov-c"><img class="ov-logo" src="img/logo-texte.png" alt="Tonnup"><div class="ov-barre"><i></i></div></div>
+</div>
+
 <div id="app"></div>
 
 <div class="restbar" id="restbar">
@@ -5104,6 +5148,40 @@
    zone par zone et publier à chaque étape, sans jamais laisser un écran vide. */
 
 const TRAD = {en:{
+  "Tout ajouter ({})":"Add all ({})",
+  "{} activités ajoutées ! 🔥":"{} activities added! 🔥",
+  "Montre connectée":"Smartwatch",
+  "Tes activités de la montre, par Health Connect.":"Your watch activities, via Health Connect.",
+  "Tes activités enregistrées par ta montre, proposées dans Tonnup.":"Activities recorded by your watch, suggested in Tonnup.",
+  "Il faut Android 14 ou plus récent.":"Requires Android 14 or newer.",
+  "Health Connect n'est pas disponible sur ce téléphone.":"Health Connect isn't available on this phone.",
+  "Proposer mes activités":"Suggest my activities",
+  "À l'ouverture de Tonnup, tes nouvelles activités de la montre te sont proposées.":"When you open Tonnup, your new watch activities are suggested.",
+  "Comment ça marche":"How it works",
+  "Ta montre enregistre tes activités dans son application (Zepp, Samsung Health, Fitbit…), qui les dépose dans Health Connect. Tonnup les lit, et rien ne quitte ton téléphone.":"Your watch records activities in its app (Zepp, Samsung Health, Fitbit…), which puts them in Health Connect. Tonnup reads them, and nothing leaves your phone.",
+  "Dans l'application de ta montre, active l'envoi vers Health Connect.":"In your watch's app, turn on syncing to Health Connect.",
+  "Autorise Tonnup dans Health Connect pour lire tes activités.":"Allow Tonnup in Health Connect to read your activities.",
+  "Course sur tapis":"Treadmill run",
+  "distance":"distance",
+  "bpm moyens":"avg bpm",
+  "Une séance de ta montre":"A workout from your watch",
+  "Elle compte pour ta flamme et tes séances, pas pour le tonnage.":"It counts for your flame and workouts, not for tonnage.",
+  "Séance ajoutée ! 🔥":"Workout added! 🔥",
+  "Musculation (montre)":"Strength training (watch)",
+  "{} bpm moyens":"{} bpm average",
+  "max {}":"max {}",
+  "kcal (montre)":"kcal (watch)",
+  "bpm max":"bpm max",
+  "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"An activity is suggested from 10 min, 30 min for walking: a walk to work won't light your flame.",
+  "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Under 5 minutes: this workout doesn't light your flame.",
+  "Ta montre":"Your watch",
+  "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
+  "Une activité de ta montre":"An activity from your watch",
+  "à":"at",
+  "{a} sur {n}":"{a} of {n}",
+  "Ajouter à Tonnup":"Add to Tonnup",
+  "Ignorer":"Ignore",
+  "Activité ajoutée ! 🔥":"Activity added! 🔥",
   "Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.":"Loads compare your first session of the month with your heaviest set since, exercise by exercise.",
   "C'est fait : tu es passé à l'annuel.":"Done: you've switched to yearly.",
   "Ton essai Analyse se termine demain":"Your Analyze trial ends tomorrow",
@@ -8804,6 +8882,39 @@ const TRAD = {en:{
 },
 /* --- espagnol et portugais (Brésil) : mêmes clés, posées par C:\Projets\outils\traduire.py --- */
 es:{
+  "Tout ajouter ({})":"Añadir todo ({})",
+  "{} activités ajoutées ! 🔥":"¡{} actividades añadidas! 🔥",
+  "Tes activités de la montre, par Health Connect.":"Tus actividades del reloj, vía Health Connect.",
+  "Tes activités enregistrées par ta montre, proposées dans Tonnup.":"Las actividades de tu reloj, propuestas en Tonnup.",
+  "Il faut Android 14 ou plus récent.":"Requiere Android 14 o posterior.",
+  "Health Connect n'est pas disponible sur ce téléphone.":"Health Connect no está disponible en este teléfono.",
+  "Proposer mes activités":"Proponer mis actividades",
+  "À l'ouverture de Tonnup, tes nouvelles activités de la montre te sont proposées.":"Al abrir Tonnup, se te proponen las nuevas actividades del reloj.",
+  "Comment ça marche":"Cómo funciona",
+  "Ta montre enregistre tes activités dans son application (Zepp, Samsung Health, Fitbit…), qui les dépose dans Health Connect. Tonnup les lit, et rien ne quitte ton téléphone.":"Tu reloj registra tus actividades en su app (Zepp, Samsung Health, Fitbit…), que las guarda en Health Connect. Tonnup las lee y nada sale de tu teléfono.",
+  "Dans l'application de ta montre, active l'envoi vers Health Connect.":"En la app de tu reloj, activa el envío a Health Connect.",
+  "Autorise Tonnup dans Health Connect pour lire tes activités.":"Permite a Tonnup en Health Connect leer tus actividades.",
+  "Course sur tapis":"Carrera en cinta",
+  "distance":"distancia",
+  "bpm moyens":"ppm medias",
+  "Une séance de ta montre":"Una sesión de tu reloj",
+  "Elle compte pour ta flamme et tes séances, pas pour le tonnage.":"Cuenta para tu llama y tus sesiones, no para el tonelaje.",
+  "Séance ajoutée ! 🔥":"¡Sesión añadida! 🔥",
+  "Musculation (montre)":"Musculación (reloj)",
+  "{} bpm moyens":"{} ppm de media",
+  "max {}":"máx. {}",
+  "kcal (montre)":"kcal (reloj)",
+  "bpm max":"ppm máx.",
+  "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"Una actividad se propone a partir de 10 min, 30 min para caminar: un trayecto a pie no enciende tu llama.",
+  "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: esta sesión no enciende tu llama.",
+  "Ta montre":"Tu reloj",
+  "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
+  "Une activité de ta montre":"Una actividad de tu reloj",
+  "à":"a las",
+  "{a} sur {n}":"{a} de {n}",
+  "Ajouter à Tonnup":"Añadir a Tonnup",
+  "Ignorer":"Ignorar",
+  "Activité ajoutée ! 🔥":"¡Actividad añadida! 🔥",
   "Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.":"Las cargas comparan tu primera sesión del mes con tu serie más pesada desde entonces, ejercicio por ejercicio.",
   "C'est fait : tu es passé à l'annuel.":"Hecho: te has pasado al plan anual.",
   "Ton essai Analyse se termine demain":"Tu prueba de Analyze termina mañana",
@@ -12718,6 +12829,39 @@ es:{
   "Rowing sous la table":"Remo bajo la mesa"
 },
 pt:{
+  "Tout ajouter ({})":"Adicionar tudo ({})",
+  "{} activités ajoutées ! 🔥":"{} atividades adicionadas! 🔥",
+  "Tes activités de la montre, par Health Connect.":"Suas atividades do relógio, via Health Connect.",
+  "Tes activités enregistrées par ta montre, proposées dans Tonnup.":"As atividades do seu relógio, sugeridas no Tonnup.",
+  "Il faut Android 14 ou plus récent.":"Requer Android 14 ou mais recente.",
+  "Health Connect n'est pas disponible sur ce téléphone.":"O Health Connect não está disponível neste celular.",
+  "Proposer mes activités":"Sugerir minhas atividades",
+  "À l'ouverture de Tonnup, tes nouvelles activités de la montre te sont proposées.":"Ao abrir o Tonnup, suas novas atividades do relógio são sugeridas.",
+  "Comment ça marche":"Como funciona",
+  "Ta montre enregistre tes activités dans son application (Zepp, Samsung Health, Fitbit…), qui les dépose dans Health Connect. Tonnup les lit, et rien ne quitte ton téléphone.":"Seu relógio registra as atividades no app dele (Zepp, Samsung Health, Fitbit…), que as coloca no Health Connect. O Tonnup as lê, e nada sai do seu celular.",
+  "Dans l'application de ta montre, active l'envoi vers Health Connect.":"No app do seu relógio, ative o envio para o Health Connect.",
+  "Autorise Tonnup dans Health Connect pour lire tes activités.":"Permita o Tonnup no Health Connect para ler suas atividades.",
+  "Course sur tapis":"Corrida na esteira",
+  "distance":"distância",
+  "bpm moyens":"bpm médios",
+  "Une séance de ta montre":"Um treino do seu relógio",
+  "Elle compte pour ta flamme et tes séances, pas pour le tonnage.":"Conta para a sua chama e os seus treinos, não para a tonelagem.",
+  "Séance ajoutée ! 🔥":"Treino adicionado! 🔥",
+  "Musculation (montre)":"Musculação (relógio)",
+  "{} bpm moyens":"{} bpm de média",
+  "max {}":"máx. {}",
+  "kcal (montre)":"kcal (relógio)",
+  "bpm max":"bpm máx.",
+  "Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.":"Uma atividade é sugerida a partir de 10 min, 30 min para caminhada: um trajeto a pé não acende a sua chama.",
+  "Moins de 5 minutes : cette séance n'allume pas ta flamme.":"Menos de 5 minutos: este treino não acende a sua chama.",
+  "Ta montre":"Seu relógio",
+  "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
+  "Une activité de ta montre":"Uma atividade do seu relógio",
+  "à":"às",
+  "{a} sur {n}":"{a} de {n}",
+  "Ajouter à Tonnup":"Adicionar ao Tonnup",
+  "Ignorer":"Ignorar",
+  "Activité ajoutée ! 🔥":"Atividade adicionada! 🔥",
   "Les charges comparent ta première séance du mois à ta série la plus lourde depuis, exercice par exercice.":"As cargas comparam sua primeira sessão do mês com sua série mais pesada desde então, exercício por exercício.",
   "C'est fait : tu es passé à l'annuel.":"Pronto: você passou para o anual.",
   "Ton essai Analyse se termine demain":"Seu teste do Analyze termina amanhã",
@@ -19812,7 +19956,17 @@ function rallumerFlamme(){
   save();
   return true;
 }
+/* Avant de rallumer, la montre (Nico, 29 sept.) : des courses faites sans ouvrir Tonnup
+   peuvent sauver la flamme — on les propose d'abord, et la fenetre de rallumage ne s'ouvre
+   que si la flamme est toujours eteinte. Sans quoi on gacherait un rallumage. */
 function openRallumer(){
+  if(db.sante && db.sante.actif && pluginSante()){
+    verifierMontre(true, ()=>{ if(flammeRallumable()) ouvrirRallumer(); else render(); });
+    return;
+  }
+  ouvrirRallumer();
+}
+function ouvrirRallumer(){
   const r = flammeRallumable();
   if(!r) return;
   const bloque = verrouille("rallumer"), reste = rallumagesRestants();
@@ -19853,7 +20007,7 @@ function meilleureFlamme(){
    entre la derniere activite et le jour ou on l'a rallumee. */
 function pointsFlamme(maintenant){
   const now = new Date(maintenant), pts = new Map();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{
+  activitesComptees().forEach(x=>{
     const d = new Date(x.date); if(!(d > 0) || d > now) return;
     d.setHours(0,0,0,0); pts.set(d.getTime(), {t:d.getTime(), act:true});
   });
@@ -19871,7 +20025,7 @@ function lienFlamme(recent, ancien){
 }
 function meilleureSerieSemaines(){
   const sem = new Set();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{
+  activitesComptees().forEach(x=>{
     const d = new Date(x.date); if(!(d > 0)) return;
     d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); sem.add(d.getTime());
   });
@@ -19885,7 +20039,7 @@ function meilleureSerieSemaines(){
    valent qu'une activite — pas de cumul. */
 function nActivites(){
   const jours = new Set();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > 0) jours.add(dayKey(d)); });
+  activitesComptees().forEach(x=>{ const d = new Date(x.date); if(d > 0) jours.add(dayKey(d)); });
   return jours.size;
 }
 /* Mode essai du vestiaire : « …/beta/#accessoires » dans la barre d'adresse. Tout est
@@ -19903,7 +20057,7 @@ function accessoireGagne(a){
 /* activites (jours avec une seance ou une sortie) sur les 7 derniers jours */
 function activites7j(fin){
   const now = fin || Date.now(), jours = new Set(), depuis = now - 7 * 864e5;
-  (db.history || []).concat(db.cardio || []).forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= now) jours.add(dayKey(d)); });
+  activitesComptees().forEach(x=>{ const d = new Date(x.date); if(d > depuis && d <= now) jours.add(dayKey(d)); });
   return jours.size;
 }
 /* Depuis combien de jours d'affilee la condition « muscle » (3 activites sur 7 jours)
@@ -19921,10 +20075,23 @@ function niveauHalo(){
   return j >= 28 ? 4 : (j >= 21 ? 3 : (j >= 14 ? 2 : (j >= 7 ? 1 : 0)));
 }
 /* la fin de la derniere activite (seance ou sortie), en ms ; 0 s'il n'y en a pas */
+/* Les seances et sorties qui comptent comme ACTIVITE — la flamme, les jours actifs, les
+   series de semaines (Nico, 29 sept.) : 5 minutes au moins. Une seance lancee puis
+   terminee aussitot n'allume rien. Elle reste dans l'historique, avec ses series. Une
+   seance ou une sortie sans duree connue compte, comme avant. */
+const MIN_ACTIVITE = 5;
+function compteActivite(x){
+  if(x.start && x.end) return x.end - x.start >= MIN_ACTIVITE * 60000;
+  if(x.min > 0) return x.min >= MIN_ACTIVITE;
+  return true;
+}
+function activitesComptees(){
+  return (db.history || []).concat(db.cardio || []).filter(compteActivite);
+}
 function finDerniereActivite(){
   let fin = 0;
-  (db.history || []).forEach(h=>{ const t = h.end || new Date(h.date).getTime(); if(t > fin && t <= Date.now()) fin = t; });
-  (db.cardio || []).forEach(c=>{ const t = new Date(c.date).getTime() + (c.min || 0) * 60000; if(t > fin && t <= Date.now()) fin = t; });
+  (db.history || []).forEach(h=>{ if(!compteActivite(h)) return; const t = h.end || new Date(h.date).getTime(); if(t > fin && t <= Date.now()) fin = t; });
+  (db.cardio || []).forEach(c=>{ if(!compteActivite(c)) return; const t = new Date(c.date).getTime() + (c.min || 0) * 60000; if(t > fin && t <= Date.now()) fin = t; });
   return fin;
 }
 /* Un VRAI record, pas +1 kg : la charge de travail de la seance du jour depasse d'au
@@ -20282,7 +20449,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "28 septembre 2026 16h08";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "29 septembre 2026 03h35";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -20419,7 +20586,7 @@ function applyDefaults(){
 applyDefaults();
 /* Sur Android, Google dit s'il y a un abonnement, et a quel prix : on lui demande
    des l'ouverture (apres que tout est defini — d'ou le tour de boucle). */
-setTimeout(()=>{ Promise.resolve(sonderAbo()).catch(()=>{}).then(()=>setTimeout(messagesAbo, 1500)); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
+setTimeout(()=>{ Promise.resolve(sonderAbo()).catch(()=>{}).then(()=>setTimeout(()=>{ messagesAbo(); setTimeout(()=>verifierMontre(false), 600); }, 1500)); chargerForfaits(); chargerPacks(); rattraperPacks(); driveRattrapage(); }, 0);
 /* la proposition de sauvegarde attend que l'ecran soit pose, et qu'aucune fiche ne l'occupe */
 setTimeout(()=>{ if(!sheetOpen && !onbEl && !guideEnCours && !raccourciRecu) proposerDrive(); }, 2600);
 /* ---- le widget de l'ecran d'accueil (Android) -----------------------------------------
@@ -21105,6 +21272,9 @@ const SEC_PAR_REP = 6;      /* une répétition et sa pause : ~4 s de mouvement,
    ouverte, une longue discussion entre deux séries, et le compteur montait tout seul.
    Le chiffre ne bouge donc qu'au moment où l'on valide une série. */
 function liftKcal(sess){
+  /* mesurees par la montre : elles remplacent l'estimation — sauf si la seance contient
+     une course ou du cardio, dont les calories sont deja comptees a part */
+  if(sess && sess.montre && sess.montre.kcal > 0 && !sess.course && !sess.cardio) return sess.montre.kcal;
   const kg = currentWeight() || (db.profile && db.profile.weight) || 75;
   let kcal = 0;
   ((sess && sess.entries) || []).forEach(en=>{
@@ -22528,6 +22698,195 @@ function carteAmisNouveau(){
     <span class="grow"><span class="bad">${TR("Nouveau")}</span><b>${TR("Suis la flamme de tes amis")}</b><small>${TR("Ajoute-les, et comparez vos séries.")}</small></span>
     <button class="am-nouveau-x" id="am-nouveau-x" aria-label="${TR("Fermer")}">✕</button></div>`;
 }
+/* ===== La montre connectee (Nico, 29 sept.) =====
+   Zepp (Amazfit), Samsung Health, Fitbit, Garmin Connect... deposent leurs seances dans
+   Health Connect. A l'ouverture, Tonnup lit celles qu'il ne connait pas et propose de les
+   ajouter : une sortie cardio avec la vraie distance, les calories et le cardio de la montre.
+   Android 14+ seulement (Health Connect integre au systeme). Rien ne quitte le telephone.
+   Les seances de musculation de la montre sont laissees de cote : elles ne disent ni les
+   exercices ni les series — elles serviront plus tard a enrichir une seance Tonnup. */
+let santePont = null;
+function pluginSante(){
+  if(santePont) return santePont;
+  const c = window.Capacitor;
+  if(c && c.Plugins && c.Plugins.Sante) santePont = c.Plugins.Sante;
+  else if(c && typeof c.registerPlugin === "function" && typeof c.isNativePlatform === "function" && c.isNativePlatform()){
+    try{ santePont = c.registerPlugin("Sante"); }catch(e){ santePont = null; }
+  }
+  return santePont;
+}
+const SANTE_TYPES = {"course":["course", "course", "Course"], "course-tapis":["course", "course", "Course sur tapis"], "marche":["course", "marche", "Marche"],
+  "velo":["velo", null, "Vélo"], "rameur":["rameur", null, "Rameur"], "elliptique":["elliptique", null, "Elliptique"],
+  "stepper":["stepper", null, "Stepper"], "natation":["natation", null, "Natation"], "autre":["autre", null, "Activité"]};
+async function openMontre(){
+  const pl = pluginSante();
+  let etat = {etat:"absent"};
+  try{ etat = await pl.dispo(); }catch(e){}
+  const sa = db.sante || {};
+  openSheet(`<h3 class="rg-h">${TR("Montre connectée")}</h3>
+    <div class="rg-sous">${TR("Tes activités enregistrées par ta montre, proposées dans Tonnup.")}</div>
+    ${etat.etat === "ancien" ? `<div class="sv-note"><div>${TR("Il faut Android 14 ou plus récent.")}</div></div>`
+      : etat.etat !== "ok" ? `<div class="sv-note"><div>${TR("Health Connect n'est pas disponible sur ce téléphone.")}</div></div>` : `
+    <div class="rg-c" style="margin-top:12px;">
+      <button class="rg-l" id="mt-actif"><span class="rgi c-bleu">${IC_MONTRE}</span><span class="grow">${TR("Proposer mes activités")}
+        <em>${TR("À l'ouverture de Tonnup, tes nouvelles activités de la montre te sont proposées.")}</em></span>
+        <span class="rg-sw ${sa.actif ? "on" : ""}"><i></i></span></button>
+    </div>
+    <div class="mt-aide">
+      <b>${TR("Comment ça marche")}</b>
+      <p>${TR("Ta montre enregistre tes activités dans son application (Zepp, Samsung Health, Fitbit…), qui les dépose dans Health Connect. Tonnup les lit, et rien ne quitte ton téléphone.")}</p>
+      <p>${TR("Dans l'application de ta montre, active l'envoi vers Health Connect.")}</p>
+      <p>${TR("Une activité est proposée à partir de 10 min, 30 min pour la marche : un trajet à pied n'allume pas ta flamme.")}</p>
+    </div>`}
+    <button class="btn btn-accent" id="mt-ok" style="width:100%; margin-top:14px;">${TR("Fermer")}</button>`);
+  document.getElementById("mt-ok").onclick = closeSheet;
+  const b = document.getElementById("mt-actif");
+  if(b) b.onclick = async ()=>{
+    if(sa.actif){ db.sante = Object.assign({}, sa, {actif:false}); save(); openMontre(); return; }
+    let r = {autorise:false};
+    try{ r = await pl.autoriser(); }catch(e){}
+    if(!r.autorise){ toast(TR("Autorise Tonnup dans Health Connect pour lire tes activités."), "erreur"); return; }
+    /* on regarde 3 jours en arriere : une activite recente est proposee tout de suite */
+    db.sante = Object.assign({vus:[]}, sa, {actif:true, depuis:sa.depuis || Date.now() - 3 * 864e5});
+    save(); vibrer(12);
+    openMontre();
+    verifierMontre(true);
+  };
+}
+/* une activite de la montre deja dans Tonnup (meme heure, a 15 min pres) : on ne la propose pas */
+function dejaDansTonnup(a){
+  const pres = x=>Math.abs(new Date(x.date).getTime() - a.debut) < 15 * 60000;
+  return (db.cardio || []).some(c=>c.santeId === a.id || pres(c)) || (db.history || []).some(h=>h.santeId === a.id || (h.start
+    && (Math.abs(h.start - a.debut) < 15 * 60000 || (h.end && h.start < a.fin && h.end > a.debut))));
+}
+let montreEnCours = false;
+/* Le minimum pour qu'une activite de la montre soit proposee, en minutes (Nico, 29 sept.).
+   La marche a 30 min : les montres detectent seules une marche soutenue, et un trajet a
+   pied vers le travail ne doit pas allumer la flamme. La muscu a 15 min : en dessous,
+   c'est un mode lance par erreur. Le reste a 10 min : une vraie seance, pas un sprint
+   pour attraper le bus. */
+function minimumMontre(type){
+  return type === "marche" ? 30 : type === "muscu" ? 15 : 10;
+}
+/* `apres` : appele une fois les activites proposees (ou s'il n'y en a pas) */
+async function verifierMontre(force, apres){
+  const sa = db.sante, pl = pluginSante();
+  const fini = ()=>{ if(apres){ const f = apres; apres = null; f(); } };
+  if(!sa || !sa.actif || !pl || demoEnCours){ fini(); return; }
+  if(montreEnCours) return;
+  if(!force && (sheetOpen || document.querySelector(".pp-modal") || document.getElementById("abo-fenetre"))) return;
+  montreEnCours = true;
+  try{
+    const depuis = Math.max(sa.depuis || 0, Date.now() - 7 * 864e5);
+    const r = await pl.activites({depuis});
+    const vus = new Set(sa.vus || []);
+    const l = (r.activites || []).filter(a=>(a.type === "muscu" || SANTE_TYPES[a.type]) && a.fin - a.debut >= minimumMontre(a.type) * 60000
+      && !vus.has(a.id) && !dejaDansTonnup(a)).sort((x, y)=>x.debut - y.debut);
+    await enrichirSeances();
+    if(l.length){ const cb = apres; apres = null; proposerActivite(l, 0, cb); }
+  }catch(e){}
+  montreEnCours = false;
+  fini();
+}
+/* Le cardio et les calories de la montre sur une seance Tonnup (Nico, 29 sept.) : ce que
+   la montre a mesure entre le debut et la fin de la seance, qu'on l'ait mise en mode
+   musculation ou non — le cardio continu suffit, en moins precis. La montre envoie ses
+   mesures a Health Connect quand son appli se synchronise, parfois des heures apres :
+   on relit donc a chaque ouverture tant que la seance a moins d'un jour. */
+async function mesurerSeance(h){
+  const pl = pluginSante();
+  if(!pl || !db.sante || !db.sante.actif || !h || !h.start || !h.end || h.end <= h.start) return null;
+  try{
+    const m = await pl.mesures({debut:h.start, fin:h.end});
+    if(!(m && (m.fcMoy > 0 || m.kcal > 0))) return h.montre || null;
+    const n = {maj:Date.now()};
+    if(m.fcMoy > 0) n.fcMoy = Math.round(m.fcMoy);
+    if(m.fcMax > 0) n.fcMax = Math.round(m.fcMax);
+    if(m.kcal > 0) n.kcal = Math.round(m.kcal);
+    h.montre = n;
+    save();
+    return n;
+  }catch(e){ return h.montre || null; }
+}
+async function enrichirSeances(){
+  const l = (db.history || []).filter(h=>h.start && h.end && !h.santeId && Date.now() - h.end < 864e5
+    && !(h.montre && h.montre.maj - h.end > 864e5));
+  for(const h of l) await mesurerSeance(h);
+}
+/* la ligne « ta montre » : cardio moyen, max, calories */
+function ligneMontre(m){
+  if(!m) return "";
+  const p = [];
+  if(m.fcMoy > 0) p.push(TR("{} bpm moyens").replace("{}", m.fcMoy));
+  if(m.fcMax > 0) p.push(TR("max {}").replace("{}", m.fcMax));
+  if(m.kcal > 0) p.push(m.kcal + " kcal");
+  return p.join(" · ");
+}
+/* Une seance de musculation de la montre sans seance Tonnup : on l'oublie parfois. Ajoutee,
+   elle compte pour la flamme et les seances, pas pour le tonnage — la montre ne sait ni
+   les exercices ni les charges. */
+function ajouterSeanceMontre(a){
+  const n = {maj:Date.now()};
+  if(a.fcMoy > 0) n.fcMoy = Math.round(a.fcMoy);
+  if(a.fcMax > 0) n.fcMax = Math.round(a.fcMax);
+  if(a.kcal > 0) n.kcal = Math.round(a.kcal);
+  db.history.push({id:uid(), date:new Date(a.debut).toISOString(), name:TR("Musculation (montre)"),
+    start:a.debut, end:a.fin, entries:[], montre:n, source:"montre", santeId:a.id});
+  marquerVue(a.id);
+}
+function marquerVue(id){
+  db.sante.vus = (db.sante.vus || []).concat([id]).slice(-300);
+  save();
+}
+function ajouterActivite(a){
+  const t = SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000, quand = new Date(a.debut);
+  const km = a.km > 0.05 ? Math.round(a.km * 100) / 100 : 0;
+  const sortie = {id:uid(), date:quand.toISOString(), km, min:Math.round(min * 10) / 10, machine:t[0], source:"montre", santeId:a.id};
+  if(t[1]) sortie.type = t[1];
+  if(!km) sortie.estime = true;
+  if(a.kcal > 0) sortie.kcalM = Math.round(a.kcal);
+  if(a.fcMoy > 0) sortie.hr = a.fcMoy;
+  if(a.fcMax > 0) sortie.hrMax = a.fcMax;
+  if(a.pas > 0) sortie.pas = a.pas;
+  db.cardio.push(sortie);
+  marquerVue(a.id);
+}
+function proposerActivite(l, i, apres){
+  const a = l[i]; if(!a) return;
+  const t = a.type === "muscu" ? [null, null, "Musculation"] : SANTE_TYPES[a.type], min = (a.fin - a.debut) / 60000;
+  const quand = new Date(a.debut);
+  const jour = dayKey(quand) === dayKey() ? TR("aujourd'hui") : quand.toLocaleDateString(loc(), {weekday:"long", day:"numeric", month:"long"});
+  const tuile = (ic, v, lab)=>`<div><span class="ic">${ic}</span><b>${v}</b><small>${lab}</small></div>`;
+  const tu = [tuile(IC_CHRONO, minTxt(Math.round(min)), TR("durée"))];
+  if(a.km > 0.05) tu.push(tuile(icoM("course", 18), kmTxt(Math.round(a.km * 100) / 100), TR("distance")));
+  if(a.kcal > 0) tu.push(tuile(icoM("flamme", 18), Math.round(a.kcal), "kcal"));
+  if(a.fcMoy > 0) tu.push(tuile(IC_COEUR, a.fcMoy, TR("bpm moyens")));
+  if(a.fcMax > 0 && tu.length === 3) tu.push(tuile(IC_COEUR, a.fcMax, TR("bpm max")));   /* 4 tuiles plutot qu'une seule orpheline */
+  const w = fenetre(`<div class="fe-logo" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">${IC_MONTRE}</div>
+    <h3>${TR(a.type === "muscu" ? "Une séance de ta montre" : "Une activité de ta montre")}</h3>
+    <p><b>${esc(TR(t[2]))}</b> · ${esc(jour)} ${TR("à")} ${quand.toLocaleTimeString(loc(), {hour:"2-digit", minute:"2-digit"})}</p>
+    <div class="mt-tuiles">${tu.join("")}</div>
+    ${a.type === "muscu" ? `<p class="fe-petit">${TR("Elle compte pour ta flamme et tes séances, pas pour le tonnage.")}</p>` : ""}
+    ${l.length > 1 ? `<p class="fe-petit">${TR("{a} sur {n}").replace("{a}", i + 1).replace("{n}", l.length)}</p>` : ""}
+    <button class="btn btn-accent" id="mt-add" style="width:100%; margin-top:12px;">${TR("Ajouter à Tonnup")}</button>
+    ${l.length - i > 1 ? `<button class="btn" id="mt-tout" style="width:100%; margin-top:8px;">${TR("Tout ajouter ({})").replace("{}", l.length - i)}</button>` : ""}
+    <button class="am-lien" id="mt-non" style="display:block; margin:8px auto 0;">${TR("Ignorer")}</button>`);
+  const suite = ()=>{ w.fermer(); if(l[i + 1]) setTimeout(()=>proposerActivite(l, i + 1, apres), 250); else{ render(); if(apres) setTimeout(apres, 250); } };
+  w.el.querySelector("#mt-add").onclick = ()=>{
+    (a.type === "muscu" ? ajouterSeanceMontre : ajouterActivite)(a);
+    vibrer(20); toast(TR(a.type === "muscu" ? "Séance ajoutée ! 🔥" : "Activité ajoutée ! 🔥"));
+    suite();
+  };
+  const tout = w.el.querySelector("#mt-tout");
+  if(tout) tout.onclick = ()=>{
+    const reste = l.slice(i);
+    reste.forEach(x=>(x.type === "muscu" ? ajouterSeanceMontre : ajouterActivite)(x));
+    vibrer(24); toast(TR("{} activités ajoutées ! 🔥").replace("{}", reste.length));
+    w.fermer(); render();
+    if(apres) setTimeout(apres, 250);
+  };
+  w.el.querySelector("#mt-non").onclick = ()=>{ marquerVue(a.id); suite(); };
+}
 function openProfil(){
   const pl = planFor(db.profile);
   const p = db.profile || {};
@@ -22589,6 +22948,62 @@ function openProfil(){
     if(b && l.length && !b.querySelector(".pastille")) b.insertAdjacentHTML("beforeend", '<i class="pastille"></i>');
   }).catch(()=>{});
   const prOk = document.getElementById("pr-ok"); if(prOk) prOk.onclick = closeSheet;
+}
+/* Le salut s'ecrit lettre par lettre a l'ouverture de l'app (Nico) : « Salut Nico, » puis
+   « Pret pour ta seance ? ». Chaque lettre est deja a sa place (invisible) : la mise en
+   page ne bouge pas, et ajusterSalut a mesure le texte entier. Rien si l'appareil demande
+   moins d'animations. */
+var salutEnAttente = false;
+/* Lever le rideau d'ouverture quand l'accueil est pret : ses images de fond decodees (1,8 s
+   au plus), et au moins 0,9 s apres le lancement — la barre a le temps de se remplir sans
+   que l'ecran clignote. Dans une page de test (iframe), il s'efface tout de suite. */
+function leverRideau(){
+  const ov = document.getElementById("ouverture");
+  if(!ov) return;
+  const fond = document.getElementById("ov-fond");
+  if(window.top !== window){ ov.remove(); if(fond) fond.remove(); if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } return; }
+  const urls = [];
+  document.querySelectorAll("#app img").forEach(im=>{ if(urls.length < 6 && im.src) urls.push(im.src); });
+  document.querySelectorAll('#app [style*="background-image"]').forEach(el=>{
+    const m = /url\(['"]?([^'")]+)/.exec(el.getAttribute("style") || ""); if(m && urls.length < 8) urls.push(m[1]); });
+  const decoder = u=>new Promise(r=>{ const im = new Image(); im.onload = im.onerror = ()=>r(); im.src = u; });
+  Promise.race([Promise.all(urls.map(decoder)), new Promise(r=>setTimeout(r, 1800))]).then(()=>{
+    setTimeout(()=>{
+      ov.classList.add("fin");
+      setTimeout(()=>{
+        ov.classList.add("leve"); if(fond) fond.remove();
+        setTimeout(()=>{ if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } }, 220);
+        setTimeout(()=>{ ov.remove(); if(fond) fond.remove(); }, 650);
+      }, 230);
+    }, Math.max(0, 900 - performance.now()));
+  });
+}
+function ecrireSalut(){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const h1 = document.querySelector(".hero-accueil h1"), sous = document.querySelector(".hero-accueil .sub");
+  if(!h1) return;
+  let i = 0;
+  const PAS = 45;                        /* ms entre deux lettres */
+  const decouper = el=>{
+    const noeuds = [];
+    const marcher = n=>n.childNodes.forEach(c=>{ if(c.nodeType === 3) noeuds.push(c); else if(c.nodeType === 1 && !c.classList.contains("wv")) marcher(c); });
+    marcher(el);
+    noeuds.forEach(t=>{
+      const frag = document.createDocumentFragment();
+      Array.from(t.textContent).forEach(ch=>{
+        if(/\s/.test(ch)){ frag.appendChild(document.createTextNode(ch)); return; }
+        const sp = document.createElement("span");
+        sp.className = "ecr"; sp.textContent = ch; sp.style.animationDelay = (i++ * PAS) + "ms";
+        frag.appendChild(sp);
+      });
+      t.replaceWith(frag);
+    });
+    /* la main qui salue arrive juste apres la derniere lettre du titre */
+    el.querySelectorAll(".wv").forEach(w=>{ w.classList.add("ecr"); w.style.animationDelay = (i++ * PAS) + "ms"; });
+  };
+  decouper(h1);
+  i += 4;                                /* une courte pause avant la deuxieme ligne */
+  if(sous) decouper(sous);
 }
 /* le salut de l'accueil sur une seule ligne : on reduit le corps jusqu'a ce qu'il tienne
    dans la place laissee par le poussin (jamais sous 18 px) */
@@ -22802,7 +23217,9 @@ function renderTabs(){
    seance change tout l'ecran sans changer d'onglet, et merite le meme fondu. */
 let ecranPrecedent = null;
 let carrouselCible = null;        /* selecteur de la carte a montrer au prochain rendu */
+let rendus = 0;                    /* combien de fois l'ecran a ete dessine depuis l'ouverture */
 function render(){
+  rendus++;
   renderTabs();
   publierAmiBientot();
   suivreAmisBientot();
@@ -23515,6 +23932,8 @@ async function planifierNotifs(){
   }catch(e){ return false; }
 }
 /* un rappel touche : on ouvre ce qu'il annonce */
+/* revenir dans l'app (apres une course avec la montre) : on regarde s'il y a du nouveau */
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible") setTimeout(()=>verifierMontre(false), 1200); });
 function brancherNotifs(){
   const n = pluginNotifs(); if(!n || !n.addListener) return;
   try{
@@ -25607,7 +26026,7 @@ async function analyserPhoto(b64, indice){
     r = await fetch(RELAIS_PHOTO, {
       method:"POST",
       headers:{"Content-Type":"application/json", "X-Tonnup":RELAIS_JETON},
-      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || "", assiette:assietteChoisie()[0], assietteCm:assietteChoisie()[2]}),
+      body: JSON.stringify({image:b64, appareil:idAppareil(), indice:indice || "", assiette:assietteChoisie()[0], assietteCm:assietteChoisie()[2], langue:langue()}),
       signal: ctrl.signal
     });
   } finally { clearTimeout(garde); }
@@ -25717,7 +26136,7 @@ function openResultatPhoto(meal, res){
     const t = it ? par100DeTable(it) : null;
     /* le nom du modele reste celui qu'on affiche (« pomme de terre », pas « Patate ») :
        la table ne sert qu'aux valeurs */
-    const nom = majuscule(a.nom);
+    const nom = majuscule(a.nom_aff || a.nom);            /* dans la langue de l'app, quand le relais la connait */
     return {nom, g:a.grammes || 100, confiance:a.confiance, note:a.note,
       prot100: t ? t.prot100 : a.prot100, kcal100: t ? t.kcal100 : a.kcal100,
       gluc100: a.gluc100, lip100: a.lip100, source: t ? "table" : "estimation"};
@@ -26350,7 +26769,7 @@ function serieSemaines(maintenant){
   const now = maintenant ? new Date(maintenant) : new Date();
   const lundi = new Date(now); lundi.setHours(0,0,0,0); lundi.setDate(lundi.getDate() - ((lundi.getDay()+6)%7));
   const jours = new Set();
-  (db.history || []).concat(db.cardio || []).forEach(x=>{
+  activitesComptees().forEach(x=>{
     const d = new Date(x.date); if(!(d > 0) || d > now) return;
     d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7));
     jours.add(d.getTime());
@@ -27710,7 +28129,7 @@ function renderSeance(app){
   /* initiales des jours : lundi→dimanche en français, Monday→Sunday en anglais */
   const days = langue()==="en" ? ["M","T","W","T","F","S","S"] : ["L","M","M","J","V","S","D"];
   const trained = new Set();
-  db.history.concat(db.cardio).forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
+  activitesComptees().forEach(x=>{ const d=new Date(x.date); if(d>=w0) trained.add((d.getDay()+6)%7); });
   const todayIdx = (now.getDay()+6)%7;
   /* comparaison avec la semaine précédente : un repère, pas un jugement */
   const w1 = new Date(w0.getTime() - 7*864e5);
@@ -27805,6 +28224,8 @@ function renderSeance(app){
   document.getElementById("hist-all").onclick = ()=>allerOnglet("hist");
   wireTopbar();
   ajusterSalut();
+  /* a l'ouverture seulement, pas en revenant sur l'onglet ; et apres le rideau s'il est la */
+  if(rendus === 1){ if(document.getElementById("ouverture")) salutEnAttente = true; else ecrireSalut(); }
   document.getElementById("bilan-btn").onclick=()=>{ if(verrouille("bilan")) openAbonnement(); else openBilan(); };
   document.getElementById("fab").onclick=openAjout;
   const rc = document.getElementById("recup-btn");
@@ -29206,11 +29627,13 @@ function openHistDetail(id){
   /* d'apres la maquette du 21 septembre : chaque exercice sur sa ligne avec sa vignette,
      puis partager, modifier, supprimer */
   openSheet(`<h3 style="text-align:center;">${esc(h.name)}</h3>
-    <div class="hd-sous">${fmtDate(h.date)} · ${mn} min · ${volPds(vol)}</div>
+    <div class="hd-sous">${fmtDate(h.date)} · ${mn} min${h.entries.length ? " · " + volPds(vol) : ""}</div>
     <div class="hd-liste">${h.entries.map(en=>{ const ex = getEx(en.exId); return `
       <div class="hd-ex">${exIcon(ex)}<div class="grow"><b>${esc(nomEx(ex))}</b>
       <span>${en.sets.map(st=>`${fmtKg(st.w)} × ${st.r}${(st.drops||[]).map(d=>` ↳ ${fmtKg(d.w)} × ${d.r}`).join("")}`).join(" · ")}</span></div></div>`; }).join("")}${
-      h.cardio ? `<div class="hd-ex"><span class="ex-ico" style="color:var(--accent);">${icoM("course", 26)}</span><div class="grow"><b>${esc(machineNom(h.cardio))}</b><span>${esc(texteSortie(h.cardio))}</span></div></div>` : ""}</div>
+      h.cardio ? `<div class="hd-ex"><span class="ex-ico" style="color:var(--accent);">${icoM("course", 26)}</span><div class="grow"><b>${esc(machineNom(h.cardio))}</b><span>${esc(texteSortie(h.cardio))}</span></div></div>` : ""}${
+      h.montre && ligneMontre(h.montre) ? `<div class="hd-ex"><span class="ex-ico" style="color:#3b82f6;">${IC_MONTRE}</span><div class="grow"><b>${TR("Ta montre")}</b><span>${esc(ligneMontre(h.montre))}</span></div></div>` : ""}${
+      !h.entries.length && h.source === "montre" ? `<div class="hd-vide">${TR("Enregistrée par ta montre : sans exercices ni charges.")}</div>` : ""}</div>
     <button class="btn hd-btn" id="hd-partager" style="width:100%; margin-bottom:10px;">${IC_PARTAGE}${TR("Partager la séance")}</button>
     <div class="row" style="gap:10px;">
       <button class="btn grow hd-btn" id="hd-edit">${IC_CRAYON}${TR("Modifier")}</button>
@@ -31099,6 +31522,8 @@ function openFinSeance(r){
         en carte sombre avec le trophee et une ligne par exercice, les trois humeurs avec
         leur visage, et « Terminé » avec son chevron */""}
   <div class="fin-serie"><span class="ic">${IC_BARRES}</span><span><b>${r.series}</b> ${TR(r.series>1 ? "séries" : "série")} ${TR("sur")} <b>${r.exos}</b> ${TR(r.exos>1 ? "exercices" : "exercice")}.</span></div>
+  <div class="fin-montre" id="fin-montre" hidden></div>
+  ${r.duree < MIN_ACTIVITE * 60000 ? `<div class="fin-court">${TR("Moins de 5 minutes : cette séance n'allume pas ta flamme.")}</div>` : ""}
   ${r.cardio ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.cardio)}</div>` : ""}
   ${r.course ? `<div style="font-size:13.5px; color:var(--ink-soft); text-align:center; margin:-6px 0 14px;">${icoM("course", 13)} ${esc(r.course)}</div>` : ""}
   ${r.records.length? `<div class="fin-rec">
@@ -31133,6 +31558,18 @@ function openFinSeance(r){
     vibrer(8);
   });
   document.getElementById("fin-ok").onclick = closeSheet;
+  /* la montre : ses mesures arrivent parfois plus tard — elles iront alors dans l'historique */
+  const hm = (db.history || []).find(x=>x.id === r.id);
+  if(hm) mesurerSeance(hm).then(m=>{
+    const el = document.getElementById("fin-montre");
+    if(!m || !el) return;
+    el.innerHTML = `<span class="ic">${IC_MONTRE}</span><span>${esc(ligneMontre(m))}</span>`;
+    el.hidden = false;
+    if(m.kcal > 0 && !hm.course && !hm.cardio){
+      const t = document.querySelector(".fin-tiles .tile:nth-child(3)");
+      if(t){ t.querySelector(".v").textContent = m.kcal; t.querySelector(".u").textContent = TR("kcal (montre)"); }
+    }
+  });
 }
 
 /* ================================================================== la carte a partager
@@ -34209,6 +34646,12 @@ function openSettings(){
         ${sw(db.settings.vibrer !== false)}
       </button>
       ${""}
+      ${pluginSante() ? `<button class="rg-l" id="st-montre">
+        <span class="rgi c-bleu">${IC_MONTRE}</span>
+        <span class="grow">${TR("Montre connectée")}
+          <em>${TR("Tes activités de la montre, par Health Connect.")}</em></span>
+        <span class="rg-sw ${db.sante && db.sante.actif ? "on" : ""}"><i></i></span>
+      </button>` : ""}
       <button class="rg-l" id="st-notifs">
         <span class="rgi c-violet">${IC_CLOCHE}</span>
         <span class="grow">${TR("Notifications")}
@@ -34324,6 +34767,8 @@ function openSettings(){
   document.getElementById("st-bk").onclick = ()=>ouvrirParDessus(openSettings, openSauvegarde);
   /* l'interrupteur allume ou coupe tout ; le reste de la ligne ouvre la page */
   document.getElementById("st-notifs").onclick = ()=>ouvrirParDessus(openSettings, openNotifs);
+  const stM = document.getElementById("st-montre");
+  if(stM) stM.onclick = ()=>ouvrirParDessus(openSettings, openMontre);
   document.getElementById("st-notifs-sw").onclick = e=>{
     e.stopPropagation();
     const r = notifsReglage(); r.actif = !r.actif; save();
@@ -36274,6 +36719,7 @@ render = function(){ _origRender(); syncWakeLock(); };
 appliquerTheme();
 majTextesFixes();
 render();
+leverRideau();
 /* juste apres le premier dessin : l'accueil passe avant les photos des autres pages */
 setTimeout(prechargerHeros, 300);
 if(!db.profile) setTimeout(()=>{ if(!db.profile) openOnboarding(true); }, 400);
