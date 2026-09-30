@@ -294,6 +294,10 @@
   .pv-temps .astuce .ic svg{width:17px; height:17px;}
   .pv-temps .astuce > span:last-child{font-size:12px; color:var(--ink-soft); line-height:1.45;}
   .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  /* les icones-images (haltere, cible, chrono) : l'image sert de masque, la couleur
+     vient du texte autour — les tailles deja reglees pour les svg s'appliquent telles quelles */
+  svg.ic-img{background:currentColor; -webkit-mask:var(--m) center / contain no-repeat; mask:var(--m) center / contain no-repeat;
+    fill:none !important; stroke:none !important;}
   .pv-course{margin-top:8px;} .pv-course.debut{margin:0 0 8px;}
   .pv-co-mv{font-size:15px; font-weight:900; color:var(--accent); margin-right:4px;}
   /* l'apercu qui se recompose : les lignes qui arrivent, celles qui partent */
@@ -1120,7 +1124,9 @@
   @keyframes disqueEnfile{from{transform:translateX(var(--dx, 60px)); opacity:0;} 25%{opacity:1;}}
   @keyframes disqueEtiq{from{opacity:0;}}
   .hx-barre-svg .e text{font-size:10px; font-weight:800; fill:var(--ink-soft); text-anchor:middle;}
-  .hx-barre{position:absolute; top:8px; right:10px; padding:4px 6px; background:none; font:inherit; font-size:11px; font-weight:700; color:var(--ink-mute);}
+  .hx-barre{position:absolute; top:12px; right:10px; padding:4px 10px; border-radius:99px; border:1px solid #E3E1DE; background:#fff;
+    font:inherit; font-size:11.5px; font-weight:800; color:var(--ink-soft); line-height:1.3; box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  :root[data-theme="dark"] .hx-barre{background:var(--surface); border-color:rgba(255,255,255,.18);}
   .hx-barres{display:inline-flex; gap:6px; flex-wrap:wrap; justify-content:center;}
   .hx-barres button{padding:6px 11px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); font:inherit; font-size:12.5px; font-weight:800; color:var(--ink-soft);}
   .hx-barres button.on{background:rgba(245,130,32,.10); box-shadow:inset 0 0 0 1.5px var(--accent); color:var(--accent);}
@@ -2812,7 +2818,7 @@
   .sheet h3{font-size:18px; margin-bottom:14px; text-align:center; padding:0 34px;}
   /* croix de fermeture, présente sur toutes les fiches */
   .sheet-x{position:absolute; top:10px; right:12px; z-index:5; width:32px; height:32px; border-radius:50%;
-    background:var(--surface2); border:1px solid var(--border);
+    background:var(--surface); border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.06);   /* blanche (Nico) */
     color:var(--ink-soft); display:flex; align-items:center; justify-content:center;
     font-size:17px; line-height:1;}
   .sheet{position:relative;}
@@ -3416,8 +3422,8 @@
   }
   @keyframes flPouf{0%{opacity:0; transform:scale(.3);} 30%{opacity:1;} 100%{opacity:0; transform:scale(1.5);}}
   /* le podium : ton poussin sautille de temps en temps, pour que tu te reperes */
-  @media (prefers-reduced-motion:no-preference){ .pd-po.moi .in{animation:pdSaut 3.2s ease-in-out 1.4s infinite;} }
-  @keyframes pdSaut{0%, 78%, 100%{transform:none;} 84%{transform:translateY(-12%) scaleY(1.03);} 90%{transform:translateY(0) scaleY(.96);} 94%{transform:none;}}
+  @media (prefers-reduced-motion:no-preference){ .pd-po.moi .in{animation:pdSaut 2s ease-in-out 1.4s infinite;} }
+  @keyframes pdSaut{0%, 74%, 100%{transform:none;} 84%{transform:translateY(-12%) scaleY(1.03);} 93%{transform:translateY(0) scaleY(.96);} 99%{transform:none;}}
   /* l'avancee de l'exercice : une fine barre qui glisse a chaque serie validee */
   .ex-av{height:5px; border-radius:99px; background:var(--surface2); overflow:hidden; margin:2px 0 10px;}
   .ex-av i{display:block; height:100%; border-radius:99px; background:var(--accent-grad); transition:width .5s cubic-bezier(.22,1,.36,1), background .3s;}
@@ -5032,7 +5038,8 @@
   /* le cadenas du bilan, sans abonnement */
   .wk-bilan .wk-cad{display:inline-flex; margin-right:5px;} .wk-bilan .wk-cad svg{width:13px; height:13px;}
   /* le bilan : un titre de carte ; le lien vers le mois */
-  .bl-tete2{margin-bottom:16px; padding-right:34px;} .bl-tete2 .pt-t{font-size:24px; font-weight:900;}
+  .bl-tete2{margin-bottom:16px; padding-right:34px;}
+  .bl-onglets + .bl-tete2{margin-top:18px;} .bl-tete2 .pt-t{font-size:24px; font-weight:900;}
   .bl-mois{display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:0; margin:0 0 16px; padding:12px 14px;
     border-radius:16px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--bord-doux); color:var(--ink);}
   .bl-mois .ic{flex:none; width:40px; height:40px; border-radius:12px; background:rgba(245,130,32,.14); color:var(--accent);
@@ -5041,6 +5048,23 @@
   .bl-mois > svg{width:18px; height:18px; color:var(--ink-mute); flex:none;}
   /* les cadres qui apparaissent en descendant */
   .rv{opacity:0; transform:translateY(22px); transition:opacity .55s ease, transform .6s cubic-bezier(.2,.9,.3,1);}
+  /* le profil : rangee par rangee */
+  .onb-rang{animation:onbRang .62s cubic-bezier(.2,.8,.3,1) backwards;}
+  @keyframes onbRang{from{opacity:0; transform:translateY(24px);}}
+  .pj-n{font-style:normal;}
+  .pj-trace{stroke-dasharray:1; stroke-dashoffset:1; animation:chTrace 1.3s cubic-bezier(.45,.05,.3,1) forwards;}
+  .pj-aire-a{animation:chAire 1s ease backwards;}
+  .pj-but, .pj-but-kg{animation:pjBut .55s cubic-bezier(.3,1.5,.5,1) backwards; transform-box:fill-box; transform-origin:center;}
+  @keyframes pjBut{from{opacity:0; transform:scale(.3);}}
+  /* les confettis derriere le poussin de la fin */
+  .fin-tete{position:relative;}
+  .fin-tete .fin-poussin{position:relative; z-index:1;}
+  .eclat{position:absolute; left:50%; top:62px; width:0; height:0; z-index:0; pointer-events:none;}
+  .eclat i{position:absolute; left:-4px; top:-5px; width:8px; height:11px; border-radius:2px; opacity:0;
+    animation:eclat 1.25s cubic-bezier(.12,.7,.3,1) forwards;}
+  @keyframes eclat{0%{opacity:1; transform:translate(0,0) rotate(0);} 70%{opacity:1;}
+    100%{opacity:0; transform:translate(var(--dx), calc(var(--dy) + 36px)) rotate(var(--r));}}
+  @media (prefers-reduced-motion:reduce){ .onb-rang, .pj-aire-a, .pj-but, .pj-but-kg{animation:none;} .pj-trace{animation:none; stroke-dashoffset:0;} }
   .rv.vu{opacity:1; transform:none;}
   /* le calendrier des seances */
   .cal-c.cal-bleu{background:linear-gradient(180deg, #5AB0F0 0%, #3C8FE0 100%); color:#fff;}
@@ -19607,6 +19631,60 @@ function clicRoue(){
 }
 const LBS = PAR_LB, POUCE = 0.393701;   /* LBS : ancien nom, même valeur */
 
+/* ---- Les pages du profil arrivent rangee par rangee (Nico, 30 sept.) ----
+   Un ecart bien marque entre deux rangees ; les roulettes cote a cote arrivent l'une
+   apres l'autre, le poussin de la fin aussi. Rend le moment ou arrive chaque rangee. */
+function rangeesOnb(corps, pas, depart){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return [];
+  const els = [];
+  [...corps.children].forEach(c=>{
+    if(c.classList.contains("onb-rou") || c.classList.contains("fin-tete")) els.push(...[...c.children].filter(x=>!x.classList.contains("eclat")));
+    else els.push(c);
+  });
+  return els.map((el, k)=>{
+    const t = (depart || 80) + k * pas;
+    el.style.animationDelay = t + "ms";
+    el.classList.add("onb-rang");
+    return {el, t};
+  });
+}
+/* une explosion de confettis derriere le poussin de la fin */
+function eclatConfettis(hote){
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const z = document.createElement("div");
+  z.className = "eclat";
+  const couleurs = ["#F58220", "#FFB020", "#FFD23F", "#EF4444", "#22C55E", "#3B82F6"];
+  for(let i = 0; i < 40; i++){
+    const c = document.createElement("i");
+    const ang = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 90;
+    c.style.setProperty("--dx", Math.round(Math.cos(ang) * dist) + "px");
+    c.style.setProperty("--dy", Math.round(Math.sin(ang) * dist * .8 - 20) + "px");
+    c.style.setProperty("--r", Math.round(Math.random() * 720 - 360) + "deg");
+    c.style.background = couleurs[i % couleurs.length];
+    c.style.animationDelay = Math.round(Math.random() * 90) + "ms";
+    if(i % 3 === 0){ c.style.width = "7px"; c.style.height = "7px"; c.style.borderRadius = "50%"; }
+    z.appendChild(c);
+  }
+  hote.insertBefore(z, hote.firstChild);
+  setTimeout(()=>z.remove(), 1700);
+}
+/* un nombre qui defile dans un <text> SVG (les kilos de la courbe) */
+function defilerTexte(el, de, a, f, delai, duree){
+  if(!el || window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const fin = el.textContent;
+  el.textContent = f(de);
+  setTimeout(()=>{
+    const t0 = performance.now();
+    const pas = now=>{
+      if(!el.isConnected) return;
+      const k = Math.min(1, (now - t0) / duree), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = k < 1 ? f(de + (a - de) * e) : fin;
+      if(k < 1) requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  }, delai);
+  setTimeout(()=>{ if(el.isConnected) el.textContent = fin; }, delai + duree + 300);
+}
 function openOnboarding(first, brouillon, depart){
   const base = brouillon || db.profile || {};
   /* profil déjà rempli une première fois : on peut ressortir sans rien casser */
@@ -19960,6 +20038,7 @@ function openOnboarding(first, brouillon, depart){
         kg ? 30 : Math.round(30*LBS), kg ? 300 : Math.round(300*LBS),
         kg ? Math.round(d.weight) : Math.round(d.weight*LBS), kg ? " kg" : " lb",
         v => { d.weight = kg ? v : Math.round(v/LBS*10)/10; }, {inverse:true});
+      rangeesOnb(corps, 180);
       corps.querySelectorAll("[data-uh]").forEach(b=>b.onclick=()=>{ majUnites(b.dataset.uh==="in" ? "imperial" : "metrique"); dessiner(); });
       corps.querySelectorAll("[data-uw]").forEach(b=>b.onclick=()=>{ majUnites(b.dataset.uw==="lbs" ? "imperial" : "metrique"); dessiner(); });
       suivant(TR("Suivant"), ()=>{
@@ -19980,6 +20059,7 @@ function openOnboarding(first, brouillon, depart){
           <div class="rou-box"><div class="rou-band"></div><div class="rou-scroll" id="rou-a"></div></div>
         </div></div>`;
       roulette(corps.querySelector("#rou-a"), 14, 100, Math.round(d.age), "", v => { d.age = v; });
+      rangeesOnb(corps, 180);
       suivant(TR("Suivant"), ()=>{
         const err = verifieChamp("age", d.age);
         if(err){ toast(err); return; }
@@ -20004,6 +20084,7 @@ function openOnboarding(first, brouillon, depart){
         </div>
         <div id="reg-alerte" style="margin-top:18px;"></div>`;
       corps.querySelectorAll("[data-uw]").forEach(b=>b.onclick=()=>{ majUnites(b.dataset.uw==="lbs" ? "imperial" : "metrique"); dessiner(); });
+      rangeesOnb(corps, 180);
       const scroll = corps.querySelector("#reg");
       let html = "";
       for(let k = 60; k <= 400; k++){                  /* de 30 à 200 kg, par pas de 500 g */
@@ -20192,14 +20273,14 @@ function openOnboarding(first, brouillon, depart){
             </defs>
             ${[0,1,2,3].map(n=>`<line x1="${x0+(x1-x0)*n/3}" y1="${y0-14}" x2="${x0+(x1-x0)*n/3}" y2="${y1+14}"
               stroke="rgba(0,0,0,.14)" stroke-dasharray="4 5"/>`).join("")}
-            <path d="${aire}" fill="url(#pj-aire)"/>
-            <path d="${courbe}" fill="none" stroke="#F58220" stroke-width="3.5" stroke-linecap="round"/>
+            <path class="pj-aire-a" d="${aire}" fill="url(#pj-aire)"/>
+            <path class="pj-trace" pathLength="1" d="${courbe}" fill="none" stroke="#F58220" stroke-width="3.5" stroke-linecap="round"/>
             <circle cx="${x0}" cy="${yA}" r="7" fill="#fff" stroke="#F58220" stroke-width="3"/>
-            <circle cx="${x1}" cy="${yB}" r="20" fill="#F58220" fill-opacity=".16"/>
+            <g class="pj-but"><circle cx="${x1}" cy="${yB}" r="20" fill="#F58220" fill-opacity=".16"/>
             <circle cx="${x1}" cy="${yB}" r="13" fill="#F58220"/>
-            <text x="${x1}" y="${yB+4.5}" text-anchor="middle" font-size="13">🏆</text>
+            <text x="${x1}" y="${yB+4.5}" text-anchor="middle" font-size="13">🏆</text></g>
             ${pastille(x0, yA + (monte ? 30 : -30), pds(d.weight), false, "start")}
-            ${pastille(x1, yB + (monte ? -34 : 34), pds(d.goalWeight), true, "end")}
+            <g class="pj-but-kg">${pastille(x1, yB + (monte ? -34 : 34), pds(d.goalWeight), true, "end")}</g>
             ${jours ? `<text x="${x1 + 8}" y="${y1+32}" text-anchor="end" font-size="13" fill="var(--ink-mute)">${TR("{} jours").replace("{}", jours)}</text>` : ""}
           </svg>
           <div class="pj-rythme">
@@ -20212,9 +20293,25 @@ function openOnboarding(first, brouillon, depart){
         </div>
         ${pl ? `<h3 class="pj-titre">${TR("Ton plan quotidien")}</h3>
           <div class="pj-duo">
-            <div class="orange"><span class="ic">${icoM("flamme", 26)}</span><div><b>${pl.kcalMin}</b><span>${TR("kcal au minimum")}</span></div></div>
-            <div class="bleu"><span class="ic">${icoM("muscle", 26)}</span><div><b>${pl.prot} g</b><span>${TR("de protéines")}</span></div></div>
+            <div class="orange"><span class="ic">${icoM("flamme", 26)}</span><div><b data-defile="${pl.kcalMin}">${pl.kcalMin}</b><span>${TR("kcal au minimum")}</span></div></div>
+            <div class="bleu"><span class="ic">${icoM("muscle", 26)}</span><div><b><i class="pj-n" data-defile="${pl.prot}">${pl.prot}</i> g</b><span>${TR("de protéines")}</span></div></div>
           </div>` : ""}`;
+      /* rangee par rangee, avec un ecart bien marque ; la courbe se trace quand sa carte
+         arrive, le poids vise defile du poids actuel a l'objectif, puis les kcal et les
+         proteines comptent (Nico) */
+      const rangs = rangeesOnb(corps, 420, 100);
+      const tProj = (rangs.find(r=>r.el.classList.contains("proj")) || {t:500}).t + 350;
+      const pj = corps.querySelector(".proj");
+      if(pj && rangs.length){
+        const tr = pj.querySelector(".pj-trace"); if(tr) tr.style.animationDelay = tProj + "ms";
+        const ai = pj.querySelector(".pj-aire-a"); if(ai) ai.style.animationDelay = (tProj + 500) + "ms";
+        const bu = pj.querySelector(".pj-but"); if(bu) bu.style.animationDelay = (tProj + 1250) + "ms";
+        const bk = pj.querySelector(".pj-but-kg"); if(bk) bk.style.animationDelay = (tProj + 1250) + "ms";
+        const txt = pj.querySelector(".pj-but-kg text");
+        defilerTexte(txt, d.weight, d.goalWeight, v=>pds(Math.round(v * 10) / 10), tProj + 1250, 900);
+      }
+      const duo = corps.querySelector(".pj-duo");
+      if(duo) animerCompteurs(duo, (rangs.find(r=>r.el === duo) || {t:1800}).t + 300);
       suivant();
       return;
     }
@@ -20241,6 +20338,10 @@ function openOnboarding(first, brouillon, depart){
                  TR("Zones sensibles")].map(t=>`<i>${t}</i>`).join("")}</span>`)}
         ${bout("onb-go", " go", ICONS.seance, TR("Créer mon programme"),
                TR("On enregistre ton profil et on te propose des séances adaptées."))}`;
+      const rangsFin = rangeesOnb(corps, 340, 120);
+      const poussin = corps.querySelector(".fin-poussin");
+      const tPoussin = (rangsFin.find(r=>r.el === poussin) || {t:120}).t;
+      if(poussin) setTimeout(()=>{ if(poussin.isConnected) eclatConfettis(corps.querySelector(".fin-tete")); }, tPoussin + 260);
       corps.querySelector("#onb-go").onclick = enregistrer;
       corps.querySelector("#onb-plus").onclick = ()=>{
         if(ETAPES[ETAPES.length-1] !== "affiner") ETAPES.push("affiner");
@@ -20531,7 +20632,8 @@ function showPlan(justCreated){
     {verrou: !!justCreated});
   document.getElementById("pl-tdee").onclick = ()=>openAjustTdee();
   compterDepuisZero(document.querySelectorAll("#sheet .pn-t .v, #sheet .pn-obj .kg, #sheet .pn-carte .gros"));
-  revelerAuDefilement("#sheet .pn-plan > :not(h3):not(.pn-sous):not(.pn-chips)");
+  /* a la sortie du profil, un ecart bien visible entre les rangees (Nico) */
+  revelerAuDefilement("#sheet .pn-plan > :not(h3):not(.pn-sous):not(.pn-chips)", justCreated ? {pas:320, depart:450} : null);
   document.getElementById("pl-sante").onclick = openSante;
   /* le detail du programme et du plan, en phrases completes, par-dessus la page */
   /* le detail du programme, en deux cartes de phrases simples (d'apres la maquette de
@@ -21615,7 +21717,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 01h18 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 02h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -22846,7 +22948,7 @@ function suggestSur(exId, target, last, derniere){
 
 /* ================= TABS ================= */
 const ICONS = {
-  seance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 5v14M17.5 5v14M3 9v6M21 9v6M6.5 12h11"/></svg>',
+  seance:'<svg class="ic-img" viewBox="0 0 24 24" style="--m:url(img/ic-haltere-1.png)" aria-hidden="true"></svg>',   /* l'haltere de Nico (30 sept.) */
   eat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3v6.5a3 3 0 0 0 6 0V3M8.5 3v6.5M8.5 12.5V21"/><path d="M17 3c-1.6 1.2-2.5 3-2.5 5s.9 3.2 2.5 3.4V21"/></svg>',
   prg:'<span class="icm icm-progress" style="width:22px; height:22px;" aria-hidden="true"></span>'
 };
@@ -22901,10 +23003,8 @@ const IC_COUCHES = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
   + '<path d="M12 2.8 21.2 7.4 12 12 2.8 7.4z"/><path d="M2.8 12.6 12 17.2l9.2-4.6"/>'
   + '<path d="M2.8 17.2 12 21.8l9.2-4.6"/></svg>';
 const IC_SAC = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 8V7a4 4 0 0 1 8 0v1h2.2a1 1 0 0 1 1 .9l1 11a1 1 0 0 1-1 1.1H4.8a1 1 0 0 1-1-1.1l1-11a1 1 0 0 1 1-.9H8zm2 0h4V7a2 2 0 0 0-4 0v1z"/></svg>';
-const IC_CHRONO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"'
-  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-  + '<circle cx="12" cy="13.8" r="7.8"/><path d="M12 10.4v3.4l2.3 1.6"/>'
-  + '<path d="M9.4 2.6h5.2M12 2.6V6M18.6 7.6l1.6-1.6"/></svg>';
+/* l'image de Nico (30 sept.), en masque : elle prend la couleur de son emplacement */
+const IC_CHRONO = '<svg class="ic-img" viewBox="0 0 24 24" style="--m:url(img/ic-chrono-1.png)" aria-hidden="true"></svg>';
 const IC_CALENDRIER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"'
   + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
   + '<rect x="3.2" y="5" width="17.6" height="16" rx="2.6"/><path d="M3.2 10h17.6M8 3v4M16 3v4"/></svg>';
@@ -22922,10 +23022,8 @@ const IC_CURSEURS = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none"
   + '<path d="M3.5 8h5M12.5 8h8M3.5 16h9M16.5 16h4"/>'
   + '<circle cx="10.5" cy="8" r="2"/><circle cx="14.5" cy="16" r="2"/></svg>';
 const IC_COURONNE_CAL = '<svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 6l5 4 5-8 5 8 5-4-2 11H4z" fill="#FFC21A" stroke="#E59A00" stroke-width="1.2" stroke-linejoin="round"/></svg>';
-const IC_CIBLE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
-  + '<path d="M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2zm0 3a7.1 7.1 0 1 1 0 14.2 7.1 7.1 0 0 1 0-14.2z"/>'
-  + '<path d="M12 7.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8zm0 2.6a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/>'
-  + '<circle cx="12" cy="12" r="1.2"/></svg>';
+/* l'image de Nico (30 sept.), en masque : elle prend la couleur de son emplacement */
+const IC_CIBLE = '<svg class="ic-img" viewBox="0 0 24 24" style="--m:url(img/ic-cible-1.png)" aria-hidden="true"></svg>';
 /* Dessinée en trait, elle se remplit d'un simple « fill » : c'est ce qui permet de
    dire « ajouté » sans case à cocher à côté. */
 /* l etincelle : ce qui se recalcule tout seul */
@@ -22992,7 +23090,8 @@ const IC_MAISON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const IC_CLOCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8.4a6 6 0 1 0-12 0c0 5.2-2.1 6.6-2.1 6.6h16.2S18 13.6 18 8.4Z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg>';
 /* Une horloge simple : le chronometre, avec sa couronne, disait « je mesure » alors
    qu il s agit d une heure a laquelle ca doit sonner. */
-const IC_HORLOGE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 1.9"/></svg>';
+/* l'image de Nico (30 sept.), en masque : elle prend la couleur de son emplacement */
+const IC_HORLOGE = '<svg class="ic-img" viewBox="0 0 24 24" style="--m:url(img/ic-chrono-1.png)" aria-hidden="true"></svg>';
 /* Celle qui sonne : pleine, avec ses ondes. Un trait fin se perdait dans la pastille. */
 const IC_CLOCHE_PLEINE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="2.7" r="1.15" fill="currentColor"/><path fill="currentColor" d="M12 3.6c-2.7 0-4.9 2.2-4.9 4.9 0 3-.6 4.4-1.2 5.2-.4.5-.1 1.3.5 1.3h11.2c.6 0 .9-.8.5-1.3-.6-.8-1.2-2.2-1.2-5.2 0-2.7-2.2-4.9-4.9-4.9Z"/><path fill="currentColor" d="M9.9 16.6h4.2a2.1 2.1 0 0 1-4.2 0Z"/><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5.6 7.2A4.6 4.6 0 0 0 5.6 10.4"/><path d="M3.3 5.9A7.6 7.6 0 0 0 3.3 11.7"/><path d="M18.4 7.2A4.6 4.6 0 0 1 18.4 10.4"/><path d="M20.7 5.9A7.6 7.6 0 0 1 20.7 11.7"/></g></svg>';
 const IC_GEAR = '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" stroke="currentColor" stroke-width=".9" stroke-linejoin="round"><path d="M9.8 2.2 L14.2 2.2 L14.4 4.5 L15.6 5.0 L17.4 3.6 L20.4 6.6 L19.0 8.4 L19.5 9.6 L21.8 9.8 L21.8 14.2 L19.5 14.4 L19.0 15.6 L20.4 17.4 L17.4 20.4 L15.6 19.0 L14.4 19.5 L14.2 21.8 L9.8 21.8 L9.6 19.5 L8.4 19.0 L6.6 20.4 L3.6 17.4 L5.0 15.6 L4.5 14.4 L2.2 14.2 L2.2 9.8 L4.5 9.6 L5.0 8.4 L3.6 6.6 L6.6 3.6 L8.4 5.0 L9.6 4.5 Z M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 1 0 0-7.2Z"/></svg>';
@@ -32027,7 +32126,10 @@ function openPreview(tplId, lieuFait){
   /* la meme formule que partout : installation, transitions, tempo, repos — plus la
      sortie cardio prevue, minute pour minute */
   const objCardio = t.cardio ? objectifCardio(t.cardio) : null;
-  const extraMin = objCardio ? Math.round(objCardio.min || 0) : 0;
+  /* la sortie cardio ET la course comptent dans le temps : quand un objectif de course
+     monte d'un niveau, sa duree change, et la jauge (sa seance complete) suit */
+  const pcTemps = t.course ? courseDeSeance(t.course) : null;
+  const extraMin = (objCardio ? Math.round(objCardio.min || 0) : 0) + (pcTemps ? Math.round(parcoursTotaux(pcTemps.etapes).min || 0) : 0);
   const plein = dureeMinutes(t.items) + extraMin;
   /* le bout de la jauge : la seance entiere (arrondie aux 5 min), 1 h 30 au plus ; au-dela,
      un dernier cran « Tout » */
@@ -32048,7 +32150,7 @@ function openPreview(tplId, lieuFait){
   /* les tuiles et les muscles comptent aussi les exercices ajoutes */
   const itemsTout = items.concat(enPlus);
   const ecartes = t.items.filter((_, i)=>!gardes.includes(i));
-  const mins = dureeMinutes(itemsTout) + (objCardio ? Math.round(objCardio.min || 0) : 0);
+  const mins = dureeMinutes(itemsTout) + extraMin;
   const nSeries = itemsTout.reduce((a,i)=>a+i.sets, 0);
 const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); return `<div class="pv-ex pv-course ${t.course.place === "debut" ? "debut" : ""}">
         <span class="num pv-co-num">${icoM("course", 16)}</span>
@@ -32218,8 +32320,10 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
       bloc.querySelectorAll(".grad span").forEach(g=>g.classList.toggle("on", g === proche));
     };
     allumer();
+    let crDernier = jauge.value;
     jauge.oninput = ()=>{
       const v = val();
+      if(jauge.value !== crDernier){ crDernier = jauge.value; clicRoue(); }   /* comme la roulette du repos (Nico) */
       allumer();
       const as = document.getElementById("pv-astuce"); if(as) as.textContent = astuceTemps(v, plein);
       const asb = document.getElementById("pv-astuce-b"); if(asb) asb.classList.toggle("cache", v === null);
@@ -32235,7 +32339,6 @@ const ligneCourse = t.course ? (()=>{ const pc = courseDeSeance(t.course); retur
         const e = efficaciteTemps(t.items, v === null || v >= plein ? null : planPourTemps(t.items, v, extraMin));
         eff.innerHTML = `<b>${e} %</b> ${TR("d'efficacité")}`;
       }
-      vibrer(4);
     };
     jauge.onchange = ()=>{ tempsDispo = val(); apercuAvant = photoApercu(); openPreview(tplId, true); };
   }
@@ -39668,14 +39771,15 @@ function dessineCalendrier(){
 /* ---- les cadres d'une longue fiche apparaissent un a un en descendant (Nico) ----
    Ce qui est deja a l'ecran a l'ouverture arrive en cascade ; le reste, au fil du
    defilement. Sans animation si le telephone le demande. */
-function revelerAuDefilement(sel){
+function revelerAuDefilement(sel, o){
+  const pas = (o && o.pas) || 90, depart = (o && o.depart) || 0;
   const els = [...document.querySelectorAll(sel)];
   if(!els.length || !("IntersectionObserver" in window)) return;
   if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const io = new IntersectionObserver(es=>{
     let k = 0;
     es.forEach(e=>{ if(!e.isIntersecting) return;
-      e.target.style.transitionDelay = (k++ * 90) + "ms";
+      e.target.style.transitionDelay = (depart + k++ * pas) + "ms";
       e.target.classList.add("vu"); io.unobserve(e.target); });
   }, {root:sheet, threshold:.12});
   els.forEach(el=>{ el.classList.add("rv"); io.observe(el); });

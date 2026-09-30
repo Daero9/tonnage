@@ -1,5 +1,5 @@
 /* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-beta-v11-20260930-0118";
+const CACHE = "tonnup-beta-v11-20260930-0211";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./icon-192.png?v=4", "./icon-512.png?v=4", "./apple-touch-icon.png?v=4",
   "./img/exos2/abducteurs.png",
   "./img/exos2/tractions-assistees.png",
@@ -123,6 +123,7 @@ const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.htm
   "./img/exos2/tirage-vertical.png",
   "./img/exos2/traction.png",
   "./img/exos2/triceps-poulie.png",
+  "./img/ic-haltere-1.png", "./img/ic-cible-1.png", "./img/ic-chrono-1.png",
   "./img/cardio/course-1.png", "./img/cardio/velo-1.png", "./img/cardio/rameur-1.png", "./img/cardio/elliptique-1.png", "./img/cardio/stepper-1.png", "./img/cardio/corde-1.png", "./img/cardio/natation-1.png", "./img/cardio/autre-1.png",
   "./img/push-2.jpg", "./img/pull-2.jpg", "./img/jambes-2.jpg", "./img/bras-2.jpg", "./img/abdos-2.jpg", "./img/cardio-2.jpg", "./img/modif.png",
   "./img/abo-analyze-2.webp", "./img/ic-run-2.webp", "./img/ic-walk-1.webp", "./img/ic-gps-1.webp", "./img/ic-chrono-2.webp", "./img/ic-calendar-1.webp", "./img/repas-exemple-1.webp", "./img/analyse-perso.webp", "./img/prog-haltere.webp", "./img/prog-muscle.webp", "./img/prog-chrono.webp", "./img/hero-seance-2.webp", "./img/hero-alimentation-2.webp", "./img/hero-analyse-2.webp",
