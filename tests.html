@@ -661,6 +661,131 @@ async function lancer(){
   })();
   neuf();
 
+  grp("Cardio : les bonnes mesures, plusieurs sorties");
+  (()=>{
+    eq("Escalier : les étages", F.texteSortie({machine:"stepper", min:15, etages:20}), "15 min · 20 étages");
+    eq("Rameur : la distance en mètres", F.texteSortie({machine:"rameur", min:10, km:2}), "10 min · " + (2000).toLocaleString(F.loc()) + " m");
+    eq("Corde : les sauts", F.texteSortie({machine:"corde", min:10, sauts:500}), "10 min · 500 sauts");
+    vrai("Chaque activité a ses cases", F.champsCardio("stepper").includes("etages") && !F.champsCardio("stepper").includes("km")
+      && F.champsCardio("velo").includes("km") && !F.champsCardio("velo").includes("pente"));
+    const a = {cardioFaits:[{machine:"stepper", min:15, fait:true}], cardio:{machine:"corde", min:10, fait:true}};
+    const un = F.kcalSortieActive({cardio:a.cardioFaits[0]}), deux = F.kcalSortieActive({cardio:a.cardio});
+    eq("Deux sorties dans une séance : leurs calories s'ajoutent", F.kcalSortieActive(a), un + deux);
+  })();
+  grp("Import depuis Strong ou Hevy");
+  (()=>{
+    const B = F.eval("db");
+    B.history = []; B.custom = [];
+    const strong = [
+      'Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Bench Press (Barbell)","W",40,10,0,0,"","",',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Bench Press (Barbell)","1",80,8,0,0,"","",',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Plank","1",0,0,0,60,"","",',
+      '"2024-03-04 18:02:11","Push A","1h 5m","Zottman Curl (Dumbbell)","1",12,10,0,0,"","",',
+      '"2024-03-06 07:30:00","Cardio","30m","Running","1",0,0,5,1800,"","",'].join("\n");
+    const r = F.analyserImport(strong, "kg");
+    eq("Strong reconnu, une séance (la course n'est pas de la muscu)", r.app + " " + r.seances.length, "Strong 1");
+    eq("La durée « 1h 5m » donne l'heure de fin", (r.seances[0].fin - r.seances[0].debut) / 6e4, 65);
+    const dc = r.seances[0].entries[0];
+    eq("« Bench Press (Barbell) » = Développé couché", F.getEx(dc.exId).name, "Développé couché");
+    vrai("La série « W » est un échauffement", dc.sets[0].warm && !dc.sets[1].warm);
+    eq("Le gainage garde sa durée en secondes", r.seances[0].entries[1].sets[0].r, 60);
+    eq("Un exercice inconnu est gardé sous son nom", r.inconnus.join(), "Zottman Curl (Dumbbell)");
+    eq("En livres, la charge est convertie en kilos", F.analyserImport(strong, "lb").seances[0].entries[0].sets[1].w, 36.29);
+    const hevy = [
+      '"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"',
+      '"Legs","8 Oct 2024, 18:02","8 Oct 2024, 19:10","","Squat (Barbell)","","","0","normal","100","5","","",""',
+      '"Legs","8 Oct 2024, 18:02","8 Oct 2024, 19:10","","Squat (Barbell)","","","1","dropset","80","8","","",""'].join("\n");
+    const h = F.analyserImport(hevy, "kg");
+    eq("Hevy reconnu, date « 8 Oct 2024, 18:02 » lue", h.app + " " + new Date(h.seances[0].debut).getHours(), "Hevy 18");
+    eq("Le dégressif s'accroche à la série d'avant", JSON.stringify(h.seances[0].entries[0].sets[0].drops), '[{"w":80,"r":8}]');
+    F.appliquerImport(r);
+    eq("L'import ajoute la séance et crée l'exercice perso", B.history.length + " " + B.custom.length, "1 1");
+    eq("Importer deux fois le même fichier ne double rien", F.analyserImport(strong, "kg").seances.length, 0);
+    eq("Un fichier d'une autre app est refusé", !!F.analyserImport(["a,b", "1,2"].join("\n"), "kg").erreur, true);
+    eq("Toutes les correspondances visent un vrai exercice",
+      Object.values(F.eval("ALIAS_IMPORT")).filter(n=>!F.eval("LIB").find(x=>x.name === n)).join(), "");
+  })();
+  grp("Haltères et supersets");
+  (()=>{
+    const B = F.eval("db");
+    const dc = F.libId("Curl haltères"), barre = F.libId("Développé couché");
+    eq("Haltères : de 1 en 1 sous 10 kg", F.incCharge(dc, 8), 1);
+    eq("Haltères : de 2 en 2 à partir de 10 kg", F.incCharge(dc, 12), 2);
+    eq("Haltères : de 10 kg on redescend à 9", F.incBas(dc, 10), 1);
+    eq("Haltères : un poids qui existe (13 → 14)", F.chargeExistante(dc, 13), 14);
+    eq("Barre : inchangé, 2,5 kg au-dessus de 20", F.incCharge(barre, 60), 2.5);
+    eq("Barre : aucun arrondi aux kilos pairs", F.chargeExistante(barre, 62.5), 62.5);
+    const j = n => new Date(Date.now() - n * 864e5).toISOString();
+    B.history = [{id:"h1", date:j(2), name:"Bras", start:Date.parse(j(2)) - 3e6, end:Date.parse(j(2)),
+      entries:[{exId:dc, sets:[1,2,3].map(()=>({w:12, r:12, done:true, warm:false, rir:4}))}]}];
+    const sug = F.suggestFor(dc, {reps:"8-12"});
+    eq("Trop facile à 12 kg : l'haltère suivant est 14 kg", sug && sug.w, 14);
+    eq("L'échauffement tombe sur un haltère qui existe (12 → 6)", F.serieEchauffement(dc, "8-12").w, 6);
+    const A = {entries:[{sets:[{done:false}], enchaine:true}, {sets:[{done:false}]}, {sets:[{done:false}]}]};
+    eq("Superset : après le 1er, on enchaîne sur le 2e sans repos", F.enchaineSansRepos(A, 0), 1);
+    eq("…après le 2e, pas d'enchaînement : c'est le repos", F.enchaineSansRepos(A, 1), null);
+    eq("…puis retour au 1er du groupe", F.retourSuperset(A, 1), 0);
+    eq("Un exercice seul n'a pas de groupe", F.retourSuperset(A, 2), null);
+  })();
+  grp("Charge de départ d'un exercice jamais fait");
+  (()=>{
+    const B = F.eval("db");
+    B.history = []; B.weights = [{date:new Date().toISOString(), kg:80}];
+    B.profile = Object.assign({}, B.profile || {}, {sex:"h", weight:80});
+    F.eval("profilDepartMemo = null");
+    const dc = F.libId("Développé couché"), sq = F.libId("Squat"), cu = F.libId("Curl haltères");
+    const h = F.chargeDepart(dc, "8-12");
+    vrai("Homme de 80 kg, débutant : un développé couché prudent (entre 20 et 45 kg)", h >= 20 && h <= 45);
+    eq("Arrondi à un poids qui existe (multiple de 2,5)", h % 2.5, 0);
+    vrai("Haltères : un poids entier", Number.isInteger(F.chargeDepart(cu, "8-12")));
+    B.profile.sex = "f"; F.eval("profilDepartMemo = null");
+    const f = F.chargeDepart(dc, "8-12");
+    vrai("Femme, même poids : plus léger en haut du corps", f < h);
+    eq("…mais jamais sous la barre de 20 kg", f >= 20, true);
+    const ecartHaut = F.chargeDepart(dc, "8-12") / h;
+    B.profile.sex = "h"; F.eval("profilDepartMemo = null");
+    const sqH = F.chargeDepart(sq, "8-12");
+    B.profile.sex = "f"; F.eval("profilDepartMemo = null");
+    vrai("L'écart homme/femme est moindre en bas du corps", F.chargeDepart(sq, "8-12") / sqH >= ecartHaut);
+    eq("Pas de charge de départ au poids du corps", F.chargeDepart(F.libId("Pompes"), "8-12"), "");
+    B.profile.sex = "h"; F.eval("profilDepartMemo = null");
+  })();
+  grp("Assisté · Normal · Lesté");
+  (()=>{
+    const B = F.eval("db");
+    const tr = F.libId("Tractions"), ta = F.libId("Tractions assistées");
+    B.history = []; B.weights = [{date:new Date().toISOString(), kg:80}];
+    const A = {name:"T", templateId:null, start:Date.now(), entries:[
+      {exId:tr, target:{sets:3, reps:"6-10"}, sets:[{w:0, r:3, done:true, warm:false}, {w:0, r:3, done:false}]}]};
+    eq("Au poids du corps : mode Normal", F.modeTrio(A.entries[0]), "normal");
+    eq("Moins de 5 tractions : l'app propose Assisté", F.conseilTrio(A.entries[0]), "assiste");
+    B.active = A;
+    F.basculerTrio(A, 0, "assiste");
+    eq("La série faite garde sa version, la suite passe en assisté",
+      A.entries.map(e=>F.getEx(e.exId).name).join(" / "), "Tractions / Tractions assistées");
+    vrai("…la première reste repliée, avec sa série faite", A.entries[0].replie && A.entries[0].sets.every(s=>s.done));
+    eq("…la suite repart au milieu de la fourchette", A.entries[1].sets[0].r, 8);
+    vrai("…avec une aide en kilos", A.entries[1].sets[0].w > 0);
+    F.basculerTrio(A, 1, "leste");
+    eq("Sans série faite, on change d'exercice sur place", A.entries.length + " " + F.getEx(A.entries[1].exId).name, "2 Tractions");
+    eq("…et Lesté montre la colonne des kilos", F.modeTrio(A.entries[1]), "leste");
+    F.basculerTrio(A, 1, "normal");
+    eq("Normal : même exercice, sans lest", F.modeTrio(A.entries[1]) + " " + A.entries[1].sets[0].w, "normal 0");
+    eq("Un autre exercice n'a pas de sélecteur", F.trioDe(F.getEx(F.libId("Squat"))), null);
+    /* à la maison : pas de machine d'assistance */
+    const matAvant = B.materiel;
+    B.materiel = ["traction"];
+    const M = {name:"M", templateId:null, start:Date.now(), entries:[
+      {exId:tr, target:{sets:3, reps:"6-10"}, sets:[{w:0, r:3, done:true, warm:false}, {w:0, r:3, done:false}]}]};
+    B.active = M;
+    vrai("Maison : pas de case « Assisté »", !/data-t3="assiste"/.test(F.selecteurTrio(M.entries[0], 0)));
+    eq("…et moins de 5 tractions : on conseille les négatives", F.conseilTrio(M.entries[0]), "negatives");
+    B.materiel = matAvant;
+    B.active = null;
+  })();
+  neuf();
+
   /* ---------------------------------------------------------- cardio */
   grp("Cardio");
   const base = {km:6, min:50, pente:0, runMin:0, hr:0, kcalM:0, machine:"course", intensite:"modere"};
@@ -1566,6 +1691,9 @@ async function lancer(){
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@']"));
       F.openProfil();
       vrai("Le profil montre la tête du compagnon, qui ouvre le vestiaire", !!F.document.querySelector("#pr-rond .pr-po"));
+      /* le rond fait un petit rebond de 0,14 s avant d'ouvrir : dans ce bloc synchrone,
+         on ouvre sans attendre le rebond */
+      F.eval("toucherPuis = (el, fn)=>fn()");
       F.document.getElementById("pr-rond").click();
       /* la tuile du bandeau, quelle que soit la couleur qu'elle montre */
       const tuileB = ()=>F.document.querySelector("#sheet .vs-t [data-acc^='bandeau']").closest(".vs-t");
@@ -2458,6 +2586,9 @@ async function lancer(){
         /* une case a cocher est dessinee par le navigateur : son style calcule ne dit
            rien de ce qui s affiche vraiment */
         if(el.tagName === "INPUT" && /^(checkbox|radio)$/.test(el.type)) return;
+        /* une icone-image (haltere, cible, chrono) : son « fond » est le dessin lui-meme,
+           decoupe par un masque — ce n'est pas une boite posee sur la fiche */
+        if(el.classList && el.classList.contains("ic-img")) return;
         if(bg !== fondDerriere(el)) return;
         /* un filet ou une ombre suffit a le detacher */
         if(parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor !== bg) return;
@@ -3538,7 +3669,8 @@ async function lancer(){
     vrai("Le réglage de l'exercice a une roue dentée, plus un menu burger",
       !!D2.querySelector("[data-hist-ex] svg") && D2.querySelector("[data-hist-ex]").getAttribute("aria-label") === "Réglages de l'exercice");
     F.openHistoExo(0);
-    vrai("La fiche d'exercice n'a plus la case « charge fixe »", !D2.getElementById("hx-plafond"));
+    /* la charge fixe vit dans la roue de l'exercice (Nico, 30 sept.), plus dans sa fiche d'info */
+    vrai("Les réglages de l'exercice ont la case « charge fixe »", !!D2.getElementById("hx-plafond"));
     vrai("…mais garde « un bras à la fois » ou sa note", !!(D2.getElementById("hx-unilat") || D2.querySelector(".hx2 .note")));
     F.hideSheet();
     D2.getElementById("tb-retour").click();
@@ -6695,6 +6827,29 @@ async function lancer(){
     vrai("…et l'ordre d'origine est conservé", g.every((v, i)=>i === 0 || v > g[i - 1]));
     eq("Trois exercices ou moins : on garde tout", F.indicesSeanceCourte(items.slice(0, 3)).length, 3);
     eq("Dix exercices : six", F.indicesSeanceCourte(items.concat(items)).length, 6);
+    /* la jauge du temps disponible */
+    const t8 = {items:["Développé couché","Squat","Rowing barre","Développé militaire","Élévations latérales","Curl barre","Extension poulie (corde)","Crunch câble"]
+      .map(n=>({exId:F.libId(n), sets:4, reps:"8-12", rest:120}))};
+    const plan = m=>F.planPourTemps(t8.items, m, 0);
+    const minutes = pl=>F.dureeMinutes(Object.keys(pl).map(i=>Object.assign({}, t8.items[i], {sets: pl[i]})));
+    vrai("Chaque temps de 15 à 90 min tient sa promesse", [15, 20, 35, 40, 55, 70, 90].every(m=>minutes(plan(m)) <= m));
+    vrai("Plus de temps, jamais moins de séries", [20, 35, 50, 65, 80].every(m=>
+      Object.values(plan(m + 10)).reduce((a, b)=>a + b, 0) >= Object.values(plan(m)).reduce((a, b)=>a + b, 0)));
+    vrai("Un exercice entre avec 2 séries au moins", [20, 35, 60].every(m=>Object.values(plan(m)).every(n=>n >= 2)));
+    eq("À 20 min, les gros mouvements d'abord", Object.keys(plan(20)).slice(0, 2).map(i=>F.getEx(t8.items[i].exId).name).join(" + "), "Développé couché + Squat");
+    eq("La séance entière tient : aucun plan", F.planPourTemps(t8.items, 200, 0), null);
+    const eff = m=>F.efficaciteTemps(t8.items, F.planPourTemps(t8.items, m, 0));
+    vrai("L'efficacité monte avec le temps, et vaut 100 % pour la séance entière",
+      eff(10) < eff(30) && eff(30) < eff(60) && eff(60) < eff(90) && F.efficaciteTemps(t8.items, null) === 100);
+    /* plus de temps que la séance : des exercices en plus, pour ses propres muscles */
+    const push = ["Développé couché","Développé incliné haltères","Développé militaire","Élévations latérales","Extension poulie (corde)"]
+      .map(n=>({exId:F.libId(n), sets:3, reps:"8-12", rest:90}));
+    const plus = F.exercicesEnPlus(push, 90, 0, null);
+    vrai("Plus de temps : des exercices en plus, qui tiennent dans le temps", plus.length >= 2
+      && F.dureeMinutes(push.concat(plus)) <= 90);
+    vrai("…jamais pour les jambes sur une séance Push", plus.every(it=>!["Quadriceps","Ischio-jambiers","Fessiers","Mollets"].includes(it.pour)));
+    vrai("…un seul exercice d'abdos au plus, et aucun déjà dans la séance",
+      plus.filter(it=>it.pour === "Abdos").length <= 1 && plus.every(it=>!push.some(p=>p.exId === it.exId)));
   })();
   neuf();
 
@@ -8386,7 +8541,7 @@ async function lancer(){
     const garde = DB.profile;
     DB.profile = Object.assign({}, garde || {}, {aim:"masse"});
     vrai("Prise de muscle, repas pauvre en protéines : compléter avec une source de protéines",
-      /source de protéines/.test(F.astuceScan({kcal:400, prot:5, gluc:60})));
+      /source de protéines|plus de protéines/.test(F.astuceScan({kcal:400, prot:5, gluc:60})));
     vrai("Riche en protéines : un mot d'encouragement", /Belle dose de protéines/.test(F.astuceScan({kcal:450, prot:40, gluc:30})));
     vrai("Petite portion en prise de muscle : de quoi compléter", /Petite portion/.test(F.astuceScan({kcal:120, prot:3, gluc:10})));
     DB.profile.aim = "seche";
@@ -8538,6 +8693,22 @@ async function lancer(){
     F.renderCourseSection(sec);
     vrai("La carte Course a le titre des autres cartes (carré orange, coureur blanc)", !!sec.querySelector(".pt-tete .pt-ic.pt-ic-orange .icm-course"));
     sec.remove(); DB.cardio = [];
+    /* la VO2max de la montre : fusion sans doublon, valeurs absurdes ecartees, tendance */
+    const J = 864e5, now = Date.now();
+    const fz = F.fusionVo2([{t:now - 100 * J, v:40}], [{t:now - 100 * J + 1000, v:40}, {t:now - 5 * J, v:42.34}, {t:now - 2 * J, v:3}, {t:now - J, v:120}]);
+    vrai("VO2max : un point à la même minute n'est pas doublé, 3 et 120 sont écartés", fz.l.length === 2 && fz.l[1].v === 42.3 && fz.change);
+    DB.vo2 = fz.l;
+    const rv = F.resumeVo2();
+    vrai("VO2max : la dernière valeur et son écart sur 3 mois", rv && rv.der.v === 42.3 && rv.ecart === 2.3 && rv.trois);
+    DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:30, machine:"course", type:"course"}];
+    const sec2 = D2.createElement("div"); D2.body.appendChild(sec2);
+    F.renderCourseSection(sec2);
+    vrai("VO2max : la carte Course l'affiche", /42,3/.test((sec2.querySelector(".co-vo2") || {}).textContent || ""));
+    sec2.remove(); DB.vo2 = [];
+    const sec3 = D2.createElement("div"); D2.body.appendChild(sec3);
+    F.renderCourseSection(sec3);
+    vrai("VO2max : sans valeur ni montre, rien ne s'affiche", !sec3.querySelector(".co-vo2") && !sec3.querySelector('[data-cg="vo2"]'));
+    sec3.remove(); DB.cardio = [];
     vrai("Les icônes dessinées par Nico sont posées en masque", /ic-walk-1\.webp/.test(F.icEtape({type:"marche"}, 20)) && /ic-gps-1/.test(F.crResume({min:10, km:1, kcal:50})));
   })();
   neuf();
