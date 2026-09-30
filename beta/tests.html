@@ -8733,6 +8733,22 @@ async function lancer(){
     vrai("Ajout : du beurre de cacahuète en sèche parle d'équilibrer les graisses",
       F.messagePlat([PL("beurre de cacahuète", 40, 600, 25, 15, 50)], "midi", 0.3, true).cat === "gras");
     DB.profile.aim = "masse";
+    /* 30 sept. : categorie de l'analyse, memoire des phrases, seance du jour, petit-dejeuner */
+    const pizza = [{nom:"pizza", nomFr:"pizza", categorie:"plat", g:350, kcal100:270, prot100:11, gluc100:33, lip100:10}];
+    vrai("Plat mêlé (catégorie « plat ») : pas de « il manque des légumes »", !F.messagePlat(pizza, "soir", 0.3).legPeu);
+    vrai("La catégorie de l'analyse passe avant les mots-clés", F.sorteAliment({nomFr:"truc inconnu", categorie:"legume"}) === "legume");
+    const memo1 = {}, p1 = F.messagePlat(poulet, "midi", memo1).phrase;
+    vrai("Même photo, même phrase quand on ajuste", F.messagePlat(poulet, "midi", memo1).phrase === p1);
+    vrai("Photo suivante : une autre formulation", F.messagePlat(poulet, "midi", {}).phrase !== p1);
+    const histAvant = DB.history;
+    DB.history = (histAvant || []).concat([{id:"t-seance", date:new Date().toISOString(), start:Date.now() - 3600e3, end:Date.now() - 1800e3, entries:[]}]);
+    const ps = F.messagePlat([PL("pâtes cuites", 350, 158, 5, 31, 1)], "midi", 0.3);
+    vrai("Féculents après une séance : un message de récupération", ps.cat === "fec" && F.eval("PLAT_PHRASES").fecSeance_masse.map(F.TR).includes(ps.phrase), ps.phrase);
+    DB.history = histAvant;
+    const pm = F.messagePlat([PL("pain", 120, 260, 9, 49, 3), PL("confiture", 30, 250, 0.5, 60, 0)], "matin", 0.3);
+    vrai("Petit-déjeuner : pas de « trop de féculents », ses propres phrases", pm.cat !== "fec" && [...F.eval("PLAT_PHRASES").matin_peuProt, ...F.eval("PLAT_PHRASES").matin_ok].map(F.TR).includes(pm.phrase), JSON.stringify(pm));
+    vrai("Photo de plat : la ligne du bas parle de « la suite de ta journée »",
+      !/Pour ton objectif :/.test(F.astuceScan({kcal:300, prot:5, gluc:40}, {phrase:"x", legumes:"", cat:"ok"})));
     vrai("Code-barres : ses messages ne changent pas", /Belle dose de protéines/.test(F.astuceScan({kcal:300, prot:30, gluc:10})));
     DB.profile.aim = aimAvant;
     vrai("Les icônes dessinées par Nico sont posées en masque", /ic-walk-1\.webp/.test(F.icEtape({type:"marche"}, 20)) && /ic-gps-1/.test(F.crResume({min:10, km:1, kcal:50})));
