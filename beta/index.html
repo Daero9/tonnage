@@ -294,6 +294,16 @@
   .pv-temps .astuce .ic svg{width:17px; height:17px;}
   .pv-temps .astuce > span:last-child{font-size:12px; color:var(--ink-soft); line-height:1.45;}
   .pv-moins{font-size:11px; font-weight:700; color:var(--ink-mute);}
+  /* les details d'une sortie */
+  .sd-details{margin-top:14px; padding:12px 14px; border-radius:16px; background:var(--surface); box-shadow:var(--ombre-carte);}
+  .sd-t{font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-mute); margin-bottom:6px;}
+  .sd-l{display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--bord-doux); font-size:13.5px; color:var(--ink-soft);}
+  .sd-l:first-of-type{border-top:0;}
+  .sd-l .ic{display:inline-flex; width:28px; height:28px; border-radius:9px; align-items:center; justify-content:center; background:rgba(245,130,32,.12); color:var(--accent);}
+  .sd-l .ic svg{width:16px; height:16px;}
+  .sd-l b{font-size:14px; font-weight:800; color:var(--ink);}
+  .co-der-l{cursor:pointer;}
+  .co-fl{display:inline-flex; margin-left:6px; color:var(--ink-mute);} .co-fl svg{width:14px; height:14px;}
   /* les icones-images (haltere, cible, chrono) : l'image sert de masque, la couleur
      vient du texte autour — les tailles deja reglees pour les svg s'appliquent telles quelles */
   svg.ic-img{background:currentColor; -webkit-mask:var(--m) center / contain no-repeat; mask:var(--m) center / contain no-repeat;
@@ -5835,6 +5845,17 @@ const TRAD = {en:{
   "{n} exercices gardés dans ta séance ✓":"{n} exercises kept in your workout ✓",
   "Exercice gardé dans ta séance ✓":"Exercise kept in your workout ✓",
   "Ou prendre une séance toute faite, adaptée à ton objectif":"Or pick a ready-made workout matched to your goal",
+  "Heure":"Time",
+  "Cœur, en moyenne":"Heart rate, average",
+  "Cœur, au plus haut":"Heart rate, peak",
+  "Pente du tapis":"Treadmill incline",
+  "Cadence":"Cadence",
+  "pas/min":"steps/min",
+  "Dont couru":"Of which running",
+  "Source":"Source",
+  "Séance Tonnup":"Tonnup workout",
+  "Saisie à la main":"Entered by hand",
+  "Les détails":"Details",
   "Ta montre":"Your watch",
   "Enregistrée par ta montre : sans exercices ni charges.":"Recorded by your watch: no exercises or weights.",
   "Une activité de ta montre":"An activity from your watch",
@@ -9775,6 +9796,17 @@ es:{
   "{n} exercices gardés dans ta séance ✓":"{n} ejercicios guardados en tu sesión ✓",
   "Exercice gardé dans ta séance ✓":"Ejercicio guardado en tu sesión ✓",
   "Ou prendre une séance toute faite, adaptée à ton objectif":"O elige una sesión ya hecha, adaptada a tu objetivo",
+  "Heure":"Hora",
+  "Cœur, en moyenne":"Pulso, media",
+  "Cœur, au plus haut":"Pulso, máximo",
+  "Pente du tapis":"Inclinación de la cinta",
+  "Cadence":"Cadencia",
+  "pas/min":"pasos/min",
+  "Dont couru":"De los cuales corriendo",
+  "Source":"Origen",
+  "Séance Tonnup":"Sesión Tonnup",
+  "Saisie à la main":"Introducida a mano",
+  "Les détails":"Los detalles",
   "Ta montre":"Tu reloj",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrada por tu reloj: sin ejercicios ni cargas.",
   "Une activité de ta montre":"Una actividad de tu reloj",
@@ -13929,6 +13961,17 @@ pt:{
   "{n} exercices gardés dans ta séance ✓":"{n} exercícios mantidos no seu treino ✓",
   "Exercice gardé dans ta séance ✓":"Exercício mantido no seu treino ✓",
   "Ou prendre une séance toute faite, adaptée à ton objectif":"Ou escolha um treino pronto, adaptado ao seu objetivo",
+  "Heure":"Hora",
+  "Cœur, en moyenne":"Frequência cardíaca, média",
+  "Cœur, au plus haut":"Frequência cardíaca, pico",
+  "Pente du tapis":"Inclinação da esteira",
+  "Cadence":"Cadência",
+  "pas/min":"passos/min",
+  "Dont couru":"Dos quais correndo",
+  "Source":"Origem",
+  "Séance Tonnup":"Treino Tonnup",
+  "Saisie à la main":"Inserido à mão",
+  "Les détails":"Os detalhes",
   "Ta montre":"Seu relógio",
   "Enregistrée par ta montre : sans exercices ni charges.":"Registrado pelo seu relógio: sem exercícios nem cargas.",
   "Une activité de ta montre":"Uma atividade do seu relógio",
@@ -21727,7 +21770,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 02h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 02h21 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -24640,6 +24683,31 @@ function blocSortie(s, poussin){
     ${htmlComparaison(s, poussin)}`;
 }
 function brancherSortie(racine){ brancherAgrandir(racine); brancherZones(racine); }
+/* ---- Les details d'une sortie (Nico, 30 sept.) : seulement ce qu'on sait vraiment ----
+   L'heure, la vitesse moyenne, le coeur (moyenne et pic), la pente du tapis, les pas et la
+   cadence, la part courue d'une sortie mixte, les mesures de l'activite, d'ou vient la
+   sortie. Rien n'est affiche s'il n'est pas mesure. */
+const IC_PENTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19h18L3 8z"/></svg>';
+function detailsSortie(c){
+  const l = [];
+  const d0 = new Date(c.date);
+  l.push([IC_HORLOGE, TR("Heure"), d0.toLocaleTimeString(loc(), {hour:"2-digit", minute:"2-digit"})]);
+  if(c.km > 0 && c.min > 0) l.push([icoM("course", 16), TR("Vitesse moyenne"), affVit(vitesseSortie(c)) + (c.estime ? " (" + TR("est.") + ")" : "")]);
+  if(c.hr > 0) l.push([IC_COEUR, TR("Cœur, en moyenne"), c.hr + " bpm"]);
+  if(c.hrMax > 0) l.push([IC_COEUR, TR("Cœur, au plus haut"), c.hrMax + " bpm"]);
+  if(c.pente > 0) l.push([IC_PENTE, TR("Pente du tapis"), String(c.pente).replace(".", ",") + " %"]);
+  if(c.pas > 0){
+    l.push([IC_PAS, TR("Pas"), Number(c.pas).toLocaleString(loc())]);
+    if(c.min > 0) l.push([IC_PAS, TR("Cadence"), Math.round(c.pas / c.min) + " " + TR("pas/min")]);
+  }
+  if(c.type === "mixte" && c.runMin > 0) l.push([icoM("course", 16), TR("Dont couru"), minTxt(Math.round(c.runMin))]);
+  if(c.etages > 0) l.push([IC_PENTE, TR("Étages montés"), c.etages]);
+  if(c.sauts > 0) l.push([IC_CHRONO, TR("Sauts"), Number(c.sauts).toLocaleString(loc())]);
+  if(c.niveau > 0) l.push([IC_CHRONO, TR("Résistance (niveau)"), c.niveau]);
+  l.push([IC_MONTRE, TR("Source"), c.source === "montre" ? TR("Ta montre") : (c.parcours ? TR("Séance Tonnup") : TR("Saisie à la main"))]);
+  return `<div class="sd-details"><div class="sd-t">${TR("Les détails")}</div>${l.map(([ic, k, v])=>
+    `<div class="sd-l"><span class="ic">${ic}</span><span class="grow">${k}</span><b>${v}</b></div>`).join("")}</div>`;
+}
 /* la fiche d'une sortie, depuis l'historique */
 function openSortieDetail(id){
   const c = (db.cardio || []).find(x=>x.id === id);
@@ -24648,6 +24716,7 @@ function openSortieDetail(id){
   openSheet(`<h3 style="text-align:center;">${esc(c.parcours || (machine ? machineNom(c) : TR(CARDIO_NOM[cardioType(c)] || "Course")))}</h3>
     <div class="hd-sous">${fmtDate(c.date)}</div>
     ${blocSortie(c, true)}
+    ${detailsSortie(c)}
     <div class="row" style="gap:10px; margin-top:14px;">
       <button class="btn grow hd-btn" id="sd-edit">${IC_CRAYON}${TR("Modifier")}</button>
       <button class="btn grow hd-btn sd-suppr" id="sd-del">${IC_POUBELLE}${TR("Supprimer")}</button>
@@ -36073,14 +36142,16 @@ function renderCourseSection(sec){
     <div class="chart-wrap" id="co-chart"></div>
     <div class="co-der-t">${TR("Dernières sorties")}</div>
     <div class="co-der">${der.map(c=>{ const pr = precedente(c);
-      return `<div><div class="grow"><b>${esc(c.parcours || TR(cardioType(c) === "marche" ? "Marche" : "Course"))}</b>
+      return `<div class="co-der-l" data-sortie="${c.id}"><div class="grow"><b>${esc(c.parcours || TR(cardioType(c) === "marche" ? "Marche" : "Course"))}</b>
         <small>${fmtDateShort(c.date)} · ${minTxt(Math.round(c.min))} · ${affVit(vitesseSortie(c))}</small></div>
-        <div class="co-km"><b>${kmTxt(c.km)}${est(c)}</b>${pr ? ecart(c.km, pr.km) : ""}</div></div>`; }).join("")}</div>
+        <div class="co-km"><b>${kmTxt(c.km)}${est(c)}</b>${pr ? ecart(c.km, pr.km) : ""}</div><span class="co-fl">${IC_CHEVRON}</span></div>`; }).join("")}</div>
     ${l.some(c=>c.estime) ? `<p class="oc-note" style="margin-top:10px;">${TR("« est. » : distance estimée d'après la vitesse prévue. Donne la vraie distance à la fin d'une séance pour suivre ta vitesse réelle.")}</p>` : ""}` : ""}
   </div>
   ${pliBouton("co-pli", prgPlis.course, TR(prgPlis.course ? "Masquer le détail de la course" : "Afficher le détail de la course"))}`;
   sec.appendChild(div);
   brancherPli(div, "co-pli", "course");
+  /* une sortie touchee : sa fiche, avec la courbe du coeur et les details (Nico) */
+  div.querySelectorAll("[data-sortie]").forEach(r=>r.onclick = ()=>toucherPuis(r, ()=>openSortieDetail(r.dataset.sortie)));
   const dessiner = ()=>{
     const el = div.querySelector("#co-chart");
     if(!el) return;
