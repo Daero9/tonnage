@@ -8693,6 +8693,22 @@ async function lancer(){
     F.renderCourseSection(sec);
     vrai("La carte Course a le titre des autres cartes (carré orange, coureur blanc)", !!sec.querySelector(".pt-tete .pt-ic.pt-ic-orange .icm-course"));
     sec.remove(); DB.cardio = [];
+    /* la VO2max de la montre : fusion sans doublon, valeurs absurdes ecartees, tendance */
+    const J = 864e5, now = Date.now();
+    const fz = F.fusionVo2([{t:now - 100 * J, v:40}], [{t:now - 100 * J + 1000, v:40}, {t:now - 5 * J, v:42.34}, {t:now - 2 * J, v:3}, {t:now - J, v:120}]);
+    vrai("VO2max : un point à la même minute n'est pas doublé, 3 et 120 sont écartés", fz.l.length === 2 && fz.l[1].v === 42.3 && fz.change);
+    DB.vo2 = fz.l;
+    const rv = F.resumeVo2();
+    vrai("VO2max : la dernière valeur et son écart sur 3 mois", rv && rv.der.v === 42.3 && rv.ecart === 2.3 && rv.trois);
+    DB.cardio = [{id:"a", date:new Date().toISOString(), km:3, min:30, machine:"course", type:"course"}];
+    const sec2 = D2.createElement("div"); D2.body.appendChild(sec2);
+    F.renderCourseSection(sec2);
+    vrai("VO2max : la carte Course l'affiche", /42,3/.test((sec2.querySelector(".co-vo2") || {}).textContent || ""));
+    sec2.remove(); DB.vo2 = [];
+    const sec3 = D2.createElement("div"); D2.body.appendChild(sec3);
+    F.renderCourseSection(sec3);
+    vrai("VO2max : sans valeur ni montre, rien ne s'affiche", !sec3.querySelector(".co-vo2") && !sec3.querySelector('[data-cg="vo2"]'));
+    sec3.remove(); DB.cardio = [];
     vrai("Les icônes dessinées par Nico sont posées en masque", /ic-walk-1\.webp/.test(F.icEtape({type:"marche"}, 20)) && /ic-gps-1/.test(F.crResume({min:10, km:1, kcal:50})));
   })();
   neuf();
