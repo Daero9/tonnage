@@ -1691,6 +1691,9 @@ async function lancer(){
       vrai("Le poussin est posé sur la carte de la semaine, avec son bandeau", !!F.document.querySelector(".under-hero .hero-poussin img.acc[src*='bandeau@']"));
       F.openProfil();
       vrai("Le profil montre la tête du compagnon, qui ouvre le vestiaire", !!F.document.querySelector("#pr-rond .pr-po"));
+      /* le rond fait un petit rebond de 0,14 s avant d'ouvrir : dans ce bloc synchrone,
+         on ouvre sans attendre le rebond */
+      F.eval("toucherPuis = (el, fn)=>fn()");
       F.document.getElementById("pr-rond").click();
       /* la tuile du bandeau, quelle que soit la couleur qu'elle montre */
       const tuileB = ()=>F.document.querySelector("#sheet .vs-t [data-acc^='bandeau']").closest(".vs-t");

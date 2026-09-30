@@ -560,6 +560,7 @@
     color:var(--ink); min-height:66px; hyphens:auto;}
   .cd-grille.large button{padding:11px 5px; font-size:12px; min-height:0;}
   .cd-grille .ic{font-size:19px; line-height:1;}
+  .cd-grille .ic.cd-duo{display:inline-flex; gap:2px;}
   .ic-cardio{display:inline-block; width:var(--t, 26px); height:var(--t, 26px); flex:0 0 auto; background:currentColor;
     -webkit-mask:var(--m) center / contain no-repeat; mask:var(--m) center / contain no-repeat;}
   .cd-grille button:active{background:var(--btn);}
@@ -2416,6 +2417,9 @@
   /* la carte qui se replie, puis la ligne qui la remplace */
   .ex-card.se-plie{overflow:hidden; transition:height .34s cubic-bezier(.4,0,.2,1);}
   .ex-card.se-deplie > *{animation:plieContenu .3s ease .12s backwards;}
+  /* le compagnon arrive en rebondissant a l'ouverture du vestiaire */
+  .vs-apercu.vs-arrive{animation:vsArrive .6s cubic-bezier(.3,1.5,.5,1) .12s backwards;}
+  @keyframes vsArrive{from{opacity:0; transform:scale(.55) translateY(20px);}}
   /* ce qui ouvre la fiche : l'icone et le nom de l'exercice, avec un rebond au toucher */
   .ouvre-fiche{cursor:pointer; -webkit-tap-highlight-color:transparent;}
   .ouvre-fiche.touche{animation:ficheTouche .32s cubic-bezier(.3,1.4,.5,1);}
@@ -21415,7 +21419,7 @@ function poussinEtat(poseForcee){
 }
 /* Le vestiaire : le poussin tel qu'il est, puis les accessoires — gagnes (on choisit ce
    qu'il porte), a gagner (avec ce qu'il reste a faire), rares a part. */
-function openVestiaire(){
+function openVestiaire(ouverture){
   /* dans le vestiaire, il pose toujours « en forme » : la pose du moment (endormi, vautre)
      cacherait ce qu'on est en train de lui mettre */
   const e = poussinEtat("en-forme"), nSeances = nActivites(), best = meilleureFlamme();
@@ -21478,6 +21482,12 @@ function openVestiaire(){
     <div class="vs-titre"><img class="em" src="img/vs-etoile.png" alt=""><b>${TR("Rares")}</b><button class="card-i" data-vsinfo="rare" aria-label="${TR("À quoi ça sert ?")}">i</button></div>
     <div class="vs-grille">${rares.map(tuile).join("")}${bientot}</div>
     <div class="vs-pied"><span class="ic">🏆</span><span class="grow">${TR("Gagne des accessoires en restant régulier !")}</span></div>`);
+  /* a l'ouverture seulement (pas quand on enfile un accessoire) : le poussin arrive en
+     rebondissant, puis le reste rangee par rangee (Nico) */
+  if(ouverture && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)){
+    const ap = document.querySelector("#sheet .vs-apercu"); if(ap) ap.classList.add("vs-arrive");
+    revelerAuDefilement("#sheet > :not(.grab):not(.sheet-x):not(h3):not(.vs-apercu)", {pas:110, depart:320});
+  }
   /* le i deplie son explication juste sous le titre, dans la fiche : on ne quitte pas
      le vestiaire (une fiche par-dessus laissait voir l'accueil derriere) */
   document.querySelectorAll("[data-vsinfo]").forEach(b=>b.onclick=()=>{
@@ -21612,10 +21622,10 @@ document.addEventListener("click", e=>{
   if(!e.target.closest("#poussin-record") && e.target.closest("#app .hero-poussin")){
     /* il sursaute, content qu'on s'occupe de lui, puis le vestiaire s'ouvre (Nico) */
     const po = e.target.closest("#app .hero-poussin");
-    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ openVestiaire(); return; }
+    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ openVestiaire(true); return; }
     po.classList.remove("tape"); void po.offsetWidth; po.classList.add("tape");
     vibrer(10);
-    setTimeout(()=>{ po.classList.remove("tape"); openVestiaire(); }, 420);
+    setTimeout(()=>{ po.classList.remove("tape"); openVestiaire(true); }, 420);
     return;
   }
   const b = e.target.closest("#poussin-record");
@@ -21717,7 +21727,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 02h11 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 02h17 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -24770,7 +24780,8 @@ function openProfil(){
   /* le parcours prend tout l'écran : la fiche doit s'effacer, sinon elle garde le clavier */
   document.getElementById("pr-plan").onclick = ()=>{ if(pl) showPlan(false); else { closeSheet(); openOnboarding(true); } };
   document.getElementById("pr-edit").onclick = ()=>{ closeSheet(); openOnboarding(false); };
-  document.getElementById("pr-rond").onclick = ()=>ouvrirParDessus(openProfil, openVestiaire);
+  /* le rond du compagnon : un petit rebond, puis le vestiaire s'ouvre en animation (Nico) */
+  document.getElementById("pr-rond").onclick = e=>toucherPuis(e.currentTarget, ()=>ouvrirParDessus(openProfil, ()=>openVestiaire(true)));
   document.getElementById("pr-amis").onclick = ()=>ouvrirParDessus(openProfil, ()=>openAmis());
   /* une demande d'ami en attente : la pastille sur « Mes amis » (une lecture, a l'ouverture du profil) */
   if(db.amis && db.amis.actif && !demoEnCours) fbRequete("demandes", "a", db.amis.uid, 20).then(l=>{
@@ -28747,9 +28758,9 @@ function openCardioAdd(idExistant){
     <div class="cd-bloc" id="cd-typewrap">
       <span class="f-lab">${TR("C'était quoi ?")}</span>
       <div class="cd-grille large">
-        <button data-ctype="marche"><span class="ic">🚶</span>${TR("Marche")}</button>
-        <button data-ctype="course"><span class="ic">🏃</span>${TR("Course")}</button>
-        <button data-ctype="mixte"><span class="ic">🚶🏃</span>${TR("Un peu des deux")}</button>
+        <button data-ctype="marche"><span class="ic"><span class="ic-cardio" style="--t:24px; --m:url(img/ic-walk-1.webp)" aria-hidden="true"></span></span>${TR("Marche")}</button>
+        <button data-ctype="course"><span class="ic">${icCardio("course", 24)}</span>${TR("Course")}</button>
+        <button data-ctype="mixte"><span class="ic cd-duo"><span class="ic-cardio" style="--t:20px; --m:url(img/ic-walk-1.webp)" aria-hidden="true"></span>${icCardio("course", 20)}</span>${TR("Un peu des deux")}</button>
       </div>
       <div class="cd-aide" id="cd-thint"></div>
     </div>
@@ -29893,6 +29904,7 @@ function openBilanMois(ref){
         corps.includes("icm-muscle") ? " " + TR("Les totaux d'un journal alimentaire sont en général sous-estimés de 20 à 30 %.") : ""}</div></div>
     <button class="btn btn-accent fin-ok bl-okb" id="bl-ok" style="width:100%; margin-top:4px;"><span class="grow">${TR("C'est noté !")}</span>${CHEV_MP}</button>`);
   document.getElementById("bl-ok").onclick = closeSheet;
+  revelerAuDefilement("#sheet > :not(.grab):not(.sheet-x):not(.bl-tete2)");   /* rangee par rangee (Nico) */
   brancherOngletsBilan();
   const pr = document.getElementById("blm-prec"), sv = document.getElementById("blm-suiv");
   if(!pr.disabled) pr.onclick = ()=>openBilanMois(new Date(an, mois - 1, 1));
