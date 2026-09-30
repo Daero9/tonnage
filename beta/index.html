@@ -3032,7 +3032,10 @@
     display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; cursor:pointer;}
   .pp-al .nm{font-size:13.5px; font-weight:700; line-height:1.2; min-height:2.4em;
     display:flex; align-items:center; justify-content:center; overflow-wrap:anywhere;}
-  .pp-al .kc{font-size:12px; color:var(--ink-mute);}
+  /* les calories et les proteines sur la meme ligne, comme dans la fenetre de l'aliment (Nico) */
+  .pp-al .kc{display:flex; align-items:center; justify-content:center; gap:6px; font-size:11.5px; color:var(--ink-mute); white-space:nowrap;}
+  .pp-al .kc .pr{display:inline-flex; align-items:center; gap:2px; font-weight:700; color:#d9436c;}   /* la couleur de la tuile des proteines */
+  .pp-al .kc .pr .icm{width:12px; height:12px;}
   .pp-al .nt{font-size:11px; color:var(--ink-mute); line-height:1.25;}
   /* le reglage des grammes dans sa pastille blanche, d'apres la reference */
   .pp-st{display:flex; align-items:center; gap:2px; margin-top:8px; padding:3px;
@@ -3543,8 +3546,10 @@
      place DANS la camera, se pose en bas de la zone visible (--v-haut-h). */
   .cam.saisie{top:var(--cam-top, var(--v-haut, 0px)); bottom:auto; height:var(--cam-h, 100%);}
   .cam.saisie .bas, .cam.saisie .repere{opacity:0; visibility:hidden; pointer-events:none;}
-  .cam.saisie.plat .indice-plat, .cam.saisie.plat .t:not(:empty) ~ .indice-plat{
-    top:calc(var(--cam-vis, var(--v-haut-h, 100dvh)) - 57px); bottom:auto;}
+  .cam .indice-champ{display:none;}
+  .cam.saisie.plat .indice-champ{display:block; position:absolute; left:50%; transform:translateX(-50%); width:min(86%, 340px);
+    top:calc(64px + env(safe-area-inset-top));}
+  .cam.saisie .indice-plat{visibility:hidden;}
   /* la video reste invisible tant qu'elle n'a rien a montrer : sans ca, Android
      affiche son gabarit gris avec un bouton « lecture » etire le temps que la
      camera s'ouvre */
@@ -3598,13 +3603,14 @@
   .cam .indice-plat{display:none;}
   .cam.plat .indice-plat{display:block; position:absolute; left:50%; transform:translateX(-50%); width:min(86%, 340px);
     top:calc(40% + min(39.2vw, calc(19.2 * var(--cam-vh, 1vh))) + 14px);}
-  .cam .indice-plat input{width:100%; border:1px solid rgba(255,255,255,.28); border-radius:99px; padding:12px 16px;
-    background:rgba(16,16,20,.55); color:#fff; font-size:14px; text-align:center;
+  .cam .indice-plat, .cam .indice-champ input{width:100%; border:1px solid rgba(255,255,255,.28); border-radius:99px; padding:12px 16px;
+    background:rgba(16,16,20,.55); color:#fff; font:inherit; font-size:14px; text-align:center;
     -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
-  .cam .indice-plat input::placeholder{color:rgba(255,255,255,.72);}
+  .cam .indice-plat .tx{display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cam .indice-plat .tx.vide, .cam .indice-champ input::placeholder{color:rgba(255,255,255,.72);}
   /* un message sous la fenetre (camera refusee, lecteur indisponible) : le champ passe dessous */
   .cam.plat .t:not(:empty) ~ .indice-plat{top:calc(40% + min(39.2vw, calc(19.2 * var(--cam-vh, 1vh))) + 78px);}
-  .cam .indice-plat input:focus{outline:none; border-color:rgba(245,130,32,.9);}
+  .cam .indice-champ input:focus{outline:none; border-color:rgba(245,130,32,.9);}
   /* ecran court : la consigne se resserre pour ne pas toucher la pilule des assiettes */
   @media (max-height:700px){ .cam .t{font-size:13px; line-height:1.35; padding:0 18px;} }
   /* le declencheur au-dessus de la pilule des modes, comme sur un appareil photo : l'inversion
@@ -21861,7 +21867,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 02h41 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 02h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27363,7 +27369,11 @@ function ouvrirCamera(mode, titre){
       <div class="t"></div>
       <!-- mode plat : ce que la photo ne montre pas (Nico — un cordon bleu passait pour
            du poulet frit). Facultatif ; part avec la photo, comme la precision d'apres. -->
-      <label class="indice-plat"><input type="text" id="cam-indice" maxlength="120" enterkeyhint="done"
+      <!-- Sous le cadre, un simple bouton ; le VRAI champ attend en haut de l'ecran. Le
+           toucher l'y fait apparaitre AVANT d'ouvrir le clavier : le champ est deja au-dessus
+           du clavier, l'iPhone n'a plus a faire glisser la page, et l'image ne saute plus (Nico). -->
+      <button type="button" class="indice-plat" data-indice><span class="tx vide">${TR("Précise si un aliment est garni ou fourré")}</span></button>
+      <label class="indice-champ"><input type="text" id="cam-indice" maxlength="120" enterkeyhint="done"
         autocomplete="off" placeholder="${TR("Précise si un aliment est garni ou fourré")}"
         aria-label="${TR("Précise si un aliment est garni ou fourré")}"></label>
       <div class="saisie" hidden><div class="tx">${TR("Code-barres (les chiffres sous les barres)")}</div>
@@ -27407,9 +27417,19 @@ function ouvrirCamera(mode, titre){
       if(performance.now() < suiviJusqua) requestAnimationFrame(suivre);
     };
     const suivrePendant = ms=>{ const relancer = performance.now() >= suiviJusqua; suiviJusqua = performance.now() + ms; if(relancer) requestAnimationFrame(suivre); };
-    if(champIndice){
-      champIndice.addEventListener("focus", ()=>{ suivre(); boite.classList.add("saisie"); suivrePendant(900); });
-      champIndice.addEventListener("blur", ()=>setTimeout(()=>{ if(document.activeElement !== champIndice){ boite.classList.remove("saisie"); suivrePendant(600); } }, 120));
+    const boutonIndice = q("[data-indice]");
+    if(champIndice && boutonIndice){
+      /* le champ passe en haut PUIS prend le focus, dans le meme toucher (iOS n'ouvre le
+         clavier que pendant le geste) */
+      boutonIndice.onclick = ()=>{ boite.classList.add("saisie"); void champIndice.offsetHeight; champIndice.focus({preventScroll:true}); suivre(); suivrePendant(900); };
+      champIndice.addEventListener("focus", ()=>{ boite.classList.add("saisie"); });
+      champIndice.addEventListener("blur", ()=>setTimeout(()=>{
+        if(document.activeElement === champIndice) return;
+        boite.classList.remove("saisie"); suivrePendant(600);
+        const v = champIndice.value.trim(), tx = boutonIndice.querySelector(".tx");
+        tx.textContent = v || TR("Précise si un aliment est garni ou fourré");
+        tx.classList.toggle("vide", !v);
+      }, 120));
     }
     const video = q("video"), texte = q(".t"), fich = q("[data-fichier]");
     let flux = null, piste = null, boucle = null, fini = false, lecteur = null, zbar = null;
@@ -28338,7 +28358,7 @@ function openResultatPhoto(meal, res){
       <div class="pp-grille${entree ? " cascade" : ""}">
         ${lignes.map((l, i)=>`<div class="pp-al" data-ouvre="${i}" style="--i:${i}">
           <div class="nm">${esc(l.nom)}</div>
-          <div class="kc">${Math.round(l.kcal100 * l.g / 100)} kcal${(l.confiance === "basse" || l.source === "estimation") ? " ≈" : ""}</div>
+          <div class="kc"><span>${Math.round(l.kcal100 * l.g / 100)} kcal${(l.confiance === "basse" || l.source === "estimation") ? " ≈" : ""}</span><span class="pr">${icoM("muscle", 12)}${Math.round(l.prot100 * l.g / 100)} g</span></div>
           ${l.note ? `<div class="nt">${esc(l.note)}</div>` : ""}
           <div class="pp-st">
             <button type="button" data-moins="${i}" aria-label="${TR("Moins")}">−</button>
