@@ -5576,9 +5576,19 @@
      est peint avant que l'app ne tourne ; quand l'accueil est pret, il monte comme un
      rideau et le salut s'ecrit. Styles ici, en ligne : ils s'appliquent sans attendre. -->
 <style>
-  #ouverture{position:fixed; inset:0; z-index:200000; background:linear-gradient(180deg, #ff9a3c 0%, #f58220 55%, #e8700f 100%); overflow:hidden;
-    clip-path:circle(var(--r, 150vmax) at 50% 50%); transition:clip-path .6s cubic-bezier(.6,0,.35,1);}
-  #ouverture .ov-c{position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); display:flex; flex-direction:column; align-items:center; gap:22px;}
+  /* Le rideau monte en TRANSFORM (Nico, 30 sept.) : sur Android, l'ancien cercle en
+     clip-path se redessinait image par image pendant que l'app demarrait, et on atterrissait
+     d'un coup sur l'accueil. Un transform, la carte graphique l'anime seule. Le bas du
+     rideau, arrondi, depasse sous l'ecran : on ne le voit qu'une fois qu'il monte. */
+  #ouverture{position:fixed; left:0; right:0; top:0; height:calc(100vh + 16vh); z-index:200000;
+    background:linear-gradient(180deg, #ff9a3c 0%, #f58220 48%, #e8700f 86%); overflow:hidden;
+    border-radius:0 0 50% 50% / 0 0 16vh 16vh; transform:translateZ(0); will-change:transform;
+    transition:transform .7s cubic-bezier(.6,0,.35,1);}
+  #ouverture .ov-c{position:absolute; left:50%; top:50vh; transform:translate(-50%, -50%); display:flex; flex-direction:column; align-items:center; gap:22px;
+    will-change:transform; transition:transform .7s cubic-bezier(.6,0,.35,1);}
+  /* le logo reste en place pendant que le rideau monte, et disparait au passage du bord */
+  #ouverture.leve{transform:translate3d(0, -118vh, 0);}
+  #ouverture.leve .ov-c{transform:translate(-50%, calc(-50% + 118vh));}
   #ouverture .ov-logo{width:58vw; max-width:300px; height:auto;}
   /* la barre : un fond transparent cerne d'un trait blanc tres fin, qui se remplit de blanc */
   #ouverture .ov-barre{width:140px; height:7px; border-radius:99px; background:transparent; box-shadow:inset 0 0 0 1px rgba(255,255,255,.9); overflow:hidden;}
@@ -5587,9 +5597,8 @@
   #ouverture.fin .ov-barre i{animation:none; width:100%; transition:width .2s ease-out;}
   /* le rideau se leve comme au lancement d'une seance : un cercle qui couvre tout
      l'ecran remonte, le logo reste en place et disparait au passage du bord */
-  #ouverture.leve{clip-path:circle(var(--r, 150vmax) at 50% calc(50% - var(--d, 300vh)));}
   @keyframes ovCharge{from{width:0;} to{width:82%;}}
-  @media (prefers-reduced-motion: reduce){ #ouverture{transition:opacity .2s;} #ouverture.leve{clip-path:none; opacity:0;} }
+  @media (prefers-reduced-motion: reduce){ #ouverture, #ouverture .ov-c{transition:opacity .2s;} #ouverture.leve{transform:none; opacity:0;} #ouverture.leve .ov-c{transform:translate(-50%, -50%);} }
 </style>
 <div id="ouverture" aria-hidden="true">
   <div class="ov-c"><img class="ov-logo" src="img/logo-blanc.webp" alt="Tonnup"><div class="ov-barre"><i></i></div></div>
@@ -21867,7 +21876,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 02h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 03h45 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -25046,14 +25055,13 @@ function leverRideau(){
       ov.classList.add("fin");
       tempsDemarrage.rideau = Math.round(performance.now());
       setTimeout(()=>{
-        const r = Math.ceil(Math.hypot(innerWidth / 2, innerHeight / 2)) + 10;
-        ov.style.setProperty("--r", r + "px");
-        ov.style.setProperty("--d", Math.ceil(innerHeight / 2 + r + 20) + "px");
-        void ov.offsetWidth;
-        ov.classList.add("leve"); if(fond) fond.remove();
-        setTimeout(()=>{ ov.remove(); appliquerTheme(); }, 600);
-        setTimeout(()=>{ if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } }, 220);
-        setTimeout(()=>{ ov.remove(); if(fond) fond.remove(); }, 750);
+        /* deux images d'attente : le navigateur a peint l'accueil sous le rideau avant
+           qu'il monte, et l'animation part d'un ecran calme */
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          ov.classList.add("leve"); if(fond) fond.remove();
+          setTimeout(()=>{ if(salutEnAttente){ salutEnAttente = false; ecrireSalut(); } }, 260);
+          setTimeout(()=>{ ov.remove(); appliquerTheme(); }, 760);
+        }));
       }, 230);
     }, Math.max(0, 900 - performance.now()));
   });
