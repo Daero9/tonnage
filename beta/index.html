@@ -3032,10 +3032,7 @@
     display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; cursor:pointer;}
   .pp-al .nm{font-size:13.5px; font-weight:700; line-height:1.2; min-height:2.4em;
     display:flex; align-items:center; justify-content:center; overflow-wrap:anywhere;}
-  /* les calories et les proteines sur la meme ligne, comme dans la fenetre de l'aliment (Nico) */
-  .pp-al .kc{display:flex; align-items:center; justify-content:center; gap:6px; font-size:11.5px; color:var(--ink-mute); white-space:nowrap;}
-  .pp-al .kc .pr{display:inline-flex; align-items:center; gap:2px; font-weight:700; color:#d9436c;}   /* la couleur de la tuile des proteines */
-  .pp-al .kc .pr .icm{width:12px; height:12px;}
+  .pp-al .kc{font-size:12px; color:var(--ink-mute);}
   .pp-al .nt{font-size:11px; color:var(--ink-mute); line-height:1.25;}
   /* le reglage des grammes dans sa pastille blanche, d'apres la reference */
   .pp-st{display:flex; align-items:center; gap:2px; margin-top:8px; padding:3px;
@@ -5148,9 +5145,12 @@
   .sc-astuce .co{flex:1; min-width:0;}
   .sc-astuce b{display:block; font-size:13px; font-weight:800; line-height:1.4; color:var(--ink);}
   .sc-astuce p{margin:4px 0 0; font-size:13px; line-height:1.45; color:var(--ink-soft);}
-  .sc-chips{display:flex; flex-wrap:wrap; gap:6px;}
-  .sc-chips span{padding:4px 10px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px rgba(245,130,32,.25);
-    font-size:12.5px; font-weight:800; color:var(--ink); white-space:nowrap;}
+  .sc-astuce.avec-chips{flex-wrap:wrap; row-gap:10px;}
+  .sc-chips{display:flex; flex-wrap:nowrap; gap:6px; flex:0 0 100%; min-width:0;}
+  .sc-chips span{padding:4px 9px; border-radius:99px; background:var(--surface); box-shadow:inset 0 0 0 1px rgba(245,130,32,.25);
+    font-size:11.5px; font-weight:800; color:var(--ink); white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .sc-astuce.avec-chips .co > p:first-child{margin-top:0; font-size:13.5px; font-weight:700; color:var(--ink);}
+  .sc-astuce.avec-chips .co > p.sc-obj:first-child{margin-top:0;}
   .sc-chips + p{margin-top:7px; font-size:13.5px; font-weight:700; color:var(--ink);}
   .sc-astuce .co > p:only-child{font-size:13.5px; font-weight:700; color:var(--ink); margin:0;}
   .sc-astuce{align-items:center;}
@@ -21867,7 +21867,7 @@ function exIcon(ex, sm){
 }
 
 const KEY="tonnage_v1";
-const BUILD = "30 septembre 2026 02h46 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
+const BUILD = "30 septembre 2026 02h52 · bêta";   /* remplacé par build.ps1 : date et heure de la construction */
 
 const MARK = "tonnage_marker";
 /* diagnostic : que survit-il entre deux ouvertures ? */
@@ -27822,9 +27822,10 @@ function astuceScan(v){
       pourObjectif = TR("Pour ton objectif : il te reste de la marge. Un plat de pâtes ou de riz complète bien ta journée.");
   }
   if(!reperes.length && !astuce && !pourObjectif) return "";
-  return `<div class="sc-astuce"><span class="ic">${IC_AMPOULE}</span><div class="co">
-    ${reperes.length ? `<div class="sc-chips">${reperes.map(r=>`<span>${r}</span>`).join("")}</div>` : ""}${astuce ? `<p>${astuce}</p>` : ""}${
-      pourObjectif ? `<p class="sc-obj">${pourObjectif}</p>` : ""}</div></div>`;
+  /* les deux reperes (proteines, calories) sur UNE ligne, de toute la largeur de la carte (Nico) */
+  const chips = reperes.length ? `<div class="sc-chips">${reperes.map(r=>`<span>${r}</span>`).join("")}</div>` : "";
+  const texte = (astuce ? `<p>${astuce}</p>` : "") + (pourObjectif ? `<p class="sc-obj">${pourObjectif}</p>` : "");
+  return `<div class="sc-astuce${chips ? " avec-chips" : ""}">${chips}${texte || !chips ? `<span class="ic">${IC_AMPOULE}</span><div class="co">${texte}</div>` : ""}</div>`;
 }
 function openProduitScanne(meal, p){
   const k = jourAlim();
@@ -28358,7 +28359,7 @@ function openResultatPhoto(meal, res){
       <div class="pp-grille${entree ? " cascade" : ""}">
         ${lignes.map((l, i)=>`<div class="pp-al" data-ouvre="${i}" style="--i:${i}">
           <div class="nm">${esc(l.nom)}</div>
-          <div class="kc"><span>${Math.round(l.kcal100 * l.g / 100)} kcal${(l.confiance === "basse" || l.source === "estimation") ? " ≈" : ""}</span><span class="pr">${icoM("muscle", 12)}${Math.round(l.prot100 * l.g / 100)} g</span></div>
+          <div class="kc">${Math.round(l.kcal100 * l.g / 100)} kcal${(l.confiance === "basse" || l.source === "estimation") ? " ≈" : ""}</div>
           ${l.note ? `<div class="nt">${esc(l.note)}</div>` : ""}
           <div class="pp-st">
             <button type="button" data-moins="${i}" aria-label="${TR("Moins")}">−</button>
