@@ -8709,6 +8709,30 @@ async function lancer(){
     F.renderCourseSection(sec3);
     vrai("VO2max : sans valeur ni montre, rien ne s'affiche", !sec3.querySelector(".co-vo2") && !sec3.querySelector('[data-cg="vo2"]'));
     sec3.remove(); DB.cardio = [];
+    /* le message d'une photo de plat (Nico, 30 sept.) : selon l'objectif et l'assiette */
+    const PL = (nom, g, k, p, gl, li)=>({nom, nomFr:nom, g, kcal100:k, prot100:p, gluc100:gl, lip100:li});
+    const aimAvant = DB.profile.aim;
+    const gateau = [PL("gâteau au chocolat", 150, 400, 5, 50, 20)];
+    const pates = [PL("pâtes cuites", 300, 158, 5, 31, 1), PL("beurre", 10, 740, 0.5, 0.5, 82)];
+    const poulet = [PL("blanc de poulet", 150, 165, 31, 0, 3.6), PL("riz cuit", 200, 130, 2.7, 28, 0.3), PL("haricots verts", 150, 31, 1.8, 5, 0.2)];
+    DB.profile.aim = "seche";
+    vrai("Plat : un gâteau parle de sucre, pas de protéines manquantes", F.messagePlat(gateau, "midi", 0.3).cat === "sucre");
+    vrai("Plat : des pâtes au beurre en sèche, trop de féculents", F.messagePlat(pates, "midi", 0.3).cat === "fec");
+    DB.profile.aim = "masse";
+    const mp = F.messagePlat(poulet, "midi", 0.3);
+    vrai("Plat : poulet, riz, haricots en masse, un message positif et les légumes salués", mp.cat === "ok" && !!mp.legumes, JSON.stringify(mp));
+    vrai("Plat : la même photo garde la même phrase", F.messagePlat(poulet, "midi", 0.3).phrase === mp.phrase);
+    vrai("Plat : pas de ligne sur les légumes au petit-déjeuner", !F.messagePlat(pates, "matin", 0.3).legumes);
+    /* un ajout a un repas deja commence : on accompagne, sans juger le complement */
+    const yaourt = [PL("skyr", 150, 60, 11, 4, 0.2)];
+    const ma = F.messagePlat(yaourt, "midi", 0.3, true);
+    vrai("Ajout : un skyr ajouté au repas, un message d'ajout et pas de ligne légumes", ma.ajout && ma.cat === "ok" && !ma.legumes, JSON.stringify(ma));
+    DB.profile.aim = "seche";
+    vrai("Ajout : du beurre de cacahuète en sèche parle d'équilibrer les graisses",
+      F.messagePlat([PL("beurre de cacahuète", 40, 600, 25, 15, 50)], "midi", 0.3, true).cat === "gras");
+    DB.profile.aim = "masse";
+    vrai("Code-barres : ses messages ne changent pas", /Belle dose de protéines/.test(F.astuceScan({kcal:300, prot:30, gluc:10})));
+    DB.profile.aim = aimAvant;
     vrai("Les icônes dessinées par Nico sont posées en masque", /ic-walk-1\.webp/.test(F.icEtape({type:"marche"}, 20)) && /ic-gps-1/.test(F.crResume({min:10, km:1, kcal:50})));
   })();
   neuf();
