@@ -1,5 +1,5 @@
-/* Tonnup — service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tonnup-beta-v11-20261014-2136";
+/* Service worker : l'app marche hors ligne et se met à jour toute seule. */
+const CACHE = "tng-beta-v11-20261014-2155";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./tr-en.js", "./tr-es.js", "./tr-pt.js", "./icon-192.png?v=5", "./icon-512.png?v=5", "./apple-touch-icon.png?v=5",
   "./img/exos2/abducteurs.png",
   "./img/exos2/tractions-assistees.png",
@@ -133,7 +133,7 @@ const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.htm
    chaque publication : avant, chaque mise à jour jetait tout et chaque téléphone retéléchargeait ~7 Mo
    d'images identiques. Une image ne change jamais de contenu sous un même nom (une image redessinée prend un
    nouveau nom de fichier) : la garder d'une version à l'autre est donc sans risque. */
-const CACHE_IMG = "tonnup-beta-v-images";
+const CACHE_IMG = "tng-beta-v-images";
 const estImage = u => /\.(webp|png|jpe?g|svg)($|\?)/.test(u);
 
 self.addEventListener("install", e => {
@@ -150,14 +150,14 @@ self.addEventListener("install", e => {
 });
 
 self.addEventListener("activate", e => {
-  /* On ne supprime que les caches de CE canal (« tonnup-v… » pour la publique, « tonnup-beta-v… » pour la
+  /* On ne supprime que les caches de CE canal (« tng-v… » pour la publique, « tng-beta-v… » pour la
      bêta) : avant, la publique effaçait le cache de la bêta et inversement, les deux vivant à la même adresse.
-     Les images qui ne sont plus dans la liste sortent du cache des images. */
+     Les images qui ne sont plus dans la liste sortent du cache des images. Les caches à l'ancien nom (avant le 14 oct.) partent aussi. */
   const prefixe = CACHE.slice(0, CACHE.indexOf("-v") + 2);
   const gardees = new Set(ASSETS.filter(estImage).map(u => new URL(u, self.registration.scope).href));
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== CACHE_IMG && (k.startsWith(prefixe) || !k.startsWith("tonnup-")))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== CACHE_IMG && (k.startsWith(prefixe) || !k.startsWith("tng-")))
         .map(k => caches.delete(k))))
       .then(() => caches.open(CACHE_IMG))
       .then(c => c.keys().then(reqs => Promise.all(reqs.filter(r => !gardees.has(r.url)).map(r => c.delete(r)))))
