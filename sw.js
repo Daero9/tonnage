@@ -1,5 +1,5 @@
 /* Service worker : l'app marche hors ligne et se met à jour toute seule. */
-const CACHE = "tng-v11-20261019-1848";
+const CACHE = "tng-v11-20261025-1128";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./confidentialite.html", "./conditions.html", "./tr-en.js", "./tr-es.js", "./tr-pt.js", "./icon-192.png?v=5", "./icon-512.png?v=5", "./apple-touch-icon.png?v=5",
   "./img/exos2/abducteurs.png",
   "./img/exos2/tractions-assistees.png",
