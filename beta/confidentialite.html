@@ -28,13 +28,21 @@
     background:var(--surface); border:1px solid var(--border); color:var(--ink);
     text-decoration:none; font-size:14px; font-weight:600;}
   .bas{margin-top:26px;}
+  .haut{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 14px; margin-bottom:18px;}
+  .haut .retour{margin-bottom:0;}
+  .langues{font-size:13px; font-weight:600; color:var(--ink-mute);}
+  .langues a{color:var(--ink-mute); text-decoration:none; padding:4px 2px;}
+  .langues a[aria-current]{color:var(--accent);}
   footer{margin-top:36px; padding-top:16px; border-top:1px solid var(--border); font-size:13.5px; color:var(--ink-mute);}
 </style>
 
 <main>
-  <a class="retour" href="./" id="retour">← Retour à &#84;onnup</a>
+  <div class="haut">
+    <a class="retour" href="./" id="retour">← Retour à &#84;onnup</a>
+    <nav class="langues" aria-label="Langue"><a href="confidentialite.html" lang="fr" aria-current="page">FR</a> · <a href="confidentialite-en.html" lang="en">EN</a> · <a href="confidentialite-es.html" lang="es">ES</a> · <a href="confidentialite-pt.html" lang="pt">PT</a> · <a href="confidentialite-it.html" lang="it">IT</a> · <a href="confidentialite-de.html" lang="de">DE</a></nav>
+  </div>
   <h1>Politique de confidentialité</h1>
-  <div class="maj">Application &#84;onnup — dernière mise à jour : 20 octobre 2026</div>
+  <div class="maj">Application &#84;onnup — dernière mise à jour : 26 octobre 2026</div>
 
   <div class="card">
     <p><strong>En une phrase : &#84;onnup ne collecte aucune donnée personnelle.</strong> Tout ce que tu saisis
@@ -144,7 +152,7 @@
     <li><strong>Ce qui reste chez toi :</strong> la photo n'est ni enregistrée par l'application, ni ajoutée à
     ta galerie ; seuls les aliments que tu valides sont notés dans ton journal, comme si tu les avais saisis
     à la main.</li>
-    <li><strong>Limite :</strong> dix photos par jour et par appareil avec &#84;onnup Premium (cinq pendant l'essai gratuit), plus les packs de photos (20 ou 50) achetés dans Google Play.</li>
+    <li><strong>Limite :</strong> dix photos par jour et par appareil avec &#84;onnup Premium (une pendant l'essai gratuit), plus les packs de photos (20 ou 50) achetés dans Google Play.</li>
   </ul>
 
   <h2 id="amis">Mes amis (facultatif)</h2>
@@ -369,6 +377,10 @@
       if(window.opener || history.length <= 1){ e.preventDefault(); window.close(); }
       else if(document.referrer){ e.preventDefault(); history.back(); }
     });
+  });
+  /* changer de langue remplace la page : « Retour » ramène toujours à l'app */
+  document.querySelectorAll(".langues a").forEach(function(a){
+    a.addEventListener("click", function(e){ e.preventDefault(); location.replace(a.href + location.hash); });
   });
 </script>
 </html>

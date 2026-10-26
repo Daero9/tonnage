@@ -28,13 +28,21 @@
     background:var(--surface); border:1px solid var(--border); color:var(--ink);
     text-decoration:none; font-size:14px; font-weight:600;}
   .bas{margin-top:26px;}
+  .haut{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 14px; margin-bottom:18px;}
+  .haut .retour{margin-bottom:0;}
+  .langues{font-size:13px; font-weight:600; color:var(--ink-mute);}
+  .langues a{color:var(--ink-mute); text-decoration:none; padding:4px 2px;}
+  .langues a[aria-current]{color:var(--accent);}
   footer{margin-top:36px; padding-top:16px; border-top:1px solid var(--border); font-size:13.5px; color:var(--ink-mute);}
 </style>
 
 <main>
-  <a class="retour" href="./" id="retour">← Retour à &#84;onnup</a>
+  <div class="haut">
+    <a class="retour" href="./" id="retour">← Retour à &#84;onnup</a>
+    <nav class="langues" aria-label="Langue"><a href="conditions.html" lang="fr" aria-current="page">FR</a> · <a href="conditions-en.html" lang="en">EN</a> · <a href="conditions-es.html" lang="es">ES</a> · <a href="conditions-pt.html" lang="pt">PT</a> · <a href="conditions-it.html" lang="it">IT</a> · <a href="conditions-de.html" lang="de">DE</a></nav>
+  </div>
   <h1>Conditions d'utilisation</h1>
-  <div class="maj">Application &#84;onnup — dernière mise à jour : 21 septembre 2026</div>
+  <div class="maj">Application &#84;onnup — dernière mise à jour : 26 octobre 2026</div>
 
   <div class="card">
     <p><strong>En bref :</strong> &#84;onnup est une application de suivi d'entraînement et d'alimentation. Les
@@ -85,7 +93,7 @@
   Bilan.</p>
   <ul>
     <li><strong>Essai gratuit :</strong> sept jours à partir de la création du profil, sans carte ni compte,
-    avec cinq photos par jour. À la fin de l'essai, la photo, la progression et le bilan se verrouillent ;
+    avec une photo par jour. À la fin de l'essai, la photo, la progression et le bilan se verrouillent ;
     tes données y restent et réapparaissent dès que tu t'abonnes.</li>
     <li><strong>Packs de photos :</strong> des achats uniques (20 photos pour 1,99 €, 50 photos pour 3,99 € au
     moment de l'achat ; prix affichés dans Google Play) qui ajoutent des photos d'assiette à une réserve, utilisable sans abonnement et sans date
@@ -119,7 +127,7 @@
   (Open Food Facts), l'analyse d'une photo d'assiette (Anthropic, via un relais de l'éditeur) et la sauvegarde
   dans ton Google Drive. Elles dépendent de la disponibilité de ces services et d'une connexion réseau ;
   l'éditeur ne garantit ni leur continuité ni l'exactitude de ce qu'elles renvoient. L'analyse de photo est
-  limitée à dix photos par jour et par appareil — cinq pendant l'essai gratuit —, un plafond que l'éditeur peut ajuster. Ce qui est envoyé et
+  limitée à dix photos par jour et par appareil — une pendant l'essai gratuit —, un plafond que l'éditeur peut ajuster. Ce qui est envoyé et
   à qui est décrit dans la <a href="confidentialite.html">politique de confidentialité</a>.</p>
 
   <h2>5 bis. Mes amis</h2>
@@ -185,6 +193,10 @@
       if(window.opener || history.length <= 1){ e.preventDefault(); window.close(); }
       else if(document.referrer){ e.preventDefault(); history.back(); }
     });
+  });
+  /* changer de langue remplace la page : « Retour » ramène toujours à l'app */
+  document.querySelectorAll(".langues a").forEach(function(a){
+    a.addEventListener("click", function(e){ e.preventDefault(); location.replace(a.href + location.hash); });
   });
 </script>
 </html>
